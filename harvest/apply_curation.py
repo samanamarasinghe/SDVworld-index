@@ -26,6 +26,9 @@ integration values:
     baseline_only    runs an SDV model purely as a foil for a proposed method
     derivative_work  ports, reimplements or extends an SDV model or design
     citation_only    cites the work without running the software
+    name_collision   matched on a term that denotes something else entirely;
+                     a false positive of the search, to be dropped from the
+                     index rather than carried as a weak entry
     unclear          evidence insufficient to classify
 """
 import argparse
@@ -48,7 +51,7 @@ FIELDS = ['uses_sdv', 'integration', 'evidence', 'sdv_component', 'use_case',
 VOCAB = {
     'integration': {'source_work', 'api_user', 'vendored_source',
                     'baseline_only', 'derivative_work', 'citation_only',
-                    'unclear'},
+                    'name_collision', 'unclear'},
     'confidence': {'high', 'medium', 'low'},
     'sdv_component': {'sdv', 'ctgan', 'rdt', 'sdmetrics', 'sdgym', 'copulas',
                       'deepecho', 'tgan', 'enterprise'},
@@ -188,6 +191,9 @@ def main():
     print(f'{applied} records patched; {done}/{len(works)} adjudicated')
     for name, count in sorted(counts.items(), key=lambda kv: -kv[1]):
         print(f'  {count:>4}  {name}')
+    dropped = counts.get('name_collision', 0)
+    if dropped:
+        print(f'\n{dropped} marked name_collision: exclude from promotion entirely')
     return 0
 
 
