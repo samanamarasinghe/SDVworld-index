@@ -16,7 +16,19 @@ raw OpenAlex fields untouched (note that OpenAlex already uses "type", which is
 why the curated field is called "kind").
 
 Idempotent: re-running produces the same result. Patches apply in filename
-order; a later patch overwriting an earlier non-identical value is reported.
+order. Changing a value set by an earlier patch is an error unless the later
+line carries "override": true, which records the correction deliberately:
+
+    {"openalex_id": "W7163879309", "override": true,
+     "integration": "derivative_work", ...}
+
+integration values:
+    api_user         calls the SDV libraries
+    vendored_source  carries a copy of SDV-family source in-tree
+    baseline_only    runs an SDV model purely as a foil for a proposed method
+    derivative_work  ports or reimplements SDV's design, in any language
+    citation_only    cites the work without running the software
+    unclear          evidence insufficient to classify
 """
 import argparse
 import csv
@@ -37,7 +49,7 @@ FIELDS = ['uses_sdv', 'integration', 'evidence', 'sdv_component', 'use_case',
 
 VOCAB = {
     'integration': {'api_user', 'vendored_source', 'baseline_only',
-                    'citation_only', 'unclear'},
+                    'derivative_work', 'citation_only', 'unclear'},
     'confidence': {'high', 'medium', 'low'},
     'sdv_component': {'sdv', 'ctgan', 'rdt', 'sdmetrics', 'sdgym', 'copulas',
                       'deepecho', 'tgan', 'enterprise'},
@@ -79,6 +91,7 @@ def load_patches(errors):
                 errors.append(f'{where}: bad JSON ({exc})')
                 continue
             wid = short(rec.pop('openalex_id', ''))
+            override = bool(rec.pop('override', False))
             if not wid:
                 errors.append(f'{where}: missing openalex_id')
                 continue
@@ -97,8 +110,9 @@ def load_patches(errors):
                     errors.append(f'{where}: {field}={value!r} not in vocabulary')
                     continue
                 prior = seen.get((wid, field))
-                if prior and prior[1] != value:
-                    errors.append(f'{where}: overwrites {wid}.{field} from {prior[0]}')
+                if prior and prior[1] != value and not override:
+                    errors.append(f'{where}: overwrites {wid}.{field} from {prior[0]}; '
+                                  f'add "override": true if deliberate')
                 seen[(wid, field)] = (where, value)
                 clean[field] = value
             patches.setdefault(wid, {}).update(clean)
@@ -168,8 +182,10 @@ def main():
 
     done = sum(1 for w in works if w.get('curation', {}).get('uses_sdv') is not None)
     uses = sum(1 for w in works if w.get('curation', {}).get('uses_sdv') is True)
+    derived = sum(1 for w in works
+                  if w.get('curation', {}).get('integration') == 'derivative_work')
     print(f'{applied} records patched; {done}/{len(works)} adjudicated; '
-          f'{uses} use SDV')
+          f'{uses} use SDV; {derived} derivative works')
     return 0
 
 
