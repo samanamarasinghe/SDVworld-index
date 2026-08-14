@@ -17,16 +17,14 @@ why the curated field is called "kind").
 
 Idempotent: re-running produces the same result. Patches apply in filename
 order. Changing a value set by an earlier patch is an error unless the later
-line carries "override": true, which records the correction deliberately:
-
-    {"openalex_id": "W7163879309", "override": true,
-     "integration": "derivative_work", ...}
+line carries "override": true, which records the correction deliberately.
 
 integration values:
+    source_work      an SDV-family paper itself, not a downstream use
     api_user         calls the SDV libraries
     vendored_source  carries a copy of SDV-family source in-tree
     baseline_only    runs an SDV model purely as a foil for a proposed method
-    derivative_work  ports or reimplements SDV's design, in any language
+    derivative_work  ports, reimplements or extends an SDV model or design
     citation_only    cites the work without running the software
     unclear          evidence insufficient to classify
 """
@@ -48,8 +46,9 @@ FIELDS = ['uses_sdv', 'integration', 'evidence', 'sdv_component', 'use_case',
           'source_url']
 
 VOCAB = {
-    'integration': {'api_user', 'vendored_source', 'baseline_only',
-                    'derivative_work', 'citation_only', 'unclear'},
+    'integration': {'source_work', 'api_user', 'vendored_source',
+                    'baseline_only', 'derivative_work', 'citation_only',
+                    'unclear'},
     'confidence': {'high', 'medium', 'low'},
     'sdv_component': {'sdv', 'ctgan', 'rdt', 'sdmetrics', 'sdgym', 'copulas',
                       'deepecho', 'tgan', 'enterprise'},
@@ -180,12 +179,15 @@ def main():
         writer.writeheader()
         writer.writerows(rows)
 
+    counts = {}
+    for work in works:
+        value = work.get('curation', {}).get('integration')
+        if value:
+            counts[value] = counts.get(value, 0) + 1
     done = sum(1 for w in works if w.get('curation', {}).get('uses_sdv') is not None)
-    uses = sum(1 for w in works if w.get('curation', {}).get('uses_sdv') is True)
-    derived = sum(1 for w in works
-                  if w.get('curation', {}).get('integration') == 'derivative_work')
-    print(f'{applied} records patched; {done}/{len(works)} adjudicated; '
-          f'{uses} use SDV; {derived} derivative works')
+    print(f'{applied} records patched; {done}/{len(works)} adjudicated')
+    for name, count in sorted(counts.items(), key=lambda kv: -kv[1]):
+        print(f'  {count:>4}  {name}')
     return 0
 
 
