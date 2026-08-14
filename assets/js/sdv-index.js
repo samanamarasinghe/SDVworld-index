@@ -23,7 +23,7 @@
     paper: 'Paper', preprint: 'Preprint', thesis: 'Thesis', blog_post: 'Blog post',
     announcement: 'Announcement', case_study: 'Case study', news_article: 'News article',
     documentation: 'Documentation', code_repo: 'Code repo', tutorial: 'Tutorial',
-    video: 'Video', dataset_benchmark: 'Dataset / benchmark', forum: 'Forum'
+    video: 'Video', dataset_benchmark: 'Dataset / benchmark', forum: 'Forum', patent: 'Patent'
   };
   var COMPONENT_LABELS = {
     sdv: 'SDV', ctgan: 'CTGAN', rdt: 'RDT', sdmetrics: 'SDMetrics', sdgym: 'SDGym',
@@ -46,12 +46,14 @@
   };
   var INTEGRATION_LABELS = {
     api_user: 'API user', vendored_source: 'Vendored source',
-    baseline_only: 'Baseline only', citation_only: 'Citation only', unclear: 'Unclear'
+    derivative_work: 'Derivative work', baseline_only: 'Baseline only',
+    citation_only: 'Citation only', source_work: 'Source work',
+    name_collision: 'Name collision', unclear: 'Unclear'
   };
   var CONF_RANK = { high: 3, medium: 2, low: 1 };
   var KIND_ORDER = ['paper', 'preprint', 'thesis', 'code_repo', 'documentation',
     'blog_post', 'announcement', 'case_study', 'tutorial', 'video',
-    'dataset_benchmark', 'news_article', 'forum'];
+    'dataset_benchmark', 'news_article', 'forum', 'patent'];
   var CITABLE = { paper: 1, preprint: 1, thesis: 1 };
 
   function prettify(v) {

@@ -27,13 +27,16 @@ Shards are never rewritten once complete; new waves add new shard files.
 | `sdv_component[]` | sdv, ctgan, rdt, sdmetrics, sdgym, copulas, deepecho, tgan, enterprise |
 | `use_case[]` | see vocabulary below |
 | `industry[]` | see vocabulary below |
+| `integration` | how a code/paper entry uses SDV; see vocabulary below |
+| `evidence` | the specific proof of use — a file path or a quoted line |
 | `confidence` | high = read the source; medium/low = metadata only |
 | `needs` | open verification task, if any |
+| `duplicate_of` | id of the canonical entry, when this record retires a duplicate |
 
 ## Vocabularies
 
 **kind**: paper, preprint, thesis, blog_post, announcement, case_study, news_article,
-documentation, code_repo, tutorial, video, dataset_benchmark, forum
+documentation, code_repo, tutorial, video, dataset_benchmark, forum, patent
 
 **use_case**: privacy_protection, anonymization, data_sharing, software_testing,
 data_augmentation, class_imbalance, ml_training, benchmarking_evaluation,
@@ -42,6 +45,13 @@ scenario_simulation, method_research, compliance, education
 **industry**: healthcare_bio, finance_insurance, government_public, academia,
 energy_utilities, telecom, retail_ecommerce, transportation, manufacturing, software,
 cross_industry
+
+**integration** (how an entry relates to SDV software): api_user (imports/uses the
+library), vendored_source (copies SDV/CTGAN source in-tree), derivative_work (extends or
+modifies that source into a new tool), baseline_only (runs it only as a comparison
+baseline), citation_only (cites but does not run it), source_work (an SDV anchor paper
+itself), name_collision (false-positive match, unrelated to SDV), unclear (use suspected
+but unverified).
 
 ## Tiers
 
