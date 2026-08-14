@@ -19,6 +19,10 @@ Idempotent: re-running produces the same result. Patches apply in filename
 order. Changing a value set by an earlier patch is an error unless the later
 line carries "override": true, which records the correction deliberately.
 
+Duplicate OpenAlex records for one work: set duplicate_of on the record to
+retire, pointing at the id to keep. Both stay in the file; anything consuming
+this data should skip records carrying duplicate_of.
+
 integration values:
     source_work      an SDV-family paper itself, not a downstream use
     api_user         calls the SDV libraries
@@ -27,8 +31,7 @@ integration values:
     derivative_work  ports, reimplements or extends an SDV model or design
     citation_only    cites the work without running the software
     name_collision   matched on a term that denotes something else entirely;
-                     a false positive of the search, to be dropped from the
-                     index rather than carried as a weak entry
+                     a false positive of the search, to be dropped
     unclear          evidence insufficient to classify
 """
 import argparse
@@ -46,7 +49,7 @@ PATCHES = os.path.join(ROOT, 'harvest', 'patches', '*.jsonl')
 LIST_FIELDS = {'sdv_component', 'use_case', 'industry'}
 FIELDS = ['uses_sdv', 'integration', 'evidence', 'sdv_component', 'use_case',
           'industry', 'kind', 'summary', 'code_url', 'confidence', 'needs',
-          'source_url']
+          'source_url', 'duplicate_of']
 
 VOCAB = {
     'integration': {'source_work', 'api_user', 'vendored_source',
@@ -62,9 +65,9 @@ VOCAB = {
     'industry': {'healthcare_bio', 'finance_insurance', 'government_public',
                  'academia', 'energy_utilities', 'telecom', 'retail_ecommerce',
                  'transportation', 'manufacturing', 'software', 'cross_industry'},
-    'kind': {'paper', 'preprint', 'thesis', 'blog_post', 'announcement',
-             'case_study', 'news_article', 'documentation', 'code_repo',
-             'tutorial', 'video', 'dataset_benchmark', 'forum'},
+    'kind': {'paper', 'preprint', 'thesis', 'patent', 'blog_post',
+             'announcement', 'case_study', 'news_article', 'documentation',
+             'code_repo', 'tutorial', 'video', 'dataset_benchmark', 'forum'},
 }
 
 
@@ -121,9 +124,12 @@ def load_patches(errors):
     return patches
 
 
-def check_complete(wid, cur, errors):
+def check_complete(wid, cur, errors, known_ids):
     """A record claiming SDV use must carry the evidence for that claim."""
-    if cur.get('uses_sdv') is not True:
+    target = cur.get('duplicate_of')
+    if target and short(target) not in known_ids:
+        errors.append(f'{wid}: duplicate_of points at unknown record {target}')
+    if cur.get('uses_sdv') is not True or target:
         return
     for field in ('evidence', 'integration', 'summary', 'confidence'):
         if not cur.get(field):
@@ -142,8 +148,7 @@ def main():
     works = json.load(open(WORKS))
     by_id = {short(w['id']): w for w in works}
 
-    unknown = set(patches) - set(by_id)
-    for wid in sorted(unknown):
+    for wid in sorted(set(patches) - set(by_id)):
         errors.append(f'{wid}: no such record in citing-works.json')
 
     applied = 0
@@ -152,7 +157,7 @@ def main():
             continue
         cur = by_id[wid].setdefault('curation', {})
         cur.update(fields)
-        check_complete(wid, cur, errors)
+        check_complete(wid, cur, errors, by_id)
         applied += 1
 
     for line in errors:
@@ -170,6 +175,9 @@ def main():
         json.dump(works, fh, indent=1, ensure_ascii=False)
 
     rows = list(csv.DictReader(open(CSV_PATH, newline='', encoding='utf-8-sig')))
+    fieldnames = list(rows[0].keys())
+    if 'duplicate_of' not in fieldnames:
+        fieldnames.append('duplicate_of')
     for row in rows:
         cur = by_id.get(row['openalex_id'], {}).get('curation', {})
         for field in FIELDS:
@@ -178,7 +186,7 @@ def main():
                 row[field] = '; '.join(value) if isinstance(value, list) else \
                     ('' if value is None else str(value))
     with open(CSV_PATH, 'w', newline='', encoding='utf-8') as fh:
-        writer = csv.DictWriter(fh, fieldnames=list(rows[0].keys()))
+        writer = csv.DictWriter(fh, fieldnames=fieldnames, restval='')
         writer.writeheader()
         writer.writerows(rows)
 
@@ -188,12 +196,11 @@ def main():
         if value:
             counts[value] = counts.get(value, 0) + 1
     done = sum(1 for w in works if w.get('curation', {}).get('uses_sdv') is not None)
-    print(f'{applied} records patched; {done}/{len(works)} adjudicated')
+    dupes = sum(1 for w in works if w.get('curation', {}).get('duplicate_of'))
+    print(f'{applied} records patched; {done}/{len(works)} adjudicated; '
+          f'{dupes} retired as duplicates')
     for name, count in sorted(counts.items(), key=lambda kv: -kv[1]):
         print(f'  {count:>4}  {name}')
-    dropped = counts.get('name_collision', 0)
-    if dropped:
-        print(f'\n{dropped} marked name_collision: exclude from promotion entirely')
     return 0
 
 
