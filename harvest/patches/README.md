@@ -8,7 +8,7 @@ fields being set:
 {"openalex_id": "W3202428668", "uses_sdv": false, "integration": "citation_only", "confidence": "high", "evidence": "survey; CTGAN cited as prior art, never run"}
 ```
 
-Patches are small and reviewable in a diff. The 10.6 MB `citing-works.json` is
+Patches are small and reviewable in a diff. The 10.6 MB `openalex-citations.json` is
 never edited by hand and never passes through a chat context — the script is the
 only thing that writes it.
 
@@ -18,7 +18,7 @@ only thing that writes it.
 2. `python harvest/apply_curation.py --check` validates: known ids, known field
    names, facet values in vocabulary, no silent overwrite of an earlier patch.
 3. `python harvest/apply_curation.py` writes the `curation` object into each
-   record in `citing-works.json` and fills the matching cells in
+   record in `openalex-citations.json` and fills the matching cells in
    `harvest/curation-worklist.csv`.
 4. Commit the patch, the JSON and the CSV together.
 

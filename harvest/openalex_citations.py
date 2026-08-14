@@ -4,7 +4,7 @@
 Run locally (no API key needed; the email just gets you the polite pool):
     OPENALEX_EMAIL=you@example.edu python harvest/openalex_citations.py
 
-Writes data/tail/citing-works.json. Feed that to the curation pass, which
+Writes data/tail/openalex-citations.json. Feed that to the curation pass, which
 filters for works that actually *use* the software rather than only cite it.
 """
 import json
@@ -15,7 +15,7 @@ import urllib.request
 
 EMAIL = os.environ.get('OPENALEX_EMAIL', '')
 OUT = os.path.join(os.path.dirname(__file__), '..', 'data', 'tail',
-                   'citing-works.json')
+                   'openalex-citations.json')
 
 # Anchor works, resolved by DOI or arXiv id at runtime.
 ANCHORS = {

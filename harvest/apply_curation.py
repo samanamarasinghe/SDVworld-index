@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Apply curation patches to citing-works.json and the worklist CSV.
+"""Apply curation patches to openalex-citations.json and the worklist CSV.
 
     python harvest/apply_curation.py --check     # validate, write nothing
     python harvest/apply_curation.py             # apply and rewrite both files
@@ -42,7 +42,7 @@ import os
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-WORKS = os.path.join(ROOT, 'data', 'tail', 'citing-works.json')
+WORKS = os.path.join(ROOT, 'data', 'tail', 'openalex-citations.json')
 CSV_PATH = os.path.join(ROOT, 'harvest', 'curation-worklist.csv')
 PATCHES = os.path.join(ROOT, 'harvest', 'patches', '*.jsonl')
 
@@ -149,7 +149,7 @@ def main():
     by_id = {short(w['id']): w for w in works}
 
     for wid in sorted(set(patches) - set(by_id)):
-        errors.append(f'{wid}: no such record in citing-works.json')
+        errors.append(f'{wid}: no such record in openalex-citations.json')
 
     applied = 0
     for wid, fields in patches.items():

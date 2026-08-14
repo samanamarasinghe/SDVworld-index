@@ -3,7 +3,7 @@
 
     python harvest/triage_signals.py
 
-Scans title and abstract of every record in citing-works.json for SDV-family
+Scans title and abstract of every record in openalex-citations.json for SDV-family
 terms. Records with no match are almost always prior-art citations rather than
 uses, and there are far too many to read by hand.
 
@@ -21,7 +21,7 @@ import os
 import re
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-WORKS = os.path.join(ROOT, 'data', 'tail', 'citing-works.json')
+WORKS = os.path.join(ROOT, 'data', 'tail', 'openalex-citations.json')
 OUT = os.path.join(ROOT, 'harvest', 'patches', 'curation-000-triage.jsonl')
 
 TERMS = {
