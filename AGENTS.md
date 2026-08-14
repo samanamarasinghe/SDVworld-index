@@ -20,7 +20,7 @@ README.md                            schema + controlled vocabularies
 build.py                             merges shards -> data/sdv-index.json
 data/shards/01-first-party.json      44 entries: MIT/DataCebo research, libraries, docs, blog, cases
 data/shards/02-github-curated.json   18 entries: third-party repos, verified against code evidence
-data/tail/github-candidates-full.json 2019 repos, pooled, not yet curated
+data/tail/github-repos.json           2019 repos, pooled + metrics, not yet curated
 harvest/README.md                    source-by-source notes and the curation rule
 harvest/openalex_citations.py        citing works for the 5 anchor papers
 harvest/github_tail.py               partitioned GitHub code search
@@ -51,7 +51,7 @@ Hosts that must be reachable: `api.openalex.org`, `api.github.com`, `serpapi.com
 OPENALEX_EMAIL=<email> python harvest/openalex_citations.py
 ```
 
-Produces `data/tail/citing-works.json`. Expect several thousand records; CTGAN alone
+Produces `data/tail/openalex-citations.json`. Expect several thousand records; CTGAN alone
 carries most of them. Commit the raw output as its own commit before doing anything
 else with it.
 
@@ -61,7 +61,7 @@ else with it.
 GITHUB_TOKEN=<token> python harvest/github_tail.py
 ```
 
-Produces `data/tail/github-candidates-full.json`, merging with the 130 repos already
+Produces `data/tail/github-repos.json`, merging with the 130 repos already
 pooled. Code search allows 10 requests/minute and caps any single query at 1000
 retrievable results — the 13 patterns in the script exist to partition around that cap.
 If a pattern returns exactly 1000, it is truncated: split it further (add a

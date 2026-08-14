@@ -96,7 +96,6 @@
   };
 
   var DATA = [];
-  var TAIL = null;         // (legacy, unused)
   var CITE = null;         // citation tail, normalized (lazy)
   var GH = null;           // github repo tail, normalized (lazy)
   var UNIVERSE = {};       // facet -> all values present
@@ -122,11 +121,6 @@
     var out = [], k;
     for (k in map) if (map[k]) out.push(k);
     return out;
-  }
-  function anyCuratedFacetActive() {
-    var blockers = ['kind', 'sdv_component', 'use_case', 'industry', 'confidence', 'authors'];
-    for (var i = 0; i < blockers.length; i++) if (selected(state.sel[blockers[i]]).length) return true;
-    return false;
   }
 
   /* ---------- Filtering ---------- */
@@ -516,81 +510,6 @@
         els.toggleGithub.checked = false; state.showGithub = false; });
   }
 
-  /* ---------- Citation tail (legacy bottom section; unused) ---------- */
-  function normalizeTail(r) {
-    var url = (r.primary_location && r.primary_location.landing_page_url) || r.doi || r.id;
-    return {
-      title: r.title || 'Untitled',
-      year: r.publication_year || null,
-      kind: r.type || '',
-      url: url,
-      doi: r.doi || '',
-      cited: r.cited_by_count || 0
-    };
-  }
-
-  function renderTail() {
-    var section = els.tailSection, mount = els.tailResults;
-    if (!state.showTail || !TAIL) { section.className = 'hidden'; return; }
-    section.className = '';
-    mount.innerHTML = '';
-
-    if (anyCuratedFacetActive()) {
-      mount.appendChild(el('div', 'tail-note',
-        'Tail hidden while Kind / component / use case / industry / confidence / author filters are active. ' +
-        'Clear those to browse the tail by title and year.'));
-      return;
-    }
-
-    var q = state.titleQuery.replace(/\s+/g, ' ').trim().toLowerCase();
-    var yearSel = selected(state.sel.year);
-    var rows = TAIL.filter(function (r) {
-      if (q && (r.title || '').toLowerCase().indexOf(q) < 0) return false;
-      if (yearSel.length && (!r.year || yearSel.indexOf(String(r.year)) < 0)) return false;
-      return true;
-    }).sort(function (a, b) { return b.cited - a.cited; });
-
-    els.tailCount.textContent = rows.length + ' of ' + TAIL.length;
-
-    var ul = el('ul', 'pub-list tail-list');
-    rows.slice(0, 400).forEach(function (r) {
-      var li = el('li', 'pub-item tail-item');
-      var t = el('div', 'pub-title');
-      if (r.url) {
-        var a = el('a', null, r.title);
-        a.href = r.url; a.target = '_blank'; a.rel = 'noopener';
-        t.appendChild(a);
-      } else t.appendChild(document.createTextNode(r.title));
-      li.appendChild(t);
-      var m = el('div', 'pub-meta');
-      if (r.kind) m.appendChild(el('span', 'badge badge-tail', r.kind));
-      var d = [];
-      if (r.year) d.push(String(r.year));
-      d.push('cited by ' + r.cited);
-      m.appendChild(el('span', 'pub-dim', ' ' + d.join(' · ')));
-      li.appendChild(m);
-      ul.appendChild(li);
-    });
-    mount.appendChild(ul);
-    if (rows.length > 400) mount.appendChild(el('div', 'tail-note', 'Showing top 400 by citations of ' + rows.length + ' matches.'));
-  }
-
-  function loadTail() {
-    if (TAIL) { renderTail(); return; }
-    fetch(TAIL_PATH).then(function (r) {
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.json();
-    }).then(function (raw) {
-      TAIL = (raw || []).map(normalizeTail);
-      els.tailLabel.textContent = 'Hide citation tail (' + TAIL.length + ')';
-      renderTail();
-    }).catch(function (e) {
-      els.errors.textContent = 'Could not load citation tail: ' + e.message;
-      els.toggleTail.checked = false;
-      state.showTail = false;
-    });
-  }
-
   /* ---------- BibTeX ---------- */
   var BIB_TYPE = { paper: 'article', preprint: 'misc', thesis: 'mastersthesis' };
   function bibKey(rec) {
@@ -686,8 +605,7 @@
       btnSummaries: $('btn-toggle-summaries'), btnClear: $('btn-clear'),
       toggleTail: $('toggle-tail'), tailLabel: $('tail-label'),
       toggleGithub: $('toggle-github'), githubLabel: $('github-label'),
-      minStars: $('min-stars'), minStarsWrap: $('minstars-wrap'),
-      tailSection: $('tail-section'), tailResults: $('tail-results'), tailCount: $('tail-count')
+      minStars: $('min-stars'), minStarsWrap: $('minstars-wrap')
     };
     wire();
 
