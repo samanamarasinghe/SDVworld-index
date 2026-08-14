@@ -99,8 +99,9 @@ Schema and the three controlled vocabularies are in `README.md`. Do not invent n
 values silently — if something genuinely does not fit, add the value to the README
 vocabulary in the same commit that first uses it, and flag it in your report.
 
-Work in batches of roughly 50 and commit each batch. Do not attempt the whole tail in
-one pass.
+Work in batches of roughly 50. Put each batch on its own branch (e.g. `curate/03-openalex`),
+rebuild, and open one PR per batch — do not merge your own curation PRs; leave them for
+Saman to review. Do not attempt the whole tail in one pass.
 
 ### 5. Rebuild
 
@@ -108,7 +109,9 @@ one pass.
 python build.py
 ```
 
-Commit the regenerated `data/sdv-index.json` together with the shards that changed.
+Regenerate after each curation batch and include `data/sdv-index.json` in that batch's PR,
+together with the shards that changed — never as a standalone commit, so the generated
+index and the reviewed shards always match.
 
 ## Rules
 
@@ -117,7 +120,9 @@ Commit the regenerated `data/sdv-index.json` together with the shards that chang
 - `data/sdv-index.json` is **generated**. Never hand-edit it.
 - Keep pools in `data/tail/` separate from curated entries in `data/shards/`. Do not bulk
   promote a pool into a shard to raise the entry count.
-- Push to `main`. One logical change per commit.
+- Raw harvest output (tasks 1–3) and script fixes go directly to `main`. Curation batches
+  (task 4) go on their own branch and open a PR — do not merge your own curation PRs;
+  leave them for Saman. One logical change per commit throughout.
 - Do not delete anything without asking Saman.
 
 ## Open items inherited from the previous session
