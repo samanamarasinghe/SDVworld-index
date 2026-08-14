@@ -4,7 +4,7 @@
     python harvest/apply_curation.py --check     # validate, write nothing
     python harvest/apply_curation.py             # apply and rewrite both files
 
-Patches live in harvest/patches/*.jsonl, one JSON object per line, keyed by
+Patches live in curate/patches/*.jsonl, one JSON object per line, keyed by
 openalex_id. Only the fields being set need to appear:
 
     {"openalex_id": "W3202428668", "uses_sdv": false,
@@ -43,8 +43,8 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WORKS = os.path.join(ROOT, 'data', 'tail', 'openalex-citations.json')
-CSV_PATH = os.path.join(ROOT, 'harvest', 'curation-worklist.csv')
-PATCHES = os.path.join(ROOT, 'harvest', 'patches', '*.jsonl')
+CSV_PATH = os.path.join(ROOT, 'curate', 'curation-worklist.csv')
+PATCHES = os.path.join(ROOT, 'curate', 'patches', '*.jsonl')
 
 LIST_FIELDS = {'sdv_component', 'use_case', 'industry'}
 FIELDS = ['uses_sdv', 'integration', 'evidence', 'sdv_component', 'use_case',

@@ -4,7 +4,7 @@
     GITHUB_TOKEN=<token> SSL_CERT_FILE="$(python3 -m certifi)" python3 harvest/github_metrics.py
 
 Reads and updates data/tail/github-repos.json (the consolidated GitHub pool from
-github_tail.py) in place, and writes harvest/github-worklist.csv -- one row/repo:
+github_tail.py) in place, and writes curate/github-worklist.csv -- one row/repo:
 raw metric columns (each a separate number) + empty curation columns.
 
 Core metrics come from the GraphQL API (batched ~40 repos/request); contributor
@@ -26,7 +26,7 @@ import urllib.request
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 POOL = os.path.join(ROOT, 'data', 'tail', 'github-repos.json')  # read + written in place
 OUT_JSON = POOL
-OUT_CSV = os.path.join(ROOT, 'harvest', 'github-worklist.csv')
+OUT_CSV = os.path.join(ROOT, 'curate', 'github-worklist.csv')
 TOKEN = os.environ['GITHUB_TOKEN']
 BATCH = 12
 META = {}  # evidence_codes / query_totals carried through from the pool file

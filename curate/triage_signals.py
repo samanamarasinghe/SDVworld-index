@@ -14,7 +14,7 @@ overridden later by a hand patch carrying "override": true.
 
 Records WITH a signal are left untouched for hand adjudication.
 
-Writes harvest/patches/curation-000-triage.jsonl. Run apply_curation.py after.
+Writes curate/patches/curation-000-triage.jsonl. Run apply_curation.py after.
 """
 import json
 import os
@@ -22,7 +22,7 @@ import re
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WORKS = os.path.join(ROOT, 'data', 'tail', 'openalex-citations.json')
-OUT = os.path.join(ROOT, 'harvest', 'patches', 'curation-000-triage.jsonl')
+OUT = os.path.join(ROOT, 'curate', 'patches', 'curation-000-triage.jsonl')
 
 TERMS = {
     'sdv': r'\bsdv\b|synthetic data vault',
