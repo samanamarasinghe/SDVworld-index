@@ -81,7 +81,7 @@ def main():
         'note': 'Candidate pool from GitHub code search. Not curated entries.',
         'evidence_codes': PATTERNS,
         'query_totals': totals,
-        'candidates': [{'repo': r, 'hits': sorted(h))} for r, h in sorted(hits.items())],
+        'candidates': [{'repo': r, 'hits': sorted(h)} for r, h in sorted(hits.items())],
     }
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, 'w') as fh:
