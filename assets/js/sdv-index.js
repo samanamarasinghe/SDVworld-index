@@ -6,7 +6,7 @@
 
   var INDEX_PATH  = 'data/sdv-index.json';
   var TAIL_PATH   = 'data/tail/openalex-citations.json';
-  var GITHUB_PATH = 'data/tail/github-metrics.json';
+  var GITHUB_PATH = 'data/tail/github-repos.json';
 
   var TYPE2KIND = {
     article: 'paper', 'conference-paper': 'paper', review: 'paper', 'book-chapter': 'paper',

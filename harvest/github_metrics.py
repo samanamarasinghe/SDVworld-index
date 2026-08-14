@@ -3,10 +3,9 @@
 
     GITHUB_TOKEN=<token> SSL_CERT_FILE="$(python3 -m certifi)" python3 harvest/github_metrics.py
 
-Reads data/tail/github-candidates-full.json and writes, for every unique repo:
-  - data/tail/github-metrics.json   structured record per repo (durable)
-  - harvest/github-worklist.csv      one row/repo: raw metric columns (each a
-                                     separate number) + empty curation columns
+Reads and updates data/tail/github-repos.json (the consolidated GitHub pool from
+github_tail.py) in place, and writes harvest/github-worklist.csv -- one row/repo:
+raw metric columns (each a separate number) + empty curation columns.
 
 Core metrics come from the GraphQL API (batched ~40 repos/request); contributor
 counts come from REST (count via the Link header); download counts come from
@@ -14,7 +13,7 @@ release assets and, where the repo is a published package, PyPI (pypistats).
 
 No composite score is computed here on purpose -- the raw signals are kept
 separate so the index can be designed and reweighted later in the sheet.
-Resumable: re-running skips repos already in github-metrics.json. Stdlib only.
+Resumable: re-running skips repos already enriched (status == ok). Stdlib only.
 """
 import csv
 import json
@@ -25,11 +24,12 @@ import urllib.error
 import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-POOL = os.path.join(ROOT, 'data', 'tail', 'github-candidates-full.json')
-OUT_JSON = os.path.join(ROOT, 'data', 'tail', 'github-metrics.json')
+POOL = os.path.join(ROOT, 'data', 'tail', 'github-repos.json')  # read + written in place
+OUT_JSON = POOL
 OUT_CSV = os.path.join(ROOT, 'harvest', 'github-worklist.csv')
 TOKEN = os.environ['GITHUB_TOKEN']
 BATCH = 12
+META = {}  # evidence_codes / query_totals carried through from the pool file
 
 METRIC_COLS = ['repo', 'owner', 'owner_type', 'hit_patterns', 'stars', 'forks',
                'watchers', 'commits', 'contributors', 'top_contributors',
@@ -146,9 +146,9 @@ def contributors(repo):
     return count, top
 
 
-def parse(node, repo, hits):
+def parse(node, repo, hp):
     if node is None:
-        return {'repo': repo, 'hit_patterns': '|'.join(hits), 'status': 'gone',
+        return {'repo': repo, 'hit_patterns': hp, 'status': 'gone',
                 'fetched_at': time.strftime('%Y-%m-%d')}
     dl = sum(a['downloadCount'] for rel in (node.get('releases', {}) or {}).get('nodes', [])
              for a in (rel.get('releaseAssets', {}) or {}).get('nodes', []))
@@ -160,7 +160,7 @@ def parse(node, repo, hits):
         'repo': node['nameWithOwner'],
         'owner': (node.get('owner') or {}).get('login', ''),
         'owner_type': (node.get('owner') or {}).get('__typename', ''),
-        'hit_patterns': '|'.join(hits),
+        'hit_patterns': hp,
         'stars': node.get('stargazerCount', 0),
         'forks': node.get('forkCount', 0),
         'watchers': (node.get('watchers') or {}).get('totalCount', 0),
@@ -188,9 +188,11 @@ def parse(node, repo, hits):
 
 def write_outputs(records):
     with open(OUT_JSON, 'w') as fh:
-        json.dump({'generated': time.strftime('%Y-%m-%d'), 'count': len(records),
-                   'note': 'Raw GitHub popularity/authorship signals per candidate repo. '
-                           'No composite score: columns are kept separate for later analysis.',
+        json.dump({'note': 'Consolidated GitHub repo pool: harvest patterns + per-repo '
+                           'metrics. Raw, uncurated; not index entries.',
+                   'generated': time.strftime('%Y-%m-%d'), 'count': len(records),
+                   'evidence_codes': META.get('evidence_codes', {}),
+                   'query_totals': META.get('query_totals', {}),
                    'repos': list(records.values())}, fh, indent=1, ensure_ascii=False)
     with open(OUT_CSV, 'w', newline='') as fh:
         w = csv.DictWriter(fh, fieldnames=METRIC_COLS + OUTPUT_COLS)
@@ -204,14 +206,14 @@ def write_outputs(records):
 
 
 def main():
-    pool = json.load(open(POOL))['candidates']
-    hits_by = {c['repo']: c['hits'] for c in pool}
-    records = {}
-    if os.path.exists(OUT_JSON):
-        loaded = json.load(open(OUT_JSON)).get('repos', [])
-        records = dict(loaded) if isinstance(loaded, dict) else {r['repo']: r for r in loaded}
-    todo = [c['repo'] for c in pool if c['repo'] not in records]
-    print(f'{len(records)} already done, {len(todo)} to fetch')
+    pool_json = json.load(open(POOL))
+    pool = pool_json.get('repos', [])
+    META['evidence_codes'] = pool_json.get('evidence_codes', {})
+    META['query_totals'] = pool_json.get('query_totals', {})
+    hits_by = {r['repo']: (r.get('hit_patterns') or '') for r in pool}
+    records = {r['repo']: r for r in pool if r.get('status') == 'ok'}
+    todo = [r['repo'] for r in pool if r.get('status') != 'ok']
+    print(f'{len(records)} already enriched, {len(todo)} to fetch')
 
     for start in range(0, len(todo), BATCH):
         batch = todo[start:start + BATCH]

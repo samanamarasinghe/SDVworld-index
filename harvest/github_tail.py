@@ -6,7 +6,7 @@ Run locally (macOS Homebrew Python needs a CA bundle; note python3):
 
 GitHub code search caps any single query at 1000 retrievable results. Any pattern
 over that cap is split automatically by file size until each slice fits.
-Writes data/tail/github-candidates-full.json (merging with what is already there).
+Writes data/tail/github-repos.json (merging with what is already there).
 """
 import json
 import os
@@ -16,7 +16,7 @@ import urllib.request
 
 TOKEN = os.environ['GITHUB_TOKEN']
 OUT = os.path.join(os.path.dirname(__file__), '..', 'data', 'tail',
-                   'github-candidates-full.json')
+                   'github-repos.json')
 
 PATTERNS = {
     'st': '"from sdv.single_table import"',
@@ -102,23 +102,33 @@ def harvest(code, base, hits):
 
 
 def main():
-    hits = {}
+    existing = {}
     if os.path.exists(OUT):
-        for row in json.load(open(OUT))['candidates']:
-            hits[row['repo']] = set(row['hits'])
+        for rec in json.load(open(OUT)).get('repos', []):
+            existing[rec['repo']] = rec
+    hits = {r: set(p for p in (rec.get('hit_patterns') or '').split('|') if p)
+            for r, rec in existing.items()}
 
     totals = {code: harvest(code, query, hits) for code, query in PATTERNS.items()}
 
+    repos = []
+    for repo in sorted(hits):
+        rec = existing.get(repo, {})
+        rec['repo'] = repo
+        rec['hit_patterns'] = '|'.join(sorted(hits[repo]))
+        repos.append(rec)
+
     payload = {
-        'note': 'Candidate pool from GitHub code search. Not curated entries. '
+        'note': 'Consolidated GitHub repo pool: harvest patterns plus per-repo metrics '
+                '(added by github_metrics.py). Raw, uncurated; not index entries. '
                 'Patterns over the 1000-result cap are split by file size.',
         'evidence_codes': PATTERNS,
         'query_totals': totals,
-        'candidates': [{'repo': r, 'hits': sorted(h)} for r, h in sorted(hits.items())],
+        'repos': repos,
     }
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, 'w') as fh:
-        json.dump(payload, fh, indent=1)
+        json.dump(payload, fh, indent=1, ensure_ascii=False)
     print(f'{len(hits)} unique repos -> {OUT}')
 
 
