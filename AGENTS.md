@@ -21,6 +21,9 @@ build.py                             merges shards -> data/sdv-index.json
 data/shards/01-first-party.json      44 entries: MIT/DataCebo research, libraries, docs, blog, cases
 data/shards/02-github-curated.json   18 entries: third-party repos, verified against code evidence
 data/tail/github-repos.json           2019 repos, pooled + metrics, not yet curated
+data/tail/openalex-citations.json     874 citing works, first-pass curation verdicts
+curate/facet_lift.py                  lifts bibliographic facets from both pools; no judgment, no fetching
+harvest/repo_evidence.py              per-repo SDV evidence bundles for a curating agent
 harvest/README.md                    source-by-source notes and the curation rule
 harvest/openalex_citations.py        citing works for the 5 anchor papers
 harvest/github_tail.py               partitioned GitHub code search
@@ -41,7 +44,13 @@ All three scripts are Python 3 standard library only. Nothing to install.
 | `OPENALEX_EMAIL` | polite-pool rate limits | recommended |
 | `SERPAPI_KEY` | `scholar_citations.py` | only for the Scholar step |
 
-Hosts that must be reachable: `api.openalex.org`, `api.github.com`, `serpapi.com`.
+`harvest/repo_evidence.py` needs **no token**: it reads public repositories through
+`codeload.github.com` tarballs and `git clone`, neither of which authenticates. A token
+only buys the code-search API and higher rate limits. Use a fine-grained read-only PAT
+from the environment, never a value committed to this repository.
+
+Hosts that must be reachable: `api.openalex.org`, `api.github.com`, `codeload.github.com`,
+`serpapi.com`. Full paper text additionally needs `arxiv.org` and `doi.org`.
 
 ## Tasks, in order
 
@@ -78,6 +87,33 @@ workshop papers and non-English work, and it is the part worth reading by hand.
 If Scholar serves a CAPTCHA, stop. Do not attempt to solve or evade it.
 
 ### 4. Curation pass — the actual work
+
+#### The SDV clause
+
+Every `summary` ends with a clause saying why the entry is in this index, in two slots:
+
+1. **which part of SDV** — an `sdv_concept` for papers, an `sdv_component` or file path
+   for repositories;
+2. **how it is used** — run, vendored, extended, compared against, or only described.
+
+Write it from the source. Never from the title, and never from the bare fact that a
+citation exists. If you could not read the source, say so in `needs` and set
+`confidence: "low"` rather than guessing.
+
+#### Importance
+
+`importance` (0-5, defined in README.md) records how central SDV is to the entry and is
+**independent of `integration`**, which records only the mechanism. A repository can
+vendor the entire CTGAN source and still be a 3 because it runs it as one baseline among
+several; a paper can run nothing and still be a 2 because it adopts CTGAN's evaluation
+protocol. Judging weight from mechanism alone gets these backwards.
+
+If a re-read finds `importance`, `integration` or `confidence` misjudged — SDV turns out
+to be central to the implementation, or to be a passing mention in related work — correct
+it. A correction is a patch line with `"override": true` naming the prior value in
+`evidence`, so the change is auditable rather than silent.
+
+#### Evidence before promotion
 
 Pooled records are not index entries. Promote them into new shards
 (`data/shards/03-*.json` and up), one shard per source and wave.
@@ -117,7 +153,9 @@ index and the reviewed shards always match.
 
 - Shards are **append-only**. Never rewrite a completed shard; corrections go in a new
   shard, or as a targeted edit with the reason in the commit message.
-- `data/sdv-index.json` is **generated**. Never hand-edit it.
+- `data/sdv-index.json` and `data/tail/facet-lift.json` are **generated**. Never
+  hand-edit either; regenerate with `build.py` and `curate/facet_lift.py`. A missing
+  copy of facet-lift.json is not data loss.
 - Keep pools in `data/tail/` separate from curated entries in `data/shards/`. Do not bulk
   promote a pool into a shard to raise the entry count.
 - Raw harvest output (tasks 1–3) and script fixes go directly to `main`. Curation batches
@@ -135,6 +173,24 @@ index and the reviewed shards always match.
    pages rather than permanent URLs. Resolve them; they are marked `needs`.
 3. Several shard 02 entries remain `medium`/`low` where classification rests on a file
    path rather than a read of the code.
+
+## Running agents in parallel
+
+Patches apply in filename order, so parallel agents must not compete for numbers.
+Reserve a block per agent up front: agent *k* owns `curate/patches/{k}00` through
+`{k}99`. Within a block, number batches in the order they should apply.
+
+Lanes that can run concurrently:
+
+| lane | unit of work | notes |
+|---|---|---|
+| repos | `harvest/repo_evidence.py --slice K/N` | no token needed; tarball or partial clone |
+| papers | a slice of `data/tail/openalex-citations.json` | needs open network for full text |
+| shard re-read | the 61 existing shard entries | corrections, so expect `override` |
+
+One lane must stay serial: **vocabulary**. Agents *propose* facet values and never invent
+them. A single arbiter adds an approved value to README.md in the commit that first uses
+it. Parallel agents each coining their own near-synonyms is the way this index degrades.
 
 ## What to report back
 
