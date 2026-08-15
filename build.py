@@ -143,6 +143,14 @@ def main():
 
     ids = collections.Counter(rec['id'] for rec in out)
     collisions = sorted(i for i, n in ids.items() if n > 1)
+    if collisions:
+        # Ids key BibTeX filenames, data/impact.json and every correction patch,
+        # which is matched by id rather than url. A collision does not corrupt the
+        # page -- it silently misroutes all three. Refuse to write the index.
+        raise SystemExit(
+            f'ERROR: {len(collisions)} duplicate id(s) across shards: '
+            f'{", ".join(collisions)}'
+        )
 
     filled, unjoined = enrich(out)
 
@@ -162,8 +170,6 @@ def main():
           f'{retired} retired by duplicate_of, {applied} corrections applied -> {dest}')
     if orphaned:
         print(f'WARNING: {orphaned} correction(s) matched no entry by id and were skipped')
-    if collisions:
-        print(f'WARNING: {len(collisions)} duplicate id(s) across shards: {", ".join(collisions)}')
     if filled:
         print('joined from harvest pools: '
               + ', '.join(f'{n} {f}' for f, n in filled.most_common()))
