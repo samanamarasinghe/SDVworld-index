@@ -110,7 +110,7 @@
   var state = {
     titleQuery: '', authorQuery: '',
     sel: { kind: {}, sdv_concept: {}, sdv_component: {}, use_case: {}, industry: {}, authors: {}, year: {} },
-    group: 'none', sortWithin: 'popularity', minImportance: 0,
+    group: 'none', sortWithin: 'popularity', minImportance: 0, minPopularity: 0,
     summaryExpanded: false, showTail: false, showGithub: false, minStars: 2
   };
 
@@ -184,10 +184,21 @@
     if (!state.minImportance) return true;
     return rec.importance != null && rec.importance >= state.minImportance;
   }
+  /* Popularity is a continuous 0-1 score, so the slider cuts by percentile of what
+     is currently in view rather than by raw value. That keeps "rightmost = only the
+     most popular" true after a tail is switched on and the population grows fivefold. */
+  function popularityFloor() {
+    if (!state.minPopularity) return -1;
+    var vals = activeData().map(popularity).sort(function (a, b) { return a - b; });
+    if (!vals.length) return -1;
+    return vals[Math.min(Math.floor(vals.length * state.minPopularity / 100), vals.length - 1)];
+  }
   function filteredData(exclude) {
     var q = state.titleQuery.replace(/\s+/g, ' ').trim().toLowerCase();
+    var floor = popularityFloor();
     return activeData().filter(function (rec) {
-      return passesImportance(rec) && matchesSearch(rec, q) && passesFacets(rec, exclude);
+      return passesImportance(rec) && popularity(rec) >= floor &&
+             matchesSearch(rec, q) && passesFacets(rec, exclude);
     });
   }
 
@@ -635,6 +646,18 @@
       syncImportanceLabel(); applyFilters();
     });
     syncImportanceLabel();
+
+    function syncPopularityLabel() {
+      els.minPopularityLabel.textContent = state.minPopularity
+        ? 'Top ' + (100 - state.minPopularity) + '% by attention'
+        : 'All entries';
+    }
+    els.minPopularity.addEventListener('input', function () {
+      state.minPopularity = parseInt(this.value, 10) || 0;
+      syncPopularityLabel(); applyFilters();
+    });
+    syncPopularityLabel();
+
     els.sortGroup.addEventListener('change', function () { state.group = this.value; renderResults(); });
     els.sortWithin.addEventListener('change', function () { state.sortWithin = this.value; renderResults(); });
 
@@ -650,6 +673,7 @@
       state.titleQuery = ''; state.authorQuery = '';
       els.title.value = ''; els.authorSearch.value = '';
       state.minImportance = 0; els.minImportance.value = '0'; syncImportanceLabel();
+      state.minPopularity = 0; els.minPopularity.value = '0'; syncPopularityLabel();
       applyFilters();
     });
 
@@ -690,7 +714,8 @@
       toggleTail: $('toggle-tail'), tailLabel: $('tail-label'),
       toggleGithub: $('toggle-github'), githubLabel: $('github-label'),
       minStars: $('min-stars'), minStarsWrap: $('minstars-wrap'),
-      minImportance: $('min-importance'), minImportanceLabel: $('min-importance-label')
+      minImportance: $('min-importance'), minImportanceLabel: $('min-importance-label'),
+      minPopularity: $('min-popularity'), minPopularityLabel: $('min-popularity-label')
     };
     wire();
 
