@@ -374,15 +374,21 @@
     return vals.map(function (v) { return labelFor(g, v); });
   }
 
-  /* Importance = blend of confidence and a bounded impact. Repos are capped below
-     top papers; docs/blogs get a neutral impact. PROVISIONAL — see todo. */
+  /* Importance = blend of confidence and a bounded impact. Repo weight (stars +
+     reuse/collaboration/effort) is capped below top papers; docs/blogs get a
+     neutral impact. Paper impact = citations (OpenAlex, which undercounts CTGAN). */
   var IMP_CONF = { high: 1, medium: 0.66, low: 0.33 };
   function importance(rec) {
     var conf = IMP_CONF[rec.confidence] != null ? IMP_CONF[rec.confidence] : 0.15;
     var impact;
-    if (rec.stars != null) impact = 0.6 * Math.min(1, Math.log1p(rec.stars) / Math.log1p(5000));
-    else if (rec.cited != null) impact = Math.min(1, Math.log1p(rec.cited) / Math.log1p(3000));
-    else impact = 0.3;
+    if (rec.kind === 'code_repo' || rec.stars != null) {
+      var w = (rec.stars || 0) + 2 * (rec.forks || 0) + 5 * (rec.contributors || 0) + 0.1 * (rec.commits || 0);
+      impact = 0.6 * Math.min(1, Math.log1p(w) / Math.log1p(8000));  // ceiling 0.6 < a top paper's 1.0
+    } else if (rec.cited != null) {
+      impact = Math.min(1, Math.log1p(rec.cited) / Math.log1p(1500));
+    } else {
+      impact = 0.3;
+    }
     return 0.5 * conf + 0.5 * impact;
   }
   function sortWithin(arr) {
@@ -492,7 +498,9 @@
       id: 'gh-' + r.repo, title: r.repo, url: 'https://github.com/' + r.repo,
       kind: 'code_repo', sdv_component: fromHits((r.hit_patterns || '').split('|')),
       use_case: [], industry: [], authors: authors, summary: r.description || '',
-      year: yr, stars: r.stars || 0, forks: r.forks || 0, confidence: null, tier: 'tail'
+      year: yr, stars: r.stars || 0, forks: r.forks || 0,
+      contributors: r.contributors || 0, commits: r.commits || 0,
+      confidence: null, tier: 'tail'
     };
   }
   function loadCite(done) {

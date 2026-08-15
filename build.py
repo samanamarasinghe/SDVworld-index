@@ -19,6 +19,13 @@ def main():
             seen.add(key)
             out.append(rec)
 
+    impact_path = os.path.join(ROOT, 'data', 'impact.json')
+    if os.path.exists(impact_path):
+        impact = json.load(open(impact_path))
+        for rec in out:
+            if rec['id'] in impact:
+                rec.update(impact[rec['id']])  # cited / stars / forks / contributors / commits
+
     out.sort(key=lambda r: (r['kind'], -(r.get('year') or 0), r['title']))
     dest = os.path.join(ROOT, 'data', 'sdv-index.json')
     with open(dest, 'w') as fh:
