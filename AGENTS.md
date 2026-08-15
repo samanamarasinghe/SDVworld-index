@@ -23,6 +23,7 @@ data/shards/02-github-curated.json   18 entries: third-party repos, verified aga
 data/tail/github-repos.json           2019 repos, pooled + metrics, not yet curated
 data/tail/openalex-citations.json     874 citing works, first-pass curation verdicts
 curate/facet_lift.py                  lifts bibliographic facets from both pools; no judgment, no fetching
+curate/open-questions.md              judgment calls awaiting a ruling; each has a provisional applied
 harvest/repo_evidence.py              per-repo SDV evidence bundles for a curating agent
 harvest/README.md                    source-by-source notes and the curation rule
 harvest/openalex_citations.py        citing works for the 5 anchor papers
@@ -102,11 +103,17 @@ citation exists. If you could not read the source, say so in `needs` and set
 
 #### Importance
 
-`importance` (0-5, defined in README.md) records how central SDV is to the entry and is
+`importance` (0-6, defined in README.md) records how central SDV is to the entry and is
 **independent of `integration`**, which records only the mechanism. A repository can
 vendor the entire CTGAN source and still be a 3 because it runs it as one baseline among
 several; a paper can run nothing and still be a 2 because it adopts CTGAN's evaluation
 protocol. Judging weight from mechanism alone gets these backwards.
+
+**6 is not a curator's rating.** It is reserved for SDV itself — the anchor papers and
+the `sdv-dev` libraries — so that a first-party artifact can never be confused with a
+third party that merely depends on one. Nothing you curate from the tails reaches 6; the
+ceiling for judged work is 5. If a tail entry genuinely looks first-party, that is a
+`needs`, not a 6.
 
 If a re-read finds `importance`, `integration` or `confidence` misjudged — SDV turns out
 to be central to the implementation, or to be a passing mention in related work — correct
@@ -131,7 +138,7 @@ Write `summary` from the abstract, README or page text — one to three sentence
 `needs` and set `confidence: "low"` rather than guessing. An entry flagged for follow-up
 is useful; a confident wrong summary poisons the index.
 
-Schema and the three controlled vocabularies are in `README.md`. Do not invent new facet
+Schema and the controlled vocabularies are in `README.md`. Do not invent new facet
 values silently — if something genuinely does not fit, add the value to the README
 vocabulary in the same commit that first uses it, and flag it in your report.
 
@@ -139,15 +146,27 @@ Work in batches of roughly 50. Put each batch on its own branch (e.g. `curate/03
 rebuild, and open one PR per batch — do not merge your own curation PRs; leave them for
 Saman to review. Do not attempt the whole tail in one pass.
 
+**Check what is already curated before selecting a batch.** Unmerged branches are not
+visible from `main`, so a batch selected against `main` alone will re-curate repositories
+another agent has already done. List the `curate/*` branches and exclude their shards too.
+
+#### Open questions
+
+`curate/open-questions.md` holds judgment calls that could not be settled from the source.
+Each carries the provisional choice already applied, so the index stays consistent while
+the question is open. Add to it rather than blocking, and never invent a resolution to an
+item already listed there.
+
 ### 5. Rebuild
 
 ```
 python build.py
 ```
 
-Regenerate after each curation batch and include `data/sdv-index.json` in that batch's PR,
-together with the shards that changed — never as a standalone commit, so the generated
-index and the reviewed shards always match.
+`.github/workflows/build-index.yml` rebuilds `data/sdv-index.json` automatically when
+shards change on `main`, and reports drift on a pull request without writing. You do not
+need to commit the generated index by hand; run `build.py` locally to check your shard
+parses and dedupes as expected.
 
 ## Rules
 
@@ -173,6 +192,9 @@ index and the reviewed shards always match.
    pages rather than permanent URLs. Resolve them; they are marked `needs`.
 3. Several shard 02 entries remain `medium`/`low` where classification rests on a file
    path rather than a read of the code.
+4. Shards 01 and 02 predate the `importance`, `sdv_concept` and `agent_skill` additions
+   and carry none of them. Until they are re-read, those 61 entries sort below every
+   later batch under importance ordering.
 
 ## Running agents in parallel
 
