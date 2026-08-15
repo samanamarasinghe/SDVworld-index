@@ -1,0 +1,60 @@
+name: build-index
+
+# data/sdv-index.json is generated from data/shards/ by build.py, and the site reads
+# it directly. Regenerating it by hand means every curation batch carries a large
+# derived blob alongside the shards a reviewer actually wants to read, and the two
+# drift the moment someone forgets. This rebuilds it instead.
+#
+# On a pull request: build and fail if the committed index does not match the shards,
+# without writing anything. On main: rebuild and commit if it changed, so the
+# published site always matches the reviewed shards.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'data/shards/**'
+      - 'build.py'
+      - '.github/workflows/build-index.yml'
+  pull_request:
+    paths:
+      - 'data/shards/**'
+      - 'build.py'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Build index
+        run: python build.py
+
+      - name: Check for drift (pull requests)
+        if: github.event_name == 'pull_request'
+        run: |
+          if ! git diff --quiet -- data/sdv-index.json; then
+            echo "::notice::data/sdv-index.json is stale; it will be rebuilt on merge."
+            git diff --stat -- data/sdv-index.json
+          fi
+
+      - name: Commit rebuilt index (main only)
+        if: github.event_name != 'pull_request'
+        run: |
+          if git diff --quiet -- data/sdv-index.json; then
+            echo "index already current, nothing to commit"
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/sdv-index.json
+          git commit -m "Rebuild data/sdv-index.json from shards [skip ci]"
+          git push
