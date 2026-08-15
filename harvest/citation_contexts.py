@@ -58,11 +58,16 @@ def ssl_context():
     without a populated CA store, so every HTTPS request fails with
     CERTIFICATE_VERIFY_FAILED until "Install Certificates.command" is run. That
     command is the proper fix, but this script should not depend on whether
-    someone remembered to run it, so certifi is used when available. certifi is
-    an optional convenience -- the script remains standard-library-only and falls
-    back to the default context, which is correct on Linux and on Homebrew
-    Python.
+    someone remembered to run it, so certifi is used as a fallback.
+
+    An environment that configures its own trust store wins, though: sandboxes
+    and corporate networks route HTTPS through an inspecting proxy whose CA is
+    in the system bundle and *not* in certifi's, so preferring certifi
+    unconditionally breaks exactly the environments this script is run in. If
+    SSL_CERT_FILE or SSL_CERT_DIR is set, the default context already reads it.
     """
+    if os.environ.get('SSL_CERT_FILE') or os.environ.get('SSL_CERT_DIR'):
+        return ssl.create_default_context()
     try:
         import certifi
         return ssl.create_default_context(cafile=certifi.where())
