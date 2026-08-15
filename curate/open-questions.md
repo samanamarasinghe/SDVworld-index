@@ -77,11 +77,16 @@ a later sweep does not re-examine them.
 Five distinct kinds now, in eleven entries, and they will keep re-pooling until
 `harvest/github_tail.py` excludes them:
 
-1. **Build-path fragments.** `abs_e2687gwsdv`, a conda temp directory, in
-   `DTiapan/ai-agents-handbook`, `Salim-Lysiun/ARNN` and `aaronGeb/tenx_week_two`;
-   `p6sdv8fm`, a Nix build hash, in `Maxelee/CARPoolGP`. Both arrive inside `file://`
-   URLs in `requirements.txt`, so a rule excluding `sdv` matches inside a path
-   component would catch the whole family.
+1. **Build-path fragments.** `abs_e2687gwsdv`, a conda temp directory, now in
+   **eleven** repositories: `DTiapan/ai-agents-handbook`, `Salim-Lysiun/ARNN`,
+   `aaronGeb/tenx_week_two`, both `petpals` copies, `abhiramp1998/bias-mitigation-bank-marketing-ML`,
+   `mbobbin/final_project`, `SvenjaGuhr/Character_Sound_Analysis`,
+   `Christopher-Win/Studiverse`, `HannaSaffi/ArtSphereWebApp` and two repositories by
+   `GGSimmons1992`. Plus `p6sdv8fm`, a Nix build hash, in `Maxelee/CARPoolGP`. Every
+   one arrives inside a `file://` URL in `requirements.txt` — always the same pinned
+   `more-itertools` line from one machine's conda cache — so a rule excluding `sdv`
+   matched inside a path component would remove the whole family at once. This single
+   fragment is now the largest source of false positives in the index.
 2. **Unrelated software of the same name.** `sdvae`, the stable-diffusion VAE, in
    `MischaD/BeyondFID`; SDMetricsOpenCore, the commercial UML design-metrics product,
    in `ptidejteam/ptidej-Ptidej`.
@@ -94,9 +99,12 @@ Five distinct kinds now, in eleven entries, and they will keep re-pooling until
    repositories from the `par` pattern would settle it.
 5. **A typo.** `asdvantage`, a misspelling of "advantage", in
    `nkh/P5-PerlBuildSystem`.
+6. **Base64 payloads.** Subresource-integrity hashes in exported HTML notebooks, in
+   `joehigh/COMSW4771`; CSRF tokens and certificate blobs in captured pages, in
+   `sealuzh/cd-linter-artifacts`.
 
-Eleven of 297 curated entries are now pure substring accidents, and the rate is
-rising as predicted: three of the eleven came from the last two batches.
+Nineteen of 484 curated entries are now pure substring accidents, and the rate is
+rising as predicted: eight of the nineteen came from the last three batches.
 
 ## 5. Treatment for the 348 `req`-only pooled repositories
 
@@ -215,3 +223,40 @@ one thing it is for.
 A one-line addition to the parallel-agents table in AGENTS.md would settle it. The
 block boundaries above are a guess at the right split; papers is the larger tail by
 record count, repos the larger by batches so far.
+
+
+## 11. Whether the zero-star tail deserves this depth
+
+**Provisional:** carrying on as before — read every repository, one clause per entry
+from a file in its tree.
+
+Twelve by-stars batches have taken the repo lane from 26 stars down to 1. What is
+left is 1,485 repositories, of which roughly 1,370 have no stars at all, and the
+shape of the last four batches is a fair preview: mostly coursework, portfolio
+projects and small applications that fit a `GaussianCopulaSynthesizer` once and are
+correctly filed `api_user` at importance 3 or 4.
+
+The case for continuing is that the batches keep producing findings that could not
+have been guessed from metadata — a national statistics institute in batch J, an MCP
+server in batch G, a competitor's written decision *not* to depend on SDV in batch J,
+a Kafka producer serving a fitted synthesizer in batch L. None of those correlate
+with stars.
+
+The case against is arithmetic. At forty-four a batch this is another thirty-four
+batches and thirty-four more pull requests, and the last three produced roughly one
+genuinely novel channel each against forty-odd routine entries.
+
+Three options, in the order I would rank them:
+
+1. **Keep going but widen the batch.** The routine entries are cheap to read and
+   cheap to write once the pattern is recognised; the cost is dominated by the
+   unusual ones. A hundred-repository batch would take about twice as long and cut
+   the pull request count by half.
+2. **Split the tail by signal, not by stars.** The `req`-only repositories (open
+   question 5) and the zero-hit repositories are where the routine entries
+   concentrate. Reading the repositories with an import hit first would front-load
+   the findings and leave a clearly-labelled remainder.
+3. **Stop at some star or activity floor** and record what was left, which is honest
+   but throws away the finding rate that does not correlate with stars.
+
+Nothing here blocks: batches continue in the meantime.
