@@ -79,14 +79,35 @@ a:hover { text-decoration: underline; }
 
 .filter-block { margin-bottom: 12px; }
 .filter-label { font-weight: bold; margin-bottom: 6px; }
+
+/* Hint markers.
+   The browser's own title tooltip is slow, cannot be styled, and does not
+   reliably fire on a plain span -- on this page it never appeared at all.
+   So the marker keeps its title for accessibility and we draw the visible
+   tooltip ourselves from the same attribute. */
 .hint {
+  position: relative;
   display: inline-block; width: 1.05em; height: 1.05em; line-height: 1.05em;
   margin-left: .35em; text-align: center; font-size: .8em; font-weight: 700;
   font-style: italic; font-family: Georgia, serif;
   color: #555; background: #e6e6ee; border-radius: 50%;
   cursor: help; vertical-align: middle; user-select: none;
 }
-.hint:hover { background: #ccccdd; color: #000; }
+.hint:hover { background: var(--ink); color: #fff; }
+.hint::after {
+  content: attr(title);
+  position: absolute; left: 50%; top: 165%; transform: translateX(-50%);
+  width: max-content; max-width: 330px;
+  white-space: pre-line; text-align: left;
+  font: 400 12.5px/1.55 "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  font-style: normal; letter-spacing: 0;
+  color: #fff; background: var(--ink);
+  padding: 9px 11px; border-radius: 6px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+  opacity: 0; visibility: hidden; transition: opacity .12s ease;
+  pointer-events: none; z-index: 60;
+}
+.hint:hover::after { opacity: 1; visibility: visible; }
 
 .text-input, .facet-search-input {
   width: 100%; padding: 6px; border: 1px solid #bbb; border-radius: 4px; background: #fff;
