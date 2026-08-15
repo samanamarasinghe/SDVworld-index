@@ -41,66 +41,73 @@
 
               <div class="sort-multilevel">
                 <span class="sort-label">Group &amp; sort:</span>
-                <label>Group
-                  <select id="sort-group">
-                    <option value="kind">Kind</option>
-                    <option value="year" selected>Year</option>
-                    <option value="sdv_component">SDV component</option>
-                    <option value="use_case">Use case</option>
-                    <option value="industry">Industry</option>
-                    <option value="none">None</option>
+                <label title="Split the results into sections. Entries with several values appear under each one, so totals can exceed the entry count.">Group
+                  <select id="sort-group" title="Split the results into sections. Entries with several values appear under each one.">
+                    <option value="none" selected title="One flat list, no section headings">None</option>
+                    <option value="kind" title="Papers, repositories, tutorials, documentation, datasets and so on">Kind</option>
+                    <option value="year" title="Publication year, or repository creation year for code">Year</option>
+                    <option value="sdv_component" title="Which SDV software is involved: sdv, ctgan, rdt, sdmetrics, sdgym, copulas">SDV component</option>
+                    <option value="sdv_concept" title="Which SDV idea is involved: mode-specific normalization, relational HMA, ML-efficacy evaluation and so on">SDV concept</option>
+                    <option value="use_case" title="What the synthetic data is for: privacy, augmentation, testing, benchmarking">Use case</option>
+                    <option value="industry" title="The sector the work belongs to">Industry</option>
                   </select>
                 </label>
-                <label>Sort
-                  <select id="sort-within">
-                    <option value="year">Year (newest)</option>
-                    <option value="title">Title (A–Z)</option>
-                    <option value="importance" selected>Importance</option>
+                <label title="Order entries within each section.">Sort
+                  <select id="sort-within" title="Order entries within each section.">
+                    <option value="popularity" selected title="Attention drawn: GitHub stars for code, citations for papers, log-compressed onto one scale so the two are comparable. Says nothing about how much SDV is involved.">Popularity</option>
+                    <option value="importance" title="How central SDV is to the entry, 0-5, judged by a curator from the source. 5 = SDV is the work, 3 = one of several baselines, 1 = passing mention. Independent of popularity.">SDV importance</option>
+                    <option value="year" title="Newest first">Year (newest)</option>
+                    <option value="title" title="Alphabetical by title">Title (A–Z)</option>
                   </select>
                 </label>
               </div>
 
-              <label class="tail-toggle">
+              <label class="tail-toggle" title="Add the uncurated pool of works that cite an SDV anchor paper. These have no summary or facets yet, and anything already curated is excluded so nothing appears twice.">
                 <input type="checkbox" id="toggle-tail"/>
                 <span id="tail-label">Show citation tail</span>
               </label>
-              <label class="tail-toggle">
+              <label class="tail-toggle" title="Add the uncurated pool of repositories found by code search. No summary or facets yet, and anything already curated is excluded so nothing appears twice.">
                 <input type="checkbox" id="toggle-github"/>
                 <span id="github-label">Show GitHub repo tail</span>
               </label>
-              <label class="tail-toggle" id="minstars-wrap" style="display:none">
+              <label class="tail-toggle" id="minstars-wrap" style="display:none"
+                     title="Hide pooled repositories below this many GitHub stars. Applies to the uncurated tail only.">
                 min &#9733; <input type="number" id="min-stars" min="0" value="2" style="width:3.5em"/>
               </label>
             </div>
 
             <div id="filters-interactive" class="filters-interactive">
               <div class="filter-block">
-                <div class="filter-label">Search title &amp; summary</div>
+                <div class="filter-label" title="Free-text match against entry titles and summaries, including the clause explaining why each entry is in the index.">Search title &amp; summary</div>
                 <input id="facet-title" type="text" class="text-input" placeholder="Search…">
               </div>
 
               <div class="filter-grid">
                 <div class="filter-block">
-                  <div class="filter-label">Kind</div>
+                  <div class="filter-label" title="What the entry is: paper, preprint, thesis, code repository, tutorial, documentation, blog post, dataset or patent.">Kind</div>
                   <div id="facet-kind" class="facet-list"></div>
                 </div>
                 <div class="filter-block">
-                  <div class="filter-label">SDV component</div>
+                  <div class="filter-label" title="Which SDV software the entry involves — sdv, ctgan, rdt, sdmetrics, sdgym, copulas. An entry can involve several.">SDV component</div>
                   <div id="facet-component" class="facet-list"></div>
                 </div>
                 <div class="filter-block">
-                  <div class="filter-label">Use case</div>
+                  <div class="filter-label" title="What the synthetic data is for: protecting privacy, sharing data, augmenting a small or imbalanced dataset, testing software, benchmarking, teaching.">Use case</div>
                   <div id="facet-usecase" class="facet-list"></div>
+                </div>
+                <div class="filter-block">
+                  <div class="filter-label" title="Which SDV idea the entry involves, as opposed to which package: mode-specific normalization, conditional sampling, relational HMA, ML-efficacy evaluation and so on. A paper can adapt an idea without importing anything.">SDV concept</div>
+                  <div id="facet-concept" class="facet-list"></div>
                 </div>
               </div>
 
               <div class="filter-grid">
                 <div class="filter-block">
-                  <div class="filter-label">Industry</div>
+                  <div class="filter-label" title="The sector the work belongs to. Academic research is filed under Academia rather than the domain it studies.">Industry</div>
                   <div id="facet-industry" class="facet-list"></div>
                 </div>
                 <div class="filter-block">
-                  <div class="filter-label">Authors</div>
+                  <div class="filter-label" title="Paper authors, or repository owner and top contributors for code. Repository names are GitHub logins, not real names.">Authors</div>
                   <div class="facet-sort-control">
                     <input id="author-search" type="text" class="facet-search-input"
                            placeholder="Filter names…" aria-label="Filter author names">
@@ -108,8 +115,14 @@
                   <div id="facet-authors" class="facet-list"></div>
                 </div>
                 <div class="filter-block">
-                  <div class="filter-label">Year</div>
+                  <div class="filter-label" title="Publication year for papers, creation year for repositories.">Year</div>
                   <div id="facet-years" class="year-grid"></div>
+
+                  <div class="filter-label" style="margin-top:.9em"
+                       title="How central SDV must be to an entry for it to show. 0 shows everything. Above 0 only curated entries appear, since pooled tail rows have not been judged yet.">SDV importance at least</div>
+                  <input type="range" id="min-importance" min="0" max="5" step="1" value="0" style="width:100%"
+                         title="0 = everything. 1 = passing mention and up. 3 = one of several baselines and up. 5 = SDV is the work. Above 0 the uncurated tail is excluded, because those entries carry no importance rating.">
+                  <div id="min-importance-label" class="facet-note">All entries</div>
                 </div>
               </div>
             </div>

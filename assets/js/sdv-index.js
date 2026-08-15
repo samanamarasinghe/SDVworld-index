@@ -35,17 +35,32 @@
     data_augmentation: 'Data augmentation', class_imbalance: 'Class imbalance',
     ml_training: 'ML training', benchmarking_evaluation: 'Benchmarking & evaluation',
     scenario_simulation: 'Scenario simulation', method_research: 'Method research',
-    compliance: 'Compliance', education: 'Education'
+    compliance: 'Compliance', education: 'Education',
+    fairness_bias: 'Fairness & bias', imputation: 'Imputation',
+    open_science_reproducibility: 'Open science & reproducibility'
+  };
+  var CONCEPT_LABELS = {
+    relational_hma: 'Relational (HMA)', mode_specific_normalization: 'Mode-specific normalization',
+    conditional_sampling: 'Conditional sampling', gaussian_copula: 'Gaussian copula',
+    vine_copula: 'Vine copula', tvae: 'TVAE', par_sequential: 'PAR (sequential)',
+    metadata_schema: 'Metadata schema', constraints: 'Constraints',
+    reversible_transforms: 'Reversible transforms (RDT)',
+    ml_efficacy_eval: 'ML-efficacy evaluation', quality_report: 'Quality report',
+    benchmark_harness: 'Benchmark harness'
   };
   var INDUSTRY_LABELS = {
     healthcare_bio: 'Healthcare & bio', finance_insurance: 'Finance & insurance',
     government_public: 'Government & public', academia: 'Academia',
     energy_utilities: 'Energy & utilities', telecom: 'Telecom',
     retail_ecommerce: 'Retail & e-commerce', transportation: 'Transportation',
-    manufacturing: 'Manufacturing', software: 'Software', cross_industry: 'Cross-industry'
+    manufacturing: 'Manufacturing', software: 'Software', cross_industry: 'Cross-industry',
+    construction_infrastructure: 'Construction & infrastructure', cybersecurity: 'Cybersecurity',
+    environment_climate: 'Environment & climate', media_recommenders: 'Media & recommenders',
+    chemicals_materials: 'Chemicals & materials', education_sector: 'Education sector',
+    agriculture: 'Agriculture'
   };
   var INTEGRATION_LABELS = {
-    api_user: 'API user', vendored_source: 'Vendored source',
+    api_user: 'API user', vendored_source: 'Vendored source', agent_skill: 'Agent skill',
     derivative_work: 'Derivative work', baseline_only: 'Baseline only',
     citation_only: 'Citation only', source_work: 'Source work',
     name_collision: 'Name collision', unclear: 'Unclear'
@@ -62,6 +77,7 @@
   function labelFor(facet, v) {
     if (facet === 'kind') return KIND_LABELS[v] || prettify(v);
     if (facet === 'sdv_component') return COMPONENT_LABELS[v] || v;
+    if (facet === 'sdv_concept') return CONCEPT_LABELS[v] || prettify(v);
     if (facet === 'use_case') return USECASE_LABELS[v] || prettify(v);
     if (facet === 'industry') return INDUSTRY_LABELS[v] || prettify(v);
     if (facet === 'confidence') return prettify(v);
@@ -69,10 +85,10 @@
   }
 
   /* ---------- Facet model ---------- */
-  var FACET_KEYS = ['kind', 'sdv_component', 'use_case', 'industry', 'authors', 'year'];
+  var FACET_KEYS = ['kind', 'sdv_component', 'sdv_concept', 'use_case', 'industry', 'authors', 'year'];
   var MOUNTS = {
-    kind: 'facet-kind', sdv_component: 'facet-component', use_case: 'facet-usecase',
-    industry: 'facet-industry', authors: 'facet-authors',
+    kind: 'facet-kind', sdv_component: 'facet-component', sdv_concept: 'facet-concept',
+    use_case: 'facet-usecase', industry: 'facet-industry', authors: 'facet-authors',
     year: 'facet-years'
   };
 
@@ -80,6 +96,7 @@
     switch (facet) {
       case 'kind': return rec.kind ? [rec.kind] : [];
       case 'sdv_component': return rec.sdv_component || [];
+      case 'sdv_concept': return rec.sdv_concept || [];
       case 'use_case': return rec.use_case || [];
       case 'industry': return rec.industry || [];
       case 'confidence': return rec.confidence ? [rec.confidence] : [];
@@ -92,8 +109,8 @@
   /* ---------- State ---------- */
   var state = {
     titleQuery: '', authorQuery: '',
-    sel: { kind: {}, sdv_component: {}, use_case: {}, industry: {}, authors: {}, year: {} },
-    group: 'year', sortWithin: 'importance',
+    sel: { kind: {}, sdv_concept: {}, sdv_component: {}, use_case: {}, industry: {}, authors: {}, year: {} },
+    group: 'none', sortWithin: 'popularity', minImportance: 0,
     summaryExpanded: false, showTail: false, showGithub: false, minStars: 2
   };
 
@@ -102,10 +119,28 @@
   var GH = null;           // github repo tail, normalized (lazy)
   var UNIVERSE = {};       // facet -> all values present
 
+  /* A pooled record that has since been curated into a shard must not appear twice:
+     the tail files still hold every harvested row, curated or not. Match on URL,
+     normalized, since ids differ between the pool and the curated entry. */
+  var CURATED_URLS = null;
+  function urlKey(u) {
+    return String(u || '').toLowerCase().replace(/^https?:\/\//, '').replace(/\/+$/, '');
+  }
+  function curatedUrls() {
+    if (!CURATED_URLS) {
+      CURATED_URLS = {};
+      DATA.forEach(function (r) { if (r.url) CURATED_URLS[urlKey(r.url)] = 1; });
+    }
+    return CURATED_URLS;
+  }
+  function notCurated(r) { return !curatedUrls()[urlKey(r.url)]; }
+
   function activeData() {
     var out = DATA;
     if (state.showTail && CITE) out = out.concat(CITE);
-    if (state.showGithub && GH) out = out.concat(GH.filter(function (r) { return (r.stars || 0) >= state.minStars; }));
+    if (state.showGithub && GH) out = out.concat(GH.filter(function (r) {
+      return (r.stars || 0) >= state.minStars;
+    }));
     return out;
   }
 
@@ -142,9 +177,18 @@
     }
     return true;
   }
+  /* The floor is applied before facets so the facet counts reflect what is shown.
+     Above 0 this necessarily drops every unrated entry, which is the whole tail --
+     the slider label says so. */
+  function passesImportance(rec) {
+    if (!state.minImportance) return true;
+    return rec.importance != null && rec.importance >= state.minImportance;
+  }
   function filteredData(exclude) {
     var q = state.titleQuery.replace(/\s+/g, ' ').trim().toLowerCase();
-    return activeData().filter(function (rec) { return matchesSearch(rec, q) && passesFacets(rec, exclude); });
+    return activeData().filter(function (rec) {
+      return passesImportance(rec) && matchesSearch(rec, q) && passesFacets(rec, exclude);
+    });
   }
 
   /* ---------- Facet rendering ---------- */
@@ -222,6 +266,7 @@
   function rebuildFacets() {
     buildCheckboxFacet('kind');
     buildCheckboxFacet('sdv_component');
+    buildCheckboxFacet('sdv_concept');
     buildCheckboxFacet('use_case');
     buildCheckboxFacet('industry');
     buildCheckboxFacet('authors');
@@ -307,6 +352,7 @@
     // Chips
     var chips = el('div', 'pub-chips');
     (rec.sdv_component || []).forEach(function (v) { addChip(chips, 'sdv_component', v); });
+    (rec.sdv_concept || []).forEach(function (v) { addChip(chips, 'sdv_concept', v); });
     (rec.use_case || []).forEach(function (v) { addChip(chips, 'use_case', v); });
     (rec.industry || []).forEach(function (v) { addChip(chips, 'industry', v); });
     if (chips.childNodes.length) li.appendChild(chips);
@@ -373,30 +419,36 @@
     return vals.map(function (v) { return labelFor(g, v); });
   }
 
-  /* Importance = blend of confidence and a bounded impact. Repo weight (stars +
-     reuse/collaboration/effort) is capped below top papers; docs/blogs get a
-     neutral impact. Paper impact = citations (OpenAlex, which undercounts CTGAN). */
-  var IMP_CONF = { high: 1, medium: 0.66, low: 0.33 };
-  function importance(rec) {
-    var conf = IMP_CONF[rec.confidence] != null ? IMP_CONF[rec.confidence] : 0.15;
-    var impact;
+  /* Popularity = attention the artifact has drawn, on one 0-1 scale so repos and
+     papers can be ranked against each other. Both sides are log-compressed, since
+     raw stars and raw citations differ by an order of magnitude at the top.
+     Repo weight blends stars with forks/contributors/commits and is capped at 0.9,
+     just below a top paper's 1.0. Entries with neither signal sit at 0.3.
+     This is NOT rec.importance, which is the 0-6 record of how central SDV is to
+     the entry; the two are independent and sortable separately. */
+  function popularity(rec) {
     if (rec.kind === 'code_repo' || rec.stars != null) {
       var w = (rec.stars || 0) + 2 * (rec.forks || 0) + 5 * (rec.contributors || 0) + 0.1 * (rec.commits || 0);
-      impact = 0.6 * Math.min(1, Math.log1p(w) / Math.log1p(8000));  // ceiling 0.6 < a top paper's 1.0
-    } else if (rec.cited != null) {
-      impact = Math.min(1, Math.log1p(rec.cited) / Math.log1p(1500));
-    } else {
-      impact = 0.3;
+      return 0.9 * Math.min(1, Math.log1p(w) / Math.log1p(8000));
     }
-    return 0.5 * conf + 0.5 * impact;
+    if (rec.cited != null) return Math.min(1, Math.log1p(rec.cited) / Math.log1p(1500));
+    return 0.3;
   }
   function sortWithin(arr) {
     var key = state.sortWithin;
     arr.sort(function (a, b) {
       if (key === 'title') return (a.title || '').toLowerCase().localeCompare((b.title || '').toLowerCase());
+      if (key === 'popularity') {
+        var dp = popularity(b) - popularity(a);
+        if (dp) return dp;
+      }
       if (key === 'importance') {
-        var di = importance(b) - importance(a);
-        if (di) return di;
+        // Curated 0-6 first; unrated entries (tail rows) fall to the bottom.
+        var ia = a.importance != null ? a.importance : -1;
+        var ib = b.importance != null ? b.importance : -1;
+        if (ib !== ia) return ib - ia;
+        var dq = popularity(b) - popularity(a);
+        if (dq) return dq;
       }
       var dy = (b.year || 0) - (a.year || 0);
       if (dy) return dy;
@@ -425,7 +477,7 @@
       var cr = { High: 3, Medium: 2, Low: 1, Unrated: 0 };
       return headers.sort(function (A, B) { return (cr[B] || 0) - (cr[A] || 0); });
     }
-    return headers; // component/use_case/industry: keep insertion order (by size)
+    return headers; // component/concept/use_case/industry: keep insertion order (by size)
   }
 
   function renderResults() {
@@ -454,7 +506,7 @@
     });
     order.forEach(function (h) { sizes[h] = groups[h].length; });
     // size-ordered facets: sort headers by group size desc before headerOrder no-op
-    if (['sdv_component', 'use_case', 'industry'].indexOf(state.group) >= 0) {
+    if (['sdv_component', 'sdv_concept', 'use_case', 'industry'].indexOf(state.group) >= 0) {
       order.sort(function (A, B) { return sizes[B] - sizes[A] || A.localeCompare(B); });
     }
     var headers = headerOrder(order);
@@ -486,7 +538,7 @@
     return {
       id: r.id, title: r.title || 'Untitled', year: r.publication_year || null,
       kind: TYPE2KIND[r.type] || 'paper', url: loc.landing_page_url || r.doi || r.id, doi: r.doi || '',
-      authors: authors, sdv_component: [], use_case: [], industry: [],
+      authors: authors, sdv_component: [], sdv_concept: [], use_case: [], industry: [],
       cited: r.cited_by_count || 0, confidence: null, tier: 'tail'
     };
   }
@@ -496,7 +548,7 @@
     return {
       id: 'gh-' + r.repo, title: r.repo, url: 'https://github.com/' + r.repo,
       kind: 'code_repo', sdv_component: fromHits((r.hit_patterns || '').split('|')),
-      use_case: [], industry: [], authors: authors, summary: r.description || '',
+      sdv_concept: [], use_case: [], industry: [], authors: authors, summary: r.description || '',
       year: yr, stars: r.stars || 0, forks: r.forks || 0,
       contributors: r.contributors || 0, commits: r.commits || 0,
       confidence: null, tier: 'tail'
@@ -505,16 +557,16 @@
   function loadCite(done) {
     if (CITE) { done(); return; }
     fetch(TAIL_PATH).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-      .then(function (raw) { CITE = (raw || []).map(normalizeCite);
-        els.tailLabel.textContent = 'Citation tail (' + CITE.length + ')'; done(); })
+      .then(function (raw) { CITE = (raw || []).map(normalizeCite).filter(notCurated);
+        els.tailLabel.textContent = 'Citation tail (' + CITE.length + ' uncurated)'; done(); })
       .catch(function (e) { els.errors.textContent = 'Could not load citation tail: ' + e.message;
         els.toggleTail.checked = false; state.showTail = false; });
   }
   function loadGh(done) {
     if (GH) { done(); return; }
     fetch(GITHUB_PATH).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-      .then(function (raw) { GH = ((raw && raw.repos) || raw || []).map(normalizeGh);
-        els.githubLabel.textContent = 'GitHub repo tail (' + GH.length + ')'; done(); })
+      .then(function (raw) { GH = ((raw && raw.repos) || raw || []).map(normalizeGh).filter(notCurated);
+        els.githubLabel.textContent = 'GitHub repo tail (' + GH.length + ' uncurated)'; done(); })
       .catch(function (e) { els.errors.textContent = 'Could not load GitHub tail: ' + e.message;
         els.toggleGithub.checked = false; state.showGithub = false; });
   }
@@ -562,6 +614,27 @@
     els.title.addEventListener('input', function () { state.titleQuery = this.value; applyFilters(); });
     els.authorSearch.addEventListener('input', function () { state.authorQuery = this.value; buildCheckboxFacet('authors'); });
 
+    /* 0-6. The top step is reserved for SDV itself -- the anchor papers and the
+       sdv-dev libraries -- rather than being a higher grade of the same judgement,
+       so nothing a curator rates can ever reach it. */
+    var IMPORTANCE_STEPS = [
+      'All entries',
+      '1+ \u2014 passing mention and up',
+      '2+ \u2014 contextual and up',
+      '3+ \u2014 one of several and up',
+      '4+ \u2014 load-bearing and up',
+      '5+ \u2014 SDV is the work',
+      '6 \u2014 SDV itself (first-party only)'
+    ];
+    els.minImportance.max = '6';
+    function syncImportanceLabel() {
+      els.minImportanceLabel.textContent = IMPORTANCE_STEPS[state.minImportance] || 'All entries';
+    }
+    els.minImportance.addEventListener('input', function () {
+      state.minImportance = parseInt(this.value, 10) || 0;
+      syncImportanceLabel(); applyFilters();
+    });
+    syncImportanceLabel();
     els.sortGroup.addEventListener('change', function () { state.group = this.value; renderResults(); });
     els.sortWithin.addEventListener('change', function () { state.sortWithin = this.value; renderResults(); });
 
@@ -576,6 +649,7 @@
       FACET_KEYS.forEach(function (fk) { state.sel[fk] = {}; });
       state.titleQuery = ''; state.authorQuery = '';
       els.title.value = ''; els.authorSearch.value = '';
+      state.minImportance = 0; els.minImportance.value = '0'; syncImportanceLabel();
       applyFilters();
     });
 
@@ -607,14 +681,16 @@
     els = {
       errors: $('pubs-errors'), results: $('pubs-results'), count: $('pubs-count'),
       title: $('facet-title'), authorSearch: $('author-search'),
-      kind: $('facet-kind'), sdv_component: $('facet-component'), use_case: $('facet-usecase'),
+      kind: $('facet-kind'), sdv_component: $('facet-component'),
+      sdv_concept: $('facet-concept'), use_case: $('facet-usecase'),
       industry: $('facet-industry'), authors: $('facet-authors'),
       year: $('facet-years'),
       sortGroup: $('sort-group'), sortWithin: $('sort-within'),
       btnSummaries: $('btn-toggle-summaries'), btnClear: $('btn-clear'),
       toggleTail: $('toggle-tail'), tailLabel: $('tail-label'),
       toggleGithub: $('toggle-github'), githubLabel: $('github-label'),
-      minStars: $('min-stars'), minStarsWrap: $('minstars-wrap')
+      minStars: $('min-stars'), minStarsWrap: $('minstars-wrap'),
+      minImportance: $('min-importance'), minImportanceLabel: $('min-importance-label')
     };
     wire();
 
