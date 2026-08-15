@@ -131,3 +131,31 @@ module, which is three index entries for what a reader would call one tool.
 
 A rule would help either way — collapse to the newest release with `duplicate_of` on
 the rest, or keep every release repository that shows a distinct SDV API generation.
+
+## 9. Code that names SDV but cannot run
+
+**Provisional:** filed case by case — `citation_only` when the code is inert by
+construction, `unclear` when it looks intended to run but cannot.
+
+Three entries so far name SDV in code that never executes:
+
+- `JianhanZhang/PyCFRL` (batch D) — a `CTGANSynthesizer` block inside a
+  triple-quoted string in an example, no `sdv` import, no declared dependency.
+  Filed `citation_only`, `importance` 1.
+- `Cukurikik/Omni` (batch E) — an `omni_sdv_engine.py` registry mapping five
+  synthesizer names to descriptions and speed hints, as strings. Nothing imports
+  `sdv`. Filed `citation_only`, `importance` 2.
+- `cosmic-hydra/zane` (batch E) — `from sdv.tabular import GAN`, a class SDV has
+  never exported, in a synthetic-patient module. Filed `unclear`, `importance` 2.
+
+The split is defensible but it is a judgment each time, and the category is growing
+as generated code reaches the tail. Two candidate rules: treat any non-executing
+reference as `citation_only` regardless of intent, which is simple and loses the
+distinction between a deliberate comment and a broken import; or add a value for
+code that targets SDV's API but does not work against any released version, which
+keeps the distinction and is a genuinely useful signal about how SDV is
+misremembered.
+
+`repo-zorai` in shard 03 is the near neighbour: a skill file calling names current
+SDV no longer exposes, filed `agent_skill`. The difference there is that the names
+were once real.
