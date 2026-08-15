@@ -88,7 +88,7 @@ exists, which is `citation_only`.
 
 | | meaning |
 |---|---|
-| 6 | SDV itself — an anchor paper or an `sdv-dev` library. Not a curator's rating; see below |
+| 6 | First-party — produced by the SDV project itself. Provenance, not a rating; see below |
 | 5 | SDV *is* the work — a fork, a direct reimplementation, a language binding |
 | 4 | Load-bearing — the result depends on running SDV; remove it and the work does not stand |
 | 3 | One of several — a compared baseline, one generator or metric among many |
@@ -96,11 +96,16 @@ exists, which is `citation_only`.
 | 1 | Passing citation, related work only |
 | 0 | Name collision or otherwise unrelated |
 
-**6 is reserved, not earned.** It marks first-party SDV — the anchor papers and the
-`sdv-dev` libraries — so the artifacts this index is *about* can never be confused with a
-third party that merely depends on one. Nothing curated from the tails reaches 6; the
-ceiling for judged work is 5. A tail entry that genuinely looks first-party is a `needs`,
-not a 6.
+**6 records provenance, not centrality.** It marks everything produced by the SDV project
+itself: the MIT DAI and DataCebo research papers and theses, the `sdv-dev` repositories,
+and DataCebo's own documentation, blog, case studies and announcements. The test is who
+made it, not how much SDV is in it — a first-party paper that predates SDV, or a docs page
+that runs nothing, is still a 6.
+
+This means 6 is not one step above 5; it is a different axis occupying the top slot, so the
+whole 0-5 range stays available for judging third-party work on its merits. Nothing curated
+from the tails reaches 6, because the tails are third-party by construction. A tail entry
+that genuinely looks first-party is a `needs`, not a 6.
 
 `importance` is otherwise independent of `integration`. A repository can vendor the whole
 CTGAN source and still be a 3 because it runs it as one baseline among several; a paper can

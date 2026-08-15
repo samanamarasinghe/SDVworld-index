@@ -109,11 +109,10 @@ vendor the entire CTGAN source and still be a 3 because it runs it as one baseli
 several; a paper can run nothing and still be a 2 because it adopts CTGAN's evaluation
 protocol. Judging weight from mechanism alone gets these backwards.
 
-**6 is not a curator's rating.** It is reserved for SDV itself — the anchor papers and
-the `sdv-dev` libraries — so that a first-party artifact can never be confused with a
-third party that merely depends on one. Nothing you curate from the tails reaches 6; the
-ceiling for judged work is 5. If a tail entry genuinely looks first-party, that is a
-`needs`, not a 6.
+**6 is not a curator's rating.** It marks first-party provenance and is defined in
+README.md, which owns the scale. Nothing you curate from the tails reaches 6, because the
+tails are third-party by construction; your ceiling is 5. A tail entry that genuinely looks
+first-party is a `needs`, not a 6.
 
 If a re-read finds `importance`, `integration` or `confidence` misjudged — SDV turns out
 to be central to the implementation, or to be a passing mention in related work — correct
