@@ -159,3 +159,22 @@ misremembered.
 `repo-zorai` in shard 03 is the near neighbour: a skill file calling names current
 SDV no longer exposes, filed `agent_skill`. The difference there is that the names
 were once real.
+
+## 10. Shard numbers are not reserved per lane
+
+**Provisional:** the repo lane has claimed 20-39 and left 08-19 to the papers lane.
+Shards 03-07 stay where they are, so the repo lane reads 03-07 then 20 onwards.
+
+AGENTS.md reserves a block of *patch* numbers per agent because patches apply in
+filename order. Shards have no such rule, and with the repo and papers lanes running
+concurrently both were taking the next free number: batch F was pushed as
+`08-github-tail-f` against an existing `08-openalex-a`, renumbered to 09 against
+`09-openalex-b`, and finally moved clear to 20.
+
+Nothing breaks — `build.py` globs the directory and dedupes on `url`, so two shards
+sharing a number merge fine — but the number stops identifying a wave, which is the
+one thing it is for.
+
+A one-line addition to the parallel-agents table in AGENTS.md would settle it. The
+block boundaries above are a guess at the right split; papers is the larger tail by
+record count, repos the larger by batches so far.
