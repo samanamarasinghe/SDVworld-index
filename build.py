@@ -9,6 +9,7 @@ metrics are joined in here at build time rather than copied into every shard by 
 
 The join only ever fills a field a shard left empty. A curator's value always wins.
 """
+import argparse
 import collections
 import glob
 import json
@@ -98,7 +99,7 @@ def enrich(records):
     return filled, unjoined
 
 
-def main():
+def main(write=False):
     by_url, by_id, out = {}, {}, []
     dupes = retired = applied = orphaned = 0
     for path in sorted(glob.glob(os.path.join(ROOT, 'data', 'shards', '*.json'))):
@@ -162,12 +163,14 @@ def main():
 
     out.sort(key=lambda r: (r['kind'], -(r.get('year') or 0), r['title']))
     dest = os.path.join(ROOT, 'data', 'sdv-index.json')
-    with open(dest, 'w') as fh:
-        json.dump(out, fh, indent=1, ensure_ascii=False)
-        fh.write('\n')
+    if write:
+        with open(dest, 'w') as fh:
+            json.dump(out, fh, indent=1, ensure_ascii=False)
+            fh.write('\n')
 
     print(f'{len(out)} entries, {dupes} duplicate urls dropped, '
-          f'{retired} retired by duplicate_of, {applied} corrections applied -> {dest}')
+          f'{retired} retired by duplicate_of, {applied} corrections applied '
+          + (f'-> {dest}' if write else '(validated only; pass --write to update it)'))
     if orphaned:
         print(f'WARNING: {orphaned} correction(s) matched no entry by id and were skipped')
     if filled:
@@ -187,4 +190,8 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser(
+        description='Merge shards into data/sdv-index.json.')
+    parser.add_argument('--write', action='store_true',
+                        help='write the index; omit to validate the shards only')
+    main(**vars(parser.parse_args()))
