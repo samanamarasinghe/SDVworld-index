@@ -133,7 +133,17 @@
     }
     return CURATED_URLS;
   }
-  function notCurated(r) { return !curatedUrls()[urlKey(r.url)]; }
+  /* A work can be reached by three different pointers -- its landing page, its
+     DOI, its OpenAlex id -- and a curator may have filed it under any one of
+     them. Matching only the pointer we happen to display leaves the entry in
+     both the index and the pool, so check every alias the row carries. */
+  function notCurated(r) {
+    var map = curatedUrls(), keys = r.alt_urls || [r.url];
+    for (var i = 0; i < keys.length; i++) {
+      if (keys[i] && map[urlKey(keys[i])]) return false;
+    }
+    return true;
+  }
 
   /* Both pools are always in view; there is no toggle and no star floor. They are
      fetched after the first paint rather than before it, because the curated index is
@@ -556,6 +566,7 @@
     return {
       id: r.id, title: r.title || 'Untitled', year: r.publication_year || null,
       kind: TYPE2KIND[r.type] || 'paper', url: loc.landing_page_url || r.doi || r.id, doi: r.doi || '',
+      alt_urls: [loc.landing_page_url, r.doi, r.id].filter(Boolean),
       authors: authors, sdv_component: [], sdv_concept: [], use_case: [], industry: [],
       cited: r.cited_by_count || 0, confidence: null, tier: 'tail'
     };

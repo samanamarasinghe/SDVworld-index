@@ -6,6 +6,7 @@ points where the entry says it does.
     python tests/validate.py --online     # adds DOI resolution and link checking
     python tests/validate.py --online --doi-only
     python tests/validate.py --online --links-only [--limit N]
+    python tests/validate.py --online --scope all         # all ~3,000 pointers
 
 Exit status is 0 when every check passes, 1 otherwise, so this can gate CI.
 
@@ -242,21 +243,34 @@ def check_repos_against_pool(index, gh):
 
 
 def check_pool_dedup(index, cite):
-    """A pooled row already curated must not also show as uncurated. The page
-    matches on one url; a work carries up to three (landing page, DOI, id)."""
+    """A curated work must not also appear as an uncurated pooled row.
+
+    A work is reachable by three pointers -- landing page, DOI, OpenAlex id --
+    and a curator may file it under any one of them, so the page has to match on
+    all three. This asserts that it does, rather than recomputing the overlap:
+    once the page is alias-aware the overlap is zero by construction, and a test
+    that only measured it would pass for ever while silently permitting a
+    regression to naive matching."""
     if cite is None:
         return
     cur = {norm_url(r['url']) for r in index if r.get('url')}
-    dupes = 0
+    naive = 0
     for w in cite:
         loc = w.get('primary_location') or {}
         shown = loc.get('landing_page_url') or w.get('doi') or w.get('id')
         alts = {norm_url(u) for u in (loc.get('landing_page_url'), w.get('doi'), w.get('id')) if u}
         if norm_url(shown) not in cur and (alts & cur):
-            dupes += 1
-    if dupes:
-        fail('pool dedup', f'{dupes} citation rows are curated but still shown as pooled '
-                           f'(matched on a different one of landing page / DOI / OpenAlex id)')
+            naive += 1
+
+    js_path = os.path.join(ROOT, 'assets', 'js', 'sdv-index.js')
+    js = open(js_path).read() if os.path.exists(js_path) else ''
+    alias_aware = 'alt_urls' in js and re.search(r'function notCurated[^}]*alt_urls', js, re.S)
+    if not alias_aware:
+        fail('pool dedup is alias-aware',
+             f'notCurated in sdv-index.js matches a single url; {naive} curated works '
+             f'would also show as pooled rows')
+    elif naive:
+        note(f'alias matching suppresses {naive} would-be duplicate pooled rows')
 
 
 # ---------------------------------------------------------------- online
@@ -341,13 +355,35 @@ def check_dois_resolve(index):
             fail('DOI resolves', f'{want[d]["id"]}: {d} is not a registered DOI')
 
 
-def check_links(index, limit=None):
-    """A cheap liveness check on every non-DOI pointer. 404 means the link is
-    dead; it says nothing about whether a 200 is the right page."""
+def pooled_targets(cite, gh, index):
+    """The uncurated pools carry pointers too, and nothing has ever checked them.
+    Anything already curated is excluded so each artifact is probed once."""
+    cur = {norm_url(r['url']) for r in index if r.get('url')}
+    out = []
+    for w in (cite or []):
+        loc = w.get('primary_location') or {}
+        u = loc.get('landing_page_url') or w.get('doi') or w.get('id')
+        if u and norm_url(u) not in cur:
+            out.append({'id': w.get('id'), 'url': u, 'pool': 'citation'})
+    for r in ((gh or {}).get('repos') or []):
+        u = 'https://github.com/' + r['repo']
+        if norm_url(u) not in cur:
+            out.append({'id': r['repo'], 'url': u, 'pool': 'repo'})
+    return out
+
+
+def check_links(index, limit=None, extra=(), workers=12):
+    """Liveness for every pointer. 404 means dead; it says nothing about whether
+    a 200 is the right page -- that is what the DOI title check is for.
+
+    Redirects are followed and reported apart from failures: a repository that
+    was renamed answers 200 at a new path, which is not broken but is a stale
+    pointer worth knowing about."""
     targets = [r for r in index if r.get('url') and not norm_doi(r['url']).startswith('10.')]
+    targets += [r for r in extra if not norm_doi(r['url']).startswith('10.')]
     if limit:
         targets = targets[:limit]
-    note(f'checking {len(targets)} non-DOI links')
+    note(f'checking {len(targets)} links ({sum(1 for t in targets if t.get("pool"))} of them pooled)')
 
     def probe(r):
         req = urllib.request.Request(r['url'], method='HEAD',
@@ -355,19 +391,33 @@ def check_links(index, limit=None):
         try:
             with urllib.request.urlopen(req, timeout=25) as resp:
                 if resp.status >= 400:
-                    return f'{r["id"]}: HTTP {resp.status} {r["url"]}'
+                    return ('dead', f'{r["id"]}: HTTP {resp.status} {r["url"]}')
+                if norm_url(resp.url) != norm_url(r['url']):
+                    return ('moved', f'{r["id"]} -> {resp.url}')
         except urllib.error.HTTPError as e:
             if e.code in (403, 405, 429):
                 return None  # host dislikes HEAD or bots; not evidence of a dead link
-            return f'{r["id"]}: HTTP {e.code} {r["url"]}'
+            return ('dead', f'{r["id"]}: HTTP {e.code} {r["url"]}')
         except Exception as e:
-            return f'{r["id"]}: {type(e).__name__} {r["url"]}'
+            return ('dead', f'{r["id"]}: {type(e).__name__} {r["url"]}')
         return None
 
-    with ThreadPoolExecutor(max_workers=8) as pool:
-        for detail in pool.map(probe, targets):
-            if detail:
+    moved = []
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        for res in pool.map(probe, targets):
+            if not res:
+                continue
+            kind, detail = res
+            if kind == 'dead':
                 fail('link is live', detail)
+            else:
+                moved.append(detail)
+    if moved:
+        note(f'{len(moved)} pointers redirect elsewhere (renamed or reorganised, not dead):')
+        for m in moved[:20]:
+            note('    ' + m)
+        if len(moved) > 20:
+            note(f'    ... and {len(moved) - 20} more')
 
 
 # ---------------------------------------------------------------- main
@@ -379,6 +429,9 @@ def main():
     ap.add_argument('--doi-only', action='store_true', help='of the network checks, DOIs only')
     ap.add_argument('--links-only', action='store_true', help='of the network checks, links only')
     ap.add_argument('--limit', type=int, help='cap the number of links checked')
+    ap.add_argument('--scope', choices=('curated', 'all'), default='curated',
+                    help="'all' also probes the uncurated citation and repo pools")
+    ap.add_argument('--workers', type=int, default=12, help='concurrent link probes')
     args = ap.parse_args()
 
     vocab = read_vocabularies()
@@ -390,16 +443,19 @@ def main():
     check_url_shape(records)
 
     index = check_built_index(load('data/sdv-index.json')) or []
+    cite = load('data/tail/openalex-citations.json')
+    gh = load('data/tail/github-repos.json')
     check_url_vs_joined_doi(index)
     check_repo_urls_are_repos(index)
-    check_repos_against_pool(index, load('data/tail/github-repos.json'))
-    check_pool_dedup(index, load('data/tail/openalex-citations.json'))
+    check_repos_against_pool(index, gh)
+    check_pool_dedup(index, cite)
 
     if args.online:
         if not args.links_only:
             check_dois_resolve(index)
         if not args.doi_only:
-            check_links(index, args.limit)
+            extra = pooled_targets(cite, gh, index) if args.scope == 'all' else ()
+            check_links(index, args.limit, extra, args.workers)
 
     for m in notes:
         print('  ' + m)
