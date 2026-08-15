@@ -95,13 +95,19 @@ def fetch_partial(repo, dest):
     one network round trip per checkout invocation, so a few thousand files take
     longer than downloading the whole repository. Filtering by blob size keeps it to
     a single fetch. Measured on a 42 MB repository: 5 s, 4943 files in the tree.
+
+    git exits non-zero when the checkout cannot materialise every path -- which the
+    filter guarantees for any blob over BLOB_LIMIT, exactly the files this is meant
+    to skip. "Clone succeeded, but checkout failed" is the normal outcome here, so
+    the test is whether a work tree came back, not the exit status.
     """
     work = os.path.join(dest, 'repo')
     clone = run(['git', 'clone', f'--filter=blob:limit={BLOB_LIMIT}', '--depth', '1',
                  f'https://github.com/{repo}.git', work], timeout=600)
-    if clone.returncode != 0:
-        raise RuntimeError(clone.stderr.strip()[:200])
     listing = run(['git', 'ls-tree', '-r', '--name-only', 'HEAD'], cwd=work)
+    if listing.returncode != 0:
+        # Keep the tail: git puts the reason last, after pages of progress output.
+        raise RuntimeError((clone.stderr.strip() or listing.stderr.strip())[-300:])
     return work, len([p for p in listing.stdout.splitlines() if p])
 
 
