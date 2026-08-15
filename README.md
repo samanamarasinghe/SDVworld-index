@@ -31,7 +31,7 @@ Shards are never rewritten once complete; new waves add new shard files.
 | `use_case[]` | see vocabulary below |
 | `industry[]` | see vocabulary below |
 | `integration` | the mechanism by which an entry relates to SDV software |
-| `importance` | 0-5, how central SDV is to the entry; orthogonal to `integration` |
+| `importance` | 0-6, how central SDV is to the entry; orthogonal to `integration` |
 | `evidence` | the specific proof — a file path, a section reference, a quoted line |
 | `confidence` | high = read the source; medium/low = metadata only |
 | `needs` | open verification task, if any |
@@ -73,22 +73,36 @@ constraints, reversible_transforms, ml_efficacy_eval, quality_report, benchmark_
 
 **integration** (the mechanism): api_user (imports/uses the library), vendored_source
 (copies SDV-family source in-tree), derivative_work (extends or modifies that source into a
-new tool), baseline_only (runs it only as a comparison baseline), citation_only (cites but
-does not run it), source_work (an SDV anchor paper or library itself), name_collision
+new tool), baseline_only (runs it only as a comparison baseline), agent_skill (ships SDV as
+an executable capability for an AI agent to invoke — working code inside a skill or
+instruction file, with no dependency declared by the host repository), citation_only (cites
+but does not run it), source_work (an SDV anchor paper or library itself), name_collision
 (false-positive match, unrelated to SDV), unclear (use suspected but unverified).
 
-**importance** (the weight), 0-5:
+`agent_skill` is not a synonym for documentation. The test is whether the artifact packages
+SDV as a capability an agent is expected to execute on demand — a runnable pattern, a
+routing rule about when SDV may be used — as opposed to prose that merely records that SDV
+exists, which is `citation_only`.
+
+**importance** (the weight), 0-6:
 
 | | meaning |
 |---|---|
-| 5 | SDV *is* the work — anchor paper, the library itself, a fork or direct reimplementation |
+| 6 | SDV itself — an anchor paper or an `sdv-dev` library. Not a curator's rating; see below |
+| 5 | SDV *is* the work — a fork, a direct reimplementation, a language binding |
 | 4 | Load-bearing — the result depends on running SDV; remove it and the work does not stand |
 | 3 | One of several — a compared baseline, one generator or metric among many |
 | 2 | Contextual — SDV's method or evaluation protocol is described and adopted, not run |
 | 1 | Passing citation, related work only |
 | 0 | Name collision or otherwise unrelated |
 
-`importance` is deliberately independent of `integration`. A repository can vendor the whole
+**6 is reserved, not earned.** It marks first-party SDV — the anchor papers and the
+`sdv-dev` libraries — so the artifacts this index is *about* can never be confused with a
+third party that merely depends on one. Nothing curated from the tails reaches 6; the
+ceiling for judged work is 5. A tail entry that genuinely looks first-party is a `needs`,
+not a 6.
+
+`importance` is otherwise independent of `integration`. A repository can vendor the whole
 CTGAN source and still be a 3 because it runs it as one baseline among several; a paper can
 run nothing and still be a 2 because it adopts CTGAN's evaluation protocol. A re-read that
 finds either field misjudged should correct it with `"override": true` and name the prior
