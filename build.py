@@ -99,7 +99,8 @@ def enrich(records):
 
 
 def main():
-    seen, out, dupes, retired = set(), [], 0, 0
+    by_url, by_id, out = {}, {}, []
+    dupes = retired = applied = orphaned = 0
     for path in sorted(glob.glob(os.path.join(ROOT, 'data', 'shards', '*.json'))):
         for rec in json.load(open(path)):
             # A record carrying duplicate_of has been retired in favour of another
@@ -107,11 +108,37 @@ def main():
             if rec.get('duplicate_of'):
                 retired += 1
                 continue
+
+            # Shards are append-only, so a re-read that finds importance, integration,
+            # confidence -- or the url itself -- misjudged cannot edit the shard that
+            # got it wrong. It appends a correction to a later shard instead, carrying
+            # only the fields that change, and the correction is merged over the
+            # original here.
+            #
+            # A correction is matched by id, not url. The field most often wrong is the
+            # url: a first-party paper whose host reorganized, a repository that moved.
+            # Matching on url would file the fix as a second entry and leave the dead
+            # link in place, which is the opposite of a correction. It also means a
+            # correction need not repeat the url at all.
+            if rec.get('override'):
+                prior = by_id.get(rec['id'])
+                if prior is None:
+                    # No target: the id is wrong, or the shard holding it is absent.
+                    # Silently dropping this is how a correction gets lost.
+                    orphaned += 1
+                    continue
+                by_url.pop(prior['url'].rstrip('/'), None)
+                prior.update({k: v for k, v in rec.items() if k != 'override'})
+                by_url[prior['url'].rstrip('/')] = prior
+                applied += 1
+                continue
+
             key = rec['url'].rstrip('/')
-            if key in seen:
+            if key in by_url:
                 dupes += 1
                 continue
-            seen.add(key)
+            by_url[key] = rec
+            by_id.setdefault(rec['id'], rec)
             out.append(rec)
 
     ids = collections.Counter(rec['id'] for rec in out)
@@ -132,7 +159,9 @@ def main():
         fh.write('\n')
 
     print(f'{len(out)} entries, {dupes} duplicate urls dropped, '
-          f'{retired} retired by duplicate_of -> {dest}')
+          f'{retired} retired by duplicate_of, {applied} corrections applied -> {dest}')
+    if orphaned:
+        print(f'WARNING: {orphaned} correction(s) matched no entry by id and were skipped')
     if collisions:
         print(f'WARNING: {len(collisions)} duplicate id(s) across shards: {", ".join(collisions)}')
     if filled:
