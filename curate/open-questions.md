@@ -269,3 +269,100 @@ Three options, in the order I would rank them:
    but throws away the finding rate that does not correlate with stars.
 
 Nothing here blocks: batches continue in the meantime.
+
+## 12. README's importance table stops at 5; AGENTS.md says 0–6
+
+**Provisional:** curated to the AGENTS.md rule — ceiling 5 for judged work, no 6
+written anywhere in shard 40.
+
+AGENTS.md says `importance` is "(0-6, defined in README.md)" and reserves 6 for SDV
+itself, "the anchor papers and the `sdv-dev` libraries", explicitly so that a
+first-party artifact cannot be confused with a third party that depends on one. The
+README table it points at runs 0–5 and gives 5 as "SDV *is* the work — anchor paper,
+the library itself, a fork or direct reimplementation", which is the definition
+AGENTS.md has since moved up to 6.
+
+So the two files disagree about what a 5 means, not only about where the scale ends.
+A curator following README alone would file the SDV anchor papers at 5 next to a
+third-party R port; a curator following AGENTS.md files the port at 5 and leaves 6
+for the first-party work. Shard 01 predates the change and should be checked for
+which reading it used.
+
+The fix is one row in the README table plus a rewrite of the 5 row. Worth doing
+before the next lane starts, because it is the one field where two curators reading
+two documents will reliably disagree.
+
+## 13. A port into another language has no clean `integration` value
+
+**Provisional:** `derivative_work`, `importance` 5, for the `rsdv` R package
+(`paper-rsdv-r-package-2026` in shard 40).
+
+`rsdv` is on CRAN as "the R Synthetic Data Vault". It reimplements SDV's design in R
+— a Gaussian copula fitted jointly over mixed column types, a metadata system with
+column types and primary keys, declarative constraints enforced by rejection
+sampling, conditional sampling, and quality, validity and privacy reports modelled on
+SDMetrics' two-property hierarchy. It copies no SDV source; it depends on the R
+`copula` package and nothing from `sdv-dev`.
+
+The vocabulary offers `derivative_work` — "extends or modifies that source into a new
+tool" — which is the closest fit but is wrong on the mechanism, since there is no
+source to modify. `api_user` is plainly wrong. `vendored_source` is wrong. The
+README's `importance` 5 row already names "a direct reimplementation" as a 5, so the
+weight is settled; only the mechanism is not.
+
+Two ways out: add a `reimplementation` value for a port that carries the design
+across a language boundary without carrying the code, or widen the `derivative_work`
+gloss to "extends, modifies or reimplements". The first is more informative and
+would apply to any future port; the second costs one line. Either way this will
+recur — a design as documented as SDV's attracts ports.
+
+## 14. Scoring `importance` when `integration` is `unclear`
+
+**Provisional:** score `importance` on how central the SDV-*family method* is to the
+work, and let `unclear` plus a `needs` line carry the doubt about the library.
+
+Thirteen of the nineteen `algorithm_only` works in shard 40 name CTGAN, TVAE or
+Gaussian Copula and name no implementation, and their full texts are behind walls
+that return 403 to automated fetches. The method is often plainly load-bearing —
+`thesis-money-laundering-minority-boosting-2026` varies the amount of synthetic data
+as its independent variable; `paper-usability-synthetic-dataset-decision-support-2024`
+has CTGAN as its only generator — while whether SDV is the thing running it is
+exactly what could not be established.
+
+Two readings are available and they differ by a whole point on seven entries:
+
+1. **Score the method.** `importance` measures centrality; the SDV-derived method is
+   central; `unclear` already records that the library link is unproven. This is what
+   AGENTS.md's own example licenses — "a paper can run nothing and still be a 2
+   because it adopts CTGAN's evaluation protocol" — and it is what shard 40 does.
+2. **Cap `unclear` at 3.** If it is not established that SDV is involved, a 4 asserts
+   more than is known, and the cap makes the uncertainty visible in a sortable field
+   rather than only in prose.
+
+Reading 1 keeps `importance` and `integration` genuinely orthogonal, which AGENTS.md
+insists on. Reading 2 protects the ranking from a batch of unverified 4s. Whichever
+is chosen should be written into AGENTS.md, since `unclear` will keep appearing
+wherever the paywalls are.
+
+## 15. Paywalled full text is now the binding constraint on the papers lane
+
+**Not a judgment call — a tooling note, recorded because it decides how good the
+next papers batch can be.**
+
+Of the 35 works in shard 40, 16 full texts were readable and 19 were not. The 19
+divide into two causes:
+
+- **403 to automated fetches** — MDPI, IEEE Xplore, ACM DL, OUP, ScienceDirect,
+  Wiley. Nine works, several of them open access, refused both `urllib` and `curl`
+  with a browser user-agent. Unpaywall and Europe PMC recover some of these; they
+  recovered two here.
+- **PDF-only, no extractor.** This environment has no `pdftotext`, `fitz`,
+  `pdfminer` or `PyPDF2`. A minimal inflate-and-grep extractor handles simple PDFs
+  but not the CID-encoded subset fonts that OSF and most publishers emit, which is
+  why the `rsdv` preprint had to be judged from CRAN and GitHub instead.
+
+The practical effect is that `confidence: "high"` in the papers lane tracks whether
+a publisher happens to serve HTML, not how hard the curator looked. Adding a PDF
+text extractor to the harvest tooling would move roughly a third of every future
+papers batch from `medium` to `high`. It is the single highest-leverage change to
+the lane.
