@@ -25,6 +25,7 @@ harvest/repo_evidence.py.
 import argparse
 import json
 import os
+import ssl
 import time
 import urllib.error
 import urllib.parse
@@ -50,12 +51,34 @@ ANCHORS = {
 }
 
 
+def ssl_context():
+    """Build a context with a CA bundle that actually exists.
+
+    The python.org macOS installer does not use the system keychain and ships
+    without a populated CA store, so every HTTPS request fails with
+    CERTIFICATE_VERIFY_FAILED until "Install Certificates.command" is run. That
+    command is the proper fix, but this script should not depend on whether
+    someone remembered to run it, so certifi is used when available. certifi is
+    an optional convenience -- the script remains standard-library-only and falls
+    back to the default context, which is correct on Linux and on Homebrew
+    Python.
+    """
+    try:
+        import certifi
+        return ssl.create_default_context(cafile=certifi.where())
+    except ImportError:
+        return ssl.create_default_context()
+
+
+SSL = ssl_context()
+
+
 def get(url, key, attempt=0):
     req = urllib.request.Request(url)
     if key:
         req.add_header('x-api-key', key)
     try:
-        with urllib.request.urlopen(req, timeout=60) as r:
+        with urllib.request.urlopen(req, timeout=60, context=SSL) as r:
             return json.load(r)
     except urllib.error.HTTPError as exc:
         # 429 is the documented throttle for unauthenticated traffic; back off and retry.
@@ -64,6 +87,16 @@ def get(url, key, attempt=0):
             print(f'  HTTP {exc.code}, retrying in {wait}s', flush=True)
             time.sleep(wait)
             return get(url, key, attempt + 1)
+        raise
+    except urllib.error.URLError as exc:
+        if isinstance(exc.reason, ssl.SSLCertVerificationError):
+            raise SystemExit(
+                'TLS certificate verification failed.\n'
+                'On a python.org macOS build this means the CA store was never '
+                'populated. Fix it with:\n'
+                '    /Applications/Python\\ 3.x/Install\\ Certificates.command\n'
+                'or install certifi (pip install certifi) and re-run.'
+            ) from exc
         raise
 
 
