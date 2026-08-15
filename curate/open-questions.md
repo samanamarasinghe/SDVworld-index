@@ -10,7 +10,7 @@ Newest section last. Delete a resolved item, or record the ruling in place.
 
 **Provisional:** filed as `vendored_source` at `importance` 1–3.
 
-Four entries so far relate to SDV only through a third party rather than directly:
+Seven entries so far relate to SDV only through a third party rather than directly:
 
 - `jansel/pytorch-jit-paritybench` — crawled CTGAN modules out of tab-ddpm's
   vendored copy
@@ -20,15 +20,23 @@ Four entries so far relate to SDV only through a third party rather than directl
 - `bvanbreugel/deep_generative_ensemble` (batch D) — carries a copy of synthcity in
   `src/`, whose SDV plugins are the generators; `DGE_data.py` defaults to
   `model_name='ctgan'`, so the ICML 2023 results run on CTGAN through synthcity
+- `spalabucr/synth-audit` (batch G) — vendors opendp/smartnoise-sdk, itself an index
+  entry, whose `snsynth/pytorch/nn/ctgan/` is CTGAN and whose `DPCTGAN` subclasses it
+- `BQ-QB/AML` (batch H) — vendors tab-ddpm, which carries a whole CTGAN package, as
+  `Hannah37/ConDOR-ICLR25` did
+- `mshubhankar/DP-DataGeneration-MissingData` (batch I) — SmartNoise again, this time
+  as the DP baselines of a paper on generation under missing data
 
-`vendored_source` is technically true of all four but says the wrong thing: it
+`vendored_source` is technically true of all seven but says the wrong thing: it
 implies a deliberate decision to embed SDV, when in each case SDV arrived as a
 passenger. A value such as `inherited` or `transitive` would separate them.
 
-Against adding it: four of 165 curated entries. `importance` 1 covered most of what
-mattered for the first three, but the fourth is a 4 — the paper's headline
-experiments depend on the inherited CTGAN — so importance no longer stands in for
-the distinction.
+Against adding it: seven of 297 curated entries. `importance` 1 covered most of what
+mattered for the first three, but four of the seven are now 3 or 4 — the results
+depend on the inherited CTGAN — so importance no longer stands in for the
+distinction. Two intermediaries account for six of the seven: opendp/smartnoise-sdk
+and yandex-research/tab-ddpm. Both are themselves worth being index entries, which
+is the argument for a value that points at the intermediary rather than at SDV.
 
 ## 2. Canonical copies for three duplicate pairs
 
@@ -42,28 +50,53 @@ means judging which account is authoritative — an author's copy, a lab's copy,
 research group's later home for the same work — and that is not decidable from the
 code alone.
 
-## 3. An `aerospace` industry value
+## 3. An `aerospace` industry value — condition met
 
-**Provisional:** `Three-Buddy-Problem/exoplanet-quest-web` filed as `academia`.
+**Provisional:** both entries filed as `academia`.
 
-It generates synthetic exoplanet records from the NASA archive — for data scarcity,
-not privacy. `academia` is not wrong but loses the domain. One entry does not
-justify a vocabulary value; a second would.
+- `Three-Buddy-Problem/exoplanet-quest-web` (shard 05) generates synthetic exoplanet
+  records from the NASA archive, for data scarcity rather than privacy.
+- `Pierciest/Exoplanet_classifier` (batch I) fits `GaussianCopulaSynthesizer` on a
+  survey catalogue to extend it for downstream simulation.
+
+The original note said one entry does not justify a vocabulary value and a second
+would. The second has arrived. `academia` is not wrong for either — both are
+research code — but it loses the domain in exactly the way `healthcare_bio` would if
+every clinical entry were filed as `academia` too.
+
+Whether the value should be `aerospace` or something wider like `space_astronomy` is
+worth a moment: neither repository is about aircraft or launch vehicles, and
+`JimmyJamJr/spoc2025` (batch F, rocket-launch weather) is the only entry so far that
+`aerospace` would fit in the ordinary sense.
 
 ## 4. Negative filters for the pooling search
 
 **Provisional:** false positives recorded at `importance` 0 rather than dropped, so
 a later sweep does not re-examine them.
 
-Two substring accidents recur and will keep re-pooling until `harvest/github_tail.py`
-excludes them:
+Five distinct kinds now, in eleven entries, and they will keep re-pooling until
+`harvest/github_tail.py` excludes them:
 
-- `abs_e2687gwsdv` — a conda temp-directory fragment, in `DTiapan/ai-agents-handbook`
-  and `Salim-Lysiun/ARNN`
-- `sdvae` — the stable-diffusion VAE, in `MischaD/BeyondFID`
+1. **Build-path fragments.** `abs_e2687gwsdv`, a conda temp directory, in
+   `DTiapan/ai-agents-handbook`, `Salim-Lysiun/ARNN` and `aaronGeb/tenx_week_two`;
+   `p6sdv8fm`, a Nix build hash, in `Maxelee/CARPoolGP`. Both arrive inside `file://`
+   URLs in `requirements.txt`, so a rule excluding `sdv` matches inside a path
+   component would catch the whole family.
+2. **Unrelated software of the same name.** `sdvae`, the stable-diffusion VAE, in
+   `MischaD/BeyondFID`; SDMetricsOpenCore, the commercial UML design-metrics product,
+   in `ptidejteam/ptidej-Ptidej`.
+3. **A suffix inside a longer class name.** `FCTGANSynthesizer` contains
+   `CTGANSynthesizer`, in `ethan-keller/FCT-GAN`. This one will recur across the
+   CTAB-GAN family and is the hardest to exclude, because the models really are in
+   CTGAN's design lineage even when no SDV code is present.
+4. **A different `ParSynthesizer`.** An OCaml program-synthesis module, in
+   `amiltner/DSInvariant` and `amiltner/HanoiArtifactEvaluation`. Excluding non-Python
+   repositories from the `par` pattern would settle it.
+5. **A typo.** `asdvantage`, a misspelling of "advantage", in
+   `nkh/P5-PerlBuildSystem`.
 
-Four of 121 curated entries so far are pure substring accidents, and the rate should
-rise as the remaining tail is almost entirely zero-star repositories.
+Eleven of 297 curated entries are now pure substring accidents, and the rate is
+rising as predicted: three of the eleven came from the last two batches.
 
 ## 5. Treatment for the 348 `req`-only pooled repositories
 
@@ -147,6 +180,10 @@ Three entries so far name SDV in code that never executes:
   `sdv`. Filed `citation_only`, `importance` 2.
 - `cosmic-hydra/zane` (batch E) — `from sdv.tabular import GAN`, a class SDV has
   never exported, in a synthetic-patient module. Filed `unclear`, `importance` 2.
+- `afsahurrehman11/PulseForge-AI` (batch I) — imports `TabularDiffusionSynthesizer`
+  and `sdv.evaluation.evaluate_privacy`, neither of which exists, but inside `try`
+  blocks with a logged fallback to `GaussianCopulaSynthesizer`, and the real
+  synthesizers beside them do run. Filed `api_user`, `importance` 3.
 
 The split is defensible but it is a judgment each time, and the category is growing
 as generated code reaches the tail. Two candidate rules: treat any non-executing
