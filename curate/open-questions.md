@@ -224,6 +224,15 @@ A one-line addition to the parallel-agents table in AGENTS.md would settle it. T
 block boundaries above are a guess at the right split; papers is the larger tail by
 record count, repos the larger by batches so far.
 
+**The reservation did not hold, which is the point.** `curate/20-openalex-d` was
+branched from a commit that predates the note above, so the papers lane took 20 as
+its next free number and `data/shards/20-openalex-d.json` now sits beside
+`data/shards/20-github-tail-f.json`. Nothing breaks — `build.py` globs and dedupes on
+`url` — but a convention recorded only in this file cannot bind an agent that
+branched before reading it. It has to be in AGENTS.md, which every agent is told to
+read first. The papers lane describes its batch D as final, so the contention should
+stop on its own; the rule is still worth writing down before the next lane starts.
+
 
 ## 11. Whether the zero-star tail deserves this depth
 
