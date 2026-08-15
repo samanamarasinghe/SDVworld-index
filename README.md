@@ -73,9 +73,16 @@ constraints, reversible_transforms, ml_efficacy_eval, quality_report, benchmark_
 
 **integration** (the mechanism): api_user (imports/uses the library), vendored_source
 (copies SDV-family source in-tree), derivative_work (extends or modifies that source into a
-new tool), baseline_only (runs it only as a comparison baseline), citation_only (cites but
-does not run it), source_work (an SDV anchor paper or library itself), name_collision
+new tool), baseline_only (runs it only as a comparison baseline), agent_skill (ships SDV as
+an executable capability for an AI agent to invoke — working code inside a skill or
+instruction file, with no dependency declared by the host repository), citation_only (cites
+but does not run it), source_work (an SDV anchor paper or library itself), name_collision
 (false-positive match, unrelated to SDV), unclear (use suspected but unverified).
+
+`agent_skill` is not a synonym for documentation. The test is whether the artifact packages
+SDV as a capability an agent is expected to execute on demand — a runnable pattern, a
+routing rule about when SDV may be used — as opposed to prose that merely records that SDV
+exists, which is `citation_only`.
 
 **importance** (the weight), 0-5:
 
