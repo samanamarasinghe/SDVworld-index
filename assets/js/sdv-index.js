@@ -110,8 +110,8 @@
   var state = {
     titleQuery: '', authorQuery: '',
     sel: { kind: {}, sdv_concept: {}, sdv_component: {}, use_case: {}, industry: {}, authors: {}, year: {} },
-    group: 'none', sortWithin: 'popularity', minImportance: 0, minPopularity: 0,
-    summaryExpanded: false, showTail: false, showGithub: false, minStars: 2
+    group: 'none', sortWithin: 'importance', minImportance: 4, minPopularity: 50,
+    summaryExpanded: false
   };
 
   var DATA = [];
@@ -135,12 +135,14 @@
   }
   function notCurated(r) { return !curatedUrls()[urlKey(r.url)]; }
 
+  /* Both pools are always in view; there is no toggle and no star floor. They are
+     fetched after the first paint rather than before it, because the curated index is
+     80 KB and the two pools are 13 MB between them -- and at the default importance
+     floor no pooled row is shown anyway, since none of them carries a rating. */
   function activeData() {
     var out = DATA;
-    if (state.showTail && CITE) out = out.concat(CITE);
-    if (state.showGithub && GH) out = out.concat(GH.filter(function (r) {
-      return (r.stars || 0) >= state.minStars;
-    }));
+    if (CITE) out = out.concat(CITE);
+    if (GH) out = out.concat(GH);
     return out;
   }
 
@@ -449,14 +451,19 @@
     var key = state.sortWithin;
     arr.sort(function (a, b) {
       if (key === 'title') return (a.title || '').toLowerCase().localeCompare((b.title || '').toLowerCase());
+      /* The two orderings are each other's tie-break. Ties are common in both:
+         27 curated entries carry no attention signal at all and share the neutral
+         default, and thousands of pooled repositories sit at identical low scores.
+         Falling through to year would order those arbitrarily; falling through to
+         the other axis says something. Unrated entries sort as -1, below 0. */
+      var ia = a.importance != null ? a.importance : -1;
+      var ib = b.importance != null ? b.importance : -1;
       if (key === 'popularity') {
         var dp = popularity(b) - popularity(a);
         if (dp) return dp;
+        if (ib !== ia) return ib - ia;
       }
       if (key === 'importance') {
-        // Curated 0-6 first; unrated entries (tail rows) fall to the bottom.
-        var ia = a.importance != null ? a.importance : -1;
-        var ib = b.importance != null ? b.importance : -1;
         if (ib !== ia) return ib - ia;
         var dq = popularity(b) - popularity(a);
         if (dq) return dq;
@@ -565,21 +572,13 @@
       confidence: null, tier: 'tail'
     };
   }
-  function loadCite(done) {
-    if (CITE) { done(); return; }
+  function loadPools() {
     fetch(TAIL_PATH).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-      .then(function (raw) { CITE = (raw || []).map(normalizeCite).filter(notCurated);
-        els.tailLabel.textContent = 'Citation tail (' + CITE.length + ' uncurated)'; done(); })
-      .catch(function (e) { els.errors.textContent = 'Could not load citation tail: ' + e.message;
-        els.toggleTail.checked = false; state.showTail = false; });
-  }
-  function loadGh(done) {
-    if (GH) { done(); return; }
+      .then(function (raw) { CITE = (raw || []).map(normalizeCite).filter(notCurated); applyFilters(); })
+      .catch(function (e) { els.errors.textContent = 'Could not load the citation pool: ' + e.message; });
     fetch(GITHUB_PATH).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-      .then(function (raw) { GH = ((raw && raw.repos) || raw || []).map(normalizeGh).filter(notCurated);
-        els.githubLabel.textContent = 'GitHub repo tail (' + GH.length + ' uncurated)'; done(); })
-      .catch(function (e) { els.errors.textContent = 'Could not load GitHub tail: ' + e.message;
-        els.toggleGithub.checked = false; state.showGithub = false; });
+      .then(function (raw) { GH = ((raw && raw.repos) || raw || []).map(normalizeGh).filter(notCurated); applyFilters(); })
+      .catch(function (e) { els.errors.textContent = 'Could not load the repository pool: ' + e.message; });
   }
 
   /* ---------- BibTeX ---------- */
@@ -610,8 +609,7 @@
 
   /* ---------- Apply ---------- */
   function updateCount() {
-    var total = activeData().length, n = filteredData().length;
-    els.count.textContent = n === total ? '(' + n + ')' : '(' + n + ' of ' + total + ')';
+    els.count.textContent = '(' + filteredData().length + ')';
   }
   function applyFilters() {
     computeUniverse();
@@ -672,24 +670,11 @@
       FACET_KEYS.forEach(function (fk) { state.sel[fk] = {}; });
       state.titleQuery = ''; state.authorQuery = '';
       els.title.value = ''; els.authorSearch.value = '';
-      state.minImportance = 0; els.minImportance.value = '0'; syncImportanceLabel();
-      state.minPopularity = 0; els.minPopularity.value = '0'; syncPopularityLabel();
+      state.minImportance = 4; els.minImportance.value = '4'; syncImportanceLabel();
+      state.minPopularity = 50; els.minPopularity.value = '50'; syncPopularityLabel();
       applyFilters();
     });
 
-    els.toggleTail.addEventListener('change', function () {
-      state.showTail = this.checked;
-      if (state.showTail) loadCite(applyFilters); else applyFilters();
-    });
-    els.toggleGithub.addEventListener('change', function () {
-      state.showGithub = this.checked;
-      els.minStarsWrap.style.display = this.checked ? '' : 'none';
-      if (state.showGithub) loadGh(applyFilters); else applyFilters();
-    });
-    els.minStars.addEventListener('input', function () {
-      state.minStars = parseInt(this.value, 10) || 0;
-      if (state.showGithub) applyFilters();
-    });
   }
 
   /* ---------- Init ---------- */
@@ -711,9 +696,6 @@
       year: $('facet-years'),
       sortGroup: $('sort-group'), sortWithin: $('sort-within'),
       btnSummaries: $('btn-toggle-summaries'), btnClear: $('btn-clear'),
-      toggleTail: $('toggle-tail'), tailLabel: $('tail-label'),
-      toggleGithub: $('toggle-github'), githubLabel: $('github-label'),
-      minStars: $('min-stars'), minStarsWrap: $('minstars-wrap'),
       minImportance: $('min-importance'), minImportanceLabel: $('min-importance-label'),
       minPopularity: $('min-popularity'), minPopularityLabel: $('min-popularity-label')
     };
@@ -726,6 +708,7 @@
       DATA = data || [];
       computeUniverse();
       applyFilters();
+      loadPools();
     }).catch(function (e) {
       els.errors.textContent = 'Could not load ' + INDEX_PATH + ': ' + e.message +
         '. Serve over HTTP (python3 -m http.server), not the file:// scheme.';
