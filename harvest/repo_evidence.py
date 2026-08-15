@@ -38,7 +38,7 @@ BLOB_LIMIT = '128k'
 CONTEXT_LINES = 4
 MAX_HITS_PER_PATTERN = 12
 READ_EXTENSIONS = ('.py', '.ipynb', '.txt', '.toml', '.cfg', '.yaml', '.yml',
-                   '.md', '.r', '.R')
+                   '.md', '.r', '.rmd', '.qmd')
 DEP_FILES = ('requirements.txt', 'pyproject.toml', 'setup.py', 'setup.cfg',
              'environment.yml', 'Pipfile', 'poetry.lock', 'conda/meta.yaml')
 
