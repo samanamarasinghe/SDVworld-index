@@ -62,7 +62,7 @@
   var INTEGRATION_LABELS = {
     api_user: 'API user', vendored_source: 'Vendored source', agent_skill: 'Agent skill',
     derivative_work: 'Derivative work', baseline_only: 'Baseline only',
-    citation_only: 'Citation only', source_work: 'Source work',
+    citation_only: 'Citation only', foundation: 'Foundation',
     name_collision: 'Name collision', unclear: 'Unclear'
   };
   var CONF_RANK = { high: 3, medium: 2, low: 1 };

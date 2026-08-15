@@ -76,7 +76,7 @@ constraints, reversible_transforms, ml_efficacy_eval, quality_report, benchmark_
 new tool), baseline_only (runs it only as a comparison baseline), agent_skill (ships SDV as
 an executable capability for an AI agent to invoke — working code inside a skill or
 instruction file, with no dependency declared by the host repository), citation_only (cites
-but does not run it), source_work (an SDV anchor paper or library itself), name_collision
+but does not run it), foundation (the artifact is SDV itself: a library, an anchor paper, or a thesis behind one), name_collision
 (false-positive match, unrelated to SDV), unclear (use suspected but unverified).
 
 `agent_skill` is not a synonym for documentation. The test is whether the artifact packages
