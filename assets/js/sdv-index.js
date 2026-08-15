@@ -69,10 +69,10 @@
   }
 
   /* ---------- Facet model ---------- */
-  var FACET_KEYS = ['kind', 'sdv_component', 'use_case', 'industry', 'confidence', 'authors', 'year'];
+  var FACET_KEYS = ['kind', 'sdv_component', 'use_case', 'industry', 'authors', 'year'];
   var MOUNTS = {
     kind: 'facet-kind', sdv_component: 'facet-component', use_case: 'facet-usecase',
-    industry: 'facet-industry', confidence: 'facet-confidence', authors: 'facet-authors',
+    industry: 'facet-industry', authors: 'facet-authors',
     year: 'facet-years'
   };
 
@@ -92,8 +92,8 @@
   /* ---------- State ---------- */
   var state = {
     titleQuery: '', authorQuery: '',
-    sel: { kind: {}, sdv_component: {}, use_case: {}, industry: {}, confidence: {}, authors: {}, year: {} },
-    group: 'kind', sortWithin: 'year',
+    sel: { kind: {}, sdv_component: {}, use_case: {}, industry: {}, authors: {}, year: {} },
+    group: 'year', sortWithin: 'importance',
     summaryExpanded: false, showTail: false, showGithub: false, minStars: 2
   };
 
@@ -224,7 +224,6 @@
     buildCheckboxFacet('sdv_component');
     buildCheckboxFacet('use_case');
     buildCheckboxFacet('industry');
-    buildCheckboxFacet('confidence');
     buildCheckboxFacet('authors');
     buildYearGrid();
   }
@@ -609,7 +608,7 @@
       errors: $('pubs-errors'), results: $('pubs-results'), count: $('pubs-count'),
       title: $('facet-title'), authorSearch: $('author-search'),
       kind: $('facet-kind'), sdv_component: $('facet-component'), use_case: $('facet-usecase'),
-      industry: $('facet-industry'), confidence: $('facet-confidence'), authors: $('facet-authors'),
+      industry: $('facet-industry'), authors: $('facet-authors'),
       year: $('facet-years'),
       sortGroup: $('sort-group'), sortWithin: $('sort-within'),
       btnSummaries: $('btn-toggle-summaries'), btnClear: $('btn-clear'),
