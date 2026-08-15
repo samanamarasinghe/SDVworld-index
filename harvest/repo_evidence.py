@@ -51,6 +51,7 @@ PATTERNS = {
     'sq': r'from sdv\.sequential import',
     'ev': r'from sdv\.evaluation',
     'sdv_any': r'\b(?:import sdv|from sdv\b)',
+    'ctgan_mod': r'\b(?:import ctgan|from ctgan\b)',
     'ct': r'CTGANSynthesizer',
     'gc': r'GaussianCopulaSynthesizer',
     'par': r'PARSynthesizer',
