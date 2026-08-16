@@ -242,6 +242,34 @@ def check_repos_against_pool(index, gh):
         note(f'{offsite} code entries are not hosted on GitHub; no pool row to corroborate them')
 
 
+def check_tail_unique(cite):
+    """The citation tail must hold each work once.
+
+    A doubled record inflates the corpus count the page reports and emits two
+    worklist rows for one paper in curate/arxiv_lane.py, which is how three
+    papers were curated twice during the parallel arXiv run. Consumers dedupe
+    on read, so this is a data-hygiene check rather than a correctness one, but
+    it is the only thing that will surface a regression in the stored file.
+    """
+    if not cite:
+        return
+    counts = collections.Counter(
+        r.get('id') or r.get('doi') or (r.get('title') or '') for r in cite
+    )
+    dupes = sorted(k for k, n in counts.items() if n > 1 and k)
+    if dupes:
+        shown = ', '.join(dupes[:8]) + (' ...' if len(dupes) > 8 else '')
+        # A warning, not a failure: every consumer (build.py's setdefault
+        # lookups, curate/arxiv_lane.py, the page's dedupeTail) collapses these
+        # on read, so the stored duplicates are untidy rather than incorrect.
+        # Same call as the orphaned-correction check.
+        note(f'WARNING: {len(dupes)} work(s) stored more than once in '
+             f'data/tail/openalex-citations.json ({shown}) - consumers dedupe '
+             f'on read; rerun harvest/resolve_tail.py to clean the stored file')
+    else:
+        note(f'citation tail: {len(cite)} works, no duplicate records')
+
+
 def check_pool_dedup(index, cite):
     """A curated work must not also appear as an uncurated pooled row.
 
@@ -448,6 +476,7 @@ def main():
     check_url_vs_joined_doi(index)
     check_repo_urls_are_repos(index)
     check_repos_against_pool(index, gh)
+    check_tail_unique(cite)
     check_pool_dedup(index, cite)
 
     if args.online:
