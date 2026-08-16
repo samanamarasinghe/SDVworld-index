@@ -82,7 +82,7 @@ instruction file, with no dependency declared by the host repository), citation_
 but does not run it), foundation (the artifact is SDV itself: a library, an anchor paper, or
 a thesis behind one), inherited (SDV arrived inside a vendored third party rather than by a
 decision to embed it — the intermediary is usually an index entry in its own right),
-declared_only (named in a dependency file and imported nowhere in the tree), port
+port
 (reimplements SDV's design in another language, carrying no SDV source), name_collision
 (false-positive match, unrelated to SDV), unclear (use suspected but unverified).
 
