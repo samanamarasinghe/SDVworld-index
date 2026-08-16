@@ -62,7 +62,10 @@ open_science_reproducibility, imputation
 **industry**: healthcare_bio, finance_insurance, government_public, academia,
 energy_utilities, telecom, retail_ecommerce, transportation, manufacturing, software,
 cross_industry, construction_infrastructure, cybersecurity, environment_climate,
-media_recommenders, chemicals_materials, education_sector, agriculture
+media_recommenders, chemicals_materials, education_sector, agriculture, aerospace
+
+Prefer the domain over `academia`. A paper is academic by construction, so `academia` on its
+own loses the field the work is actually about; use it only when no domain applies.
 
 **sdv_component** (which software): sdv, ctgan, rdt, sdmetrics, sdgym, copulas, deepecho,
 tgan, enterprise
@@ -76,8 +79,16 @@ constraints, reversible_transforms, ml_efficacy_eval, quality_report, benchmark_
 new tool), baseline_only (runs it only as a comparison baseline), agent_skill (ships SDV as
 an executable capability for an AI agent to invoke — working code inside a skill or
 instruction file, with no dependency declared by the host repository), citation_only (cites
-but does not run it), foundation (the artifact is SDV itself: a library, an anchor paper, or a thesis behind one), name_collision
+but does not run it), foundation (the artifact is SDV itself: a library, an anchor paper, or
+a thesis behind one), inherited (SDV arrived inside a vendored third party rather than by a
+decision to embed it — the intermediary is usually an index entry in its own right),
+declared_only (named in a dependency file and imported nowhere in the tree), port
+(reimplements SDV's design in another language, carrying no SDV source), name_collision
 (false-positive match, unrelated to SDV), unclear (use suspected but unverified).
+
+`unclear` may not carry `confidence: high`. If the library link could not be established,
+the doubt belongs in a sortable field rather than only in prose — and `importance` still
+scores how central the SDV-family *method* is, so the two fields stay independent.
 
 `agent_skill` is not a synonym for documentation. The test is whether the artifact packages
 SDV as a capability an agent is expected to execute on demand — a runnable pattern, a
