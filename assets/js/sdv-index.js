@@ -472,6 +472,15 @@
      This is NOT rec.importance, which is the 0-6 record of how central SDV is to
      the entry; the two are independent and sortable separately. */
   function popularity(rec) {
+    /* First-party pages carry no stars and no citations, so they scored the neutral
+       default and sat mid-pack. That understates them: an SDV or DataCebo page is the
+       primary source for whatever it describes. This is an editorial floor rather than
+       a measurement -- 0.95 puts them above every repository, which caps at 0.9, and
+       below a maximally cited paper. sdv-dev repositories are excluded: they have real
+       star counts and do not need the help. */
+    if (/^https?:\/\/(www\.)?(datacebo\.com|(docs\.)?sdv\.dev)\//i.test(rec.url || '')) {
+      return 0.95;
+    }
     if (rec.kind === 'code_repo' || rec.stars != null) {
       var w = (rec.stars || 0) + 2 * (rec.forks || 0) + 5 * (rec.contributors || 0) + 0.1 * (rec.commits || 0);
       return 0.9 * Math.min(1, Math.log1p(w) / Math.log1p(8000));
