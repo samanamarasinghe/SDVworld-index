@@ -18,31 +18,37 @@ use case, and industry. Modelled on `data/publications.json` in
 ```
 README.md                            schema + controlled vocabularies
 build.py                             merges shards -> data/sdv-index.json
-data/shards/01-first-party.json      44 entries: MIT/DataCebo research, libraries, docs, blog, cases
-data/shards/02-github-curated.json   18 entries: third-party repos, verified against code evidence
-data/tail/github-repos.json           2019 repos, pooled + metrics, not yet curated
-data/tail/openalex-citations.json     874 citing works, first-pass curation verdicts
-curate/facet_lift.py                  lifts bibliographic facets from both pools; no judgment, no fetching
-curate/open-questions.md              judgment calls awaiting a ruling; each has a provisional applied
-harvest/repo_evidence.py              per-repo SDV evidence bundles for a curating agent
+tests/validate.py                    schema, vocabulary and pointer checks
+data/shards/NN-*.json                curated entries, append-only, one shard per wave
+data/tail/github-repos.json          pooled repositories with metrics, mostly uncurated
+data/tail/openalex-citations.json    pooled citing works with first-pass verdicts
+curate/facet_lift.py                 lifts bibliographic facets from both pools; no judgment
+curate/open-questions.md             judgment calls awaiting a ruling; each has a provisional
+harvest/repo_evidence.py             per-repo SDV evidence bundles for a curating agent
 harvest/README.md                    source-by-source notes and the curation rule
 harvest/openalex_citations.py        citing works for the 5 anchor papers
 harvest/github_tail.py               partitioned GitHub code search
 harvest/scholar_citations.py         Google Scholar via SerpAPI
 ```
 
-**No harvest script has ever been executed.** They were written in an environment whose
-sandbox could not reach any of the target APIs. Treat your first run as the test: expect
-bugs, fix them, commit the fixes with a note in the commit message.
+All the harvest scripts have now been run and their bugs fixed. `tests/validate.py` checks
+the result: schema, controlled vocabulary, and that every pointer resolves to what the entry
+says it does. Run it before opening a PR; `--online --scope all` probes all ~3,000 pointers
+in about ninety seconds.
 
-All three scripts are Python 3 standard library only. Nothing to install.
+**The repository tail is closed.** Roughly 1,400 pooled repositories, almost all with no
+stars, will not be read. They stay in `data/tail/` at low importance. Do not restart that
+lane: indexing them unread would put clauses in the index that came from no source, which is
+the one rule everything else here rests on.
+
+All the scripts are Python 3 standard library only. Nothing to install.
 
 ## Credentials and network
 
 | need | for | required |
 |---|---|---|
 | `GITHUB_TOKEN` | `github_tail.py`, and pushing | yes |
-| `OPENALEX_EMAIL` | polite-pool rate limits | recommended |
+| `OPENALEX_API_KEY` or `OPENALEX_EMAIL` | rate limits on the citation lane | recommended |
 | `SERPAPI_KEY` | `scholar_citations.py` | only for the Scholar step |
 
 `harvest/repo_evidence.py` needs **no token**: it reads public repositories through
@@ -58,12 +64,12 @@ Hosts that must be reachable: `api.openalex.org`, `api.github.com`, `codeload.gi
 ### 1. OpenAlex sweep
 
 ```
-OPENALEX_EMAIL=<email> python harvest/openalex_citations.py
+OPENALEX_API_KEY=<key> python harvest/openalex_citations.py
 ```
 
-Produces `data/tail/openalex-citations.json`. Expect several thousand records; CTGAN alone
-carries most of them. Commit the raw output as its own commit before doing anything
-else with it.
+Produces `data/tail/openalex-citations.json`. Merges rather than overwrites, preserving
+`curation`, `source_channel` and `resolved_via` on records already there. Commit the raw
+output as its own commit before doing anything else with it.
 
 ### 2. GitHub tail
 
@@ -71,10 +77,9 @@ else with it.
 GITHUB_TOKEN=<token> python harvest/github_tail.py
 ```
 
-Produces `data/tail/github-repos.json`, merging with the 130 repos already
-pooled. Code search allows 10 requests/minute and caps any single query at 1000
-retrievable results — the 13 patterns in the script exist to partition around that cap.
-If a pattern returns exactly 1000, it is truncated: split it further (add a
+Produces `data/tail/github-repos.json`. Code search allows 10 requests/minute and caps any
+single query at 1000 retrievable results — the 13 patterns in the script exist to partition
+around that cap. If a pattern returns exactly 1000, it is truncated: split it further (add a
 `language:` or `size:` qualifier) rather than accepting the loss. Commit the output.
 
 ### 3. Google Scholar (optional, needs a paid key)
@@ -119,17 +124,23 @@ to be central to the implementation, or to be a passing mention in related work 
 it. A correction is a patch line with `"override": true` naming the prior value in
 `evidence`, so the change is auditable rather than silent.
 
+`unclear` may not carry `confidence: high`. If it could not be established that SDV is the
+thing running, that doubt belongs in a sortable field. Do **not** cap `importance` to signal
+it: `importance` scores how central the SDV-family *method* is, and the default view is
+`importance` 4 and above, so a cap would hide exactly the entries most in need of a second
+look.
+
 #### Evidence before promotion
 
-Pooled records are not index entries. Promote them into new shards
-(`data/shards/03-*.json` and up), one shard per source and wave.
+Pooled records are not index entries. Promote them into new shards, one shard per source
+and wave.
 
 **Citing a paper is not using the software.** CTGAN is cited constantly as prior art by
 work that never runs it. Before promoting anything, find evidence of actual use: a named
 synthesizer class, an install line, a linked repository, an SDMetrics score. Then set:
 
 - `evidence` — the specific thing you found (a file path, a quoted method line)
-- `integration` — `api_user`, `vendored_source`, `baseline_only`, or `citation_only`
+- `integration` — the mechanism, from the vocabulary in README.md
 - `confidence` — `high` only if you read the source. Metadata alone is `medium` at best.
 
 Write `summary` from the abstract, README or page text — one to three sentences.
@@ -141,9 +152,8 @@ Schema and the controlled vocabularies are in `README.md`. Do not invent new fac
 values silently — if something genuinely does not fit, add the value to the README
 vocabulary in the same commit that first uses it, and flag it in your report.
 
-Work in batches of roughly 50. Put each batch on its own branch (e.g. `curate/03-openalex`),
-rebuild, and open one PR per batch — do not merge your own curation PRs; leave them for
-Saman to review. Do not attempt the whole tail in one pass.
+Work in batches of roughly 50. Put each batch on its own branch, rebuild, and open one PR
+per batch — do not merge your own curation PRs; leave them for Saman to review.
 
 **Check what is already curated before selecting a batch.** Unmerged branches are not
 visible from `main`, so a batch selected against `main` alone will re-curate repositories
@@ -156,30 +166,42 @@ Each carries the provisional choice already applied, so the index stays consiste
 the question is open. Add to it rather than blocking, and never invent a resolution to an
 item already listed there.
 
+A ruling belongs where a curator will meet it — the vocabulary in README.md, a workflow
+rule here, the data in a correction shard — not left in the notes file. A convention
+recorded only in `open-questions.md` cannot bind an agent that branched before reading it.
+
 ### 5. Rebuild
 
 ```
-python build.py
+python build.py            # validate only
+python build.py --write    # write data/sdv-index.json; CI passes this
 ```
 
 `.github/workflows/build-index.yml` rebuilds `data/sdv-index.json` automatically when
-shards change on `main`, and reports drift on a pull request without writing. You do not
-need to commit the generated index by hand; run `build.py` locally to check your shard
-parses and dedupes as expected.
+shards change on `main`, and reports drift on a pull request without writing. Do not commit
+the generated index by hand; run `build.py` locally to check your shard parses and dedupes
+as expected.
 
 ## Rules
 
 - Shards are **append-only**. Never rewrite a completed shard; corrections go in a new
   shard, or as a targeted edit with the reason in the commit message.
 - `data/sdv-index.json` and `data/tail/facet-lift.json` are **generated**. Never
-  hand-edit either; regenerate with `build.py` and `curate/facet_lift.py`. A missing
-  copy of facet-lift.json is not data loss.
+  hand-edit either; regenerate with `build.py --write` and `curate/facet_lift.py`. A
+  missing copy of facet-lift.json is not data loss.
 - Keep pools in `data/tail/` separate from curated entries in `data/shards/`. Do not bulk
   promote a pool into a shard to raise the entry count.
 - Raw harvest output (tasks 1–3) and script fixes go directly to `main`. Curation batches
   (task 4) go on their own branch and open a PR — do not merge your own curation PRs;
   leave them for Saman. One logical change per commit throughout.
 - Do not delete anything without asking Saman.
+- **A correction shard must sort after every shard it corrects.** `build.py` merges in
+  filename order, so an `override` naming an id that a later shard has not yet defined is
+  counted as orphaned and silently dropped. Number a correction above the highest shard in
+  the repository, not above your own lane's.
+- **Shard numbers are not reserved per lane and do not need to be.** Two shards sharing a
+  number merge fine. Take the next number above the highest that exists, whichever lane put
+  it there.
 
 ## Open items inherited from the previous session
 
@@ -187,13 +209,11 @@ parses and dedupes as expected.
    mentions neither SDV nor the DSAA'16 paper. The link was inferred from the repository
    name and date, which is not good enough. Inspect the source and either confirm it as a
    reimplementation or drop the entry.
-2. Four case studies in shard 01 (ING, MAPFRE, UCLA fraud, AML banking) point at listing
-   pages rather than permanent URLs. Resolve them; they are marked `needs`.
+2. Two case studies in shard 01 (UCLA fraud, AML banking) point at listing pages rather
+   than permanent URLs. They share those URLs with their siblings, so `build.py` drops them
+   before the id index and their corrections orphan. Resolving the permalinks fixes both.
 3. Several shard 02 entries remain `medium`/`low` where classification rests on a file
    path rather than a read of the code.
-4. Shards 01 and 02 predate the `importance`, `sdv_concept` and `agent_skill` additions
-   and carry none of them. Until they are re-read, those 61 entries sort below every
-   later batch under importance ordering.
 
 ## Running agents in parallel
 
@@ -207,7 +227,6 @@ Lanes that can run concurrently:
 |---|---|---|
 | repos | `harvest/repo_evidence.py --slice K/N` | no token needed; tarball or partial clone |
 | papers | a slice of `data/tail/openalex-citations.json` | needs open network for full text |
-| shard re-read | the 61 existing shard entries | corrections, so expect `override` |
 
 One lane must stay serial: **vocabulary**. Agents *propose* facet values and never invent
 them. A single arbiter adds an approved value to README.md in the commit that first uses
