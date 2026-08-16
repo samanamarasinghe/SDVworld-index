@@ -106,7 +106,12 @@ def main(write=False):
         for rec in json.load(open(path)):
             # A record carrying duplicate_of has been retired in favour of another
             # entry. It stays in its shard as an audit trail; it is not an index entry.
-            if rec.get('duplicate_of'):
+            #
+            # Corrections are exempt: a correction that SETS duplicate_of is retiring
+            # its target, not itself, and must reach the merge below. Testing this
+            # first swallowed the correction and counted it as a retirement, so the
+            # target stayed in the index while the log claimed otherwise.
+            if rec.get('duplicate_of') and not rec.get('override'):
                 retired += 1
                 continue
 
@@ -141,6 +146,14 @@ def main(write=False):
             by_url[key] = rec
             by_id.setdefault(rec['id'], rec)
             out.append(rec)
+
+    # Retire anything a correction has since marked duplicate_of. This runs after the
+    # merge because the marking may arrive in a later shard than the entry it retires.
+    before = len(out)
+    out = [rec for rec in out if not rec.get('duplicate_of')]
+    retired += before - len(out)
+    for key in [k for k, r in list(by_url.items()) if r.get('duplicate_of')]:
+        by_url.pop(key, None)
 
     ids = collections.Counter(rec['id'] for rec in out)
     collisions = sorted(i for i, n in ids.items() if n > 1)
