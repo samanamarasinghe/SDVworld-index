@@ -57,7 +57,7 @@
     construction_infrastructure: 'Construction & infrastructure', cybersecurity: 'Cybersecurity',
     environment_climate: 'Environment & climate', media_recommenders: 'Media & recommenders',
     chemicals_materials: 'Chemicals & materials', education_sector: 'Education sector',
-    agriculture: 'Agriculture'
+    agriculture: 'Agriculture', aerospace: 'Aerospace'
   };
   var INTEGRATION_LABELS = {
     api_user: 'API user', vendored_source: 'Vendored source', agent_skill: 'Agent skill',
@@ -76,29 +76,44 @@
     return String(v || '').replace(/_/g, ' ').replace(/^./, function (c) { return c.toUpperCase(); });
   }
   function labelFor(facet, v) {
+    if (v === '__none__') return 'Not specified';
     if (facet === 'kind') return KIND_LABELS[v] || prettify(v);
     if (facet === 'sdv_component') return COMPONENT_LABELS[v] || v;
     if (facet === 'sdv_concept') return CONCEPT_LABELS[v] || prettify(v);
     if (facet === 'use_case') return USECASE_LABELS[v] || prettify(v);
     if (facet === 'industry') return INDUSTRY_LABELS[v] || prettify(v);
+    if (facet === 'integration') return INTEGRATION_LABELS[v] || prettify(v);
     if (facet === 'confidence') return prettify(v);
     return v;
   }
 
   /* ---------- Facet model ---------- */
-  var FACET_KEYS = ['kind', 'sdv_component', 'sdv_concept', 'use_case', 'industry', 'authors', 'year'];
+  var FACET_KEYS = ['kind', 'sdv_component', 'sdv_concept', 'use_case', 'integration',
+    'industry', 'authors', 'year'];
   var MOUNTS = {
     kind: 'facet-kind', sdv_component: 'facet-component', sdv_concept: 'facet-concept',
-    use_case: 'facet-usecase', industry: 'facet-industry', authors: 'facet-authors',
-    year: 'facet-years'
+    use_case: 'facet-usecase', integration: 'facet-integration',
+    industry: 'facet-industry', authors: 'facet-authors', year: 'facet-years'
   };
 
+  /* Absence is a curatorial statement, not missing data: the source named SDV and never
+     named a synthesizer class, so no concept was guessed. A sentinel makes that visible
+     as an ordinary facet value; otherwise those entries vanish the moment anyone ticks a
+     box. Authors is excluded -- a missing author list is an absent fact, not a judgement. */
+  var NONE = '__none__';
+  var NO_NONE = { authors: 1 };
   function valuesOf(rec, facet) {
+    var v = rawValuesOf(rec, facet);
+    return v.length || NO_NONE[facet] ? v : [NONE];
+  }
+
+  function rawValuesOf(rec, facet) {
     switch (facet) {
       case 'kind': return rec.kind ? [rec.kind] : [];
       case 'sdv_component': return rec.sdv_component || [];
       case 'sdv_concept': return rec.sdv_concept || [];
       case 'use_case': return rec.use_case || [];
+      case 'integration': return rec.integration ? [rec.integration] : [];
       case 'industry': return rec.industry || [];
       case 'confidence': return rec.confidence ? [rec.confidence] : [];
       case 'authors': return rec.authors || [];
@@ -110,9 +125,9 @@
   /* ---------- State ---------- */
   var state = {
     titleQuery: '', authorQuery: '',
-    sel: { kind: {}, sdv_concept: {}, sdv_component: {}, use_case: {}, industry: {}, authors: {}, year: {} },
+    sel: { kind: {}, sdv_concept: {}, sdv_component: {}, use_case: {}, integration: {}, industry: {}, authors: {}, year: {} },
     group: 'none', sortWithin: 'importance', minImportance: 4, minPopularity: 50,
-    summaryExpanded: false
+    summaryExpanded: false, showNeeds: false
   };
 
   var DATA = [];
@@ -148,7 +163,7 @@
 
   /* Both pools are always in view; there is no toggle and no star floor. They are
      fetched after the first paint rather than before it, because the curated index is
-     80 KB and the two pools are 13 MB between them -- and at the default importance
+     small and the two pools are several MB between them -- and at the default importance
      floor no pooled row is shown anyway, since none of them carries a rating. */
   function activeData() {
     var out = DATA;
@@ -182,7 +197,7 @@
     for (var i = 0; i < FACET_KEYS.length; i++) {
       var fk = FACET_KEYS[i];
       if (fk === exclude) continue;
-      var sel = selected(state.sel[fk]);
+      var sel = selected(state.sel[fk] || {});
       if (!sel.length) continue;
       var vals = valuesOf(rec, fk), hit = false;
       for (var j = 0; j < sel.length; j++) if (vals.indexOf(sel[j]) >= 0) { hit = true; break; }
@@ -199,7 +214,7 @@
   }
   /* Popularity is a continuous 0-1 score, so the slider cuts by percentile of what
      is currently in view rather than by raw value. That keeps "rightmost = only the
-     most popular" true after a tail is switched on and the population grows fivefold. */
+     most popular" true however large the pools grow. */
   function popularityFloor() {
     if (!state.minPopularity) return -1;
     var vals = activeData().map(popularity).sort(function (a, b) { return a - b; });
@@ -227,6 +242,7 @@
 
   function buildCheckboxFacet(facet) {
     var mount = els[facet];
+    if (!mount) return;   // markup for this facet is not on the page yet
     var counts = countValues(filteredData(facet), facet);
     var values = UNIVERSE[facet].slice();
 
@@ -242,6 +258,9 @@
       if (!q && values.length > 200) values = values.slice(0, 200);
     } else {
       values.sort(function (a, b) {
+        // Not specified sorts last however common: an absence, not a popular answer.
+        if (a === NONE) return 1;
+        if (b === NONE) return -1;
         var d = (counts[b] || 0) - (counts[a] || 0);
         return d !== 0 ? d : labelFor(facet, a).localeCompare(labelFor(facet, b));
       });
@@ -271,6 +290,7 @@
 
   function buildYearGrid() {
     var mount = els.year;
+    if (!mount) return;
     var counts = countValues(filteredData('year'), 'year');
     var years = UNIVERSE.year.slice().sort(function (a, b) { return parseInt(b, 10) - parseInt(a, 10); });
     mount.innerHTML = '';
@@ -292,6 +312,7 @@
     buildCheckboxFacet('sdv_component');
     buildCheckboxFacet('sdv_concept');
     buildCheckboxFacet('use_case');
+    buildCheckboxFacet('integration');
     buildCheckboxFacet('industry');
     buildCheckboxFacet('authors');
     buildYearGrid();
@@ -368,7 +389,7 @@
       li.appendChild(ev);
     }
 
-    // Needs flag
+    // Needs flag. Hidden by CSS unless the results container carries .show-needs.
     if (rec.needs) {
       li.appendChild(el('div', 'pub-needs', '\u2691 needs: ' + rec.needs));
     }
@@ -463,10 +484,10 @@
     arr.sort(function (a, b) {
       if (key === 'title') return (a.title || '').toLowerCase().localeCompare((b.title || '').toLowerCase());
       /* The two orderings are each other's tie-break. Ties are common in both:
-         27 curated entries carry no attention signal at all and share the neutral
-         default, and thousands of pooled repositories sit at identical low scores.
-         Falling through to year would order those arbitrarily; falling through to
-         the other axis says something. Unrated entries sort as -1, below 0. */
+         entries with no attention signal share the neutral default, and thousands of
+         pooled repositories sit at identical low scores. Falling through to year would
+         order those arbitrarily; falling through to the other axis says something.
+         Unrated entries sort as -1, below 0. */
       var ia = a.importance != null ? a.importance : -1;
       var ib = b.importance != null ? b.importance : -1;
       if (key === 'popularity') {
@@ -535,7 +556,7 @@
     });
     order.forEach(function (h) { sizes[h] = groups[h].length; });
     // size-ordered facets: sort headers by group size desc before headerOrder no-op
-    if (['sdv_component', 'sdv_concept', 'use_case', 'industry'].indexOf(state.group) >= 0) {
+    if (['sdv_component', 'sdv_concept', 'use_case', 'industry', 'integration'].indexOf(state.group) >= 0) {
       order.sort(function (A, B) { return sizes[B] - sizes[A] || A.localeCompare(B); });
     }
     var headers = headerOrder(order);
@@ -584,6 +605,19 @@
       confidence: null, tier: 'tail'
     };
   }
+
+  /* The page gave no indication of its own vintage, which matters once releases are
+     tagged. build.py writes the stamp; a missing file just leaves the footer as authored. */
+  function stampFooter() {
+    fetch('data/build-info.json').then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (info) {
+        if (!info) return;
+        var e = document.querySelector('.credits');
+        if (e) e.textContent = 'An index of the Synthetic Data Vault ecosystem · v' + info.version +
+          ' · ' + info.entries + ' curated entries · built ' + info.built;
+      }).catch(function () {});
+  }
+
   function loadPools() {
     fetch(TAIL_PATH).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
       .then(function (raw) { CITE = (raw || []).map(normalizeCite).filter(notCurated); applyFilters(); })
@@ -635,9 +669,8 @@
     els.title.addEventListener('input', function () { state.titleQuery = this.value; applyFilters(); });
     els.authorSearch.addEventListener('input', function () { state.authorQuery = this.value; buildCheckboxFacet('authors'); });
 
-    /* 0-6. The top step is reserved for SDV itself -- the anchor papers and the
-       sdv-dev libraries -- rather than being a higher grade of the same judgement,
-       so nothing a curator rates can ever reach it. */
+    /* 0-6. The top step marks first-party provenance rather than being a higher grade
+       of the same judgement, so nothing a curator rates from the tails reaches it. */
     var IMPORTANCE_STEPS = [
       'All entries',
       '1+ \u2014 passing mention and up',
@@ -645,7 +678,7 @@
       '3+ \u2014 one of several and up',
       '4+ \u2014 load-bearing and up',
       '5+ \u2014 SDV is the work',
-      '6 \u2014 SDV itself (first-party only)'
+      '6 \u2014 first-party only'
     ];
     els.minImportance.max = '6';
     function syncImportanceLabel() {
@@ -670,6 +703,17 @@
 
     els.sortGroup.addEventListener('change', function () { state.group = this.value; renderResults(); });
     els.sortWithin.addEventListener('change', function () { state.sortWithin = this.value; renderResults(); });
+
+    /* needs names an unfinished verification task: the honest map of where the index is
+       soft, but noise while browsing, so it is hidden until asked for. A class on the
+       results container does it -- no re-render, and the CSS decides, so nothing here
+       has to know what a needs line looks like. */
+    if (els.btnNeeds) els.btnNeeds.addEventListener('click', function () {
+      state.showNeeds = !state.showNeeds;
+      this.setAttribute('aria-pressed', String(state.showNeeds));
+      this.textContent = state.showNeeds ? 'Hide open questions' : 'Show open questions';
+      els.results.classList.toggle('show-needs', state.showNeeds);
+    });
 
     els.btnSummaries.addEventListener('click', function () {
       state.summaryExpanded = !state.summaryExpanded;
@@ -704,9 +748,11 @@
       title: $('facet-title'), authorSearch: $('author-search'),
       kind: $('facet-kind'), sdv_component: $('facet-component'),
       sdv_concept: $('facet-concept'), use_case: $('facet-usecase'),
+      integration: $('facet-integration'),
       industry: $('facet-industry'), authors: $('facet-authors'),
       year: $('facet-years'),
       sortGroup: $('sort-group'), sortWithin: $('sort-within'),
+      btnNeeds: $('btn-toggle-needs'),
       btnSummaries: $('btn-toggle-summaries'), btnClear: $('btn-clear'),
       minImportance: $('min-importance'), minImportanceLabel: $('min-importance-label'),
       minPopularity: $('min-popularity'), minPopularityLabel: $('min-popularity-label')
@@ -721,6 +767,7 @@
       computeUniverse();
       applyFilters();
       loadPools();
+      stampFooter();
     }).catch(function (e) {
       els.errors.textContent = 'Could not load ' + INDEX_PATH + ': ' + e.message +
         '. Serve over HTTP (python3 -m http.server), not the file:// scheme.';
