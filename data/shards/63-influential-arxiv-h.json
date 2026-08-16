@@ -1,0 +1,203 @@
+[
+  {
+    "id": "paper-dp-heterogeneous-ehr-2020",
+    "title": "Generation of Differentially Private Heterogeneous Electronic Health Records",
+    "url": "https://doi.org/10.48550/arXiv.2006.03423",
+    "kind": "preprint",
+    "summary": "Explores generative adversarial training for synthetic electronic health records that mix binary, categorical and continuous administrative and diagnostic fields, selects a WGAN-GP formulation over MedGAN and WGAN on data-fidelity grounds, and then retrains it under (1, 1e-5) differential privacy, reporting a roughly 17% drop in downstream readmission-classification utility and a sub-population analysis showing no bias introduced beyond what the source data already carried. CTGAN was trained as a candidate generator and dropped for slow training and poorer results on the paper's high-cardinality discrete features, but its mode-specific normalization is retained: the real-valued columns are decomposed with Gaussian mixture models as in CTGAN before the surviving WGAN-GP model is fitted.",
+    "year": 2020,
+    "source_channel": "semantic_scholar_discovery",
+    "sdv_component": [
+      "ctgan"
+    ],
+    "sdv_concept": [
+      "mode_specific_normalization",
+      "conditional_sampling"
+    ],
+    "use_case": [
+      "privacy_protection",
+      "data_sharing",
+      "ml_training"
+    ],
+    "industry": [
+      "healthcare_bio"
+    ],
+    "integration": "baseline_only",
+    "importance": 4,
+    "evidence": "section 2.1 describes CTGAN as introducing mode-specific normalization and conditional training by sampling to combat mode collapse on tabular data; section 3.1 states that the real-valued features are decomposed using Gaussian Mixture Models as is done in the CTGAN, as part of the preprocessing feeding the model that is actually used; section 3.2 records a preliminary investigation into using the CTGAN model whose large number of discrete features led to markedly increased training time and poorer results, so the CTGAN itself is not included as a potential model. Importance 4 rather than 3 under the convention that a paper both comparing CTGAN and building on its mode-specific normalization moves up a step; note that the comparison rests on that prose sentence, as CTGAN has no row in Table 1 or Table 2 (MedGAN, WGAN, WGAN-GP only), so a reviewer preferring the results-row test would record 3.",
+    "confidence": "high"
+  },
+  {
+    "id": "paper-conditional-counterfactual-explanations-2021",
+    "title": "Conditional Generative Models for Counterfactual Explanations",
+    "url": "https://doi.org/10.48550/arXiv.2101.10123",
+    "kind": "preprint",
+    "summary": "Proposes a framework that trains a conditional generative model to emit counterfactual explanations in a single forward pass rather than by per-instance optimization, conditioning the generator on the desired target prediction and applying it across image, time-series and mixed-type tabular modalities. The tabular branch, named CF-CTGAN, is built directly on CTGAN: the generator and discriminator architectures are reused as-is from Xu et al., continuous features carry CTGAN's mode-specific normalization and categorical features its Gumbel-Softmax sampling, with CTGAN's conditional vector removed and replaced by conditioning on the target class.",
+    "year": 2021,
+    "source_channel": "semantic_scholar_discovery",
+    "sdv_component": [
+      "ctgan"
+    ],
+    "sdv_concept": [
+      "mode_specific_normalization"
+    ],
+    "use_case": [
+      "method_research",
+      "fairness_bias"
+    ],
+    "industry": [
+      "cross_industry"
+    ],
+    "integration": "derivative_work",
+    "importance": 5,
+    "evidence": "section 3.4 states that for tabular data the authors adapt the CTGAN approach and architecture, with fully connected generator and discriminator with residual connections, mode-specific normalization of continuous features, one-hot encoding of categoricals and Gumbel-Softmax for categorical sampling, and that they dispense with the use of conditional vectors; appendix A.3 states that the GCF and D architectures are directly reused as-is from Xu et al. and records mode-specific normalization applied to the Adult Census numerical variables; Figure 7 labels the method CF CTGAN (Ours) and Figures 15-16 caption the generated counterfactuals as produced by CF-CTGAN. The compared baselines are DiCE and CFProto, both counterfactual-search methods, so CTGAN is the substrate and not a benchmark.",
+    "confidence": "high",
+    "needs": "importance 5 follows the named-variant convention (CF-CTGAN reuses CTGAN's generator and discriminator as-is). Reviewable: the tabular branch is one of three modality branches (CelebA uses a ResNet encoder-decoder, ECG adapts RCGAN), so a reviewer applying the constrained-DGM precedent for a substrate that carries only part of the paper may prefer 4."
+  },
+  {
+    "id": "paper-fed-tgan-2021",
+    "title": "Fed-TGAN: Federated Learning Framework for Synthesizing Tabular Data",
+    "url": "https://doi.org/10.48550/arXiv.2108.07927",
+    "kind": "preprint",
+    "summary": "Presents a federated learning framework for training tabular GANs across clients that cannot pool their data, addressing the fact that tabular generators need per-column global statistics before a common encoding can be agreed: it builds the categorical and continuous encoders at the federator without seeing local rows, and weights client model updates by a table-similarity score alongside row count, converging faster than multi-discriminator and vanilla federated baselines on non-IID and quantity-skewed splits. CTGAN is the generator being federated in every arm of the evaluation, and the privacy-preserving encoder construction is written against CTGAN's own scheme, one-hot for categoricals and variational Gaussian mixture mode-specific normalization for continuous columns, with CTGAN's default settings retained.",
+    "year": 2021,
+    "source_channel": "semantic_scholar_discovery",
+    "sdv_component": [
+      "ctgan"
+    ],
+    "sdv_concept": [
+      "mode_specific_normalization",
+      "conditional_sampling"
+    ],
+    "use_case": [
+      "privacy_protection",
+      "data_sharing",
+      "method_research",
+      "benchmarking_evaluation"
+    ],
+    "industry": [
+      "cross_industry",
+      "finance_insurance"
+    ],
+    "integration": "derivative_work",
+    "importance": 4,
+    "evidence": "the contributions list states the framework is for decentralized learning of tabular GANs, naming CTGAN, and that the authors apply Fed-TGAN with CTGAN as an example while claiming usage is not limited to it; section 2 states that TGAN, CTGAN and CTAB-GAN use one-hot encoding for categorical columns and variational Gaussian mixture encoding for continuous columns, which is the dependency the federated encoder is designed around; the experimental setup states the aim is to learn a CTGAN model from distributed clients using the three frameworks on the basis of CTGAN's default settings for encoding features, with 10 as the mode limit for the VGM encoders, and that all baselines were re-implemented in PyTorch 1.8.1 RPC. Importance 4 rather than 5 on the constrained-DGM precedent: CTGAN is the sole substrate actually run but is declared interchangeable, and its generator and losses are unmodified - what is extended is its encoding and training protocol.",
+    "confidence": "high"
+  },
+  {
+    "id": "paper-generative-trees-2022",
+    "title": "Generative Trees: Adversarial and Copycat",
+    "url": "https://doi.org/10.48550/arXiv.2201.11205",
+    "kind": "preprint",
+    "summary": "Develops a tree-based generative model for tabular data, deriving a variational GAN-style loss whose tightness follows from the properness of the supervised loss and the calibration property that decision trees satisfy, and giving both a boosting-compliant adversarial training algorithm and a copycat scheme in which the generator copies the discriminator's tree at run time and completes it. CTGAN is the single neural contender the empirical case is argued against, run at 10, 300 and 1000 epochs across the train-on-synthetic, synthetic-versus-real discrimination and data-augmentation experiments, with per-domain statistical win/tie/loss counts against it reported in Tables 3 and 4.",
+    "year": 2022,
+    "source_channel": "semantic_scholar_discovery",
+    "sdv_component": [
+      "ctgan"
+    ],
+    "sdv_concept": [
+      "ml_efficacy_eval"
+    ],
+    "use_case": [
+      "benchmarking_evaluation",
+      "method_research",
+      "data_augmentation",
+      "imputation"
+    ],
+    "industry": [
+      "cross_industry"
+    ],
+    "integration": "baseline_only",
+    "importance": 3,
+    "evidence": "the introduction states that on fake/real discrimination generative trees tend to get better results than the neural networks of CT-GAN, citing Xu et al. 2019; section 6.2 names CT-GAN as the state-of-the-art contender, trained for 10, 300 or 1000 epochs, with random forests and gradient-boosted trees fitted on real or fake data; Table 3 reports statistical wins/ties/losses for generative trees against CT-GAN across the TRAIN-SYNTH, SYNTH-DISCRIM and SYNTH-AUG protocols on 10 to 13 domains, and Table 4 plots per-domain accuracy with CT-GAN results marked by epoch count. Importance 3: CTGAN is a compared generator only - generative trees share none of its architecture, and the paper does not adopt its conditional vector or mode-specific normalization. Note the pypdf rendering is CT-GAN throughout, which the tight scan matches.",
+    "confidence": "high"
+  },
+  {
+    "id": "paper-tabddpm-2022",
+    "title": "TabDDPM: Modelling Tabular Data with Diffusion Models",
+    "url": "https://doi.org/10.48550/arXiv.2209.15421",
+    "kind": "preprint",
+    "summary": "Applies denoising diffusion to general tabular data by running Gaussian diffusion on the normalized continuous features and multinomial diffusion on the one-hot categorical features under a shared reverse model, and shows across a wide benchmark that the result beats the GAN and VAE alternatives on machine-learning efficiency and on marginal and correlation fidelity, with SMOTE the only competitive shallow method. CTGAN and TVAE are two of the compared generators, with TVAE described as the state-of-the-art tabular variational autoencoder and CTGAN as the best-known GAN-based synthesizer, and the paper's primary evaluation measure is the machine-learning efficiency protocol credited to Xu et al.",
+    "year": 2022,
+    "source_channel": "semantic_scholar_discovery",
+    "sdv_component": [
+      "ctgan"
+    ],
+    "sdv_concept": [
+      "tvae",
+      "ml_efficacy_eval"
+    ],
+    "use_case": [
+      "benchmarking_evaluation",
+      "ml_training",
+      "data_augmentation",
+      "privacy_protection"
+    ],
+    "industry": [
+      "cross_industry"
+    ],
+    "integration": "baseline_only",
+    "importance": 3,
+    "evidence": "the baselines section names TVAE (Xu et al. 2019) as the state-of-the-art variational autoencoder for tabular data generation, with no VAE-like alternative that outperforms it and has public source, and CTGAN (Xu et al. 2019) as arguably the most popular and well-known GAN-based model for synthetic data generation; the evaluation-measure paragraph states that the primary measure is machine-learning efficiency, cited to Xu et al. 2019; Table 3 reports average ranks for CTGAN and TVAE alongside CTABGAN+, SMOTE and TabDDPM on Wasserstein distance, Jensen-Shannon divergence and correlation-matrix L2, and Figures 2-3 compare TVAE's feature distributions and correlations against TabDDPM's. Importance 3: compared generators plus an adopted evaluation protocol, with no reuse of the conditional vector or mode-specific normalization.",
+    "confidence": "high"
+  },
+  {
+    "id": "paper-dp-llmtgen-2024",
+    "title": "Differentially Private Tabular Data Synthesis using Large Language Models",
+    "url": "https://doi.org/10.48550/arXiv.2406.01457",
+    "kind": "preprint",
+    "summary": "Introduces a two-stage fine-tuning procedure that adapts a pretrained language model into a differentially private tabular synthesizer, first teaching the model the table's format with a non-private loss over a randomly generated table and then fitting the sensitive data under DP-SGD with a loss that masks the format tokens, and reports lower marginal error than GAN-based and marginal-based mechanisms across privacy budgets, plus a fairness-constrained generation setting reached by conditioning the prompt. CTGAN supplies two of the compared mechanisms: the authors train it under DP-SGD as DP-CTGAN and under the PATE teacher-ensemble framework as PATE-CTGAN, and both appear in every results table alongside DP-GAN, RAP, RAP++ and GSD.",
+    "year": 2024,
+    "source_channel": "semantic_scholar_discovery",
+    "sdv_component": [
+      "ctgan"
+    ],
+    "sdv_concept": [
+      "conditional_sampling"
+    ],
+    "use_case": [
+      "privacy_protection",
+      "data_sharing",
+      "benchmarking_evaluation",
+      "fairness_bias"
+    ],
+    "industry": [
+      "cross_industry",
+      "healthcare_bio"
+    ],
+    "integration": "baseline_only",
+    "importance": 3,
+    "evidence": "the related-work section states that Xu et al. designed a suitable variant of GANs for tabular data named CTGAN which outperformed previous statistical methods, and that GAN utility struggles under DP settings trained by DP-SGD; the baselines paragraph states the authors consider Conditional Tabular GAN (CTGAN) and train the CTGANs both by DP-SGD, named DP-CTGAN, and by the PATE framework, referred to as PATE-CTGAN; the results tables report DP-CTGAN and PATE-CTGAN at every epsilon setting on marginal-error and downstream-accuracy columns. Importance 3: CTGAN is one of six compared mechanisms and is not the paper's engine, so the shard-55 open question about running a third-party CTGAN derivative as the production generator does not arise here.",
+    "confidence": "high"
+  },
+  {
+    "id": "paper-taegan-2024",
+    "title": "TAEGAN: Generating Synthetic Tabular Data For Data Augmentation",
+    "url": "https://doi.org/10.48550/arXiv.2410.01933",
+    "kind": "preprint",
+    "summary": "Proposes a tabular GAN whose generator is a masked auto-encoder given a self-supervised warmup before adversarial training, so the generator learns from reconstruction signal as well as discriminator feedback, and pairs it with a sampling scheme for skewed columns and a revised loss, reporting stronger quality than seven synthesizers on small datasets at lower training cost than the transformer and diffusion alternatives. CTGAN is both a benchmark and a foundation here: the model inherits CTGAN's feature engineering wholesale, one-hot categoricals and variational Gaussian mixture mode-specific normalization of continuous columns, and the paper generalizes CTGAN's conditional vector into a notation that covers both, tabulating how its own constraints differ from CTGAN's.",
+    "year": 2024,
+    "source_channel": "semantic_scholar_discovery",
+    "sdv_component": [
+      "ctgan"
+    ],
+    "sdv_concept": [
+      "conditional_sampling",
+      "mode_specific_normalization",
+      "tvae"
+    ],
+    "use_case": [
+      "data_augmentation",
+      "benchmarking_evaluation",
+      "ml_training",
+      "privacy_protection"
+    ],
+    "industry": [
+      "cross_industry"
+    ],
+    "integration": "baseline_only",
+    "importance": 4,
+    "evidence": "section 3.1 states that TAEGAN inherits feature engineering from CTGAN (Xu et al. 2019), with one-hot encoded categorical features and continuous features decomposed using VGM, referring to mode-specific normalization in Xu et al. for the details; section 3.2 states that prior work found tabular GANs perform better with a conditional generator, that the definition of conditional vectors has evolved since its first introduction in Xu et al., and that CTGAN allows only components from categorical features, with Table 1 comparing the conditional-vector definitions of CTGAN, CTAB-GAN and TAEGAN; section 2.1 names CTGAN and TVAE as introducing tabular-specific feature engineering and a training-time sampling method to address imbalance; Figure 2 charts TAEGAN against CTGAN, TVAE, CTAB-GAN+, GReaT and TabSyn on utility, reality, privacy, fidelity and efficiency. Importance 4 on the MTGAN and SurvivalGAN precedent: the paper both benchmarks CTGAN and builds on its conditional vector and mode-specific normalization. Recorded under the tail's title; the arXiv PDF is titled 'TAEGAN: Revisit GANs for Tabular Data Generation'.",
+    "confidence": "high"
+  }
+]
