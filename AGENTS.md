@@ -22,24 +22,33 @@ tests/validate.py                    schema, vocabulary and pointer checks
 data/shards/NN-*.json                curated entries, append-only, one shard per wave
 data/tail/github-repos.json          pooled repositories with metrics, mostly uncurated
 data/tail/openalex-citations.json    pooled citing works with first-pass verdicts
+data/tail/openalex-abstracts.json    abstracts, keyed by OpenAlex id; the page never reads it
 curate/facet_lift.py                 lifts bibliographic facets from both pools; no judgment
+curate/strip_joined_fields.py        removes from shards anything build.py can join
 curate/open-questions.md             judgment calls awaiting a ruling; each has a provisional
 harvest/repo_evidence.py             per-repo SDV evidence bundles for a curating agent
 harvest/README.md                    source-by-source notes and the curation rule
 harvest/openalex_citations.py        citing works for the 5 anchor papers
+harvest/resolve_s2.py                folds the Semantic Scholar edges into the citation tail
 harvest/github_tail.py               partitioned GitHub code search
 harvest/scholar_citations.py         Google Scholar via SerpAPI
 ```
 
 All the harvest scripts have now been run and their bugs fixed. `tests/validate.py` checks
 the result: schema, controlled vocabulary, and that every pointer resolves to what the entry
-says it does. Run it before opening a PR; `--online --scope all` probes all ~3,000 pointers
-in about ninety seconds.
+says it does. Run it before opening a PR; `--online --scope all` probes every pointer in
+about ninety seconds.
 
 **The repository tail is closed.** Roughly 1,400 pooled repositories, almost all with no
 stars, will not be read. They stay in `data/tail/` at low importance. Do not restart that
 lane: indexing them unread would put clauses in the index that came from no source, which is
 the one rule everything else here rests on.
+
+**Shards carry judgment, not bibliography.** Year, authors, stars and citation counts are
+joined from the pools at build time, so do not write them into a shard — a stored star count
+is stale the day after. `venue` and `doi` are the exception and stay curator-owned, because
+OpenAlex is wrong about fourteen venues. `curate/strip_joined_fields.py` enforces this and
+refuses to run if the join cannot reproduce what it removes.
 
 All the scripts are Python 3 standard library only. Nothing to install.
 
@@ -92,43 +101,25 @@ Run this *after* OpenAlex and treat its extra rows as a delta — that delta is 
 workshop papers and non-English work, and it is the part worth reading by hand.
 If Scholar serves a CAPTCHA, stop. Do not attempt to solve or evade it.
 
-### 4. Curation pass — the actual work
+## 4. Curation pass — the actual work
 
-#### The SDV clause
+#### Schema and vocabulary
 
-Every `summary` ends with a clause saying why the entry is in this index, in two slots:
+README.md owns both, and is the only place either is defined. Read it before curating.
+The parts most often got wrong:
 
-1. **which part of SDV** — an `sdv_concept` for papers, an `sdv_component` or file path
-   for repositories;
-2. **how it is used** — run, vendored, extended, compared against, or only described.
+- Every `summary` ends with the **SDV clause** — which part of SDV, and how it is used.
+  Written from the source, never from the title, never from the bare existence of a
+  citation. If you could not read the source, say so in `needs` and set `confidence: low`.
+- `importance` and `integration` are **independent**. One scores how central SDV is, the
+  other records only the mechanism. Judging weight from mechanism gets it backwards.
+- `importance` 6 is not a rating you assign. It marks first-party provenance, so nothing
+  curated from the tails reaches it; your ceiling is 5.
+- `unclear` may not carry `confidence: high`.
 
-Write it from the source. Never from the title, and never from the bare fact that a
-citation exists. If you could not read the source, say so in `needs` and set
-`confidence: "low"` rather than guessing.
-
-#### Importance
-
-`importance` (0-6, defined in README.md) records how central SDV is to the entry and is
-**independent of `integration`**, which records only the mechanism. A repository can
-vendor the entire CTGAN source and still be a 3 because it runs it as one baseline among
-several; a paper can run nothing and still be a 2 because it adopts CTGAN's evaluation
-protocol. Judging weight from mechanism alone gets these backwards.
-
-**6 is not a curator's rating.** It marks first-party provenance and is defined in
-README.md, which owns the scale. Nothing you curate from the tails reaches 6, because the
-tails are third-party by construction; your ceiling is 5. A tail entry that genuinely looks
-first-party is a `needs`, not a 6.
-
-If a re-read finds `importance`, `integration` or `confidence` misjudged — SDV turns out
-to be central to the implementation, or to be a passing mention in related work — correct
-it. A correction is a patch line with `"override": true` naming the prior value in
-`evidence`, so the change is auditable rather than silent.
-
-`unclear` may not carry `confidence: high`. If it could not be established that SDV is the
-thing running, that doubt belongs in a sortable field. Do **not** cap `importance` to signal
-it: `importance` scores how central the SDV-family *method* is, and the default view is
-`importance` 4 and above, so a cap would hide exactly the entries most in need of a second
-look.
+If a re-read finds `importance`, `integration`, `confidence` or the `url` misjudged,
+correct it with `"override": true`, naming the prior value in `evidence` so the change is
+auditable. Corrections are matched by id and must sort after the shard they correct.
 
 #### Evidence before promotion
 
@@ -148,9 +139,8 @@ Write `summary` from the abstract, README or page text — one to three sentence
 `needs` and set `confidence: "low"` rather than guessing. An entry flagged for follow-up
 is useful; a confident wrong summary poisons the index.
 
-Schema and the controlled vocabularies are in `README.md`. Do not invent new facet
-values silently — if something genuinely does not fit, add the value to the README
-vocabulary in the same commit that first uses it, and flag it in your report.
+Do not invent facet values silently — if something genuinely does not fit, add the value to
+the README vocabulary in the same commit that first uses it, and flag it in your report.
 
 Work in batches of roughly 50. Put each batch on its own branch, rebuild, and open one PR
 per batch — do not merge your own curation PRs; leave them for Saman to review.
@@ -217,16 +207,16 @@ as expected.
 
 ## Running agents in parallel
 
-Patches apply in filename order, so parallel agents must not compete for numbers.
-Reserve a block per agent up front: agent *k* owns `curate/patches/{k}00` through
-`{k}99`. Within a block, number batches in the order they should apply.
-
 Lanes that can run concurrently:
 
 | lane | unit of work | notes |
 |---|---|---|
 | repos | `harvest/repo_evidence.py --slice K/N` | no token needed; tarball or partial clone |
 | papers | a slice of `data/tail/openalex-citations.json` | needs open network for full text |
+
+Shard numbering is not partitioned per agent — see the rules above. Take the next number
+above the highest that exists, and remember that a correction has to sort after what it
+corrects, which is a property of the whole repository rather than of your lane.
 
 One lane must stay serial: **vocabulary**. Agents *propose* facet values and never invent
 them. A single arbiter adds an approved value to README.md in the commit that first uses
