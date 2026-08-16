@@ -11,6 +11,7 @@ The join only ever fills a field a shard left empty. A curator's value always wi
 """
 import argparse
 import collections
+import datetime
 import glob
 import json
 import os
@@ -179,6 +180,17 @@ def main(write=False):
     if write:
         with open(dest, 'w') as fh:
             json.dump(out, fh, indent=1, ensure_ascii=False)
+            fh.write('\n')
+        # A stamp the page can show, so a visitor can tell how current the index is.
+        # Version comes from the VERSION file; the count is whatever was just built.
+        info = {
+            'version': (open(os.path.join(ROOT, 'VERSION')).read().strip()
+                        if os.path.exists(os.path.join(ROOT, 'VERSION')) else None),
+            'built': datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d'),
+            'entries': len(out),
+        }
+        with open(os.path.join(ROOT, 'data', 'build-info.json'), 'w') as fh:
+            json.dump(info, fh, indent=1)
             fh.write('\n')
 
     print(f'{len(out)} entries, {dupes} duplicate urls dropped, '
