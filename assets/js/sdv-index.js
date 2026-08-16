@@ -464,6 +464,36 @@
     return vals.map(function (v) { return labelFor(g, v); });
   }
 
+  /* First-party material is ordered editorially rather than measured, because the
+     signals do not exist for it: a DataCebo page has no stars and no citations, and
+     the SDV paper's citation count says nothing about it being the thing everything
+     else in this index descends from. Each band is a fixed floor and the measured
+     score orders entries within it, so the sdv-dev repositories still fall into star
+     order without being able to cross into the band above. Only importance 6 is
+     affected, and the default view sorts on importance first, so this never lifts
+     first-party material above third-party work; it settles the order among the
+     first-party set. */
+  var SCHOLARLY_KIND = { paper: 1, preprint: 1, thesis: 1, dataset_benchmark: 1 };
+  /* The four papers SDV descends from, in the order they should be read rather than
+     the order their citation counts give. Citations would put TGAN second on 220 and
+     drop the wind copula paper to sixth on 8, which describes attention rather than
+     lineage. Everything else first-party and scholarly sits below the repositories,
+     ordered by citations as before. */
+  var FOUNDATION = ['paper-sdv-dsaa-2016', 'paper-ctgan-2019',
+                    'paper-vine-copula-2019', 'paper-wind-copula-2015'];
+  function firstPartyBand(rec) {
+    if (rec.importance !== 6) return null;
+    var f = FOUNDATION.indexOf(rec.id);
+    /* Bands are spaced wider than the 0.01 a measured score can add, so a group can
+       never interleave with the one above it. */
+    if (f >= 0) return 1.0 - 0.002 * f;   // fixed order, above every other band
+    if (/^https?:\/\/(www\.)?github\.com\/sdv-dev\//i.test(rec.url || '')) return 0.98;
+    if (SCHOLARLY_KIND[rec.kind]) return 0.97;
+    if (rec.kind === 'case_study') return 0.96;
+    if (rec.kind === 'blog_post') return 0.95;
+    return 0.94;   // documentation, announcements, the project site, the forum
+  }
+
   /* Popularity = attention the artifact has drawn, on one 0-1 scale so repos and
      papers can be ranked against each other. Both sides are log-compressed, since
      raw stars and raw citations differ by an order of magnitude at the top.
@@ -472,15 +502,14 @@
      This is NOT rec.importance, which is the 0-6 record of how central SDV is to
      the entry; the two are independent and sortable separately. */
   function popularity(rec) {
-    /* First-party pages carry no stars and no citations, so they scored the neutral
-       default and sat mid-pack. That understates them: an SDV or DataCebo page is the
-       primary source for whatever it describes. This is an editorial floor rather than
-       a measurement -- 0.95 puts them above every repository, which caps at 0.9, and
-       below a maximally cited paper. sdv-dev repositories are excluded: they have real
-       star counts and do not need the help. */
-    if (/^https?:\/\/(www\.)?(datacebo\.com|(docs\.)?sdv\.dev)\//i.test(rec.url || '')) {
-      return 0.95;
-    }
+    var band = firstPartyBand(rec);
+    if (band === null) return measured(rec);
+    /* A named foundation paper takes its band exactly; every other band is a floor
+       that the measured score orders within. */
+    return FOUNDATION.indexOf(rec.id) >= 0 ? band : band + 0.01 * measured(rec);
+  }
+
+  function measured(rec) {
     if (rec.kind === 'code_repo' || rec.stars != null) {
       var w = (rec.stars || 0) + 2 * (rec.forks || 0) + 5 * (rec.contributors || 0) + 0.1 * (rec.commits || 0);
       return 0.9 * Math.min(1, Math.log1p(w) / Math.log1p(8000));
