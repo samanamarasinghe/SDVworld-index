@@ -658,11 +658,25 @@
 
   function loadPools() {
     fetch(TAIL_PATH).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-      .then(function (raw) { CITE = (raw || []).map(normalizeCite).filter(notCurated); applyFilters(); })
+      .then(function (raw) { CITE = dedupeTail(raw || []).map(normalizeCite).filter(notCurated); applyFilters(); })
       .catch(function (e) { els.errors.textContent = 'Could not load the citation pool: ' + e.message; });
     fetch(GITHUB_PATH).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
       .then(function (raw) { GH = ((raw && raw.repos) || raw || []).map(normalizeGh).filter(notCurated); applyFilters(); })
       .catch(function (e) { els.errors.textContent = 'Could not load the repository pool: ' + e.message; });
+  }
+
+  /* The stored citation tail has carried the same work twice (14 works as of
+     2026-08-16). Duplicates would show as repeated pool rows and inflate the
+     corpus count in the header, so collapse them on their OpenAlex id. */
+  function dedupeTail(raw) {
+    var seen = {}, out = [];
+    for (var i = 0; i < raw.length; i++) {
+      var key = raw[i].id || raw[i].doi || (raw[i].title || '');
+      if (key && seen[key]) continue;
+      if (key) seen[key] = 1;
+      out.push(raw[i]);
+    }
+    return out;
   }
 
   /* ---------- BibTeX ---------- */
