@@ -7,6 +7,11 @@ repository entries is ``data/github-repo-author-overrides.json``; this script co
 that into the shards and derives the two facet lists with the same classifier
 ``curate/affiliation_facets.py`` already uses, so one rule decides every record.
 
+Two files feed it: ``data/github-repo-author-overrides.json`` for repository contributors
+harvested from GitHub, and ``data/curated-author-affiliations.json`` for hand-curated
+writings, papers and theses.  The affiliation recorded is the organization through which
+that author did THIS work, not their current employer.
+
 Judgment stays append-only.  A wrong importance, integration, summary, url or facet
 is still fixed by a correction shard in a later file -- this script refuses to write
 if any non-generated field would differ, so it cannot become a back door for that.
@@ -36,7 +41,10 @@ import affiliation_facets as facets
 
 ROOT = facets.ROOT
 SHARDS = facets.SHARDS
-REPO_OVERRIDES = "data/github-repo-author-overrides.json"
+OVERRIDE_FILES = (
+    "data/github-repo-author-overrides.json",   # harvested from GitHub contributors
+    "data/curated-author-affiliations.json",     # hand-curated: writings, papers, theses
+)
 
 GENERATED = ("authors", "affiliations", "affiliation_types", "affiliation_countries")
 
@@ -56,8 +64,13 @@ SKIP_ACCOUNTS = {"service_account", "bot"}
 
 
 def load_overrides():
-    data = facets.load(REPO_OVERRIDES, {})
-    return data.get("organizations", {}), data.get("entries", {})
+    """Merge every override file. A later file wins on a repeated entry id."""
+    organizations, entries = {}, {}
+    for relative in OVERRIDE_FILES:
+        data = facets.load(relative, {})
+        organizations.update(data.get("organizations", {}))
+        entries.update(data.get("entries", {}))
+    return organizations, entries
 
 
 def extend_evidence(evidence, organizations):
@@ -138,7 +151,7 @@ def place(record, fields):
 def main(write=False, only=None):
     organizations, entries = load_overrides()
     if not entries:
-        raise SystemExit(f"ERROR: no entries found in {REPO_OVERRIDES}")
+        raise SystemExit("ERROR: no entries found in " + ", ".join(OVERRIDE_FILES))
     evidence = facets.build_evidence()
     extend_evidence(evidence, organizations)
 
