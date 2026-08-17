@@ -41,9 +41,14 @@ import affiliation_facets as facets
 
 ROOT = facets.ROOT
 SHARDS = facets.SHARDS
-OVERRIDE_FILES = (
-    "data/github-repo-author-overrides.json",   # harvested from GitHub contributors
-    "data/curated-author-affiliations.json",     # hand-curated: writings, papers, theses
+
+# Hand curation arrives in batches, so the curated series is globbed rather than listed:
+# data/curated-author-affiliations.json, then -002, -003 ... Each batch is a small file
+# that can be reviewed on its own, and no batch rewrites the ones before it.
+OVERRIDE_FILES = ("data/github-repo-author-overrides.json",) + tuple(
+    os.path.relpath(path, ROOT)
+    for path in sorted(glob.glob(os.path.join(ROOT, "data",
+                                              "curated-author-affiliations*.json")))
 )
 
 GENERATED = ("authors", "affiliations", "affiliation_types", "affiliation_countries")
