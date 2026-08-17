@@ -1,0 +1,262 @@
+================================================================================
+SDVworld-index -- TODO
+Index v0.99 | 1087 curated entries | 77 shards | last reviewed 2026-08-17
+================================================================================
+
+Read README.txt first if you have not. This file is the work queue: what is
+missing, what is curated but unverified, what was never curated, and what is
+deliberately closed. Judgment calls awaiting the owner's ruling are not here --
+they are in docs/open-questions.md, one section each.
+
+Every count below is derived from the data, not maintained by hand. Section 0
+gives the commands that regenerate them, so distrust the numbers and re-run.
+
+--------------------------------------------------------------------------------
+0. REGENERATE THESE NUMBERS BEFORE TRUSTING THEM
+--------------------------------------------------------------------------------
+
+    python3 build.py                  # counts, facet histograms, join coverage
+    python3 tests/validate.py         # schema, vocabulary, cross-checks
+    python3 tests/validate.py --online --scope all    # also probes every pointer
+
+A one-liner for any field census, e.g. entries with no integration:
+
+    python3 -c "import json; d=json.load(open('data/sdv-index.json')); \
+      print(sum(1 for r in d if not r.get('integration')))"
+
+--------------------------------------------------------------------------------
+1. WAITING ON THE OWNER -- 23 JUDGMENT CALLS
+--------------------------------------------------------------------------------
+
+Do not resolve these yourself. Each is recorded twice: as a `needs` string on
+the entry, and as a numbered section in docs/open-questions.md carrying the
+provisional value already applied. The index is consistent either way; a ruling
+either confirms the provisional call or triggers a correction shard.
+
+Two clusters are ripe and would close most of them with one line each:
+
+  (a) wrapper vs modification -- when does building on CTGAN become
+      derivative_work rather than api_user? Four cases turn on it
+      (open questions 2, 16, 18, 19).
+  (b) the benchmark/comparative-study shape -- when a paper proposes no
+      generator of its own, are the generators it runs baselines or evaluation
+      subjects? Three cases, judged three different ways (question 20).
+
+To list them from the data:
+
+    python3 -c "import json; d=json.load(open('data/sdv-index.json')); \
+      [print(r['id'],'|',r['needs']) for r in d if r.get('needs') and \
+      ('convention' in r['needs'].lower() or 'ruling' in r['needs'].lower())]"
+
+--------------------------------------------------------------------------------
+2. MISSING DATA
+--------------------------------------------------------------------------------
+
+Counts are out of 1087 entries. None of these is a bug; each is a field no
+source established, and each is a curation task.
+
+  Facets
+    154  no sdv_concept        -- the source named no mechanism, often correctly
+     61  no use_case
+     37  no integration        -- predates the field; needs a read to assign
+     31  no sdv_component
+    166  industry is ["academia"] alone (129 repos, 22 papers, 5 theses)
+           This is the academia audit. The valuable half is not reassignment
+           but discovering industry values that do not exist yet -- a keyword
+           pass cannot do that, because it only finds categories already in the
+           vocabulary. space_astronomy is already a visible candidate.
+           See docs/open-questions.md section A.
+
+  Attribution
+    127  no authors at all (103 repos, 15 documentation, 5 tutorials)
+    541  authors present but EVERY affiliation is null (329 repos, 129
+           preprints) -- so only 419 entries carry a named organization, and
+           the Affiliations and Americas/Europe/Asia/Africa-Oceania facets see
+           just those. Repositories are the bulk: a GitHub profile with no
+           company field cannot be resolved without a judgment call about the
+           person.
+
+  Bibliographic
+     11  no year -- all first-party docs and site entries, which have no
+           publication date: docs-sdv-agent, docs-bundle-ai-connectors,
+           docs-bundle-cag, docs-bundle-dp, docs-bundle-targeted-sampling,
+           docs-bundle-xsynthesizers, docs-sdv-community, docs-compare-features,
+           docs-sdv-enterprise, site-sdv-dev, site-forum
+    925  no venue, 655 no doi -- expected: 513 entries are repositories
+      8  scholarly entries and 1 repository join to no pool row, so they get no
+           year, DOI, citation or star count. `build.py` prints them as
+           "not joined".
+     12  no evidence: announce-dp-synthesizers, blog-label-balancing,
+           blog-community-feedback-models, blog-fake-to-synthetic-ml,
+           blog-intro-to-sdv, case-aml-banks, case-ucla-fraud,
+           docs-compare-features, site-sdv-dev, site-forum,
+           paper-wind-copula-2015, paper-cents-2025
+           The first ten are first-party pages where the artifact IS the
+           evidence; the last two are real gaps.
+
+--------------------------------------------------------------------------------
+3. CURATED BUT NOT FULLY VERIFIED
+--------------------------------------------------------------------------------
+
+    183  confidence: medium  (136 papers, 17 repos, 16 preprints)
+     15  confidence: low     (9 papers, 4 repos)
+
+  In the papers lane, `medium` almost always means the publisher would not
+  serve the full text to an automated fetch, not that the curator was careless.
+  This is the single highest-leverage fix in the project: adding a PDF text
+  extractor to the toolchain would move roughly a third of every future papers
+  batch from medium to high. There is no pdftotext, fitz, pdfminer or PyPDF2 in
+  the default environment; pypdf installs with `pip install --break-system-packages`.
+
+    135  entries carry a `needs` string. Roughly: 23 awaiting a ruling
+         (section 1), 11 duplicate questions, 101 verification tasks --
+         a full text that would not fetch, a repository that would not clone,
+         a classification resting on a file path rather than a read of the code.
+
+     32  scholarly entries have no second source, so the url-vs-DOI
+         cross-check in validate.py cannot corroborate their pointer.
+      1  code entry is not hosted on GitHub and has no pool row to check.
+
+  Known duplicate questions, both needing a decision then a correction shard:
+    - repo-tabularfm-org vs repo-tabularfm: identical titles, org fork vs
+      personal account, both vendored_source 4. Test: more commits plus more
+      contributors wins; set duplicate_of on the loser.
+    - paper-subpopulation-synthetic-ehr-2023 is the arXiv PREPRINT and it is
+      the version that survived, while the published JAMIA Open version
+      (10.1093/jamiaopen/ooaf091) was never added. This breaks the standing
+      rule that the published version is the version of record. The fix is to
+      add the JAMIA version and retire the arXiv entry.
+    - paper-fingan-crm-banking-2022 (arXiv 2201.11486) has a published twin,
+      Neural Computing and Applications 35:6015-6028
+      (10.1007/s00521-022-07968-x). Same rule applies. The published PDF has
+      been read: its table 9 says LGBM where the preprint entry's evidence says
+      xgboost, so fix that line on merge.
+
+--------------------------------------------------------------------------------
+4. NOT YET CURATED -- THE REAL REMAINING SCOPE
+--------------------------------------------------------------------------------
+
+  2618  of the 2862 works in data/tail/openalex-citations.json are uncurated.
+        This is the bulk of the remaining project. The 287 works flagged
+        `influential` were its highest-value slice and are now done except for
+        the items below. Work in batches of about 50, one shard per batch.
+
+     6  works need an institutional login; the owner downloads the PDF and
+        uploads it to the chat, which is faster than any fetching route:
+          10.1007/s00521-025-11749-7    10.1007/s42952-025-00342-2
+          10.1080/01605682.2025.2450060 10.1117/12.3093790
+          10.1515/joc-2024-0281         10.2118/204224-pa
+
+     3  open access but unreachable from a sandbox -- candidates for a real
+        browser session:
+          10.1007/978-3-031-70371-3_4  (HAL anti-bot interstitial)
+          10.1162/coli_a_00540         (QMUL DSpace serves a JS shell)
+          10.21428/594757db.3e4f0dfb   (BankGAN, 403 to curl and urllib alike)
+
+     4  genuinely stuck, no route found:
+          10.1177/09720634251396339  10.58812/esiscs.v2i02.1151
+          and the two above that are also paywalled.
+
+  Access routes that work are written up in docs/agent-guide.md -- MDPI's CDN,
+  SciTePress's direct PDF path, the malformed PMC urls Unpaywall returns.
+  Read that before inventing a new one.
+
+  The full-text read queue -- pooled works whose abstract suggested SDV use
+  without establishing it -- has been worked through. ONE candidate remains:
+  W4390129643, "Fs-TGAN: an enhanced approach for IoT intrusion detection",
+  no abstract indexed. Regenerate the list rather than trusting this line:
+
+    python3 -c "
+    import json,re
+    idx=json.load(open('data/sdv-index.json'))
+    norm=lambda t: re.sub(r'[^a-z0-9]+',' ',(t or '').lower()).strip()
+    have={norm(r['title']) for r in idx}
+    seen=set()
+    for r in json.load(open('data/tail/openalex-citations.json')):
+        if r['id'] in seen: continue
+        seen.add(r['id']); c=r.get('curation') or {}
+        if not c.get('uses_sdv') or c.get('duplicate_of'): continue
+        if norm(r.get('title')) in have: continue
+        if c.get('confidence')=='low' or 'read full text' in (c.get('needs') or ''):
+            print(r['id'], '|', r.get('title'))
+    "
+
+--------------------------------------------------------------------------------
+5. SITE AND CODE
+--------------------------------------------------------------------------------
+
+  Bugs, smallest first:
+
+  [ ] data/tail/openalex-citations.json stores 14 works twice. Every consumer
+      dedupes on read (curate/arxiv_lane.py is the reference implementation);
+      the stored file is still wrong. Fixing it at rest is a small script
+      nobody has written.
+
+  [ ] harvest/affiliation_normalizations.py maps "stanford university" and
+      "stanford cs" to the university's full legal name, which was corrected
+      out of the index in shard 107. Regenerating the alias layer would
+      reintroduce it. Two occurrences; the file carries CJK, accents and emoji,
+      so edit it in place rather than round-tripping it through a tool.
+
+  [ ] One unmerged remote branch, agent/add-canonical-authors-affiliations,
+      whose work reached main by another route. Deleting a branch needs the
+      owner's say-so.
+
+  Worth building:
+
+  [ ] Nothing in the repo checks what the PAGE shows. validate.py checks data.
+      A filter regression that hid 668 entries shipped and was caught by a
+      human reading the header count. The fix is a stub-DOM harness: about 40
+      lines of fake document/fetch in node, vm.runInThisContext on the real
+      assets/js/sdv-index.js, then read pubs-count.textContent and drive the
+      sliders and buttons. Compare counts at importance 0 / popularity 0,
+      at 4 / 0, and at the defaults. docs/site.md records the reference counts
+      and the two stubs that are easy to miss.
+
+  [ ] A machine-readable retraction flag. One indexed work is retracted
+      (10.52783/jes.2913, shard 100); the retraction is stated in its summary
+      and nowhere a program can see it. Proposed: `retracted: true`.
+      validate.py has no key allowlist, so an extra key passes.
+
+--------------------------------------------------------------------------------
+6. CLOSED -- DO NOT RESTART THESE
+--------------------------------------------------------------------------------
+
+  * The repository tail. About 1400 pooled repositories, almost all with zero
+    stars, will not be read. They stay in data/tail/github-repos.json at low
+    importance and are hidden by any importance floor above 0. Indexing them
+    unread would put summary clauses in the index that came from no source,
+    which is the one rule everything else here rests on.
+
+  * The self-archive hunt on the login-required works. Confirmed empty five
+    ways: Unpaywall, Semantic Scholar openAccessPdf, OpenAlex locations,
+    OpenAlex fuzzy title search for sibling preprints, and the arXiv API.
+    These are regional engineering journals whose author communities do not
+    self-archive. If a NEW closed set appears, run Unpaywall and OpenAlex
+    first, then web search the residual -- in that order.
+
+  * Two records in the tail look uncurated but were deliberately removed as
+    preprint duplicates: 10.48550/arxiv.2210.13423 and
+    10.48550/arxiv.2211.07369. Never re-add them.
+
+  * The Google Scholar lane, unless a SERPAPI_KEY turns up. Scholar publishes
+    no API and its terms forbid automated querying; if it serves a CAPTCHA,
+    stop rather than working around it.
+
+--------------------------------------------------------------------------------
+7. SMALLER THINGS
+--------------------------------------------------------------------------------
+
+  [ ] paper-pretactical-flight-delay-synthetic-2025 names a companion library,
+      SynthAIr/syntabair, which is an index candidate in its own right as a
+      vendored_source repository and is not in the pool.
+  [ ] Palazzo's thesis was identified as a candidate and never curated.
+  [ ] 37 lineage pairs -- works whose relationship to SDV runs through a named
+      third-party derivative -- were tabled pending domain expertise.
+  [ ] source_channel carries 12 values and they do not partition cleanly:
+      `docs`, `sdv_dev`, `datacebo_site`, `datacebo_research`,
+      `datacebo_blog`, `datacebo_case_studies` and `datacebo_announcements`
+      all describe first-party material found the same way. Shard 042 renamed
+      some of them; the rest was never finished. It is a cosmetic field -- the
+      site does not filter on it -- so do this only if you are touching those
+      shards anyway.
