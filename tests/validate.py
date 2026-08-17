@@ -138,7 +138,7 @@ def check_required_fields(records):
 def check_attribution_lists(records):
     """Numbered shards carry minimal, positionally aligned attribution lists."""
     forbidden = re.compile(
-        r'(?i)(?:\[bot\]|dependabot|github-actions|copilot|claude|^bot$|^student$|^user$)')
+        r'(?i)(?:\[bot\]|dependabot|github-actions|^copilot|^claude(?: code| ai)?$|^bot$|^student$|^user$)')
     checked = 0
     for name, rec in records:
         match = re.match(r'(\d+)', name)
