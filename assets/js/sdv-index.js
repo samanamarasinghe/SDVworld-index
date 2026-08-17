@@ -127,6 +127,9 @@
     return String(v || '').replace(/_/g, ' ').replace(/^./, function (c) { return c.toUpperCase(); });
   }
   function labelFor(facet, v) {
+    /* Undated rather than the generic Not specified, and the same word the year group
+       headings use, so the button and the heading agree. */
+    if (facet === 'year' && v === '__none__') return 'Undated';
     if (v === '__none__') return 'Not specified';
     if (facet === 'kind') return KIND_LABELS[v] || prettify(v);
     if (facet === 'sdv_component') return COMPONENT_LABELS[v] || v;
@@ -558,13 +561,20 @@
     var mount = els.year;
     if (!mount) return;
     var counts = countValues(filteredData('year'), 'year');
-    var years = UNIVERSE.year.slice().sort(function (a, b) { return parseInt(b, 10) - parseInt(a, 10); });
+    /* Undated sorts last however many entries it holds -- it is an absence, not a year.
+       Left to parseInt it compares as NaN and lands wherever the sort happens to put it. */
+    var years = UNIVERSE.year.slice().sort(function (a, b) {
+      if (a === NONE) return 1;
+      if (b === NONE) return -1;
+      return parseInt(b, 10) - parseInt(a, 10);
+    });
     mount.innerHTML = '';
     for (var i = 0; i < years.length; i++) {
       var y = years[i], n = counts[y] || 0, on = !!state.sel.year[y];
       var btn = el('button', 'year-btn' + (on ? ' active' : ''));
       btn.type = 'button';
-      btn.appendChild(document.createTextNode(y + ' '));
+      btn.title = y === NONE ? 'Entries with no year on record' : '';
+      btn.appendChild(document.createTextNode(labelFor('year', y) + ' '));
       btn.appendChild(el('span', 'year-badge', String(n)));
       btn.onclick = (function (yy) {
         return function () { state.sel.year[yy] = !state.sel.year[yy]; applyFilters(); };
