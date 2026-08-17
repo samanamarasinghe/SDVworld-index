@@ -2,7 +2,7 @@
 """Remove from the shards every field build.py can join, and normalise their formatting.
 
 Curation records judgment; the harvest pools record bibliography. Both currently hold
-year, authors, stars and cited, and the two copies have already begun to disagree -- stars
+year, stars and cited, and the two copies have already begun to disagree -- stars
 and cited are stale the day after a shard is written, while the pool is refreshed by every
 harvest.
 
@@ -33,7 +33,7 @@ import subprocess
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-STRIP = ('year', 'authors', 'stars', 'cited', 'forks', 'commits', 'contributors')
+STRIP = ('year', 'stars', 'cited', 'forks', 'commits', 'contributors')
 
 
 def build_index():
@@ -80,10 +80,6 @@ def main():
         was, now = before[entry_id].get(field), joined.get(entry_id, {}).get(field)
         if was == now:
             return True
-        # Author lists are the exception to strict equality: shards truncate them and the
-        # pool carries the full list, so a joined superset is an improvement.
-        if field == 'authors' and isinstance(was, list) and isinstance(now, list):
-            return set(was) <= set(now)
         return False
 
     keep = collections.defaultdict(set)

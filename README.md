@@ -22,9 +22,11 @@ Shards are never rewritten once complete; new waves add new shard files.
 | `url` | pointer to the artifact |
 | `kind` | see vocabulary below |
 | `summary` | 1-3 sentences written from the source, ending with the SDV clause (see below) |
-| `authors`, `year`, `venue`, `doi` | present where applicable |
-| `affiliations`, `countries` | institutions and ISO country codes, where the source records them |
-| `contributors` | GitHub logins, for code entries; never written into `authors` |
+| `authors` | real named publication authors, or real named repository owners/contributors |
+| `affiliations` | positionally aligned with `authors`; `null` when an author's affiliation is unconfirmed |
+| `year`, `venue`, `doi` | present where applicable |
+| `countries` | ISO country codes, where the source records them |
+| `contributors` | numeric repository contributor count used as an impact metric |
 | `source_channel` | how the entry was found |
 | `sdv_component[]` | which SDV *software* is involved; see vocabulary below |
 | `sdv_concept[]` | which SDV *idea* is involved; see vocabulary below |

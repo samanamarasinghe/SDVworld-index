@@ -2,10 +2,10 @@
 """Merge harvest shards into data/sdv-index.json and report facet counts.
 
 Curation records judgment: what an entry is, how it uses SDV, how central that use is.
-It does not re-record bibliography that the harvest pools already hold. Repository
-metadata lives in data/tail/github-repos.json and bibliographic metadata in
-data/tail/openalex-citations.json, so year, authors, DOI, venue and the popularity
-metrics are joined in here at build time rather than copied into every shard by hand.
+Repository metadata lives in data/tail/github-repos.json and bibliographic metadata in
+data/tail/openalex-citations.json, so year, DOI, venue and popularity metrics are joined
+here at build time. Shard-provided author and affiliation lists are authoritative; the
+legacy author join is only a fallback for newer shards that do not carry those fields yet.
 
 The join only ever fills a field a shard left empty. A curator's value always wins.
 """
@@ -80,7 +80,9 @@ def enrich(records):
                 continue
             created = str(g.get('created') or '')[:4]
             put(rec, 'year', int(created) if created.isdigit() else None)
-            put(rec, 'authors', [a for a in [g.get('owner')] + (g.get('top_contributors') or []) if a])
+            if 'authors' not in rec:
+                put(rec, 'authors', [a for a in [g.get('owner')] +
+                                     (g.get('top_contributors') or []) if a])
             for field in ('stars', 'forks', 'commits', 'contributors'):
                 put(rec, field, g.get(field))
 
@@ -93,9 +95,10 @@ def enrich(records):
             put(rec, 'year', o.get('publication_year'))
             put(rec, 'venue', ((o.get('primary_location') or {}).get('source') or {}).get('display_name'))
             put(rec, 'cited', o.get('cited_by_count'))
-            put(rec, 'authors', [(a.get('author') or {}).get('display_name')
-                                 for a in (o.get('authorships') or [])
-                                 if (a.get('author') or {}).get('display_name')])
+            if 'authors' not in rec:
+                put(rec, 'authors', [(a.get('author') or {}).get('display_name')
+                                     for a in (o.get('authorships') or [])
+                                     if (a.get('author') or {}).get('display_name')])
 
     return filled, unjoined
 

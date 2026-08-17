@@ -121,6 +121,45 @@ def check_required_fields(records):
                 fail('required fields', f'{name}: {rec.get("id", "<no id>")} missing {field}')
 
 
+def check_attribution_lists(records):
+    """Numbered shards carry minimal, positionally aligned attribution lists."""
+    forbidden = re.compile(
+        r'(?i)(?:\[bot\]|dependabot|github-actions|copilot|claude|^bot$|^student$|^user$)')
+    checked = 0
+    for name, rec in records:
+        match = re.match(r'(\d+)', name)
+        if rec.get('override') or not match:
+            continue
+        checked += 1
+        authors = rec.get('authors')
+        affiliations = rec.get('affiliations')
+        if not isinstance(authors, list) or not isinstance(affiliations, list):
+            fail('attribution lists',
+                 f'{rec.get("id")}: authors and affiliations must both be lists')
+            continue
+        if len(authors) != len(affiliations):
+            fail('attribution lists',
+                 f'{rec.get("id")}: {len(authors)} authors but '
+                 f'{len(affiliations)} affiliations')
+        seen = set()
+        for author in authors:
+            if not isinstance(author, str) or not author.strip():
+                fail('attribution lists', f'{rec.get("id")}: invalid author {author!r}')
+                continue
+            key = re.sub(r'\W+', '', author.casefold())
+            if rec.get('kind') == 'code_repo' and key in seen:
+                fail('attribution lists', f'{rec.get("id")}: duplicate author {author!r}')
+            seen.add(key)
+            if author != 'DataCebo Team' and forbidden.search(author):
+                fail('attribution lists', f'{rec.get("id")}: non-person author {author!r}')
+        for affiliation in affiliations:
+            if affiliation is not None and (not isinstance(affiliation, str) or
+                                            not affiliation.strip()):
+                fail('attribution lists',
+                     f'{rec.get("id")}: invalid affiliation {affiliation!r}')
+    note(f'attribution pairs checked on {checked} base records in numbered shards')
+
+
 def check_ids(records):
     ids = collections.Counter(r['id'] for _, r in records if not r.get('override') and r.get('id'))
     for i, n in ids.items():
@@ -465,6 +504,7 @@ def main():
     vocab = read_vocabularies()
     records = check_shards_parse()
     check_required_fields(records)
+    check_attribution_lists(records)
     check_ids(records)
     check_vocabularies(records, vocab)
     check_scales(records)

@@ -44,11 +44,13 @@ stars, will not be read. They stay in `data/tail/` at low importance. Do not res
 lane: indexing them unread would put clauses in the index that came from no source, which is
 the one rule everything else here rests on.
 
-**Shards carry judgment, not bibliography.** Year, authors, stars and citation counts are
-joined from the pools at build time, so do not write them into a shard — a stored star count
-is stale the day after. `venue` and `doi` are the exception and stay curator-owned, because
-OpenAlex is wrong about fourteen venues. `curate/strip_joined_fields.py` enforces this and
-refuses to run if the join cannot reproduce what it removes.
+**Shards carry curated attribution as well as judgment.** Every base entry in a numbered shard
+stores `authors` and a positionally aligned `affiliations` list; repositories use `authors`
+for real named owners and contributors. Unknown affiliations are JSON null, and handles,
+bots, service accounts and organization bylines are excluded except for `DataCebo Team`.
+Year, stars and citation counts are still joined from the pools because they drift. `venue`
+and `doi` stay curator-owned because OpenAlex is wrong about fourteen venues.
+`curate/strip_joined_fields.py` removes only the regenerable fields.
 
 All the scripts are Python 3 standard library only. Nothing to install.
 
