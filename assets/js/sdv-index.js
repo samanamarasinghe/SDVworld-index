@@ -66,15 +66,15 @@
     inherited: 'Inherited', declared_only: 'Declared only', port: 'Port',
     name_collision: 'Name collision', unclear: 'Unclear'
   };
-  /* Two derived splits over organization-aligned affiliation fields, each rendered
-     as a button group
-     rather than a checkbox list: the question is never "which of 500 organizations"
-     but "industry or academia" and "which part of the world".
-     onEmpty says what to do when the last lit button in a group is switched off, since
-     an empty group would show nothing: the pair hands the selection to its partner, the
-     region group reopens to all three. */
+  /* Two derived splits over organization-aligned affiliation fields, each rendered as a
+     button group rather than a checkbox list: the question is never "which of 500
+     organizations" but "industry or academia" and "which part of the world".
+     These groups PERMIT rather than select, the opposite of every checkbox facet on the
+     page -- see passesAffiliationFacets. onEmpty says what to do when the last lit button
+     in a group is switched off, since an empty group would show nothing: the pair hands
+     the selection to its partner, the region group reopens to all three. */
   var AFF_LABELS = {
-    academic_only: 'Academic-only', rest: 'Rest',
+    academic: 'Academic', non_academic: 'Non-academic',
     americas: 'Americas', europe: 'Europe', asia_plus: 'Asia+'
   };
   /* Each group mounts beside the checkbox facet asking the same question from the other
@@ -82,7 +82,7 @@
      and the regions over the organization list they summarize. */
   var AFF_GROUPS = [
     { facet: 'aff_type', mount: 'affTypeToggles',
-      values: ['academic_only', 'rest'], onEmpty: 'others' },
+      values: ['academic', 'non_academic'], onEmpty: 'others' },
     { facet: 'aff_region', mount: 'affRegionToggles',
       values: ['americas', 'europe', 'asia_plus'], onEmpty: 'all' }
   ];
@@ -164,10 +164,14 @@
     return [];
   }
 
-  /* The two stored lists align with organizationsOf(rec). Academic-only is exclusive:
-     every named organization must be academic; mixed, unresolved and empty entries are
-     Rest. Regions are organization-level and may overlap across an entry. An unknown
-     country is not silently assigned to any region when that group is narrowed. */
+  /* The two stored lists align with organizationsOf(rec), and both splits OVERLAP: an
+     entry with a university and a company carries both types, one with organizations on
+     two continents carries both regions. Overlap is what makes the veto in
+     passesAffiliationFacets useful -- unlighting Non-academic leaves the entries with no
+     non-academic organization, which is to say the academic-only ones, with no separate
+     exclusive value to maintain. An organization whose type is missing or unknown counts
+     as non-academic, as does an entry with no affiliation at all. An unknown country is
+     assigned to no region, so it can never be the reason an entry is vetoed. */
   function regionOf(name) {
     var k = String(name || '').toLowerCase().replace(/^the\s+/, '').trim();
     if (!k || k === 'unknown') return '';
@@ -176,7 +180,12 @@
     return 'asia_plus';
   }
   function affTypes(rec) {
-    return [entryAffType(rec)];
+    var rows = affiliationRows(rec), acad = false, other = false;
+    for (var i = 0; i < rows.length; i++) {
+      if (rows[i].type === 'academic') acad = true; else other = true;
+    }
+    if (!acad) return ['non_academic'];
+    return other ? ['academic', 'non_academic'] : ['academic'];
   }
   function affRegions(rec) {
     return dedupe(affiliationRows(rec).map(function (row) { return row.region; }).filter(Boolean));
@@ -210,39 +219,36 @@
     });
   }
 
-  function entryAffType(rec) {
-    var rows = affiliationRows(rec);
-    if (!rows.length) return 'rest';
-    for (var i = 0; i < rows.length; i++) {
-      if (rows[i].type !== 'academic') return 'rest';
-    }
-    return 'academic_only';
-  }
-
-  function groupSelection(group, exclude) {
-    if (group.facet === exclude) return [];
-    var values = selected(state.sel[group.facet] || {});
-    return values.length === group.values.length ? [] : values;
-  }
-
-  function matchingAffiliationRows(rec, exclude) {
-    var organizations = exclude === 'affiliations' ? [] :
-      selected(state.sel.affiliations || {});
-    var regions = groupSelection(AFF_GROUPS[1], exclude);
-    return affiliationRows(rec).filter(function (row) {
-      return (!organizations.length || organizations.indexOf(row.organization) >= 0) &&
-        (!regions.length || regions.indexOf(row.region) >= 0);
-    });
+  /* A veto, not a selection. A checkbox facet asks whether ANY value the record carries
+     was ticked; a button group asks whether EVERY value it carries is still lit.
+     Unlighting Americas therefore drops a paper with authors at MIT and Delft even though
+     Europe stays lit, because one of its organizations is somewhere the reader has ruled
+     out -- and on an overlapping split that makes a single lit button read as "only
+     here" rather than "somewhere here". All buttons lit permits everything, so the
+     opening state filters nothing.
+     exclude keeps a group out of its own count, so a dark button still shows how many
+     entries it is holding back. */
+  function groupPermits(group, rec, exclude) {
+    if (group.facet === exclude) return true;
+    var sel = state.sel[group.facet] || {}, vals = valuesOf(rec, group.facet);
+    for (var i = 0; i < vals.length; i++) if (!sel[vals[i]]) return false;
+    return true;
   }
 
   function passesAffiliationFacets(rec, exclude) {
-    var organizations = exclude === 'affiliations' ? [] :
-      selected(state.sel.affiliations || {});
-    var types = groupSelection(AFF_GROUPS[0], exclude);
-    var regions = groupSelection(AFF_GROUPS[1], exclude);
-    if (types.length && types.indexOf(entryAffType(rec)) < 0) return false;
-    if (!organizations.length && !regions.length) return true;
-    return matchingAffiliationRows(rec, exclude).length > 0;
+    for (var i = 0; i < AFF_GROUPS.length; i++) {
+      if (!groupPermits(AFF_GROUPS[i], rec, exclude)) return false;
+    }
+    /* The organization list stays an include filter, like Authors: naming one is asking
+       for the entries it appears on, so one match is enough. */
+    if (exclude === 'affiliations') return true;
+    var organizations = selected(state.sel.affiliations || {});
+    if (!organizations.length) return true;
+    var mine = organizationsOf(rec);
+    for (var j = 0; j < organizations.length; j++) {
+      if (mine.indexOf(organizations[j]) >= 0) return true;
+    }
+    return false;
   }
 
   function dedupe(arr) {
@@ -374,19 +380,7 @@
   function countValues(records, facet) {
     var c = {};
     for (var i = 0; i < records.length; i++) {
-      var vals;
-      if (facet === 'affiliations' || facet === 'aff_type' || facet === 'aff_region') {
-        var rows = matchingAffiliationRows(records[i], facet);
-        if (facet === 'affiliations') {
-          vals = dedupe(rows.map(function (row) { return row.organization; }));
-        } else if (facet === 'aff_type') {
-          vals = [entryAffType(records[i])];
-        } else {
-          vals = dedupe(rows.map(function (row) { return row.region; }).filter(Boolean));
-        }
-      } else {
-        vals = valuesOf(records[i], facet);
-      }
+      var vals = valuesOf(records[i], facet);
       for (var j = 0; j < vals.length; j++) c[vals[j]] = (c[vals[j]] || 0) + 1;
     }
     return c;
@@ -462,15 +456,18 @@
       if (!mount) return;
       mount.innerHTML = '';
       if (!present) return;
-      /* Counts exclude the group's own selection, so switching one button off does not
-         zero the count on the button you would click to come back. */
+      /* Counted with this group's own veto lifted, so the number reads as how many
+         entries carry that value -- exactly what unlighting it removes -- rather than
+         collapsing to 0 the moment the button goes dark. */
       var counts = countValues(filteredData(grp.facet), grp.facet);
       var group = el('div', 'aff-group');
       grp.values.forEach(function (v) {
         var on = !!state.sel[grp.facet][v];
         var btn = el('button', 'aff-btn' + (on ? ' active' : ''));
         btn.type = 'button';
-        btn.title = on ? 'Showing ' + AFF_LABELS[v] : 'Hiding ' + AFF_LABELS[v];
+        btn.title = on
+          ? 'Allowing ' + AFF_LABELS[v] + ': ' + (counts[v] || 0) + ' entries have one'
+          : 'Excluding every entry with any ' + AFF_LABELS[v] + ' organization';
         btn.appendChild(document.createTextNode(AFF_LABELS[v] + ' '));
         btn.appendChild(el('span', 'aff-badge', String(counts[v] || 0)));
         btn.onclick = (function (g, val) {
