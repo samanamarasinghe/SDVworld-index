@@ -78,7 +78,7 @@
      that button as narrow as "Americas" so all four regions still fit one line of a
      third-width column. */
   var AFF_LABELS = {
-    academic: 'Academic', non_academic: 'Non-academic', unaffiliated: 'No\naffiliation',
+    academic: 'Academic', non_academic: 'Non-academic', unaffiliated: 'Affiliation\nnot found',
     americas: 'Americas', europe: 'Europe', asia: 'Asia',
     africa_oceania: 'Africa /\nOceania'
   };
