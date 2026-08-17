@@ -427,10 +427,15 @@
   }
 
   function buildCheckboxFacet(facet) {
+    var truncated = false;
     var mount = els[facet];
     if (!mount) return;   // markup for this facet is not on the page yet
     var counts = countValues(filteredData(facet), facet);
     var values = UNIVERSE[facet].slice();
+    /* Header count: how many values this facet still offers in the current view.
+       Computed before the search filter and the cap, so it stays the denominator. */
+    var active = 0;
+    for (var ck in counts) if (counts[ck]) active++;
 
     /* A region/type choice should show only organizations on that side of the
        split. Keep an already-selected zero-count item so it can still be cleared. */
@@ -447,7 +452,8 @@
         var d = (counts[b] || 0) - (counts[a] || 0);
         return d !== 0 ? d : a.localeCompare(b);
       });
-      if (!q && values.length > 200) values = values.slice(0, 200);
+      truncated = !q && values.length > 200;
+      if (truncated) values = values.slice(0, 200);
     } else {
       values.sort(function (a, b) {
         // Not specified sorts last however common: an absence, not a popular answer.
@@ -456,6 +462,21 @@
         var d = (counts[b] || 0) - (counts[a] || 0);
         return d !== 0 ? d : labelFor(facet, a).localeCompare(labelFor(facet, b));
       });
+    }
+
+    /* The Authors list is capped, so its header says which 200 these are rather than
+       letting the reader assume the list is everything. */
+    var block = mount.parentNode, label = block && block.querySelector('.filter-label');
+    if (label) {
+      var tag = label.querySelector('.facet-count');
+      if (!tag) {
+        tag = el('span', 'facet-count', '');
+        var hint = label.querySelector('.hint');
+        if (hint) label.insertBefore(tag, hint); else label.appendChild(tag);
+      }
+      tag.textContent = truncated ? ' (top ' + values.length + ' of ' + active + ')'
+        : values.length < active ? ' (' + values.length + ' of ' + active + ')'
+        : ' (' + active + ')';
     }
 
     var wrap = el('div', 'facet-scroll');
