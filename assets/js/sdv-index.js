@@ -89,19 +89,23 @@
 
   /* ---------- Facet model ---------- */
   var FACET_KEYS = ['kind', 'sdv_component', 'sdv_concept', 'use_case', 'integration',
-    'industry', 'authors', 'year'];
+    'industry', 'authors', 'affiliations', 'year'];
   var MOUNTS = {
     kind: 'facet-kind', sdv_component: 'facet-component', sdv_concept: 'facet-concept',
     use_case: 'facet-usecase', integration: 'facet-integration',
-    industry: 'facet-industry', authors: 'facet-authors', year: 'facet-years'
+    industry: 'facet-industry', authors: 'facet-authors',
+    affiliations: 'facet-affiliations', year: 'facet-years'
   };
+  /* Facets whose values run to the hundreds get a filter box above the list and are
+     capped until something is typed. */
+  var SEARCHABLE = { authors: 1, affiliations: 1 };
 
   /* Absence is a curatorial statement, not missing data: the source named SDV and never
      named a synthesizer class, so no concept was guessed. A sentinel makes that visible
      as an ordinary facet value; otherwise those entries vanish the moment anyone ticks a
      box. Authors is excluded -- a missing author list is an absent fact, not a judgement. */
   var NONE = '__none__';
-  var NO_NONE = { authors: 1 };
+  var NO_NONE = { authors: 1, affiliations: 1 };
   function valuesOf(rec, facet) {
     var v = rawValuesOf(rec, facet);
     return v.length || NO_NONE[facet] ? v : [NONE];
@@ -117,15 +121,29 @@
       case 'industry': return rec.industry || [];
       case 'confidence': return rec.confidence ? [rec.confidence] : [];
       case 'authors': return rec.authors || [];
+      /* Positionally aligned with authors and null wherever an affiliation was never
+         stated or could not be confirmed, so the nulls are dropped rather than shown.
+         Co-authors at one institution would otherwise count that institution once per
+         author, which is a fact about the author list, not about the entry. */
+      case 'affiliations': return dedupe((rec.affiliations || []).filter(Boolean));
       case 'year': return rec.year ? [String(rec.year)] : [];
     }
     return [];
   }
 
+  function dedupe(arr) {
+    var seen = {}, out = [];
+    for (var i = 0; i < arr.length; i++) {
+      if (!seen[arr[i]]) { seen[arr[i]] = 1; out.push(arr[i]); }
+    }
+    return out;
+  }
+
   /* ---------- State ---------- */
   var state = {
-    titleQuery: '', authorQuery: '',
-    sel: { kind: {}, sdv_concept: {}, sdv_component: {}, use_case: {}, integration: {}, industry: {}, authors: {}, year: {} },
+    titleQuery: '', facetQuery: { authors: '', affiliations: '' },
+    sel: { kind: {}, sdv_concept: {}, sdv_component: {}, use_case: {}, integration: {},
+           industry: {}, authors: {}, affiliations: {}, year: {} },
     group: 'none', sortWithin: 'importance', minImportance: 4, minPopularity: 50,
     summaryExpanded: false, showNeeds: false
   };
@@ -248,8 +266,8 @@
 
     if (facet === 'confidence') {
       values.sort(function (a, b) { return (CONF_RANK[b] || 0) - (CONF_RANK[a] || 0); });
-    } else if (facet === 'authors') {
-      var q = state.authorQuery.trim().toLowerCase();
+    } else if (SEARCHABLE[facet]) {
+      var q = (state.facetQuery[facet] || '').trim().toLowerCase();
       if (q) values = values.filter(function (v) { return v.toLowerCase().indexOf(q) >= 0; });
       values.sort(function (a, b) {
         var d = (counts[b] || 0) - (counts[a] || 0);
@@ -315,6 +333,7 @@
     buildCheckboxFacet('integration');
     buildCheckboxFacet('industry');
     buildCheckboxFacet('authors');
+    buildCheckboxFacet('affiliations');
     buildYearGrid();
   }
 
@@ -719,7 +738,12 @@
   /* ---------- Events ---------- */
   function wire() {
     els.title.addEventListener('input', function () { state.titleQuery = this.value; applyFilters(); });
-    els.authorSearch.addEventListener('input', function () { state.authorQuery = this.value; buildCheckboxFacet('authors'); });
+    els.authorSearch.addEventListener('input', function () {
+      state.facetQuery.authors = this.value; buildCheckboxFacet('authors');
+    });
+    if (els.affiliationSearch) els.affiliationSearch.addEventListener('input', function () {
+      state.facetQuery.affiliations = this.value; buildCheckboxFacet('affiliations');
+    });
 
     /* 0-6. The top step marks first-party provenance rather than being a higher grade
        of the same judgement, so nothing a curator rates from the tails reaches it. */
@@ -776,8 +800,9 @@
 
     els.btnClear.addEventListener('click', function () {
       FACET_KEYS.forEach(function (fk) { state.sel[fk] = {}; });
-      state.titleQuery = ''; state.authorQuery = '';
+      state.titleQuery = ''; state.facetQuery = { authors: '', affiliations: '' };
       els.title.value = ''; els.authorSearch.value = '';
+      if (els.affiliationSearch) els.affiliationSearch.value = '';
       state.minImportance = 4; els.minImportance.value = '4'; syncImportanceLabel();
       state.minPopularity = 50; els.minPopularity.value = '50'; syncPopularityLabel();
       applyFilters();
@@ -798,6 +823,7 @@
     els = {
       errors: $('pubs-errors'), results: $('pubs-results'), count: $('pubs-count'),
       title: $('facet-title'), authorSearch: $('author-search'),
+      affiliationSearch: $('affiliation-search'), affiliations: $('facet-affiliations'),
       kind: $('facet-kind'), sdv_component: $('facet-component'),
       sdv_concept: $('facet-concept'), use_case: $('facet-usecase'),
       integration: $('facet-integration'),
