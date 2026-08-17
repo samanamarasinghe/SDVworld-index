@@ -189,6 +189,7 @@ def check_affiliation_filter_lists(records):
         'Massachusetts Institute of Technology': 'United States',
         'RV College of Engineering': 'India',
         'Bangalore Bio-Innovation Centre (BBC)': 'India',
+        'BASF (United States)': 'United States',
     }
     expected_types = {
         'Massachusetts Institute of Technology': 'academic',

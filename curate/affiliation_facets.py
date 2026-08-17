@@ -141,10 +141,9 @@ MANUAL_COUNTRIES = {
     # OpenAlex attached the US branch's country to this Taiwan-based foundation.
     "Buddhist Tzu Chi Medical Foundation": "Taiwan",
 
-    # A multinational receives one home country even when the source string names a
-    # branch office.  This keeps one organization from appearing under many countries.
+    # Curated country choices for explicitly labeled multinational branches.
     "Arup Group (Canada)": "United Kingdom",
-    "BASF (United States)": "Germany",
+    "BASF (United States)": "United States",
     "British American Tobacco (Germany)": "United Kingdom",
     "Google (United Kingdom)": "United States",
 }
