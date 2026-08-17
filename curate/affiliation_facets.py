@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
-"""Add entry-level affiliation type and country facets to numbered shards.
+"""Add organization-aligned affiliation facets to numbered shards.
 
 The authoritative author-to-affiliation relationship remains the two positionally
-aligned ``authors`` and ``affiliations`` lists.  These two new fields are deliberately
-denormalized unions for the static page's filters:
+aligned ``authors`` and ``affiliations`` lists.  An affiliation may name multiple
+organizations separated by semicolons.  The static page splits those strings, removes
+duplicate organization names while preserving their first occurrence, and aligns these
+two fields with that resulting organization sequence:
 
-    affiliation_types: ["academic", "corporate"]
-    affiliation_countries: ["United Kingdom", "United States"]
+    affiliations: ["Harvard University; Korea University", "Harvard University"]
+    affiliation_types: ["academic", "academic"]
+    affiliation_countries: ["United States", "South Korea"]
 
 Each organization receives one type and one country.  Hospitals are always nonprofit,
 and multinational companies use one home country rather than every operating country.
@@ -127,6 +130,17 @@ MANUAL_COUNTRIES = {
     "Samsung SDS (South Korea)": "South Korea",
     "University of British Columbia": "Canada",
 
+    # Institutions whose source rows did not carry usable OpenAlex/ROR metadata.
+    "Chang Gung University": "Taiwan",
+    "Hohai University": "China",
+    "National Central University": "Taiwan",
+    "Shri Mata Vaishno Devi University": "India",
+    "University of Danang, University of Science and Technology": "Vietnam",
+    "University of Danang, Vietnam-Korea University of Information and Communication Technology": "Vietnam",
+
+    # OpenAlex attached the US branch's country to this Taiwan-based foundation.
+    "Buddhist Tzu Chi Medical Foundation": "Taiwan",
+
     # A multinational receives one home country even when the source string names a
     # branch office.  This keeps one organization from appearing under many countries.
     "Arup Group (Canada)": "United Kingdom",
@@ -141,6 +155,12 @@ MANUAL_TYPES = {
     "Changcheng Institute of Metrology & Measurement": "government",
     "China Electric Power Research Institute": "corporate",
     "University of British Columbia": "academic",
+    "Chang Gung University": "academic",
+    "Hohai University": "academic",
+    "National Central University": "academic",
+    "Shri Mata Vaishno Devi University": "academic",
+    "University of Danang, University of Science and Technology": "academic",
+    "University of Danang, Vietnam-Korea University of Information and Communication Technology": "academic",
 
     # ROR calls these facilities/other.  The UI vocabulary needs one broad sector.
     "Bank of Canada": "government",
@@ -304,29 +324,25 @@ def split_affiliation(value):
     return [part.strip() for part in value.split(";") if part.strip()]
 
 
-def classify_record(record, evidence):
-    affiliations = record.get("affiliations") or []
-    types = set()
-    countries = set()
-
-    if not affiliations:
-        types.add("unknown")
-        countries.add("unknown")
-
-    for affiliation in affiliations:
+def organizations_for(record):
+    """Return the UI's organization sequence for an author-aligned record."""
+    organizations = []
+    seen = set()
+    for affiliation in record.get("affiliations") or []:
         if not affiliation:
-            types.add("unknown")
-            countries.add("unknown")
             continue
         for organization in split_affiliation(affiliation):
-            types.add(choose_type(organization, evidence))
-            countries.add(choose_country(organization, evidence))
+            if organization not in seen:
+                seen.add(organization)
+                organizations.append(organization)
+    return organizations
 
-    ordered_types = sorted(types, key=lambda value: TYPE_RANK[value])
-    ordered_countries = sorted(
-        countries, key=lambda value: (value == "unknown", value.casefold())
-    )
-    return ordered_types, ordered_countries
+
+def classify_record(record, evidence):
+    organizations = organizations_for(record)
+    types = [choose_type(organization, evidence) for organization in organizations]
+    countries = [choose_country(organization, evidence) for organization in organizations]
+    return types, countries
 
 
 def insert_facets(record, affiliation_types, affiliation_countries):

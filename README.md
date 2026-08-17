@@ -24,8 +24,8 @@ Shards are never rewritten once complete; new waves add new shard files.
 | `summary` | 1-3 sentences written from the source, ending with the SDV clause (see below) |
 | `authors` | real named publication authors, or real named repository owners/contributors |
 | `affiliations` | positionally aligned with `authors`; `null` when an author's affiliation is unconfirmed |
-| `affiliation_types[]` | deduplicated entry-level affiliation sectors; not positionally aligned with `authors` |
-| `affiliation_countries[]` | deduplicated entry-level full country names; not positionally aligned with `authors` |
+| `affiliation_types[]` | one sector per distinct organization named in `affiliations`; positionally aligned with the organization sequence described below |
+| `affiliation_countries[]` | one full country name per distinct organization named in `affiliations`; positionally aligned with `affiliation_types` |
 | `year`, `venue`, `doi` | present where applicable |
 | `countries` | ISO country codes, where the source records them |
 | `contributors` | numeric repository contributor count used as an impact metric |
@@ -73,11 +73,15 @@ media_recommenders, chemicals_materials, education_sector, agriculture, aerospac
 Each resolved organization contributes exactly one affiliation type and one country. Hospitals
 are `nonprofit`, including university and government hospitals. A multinational company uses
 one canonical home country rather than every country in which it operates. Countries are stored
-as standardized full names for readable JSON and pivot tables. The two lists are entry-level
-filter facets: they contain the deduplicated union across the entry's author affiliations and do
-not repeat the positional author-to-affiliation relationship already represented by `authors`
-and `affiliations`. `unknown` records absent or unresolved information and may coexist with a
-known value when attribution is only partly known.
+as standardized full names for readable JSON and pivot tables.
+
+The two filter lists align with the distinct organization sequence derived from `affiliations`:
+scan the author-aligned list from left to right, split each non-null value on semicolons, trim the
+pieces, and keep the first occurrence of each organization. Thus index *i* in
+`affiliation_types` and `affiliation_countries` describes organization *i* in that sequence.
+This keeps the shard schema as simple lists while allowing the UI to correlate an organization
+with its own type and country. A literal `unknown` is used only when a named organization could
+not be resolved; a null author affiliation contributes no organization and no facet value.
 
 Prefer the domain over `academia`. A paper is academic by construction, so `academia` on its
 own loses the field the work is actually about; use it only when no domain applies.

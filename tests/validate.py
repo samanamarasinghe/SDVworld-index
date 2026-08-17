@@ -86,6 +86,19 @@ def norm_url(u):
     return re.sub(r'/+$', '', re.sub(r'^https?://(www\.)?', '', str(u or '').lower()))
 
 
+def affiliation_organizations(rec):
+    organizations = []
+    seen = set()
+    for affiliation in rec.get('affiliations') or []:
+        if not affiliation:
+            continue
+        for organization in (part.strip() for part in affiliation.split(';')):
+            if organization and organization not in seen:
+                seen.add(organization)
+                organizations.append(organization)
+    return organizations
+
+
 # ---------------------------------------------------------------- offline
 
 def check_shards_parse():
@@ -162,27 +175,40 @@ def check_attribution_lists(records):
 
 
 def check_affiliation_filter_lists(records):
-    """Base records carry two denormalized lists used directly as UI facets."""
+    """Facet lists align one-to-one with distinct, semicolon-split organizations."""
     checked = 0
+    organization_facts = {}
+    expected_countries = {
+        'Buddhist Tzu Chi Medical Foundation': 'Taiwan',
+        'Clemson University': 'United States',
+        'DataCebo, Inc.': 'United States',
+        'George Washington University': 'United States',
+        'Harvard University': 'United States',
+        'Korea University': 'South Korea',
+        'Leland Stanford Junior University': 'United States',
+    }
     for name, rec in records:
         if rec.get('override') or not re.match(r'\d+', name):
             continue
         checked += 1
         types = rec.get('affiliation_types')
         countries = rec.get('affiliation_countries')
-        if not isinstance(types, list) or not types:
+        if not isinstance(types, list):
             fail('affiliation filter lists',
-                 f'{rec.get("id")}: affiliation_types must be a non-empty list')
+                 f'{rec.get("id")}: affiliation_types must be a list')
             continue
-        if not isinstance(countries, list) or not countries:
+        if not isinstance(countries, list):
             fail('affiliation filter lists',
-                 f'{rec.get("id")}: affiliation_countries must be a non-empty list')
+                 f'{rec.get("id")}: affiliation_countries must be a list')
+            continue
+        organizations = affiliation_organizations(rec)
+        if len(types) != len(organizations) or len(countries) != len(organizations):
+            fail('affiliation filter lists',
+                 f'{rec.get("id")}: {len(organizations)} organizations but '
+                 f'{len(types)} types and {len(countries)} countries')
             continue
         for field, values in (('affiliation_types', types),
                               ('affiliation_countries', countries)):
-            if len(values) != len(set(values)):
-                fail('affiliation filter lists',
-                     f'{rec.get("id")}: {field} contains duplicates')
             for value in values:
                 if not isinstance(value, str) or not value.strip():
                     fail('affiliation filter lists',
@@ -191,11 +217,20 @@ def check_affiliation_filter_lists(records):
             if country != 'unknown' and re.fullmatch(r'[A-Z]{2}', country):
                 fail('affiliation filter lists',
                      f'{rec.get("id")}: country {country!r} must use its full name')
-        affiliations = rec.get('affiliations') or []
-        if (not affiliations or any(value is None for value in affiliations)):
-            if 'unknown' not in types or 'unknown' not in countries:
+        for organization, organization_type, country in zip(organizations, types, countries):
+            fact = (organization_type, country)
+            prior = organization_facts.setdefault(organization, fact)
+            if prior != fact:
                 fail('affiliation filter lists',
-                     f'{rec.get("id")}: incomplete affiliations must include unknown')
+                     f'{organization!r} has conflicting facts {prior!r} and {fact!r}')
+    for organization, expected in expected_countries.items():
+        actual = organization_facts.get(organization)
+        if not actual:
+            fail('affiliation filter lists',
+                 f'regression institution {organization!r} is absent')
+        elif actual[1] != expected:
+            fail('affiliation filter lists',
+                 f'{organization!r} country is {actual[1]!r}, expected {expected!r}')
     note(f'affiliation filter lists checked on {checked} base records')
 
 
@@ -260,7 +295,28 @@ def check_built_index(index):
     for r in index:
         if r.get('duplicate_of'):
             fail('retired entries', f'{r.get("id")} carries duplicate_of but is still in the index')
+        organizations = affiliation_organizations(r)
+        types = r.get('affiliation_types')
+        countries = r.get('affiliation_countries')
+        if not isinstance(types, list) or not isinstance(countries, list):
+            fail('built affiliation facets',
+                 f'{r.get("id")}: generated index lacks affiliation facet lists')
+        elif len(organizations) != len(types) or len(organizations) != len(countries):
+            fail('built affiliation facets',
+                 f'{r.get("id")}: {len(organizations)} organizations but '
+                 f'{len(types)} types and {len(countries)} countries')
     return index
+
+
+def check_ui_mounts():
+    """Every JavaScript getElementById shortcut must name an element in the page."""
+    html = open(os.path.join(ROOT, 'index.html')).read()
+    javascript = open(os.path.join(ROOT, 'assets/js/sdv-index.js')).read()
+    html_ids = set(re.findall(r'\bid=["\']([^"\']+)["\']', html))
+    js_ids = set(re.findall(r"\$\(['\"]([^'\"]+)['\"]\)", javascript))
+    for element_id in sorted(js_ids - html_ids):
+        fail('UI mount exists',
+             f'assets/js/sdv-index.js requests #{element_id}, absent from index.html')
 
 
 def check_url_vs_joined_doi(index):
@@ -549,6 +605,7 @@ def main():
     check_vocabularies(records, vocab)
     check_scales(records)
     check_url_shape(records)
+    check_ui_mounts()
 
     index = check_built_index(load('data/sdv-index.json')) or []
     cite = load('data/tail/openalex-citations.json')

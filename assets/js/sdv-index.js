@@ -66,7 +66,8 @@
     inherited: 'Inherited', declared_only: 'Declared only', port: 'Port',
     name_collision: 'Name collision', unclear: 'Unclear'
   };
-  /* Two derived splits over the affiliation fields, each rendered as a button group
+  /* Two derived splits over organization-aligned affiliation fields, each rendered
+     as a button group
      rather than a checkbox list: the question is never "which of 500 organizations"
      but "industry or academia" and "which part of the world".
      onEmpty says what to do when the last lit button in a group is switched off, since
@@ -86,9 +87,7 @@
       values: ['americas', 'europe', 'asia_plus'], onEmpty: 'all' }
   ];
   /* Country names as the affiliation tables spell them, plus the aliases those tables
-     have used before. Asia+ is the remainder rather than a list -- Asia, Oceania and
-     Africa, and equally anything spelled in a way these two tables do not cover, which
-     keeps an unrecognized country visible somewhere instead of nowhere. */
+     have used before. Asia+ is the known-country remainder: Asia, Oceania and Africa. */
   var AMERICAS = {};
   var EUROPE = {};
   (function (index) {
@@ -154,11 +153,10 @@
       case 'industry': return rec.industry || [];
       case 'confidence': return rec.confidence ? [rec.confidence] : [];
       case 'authors': return rec.authors || [];
-      /* Positionally aligned with authors and null wherever an affiliation was never
-         stated or could not be confirmed, so the nulls are dropped rather than shown.
-         Co-authors at one institution would otherwise count that institution once per
-         author, which is a fact about the author list, not about the entry. */
-      case 'affiliations': return dedupe((rec.affiliations || []).filter(Boolean));
+      /* The stored list is aligned with authors, so one element can contain several
+         semicolon-separated organizations and co-authors can repeat an institution.
+         The filter works on distinct organizations, not those compound strings. */
+      case 'affiliations': return organizationsOf(rec);
       case 'aff_type': return affTypes(rec);
       case 'aff_region': return affRegions(rec);
       case 'year': return rec.year ? [String(rec.year)] : [];
@@ -166,44 +164,85 @@
     return [];
   }
 
-  /* Both splits are TOTAL -- every record answers to at least one value in each group,
-     so all-lit and nothing-selected filter identically and the default state is inert.
-     Absence is assigned rather than left out: no type on record reads as Rest, no
-     country reads as Americas.
-     The type split is also EXCLUSIVE, which the region split is not: Academic-only
-     means every organization on the entry is academic, so a university paper with one
-     industry co-author is Rest rather than appearing under both. Its counts therefore
-     sum to the entry total, while an entry with authors in two regions is counted
-     under each of them. */
-  /* Loose on the word because the source tables spell this two ways: the affiliation
-     tables carry ROR's vocabulary (education, company, healthcare, government), while
-     the joined field uses academic/corporate. Matching the stem catches both, and a
-     compound value such as "education; funder" counts as academic on its first half. */
-  function isAcademic(t) {
-    var s = String(t || '').toLowerCase();
-    return s.indexOf('academ') >= 0 || s.indexOf('educat') >= 0 || s.indexOf('universit') >= 0;
-  }
-  function affTypes(rec) {
-    var ts = rec.affiliation_types || [], acad = false, other = false;
-    for (var i = 0; i < ts.length; i++) {
-      if (isAcademic(ts[i])) acad = true; else other = true;
-    }
-    return acad && !other ? ['academic_only'] : ['rest'];
-  }
+  /* The two stored lists align with organizationsOf(rec). Academic-only is exclusive:
+     every named organization must be academic; mixed, unresolved and empty entries are
+     Rest. Regions are organization-level and may overlap across an entry. An unknown
+     country is not silently assigned to any region when that group is narrowed. */
   function regionOf(name) {
     var k = String(name || '').toLowerCase().replace(/^the\s+/, '').trim();
+    if (!k || k === 'unknown') return '';
     if (AMERICAS[k]) return 'americas';
     if (EUROPE[k]) return 'europe';
     return 'asia_plus';
   }
+  function affTypes(rec) {
+    return [entryAffType(rec)];
+  }
   function affRegions(rec) {
-    var cs = rec.affiliation_countries || [], set = {};
-    for (var i = 0; i < cs.length; i++) set[regionOf(cs[i])] = 1;
-    /* No country resolved sits with the Americas, which is where the bulk of the
-       unresolved affiliations turn out to belong. */
+    return dedupe(affiliationRows(rec).map(function (row) { return row.region; }).filter(Boolean));
+  }
+
+  function organizationsOf(rec) {
     var out = [];
-    AFF_GROUPS[1].values.forEach(function (v) { if (set[v]) out.push(v); });
-    return out.length ? out : ['americas'];
+    (rec.affiliations || []).forEach(function (value) {
+      if (!value) return;
+      String(value).split(';').forEach(function (part) {
+        part = part.trim();
+        if (part) out.push(part);
+      });
+    });
+    return dedupe(out);
+  }
+
+  function affiliationRows(rec) {
+    var organizations = organizationsOf(rec);
+    var types = rec.affiliation_types || [];
+    var countries = rec.affiliation_countries || [];
+    return organizations.map(function (organization, i) {
+      var rawType = types[i];
+      var rawCountry = countries[i];
+      return {
+        organization: organization,
+        type: rawType === 'academic' ? 'academic' :
+          (rawType && rawType !== 'unknown' ? 'non_academic' : ''),
+        region: regionOf(rawCountry)
+      };
+    });
+  }
+
+  function entryAffType(rec) {
+    var rows = affiliationRows(rec);
+    if (!rows.length) return 'rest';
+    for (var i = 0; i < rows.length; i++) {
+      if (rows[i].type !== 'academic') return 'rest';
+    }
+    return 'academic_only';
+  }
+
+  function groupSelection(group, exclude) {
+    if (group.facet === exclude) return [];
+    var values = selected(state.sel[group.facet] || {});
+    return values.length === group.values.length ? [] : values;
+  }
+
+  function matchingAffiliationRows(rec, exclude) {
+    var organizations = exclude === 'affiliations' ? [] :
+      selected(state.sel.affiliations || {});
+    var regions = groupSelection(AFF_GROUPS[1], exclude);
+    return affiliationRows(rec).filter(function (row) {
+      return (!organizations.length || organizations.indexOf(row.organization) >= 0) &&
+        (!regions.length || regions.indexOf(row.region) >= 0);
+    });
+  }
+
+  function passesAffiliationFacets(rec, exclude) {
+    var organizations = exclude === 'affiliations' ? [] :
+      selected(state.sel.affiliations || {});
+    var types = groupSelection(AFF_GROUPS[0], exclude);
+    var regions = groupSelection(AFF_GROUPS[1], exclude);
+    if (types.length && types.indexOf(entryAffType(rec)) < 0) return false;
+    if (!organizations.length && !regions.length) return true;
+    return matchingAffiliationRows(rec, exclude).length > 0;
   }
 
   function dedupe(arr) {
@@ -297,13 +336,14 @@
     for (var i = 0; i < FACET_KEYS.length; i++) {
       var fk = FACET_KEYS[i];
       if (fk === exclude) continue;
+      if (fk === 'affiliations' || fk === 'aff_type' || fk === 'aff_region') continue;
       var sel = selected(state.sel[fk] || {});
       if (!sel.length) continue;
       var vals = valuesOf(rec, fk), hit = false;
       for (var j = 0; j < sel.length; j++) if (vals.indexOf(sel[j]) >= 0) { hit = true; break; }
       if (!hit) return false;
     }
-    return true;
+    return passesAffiliationFacets(rec, exclude);
   }
   /* The floor is applied before facets so the facet counts reflect what is shown.
      Above 0 this necessarily drops every unrated entry, which is the whole tail --
@@ -334,7 +374,19 @@
   function countValues(records, facet) {
     var c = {};
     for (var i = 0; i < records.length; i++) {
-      var vals = valuesOf(records[i], facet);
+      var vals;
+      if (facet === 'affiliations' || facet === 'aff_type' || facet === 'aff_region') {
+        var rows = matchingAffiliationRows(records[i], facet);
+        if (facet === 'affiliations') {
+          vals = dedupe(rows.map(function (row) { return row.organization; }));
+        } else if (facet === 'aff_type') {
+          vals = [entryAffType(records[i])];
+        } else {
+          vals = dedupe(rows.map(function (row) { return row.region; }).filter(Boolean));
+        }
+      } else {
+        vals = valuesOf(records[i], facet);
+      }
       for (var j = 0; j < vals.length; j++) c[vals[j]] = (c[vals[j]] || 0) + 1;
     }
     return c;
@@ -345,6 +397,12 @@
     if (!mount) return;   // markup for this facet is not on the page yet
     var counts = countValues(filteredData(facet), facet);
     var values = UNIVERSE[facet].slice();
+
+    /* A region/type choice should show only organizations on that side of the
+       split. Keep an already-selected zero-count item so it can still be cleared. */
+    if (facet === 'affiliations') {
+      values = values.filter(function (v) { return counts[v] || state.sel[facet][v]; });
+    }
 
     if (facet === 'confidence') {
       values.sort(function (a, b) { return (CONF_RANK[b] || 0) - (CONF_RANK[a] || 0); });
