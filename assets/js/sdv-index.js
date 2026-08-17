@@ -73,10 +73,14 @@
      page -- see passesAffiliationFacets. onEmpty says what to do when the last lit button
      in a group is switched off, since an empty group would show nothing: the pair hands
      the selection to its partner, the region group reopens to every region. */
+  /* A label may carry a newline, which the button renders as two centred lines. Africa
+     and Oceania are one bucket of 16 entries between them, and stacking the name keeps
+     that button as narrow as "Americas" so all four regions still fit one line of a
+     third-width column. */
   var AFF_LABELS = {
     academic: 'Academic', non_academic: 'Non-academic',
     americas: 'Americas', europe: 'Europe', asia: 'Asia',
-    africa: 'Africa', oceania: 'Oceania'
+    africa_oceania: 'Africa /\nOceania'
   };
   /* Each group mounts beside the checkbox facet asking the same question from the other
      direction: Academic over Industry, which classifies the work rather than the people,
@@ -85,16 +89,16 @@
     { facet: 'aff_type', mount: 'affTypeToggles',
       values: ['academic', 'non_academic'], onEmpty: 'others' },
     { facet: 'aff_region', mount: 'affRegionToggles',
-      values: ['americas', 'europe', 'asia', 'africa', 'oceania'], onEmpty: 'all' }
+      values: ['americas', 'europe', 'asia', 'africa_oceania'], onEmpty: 'all' }
   ];
   /* Country names as the affiliation tables spell them, plus the aliases those tables
      have used before. Every region is ENUMERATED rather than one of them serving as the
      remainder: a name none of the lists recognizes has to come out as no region at all,
      because a veto must never rest on a country we failed to place. Adding a country
      here is the fix when one turns up unplaced -- it will show in no count until it is
-     listed. Africa and Oceania are small enough here (single figures each) that they
-     could have stayed folded into Asia, but a reader looking for African work should not
-     have to know it was filed under Asia to find it. */
+     listed. Africa and Oceania share one bucket -- single figures each, too thin to read
+     as separate buttons -- but they are kept out of Asia so that a reader looking for
+     African work does not have to know it had been filed under Asia to find it. */
   var AMERICAS = {};
   var EUROPE = {};
   var ASIA = {};
@@ -202,8 +206,7 @@
     if (AMERICAS[k]) return 'americas';
     if (EUROPE[k]) return 'europe';
     if (ASIA[k]) return 'asia';
-    if (AFRICA[k]) return 'africa';
-    if (OCEANIA[k]) return 'oceania';
+    if (AFRICA[k] || OCEANIA[k]) return 'africa_oceania';
     return '';   // unplaced: carried by no button, so vetoed by none of them
   }
   function affTypes(rec) {
@@ -495,7 +498,7 @@
         btn.title = on
           ? 'Allowing ' + AFF_LABELS[v] + ': ' + (counts[v] || 0) + ' entries have one'
           : 'Excluding every entry with any ' + AFF_LABELS[v] + ' organization';
-        btn.appendChild(document.createTextNode(AFF_LABELS[v] + ' '));
+        btn.appendChild(el('span', 'aff-label', AFF_LABELS[v]));
         btn.appendChild(el('span', 'aff-badge', String(counts[v] || 0)));
         btn.onclick = (function (g, val) {
           return function () { toggleAff(g, val); };
