@@ -439,7 +439,7 @@
 
     /* A region/type choice should show only organizations on that side of the
        split. Keep an already-selected zero-count item so it can still be cleared. */
-    if (facet === 'affiliations') {
+    if (facet === 'affiliations' || facet === 'authors') {
       values = values.filter(function (v) { return counts[v] || state.sel[facet][v]; });
     }
 
