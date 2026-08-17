@@ -511,6 +511,20 @@
     applyFilters();
   }
 
+  /* The importance slider has 7 discrete stops and nothing in its native rendering says
+     so. One mark per step, read off the input's own min/max/step so the marks and the
+     control cannot disagree, and drawn once since the scale never changes. */
+  function buildStopMarks(input, mount) {
+    if (!input || !mount) return;
+    var min = parseFloat(input.min), max = parseFloat(input.max), step = parseFloat(input.step);
+    if (!(step > 0) || !(max > min)) return;
+    var n = Math.round((max - min) / step);
+    mount.innerHTML = '';
+    for (var i = 0; i <= n; i++) {
+      mount.appendChild(el('span', 'slider-tick' + (i === 0 || i === n ? ' tick-end' : '')));
+    }
+  }
+
   function buildYearGrid() {
     var mount = els.year;
     if (!mount) return;
@@ -960,6 +974,7 @@
       '6 \u2014 first-party only'
     ];
     els.minImportance.max = '6';
+    buildStopMarks(els.minImportance, els.importanceTicks);
     function syncImportanceLabel() {
       els.minImportanceLabel.textContent = IMPORTANCE_STEPS[state.minImportance] || 'All entries';
     }
@@ -1039,6 +1054,7 @@
       btnNeeds: $('btn-toggle-needs'),
       btnSummaries: $('btn-toggle-summaries'), btnClear: $('btn-clear'),
       minImportance: $('min-importance'), minImportanceLabel: $('min-importance-label'),
+      importanceTicks: $('importance-ticks'),
       minPopularity: $('min-popularity'), minPopularityLabel: $('min-popularity-label')
     };
     wire();
