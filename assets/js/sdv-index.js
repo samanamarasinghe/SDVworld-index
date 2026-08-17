@@ -148,7 +148,13 @@
      as an ordinary facet value; otherwise those entries vanish the moment anyone ticks a
      box. Authors is excluded -- a missing author list is an absent fact, not a judgement. */
   var NONE = '__none__';
-  var NO_NONE = { authors: 1, affiliations: 1 };
+  /* aff_type and aff_region are in here for a different reason from authors and
+     affiliations, and leaving them out was a bug: a button group enumerates its own
+     values, so a record with no resolved region must come back with an EMPTY list.
+     Given the sentinel instead, groupPermits sees a value no button lights and vetoes
+     the record -- which silently dropped every entry with no affiliation, the whole of
+     both pools included. */
+  var NO_NONE = { authors: 1, affiliations: 1, aff_type: 1, aff_region: 1 };
   function valuesOf(rec, facet) {
     var v = rawValuesOf(rec, facet);
     return v.length || NO_NONE[facet] ? v : [NONE];
