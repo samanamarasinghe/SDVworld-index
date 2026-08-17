@@ -72,9 +72,12 @@
   var AFF_LABELS = {
     academic: 'Academic', non_academic: 'Non-academic', us: 'US', non_us: 'Non-US'
   };
+  /* Each pair mounts beside the checkbox facet asking the same question from the other
+     direction: Academic sits over Industry, which classifies the work rather than the
+     people, and US sits over the organization list it summarizes. */
   var AFF_PAIRS = [
-    { facet: 'aff_type', values: ['academic', 'non_academic'] },
-    { facet: 'aff_country', values: ['us', 'non_us'] }
+    { facet: 'aff_type', mount: 'affTypeToggles', values: ['academic', 'non_academic'] },
+    { facet: 'aff_country', mount: 'affCountryToggles', values: ['us', 'non_us'] }
   ];
   var US_NAMES = { 'United States': 1, 'United States of America': 1, 'USA': 1, 'US': 1 };
 
@@ -363,11 +366,12 @@
   }
 
   function buildAffToggles() {
-    var mount = els.affToggles;
-    if (!mount) return;
-    mount.innerHTML = '';
-    if (!affFieldsPresent()) return;
+    var present = affFieldsPresent();
     AFF_PAIRS.forEach(function (pair) {
+      var mount = els[pair.mount];
+      if (!mount) return;
+      mount.innerHTML = '';
+      if (!present) return;
       /* Counts exclude the pair's own selection, so turning one half off does not
          zero the count on the half you would click to come back. */
       var counts = countValues(filteredData(pair.facet), pair.facet);
@@ -918,7 +922,9 @@
     els = {
       errors: $('pubs-errors'), results: $('pubs-results'), count: $('pubs-count'),
       title: $('facet-title'), authorSearch: $('author-search'),
-      affiliations: $('facet-affiliations'), affToggles: $('facet-aff-toggles'),
+      affiliations: $('facet-affiliations'),
+      affTypeToggles: $('facet-aff-type-toggles'),
+      affCountryToggles: $('facet-aff-country-toggles'),
       kind: $('facet-kind'), sdv_component: $('facet-component'),
       sdv_concept: $('facet-concept'), use_case: $('facet-usecase'),
       integration: $('facet-integration'),
