@@ -207,7 +207,8 @@ def main(write=False):
     if unjoined:
         print('not joined: ' + ', '.join(f'{n} {k}' for k, n in unjoined.most_common()))
 
-    for facet in ('kind', 'use_case', 'industry', 'sdv_component'):
+    for facet in ('kind', 'use_case', 'industry', 'sdv_component',
+                  'affiliation_types', 'affiliation_countries'):
         counter = collections.Counter()
         for rec in out:
             val = rec.get(facet)

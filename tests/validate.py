@@ -31,7 +31,8 @@ from concurrent.futures import ThreadPoolExecutor
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCHOLARLY = {'paper', 'preprint', 'thesis', 'dataset_benchmark'}
-FACETS = ('kind', 'use_case', 'industry', 'sdv_component', 'sdv_concept', 'integration')
+FACETS = ('kind', 'use_case', 'industry', 'sdv_component', 'sdv_concept', 'integration',
+          'affiliation_types')
 
 failures = []
 notes = []
@@ -158,6 +159,44 @@ def check_attribution_lists(records):
                 fail('attribution lists',
                      f'{rec.get("id")}: invalid affiliation {affiliation!r}')
     note(f'attribution pairs checked on {checked} base records in numbered shards')
+
+
+def check_affiliation_filter_lists(records):
+    """Base records carry two denormalized lists used directly as UI facets."""
+    checked = 0
+    for name, rec in records:
+        if rec.get('override') or not re.match(r'\d+', name):
+            continue
+        checked += 1
+        types = rec.get('affiliation_types')
+        countries = rec.get('affiliation_countries')
+        if not isinstance(types, list) or not types:
+            fail('affiliation filter lists',
+                 f'{rec.get("id")}: affiliation_types must be a non-empty list')
+            continue
+        if not isinstance(countries, list) or not countries:
+            fail('affiliation filter lists',
+                 f'{rec.get("id")}: affiliation_countries must be a non-empty list')
+            continue
+        for field, values in (('affiliation_types', types),
+                              ('affiliation_countries', countries)):
+            if len(values) != len(set(values)):
+                fail('affiliation filter lists',
+                     f'{rec.get("id")}: {field} contains duplicates')
+            for value in values:
+                if not isinstance(value, str) or not value.strip():
+                    fail('affiliation filter lists',
+                         f'{rec.get("id")}: invalid {field} value {value!r}')
+        for country in countries:
+            if country != 'unknown' and re.fullmatch(r'[A-Z]{2}', country):
+                fail('affiliation filter lists',
+                     f'{rec.get("id")}: country {country!r} must use its full name')
+        affiliations = rec.get('affiliations') or []
+        if (not affiliations or any(value is None for value in affiliations)):
+            if 'unknown' not in types or 'unknown' not in countries:
+                fail('affiliation filter lists',
+                     f'{rec.get("id")}: incomplete affiliations must include unknown')
+    note(f'affiliation filter lists checked on {checked} base records')
 
 
 def check_ids(records):
@@ -505,6 +544,7 @@ def main():
     records = check_shards_parse()
     check_required_fields(records)
     check_attribution_lists(records)
+    check_affiliation_filter_lists(records)
     check_ids(records)
     check_vocabularies(records, vocab)
     check_scales(records)

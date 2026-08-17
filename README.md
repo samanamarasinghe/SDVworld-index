@@ -24,6 +24,8 @@ Shards are never rewritten once complete; new waves add new shard files.
 | `summary` | 1-3 sentences written from the source, ending with the SDV clause (see below) |
 | `authors` | real named publication authors, or real named repository owners/contributors |
 | `affiliations` | positionally aligned with `authors`; `null` when an author's affiliation is unconfirmed |
+| `affiliation_types[]` | deduplicated entry-level affiliation sectors; not positionally aligned with `authors` |
+| `affiliation_countries[]` | deduplicated entry-level full country names; not positionally aligned with `authors` |
 | `year`, `venue`, `doi` | present where applicable |
 | `countries` | ISO country codes, where the source records them |
 | `contributors` | numeric repository contributor count used as an impact metric |
@@ -65,6 +67,17 @@ open_science_reproducibility, imputation
 energy_utilities, telecom, retail_ecommerce, transportation, manufacturing, software,
 cross_industry, construction_infrastructure, cybersecurity, environment_climate,
 media_recommenders, chemicals_materials, education_sector, agriculture, aerospace
+
+**affiliation_types**: academic, corporate, government, nonprofit, other, unknown
+
+Each resolved organization contributes exactly one affiliation type and one country. Hospitals
+are `nonprofit`, including university and government hospitals. A multinational company uses
+one canonical home country rather than every country in which it operates. Countries are stored
+as standardized full names for readable JSON and pivot tables. The two lists are entry-level
+filter facets: they contain the deduplicated union across the entry's author affiliations and do
+not repeat the positional author-to-affiliation relationship already represented by `authors`
+and `affiliations`. `unknown` records absent or unresolved information and may coexist with a
+known value when attribution is only partly known.
 
 Prefer the domain over `academia`. A paper is academic by construction, so `academia` on its
 own loses the field the work is actually about; use it only when no domain applies.
