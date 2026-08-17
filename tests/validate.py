@@ -187,9 +187,22 @@ def check_affiliation_filter_lists(records):
         'Korea University': 'South Korea',
         'Leland Stanford Junior University': 'United States',
         'Massachusetts Institute of Technology': 'United States',
+        'RV College of Engineering': 'India',
+        'Bangalore Bio-Innovation Centre (BBC)': 'India',
     }
     expected_types = {
         'Massachusetts Institute of Technology': 'academic',
+        'RV College of Engineering': 'academic',
+        'Bangalore Bio-Innovation Centre (BBC)': 'government',
+    }
+    expected_exome_affiliations = {
+        'Abdu Rehaman Pasha Syed': 'RV College of Engineering',
+        'Rahul Anbalagan': 'RV College of Engineering',
+        'Anagha S. Setlur': 'RV College of Engineering',
+        'Chandrashekar Karunakaran': 'RV College of Engineering',
+        'Jyoti Shetty': 'RV College of Engineering',
+        'Jitendra Kumar': 'Bangalore Bio-Innovation Centre (BBC)',
+        'Vidya Niranjan': 'RV College of Engineering',
     }
     for name, rec in records:
         if rec.get('override') or not re.match(r'\d+', name):
@@ -227,6 +240,12 @@ def check_affiliation_filter_lists(records):
             if prior != fact:
                 fail('affiliation filter lists',
                      f'{organization!r} has conflicting facts {prior!r} and {fact!r}')
+        if rec.get('id') == 'paper-exome-ensemble-cancer-2022':
+            actual = dict(zip(rec.get('authors') or [], rec.get('affiliations') or []))
+            if actual != expected_exome_affiliations:
+                fail('affiliation filter lists',
+                     f'exome paper author affiliations are {actual!r}, '
+                     f'expected {expected_exome_affiliations!r}')
     for organization, expected in expected_countries.items():
         actual = organization_facts.get(organization)
         if not actual:
@@ -246,6 +265,10 @@ def check_affiliation_filter_lists(records):
     if 'IIT@MIT' in organization_facts:
         fail('affiliation filter lists',
              "legacy affiliation alias 'IIT@MIT' must be canonicalized")
+    for legacy in ('Department of Biotechnology', 'Biotech Park'):
+        if legacy in organization_facts:
+            fail('affiliation filter lists',
+                 f'legacy affiliation alias {legacy!r} must be canonicalized')
     note(f'affiliation filter lists checked on {checked} base records')
 
 
