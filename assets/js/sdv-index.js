@@ -66,6 +66,18 @@
     inherited: 'Inherited', declared_only: 'Declared only', port: 'Port',
     name_collision: 'Name collision', unclear: 'Unclear'
   };
+  /* Two derived splits over the affiliation fields, each rendered as a pair of
+     buttons rather than a checkbox list: the question is never "which of 500
+     organizations" but "industry or academia" and "here or elsewhere". */
+  var AFF_LABELS = {
+    academic: 'Academic', non_academic: 'Non-academic', us: 'US', non_us: 'Non-US'
+  };
+  var AFF_PAIRS = [
+    { facet: 'aff_type', values: ['academic', 'non_academic'] },
+    { facet: 'aff_country', values: ['us', 'non_us'] }
+  ];
+  var US_NAMES = { 'United States': 1, 'United States of America': 1, 'USA': 1, 'US': 1 };
+
   var CONF_RANK = { high: 3, medium: 2, low: 1 };
   var KIND_ORDER = ['paper', 'preprint', 'thesis', 'code_repo', 'documentation',
     'blog_post', 'announcement', 'case_study', 'tutorial', 'video',
@@ -84,12 +96,13 @@
     if (facet === 'industry') return INDUSTRY_LABELS[v] || prettify(v);
     if (facet === 'integration') return INTEGRATION_LABELS[v] || prettify(v);
     if (facet === 'confidence') return prettify(v);
+    if (facet === 'aff_type' || facet === 'aff_country') return AFF_LABELS[v] || v;
     return v;
   }
 
   /* ---------- Facet model ---------- */
   var FACET_KEYS = ['kind', 'sdv_component', 'sdv_concept', 'use_case', 'integration',
-    'industry', 'authors', 'affiliations', 'year'];
+    'industry', 'authors', 'affiliations', 'aff_type', 'aff_country', 'year'];
   var MOUNTS = {
     kind: 'facet-kind', sdv_component: 'facet-component', sdv_concept: 'facet-concept',
     use_case: 'facet-usecase', integration: 'facet-integration',
@@ -98,7 +111,7 @@
   };
   /* Facets whose values run to the hundreds get a filter box above the list and are
      capped until something is typed. */
-  var SEARCHABLE = { authors: 1, affiliations: 1 };
+  var SEARCHABLE = { authors: 1 };
 
   /* Absence is a curatorial statement, not missing data: the source named SDV and never
      named a synthesizer class, so no concept was guessed. A sentinel makes that visible
@@ -126,9 +139,36 @@
          Co-authors at one institution would otherwise count that institution once per
          author, which is a fact about the author list, not about the entry. */
       case 'affiliations': return dedupe((rec.affiliations || []).filter(Boolean));
+      case 'aff_type': return affTypes(rec);
+      case 'aff_country': return affCountries(rec);
       case 'year': return rec.year ? [String(rec.year)] : [];
     }
     return [];
+  }
+
+  /* Both splits are TOTAL -- every record answers to at least one value in each pair,
+     so "both lit" and "nothing selected" filter identically and the default state is
+     inert. Absence is assigned rather than left out: no type on record reads as
+     Non-academic, no country reads as US. A multi-institution entry answers to both
+     halves of a pair, matching how every other facet treats multi-valued records. */
+  function affTypes(rec) {
+    var ts = rec.affiliation_types || [], acad = false, other = false;
+    for (var i = 0; i < ts.length; i++) {
+      if (ts[i] === 'academic') acad = true; else other = true;
+    }
+    if (!acad) return ['non_academic'];
+    return other ? ['academic', 'non_academic'] : ['academic'];
+  }
+  function affCountries(rec) {
+    var cs = rec.affiliation_countries || [], us = false, non = false;
+    for (var i = 0; i < cs.length; i++) {
+      if (US_NAMES[cs[i]]) us = true; else non = true;
+    }
+    if (!us && !non) return ['us'];
+    var out = [];
+    if (us) out.push('us');
+    if (non) out.push('non_us');
+    return out;
   }
 
   function dedupe(arr) {
@@ -141,12 +181,19 @@
 
   /* ---------- State ---------- */
   var state = {
-    titleQuery: '', facetQuery: { authors: '', affiliations: '' },
+    titleQuery: '', facetQuery: { authors: '' },
     sel: { kind: {}, sdv_concept: {}, sdv_component: {}, use_case: {}, integration: {},
-           industry: {}, authors: {}, affiliations: {}, year: {} },
+           industry: {}, authors: {}, affiliations: {}, year: {},
+           aff_type: bothOn(AFF_PAIRS[0]), aff_country: bothOn(AFF_PAIRS[1]) },
     group: 'none', sortWithin: 'importance', minImportance: 4, minPopularity: 50,
     summaryExpanded: false, showNeeds: false
   };
+
+  function bothOn(pair) {
+    var m = {};
+    pair.values.forEach(function (v) { m[v] = true; });
+    return m;
+  }
 
   var DATA = [];
   var CITE = null;         // citation tail, normalized (lazy)
@@ -306,6 +353,55 @@
     mount.appendChild(wrap);
   }
 
+  /* Hidden until the data carries the fields, so this can ship before or after the
+     build starts emitting them; the pair defaults are inert either way. */
+  function affFieldsPresent() {
+    for (var i = 0; i < DATA.length; i++) {
+      if (DATA[i].affiliation_types || DATA[i].affiliation_countries) return true;
+    }
+    return false;
+  }
+
+  function buildAffToggles() {
+    var mount = els.affToggles;
+    if (!mount) return;
+    mount.innerHTML = '';
+    if (!affFieldsPresent()) return;
+    AFF_PAIRS.forEach(function (pair) {
+      /* Counts exclude the pair's own selection, so turning one half off does not
+         zero the count on the half you would click to come back. */
+      var counts = countValues(filteredData(pair.facet), pair.facet);
+      var group = el('div', 'aff-group');
+      pair.values.forEach(function (v) {
+        var on = !!state.sel[pair.facet][v];
+        var btn = el('button', 'aff-btn' + (on ? ' active' : ''));
+        btn.type = 'button';
+        btn.title = on ? 'Showing ' + AFF_LABELS[v] : 'Hiding ' + AFF_LABELS[v];
+        btn.appendChild(document.createTextNode(AFF_LABELS[v] + ' '));
+        btn.appendChild(el('span', 'aff-badge', String(counts[v] || 0)));
+        btn.onclick = (function (p, val) {
+          return function () { toggleAff(p, val); };
+        })(pair, v);
+        group.appendChild(btn);
+      });
+      mount.appendChild(group);
+    });
+  }
+
+  /* Three reachable states per pair and never an empty one. Clicking an unlit button
+     lights it, which from a single selection widens the pair back to both. Clicking a
+     lit button while its partner is also lit narrows to it alone -- a click on a button
+     always ends with that button lit, so clicking US never leaves you looking at Non-US.
+     Clicking the last lit button hands the selection to its partner. */
+  function toggleAff(pair, v) {
+    var sel = state.sel[pair.facet];
+    var other = pair.values[0] === v ? pair.values[1] : pair.values[0];
+    if (!sel[v]) sel[v] = true;
+    else if (sel[other]) sel[other] = false;
+    else { sel[v] = false; sel[other] = true; }
+    applyFilters();
+  }
+
   function buildYearGrid() {
     var mount = els.year;
     if (!mount) return;
@@ -334,6 +430,7 @@
     buildCheckboxFacet('industry');
     buildCheckboxFacet('authors');
     buildCheckboxFacet('affiliations');
+    buildAffToggles();
     buildYearGrid();
   }
 
@@ -741,9 +838,6 @@
     els.authorSearch.addEventListener('input', function () {
       state.facetQuery.authors = this.value; buildCheckboxFacet('authors');
     });
-    if (els.affiliationSearch) els.affiliationSearch.addEventListener('input', function () {
-      state.facetQuery.affiliations = this.value; buildCheckboxFacet('affiliations');
-    });
 
     /* 0-6. The top step marks first-party provenance rather than being a higher grade
        of the same judgement, so nothing a curator rates from the tails reaches it. */
@@ -800,9 +894,10 @@
 
     els.btnClear.addEventListener('click', function () {
       FACET_KEYS.forEach(function (fk) { state.sel[fk] = {}; });
-      state.titleQuery = ''; state.facetQuery = { authors: '', affiliations: '' };
+      state.sel.aff_type = bothOn(AFF_PAIRS[0]);
+      state.sel.aff_country = bothOn(AFF_PAIRS[1]);
+      state.titleQuery = ''; state.facetQuery = { authors: '' };
       els.title.value = ''; els.authorSearch.value = '';
-      if (els.affiliationSearch) els.affiliationSearch.value = '';
       state.minImportance = 4; els.minImportance.value = '4'; syncImportanceLabel();
       state.minPopularity = 50; els.minPopularity.value = '50'; syncPopularityLabel();
       applyFilters();
@@ -823,7 +918,7 @@
     els = {
       errors: $('pubs-errors'), results: $('pubs-results'), count: $('pubs-count'),
       title: $('facet-title'), authorSearch: $('author-search'),
-      affiliationSearch: $('affiliation-search'), affiliations: $('facet-affiliations'),
+      affiliations: $('facet-affiliations'), affToggles: $('facet-aff-toggles'),
       kind: $('facet-kind'), sdv_component: $('facet-component'),
       sdv_concept: $('facet-concept'), use_case: $('facet-usecase'),
       integration: $('facet-integration'),
