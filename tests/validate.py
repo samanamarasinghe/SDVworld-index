@@ -186,6 +186,10 @@ def check_affiliation_filter_lists(records):
         'Harvard University': 'United States',
         'Korea University': 'South Korea',
         'Leland Stanford Junior University': 'United States',
+        'Massachusetts Institute of Technology': 'United States',
+    }
+    expected_types = {
+        'Massachusetts Institute of Technology': 'academic',
     }
     for name, rec in records:
         if rec.get('override') or not re.match(r'\d+', name):
@@ -231,6 +235,17 @@ def check_affiliation_filter_lists(records):
         elif actual[1] != expected:
             fail('affiliation filter lists',
                  f'{organization!r} country is {actual[1]!r}, expected {expected!r}')
+    for organization, expected in expected_types.items():
+        actual = organization_facts.get(organization)
+        if not actual:
+            fail('affiliation filter lists',
+                 f'regression institution {organization!r} is absent')
+        elif actual[0] != expected:
+            fail('affiliation filter lists',
+                 f'{organization!r} type is {actual[0]!r}, expected {expected!r}')
+    if 'IIT@MIT' in organization_facts:
+        fail('affiliation filter lists',
+             "legacy affiliation alias 'IIT@MIT' must be canonicalized")
     note(f'affiliation filter lists checked on {checked} base records')
 
 

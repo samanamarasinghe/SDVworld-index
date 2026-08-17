@@ -174,7 +174,7 @@ MANUAL_TYPES = {
     "FORTH Institute of Molecular Biology and Biotechnology": "nonprofit",
     "German Research Centre for Artificial Intelligence": "nonprofit",
     "IBM Research - Thomas J. Watson Research Center": "corporate",
-    "IIT@MIT": "nonprofit",
+    "Massachusetts Institute of Technology": "academic",
     "Institut de Mathématiques de Toulouse": "academic",
     "Institute of Geology and Geophysics": "government",
     "Peninsula Research": "government",
