@@ -66,20 +66,37 @@
     inherited: 'Inherited', declared_only: 'Declared only', port: 'Port',
     name_collision: 'Name collision', unclear: 'Unclear'
   };
-  /* Two derived splits over the affiliation fields, each rendered as a pair of
-     buttons rather than a checkbox list: the question is never "which of 500
-     organizations" but "industry or academia" and "here or elsewhere". */
+  /* Two derived splits over the affiliation fields, each rendered as a button group
+     rather than a checkbox list: the question is never "which of 500 organizations"
+     but "industry or academia" and "which part of the world".
+     onEmpty says what to do when the last lit button in a group is switched off, since
+     an empty group would show nothing: the pair hands the selection to its partner, the
+     region group reopens to all three. */
   var AFF_LABELS = {
-    academic: 'Academic', non_academic: 'Non-academic', us: 'US', non_us: 'Non-US'
+    academic: 'Academic', non_academic: 'Non-academic',
+    americas: 'Americas', europe: 'Europe', asia_plus: 'Asia+'
   };
-  /* Each pair mounts beside the checkbox facet asking the same question from the other
-     direction: Academic sits over Industry, which classifies the work rather than the
-     people, and US sits over the organization list it summarizes. */
-  var AFF_PAIRS = [
-    { facet: 'aff_type', mount: 'affTypeToggles', values: ['academic', 'non_academic'] },
-    { facet: 'aff_country', mount: 'affCountryToggles', values: ['us', 'non_us'] }
+  /* Each group mounts beside the checkbox facet asking the same question from the other
+     direction: Academic over Industry, which classifies the work rather than the people,
+     and the regions over the organization list they summarize. */
+  var AFF_GROUPS = [
+    { facet: 'aff_type', mount: 'affTypeToggles',
+      values: ['academic', 'non_academic'], onEmpty: 'others' },
+    { facet: 'aff_region', mount: 'affRegionToggles',
+      values: ['americas', 'europe', 'asia_plus'], onEmpty: 'all' }
   ];
-  var US_NAMES = { 'United States': 1, 'United States of America': 1, 'USA': 1, 'US': 1 };
+  /* Country names as the affiliation tables spell them, plus the aliases those tables
+     have used before. Asia+ is the remainder rather than a list -- Asia, Oceania and
+     Africa, and equally anything spelled in a way these two tables do not cover, which
+     keeps an unrecognized country visible somewhere instead of nowhere. */
+  var AMERICAS = {};
+  var EUROPE = {};
+  (function (index) {
+    'United States|United States of America|USA|US|Canada|Mexico|Brazil|Colombia|Argentina|Chile|Peru|Ecuador|Uruguay|Paraguay|Bolivia|Venezuela|Costa Rica|Panama|Guatemala|Honduras|Nicaragua|El Salvador|Cuba|Dominican Republic|Haiti|Jamaica|Trinidad and Tobago|Barbados|Bahamas|Belize|Guyana|Suriname|Puerto Rico|Greenland'
+      .split('|').forEach(function (n) { AMERICAS[n.toLowerCase()] = 1; });
+    'United Kingdom|UK|Great Britain|England|Scotland|Wales|Northern Ireland|Ireland|France|Germany|Italy|Spain|Portugal|Netherlands|Belgium|Luxembourg|Switzerland|Austria|Denmark|Norway|Sweden|Finland|Iceland|Poland|Czech Republic|Czechia|Slovakia|Hungary|Romania|Bulgaria|Greece|Croatia|Slovenia|Serbia|Bosnia and Herzegovina|Montenegro|North Macedonia|Albania|Estonia|Latvia|Lithuania|Belarus|Ukraine|Moldova|Russia|Russian Federation|Malta|Cyprus|Monaco|Liechtenstein|Andorra|San Marino'
+      .split('|').forEach(function (n) { EUROPE[n.toLowerCase()] = 1; });
+  })();
 
   var CONF_RANK = { high: 3, medium: 2, low: 1 };
   var KIND_ORDER = ['paper', 'preprint', 'thesis', 'code_repo', 'documentation',
@@ -99,13 +116,13 @@
     if (facet === 'industry') return INDUSTRY_LABELS[v] || prettify(v);
     if (facet === 'integration') return INTEGRATION_LABELS[v] || prettify(v);
     if (facet === 'confidence') return prettify(v);
-    if (facet === 'aff_type' || facet === 'aff_country') return AFF_LABELS[v] || v;
+    if (facet === 'aff_type' || facet === 'aff_region') return AFF_LABELS[v] || v;
     return v;
   }
 
   /* ---------- Facet model ---------- */
   var FACET_KEYS = ['kind', 'sdv_component', 'sdv_concept', 'use_case', 'integration',
-    'industry', 'authors', 'affiliations', 'aff_type', 'aff_country', 'year'];
+    'industry', 'authors', 'affiliations', 'aff_type', 'aff_region', 'year'];
   var MOUNTS = {
     kind: 'facet-kind', sdv_component: 'facet-component', sdv_concept: 'facet-concept',
     use_case: 'facet-usecase', integration: 'facet-integration',
@@ -143,7 +160,7 @@
          author, which is a fact about the author list, not about the entry. */
       case 'affiliations': return dedupe((rec.affiliations || []).filter(Boolean));
       case 'aff_type': return affTypes(rec);
-      case 'aff_country': return affCountries(rec);
+      case 'aff_region': return affRegions(rec);
       case 'year': return rec.year ? [String(rec.year)] : [];
     }
     return [];
@@ -154,24 +171,36 @@
      inert. Absence is assigned rather than left out: no type on record reads as
      Non-academic, no country reads as US. A multi-institution entry answers to both
      halves of a pair, matching how every other facet treats multi-valued records. */
+  /* Loose on the word because the source tables spell this two ways: the affiliation
+     tables carry ROR's vocabulary (education, company, healthcare, government), while
+     the joined field uses academic/corporate. Matching the stem catches both, and a
+     compound value such as "education; funder" counts as academic on its first half. */
+  function isAcademic(t) {
+    var s = String(t || '').toLowerCase();
+    return s.indexOf('academ') >= 0 || s.indexOf('educat') >= 0 || s.indexOf('universit') >= 0;
+  }
   function affTypes(rec) {
     var ts = rec.affiliation_types || [], acad = false, other = false;
     for (var i = 0; i < ts.length; i++) {
-      if (ts[i] === 'academic') acad = true; else other = true;
+      if (isAcademic(ts[i])) acad = true; else other = true;
     }
     if (!acad) return ['non_academic'];
     return other ? ['academic', 'non_academic'] : ['academic'];
   }
-  function affCountries(rec) {
-    var cs = rec.affiliation_countries || [], us = false, non = false;
-    for (var i = 0; i < cs.length; i++) {
-      if (US_NAMES[cs[i]]) us = true; else non = true;
-    }
-    if (!us && !non) return ['us'];
+  function regionOf(name) {
+    var k = String(name || '').toLowerCase().replace(/^the\s+/, '').trim();
+    if (AMERICAS[k]) return 'americas';
+    if (EUROPE[k]) return 'europe';
+    return 'asia_plus';
+  }
+  function affRegions(rec) {
+    var cs = rec.affiliation_countries || [], set = {};
+    for (var i = 0; i < cs.length; i++) set[regionOf(cs[i])] = 1;
+    /* No country resolved sits with the Americas, which is where the bulk of the
+       unresolved affiliations turn out to belong. */
     var out = [];
-    if (us) out.push('us');
-    if (non) out.push('non_us');
-    return out;
+    AFF_GROUPS[1].values.forEach(function (v) { if (set[v]) out.push(v); });
+    return out.length ? out : ['americas'];
   }
 
   function dedupe(arr) {
@@ -187,14 +216,14 @@
     titleQuery: '', facetQuery: { authors: '' },
     sel: { kind: {}, sdv_concept: {}, sdv_component: {}, use_case: {}, integration: {},
            industry: {}, authors: {}, affiliations: {}, year: {},
-           aff_type: bothOn(AFF_PAIRS[0]), aff_country: bothOn(AFF_PAIRS[1]) },
+           aff_type: allOn(AFF_GROUPS[0]), aff_region: allOn(AFF_GROUPS[1]) },
     group: 'none', sortWithin: 'importance', minImportance: 4, minPopularity: 50,
     summaryExpanded: false, showNeeds: false
   };
 
-  function bothOn(pair) {
+  function allOn(group) {
     var m = {};
-    pair.values.forEach(function (v) { m[v] = true; });
+    group.values.forEach(function (v) { m[v] = true; });
     return m;
   }
 
@@ -367,42 +396,46 @@
 
   function buildAffToggles() {
     var present = affFieldsPresent();
-    AFF_PAIRS.forEach(function (pair) {
-      var mount = els[pair.mount];
+    AFF_GROUPS.forEach(function (grp) {
+      var mount = els[grp.mount];
       if (!mount) return;
       mount.innerHTML = '';
       if (!present) return;
-      /* Counts exclude the pair's own selection, so turning one half off does not
-         zero the count on the half you would click to come back. */
-      var counts = countValues(filteredData(pair.facet), pair.facet);
+      /* Counts exclude the group's own selection, so switching one button off does not
+         zero the count on the button you would click to come back. */
+      var counts = countValues(filteredData(grp.facet), grp.facet);
       var group = el('div', 'aff-group');
-      pair.values.forEach(function (v) {
-        var on = !!state.sel[pair.facet][v];
+      grp.values.forEach(function (v) {
+        var on = !!state.sel[grp.facet][v];
         var btn = el('button', 'aff-btn' + (on ? ' active' : ''));
         btn.type = 'button';
         btn.title = on ? 'Showing ' + AFF_LABELS[v] : 'Hiding ' + AFF_LABELS[v];
         btn.appendChild(document.createTextNode(AFF_LABELS[v] + ' '));
         btn.appendChild(el('span', 'aff-badge', String(counts[v] || 0)));
-        btn.onclick = (function (p, val) {
-          return function () { toggleAff(p, val); };
-        })(pair, v);
+        btn.onclick = (function (g, val) {
+          return function () { toggleAff(g, val); };
+        })(grp, v);
         group.appendChild(btn);
       });
       mount.appendChild(group);
     });
   }
 
-  /* Three reachable states per pair and never an empty one. Clicking an unlit button
-     lights it, which from a single selection widens the pair back to both. Clicking a
-     lit button while its partner is also lit narrows to it alone -- a click on a button
-     always ends with that button lit, so clicking US never leaves you looking at Non-US.
-     Clicking the last lit button hands the selection to its partner. */
-  function toggleAff(pair, v) {
-    var sel = state.sel[pair.facet];
-    var other = pair.values[0] === v ? pair.values[1] : pair.values[0];
-    if (!sel[v]) sel[v] = true;
-    else if (sel[other]) sel[other] = false;
-    else { sel[v] = false; sel[other] = true; }
+  /* A plain toggle with a floor: off lights, on unlights, and a group is never left
+     empty because an empty group would show nothing at all. What the floor does differs
+     by group, which is deliberate -- switching off the last lit half of the pair hands
+     the selection to the other half, so one click flips it, while switching off the last
+     lit region reopens all three, so one click clears the filter. */
+  function toggleAff(grp, v) {
+    var sel = state.sel[grp.facet], any = false;
+    if (!sel[v]) { sel[v] = true; applyFilters(); return; }
+    sel[v] = false;
+    grp.values.forEach(function (x) { if (sel[x]) any = true; });
+    if (!any) {
+      grp.values.forEach(function (x) {
+        if (grp.onEmpty === 'all' || x !== v) sel[x] = true;
+      });
+    }
     applyFilters();
   }
 
@@ -898,8 +931,8 @@
 
     els.btnClear.addEventListener('click', function () {
       FACET_KEYS.forEach(function (fk) { state.sel[fk] = {}; });
-      state.sel.aff_type = bothOn(AFF_PAIRS[0]);
-      state.sel.aff_country = bothOn(AFF_PAIRS[1]);
+      state.sel.aff_type = allOn(AFF_GROUPS[0]);
+      state.sel.aff_region = allOn(AFF_GROUPS[1]);
       state.titleQuery = ''; state.facetQuery = { authors: '' };
       els.title.value = ''; els.authorSearch.value = '';
       state.minImportance = 4; els.minImportance.value = '4'; syncImportanceLabel();
@@ -924,7 +957,7 @@
       title: $('facet-title'), authorSearch: $('author-search'),
       affiliations: $('facet-affiliations'),
       affTypeToggles: $('facet-aff-type-toggles'),
-      affCountryToggles: $('facet-aff-country-toggles'),
+      affRegionToggles: $('facet-aff-region-toggles'),
       kind: $('facet-kind'), sdv_component: $('facet-component'),
       sdv_concept: $('facet-concept'), use_case: $('facet-usecase'),
       integration: $('facet-integration'),
