@@ -304,7 +304,7 @@
     sel: { kind: {}, sdv_concept: {}, sdv_component: {}, use_case: {}, integration: {},
            industry: {}, authors: {}, affiliations: {}, year: {},
            aff_type: allOn(AFF_GROUPS[0]), aff_region: allOn(AFF_GROUPS[1]) },
-    group: 'none', sortWithin: 'importance', minImportance: 4, minPopularity: 50,
+    group: 'none', sortWithin: 'importance', minImportance: 1, minPopularity: 0,
     summaryExpanded: false, showNeeds: false
   };
 
@@ -347,8 +347,8 @@
 
   /* Both pools are always in view; there is no toggle and no star floor. They are
      fetched after the first paint rather than before it, because the curated index is
-     small and the two pools are several MB between them -- and at the default importance
-     floor no pooled row is shown anyway, since none of them carries a rating. */
+     small and the two pools are several MB between them -- and at any importance floor
+     above 0, which the default is, no pooled row is shown anyway: none carries a rating. */
   function activeData() {
     var out = DATA;
     if (CITE) out = out.concat(CITE);
@@ -1061,8 +1061,8 @@
       state.sel.aff_region = allOn(AFF_GROUPS[1]);
       state.titleQuery = ''; state.facetQuery = { authors: '' };
       els.title.value = ''; els.authorSearch.value = '';
-      state.minImportance = 4; els.minImportance.value = '4'; syncImportanceLabel();
-      state.minPopularity = 50; els.minPopularity.value = '50'; syncPopularityLabel();
+      state.minImportance = 1; els.minImportance.value = '1'; syncImportanceLabel();
+      state.minPopularity = 0; els.minPopularity.value = '0'; syncPopularityLabel();
       applyFilters();
     });
 
