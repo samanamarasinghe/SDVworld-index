@@ -17,12 +17,21 @@ shards:
     data/curated-author-affiliations.json       hand-owned, batch 1
     data/curated-author-affiliations-002.json   batch 2
     ...
-    data/curated-author-affiliations-012.json   batch 12
+    data/curated-author-affiliations-015.json   batch 15
 
 The script globs `data/curated-author-affiliations*.json`, so a new batch is a new
-numbered file rather than an edit to a growing one. Later files win on a repeated
-entry id. Each file is self-contained and reviewable on its own, and a batch that
-turns out to be wrong can be deleted whole.
+numbered file rather than an edit to a growing one. Each file is self-contained and
+reviewable on its own, and a batch that turns out to be wrong can be deleted whole.
+
+**Merge order, which is not what it looks like.** Files are merged in `sorted()`
+order and a later file wins on a repeated entry id — but `-` sorts before `.`, so
+every numbered file comes *before* the un-numbered `curated-author-affiliations.json`.
+That base file therefore wins over all of them and cannot be superseded by a later
+batch: a correction to a row it owns has to be made in the file itself.
+
+**A correcting batch must restate every author of the entry.** The merge takes an
+entry's rows as a set for that entry; a partial author list does not match the record
+and is ignored.
 
 Every file has the same three keys:
 
@@ -32,7 +41,7 @@ Every file has the same three keys:
 
 `affiliation` holds one organization or several separated by semicolons, and is
 `null` where nothing could be established. The rows are positionally aligned with
-the entry's `authors`, so a batch that touches an entry restates every author of it.
+the entry's `authors`.
 
 ## Source status vocabulary
 
@@ -57,7 +66,9 @@ They are recorded separately for exactly that reason.
 
 **The affiliation is the organization through which the person did *that* work**, not
 their current employer. The same person can legitimately carry different affiliations
-on different entries, and those are not inconsistencies to reconcile.
+on different entries, and those are not inconsistencies to reconcile — thirty-six
+people in this index do. What *is* worth fixing is the same organization written two
+ways for the same person.
 
 **An affiliation is a place.** A role descriptor is not one: "Independent Researcher",
 "Open Source Contributor" and "Community Contributor" are recorded as no affiliation
@@ -78,6 +89,9 @@ be worse than leaving them empty.
   commit emails agree.
 - **Alumni bios are not affiliations.** "Alumni from @X" and bios naming only a
   country or a bare "University" are skipped.
+- **Institutions are often written as acronyms.** A scan for "university", "institute"
+  and `.edu` misses "Ph.D. Candidate at MIT", "KAIST" and "PhD researcher at UCL".
+  Any profile pass needs an acronym list beside the word list.
 - **Free mail, GitHub noreply, local hostnames** (`*.local`, `*.compute.internal`)
   and `example.com` are filtered before a domain is read as evidence.
 - **Publisher deposits are unnormalized.** Crossref returns
@@ -103,16 +117,17 @@ commit carries the override file only.
 
 ## Where attribution stands
 
-Of 1087 entries, 678 carry at least one affiliation and 385 do not. The unattributed
-set is 327 code repositories, 23 documentation pages, 19 tutorials, 12 papers and
-preprints, 5 dataset benchmarks and 4 blog posts. One hundred of them record no
+Of 1087 entries, 686 carry at least one affiliation and 377 do not. The unattributed
+set is almost entirely code repositories, plus documentation pages, tutorials, a
+handful of papers, dataset benchmarks and blog posts. One hundred of them record no
 author name at all.
 
 Every mechanical route has been worked through: arXiv front pages for all 126 papers
-that had one, Crossref for every remaining DOI, and — for GitHub — owner accounts,
-commit-email domains and profile bios across all 454 hosted entries. What is left
-needs a browser (a handful of papers behind bot walls), a person's own knowledge, or
-a decision about entries whose authors were never recorded.
+that had one, Crossref for every remaining DOI, publisher pages in a browser for the
+ones a plain fetch could not reach, and — for GitHub — owner accounts, commit-email
+domains and profile bios across all 454 hosted entries. Three papers stay unread
+because ScienceDirect answers with a captcha, OpenReview with a browser check, and
+one journal prints no affiliations at all.
 
 Twenty-two repository entries return 404: the repository was deleted or renamed after
 it was indexed. That is a data-quality task rather than an attribution one.
