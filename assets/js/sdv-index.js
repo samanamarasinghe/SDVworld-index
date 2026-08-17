@@ -73,7 +73,7 @@
      an empty group would show nothing: the pair hands the selection to its partner, the
      region group reopens to all three. */
   var AFF_LABELS = {
-    academic: 'Academic', non_academic: 'Non-academic',
+    academic_only: 'Academic-only', rest: 'Rest',
     americas: 'Americas', europe: 'Europe', asia_plus: 'Asia+'
   };
   /* Each group mounts beside the checkbox facet asking the same question from the other
@@ -81,7 +81,7 @@
      and the regions over the organization list they summarize. */
   var AFF_GROUPS = [
     { facet: 'aff_type', mount: 'affTypeToggles',
-      values: ['academic', 'non_academic'], onEmpty: 'others' },
+      values: ['academic_only', 'rest'], onEmpty: 'others' },
     { facet: 'aff_region', mount: 'affRegionToggles',
       values: ['americas', 'europe', 'asia_plus'], onEmpty: 'all' }
   ];
@@ -166,11 +166,15 @@
     return [];
   }
 
-  /* Both splits are TOTAL -- every record answers to at least one value in each pair,
-     so "both lit" and "nothing selected" filter identically and the default state is
-     inert. Absence is assigned rather than left out: no type on record reads as
-     Non-academic, no country reads as US. A multi-institution entry answers to both
-     halves of a pair, matching how every other facet treats multi-valued records. */
+  /* Both splits are TOTAL -- every record answers to at least one value in each group,
+     so all-lit and nothing-selected filter identically and the default state is inert.
+     Absence is assigned rather than left out: no type on record reads as Rest, no
+     country reads as Americas.
+     The type split is also EXCLUSIVE, which the region split is not: Academic-only
+     means every organization on the entry is academic, so a university paper with one
+     industry co-author is Rest rather than appearing under both. Its counts therefore
+     sum to the entry total, while an entry with authors in two regions is counted
+     under each of them. */
   /* Loose on the word because the source tables spell this two ways: the affiliation
      tables carry ROR's vocabulary (education, company, healthcare, government), while
      the joined field uses academic/corporate. Matching the stem catches both, and a
@@ -184,8 +188,7 @@
     for (var i = 0; i < ts.length; i++) {
       if (isAcademic(ts[i])) acad = true; else other = true;
     }
-    if (!acad) return ['non_academic'];
-    return other ? ['academic', 'non_academic'] : ['academic'];
+    return acad && !other ? ['academic_only'] : ['rest'];
   }
   function regionOf(name) {
     var k = String(name || '').toLowerCase().replace(/^the\s+/, '').trim();
