@@ -72,10 +72,11 @@
      These groups PERMIT rather than select, the opposite of every checkbox facet on the
      page -- see passesAffiliationFacets. onEmpty says what to do when the last lit button
      in a group is switched off, since an empty group would show nothing: the pair hands
-     the selection to its partner, the region group reopens to all three. */
+     the selection to its partner, the region group reopens to every region. */
   var AFF_LABELS = {
     academic: 'Academic', non_academic: 'Non-academic',
-    americas: 'Americas', europe: 'Europe', asia_plus: 'Asia+'
+    americas: 'Americas', europe: 'Europe', asia: 'Asia',
+    africa: 'Africa', oceania: 'Oceania'
   };
   /* Each group mounts beside the checkbox facet asking the same question from the other
      direction: Academic over Industry, which classifies the work rather than the people,
@@ -84,28 +85,32 @@
     { facet: 'aff_type', mount: 'affTypeToggles',
       values: ['academic', 'non_academic'], onEmpty: 'others' },
     { facet: 'aff_region', mount: 'affRegionToggles',
-      values: ['americas', 'europe', 'asia_plus'], onEmpty: 'all' }
+      values: ['americas', 'europe', 'asia', 'africa', 'oceania'], onEmpty: 'all' }
   ];
   /* Country names as the affiliation tables spell them, plus the aliases those tables
-     have used before. All three regions are ENUMERATED, including Asia+ (Asia, Oceania
-     and Africa), rather than one of them serving as the remainder: a name none of the
-     lists recognizes has to come out as no region at all, because a veto must never
-     rest on a country we failed to place. Adding a country here is the fix when one
-     turns up unplaced -- it will show in no count until it is listed. */
+     have used before. Every region is ENUMERATED rather than one of them serving as the
+     remainder: a name none of the lists recognizes has to come out as no region at all,
+     because a veto must never rest on a country we failed to place. Adding a country
+     here is the fix when one turns up unplaced -- it will show in no count until it is
+     listed. Africa and Oceania are small enough here (single figures each) that they
+     could have stayed folded into Asia, but a reader looking for African work should not
+     have to know it was filed under Asia to find it. */
   var AMERICAS = {};
   var EUROPE = {};
-  var ASIA_PLUS = {};
+  var ASIA = {};
+  var AFRICA = {};
+  var OCEANIA = {};
   (function (index) {
     'United States|United States of America|USA|US|Canada|Mexico|Brazil|Colombia|Argentina|Chile|Peru|Ecuador|Uruguay|Paraguay|Bolivia|Venezuela|Costa Rica|Panama|Guatemala|Honduras|Nicaragua|El Salvador|Cuba|Dominican Republic|Haiti|Jamaica|Trinidad and Tobago|Barbados|Bahamas|Belize|Guyana|Suriname|Puerto Rico|Greenland'
       .split('|').forEach(function (n) { AMERICAS[n.toLowerCase()] = 1; });
     'United Kingdom|UK|Great Britain|England|Scotland|Wales|Northern Ireland|Ireland|France|Germany|Italy|Spain|Portugal|Netherlands|Belgium|Luxembourg|Switzerland|Austria|Denmark|Norway|Sweden|Finland|Iceland|Poland|Czech Republic|Czechia|Slovakia|Hungary|Romania|Bulgaria|Greece|Croatia|Slovenia|Serbia|Bosnia and Herzegovina|Montenegro|North Macedonia|Albania|Estonia|Latvia|Lithuania|Belarus|Ukraine|Moldova|Russia|Russian Federation|Malta|Cyprus|Kosovo|Monaco|Liechtenstein|Andorra|San Marino'
       .split('|').forEach(function (n) { EUROPE[n.toLowerCase()] = 1; });
     'China|India|South Korea|Korea|Republic of Korea|North Korea|Japan|Taiwan|Hong Kong|Macau|Singapore|Malaysia|Indonesia|Thailand|Vietnam|Philippines|Cambodia|Laos|Myanmar|Brunei|Timor-Leste|Bangladesh|Pakistan|Sri Lanka|Nepal|Bhutan|Maldives|Afghanistan|Iran|Iraq|Israel|Palestine|Jordan|Lebanon|Syria|Saudi Arabia|Yemen|Oman|United Arab Emirates|UAE|Qatar|Bahrain|Kuwait|Türkiye|Turkey|Georgia|Armenia|Azerbaijan|Kazakhstan|Uzbekistan|Turkmenistan|Kyrgyzstan|Tajikistan|Mongolia'
-      .split('|').forEach(function (n) { ASIA_PLUS[n.toLowerCase()] = 1; });
+      .split('|').forEach(function (n) { ASIA[n.toLowerCase()] = 1; });
     'Australia|New Zealand|Fiji|Papua New Guinea|Samoa|Tonga|Vanuatu|Solomon Islands|New Caledonia|French Polynesia|Guam'
-      .split('|').forEach(function (n) { ASIA_PLUS[n.toLowerCase()] = 1; });
+      .split('|').forEach(function (n) { OCEANIA[n.toLowerCase()] = 1; });
     'Egypt|Morocco|Algeria|Tunisia|Libya|Sudan|South Sudan|Ethiopia|Eritrea|Djibouti|Somalia|Kenya|Uganda|Tanzania|Rwanda|Burundi|Nigeria|Ghana|Senegal|Ivory Coast|Cote d Ivoire|Mali|Burkina Faso|Niger|Chad|Cameroon|Gabon|Congo|Democratic Republic of the Congo|DR Congo|Central African Republic|Benin|Togo|Guinea|Sierra Leone|Liberia|Gambia|Mauritania|Cape Verde|Zambia|Zimbabwe|Malawi|Mozambique|Angola|Namibia|Botswana|South Africa|Lesotho|Eswatini|Madagascar|Mauritius|Seychelles'
-      .split('|').forEach(function (n) { ASIA_PLUS[n.toLowerCase()] = 1; });
+      .split('|').forEach(function (n) { AFRICA[n.toLowerCase()] = 1; });
   })();
 
   var CONF_RANK = { high: 3, medium: 2, low: 1 };
@@ -196,7 +201,9 @@
     if (!k || k === 'unknown' || k === 'n/a' || k === 'unspecified') return '';
     if (AMERICAS[k]) return 'americas';
     if (EUROPE[k]) return 'europe';
-    if (ASIA_PLUS[k]) return 'asia_plus';
+    if (ASIA[k]) return 'asia';
+    if (AFRICA[k]) return 'africa';
+    if (OCEANIA[k]) return 'oceania';
     return '';   // unplaced: carried by no button, so vetoed by none of them
   }
   function affTypes(rec) {
@@ -503,7 +510,7 @@
      empty because an empty group would show nothing at all. What the floor does differs
      by group, which is deliberate -- switching off the last lit half of the pair hands
      the selection to the other half, so one click flips it, while switching off the last
-     lit region reopens all three, so one click clears the filter. */
+     lit region reopens every region, so one click clears the filter. */
   function toggleAff(grp, v) {
     var sel = state.sel[grp.facet], any = false;
     if (!sel[v]) { sel[v] = true; applyFilters(); return; }
