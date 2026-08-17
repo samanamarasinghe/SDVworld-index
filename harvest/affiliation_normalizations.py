@@ -89,11 +89,11 @@ EXPLICIT = {
     "@meta-llama": entry("Meta Platforms, Inc.", "official_source_confirmed", "United States",
                          ["https://investor.atmeta.com/files/doc_downloads/2024/05/2024-anti-slavery-and-human-trafficking-statement.pdf"],
                          "company"),
-    "stanford cs": entry("Leland Stanford Junior University", "official_source_confirmed",
+    "stanford cs": entry("Stanford University", "official_source_confirmed",
                          "United States", ["https://www.stanford.edu/about/history"],
                          "education"),
     "stanford university": entry(
-        "Leland Stanford Junior University", "official_source_confirmed", "United States",
+        "Stanford University", "official_source_confirmed", "United States",
         ["https://www.stanford.edu/about/history"], "education"),
     "@yaleuniversity": entry("Yale University", "official_source_confirmed",
                              "United States",
