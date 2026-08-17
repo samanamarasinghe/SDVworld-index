@@ -14,7 +14,7 @@ if any non-generated field would differ, so it cannot become a back door for tha
 Author order follows the override file, which lists contributors by commit count.
 Rows carrying ``account_type`` of service_account or bot stay in the override file as
 a record but are kept out of the author list, so that choice is reversible without
-re-harvesting.
+re-harvesting.  A name a shard already carries is never dropped.
 
 Run without --write to report what would change.  Then::
 
@@ -82,6 +82,34 @@ def author_lists(rows):
     return authors, affiliations
 
 
+def merge_existing(record, authors, affiliations):
+    """Never drop a name a shard already carries, and never blank a known affiliation.
+
+    The REST contributors endpoint and the GraphQL pass that built the pools disagree:
+    ASyH and ctgan-tf already record people the endpoint does not return, including a
+    repository owner whose commits carry an unlinked email.  A curated name outranks a
+    fresh harvest, so anything already present is kept -- matched by name, appended in
+    its old order if the override list does not mention it.
+    """
+    old_authors = record.get("authors") or []
+    old_affiliations = record.get("affiliations") or []
+    old = {}
+    for index, name in enumerate(old_authors):
+        old.setdefault(name, old_affiliations[index]
+                       if index < len(old_affiliations) else None)
+    for index, name in enumerate(authors):
+        if affiliations[index] is None and old.get(name):
+            affiliations[index] = old[name]
+    known = set(authors)
+    for name in old_authors:
+        if name in known:
+            continue
+        known.add(name)
+        authors.append(name)
+        affiliations.append(old.get(name))
+    return authors, affiliations
+
+
 def place(record, fields):
     """Set the four generated fields, keeping the record's key order stable.
 
@@ -134,7 +162,7 @@ def main(write=False, only=None):
                 continue
             seen.add(record["id"])
 
-            authors, affiliations = author_lists(rows)
+            authors, affiliations = merge_existing(record, *author_lists(rows))
             types, countries = facets.classify_record({"affiliations": affiliations},
                                                       evidence)
             revised = place(record, {"authors": authors,
