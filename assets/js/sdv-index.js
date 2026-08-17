@@ -72,13 +72,13 @@
      These groups PERMIT rather than select, the opposite of every checkbox facet on the
      page -- see passesAffiliationFacets. onEmpty says what to do when the last lit button
      in a group is switched off, since an empty group would show nothing: the pair hands
-     the selection to its partner, the region group reopens to every region. */
+     the selection to its partner, a group of three or more reopens entirely. */
   /* A label may carry a newline, which the button renders as two centred lines. Africa
      and Oceania are one bucket of 16 entries between them, and stacking the name keeps
      that button as narrow as "Americas" so all four regions still fit one line of a
      third-width column. */
   var AFF_LABELS = {
-    academic: 'Academic', non_academic: 'Non-academic',
+    academic: 'Academic', non_academic: 'Non-academic', unaffiliated: 'No\naffiliation',
     americas: 'Americas', europe: 'Europe', asia: 'Asia',
     africa_oceania: 'Africa /\nOceania'
   };
@@ -87,7 +87,7 @@
      and the regions over the organization list they summarize. */
   var AFF_GROUPS = [
     { facet: 'aff_type', mount: 'affTypeToggles',
-      values: ['academic', 'non_academic'], onEmpty: 'others' },
+      values: ['academic', 'non_academic', 'unaffiliated'], onEmpty: 'all' },
     { facet: 'aff_region', mount: 'affRegionToggles',
       values: ['americas', 'europe', 'asia', 'africa_oceania'], onEmpty: 'all' }
   ];
@@ -195,11 +195,16 @@
      two continents carries both regions. Overlap is what makes the veto in
      passesAffiliationFacets useful -- unlighting Non-academic leaves the entries with no
      non-academic organization, which is to say the academic-only ones, with no separate
-     exclusive value to maintain. An organization whose type is missing or unknown counts
-     as non-academic, as does an entry with no affiliation at all. A country that is
-     absent, marked unknown, or spelled in a way the region lists do not place is
-     assigned to NO region, so it can never be the reason an entry is vetoed -- and an
-     entry with no affiliation on record therefore survives every regional narrowing. */
+     exclusive value to maintain.
+     An entry with NO affiliation on record is its own value rather than being folded into
+     Non-academic, because the type buttons exclude and folding it in meant that hiding
+     industry work also hid everything unattributed -- two thirds of the index, silently.
+     It gets its own button instead, so those entries can be excluded when that is what
+     the reader means and are otherwise left alone. (An organization whose type is
+     unrecorded still reads non-academic; no row in the data is currently like that.)
+     Countries work the same way in spirit but need no button: one that is absent, marked
+     unknown, or spelled in a way the region lists do not place is assigned to NO region,
+     so it can never be the reason an entry is vetoed. */
   function regionOf(name) {
     var k = String(name || '').toLowerCase().replace(/^the\s+/, '').trim();
     if (!k || k === 'unknown' || k === 'n/a' || k === 'unspecified') return '';
@@ -211,6 +216,7 @@
   }
   function affTypes(rec) {
     var rows = affiliationRows(rec), acad = false, other = false;
+    if (!rows.length) return ['unaffiliated'];
     for (var i = 0; i < rows.length; i++) {
       if (rows[i].type === 'academic') acad = true; else other = true;
     }
@@ -479,6 +485,11 @@
     return false;
   }
 
+  /* The hover text is one line, so a stacked label flattens back for it. */
+  function plainLabel(v) {
+    return String(AFF_LABELS[v] || v).replace(/\s*\n\s*/g, ' ');
+  }
+
   function buildAffToggles() {
     var present = affFieldsPresent();
     AFF_GROUPS.forEach(function (grp) {
@@ -496,8 +507,10 @@
         var btn = el('button', 'aff-btn' + (on ? ' active' : ''));
         btn.type = 'button';
         btn.title = on
-          ? 'Allowing ' + AFF_LABELS[v] + ': ' + (counts[v] || 0) + ' entries have one'
-          : 'Excluding every entry with any ' + AFF_LABELS[v] + ' organization';
+          ? 'Allowing ' + plainLabel(v) + ': ' + (counts[v] || 0) + ' entries'
+          : 'Excluding every entry ' + (v === 'unaffiliated'
+              ? 'with no affiliation on record'
+              : 'with any ' + plainLabel(v) + ' organization');
         btn.appendChild(el('span', 'aff-label', AFF_LABELS[v]));
         btn.appendChild(el('span', 'aff-badge', String(counts[v] || 0)));
         btn.onclick = (function (g, val) {
