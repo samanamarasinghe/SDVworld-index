@@ -87,14 +87,25 @@
       values: ['americas', 'europe', 'asia_plus'], onEmpty: 'all' }
   ];
   /* Country names as the affiliation tables spell them, plus the aliases those tables
-     have used before. Asia+ is the known-country remainder: Asia, Oceania and Africa. */
+     have used before. All three regions are ENUMERATED, including Asia+ (Asia, Oceania
+     and Africa), rather than one of them serving as the remainder: a name none of the
+     lists recognizes has to come out as no region at all, because a veto must never
+     rest on a country we failed to place. Adding a country here is the fix when one
+     turns up unplaced -- it will show in no count until it is listed. */
   var AMERICAS = {};
   var EUROPE = {};
+  var ASIA_PLUS = {};
   (function (index) {
     'United States|United States of America|USA|US|Canada|Mexico|Brazil|Colombia|Argentina|Chile|Peru|Ecuador|Uruguay|Paraguay|Bolivia|Venezuela|Costa Rica|Panama|Guatemala|Honduras|Nicaragua|El Salvador|Cuba|Dominican Republic|Haiti|Jamaica|Trinidad and Tobago|Barbados|Bahamas|Belize|Guyana|Suriname|Puerto Rico|Greenland'
       .split('|').forEach(function (n) { AMERICAS[n.toLowerCase()] = 1; });
-    'United Kingdom|UK|Great Britain|England|Scotland|Wales|Northern Ireland|Ireland|France|Germany|Italy|Spain|Portugal|Netherlands|Belgium|Luxembourg|Switzerland|Austria|Denmark|Norway|Sweden|Finland|Iceland|Poland|Czech Republic|Czechia|Slovakia|Hungary|Romania|Bulgaria|Greece|Croatia|Slovenia|Serbia|Bosnia and Herzegovina|Montenegro|North Macedonia|Albania|Estonia|Latvia|Lithuania|Belarus|Ukraine|Moldova|Russia|Russian Federation|Malta|Cyprus|Monaco|Liechtenstein|Andorra|San Marino'
+    'United Kingdom|UK|Great Britain|England|Scotland|Wales|Northern Ireland|Ireland|France|Germany|Italy|Spain|Portugal|Netherlands|Belgium|Luxembourg|Switzerland|Austria|Denmark|Norway|Sweden|Finland|Iceland|Poland|Czech Republic|Czechia|Slovakia|Hungary|Romania|Bulgaria|Greece|Croatia|Slovenia|Serbia|Bosnia and Herzegovina|Montenegro|North Macedonia|Albania|Estonia|Latvia|Lithuania|Belarus|Ukraine|Moldova|Russia|Russian Federation|Malta|Cyprus|Kosovo|Monaco|Liechtenstein|Andorra|San Marino'
       .split('|').forEach(function (n) { EUROPE[n.toLowerCase()] = 1; });
+    'China|India|South Korea|Korea|Republic of Korea|North Korea|Japan|Taiwan|Hong Kong|Macau|Singapore|Malaysia|Indonesia|Thailand|Vietnam|Philippines|Cambodia|Laos|Myanmar|Brunei|Timor-Leste|Bangladesh|Pakistan|Sri Lanka|Nepal|Bhutan|Maldives|Afghanistan|Iran|Iraq|Israel|Palestine|Jordan|Lebanon|Syria|Saudi Arabia|Yemen|Oman|United Arab Emirates|UAE|Qatar|Bahrain|Kuwait|Türkiye|Turkey|Georgia|Armenia|Azerbaijan|Kazakhstan|Uzbekistan|Turkmenistan|Kyrgyzstan|Tajikistan|Mongolia'
+      .split('|').forEach(function (n) { ASIA_PLUS[n.toLowerCase()] = 1; });
+    'Australia|New Zealand|Fiji|Papua New Guinea|Samoa|Tonga|Vanuatu|Solomon Islands|New Caledonia|French Polynesia|Guam'
+      .split('|').forEach(function (n) { ASIA_PLUS[n.toLowerCase()] = 1; });
+    'Egypt|Morocco|Algeria|Tunisia|Libya|Sudan|South Sudan|Ethiopia|Eritrea|Djibouti|Somalia|Kenya|Uganda|Tanzania|Rwanda|Burundi|Nigeria|Ghana|Senegal|Ivory Coast|Cote d Ivoire|Mali|Burkina Faso|Niger|Chad|Cameroon|Gabon|Congo|Democratic Republic of the Congo|DR Congo|Central African Republic|Benin|Togo|Guinea|Sierra Leone|Liberia|Gambia|Mauritania|Cape Verde|Zambia|Zimbabwe|Malawi|Mozambique|Angola|Namibia|Botswana|South Africa|Lesotho|Eswatini|Madagascar|Mauritius|Seychelles'
+      .split('|').forEach(function (n) { ASIA_PLUS[n.toLowerCase()] = 1; });
   })();
 
   var CONF_RANK = { high: 3, medium: 2, low: 1 };
@@ -170,14 +181,17 @@
      passesAffiliationFacets useful -- unlighting Non-academic leaves the entries with no
      non-academic organization, which is to say the academic-only ones, with no separate
      exclusive value to maintain. An organization whose type is missing or unknown counts
-     as non-academic, as does an entry with no affiliation at all. An unknown country is
-     assigned to no region, so it can never be the reason an entry is vetoed. */
+     as non-academic, as does an entry with no affiliation at all. A country that is
+     absent, marked unknown, or spelled in a way the region lists do not place is
+     assigned to NO region, so it can never be the reason an entry is vetoed -- and an
+     entry with no affiliation on record therefore survives every regional narrowing. */
   function regionOf(name) {
     var k = String(name || '').toLowerCase().replace(/^the\s+/, '').trim();
-    if (!k || k === 'unknown') return '';
+    if (!k || k === 'unknown' || k === 'n/a' || k === 'unspecified') return '';
     if (AMERICAS[k]) return 'americas';
     if (EUROPE[k]) return 'europe';
-    return 'asia_plus';
+    if (ASIA_PLUS[k]) return 'asia_plus';
+    return '';   // unplaced: carried by no button, so vetoed by none of them
   }
   function affTypes(rec) {
     var rows = affiliationRows(rec), acad = false, other = false;
