@@ -10,9 +10,12 @@ Everything is Python 3 standard library.
 
 | script | what it does |
 |---|---|
+| `apply_author_affiliations.py` | writes author names and affiliations into the base shards from the override series in `data/`, regenerating the two facet lists as it goes. Dry run by default; `--write` applies; `--only SUBSTRING` limits it to one shard. Refuses to write if any curator-owned field would change or if the lists would fall out of alignment. See `docs/author-affiliations.md` |
 | `affiliation_facets.py` | regenerates `affiliation_types` and `affiliation_countries` from `affiliations` in every base shard record, aligned with the distinct organization sequence rather than with `authors`. Run without `--write` to report drift. Skips correction records, because an empty field on an override would blank the base record's value when `build.py` merges |
 | `strip_joined_fields.py` | removes from a shard anything `build.py` can join back from the pools, so a shard carries only what a curator decided. Only touches regenerable fields — never `venue` or `doi`, which stay curator-owned |
 | `facet_lift.py` | lifts bibliographic facets out of the raw pools into `data/tail/facet-lift.json`, a curation-ready sidecar. Regenerable; a missing copy is not data loss |
+| `build_impact.py` | rebuilds `data/impact.json`, the hand-checked citation counts that override the pool join |
+| `pool_hygiene.py` | reports defects in the raw pools rather than fixing them — the doubled records in `data/tail/openalex-citations.json` are the standing example |
 | `arxiv_lane.py` | reports which influential arXiv works remain uncurated. Also the one place that dedupes `data/tail/openalex-citations.json` on read, which matters because the stored file holds 14 works twice. Slices by a stable hash of the arXiv id — never by position in the remaining list, which reshuffles every slice as soon as one shard lands |
 
 ## Archived
@@ -26,5 +29,6 @@ says what each one was for.
 
 - The record schema and vocabularies: `docs/schema.md`
 - How to curate, and the accumulated conventions: `docs/agent-guide.md`
+- Where author affiliations come from: `docs/author-affiliations.md`
 - Judgment calls awaiting a ruling: `docs/open-questions.md`
 - What is left to do: `TODO.txt`
