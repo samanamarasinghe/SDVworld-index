@@ -73,18 +73,19 @@
      page -- see passesAffiliationFacets. onEmpty says what to do when the last lit button
      in a group is switched off, since an empty group would show nothing: the pair hands
      the selection to its partner, a group of three or more reopens entirely. */
-  /* A label may carry a newline, which the button renders as two centred lines. Africa
-     and Oceania are one bucket of 16 entries between them, and stacking the name keeps
-     that button as narrow as "Americas" so all four regions still fit one line of a
-     third-width column. */
+  /* A label may carry a newline, which the button renders as two centred lines. Every
+     label in the type group names the affiliation outright, because the group sits under
+     Sector where a bare "Academic" would read as a claim about the subject matter rather
+     than about the authors' organizations; stacking keeps the longer names narrow. */
   var AFF_LABELS = {
-    academic: 'Academic', non_academic: 'Non-academic', unaffiliated: 'Affiliation\nnot found',
+    academic: 'Academic\naffiliation', non_academic: 'Non-academic\naffiliation',
+    unaffiliated: 'Affiliation\nnot found',
     americas: 'Americas', europe: 'Europe', asia: 'Asia',
     africa_oceania: 'Africa /\nOceania'
   };
   /* Each group mounts beside the checkbox facet asking the same question from the other
-     direction: Academic over Industry, which classifies the work rather than the people,
-     and the regions over the organization list they summarize. */
+     direction: the affiliation types over Sector, which classifies the work rather than
+     the people, and the regions over the organization list they summarize. */
   var AFF_GROUPS = [
     { facet: 'aff_type', mount: 'affTypeToggles',
       values: ['academic', 'non_academic', 'unaffiliated'], onEmpty: 'all' },
