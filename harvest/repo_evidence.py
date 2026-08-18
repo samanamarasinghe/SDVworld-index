@@ -3,6 +3,7 @@
 
     python harvest/repo_evidence.py owner/repo [owner/repo ...]
     python harvest/repo_evidence.py --slice 3/8      # partition the pooled repos
+    python harvest/repo_evidence.py --skip-existing  # resume: leave ok records alone
     python harvest/repo_evidence.py --out evidence/  # default: harvest/evidence/
 
 No GITHUB_TOKEN is required. Two acquisition paths, chosen by repository size as
@@ -164,6 +165,22 @@ def read_readme(root):
     return ''
 
 
+def harvested(repo, out_dir):
+    """True if an earlier run already wrote a successful record for this repo.
+
+    An error record does not count. A 404 is permanent but a timed-out fetch is
+    not, and re-trying a handful of failures costs less than silently dropping a
+    repository that would have worked on the second attempt.
+    """
+    path = os.path.join(out_dir, repo.replace('/', '__') + '.json')
+    if not os.path.exists(path):
+        return False
+    try:
+        return json.load(open(path)).get('status') == 'ok'
+    except (OSError, ValueError):  # truncated by an interrupted run
+        return False
+
+
 def harvest(repo, size_kb, out_dir):
     dest = tempfile.mkdtemp(prefix='sdvrepo-')
     record = {'repo': repo, 'disk_kb': size_kb}
@@ -200,6 +217,8 @@ def main():
     parser.add_argument('repos', nargs='*')
     parser.add_argument('--slice', help='K/N, take every Nth repo from the pool')
     parser.add_argument('--out', default=DEFAULT_OUT)
+    parser.add_argument('--skip-existing', action='store_true',
+                        help='leave repos that already have an ok record alone')
     args = parser.parse_args()
 
     sizes = {r['repo']: r.get('disk_kb', 0) for r in json.load(open(POOL))['repos']}
@@ -210,6 +229,12 @@ def main():
         names = args.repos
     else:
         parser.error('give repo names or --slice K/N')
+
+    if args.skip_existing:
+        keep = [r for r in names if not harvested(r, args.out)]
+        print(f'skipping {len(names) - len(keep)} already harvested, '
+              f'{len(keep)} to go', file=sys.stderr)
+        names = keep
 
     ok = 0
     for i, repo in enumerate(names, 1):
