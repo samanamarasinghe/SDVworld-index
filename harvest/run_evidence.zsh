@@ -7,6 +7,10 @@
 # Evidence lands in harvest/evidence/ (one JSON per repo), logs in harvest/logs/.
 # No GITHUB_TOKEN needed: repo_evidence.py fetches tarballs and partial clones.
 #
+# Resumable. --skip-existing leaves any repo that already has an ok record alone,
+# so re-running after an interrupt picks up where it stopped. Records that failed
+# ARE retried; to force a full re-harvest, empty harvest/evidence/ first.
+#
 # Run this only after github_tail.py has finished. Slice membership is computed
 # from data/tail/github-repos.json when each process starts, so a pool that
 # changes mid-pass reshuffles the slices and repos get done twice or not at all.
@@ -21,7 +25,8 @@ pids=()
 trap 'print "\ninterrupted, stopping slices"; kill ${pids} 2>/dev/null; exit 130' INT TERM
 
 for k in {1..$N}; do
-  python3 harvest/repo_evidence.py --slice $k/$N > harvest/logs/slice-$k-of-$N.log 2>&1 &
+  python3 harvest/repo_evidence.py --slice $k/$N --skip-existing \
+    > harvest/logs/slice-$k-of-$N.log 2>&1 &
   pids+=($!)
   print "started slice $k/$N (pid $!)"
 done
