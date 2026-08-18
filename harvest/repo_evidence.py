@@ -4,6 +4,7 @@
     python harvest/repo_evidence.py owner/repo [owner/repo ...]
     python harvest/repo_evidence.py --slice 3/8      # partition the pooled repos
     python harvest/repo_evidence.py --skip-existing  # resume: leave ok records alone
+    python harvest/repo_evidence.py --uncurated      # skip repos already indexed
     python harvest/repo_evidence.py --out evidence/  # default: harvest/evidence/
 
 No GITHUB_TOKEN is required. Two acquisition paths, chosen by repository size as
@@ -32,6 +33,7 @@ import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 POOL = os.path.join(ROOT, 'data', 'tail', 'github-repos.json')
+INDEX = os.path.join(ROOT, 'data', 'sdv-index.json')
 DEFAULT_OUT = os.path.join(ROOT, 'harvest', 'evidence')
 
 SIZE_CAP_KB = 20000
@@ -165,6 +167,30 @@ def read_readme(root):
     return ''
 
 
+GITHUB_URL = re.compile(r'https?://(?:www\.)?github\.com/([^/#?]+)/([^/#?]+)')
+
+
+def indexed_repos():
+    """Repositories that already carry a curated entry in the built index.
+
+    Lowercased on both sides: GitHub treats owner/name case-insensitively, and an
+    entry url is typed by hand often enough for its capitalisation to drift from
+    the pool's.
+    """
+    try:
+        entries = json.load(open(INDEX))
+    except (OSError, ValueError):
+        return set()
+    if isinstance(entries, dict):
+        entries = entries.get('entries', [])
+    found = set()
+    for entry in entries:
+        match = GITHUB_URL.match(entry.get('url') or '')
+        if match:
+            found.add(f'{match.group(1)}/{match.group(2)}'.removesuffix('.git').lower())
+    return found
+
+
 def harvested(repo, out_dir):
     """True if an earlier run already wrote a successful record for this repo.
 
@@ -219,6 +245,8 @@ def main():
     parser.add_argument('--out', default=DEFAULT_OUT)
     parser.add_argument('--skip-existing', action='store_true',
                         help='leave repos that already have an ok record alone')
+    parser.add_argument('--uncurated', action='store_true',
+                        help='leave repos that already have an index entry alone')
     args = parser.parse_args()
 
     sizes = {r['repo']: r.get('disk_kb', 0) for r in json.load(open(POOL))['repos']}
@@ -229,6 +257,13 @@ def main():
         names = args.repos
     else:
         parser.error('give repo names or --slice K/N')
+
+    if args.uncurated:
+        curated = indexed_repos()
+        keep = [r for r in names if r.lower() not in curated]
+        print(f'skipping {len(names) - len(keep)} already indexed, '
+              f'{len(keep)} uncurated', file=sys.stderr)
+        names = keep
 
     if args.skip_existing:
         keep = [r for r in names if not harvested(r, args.out)]
