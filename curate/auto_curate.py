@@ -56,6 +56,7 @@ MODEL = 'claude-sonnet-5'
 MAX_TOKENS = 3000        # Sonnet spends output tokens thinking; 1500 truncated
                          # a record mid-evidence and lost the closing brace
 PER_BATCH = 400          # keeps each POST near 10 MB; the API ceiling is far higher
+MAX_ID_CHARS = 64        # the Batch API rejects a custom_id longer than this
 FACETS = ('kind', 'use_case', 'industry', 'sdv_component', 'sdv_concept', 'integration')
 
 README_CHARS = 6000
@@ -112,18 +113,36 @@ def never_readd():
     return {r.lower() for r in data.get('repos', [])}
 
 
+def trim(slug, reserve=0):
+    """Cut a slug to the custom_id ceiling, at a word boundary where one is near.
+
+    `reserve` holds back room for a disambiguating suffix, so appending one after
+    trimming cannot push the result back over the limit.
+    """
+    limit = MAX_ID_CHARS - reserve
+    if len(slug) <= limit:
+        return slug
+    cut = slug[:limit].rstrip('-')
+    tail = cut.rfind('-')
+    if tail > len('repo-'):                # keep whole words, but never only the prefix
+        cut = cut[:tail]
+    return cut.rstrip('-')
+
+
 def slug_for(repo, taken):
     """Deterministic id, assigned here rather than by the model, so two records can
     never collide on one and so a re-run reproduces the same ids."""
     owner, name = repo.split('/', 1)
     base = re.sub(r'[^a-z0-9]+', '-', name.lower()).strip('-') or 'repo'
-    candidate = f'repo-{base}'
+    candidate = trim(f'repo-{base}')
     if candidate in taken:
         owner_slug = re.sub(r'[^a-z0-9]+', '-', owner.lower()).strip('-')
-        candidate = f'repo-{owner_slug}-{base}'
+        candidate = trim(f'repo-{owner_slug}-{base}')
     suffix = 2
     while candidate in taken:
-        candidate = f'repo-{base}-{suffix}'
+        # Trimming a long name can collapse two repositories onto one slug, so the
+        # numeric suffix has to survive the length cap too.
+        candidate = trim(f'repo-{base}', reserve=len(str(suffix)) + 1) + f'-{suffix}'
         suffix += 1
     taken.add(candidate)
     return candidate
