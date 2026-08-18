@@ -49,7 +49,8 @@ REQUESTS_DUMP = os.path.join(OUT, '_requests.json')
 
 API = 'https://api.anthropic.com/v1'
 MODEL = 'claude-sonnet-5'
-MAX_TOKENS = 1500
+MAX_TOKENS = 3000        # Sonnet spends output tokens thinking; 1500 truncated
+                         # a record mid-evidence and lost the closing brace
 PER_BATCH = 400          # keeps each POST near 10 MB; the API ceiling is far higher
 FACETS = ('kind', 'use_case', 'industry', 'sdv_component', 'sdv_concept', 'integration')
 
@@ -181,7 +182,9 @@ Fields:
   industry       {vocab['industry']}
   integration    one of {vocab['integration']}
   importance     integer 0-5
-  evidence       the specific proof: file path with line numbers, or a quoted line
+  evidence       the specific proof: file path with line numbers, or one quoted
+                 line. Keep it under 200 characters -- one good proof, not every
+                 occurrence.
   confidence     high | medium | low
   needs          optional; the open question or unresolved call, if any
 
@@ -223,6 +226,12 @@ RULES THAT DECIDE MOST CASES:
 - A dependency line in requirements.txt with no call anywhere in the code is
   citation_only or unclear, not api_user. Importing is not using.
 - Any model set containing CopulaGAN is the SDV tabular API even if no library is named.
+- COMPONENT IS THE PACKAGE IMPORTED, not the algorithm named. `from sdv.tabular import
+  CTGAN` or `from sdv.single_table import CTGANSynthesizer` is component `sdv` ALONE --
+  the class arrives through SDV. Add `ctgan` only when the standalone package is
+  imported directly, as `import ctgan` or `from ctgan import CTGAN`. The same holds for
+  rdt, copulas and sdmetrics: reached through sdv.*, the component is sdv. The
+  algorithm still goes in sdv_concept either way.
 - TGAN (Xu & Veeramachaneni 2018) is a DIFFERENT work from CTGAN. Key the component to
   what the evidence actually shows.
 - A repository that carries an in-tree copy of ctgan/, sdv/, rdt/ or copulas/ is
