@@ -21,6 +21,10 @@ curate/auto-shards/records/, and everything that fails validation in
 curate/auto-shards/needs-review.jsonl with the reasons. Nothing here is an index
 entry until a human moves it into data/shards/.
 
+A repository that already has a record is skipped, so re-running --submit after a
+pass picks up exactly the failures: a degenerate response, a truncation, a batch-side
+error. Expect a handful across a thousand-odd requests.
+
 What this does NOT do, and must be done by hand afterwards: the cross-record work.
 No duplicate sweep, no detection that two repositories are the same project, no
 check against open questions. Each request sees one repository and nothing else.
@@ -232,6 +236,12 @@ RULES THAT DECIDE MOST CASES:
   imported directly, as `import ctgan` or `from ctgan import CTGAN`. The same holds for
   rdt, copulas and sdmetrics: reached through sdv.*, the component is sdv. The
   algorithm still goes in sdv_concept either way.
+- RECORD THE CONCEPT OF EVERY SYNTHESIZER THAT RUNS. CTGAN or CopulaGAN ->
+  mode_specific_normalization; TVAE -> tvae; GaussianCopula -> gaussian_copula; PAR ->
+  par_sequential; HMA -> relational_hma; a Metadata or SingleTableMetadata object ->
+  metadata_schema; evaluate_quality or QualityReport -> quality_report. Two
+  synthesizers means two concepts. Leave sdv_concept empty only when no algorithm is
+  identifiable at all -- a dataset download, or a bare import that is never called.
 - TGAN (Xu & Veeramachaneni 2018) is a DIFFERENT work from CTGAN. Key the component to
   what the evidence actually shows.
 - A repository that carries an in-tree copy of ctgan/, sdv/, rdt/ or copulas/ is
@@ -352,12 +362,17 @@ def validate(record, repo, entry_id, vocab):
         for value in values:
             if value not in vocab[facet]:
                 problems.append(f'{facet}: {value!r} is not in the vocabulary')
-    if not record.get('use_case'):
-        problems.append('use_case is empty')
-    if not record.get('industry'):
-        problems.append('industry is empty')
 
     integration = record.get('integration')
+    # A false positive has no use case and no domain, so the non-empty requirement is
+    # waived for it -- otherwise every correctly identified collision, which is the
+    # commonest thing in this pool, would be diverted to review.
+    if integration != 'name_collision':
+        if not record.get('use_case'):
+            problems.append('use_case is empty')
+        if not record.get('industry'):
+            problems.append('industry is empty')
+
     if integration not in vocab['integration']:
         problems.append(f'integration: {integration!r} is not in the vocabulary')
     if integration != 'name_collision' and not record.get('sdv_component'):
