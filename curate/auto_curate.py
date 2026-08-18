@@ -169,8 +169,12 @@ Fields:
   authors     real named people, from a README byline or citation block only. Never
               GitHub handles, bots or organisation names. [] if none are named.
   affiliations        aligned 1:1 with authors, null where unknown. [] if no authors.
-  affiliation_types   [] unless the README states an organisation outright
-  affiliation_countries  same
+                      An element may name several organisations separated by "; ".
+  affiliation_types   one per DISTINCT ORGANISATION named in affiliations, in the order
+                      they first appear -- not one per author. Allowed values:
+                      academic, corporate, government, nonprofit, other, unknown.
+                      MUST be [] when affiliations names no organisation at all.
+  affiliation_countries  same alignment, full country names. [] under the same rule.
   sdv_component  {vocab['sdv_component']}
   sdv_concept    {vocab['sdv_concept']}
   use_case       {vocab['use_case']}
@@ -224,7 +228,12 @@ RULES THAT DECIDE MOST CASES:
 - A repository that carries an in-tree copy of ctgan/, sdv/, rdt/ or copulas/ is
   vendored_source, and if it only vendors a bundle it never calls, say so in `needs`.
 - A tutorial or course exercise that runs SDV is still api_user; importance 3 at most.
-- Prefer the domain over `academia` for industry; use academia only if nothing else fits.
+- INDUSTRY IS THE DOMAIN THE WORK IS ABOUT, not the kind of institution that made it.
+  A university repository about credit-card fraud is finance_insurance. `academia` is
+  the last resort, for work whose only subject is scholarship itself; a methods or
+  tooling repository with no single domain is cross_industry, and a repository whose
+  subject is software engineering is software. Reaching for academia because the
+  authors are researchers is the error to avoid.
 - unclear may never carry confidence high.
 - confidence high only where the evidence shows a call site. A README claim alone is
   medium. If the evidence is too thin to judge, say so in `needs` and use low rather
@@ -375,6 +384,22 @@ def validate(record, repo, entry_id, vocab):
         if value not in ('academic', 'corporate', 'government', 'nonprofit',
                          'other', 'unknown'):
             problems.append(f'affiliation_type {value!r} is not in the vocabulary')
+
+    # The two filter lists describe the distinct organizations named in affiliations,
+    # so they cannot be longer than that sequence and must be empty when it is.
+    organizations, seen = [], set()
+    for affiliation in record.get('affiliations') or []:
+        if not affiliation or not isinstance(affiliation, str):
+            continue
+        for organization in (part.strip() for part in affiliation.split(';')):
+            if organization and organization not in seen:
+                seen.add(organization)
+                organizations.append(organization)
+    for field in ('affiliation_types', 'affiliation_countries'):
+        values = record.get(field) or []
+        if len(values) > len(organizations):
+            problems.append(f'{field} has {len(values)} values but affiliations names '
+                            f'{len(organizations)} organization(s)')
     return problems
 
 
