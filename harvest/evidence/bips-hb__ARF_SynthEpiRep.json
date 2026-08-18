@@ -1,0 +1,316 @@
+{
+ "repo": "bips-hb/ARF_SynthEpiRep",
+ "disk_kb": 795,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "---\noutput: html_document\n---\n# Can synthetic data reproduce real-world findings in epidemiology? A replication study using tree-based generative AI\n\nThis repository contains the code which produced the results of the manuscript \"Can synthetic data reproduce real-world findings in epidemiology? A replication study using tree-based generative AI\" by Kapar et al. (2025).\n\n\n## Summary\n\nThe paper proposes the use of [adversarial random forests (ARF)](https://proceedings.mlr.press/v206/watson23a.html) as a competitive, fast, and user-friendly method for synthesizing tabular epidemiological data.\nTo evaluate its performance, statistical analyses from six epidemiological publications were replicated and the results on synthetic data compared to original findings.\nAdditionally, the impact of dimensionality and variable complexity on synthesis quality was assessed by limiting datasets to variables relevant to individual analysis tasks, including necessary derivations.\n\nSupplementary analyses included a comparison of the ARF the effects of the parameter `min_node_size` on synthesis quality, and a comparison of the ARF to other popular synthesis methods for tabular data.\nThe trade-off between utility and privacy (measured by membership and attribute inference attacks) was assessed as well as the generalisation to unseen test data and the synthesis runtime.\n\n\n## Replicated original publications\n\nThe replicated original publications cover blood pressure, anthropometry, myocardial infarction, accelerometry, loneliness, and diabetes,\nand are based on data from the [German National Cohort (NAKO Gesundheitsstudie)](https://nako.de), the [Bremen STEMI Registry U45 Study (BSR-U45)](https://bremer-herzen.de/causes/u45-studie/), and the [Guelph Family Health Study (GFHS)](https://guelphfamilyhealthstudy.com/).\n\n**Publication list**\n\n- Tamara Schikowski, Claudia Wigmann, Kateryna B Fuks, et al.\nBlutdruckmessung in der NAKO—methodische Unterschiede, Blutdruckverteilung und Bekanntheit der Hypertonie im Vergleich zu anderen bevölkerungsbezogenen Studien in Deutschland\n[Blood pressure measurement in the NAKO German National Cohort (GNC)—differences in methods, distribution of blood pressure values, and awareness of hypertension compared to other population-based studies in Germany].\n*Bundesgesundheitsblatt Gesundheitsforschung Gesundheitsschutz* 2020;**63**(4):452–64.\n[https://doi.org/10.1007/s00103-020-03109-8](https://doi.org/10.1007/s00103-020-03109-8)\n\n- Beate Fischer, Anja M Sedlmeier, Saskia Hartwig, et al.\nAnthropometrische Messungen in der NAKO Gesundheitsstudie—mehr als nur Größe und Gewicht\n[Anthropometric measures in the German National Cohort—more than weight and height].\n*Bundesgesundheitsblatt, Gesundheitsforschung, Gesundheitsschutz* 2020;**63**(3):290–300.\n[https://doi.org/10.1007/s00103-020-03096-w](https://doi.org/10.1007/s00103-020-03096-w)\n\n- Harm Wienbergen, Daniel Boakye, Kathrin Günther, et al.\nLifestyle and metabolic risk factors in patients with early-onset myocardial infarction: a case-control study.\n*Eur J Prev Cardiol* 2022;**29**(16):2076–87.\n[https://doi.org/10.1093/eurjpc/zwac132](https://doi.org/10.1093/eurjpc/zwac132)\n\n- Becky Breau, Hannah J Coyle-Asbil, Jess Haines, David WL Ma, and Lori Ann Vallis.\nActiGraph cutpoints impact physical activity and sedentary behavior outcomes in young children.\n*J Meas Phys Behav* 2022;**5**(2):85–96.\n[https://doi.org/10.1123/jmpb.2021-0042](https://doi.org/10.1123/jmpb.2021-0042)\n\n- Klaus Berger, Steffi Riedel-Heller, Alexander Pabst, Marcella Rietschel, Dirk Richter, and NAKO-Konsortium.\nEinsamkeit während der ersten Welle der SARS-CoV-2-Pandemie—Ergebnisse der NAKO-Gesundheitsstudie\n[Loneliness during the first wave of the SARS-CoV-2 pandemic—results of the German National Cohort (NAKO)].\n*Bundesgesundheitsblatt, Gesundheitsforschung, Gesundheitsschutz* 2021;**64**(9):1157–64.\n[https://doi.org/10.1007/s00103-021-03393-y](https://doi.org/10.1007/s00103-021-03393-y)\n\n- Justine Tanoey, Christina Baechle, Hermann Brenner, et al.\nBirth order, caesarean section, or daycare attendance in relation to child-and adult-onset type 1 diabetes: results from the German National Cohort.\n*Int J Environ Res Public Health* 2022;**19**(17):e10880.\n[https://doi.org/10.3390/ijerph191710880](https://doi.org/10.3390/ijerph191710880)\n\n\n## Data availablity\n\nNone of the data used in this work are openly available. Hence, this repository does not contain any data files for reproduction.\n\nThe NAKO data are not openly available due to data protection measures.\nHowever, scientists can apply for data access following the official usage regulations and upon formal request to the NAKO use and access committee (https://transfer.nako.de).\n\nParticipant data from the Bremen STEMI Registry U45 Study (BSR-U45) are not publicly available.\n\nDue to University of Guelph Research Ethics Board restrictions and participant confidentiality, no GFHS participant data are publicly available.\nThe GFHS welcomes outside collaborators. Interested investigators can contact GFHS investigators to explore this option,\nwhich preserves participant confidentiality and meets the requirements of the University of Guelph Research Ethics Board, to protect human subjects.  \n\n\n## Repoistory organisation\n\n- Publication-specific code is organised within subfolders of `/NAKO` and `/GFHS` folders\n- Creation of full and task-specific original datasets: `create_train.R` (calls publication-specific code in publication folders)\n- Data synthesis with R: `create_syn.R` (global for all publicaitons)\n- Analyses replication and comparison: `run_analyses.R` (calls publication-specific code `analysis.R` and `analysis_taskspec.R` in publication folders)\n- Results are stored in `/figures` and `/tables` subfolders of publication folders\n- Supplementary analyses are stored in `/Supplement`\n\n\n## Requirements\n\n### Required <img src=\"https://www.r-project.org/Rlogo.png\" alt=\"R logo\" style=\"height: 1em; vertical-align: middle;\"> packages\n\n**For synthesis:**\n\n- `arf`\n\n**For statistical analyses:**\n\n- `survival`\n- `zscorer`\n- `scales`\n\n**For visualization:**\n\n- `ggplot2`\n- `ggh4x`\n- `xtable`\n\n**For parallel processing:**\n\n- `doParallel`\n- `foreach`\n\n**For data processing and console output:**\n\n- `data.table`\n\n**For supplement:**\n\n- `synthpop`\n- `ddpm`(PyPI)\n- `sdv` (PyPI)\n- `ranger`\n- `pROC`\n- `caret`\n- `approxOT`\n- `philentropy`\n- `binom`\n- `microbenchmark`\n",
+ "hits": {
+  "st": [
+   {
+    "file": "Supplement/runtime/runtime.py",
+    "line": 13,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from timeit import repeat",
+     "import time",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from dpmm.pipelines import PrivBayesPipeline",
+     "",
+     "# to run in console"
+    ]
+   },
+   {
+    "file": "Supplement/runtime/runtime.py",
+    "line": 14,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from timeit import repeat",
+     "import time",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from dpmm.pipelines import PrivBayesPipeline",
+     "",
+     "# to run in console",
+     "sys.path.append(os.getcwd())"
+    ]
+   },
+   {
+    "file": "Supplement/synthesis/synthesize.py",
+    "line": 13,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import random",
+     "import torch",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from dpmm.pipelines import PrivBayesPipeline",
+     "",
+     "torch.backends.cudnn.deterministic = True"
+    ]
+   },
+   {
+    "file": "Supplement/synthesis/synthesize.py",
+    "line": 14,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import torch",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from dpmm.pipelines import PrivBayesPipeline",
+     "",
+     "torch.backends.cudnn.deterministic = True",
+     "torch.backends.cudnn.benchmark = False"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "Supplement/runtime/runtime.py",
+    "line": 12,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import os",
+     "import pandas as pd",
+     "from timeit import repeat",
+     "import time",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from dpmm.pipelines import PrivBayesPipeline",
+     ""
+    ]
+   },
+   {
+    "file": "Supplement/synthesis/synthesize.py",
+    "line": 12,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "import random",
+     "import torch",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from dpmm.pipelines import PrivBayesPipeline",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "Supplement/runtime/runtime.py",
+    "line": 12,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import os",
+     "import pandas as pd",
+     "from timeit import repeat",
+     "import time",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from dpmm.pipelines import PrivBayesPipeline",
+     ""
+    ]
+   },
+   {
+    "file": "Supplement/runtime/runtime.py",
+    "line": 13,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from timeit import repeat",
+     "import time",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from dpmm.pipelines import PrivBayesPipeline",
+     "",
+     "# to run in console"
+    ]
+   },
+   {
+    "file": "Supplement/runtime/runtime.py",
+    "line": 14,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from timeit import repeat",
+     "import time",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from dpmm.pipelines import PrivBayesPipeline",
+     "",
+     "# to run in console",
+     "sys.path.append(os.getcwd())"
+    ]
+   },
+   {
+    "file": "Supplement/synthesis/synthesize.py",
+    "line": 12,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "import random",
+     "import torch",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from dpmm.pipelines import PrivBayesPipeline",
+     ""
+    ]
+   },
+   {
+    "file": "Supplement/synthesis/synthesize.py",
+    "line": 13,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import random",
+     "import torch",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from dpmm.pipelines import PrivBayesPipeline",
+     "",
+     "torch.backends.cudnn.deterministic = True"
+    ]
+   },
+   {
+    "file": "Supplement/synthesis/synthesize.py",
+    "line": 14,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import torch",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from dpmm.pipelines import PrivBayesPipeline",
+     "",
+     "torch.backends.cudnn.deterministic = True",
+     "torch.backends.cudnn.benchmark = False"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "Supplement/runtime/runtime.py",
+    "line": 14,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from timeit import repeat",
+     "import time",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from dpmm.pipelines import PrivBayesPipeline",
+     "",
+     "# to run in console",
+     "sys.path.append(os.getcwd())"
+    ]
+   },
+   {
+    "file": "Supplement/synthesis/synthesize.py",
+    "line": 14,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import torch",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from dpmm.pipelines import PrivBayesPipeline",
+     "",
+     "torch.backends.cudnn.deterministic = True",
+     "torch.backends.cudnn.benchmark = False"
+    ]
+   },
+   {
+    "file": "Supplement/synthesis/synthesize.py",
+    "line": 43,
+    "text": "synthesizer = CTGANSynthesizer(metadata,cuda = device)",
+    "context": [
+     "",
+     "def synthesize_ctgan(data, device = \"cuda:0\"): ",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(data)",
+     "    synthesizer = CTGANSynthesizer(metadata,cuda = device)",
+     "    synthesizer.fit(data)",
+     "    return synthesizer.sample(len(data))",
+     "",
+     "def synthesize_PrivBayes(data, epsilon: float = 1, delta: float = None, proc_epsilon: float = 0.1, device=None):"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "Supplement/runtime/runtime.py",
+    "line": 13,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from timeit import repeat",
+     "import time",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from dpmm.pipelines import PrivBayesPipeline",
+     "",
+     "# to run in console"
+    ]
+   },
+   {
+    "file": "Supplement/synthesis/synthesize.py",
+    "line": 13,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import random",
+     "import torch",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from dpmm.pipelines import PrivBayesPipeline",
+     "",
+     "torch.backends.cudnn.deterministic = True"
+    ]
+   },
+   {
+    "file": "Supplement/synthesis/synthesize.py",
+    "line": 34,
+    "text": "synthesizer = TVAESynthesizer(metadata,cuda = device)",
+    "context": [
+     "",
+     "def synthesize_tvae(data, device = \"cuda:0\"): ",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(data)",
+     "    synthesizer = TVAESynthesizer(metadata,cuda = device)",
+     "    synthesizer.fit(data)",
+     "    return synthesizer.sample(len(data))",
+     "",
+     "# CTGAN"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

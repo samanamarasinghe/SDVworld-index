@@ -1,0 +1,488 @@
+{
+ "repo": "0xb3i/tabular-data-synthesis",
+ "disk_kb": 6306,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Diffusion-based Tabular Data Synthesis\n\n基于扩散模型的表格数据合成系统，支持生成高质量合成表格数据。\n\n## 特性\n\n- 🔥 **多种生成模型**: TabDDPM、CTABGAN、CTABGAN+、TVAE、SMOTE\n- 🛠 **灵活的预处理**: 支持多种表格数据预处理策略\n- 📊 **完整评估体系**: ML-efficacy + 统计相似性评估\n- 🚀 **多数据集支持**: 内置多个基准数据集配置\n- 🎮 **GPU 加速**: 支持 NVIDIA GPU 全量训练\n\n## 环境要求\n\n- **操作系统**: Linux (Ubuntu 22.04)\n- **GPU**: NVIDIA GPU（已验证 RTX 3090, CUDA 11.8）\n- **Python**: 3.9.x\n- **包管理器**: [uv](https://github.com/astral-sh/uv)\n\n## 快速开始\n\n### 1. 安装 NVIDIA 驱动\n\n如果 `nvidia-smi` 无法运行，需要加载内核模块：\n\n```bash\ndepmod -a\nmodprobe nvidia\nmodprobe nvidia-uvm\nmodprobe nvidia-modeset\nmodprobe nvidia-drm\nnvidia-smi  # 验证 GPU 可用\n```\n\n> 如果驱动未安装，执行 `apt-get install -y nvidia-driver-535`（需绕过代理，见下方说明）\n\n### 2. 环境配置\n\n使用 `uv` 包管理器：\n\n```bash\ncd /root/tabular-data-synthesis\n\n# 创建虚拟环境\nuv venv --python 3.9\nsource .venv/bin/activate\n\n# 安装 PyTorch（带 CUDA 支持）\nuv pip install torch==1.13.1 --index-url https://pypi.tuna.tsinghua.edu.cn/simple\n\n# 安装 numpy（必须 <2，兼容 torch 1.x）\nuv pip install \"numpy<2\" --index-url https://pypi.tuna.tsinghua.edu.cn/simple\n\n# 安装其余依赖\nuv pip install table-evaluator catboost category-encoders dython icecream libzero \\\n    optuna pandas pyarrow rtdl scikit-learn scipy skorch tomli-w tomli tqdm \\\n    imbalanced-learn rdt \"setuptools<70\" \\\n    --index-url https://pypi.tuna.tsinghua.edu.cn/simple\n\n# 以可编辑模式安装项目\nuv pip install -e . --no-deps --index-url https://pypi.tuna.tsinghua.edu.cn/simple\n```\n\n> ⚠️ 所有 `uv pip install` 命令必须加 `--index-url https://pypi.tuna.tsinghua.edu.cn/simple`，因为容器无法访问外网。\n\n### 3. 修复兼容性问题\n\n安装完成后，需要修复以下兼容性问题：\n\n#### 3.1 修复 scikit-plot 的 scipy.interp 兼容性\n\nscipy 1.10+ 移除了 `interp` 函数，scikit-plot 仍在使用。修改两个文件：\n\n**文件 1**: `.venv/lib/python3.9/site-packages/scikitplot/metrics.py`\n\n```python\n# 将第 27 行：\nfrom scipy import interp\n# 替换为：\ntry:\n    from scipy import interp\nexcept ImportError:\n    from numpy import interp\n```\n\n**文件 2**: `.venv/lib/python3.9/site-packages/scikitplot/plotters.py`\n\n```python\n# 将第 28 行：\nfrom scipy import interp\n# 替换为：\ntry:\n    from scipy import interp\nexcept ImportError:\n    from numpy import interp\n```\n\n### 4. 准备数据集\n\n数据集已存放在项目根目录 `data/` 下，需要创建符号链接到 `src/tabsynth/data/`：\n\n```bash\ncd /root/tabular-data-synthesis\nrm -rf src/tabsynth/data\nln -s ../../data src/tabsynth/data\n```\n\n验证数据可访问：\n\n```bash\nls src/tabsynth/data/adult/  # 应看到 X_num_train.npy, X_cat_train.npy, y_train.npy 等\n```\n\n### 5. 运行 Pipeline\n\n```bash\n# 激活环境\nsource .venv/bin/activate\n\n# Debug 模式（默认，CPU 快速验证）\npython src/tabsynth/scripts/pipeline.py \\\n    --config src/tabsynth/exp/adult/config.toml \\\n    --train --sample --eval\n\n# 全量 GPU 训练模式（推荐）\nAZUREML_RUN_ID=1 python src/tabsynth/scripts/pipeline.py \\\n    --config src/tabsynth/exp/adult/config.toml \\\n    --train --sample --eval\n```\n\n或使用脚本：\n\n```bash\n./run_dataset.sh adult --train --sample --eval\n\n# 全量 GPU 模式\nAZUREML_RUN_ID=1 ./run_dataset.sh adult --train --sample --eval\n```\n\n## 可用数据集\n\n| 数据集 | 任务类型 | 样本数 | 特征数 | 说明 |\n|--------|----------|--------|--------|------|\n| adult | 二分类 | 26,048 | 14 | 收入预测 |\n| cardio | 二分类 | 44,800 | 11 | 心血管疾病预测 |\n| churn2 | 二分类 | 6,400 | 11 | 客户流失预测 |\n| california | 回归 | 13,209 | 8 | 加州房价预测 |\n| diabetes | 二分类 | 491 | 8 | 糖尿病预测 |\n| abalone | 回归 | 2,672 | 8 | 鲍鱼年龄预测 |\n\n运行其他数据集：\n\n```bash\nAZUREML_RUN_ID=1 ./run_dataset.sh cardio --train --sample --eval\nAZUREML_RUN_ID=1 ./run_dataset.sh churn2 --train --sample --eval\nAZUREML_RUN_ID=1 ./run_dataset.sh california --train --sample --eval\n```\n\n## Debug 模式 vs 完整训练模式\n\n| 模式 | 扩散步数 | 训练步数 | 设备 | 采样数量 | 适用场景 |\n|------|----------|----------|------|----------|----------|\n| **Debug 模式** | 10 | 2 | CPU | 10000 | 快速验证流程、调试代码 |\n| **完整训练模式** | 1000 | 5000-10000 | GPU | 原始数据量 | 正式训练、生产环境 |\n\n### 切换方式\n\n**方式一：环境变量（推荐）**\n\n```bash\n# Debug 模式（默认）\npython src/tabsynth/scripts/pipeline.py --config src/tabsynth/exp/adult/config.toml --train --sample --eval\n\n# 完整训练模式\nAZUREML_RUN_ID=1 python src/tabsynth/scripts/pipeline.py --config src/tabsynth/exp/adult/config.toml --train --sample --eval\n```\n\n**方式二：修改代码**\n\n编辑 `src/tabsynth/lib/variables.py`：\n\n```python\nRUNS_IN_CLOUD = True  # 强制启用完整训练模式\n```\n\n## 项目结构\n\n```\ntabular-data-synthesis/\n├── data/                        # 数据目录（实际数据存放位置）\n│   └── <dataset>/               # 各数据集文件夹\n│       ├── X_num_*.npy          # 数值特征\n│       ├── X_cat_*.npy          # 类别特征\n│       ├── y_*.npy              # 标签\n│       └── info.json            # 数据集元信息\n├── src/tabsynth/\n│   ├── data/                    # → 符号链接到 ../../data\n│   ├── exp/                     # 实验配置\n│   │   └── <dataset>/\n│   │       └── config.toml      # 实验参数配置\n│   ├── scripts/                 # 主要脚本\n│   │   ├── pipeline.py          # 完整流程\n│   │   ├── train.py             # 训练\n│   │   ├── sample.py            # 采样\n│   │   └── eval_*.py            # 评估\n│   ├── tab_ddpm/                # 扩散模型实现\n│   ├── tabular_processing/      # 表格数据预处理\n│   ├── evaluation/              # 评估模块\n│   └── lib/                     # 工具函数\n├── outputs/                     # 输出目录（自动生成）\n├── docs/                        # 文档\n├── run_dataset.sh               # 便捷运行脚本\n├── pyproject.toml               # 项目配置和依赖定义\n└── requirements.lock            # 精确版本锁定\n```\n\n## 配置参数说明\n\n| 参数 | 说明 | 推荐值 |\n|------|------|--------|\n| `num_timesteps` | 扩散步数 | 1000 |\n| `scheduler` | 噪声调度器 | \"cosine\" |\n| `steps` | 训练步数 | 5000-10000 |\n| `batch_size` | 批大小 | 4096 |\n| `device` | 训练设备 | \"cuda:0\" |\n| `tabular_processor.type` | 预处理策略 | \"identity\" / \"bgm\" / \"ft\" |\n\n## 添加自定义数据集\n\n### 1. 准备数据文件\n\n将数据放入 `data/<your_dataset>/`：\n\n```\nX_num_train.npy, X_num_val.npy, X_num_test.npy  # 数值特征 (n_samples, n_num_features)\nX_cat_train.npy, X_cat_val.npy, X_cat_test.npy  # 类别特征 (可选)\ny_train.npy, y_val.npy, y_test.npy              # 标签 (n_samples,)\ninfo.json                                        # 元信息\n```\n\n### 2. 创建 info.json\n\n```json\n{\n    \"name\": \"Your Dataset\",\n    \"task_type\": \"binclass\",\n    \"n_num_features\": 6,\n    \"n_cat_features\": 4,\n    \"train_size\": 10000,\n    \"val_size\": 2000,\n    \"test_size\": 3000,\n    \"dataset_config\": {\n        \"cat_columns\": [\"cat1\", \"cat2\"],\n        \"int_columns\": [\"num1\", \"num2\"],\n        \"target_column\": \"target\"\n    }\n}\n```\n\n### 3. 创建 config.toml\n\n复制 `src/tabsynth/exp/adult/config.toml` 并修改参数。\n\n### 4. 运行\n\n```bash\nAZUREML_RUN_ID=1 python src/tabsynth/scripts/pipeline.py \\\n    --config src/tabsynth/exp/<your_dataset>/config.toml \\\n    --train --sample --eval\n```\n\n## 评估指标\n\n### ML-efficacy\n\n使用合成数据训练分类器，在真实测试集上评估性能：\n- Accuracy\n- F1-score\n- ROC-AUC\n\n### 统计相似性\n\n- `basic_score`: 均值/方差/中位数相似度\n- `corr_score`: 特征相关性保持\n- `ml_score`: ML-efficacy 一致性\n- `sup_score`: 分布覆盖度\n\n## 已知问题与解决方案\n\n| 问题 | 原因 | 解决方案 |\n|------|------|----------|\n| `ImportError: cannot import name 'interp' from 'scipy'` | scipy 1.10+ 移除了 `interp` | 修改 scikit-plot 源码，使用 `numpy.interp` 替代 |\n| `ImportError: cannot import name 'compute_associations'` | dython 新版 API 变更 | 已在项目代码中适配为 `associations()` |\n| `InvalidParameterError: 'subsample' must be an int` | sklearn 新版参数类型检查更严格 | 已修复为 `int(1e9)` |\n| `TypeError: unexpected keyword argument 'squared'` | sklearn 1.4+ 移除了 `squared` 参数 | 已修复为 `np.sqrt(mean_squared_error(...))` |\n| `ModuleNotFoundError: No module named 'pkg_resources'` | setuptools >= 70 不再默认包含 | 安装 `setuptools<70` |\n| apt 无法下载包 | 容器代理配置问题 | 运行 `unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY` 后再执行 apt |\n\n## 已安装的依赖版本\n\n| 包名 | 版本 | 说明 |\n|------|------|------|\n| torch | 1.13.1+cu117 | CUDA 11.7 支持 |\n| numpy | 1.26.4 | 必须 <2，兼容 torch |\n| scipy | 1.13.1 | |\n| catboost | 1.2.10 | |\n| scikit-learn | 1.6.1 | |\n| pandas | 2.3.3 | |\n| dython | 0.5.1 | |\n| table-evaluator | 1.6.1 | |\n| rtdl | 0.0.13 | |\n| setuptools | 69.5.1 | 必须 <70 |\n\n## 参考文献\n\n- [TabDDPM: Modelling Tabular Data with Diffusion Models](https://arxiv.org/abs/2209.15421)\n- [CTAB-GAN+: Enhancing Tabular Data Synthesis](https://arxiv.org/abs/2204.00401)\n- [TabSynDex: A Universal Metric for Robust Evaluation of Synthetic Tabular Data](https://arxiv.org/abs/2207.05295)\n",
+ "hits": {
+  "tvae": [
+   {
+    "file": "src/tabsynth/CTGAN/train_sample_tvae.py",
+    "line": 5,
+    "text": "from tabsynth.CTGAN.CTGAN.ctgan import TVAESynthesizer",
+    "context": [
+     "from tabsynth import lib",
+     "import os",
+     "import numpy as np",
+     "import argparse",
+     "from tabsynth.CTGAN.CTGAN.ctgan import TVAESynthesizer",
+     "from pathlib import Path",
+     "import torch",
+     "import pickle",
+     "import warnings"
+    ]
+   },
+   {
+    "file": "src/tabsynth/CTGAN/train_sample_tvae.py",
+    "line": 41,
+    "text": "synthesizer =  TVAESynthesizer(",
+    "context": [
+     "",
+     "    train_params[\"batch_size\"] = min(y_train.shape[0], train_params[\"batch_size\"])",
+     "",
+     "    print(train_params)",
+     "    synthesizer =  TVAESynthesizer( ",
+     "                    **train_params,",
+     "                    device=device",
+     "                ) ",
+     "    "
+    ]
+   },
+   {
+    "file": "src/tabsynth/CTGAN/CTGAN/ctgan/__init__.py",
+    "line": 11,
+    "text": "from .synthesizers.tvae import TVAESynthesizer",
+    "context": [
+     "__version__ = '0.5.2.dev0'",
+     "",
+     "from .demo import load_demo",
+     "from .synthesizers.ctgan import CTGANSynthesizer",
+     "from .synthesizers.tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    'CTGANSynthesizer',",
+     "    'TVAESynthesizer',"
+    ]
+   },
+   {
+    "file": "src/tabsynth/CTGAN/CTGAN/ctgan/__init__.py",
+    "line": 15,
+    "text": "'TVAESynthesizer',",
+    "context": [
+     "from .synthesizers.tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    'CTGANSynthesizer',",
+     "    'TVAESynthesizer',",
+     "    'load_demo'",
+     ")"
+    ]
+   },
+   {
+    "file": "src/tabsynth/CTGAN/CTGAN/ctgan/synthesizers/__init__.py",
+    "line": 4,
+    "text": "from .tvae import TVAESynthesizer",
+    "context": [
+     "\"\"\"Synthesizers module.\"\"\"",
+     "",
+     "from .ctgan import CTGANSynthesizer",
+     "from .tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    'CTGANSynthesizer',",
+     "    'TVAESynthesizer'"
+    ]
+   },
+   {
+    "file": "src/tabsynth/CTGAN/CTGAN/ctgan/synthesizers/__init__.py",
+    "line": 8,
+    "text": "'TVAESynthesizer'",
+    "context": [
+     "from .tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    'CTGANSynthesizer',",
+     "    'TVAESynthesizer'",
+     ")",
+     "",
+     "",
+     "def get_all_synthesizers():"
+    ]
+   },
+   {
+    "file": "src/tabsynth/CTGAN/CTGAN/ctgan/synthesizers/tvae.py",
+    "line": 1,
+    "text": "\"\"\"TVAESynthesizer module.\"\"\"",
+    "context": [
+     "\"\"\"TVAESynthesizer module.\"\"\"",
+     "",
+     "import numpy as np",
+     "import torch",
+     "from torch.nn import Linear, Module, Parameter, ReLU, Sequential"
+    ]
+   },
+   {
+    "file": "src/tabsynth/CTGAN/CTGAN/ctgan/synthesizers/tvae.py",
+    "line": 15,
+    "text": "\"\"\"Encoder for the TVAESynthesizer.",
+    "context": [
+     "from .base import BaseSynthesizer, random_state",
+     "",
+     "",
+     "class Encoder(Module):",
+     "    \"\"\"Encoder for the TVAESynthesizer.",
+     "",
+     "    Args:",
+     "        data_dim (int):",
+     "            Dimensions of the data."
+    ]
+   },
+   {
+    "file": "src/tabsynth/CTGAN/CTGAN/ctgan/synthesizers/tvae.py",
+    "line": 51,
+    "text": "\"\"\"Decoder for the TVAESynthesizer.",
+    "context": [
+     "        return mu, std, logvar",
+     "",
+     "",
+     "class Decoder(Module):",
+     "    \"\"\"Decoder for the TVAESynthesizer.",
+     "",
+     "    Args:",
+     "        embedding_dim (int):",
+     "            Size of the input vector."
+    ]
+   },
+   {
+    "file": "src/tabsynth/CTGAN/CTGAN/ctgan/synthesizers/tvae.py",
+    "line": 103,
+    "text": "class TVAESynthesizer(BaseSynthesizer):",
+    "context": [
+     "    KLD = -0.5 * torch.sum(1 + logvar - mu**2 - logvar.exp())",
+     "    return sum(loss) * factor / x.size()[0], KLD / x.size()[0]",
+     "",
+     "",
+     "class TVAESynthesizer(BaseSynthesizer):",
+     "    \"\"\"TVAESynthesizer.\"\"\"",
+     "",
+     "    def __init__(",
+     "        self,"
+    ]
+   },
+   {
+    "file": "src/tabsynth/CTGAN/CTGAN/ctgan/synthesizers/tvae.py",
+    "line": 104,
+    "text": "\"\"\"TVAESynthesizer.\"\"\"",
+    "context": [
+     "    return sum(loss) * factor / x.size()[0], KLD / x.size()[0]",
+     "",
+     "",
+     "class TVAESynthesizer(BaseSynthesizer):",
+     "    \"\"\"TVAESynthesizer.\"\"\"",
+     "",
+     "    def __init__(",
+     "        self,",
+     "        embedding_dim=128,"
+    ]
+   }
+  ],
+  "ctgan_mod": [
+   {
+    "file": "src/tabsynth/CTGAN/CTGAN/README.md",
+    "line": 91,
+    "text": "from ctgan import CTGANSynthesizer",
+    "context": [
+     "In this example we load the [Adult Census Dataset](https://archive.ics.uci.edu/ml/datasets/adult) which is a built-in demo dataset. We then model it using the **CTGANSynthesizer** and generate a synth",
+     "",
+     "",
+     "```python3",
+     "from ctgan import CTGANSynthesizer",
+     "from ctgan import load_demo",
+     "",
+     "data = load_demo()",
+     ""
+    ]
+   },
+   {
+    "file": "src/tabsynth/CTGAN/CTGAN/README.md",
+    "line": 92,
+    "text": "from ctgan import load_demo",
+    "context": [
+     "",
+     "",
+     "```python3",
+     "from ctgan import CTGANSynthesizer",
+     "from ctgan import load_demo",
+     "",
+     "data = load_demo()",
+     "",
+     "# Names of the columns that are discrete"
+    ]
+   },
+   {
+    "file": "src/tabsynth/CTGAN/CTGAN/ctgan/__main__.py",
+    "line": 5,
+    "text": "from ctgan.data import read_csv, read_tsv, write_tsv",
+    "context": [
+     "\"\"\"CLI.\"\"\"",
+     "",
+     "import argparse",
+     "",
+     "from ctgan.data import read_csv, read_tsv, write_tsv",
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+     "",
+     "",
+     "def _parse_args():"
+    ]
+   },
+   {
+    "file": "src/tabsynth/CTGAN/CTGAN/ctgan/__main__.py",
+    "line": 6,
+    "text": "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+    "context": [
+     "",
+     "import argparse",
+     "",
+     "from ctgan.data import read_csv, read_tsv, write_tsv",
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+     "",
+     "",
+     "def _parse_args():",
+     "    parser = argparse.ArgumentParser(description='CTGAN Command Line Interface')"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "src/tabsynth/CTGAN/CTGAN/README.md",
+    "line": 87,
+    "text": "In this example we load the [Adult Census Dataset](https://archive.ics.uci.edu/ml/datasets/adult) which is a built-in demo dataset. We then model it using the **CTGANSynthesizer** and generate a synthetic copy of it.",
+    "context": [
+     "",
+     "* **Continuous Columns**: can contain any numerical value.",
+     "* **Discrete Columns**: contain a finite number values, whether these are string values or not.",
+     "",
+     "In this example we load the [Adult Census Dataset](https://archive.ics.uci.edu/ml/datasets/adult) which is a built-in demo dataset. We then model it using the **CTGANSynthesizer** and generate a synth",
+     "",
+     "",
+     "```python3",
+     "from ctgan import CTGANSynthesizer"
+    ]
+   },
+   {
+    "file": "src/tabsynth/CTGAN/CTGAN/README.md",
+    "line": 91,
+    "text": "from ctgan import CTGANSynthesizer",
+    "context": [
+     "In this example we load the [Adult Census Dataset](https://archive.ics.uci.edu/ml/datasets/adult) which is a built-in demo dataset. We then model it using the **CTGANSynthesizer** and generate a synth",
+     "",
+     "",
+     "```python3",
+     "from ctgan import CTGANSynthesizer",
+     "from ctgan import load_demo",
+     "",
+     "data = load_demo()",
+     ""
+    ]
+   },
+   {
+    "file": "src/tabsynth/CTGAN/CTGAN/README.md",
+    "line": 109,
+    "text": "ctgan = CTGANSynthesizer(epochs=10)",
+    "context": [
+     "    'native-country',",
+     "    'income'",
+     "]",
+     "",
+     "ctgan = CTGANSynthesizer(epochs=10)",
+     "ctgan.fit(data, discrete_columns)",
+     "",
+     "# Synthetic copy",
+     "samples = ctgan.sample(1000)"
+    ]
+   },
+   {
+    "file": "src/tabsynth/CTGAN/CTGAN/ctgan/__init__.py",
+    "line": 10,
+    "text": "from .synthesizers.ctgan import CTGANSynthesizer",
+    "context": [
+     "__email__ = 'dailabmit@gmail.com'",
+     "__version__ = '0.5.2.dev0'",
+     "",
+     "from .demo import load_demo",
+     "from .synthesizers.ctgan import CTGANSynthesizer",
+     "from .synthesizers.tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    'CTGANSynthesizer',"
+    ]
+   },
+   {
+    "file": "src/tabsynth/CTGAN/CTGAN/ctgan/__init__.py",
+    "line": 14,
+    "text": "'CTGANSynthesizer',",
+    "context": [
+     "from .synthesizers.ctgan import CTGANSynthesizer",
+     "from .synthesizers.tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    'CTGANSynthesizer',",
+     "    'TVAESynthesizer',",
+     "    'load_demo'",
+     ")"
+    ]
+   },
+   {
+    "file": "src/tabsynth/CTGAN/CTGAN/ctgan/__main__.py",
+    "line": 6,
+    "text": "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+    "context": [
+     "",
+     "import argparse",
+     "",
+     "from ctgan.data import read_csv, read_tsv, write_tsv",
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+     "",
+     "",
+     "def _parse_args():",
+     "    parser = argparse.ArgumentParser(description='CTGAN Command Line Interface')"
+    ]
+   },
+   {
+    "file": "src/tabsynth/CTGAN/CTGAN/ctgan/__main__.py",
+    "line": 70,
+    "text": "model = CTGANSynthesizer.load(args.load)",
+    "context": [
+     "    else:",
+     "        data, discrete_columns = read_csv(args.data, args.metadata, args.header, args.discrete)",
+     "",
+     "    if args.load:",
+     "        model = CTGANSynthesizer.load(args.load)",
+     "    else:",
+     "        generator_dim = [int(x) for x in args.generator_dim.split(',')]",
+     "        discriminator_dim = [int(x) for x in args.discriminator_dim.split(',')]",
+     "        model = CTGANSynthesizer("
+    ]
+   },
+   {
+    "file": "src/tabsynth/CTGAN/CTGAN/ctgan/__main__.py",
+    "line": 74,
+    "text": "model = CTGANSynthesizer(",
+    "context": [
+     "        model = CTGANSynthesizer.load(args.load)",
+     "    else:",
+     "        generator_dim = [int(x) for x in args.generator_dim.split(',')]",
+     "        discriminator_dim = [int(x) for x in args.discriminator_dim.split(',')]",
+     "        model = CTGANSynthesizer(",
+     "            embedding_dim=args.embedding_dim, generator_dim=generator_dim,",
+     "            discriminator_dim=discriminator_dim, generator_lr=args.generator_lr,",
+     "            generator_decay=args.generator_decay, discriminator_lr=args.discriminator_lr,",
+     "            discriminator_decay=args.discriminator_decay, batch_size=args.batch_size,"
+    ]
+   },
+   {
+    "file": "src/tabsynth/CTGAN/CTGAN/ctgan/synthesizers/__init__.py",
+    "line": 3,
+    "text": "from .ctgan import CTGANSynthesizer",
+    "context": [
+     "\"\"\"Synthesizers module.\"\"\"",
+     "",
+     "from .ctgan import CTGANSynthesizer",
+     "from .tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    'CTGANSynthesizer',"
+    ]
+   },
+   {
+    "file": "src/tabsynth/CTGAN/CTGAN/ctgan/synthesizers/__init__.py",
+    "line": 7,
+    "text": "'CTGANSynthesizer',",
+    "context": [
+     "from .ctgan import CTGANSynthesizer",
+     "from .tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    'CTGANSynthesizer',",
+     "    'TVAESynthesizer'",
+     ")",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "src/tabsynth/CTGAN/CTGAN/ctgan/synthesizers/ctgan.py",
+    "line": 1,
+    "text": "\"\"\"CTGANSynthesizer module.\"\"\"",
+    "context": [
+     "\"\"\"CTGANSynthesizer module.\"\"\"",
+     "",
+     "import warnings",
+     "",
+     "import numpy as np"
+    ]
+   },
+   {
+    "file": "src/tabsynth/CTGAN/CTGAN/ctgan/synthesizers/ctgan.py",
+    "line": 18,
+    "text": "\"\"\"Discriminator for the CTGANSynthesizer.\"\"\"",
+    "context": [
+     "from .base import BaseSynthesizer, random_state",
+     "",
+     "",
+     "class Discriminator(Module):",
+     "    \"\"\"Discriminator for the CTGANSynthesizer.\"\"\"",
+     "",
+     "    def __init__(self, input_dim, discriminator_dim, pac=10):",
+     "        super(Discriminator, self).__init__()",
+     "        dim = input_dim * pac"
+    ]
+   }
+  ],
+  "rdt": [
+   {
+    "file": "src/tabsynth/CTGAN/CTGAN/ctgan/data_transformer.py",
+    "line": 7,
+    "text": "from rdt.transformers import BayesGMMTransformer, OneHotEncodingTransformer",
+    "context": [
+     "from collections import namedtuple",
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from rdt.transformers import BayesGMMTransformer, OneHotEncodingTransformer",
+     "",
+     "SpanInfo = namedtuple('SpanInfo', ['dim', 'activation_fn'])",
+     "ColumnTransformInfo = namedtuple(",
+     "    'ColumnTransformInfo', ["
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ctgan_mod",
+  "rdt",
+  "tvae"
+ ],
+ "vendored_dirs": [
+  "src/tabsynth/CTGAN"
+ ],
+ "dependencies": {
+  "environment.yml": [
+   "    - rdt==0.6.4"
+  ],
+  "pyproject.toml": [
+   "    \"rdt>=0.6.4\","
+  ],
+  "src/tabsynth/CTGAN/CTGAN/setup.py": [
+   "    'rdt>=0.6.2,<0.7',",
+   "            'ctgan=ctgan.__main__:main'",
+   "    keywords='ctgan CTGAN',",
+   "    name='ctgan',",
+   "    packages=find_packages(include=['ctgan', 'ctgan.*']),",
+   "    url='https://github.com/sdv-dev/CTGAN',"
+  ],
+  "src/tabsynth/CTGAN/CTGAN/setup.cfg": [
+   "[bumpversion:file:ctgan/__init__.py]",
+   "\tctgan/data.py:T001"
+  ],
+  "src/tabsynth/CTGAN/CTGAN/conda/meta.yaml": [
+   "{% set name = 'ctgan' %}",
+   "    - ctgan=ctgan.__main__:main",
+   "    - rdt >=0.6.2,<0.7",
+   "    - rdt >=0.6.2,<0.7",
+   "  home: \"https://github.com/sdv-dev/CTGAN\"",
+   "    - sdv-dev"
+  ]
+ }
+}

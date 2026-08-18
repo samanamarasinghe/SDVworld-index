@@ -1,0 +1,435 @@
+{
+ "repo": "ahmed-fouad-lagha/tabular-polygraph",
+ "disk_kb": 38139,
+ "method": "partial_clone",
+ "tree_files": 193,
+ "status": "ok",
+ "readme": "# Beyond Fidelity: When Statistical Quality Metrics Miss Structural Violations in Synthetic Tabular Data\n\n<div align=\"center\">\n\n<img src=\"assets/logo.png\" alt=\"Tabular Polygraph\" width=\"20%\"/>\n\n[![CI](https://github.com/ahmed-fouad-lagha/tabular-polygraph/actions/workflows/ci.yml/badge.svg)](https://github.com/ahmed-fouad-lagha/tabular-polygraph/actions/workflows/ci.yml)\n[![Python](https://img.shields.io/badge/Python-3.12-blue)](requirements.lock)\n[![PyTorch](https://img.shields.io/badge/PyTorch-2.x-ee4c2c)](https://pytorch.org)\n[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)\n\n**A Neuro-Symbolic Hybrid Integrity Framework for logically-consistent synthetic tabular data.**\n\n---\n\n</div>\n\nThe Hybrid Integrity Framework (HIF) provides a technically rigorous foundation for evaluating synthetic tabular data quality beyond simple distributional similarity. Standard evaluation pipelines measure Euclidean and marginal agreement, which can miss row-level semantic inconsistencies — incompatible categorical combinations, physically implausible numeric relations, or violated domain constraints. HIF addresses this gap through neurosymbolic learning and acts as a Tabular Polygraph to detect \"Semantic Hallucinations\".\n\n<p align=\"center\">\n\t<img src=\"assets/hif_architecture.svg\" alt=\"Hybrid Integrity Framework Architecture\" width=\"88%\"/>\n\t<br>\n\t<em>Figure 1: The Hybrid Integrity Framework (HIF)</em>\n</p>\n\nThe HIF Hybrid Integrity Framework provides:\n- **Algebraic Integrity Certificates** via the Multiplicative Integrity (MI) model.\n- **Neural-Symbolic Oracles (LSE)** for categorical manifold discovery and auditing.\n- **Neighbor-Invariant Continuity (NIC)** for verifying continuous manifold residuals.\n- Reporting alongside marginal, joint, stylized-facts, and downstream utility metrics.\n\n#### Core workflow\n1. Learn structural regularities from real data using an unsupervised model\n2. Score each synthetic row by semantic deviation severity\n3. Aggregate violations into dataset-level quality diagnostics\n\n#### Performance\n- **Spearman Monotonicity ($\\rho = -0.98$)**: Strong monotonic response under targeted semantic corruption in the Census ACS calibration protocol.\n- **Utility Correlation is dataset-dependent**: Strong on Census ACS in current runs, weak on Adult under the same protocol.\n- **Hallucination Detection**: Identifies row-level logical consistency gaps that can be attenuated by aggregate KS/TVD-style summaries.\n\n## Setup\n\n```bash\ngit clone https://github.com/ahmed-fouad-lagha/tabular-polygraph.git\ncd tabular-polygraph\npip install -e .\n\n# Verify environment\ntabular-polygraph list\n```\n\n## Quick Start\n\nEvaluate synthetic data against real ground truth. The evaluate command generates a 4-Pillar Scorecard covering Fidelity, Logic (Integrity), Utility, and Privacy.\n\n> **Reproducibility:** the exact datasets behind every number in the manuscript are\n> bundled in `data/cache/*.parquet`. `load_dataset` uses these snapshots by default, so\n> a fresh clone reproduces all paper results offline, independent of the live Census\n> API / UCI sources. Delete `data/cache/` to instead use freshly downloaded data.\n\n```bash\n# 1. Download sample data (cached in ~/.tabular_polygraph/cache/)\ntabular-polygraph download census_acs\n\n# 2. Generate synthetic data\ntabular-polygraph generate census_acs --rows 100 --output synthetic.csv\n\n# 3. Audit for Hallucinations (Semantic Integrity)\ntabular-polygraph evaluate ~/.tabular_polygraph/cache/census_acs.parquet synthetic.csv --type cross_sectional --hif-epochs 10\n```\n\n## CLI Reference\n\n### Generate Synthetic Data\n\n```bash\ntabular-polygraph generate <dataset_id_or_path> \\\n  --rows <number_of_rows> \\\n  --generator <type> \\\n  --seed <integer> \\\n  --output <filename.csv>\n```\n\n### Audit Synthetic Data (Fidelity Report)\n\n```bash\ntabular-polygraph evaluate <real_data_path> <synthetic_data_path> \\\n  --type <cross_sectional|time_series|panel> \\\n  --hif-epochs <integer> \\\n  --seed <integer> \\\n  --target <target_column_for_utility> \\\n  --output <report.json>\n```\n\n## Python API\n\n```python\nimport pandas as pd\nfrom tabular_polygraph import hif_score  # one-liner row-level audit\nfrom tabular_polygraph.dataset import load_dataset\nfrom tabular_polygraph.fidelity import fidelity_report\n\n# 1. Load Data\nreal = load_dataset(\"census_acs\")\nsyn = pd.read_csv(\"synthetic.csv\")\n\n# 2. Generate 4-Pillar Scorecard (Stats, Logic, Utility, Privacy)\nreport = fidelity_report(real, syn, dataset_type=\"cross_sectional\")\nprint(f\"Hybrid Integrity Score: {report['summary']['logic_score']}%\")\n\n# 3. Detect Row-Level Hallucinations\n# hif_score returns per-row penalty scores [0 = valid, 1 = hallucination]\nhif_results = hif_score(real, syn)\nsyn[\"hallucination_score\"] = hif_results[\"row_penalties\"]\n\n# Identify the top Hallucinations\nhallucinations = syn.sort_values(\"hallucination_score\", ascending=False).head(5)\nprint(hallucinations)\n```\n\n## Reproduce Benchmarks\n\nThe empirical results and tables in the manuscript are produced by the scripts in `scripts/`, which write to `outputs/` by default. Each section below maps a manuscript result to its reproducing command.\n\n### 1. HIF Validation & Calibration (Section 4.4)\nSensitivity of HIF to semantic corruption under `permutation` and `conditional_swap` corruption strategies, and the associated calibration curves.\n\n```bash\npython scripts/02_hif_calibration.py --dataset census_acs --rows 2000 --seeds 42,43,44 \\\n  --levels 0,0.1,0.2,0.4,0.6 --strategy permutation --generator gaussian_copula\n\npython scripts/02_hif_calibration.py --dataset census_acs --rows 2000 --seeds 42,43,44 \\\n  --levels 0,0.1,0.2,0.4,0.6 --strategy conditional_swap --generator gaussian_copula\n```\n\n### 2. Cross-Architecture Benchmark (Table 1)\nScores Gaussian Copula, Vine Copula, CTGAN, and T-VAE cohorts across fidelity and utility metrics. The real-data reference row of Table 1 is produced separately by script 14 (below).\n\n```bash\npython scripts/03_cross_architecture_benchmark.py --rows 2000 --seeds 10 \\\n  --generators gaussian_copula,vine,ctgan,tvae\n```\n\n### 3. Downstream Utility Filtering (Table 2)\nPaired tests comparing downstream F1 under HIF filtering vs no filtering (binary median-split `household_income` target) across all dataset--generator combinations.\n\n```bash\npython scripts/04_downstream_utility_significance.py --dataset census_acs \\\n  --target household_income --rows 2000 --seeds 10 --generator gaussian_copula\n\npython scripts/04_downstream_utility_significance.py --dataset census_acs \\\n  --target household_income --rows 2000 --seeds 10 --generator ctgan\n```\n\n### 4. Held-Out Error Benchmarks (Table 3 / Table 4)\nValidates HIF on held-out error families HIF was not engineered to detect, comparing against Isolation Forest, LOF, and a learned-density baseline (BIC-selected Gaussian Mixture Model scored by negative log-likelihood); `05_heldout_matched_threshold.py` additionally reports HIF and GMM F1 at operating points matched to the baselines' `contamination` setting. The same protocol is replicated on a second domain (Online Purchases) into `outputs/heldout_online_purchases/`.\n\n```bash\npython scripts/05_heldout_error_baselines.py --dataset census_acs --rows 2000 \\\n  --seeds 10 --corruption-levels 0.4\n\npython scripts/05_heldout_matched_threshold.py --dataset census_acs --rows 2000 \\\n  --seeds 42,43,44,45,46,47,48,49,50,51 --corruption-levels 0.4\n\npython scripts/05_heldout_error_baselines.py --dataset online_purchases --rows 664 \\\n  --seeds 10 --corruption-levels 0.4\n\npython scripts/05_heldout_matched_threshold.py --dataset online_purchases --rows 664 \\\n  --seeds 42,43,44,45,46,47,48,49,50,51 --corruption-levels 0.4\n```\n\n### 5. Component Ablation Study (Table 5)\nIsolates each HIF component (LSE, NIC, rule audit) and each aggregation scheme to measure its contribution to violation detection.\n\n```bash\npython scripts/06_component_ablation_study.py --dataset census_acs \\\n  --target household_income --rows 2000 --seeds 5 --generator ctgan\n```\n\n### 6. Hyperparameter Sensitivity (Appendix)\nDemonstrates HIF's stability across hub counts, confidence percentiles, and violation thresholds.\n\n```bash\npython scripts/07_hyperparameter_sensitivity.py --dataset census_acs --records 2000 --seeds 5\n```\n\n### 7. External Arithmetic-Identity Verification (§4.1, Table)\nConfirms HIF-flagged records against real-data arithmetic identities (Supermarket Sales, Online Purchases) across 10 seeds and 4 generators.\n\n```bash\npython scripts/09_arithmetic_identity_verification.py --seeds 10\n```\n\n### 8. Downstream-Utility Threshold Sensitivity (§5.1, Appendix)\nSweeps the HIF filtering threshold (H ∈ {0.3, 0.5, 0.7}) on Census ACS CTGAN downstream F1 to confirm the utility-recovery effect is robust to the operating point.\n\n```bash\npython scripts/10_threshold_utility_sensitivity.py --seeds 10\n```\n\n### 9. Sample-Complexity Floor at HIF's Configuration (§3, Appendix)\nInstantiates the identity-testing bounds cited in §3 at HIF's actual hub-conditioned sample sizes (2,000 rows, ≤10 features, 5 hubs per dataset).\n\n```bash\npython scripts/11_sample_complexity_bounds.py\n```\n\n### 10. Real-Data Reference Floor (Table 1 reference row)\nFits the HIF auditor on real rows and scores a genuine held-out real remainder for each dataset, establishing the framework's own error floor (genuine data flagged at 0.0–14.0% across domains) and exposing the framework-level overfitting signature (training rows score higher than fresh held-out rows).\n\n```bash\npython scripts/14_real_data_reference.py\n```\n\n### 11. Multiple-Comparisons Battery (Section: Downstream Utility)\nRecomputes the paired F1 difference, paired t-test, Wilcoxon signed-rank, 95% CI, and Cohen's d for all dataset–generator configurations from the committed per-seed rows in `outputs/full_benchmark.csv`, and applies a Bonferroni correction over the 16 configurations with estimable deltas (α = 0.0031).\n\n```bash\npython scripts/15_multiple_comparisons.py\n```\n\n## License\n\nThis project is licensed under the MIT License — see [LICENSE](LICENSE) for details.\n",
+ "hits": {
+  "st": [
+   {
+    "file": "tabular_polygraph/generators/ctgan.py",
+    "line": 39,
+    "text": "from sdv.single_table import CTGANSynthesizer  # noqa: F401",
+    "context": [
+     "        self._model: Any = None",
+     "",
+     "    def _require_sdv(self):",
+     "        try:",
+     "            from sdv.single_table import CTGANSynthesizer  # noqa: F401",
+     "        except ImportError:",
+     "            raise ImportError(\"SDV is not installed.\") from None",
+     "",
+     "    def fit(self, data: pd.DataFrame) -> \"CTGANGenerator\":"
+    ]
+   },
+   {
+    "file": "tabular_polygraph/generators/ctgan.py",
+    "line": 46,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "    def fit(self, data: pd.DataFrame) -> \"CTGANGenerator\":",
+     "        self._require_sdv()",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "",
+     "        self._record_schema(data)",
+     "",
+     "        with warnings.catch_warnings():"
+    ]
+   },
+   {
+    "file": "tabular_polygraph/generators/tvae.py",
+    "line": 61,
+    "text": "from sdv.single_table import TVAESynthesizer  # noqa: F401",
+    "context": [
+     "        self._model: Any = None",
+     "",
+     "    def _require_sdv(self):",
+     "        try:",
+     "            from sdv.single_table import TVAESynthesizer  # noqa: F401",
+     "        except ImportError:",
+     "            raise ImportError(\"SDV is not installed.\") from None",
+     "",
+     "    def fit(self, data: pd.DataFrame) -> \"TVAEGenerator\":"
+    ]
+   },
+   {
+    "file": "tabular_polygraph/generators/tvae.py",
+    "line": 68,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "",
+     "    def fit(self, data: pd.DataFrame) -> \"TVAEGenerator\":",
+     "        self._require_sdv()",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import TVAESynthesizer",
+     "",
+     "        self._record_schema(data)",
+     "",
+     "        with warnings.catch_warnings():"
+    ]
+   },
+   {
+    "file": "tests/generators/test_tvae.py",
+    "line": 8,
+    "text": "from sdv.single_table import TVAESynthesizer  # noqa: F401",
+    "context": [
+     "",
+     "",
+     "def test_tvae_smoke():",
+     "    try:",
+     "        from sdv.single_table import TVAESynthesizer  # noqa: F401",
+     "    except ImportError:",
+     "        pytest.skip(\"sdv not installed\")",
+     "",
+     "    from tabular_polygraph.generators import TVAEGenerator"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "tabular_polygraph/generators/ctgan.py",
+    "line": 45,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "            raise ImportError(\"SDV is not installed.\") from None",
+     "",
+     "    def fit(self, data: pd.DataFrame) -> \"CTGANGenerator\":",
+     "        self._require_sdv()",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "",
+     "        self._record_schema(data)",
+     ""
+    ]
+   },
+   {
+    "file": "tabular_polygraph/generators/tvae.py",
+    "line": 67,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "            raise ImportError(\"SDV is not installed.\") from None",
+     "",
+     "    def fit(self, data: pd.DataFrame) -> \"TVAEGenerator\":",
+     "        self._require_sdv()",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import TVAESynthesizer",
+     "",
+     "        self._record_schema(data)",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "tabular_polygraph/generators/ctgan.py",
+    "line": 39,
+    "text": "from sdv.single_table import CTGANSynthesizer  # noqa: F401",
+    "context": [
+     "        self._model: Any = None",
+     "",
+     "    def _require_sdv(self):",
+     "        try:",
+     "            from sdv.single_table import CTGANSynthesizer  # noqa: F401",
+     "        except ImportError:",
+     "            raise ImportError(\"SDV is not installed.\") from None",
+     "",
+     "    def fit(self, data: pd.DataFrame) -> \"CTGANGenerator\":"
+    ]
+   },
+   {
+    "file": "tabular_polygraph/generators/ctgan.py",
+    "line": 45,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "            raise ImportError(\"SDV is not installed.\") from None",
+     "",
+     "    def fit(self, data: pd.DataFrame) -> \"CTGANGenerator\":",
+     "        self._require_sdv()",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "",
+     "        self._record_schema(data)",
+     ""
+    ]
+   },
+   {
+    "file": "tabular_polygraph/generators/ctgan.py",
+    "line": 46,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "    def fit(self, data: pd.DataFrame) -> \"CTGANGenerator\":",
+     "        self._require_sdv()",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "",
+     "        self._record_schema(data)",
+     "",
+     "        with warnings.catch_warnings():"
+    ]
+   },
+   {
+    "file": "tabular_polygraph/generators/tvae.py",
+    "line": 61,
+    "text": "from sdv.single_table import TVAESynthesizer  # noqa: F401",
+    "context": [
+     "        self._model: Any = None",
+     "",
+     "    def _require_sdv(self):",
+     "        try:",
+     "            from sdv.single_table import TVAESynthesizer  # noqa: F401",
+     "        except ImportError:",
+     "            raise ImportError(\"SDV is not installed.\") from None",
+     "",
+     "    def fit(self, data: pd.DataFrame) -> \"TVAEGenerator\":"
+    ]
+   },
+   {
+    "file": "tabular_polygraph/generators/tvae.py",
+    "line": 67,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "            raise ImportError(\"SDV is not installed.\") from None",
+     "",
+     "    def fit(self, data: pd.DataFrame) -> \"TVAEGenerator\":",
+     "        self._require_sdv()",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import TVAESynthesizer",
+     "",
+     "        self._record_schema(data)",
+     ""
+    ]
+   },
+   {
+    "file": "tabular_polygraph/generators/tvae.py",
+    "line": 68,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "",
+     "    def fit(self, data: pd.DataFrame) -> \"TVAEGenerator\":",
+     "        self._require_sdv()",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import TVAESynthesizer",
+     "",
+     "        self._record_schema(data)",
+     "",
+     "        with warnings.catch_warnings():"
+    ]
+   },
+   {
+    "file": "tabular_polygraph/generators/base.py",
+    "line": 140,
+    "text": "from sdv.sampling.tabular import Condition",
+    "context": [
+     "        seed: int | None = None,",
+     "    ) -> pd.DataFrame:",
+     "        \"\"\"Shared generate logic for SDV-based generators (CTGAN, TVAE).\"\"\"",
+     "        try:",
+     "            from sdv.sampling.tabular import Condition",
+     "        except ImportError:",
+     "            from sdv.sampling import Condition",
+     "",
+     "        if seed is not None:"
+    ]
+   },
+   {
+    "file": "tabular_polygraph/generators/base.py",
+    "line": 142,
+    "text": "from sdv.sampling import Condition",
+    "context": [
+     "        \"\"\"Shared generate logic for SDV-based generators (CTGAN, TVAE).\"\"\"",
+     "        try:",
+     "            from sdv.sampling.tabular import Condition",
+     "        except ImportError:",
+     "            from sdv.sampling import Condition",
+     "",
+     "        if seed is not None:",
+     "            try:",
+     "                self._model.set_random_state(seed)"
+    ]
+   },
+   {
+    "file": "tests/generators/test_tvae.py",
+    "line": 8,
+    "text": "from sdv.single_table import TVAESynthesizer  # noqa: F401",
+    "context": [
+     "",
+     "",
+     "def test_tvae_smoke():",
+     "    try:",
+     "        from sdv.single_table import TVAESynthesizer  # noqa: F401",
+     "    except ImportError:",
+     "        pytest.skip(\"sdv not installed\")",
+     "",
+     "    from tabular_polygraph.generators import TVAEGenerator"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "tabular_polygraph/generators/ctgan.py",
+    "line": 22,
+    "text": "CTGAN deep tabular generator (wraps SDV's CTGANSynthesizer).",
+    "context": [
+     "",
+     "",
+     "class CTGANGenerator(BaseGenerator):",
+     "    \"\"\"",
+     "    CTGAN deep tabular generator (wraps SDV's CTGANSynthesizer).",
+     "    \"\"\"",
+     "",
+     "    def _init(",
+     "        self,"
+    ]
+   },
+   {
+    "file": "tabular_polygraph/generators/ctgan.py",
+    "line": 39,
+    "text": "from sdv.single_table import CTGANSynthesizer  # noqa: F401",
+    "context": [
+     "        self._model: Any = None",
+     "",
+     "    def _require_sdv(self):",
+     "        try:",
+     "            from sdv.single_table import CTGANSynthesizer  # noqa: F401",
+     "        except ImportError:",
+     "            raise ImportError(\"SDV is not installed.\") from None",
+     "",
+     "    def fit(self, data: pd.DataFrame) -> \"CTGANGenerator\":"
+    ]
+   },
+   {
+    "file": "tabular_polygraph/generators/ctgan.py",
+    "line": 46,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "    def fit(self, data: pd.DataFrame) -> \"CTGANGenerator\":",
+     "        self._require_sdv()",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "",
+     "        self._record_schema(data)",
+     "",
+     "        with warnings.catch_warnings():"
+    ]
+   },
+   {
+    "file": "tabular_polygraph/generators/ctgan.py",
+    "line": 58,
+    "text": "self._model = CTGANSynthesizer(",
+    "context": [
+     "",
+     "            metadata = SingleTableMetadata()",
+     "            metadata.detect_from_dataframe(data[self._columns])",
+     "",
+     "            self._model = CTGANSynthesizer(",
+     "                metadata=metadata,",
+     "                epochs=self._epochs,",
+     "                batch_size=self._batch_size,",
+     "                verbose=self._verbose,"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "tabular_polygraph/generators/tvae.py",
+    "line": 29,
+    "text": "TVAE deep tabular generator (wraps SDV's TVAESynthesizer).",
+    "context": [
+     "",
+     "",
+     "class TVAEGenerator(BaseGenerator):",
+     "    \"\"\"",
+     "    TVAE deep tabular generator (wraps SDV's TVAESynthesizer).",
+     "",
+     "    Usage (same interface as GaussianCopulaGenerator):",
+     "        gen = TVAEGenerator(epochs=300, batch_size=500)",
+     "        gen.fit(real_df)"
+    ]
+   },
+   {
+    "file": "tabular_polygraph/generators/tvae.py",
+    "line": 61,
+    "text": "from sdv.single_table import TVAESynthesizer  # noqa: F401",
+    "context": [
+     "        self._model: Any = None",
+     "",
+     "    def _require_sdv(self):",
+     "        try:",
+     "            from sdv.single_table import TVAESynthesizer  # noqa: F401",
+     "        except ImportError:",
+     "            raise ImportError(\"SDV is not installed.\") from None",
+     "",
+     "    def fit(self, data: pd.DataFrame) -> \"TVAEGenerator\":"
+    ]
+   },
+   {
+    "file": "tabular_polygraph/generators/tvae.py",
+    "line": 68,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "",
+     "    def fit(self, data: pd.DataFrame) -> \"TVAEGenerator\":",
+     "        self._require_sdv()",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import TVAESynthesizer",
+     "",
+     "        self._record_schema(data)",
+     "",
+     "        with warnings.catch_warnings():"
+    ]
+   },
+   {
+    "file": "tabular_polygraph/generators/tvae.py",
+    "line": 80,
+    "text": "self._model = TVAESynthesizer(",
+    "context": [
+     "",
+     "            metadata = SingleTableMetadata()",
+     "            metadata.detect_from_dataframe(data[self._columns])",
+     "",
+     "            self._model = TVAESynthesizer(",
+     "                metadata=metadata,",
+     "                epochs=self._epochs,",
+     "                batch_size=self._batch_size,",
+     "                embedding_dim=self._embedding_dim,"
+    ]
+   },
+   {
+    "file": "tests/generators/test_tvae.py",
+    "line": 8,
+    "text": "from sdv.single_table import TVAESynthesizer  # noqa: F401",
+    "context": [
+     "",
+     "",
+     "def test_tvae_smoke():",
+     "    try:",
+     "        from sdv.single_table import TVAESynthesizer  # noqa: F401",
+     "    except ImportError:",
+     "        pytest.skip(\"sdv not installed\")",
+     "",
+     "    from tabular_polygraph.generators import TVAEGenerator"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "pyproject.toml": [
+   "ctgan = [",
+   "    \"ctgan==0.11.1\",",
+   "    \"sdv==1.32.0\","
+  ]
+ }
+}

@@ -1,0 +1,412 @@
+{
+ "repo": "KANUBALAD/ML-Fairness-in-School-DropOut-",
+ "disk_kb": 9421,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "<<<<<<< HEAD\n# ML-Fairness-in-School-DropOut\n\nThis project aims to address the issue of fairness in machine learning models for predicting school dropout rates. The goal is to develop and evaluate models that are not biased towards any particular group, ensuring equal opportunities for all students.\n\n```\npython main.py ./yaml/brazil.yaml\n```\n\n## Table of Contents\n- [Introduction](#introduction)\n- [Installation](#installation)\n- [Usage](#usage)\n- [Data](#data)\n- [Model Training](#model-training)\n- [Evaluation](#evaluation)\n- [Contributing](#contributing)\n- [License](#license)\n\n## Introduction\nThe aim of this project is to utilize various machine learning models to predict the school dropout rate. Additionally, we evaluate the fairness of these models in reference with different definitions of fairness.\n\n## Installation\nTo facilitate an easy setup, we have provided a .env file. You can use this file to install all the necessary packages required for this project by executing a single command.\n\n## Data\nThis dataset originates from Kaggle, titled \"Predict students' dropout and academic success: Investigating the Impact of Social and Economic Factors.\" The dataset is comprehensively described, including its source, format in the Kaggle website. For public datasets, you can [downlaod it here](https://www.kaggle.com/datasets/thedevastator/higher-education-predictors-of-student-retention/data).\n\n## Model Training\nWe trained 3 different ML models:\n - Logistic Regression\n - Random Forest\n - Decision Trees\n\n## Evaluation\nOur evaluation metrics include:\n\n- **Accuracy Parity:** The accuracy rate is a measure of how many instances were correctly classified by the model, where a higher accuracy rate generally indicates a better-performing model.\n\n- **False Positive Rate:**  Calculates the false positive rate (FPR) for a binary classification task. The FPR is a measure of how many negative instances (i.e., instances that should have been classified as 0) were incorrectly classified as positive (1).\n\n\n- **Demographic Parity:** Demographic parity is a fairness metric that measures whether the positive prediction rates are equal across different groups. In other words, it checks if individuals from different groups have an equal chance of being predicted as positive, regardless of their true labels.\n\n- **Equality of Opportunity:** Equality of opportunity is a fairness metric that measures whether the true positive rates are equal across different groups. In other words, it checks if individuals who should have been classified as positive (i.e., true label is 1) have an equal chance of being correctly classified as positive, regardless of their group membership.\n\n\n\n## License\nThis project is licensed under the [MIT License](https://opensource.org/licenses/MIT).\n\nCopyright (c) 2024 School dropout rate\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\n\n\n## Contact\nIf you have any questions or suggestions, feel free to contact [Deborah D Kanubala](mailto:dkanubala@aimsammi.org) or [Alidu Abubakari](mailto:alidu.abubakari@acity.edu.gh).\n\n=======\n# Fairness in AI for Education: A Modular Framework for Mitigating Bias in Dropout Prediction\n\nThis project provides a comprehensive and modular framework for studying and mitigating algorithmic bias in student dropout prediction models. It uses real-world datasets from different continents to explore the effectiveness of fairness interventions, with a special focus on how dataset imbalance impacts their performance.\n\nThe framework includes a complete, end-to-end experimental pipeline, from model selection and baseline fairness analysis to advanced studies on the impact of data augmentation using various synthetic data generation techniques (Faker, LLM, GANs).\n\n## Table of Contents\n\n- [Key Features](#key-features)\n- [Project Structure](#project-structure)\n- [Setup and Installation](#setup-and-installation)\n  - [Prerequisites](#prerequisites)\n  - [Installation Steps](#installation-steps)\n- [How to Use the Framework](#how-to-use-the-framework)\n  - [Understanding Configuration](#understanding-configuration)\n  - [Running a Standard ML Experiment](#running-a-standard-ml-experiment)\n  - [Running a Balanced Augmentation Experiment](#running-a-balanced-augmentation-experiment)\n- [The Reproducible Experimental Pipeline](#the-reproducible-experimental-pipeline)\n  - [Experiment 1: Model Selection](#experiment-1-model-selection)\n  - [Experiment 2: Baseline Fairness Assessment](#experiment-2-baseline-fairness-assessment)\n  - [Experiment 3: Imbalance Impact Study](#experiment-3-imbalance-impact-study)\n  - [Experiment 4: Method Selection Criteria Study](#experiment-4-method-selection-criteria-study)\n- [Source Code Modules (`src/`) Explained](#source-code-modules-src-explained)\n- [Results](#results)\n- [Contributing](#contributing)\n- [License](#license)\n\n## Key Features\n\n*   **Modular Architecture**: Cleanly separated modules for data loading, preprocessing, modeling, and fairness evaluation.\n*   **Multi-Dataset Support**: Comes pre-configured for three real-world student dropout datasets from Brazil, Africa, and India.\n*   **Standard ML Models**: Includes implementations for Logistic Regression, Decision Trees, and Random Forests.\n*   **Fairness-Aware Training**: Implements pre-processing mitigation techniques like Reweighting to reduce model bias.\n*   **Comprehensive Fairness Metrics**: Evaluates models using a suite of metrics including Demographic Parity, Equalized Odds, and Accuracy Difference.\n*   **Advanced Data Augmentation**: Features a powerful system for generating targeted synthetic data to rebalance datasets according to specific fairness goals.\n*   **Multiple Generation Methods**:\n    *   **Faker**: Fast, rule-based generation.\n    *   **LLM-based**: Sophisticated, context-aware generation using Large Language Models (e.g., DeepSeek).\n    *   **GAN-based**: Support for CTGAN and TVAE models via the `sdv` library (optional).\n*   **Reproducible Research Pipeline**: A set of four shell scripts that fully automate the experimental workflow, from initial model selection to a final, evidence-based comparison of data generation methods.\n\n## Project Structure\n\nThe project is organized in a modular and intuitive structure to facilitate research and development.\n\n```\nModularCode/\n├── data/\n│   ├── asia_dropout.csv            # India dataset\n│   ├── brazil_data.csv             # Brazil dataset\n│   └── Secondary_school_dropout_dataset.csv # Africa dataset\n├── experiments/\n│   ├── 01_model_selection.sh       # Finds the best model for each dataset\n│   ├── 02_baseline_fairness.sh     # Establishes baseline fairness metrics\n│   ├── 03_imbalance_impact.sh      # Studies how imbalance affects fairness\n│   ├── 04_method_comparison.sh     # Compares Faker vs. LLM generation methods\n│   └── utils/                      # Helper scripts for experiments\n├── results/                        # Directory for saving all experiment outputs\n├── src/\n│   ├── dataload.py                 # Loads and performs initial data transformation\n│   ├── fairness.py                 # Core fairness metrics and mitigation logic\n│   ├── llm_synthetic_generator.py  # LLM-based synthetic data generator\n│   ├── model.py                    # ML model training and cross-validation\n│   ├── preprocess.py               # Feature preprocessing pipeline (scaling, encoding)\n│   ├── synthetic_generator.py      # Faker-based synthetic data generator\n│   └── utils.py                    # Helper functions (data splitting, metrics)\n├── yaml/\n│   ├── africa.yaml                 # Configuration for the Africa dataset\n│   ├── brazil.yaml                 # Configuration for the Brazil dataset\n│   └── india.yaml                  # Configuration for the India dataset\n├── main.py                         # Main entry point for running all experiments\n├── requirements.txt                # Python package dependencies\n└── README.md                       # This file\n```\n\n## Setup and Installation\n\n### Prerequisites\n\n*   Python 3.8+\n*   `pip` package manager\n*   `bash` shell (for running the experiment scripts)\n*   (Optional) A `yq` installation for easier YAML manipulation in the shell scripts. A `sed` fallback is included.\n\n### Installation Steps\n\n1.  **Clone the repository:**\n    ```bash\n    git clone <repository-url>\n    cd ModularCode\n    ```\n\n2.  **Create and activate a virtual environment (recommended):**\n    ```bash\n    python -m venv venv\n    source venv/bin/activate  # On Windows, use `venv\\Scripts\\activate`\n    ```\n\n3.  **Install the required Python packages:**\n    ```bash\n    pip install -r requirements.txt\n    ```\n    *The `requirements.txt` should contain:*\n    ```\n    pandas\n    numpy\n    scikit-learn\n    pyyaml\n    faker\n    chardet\n    aiohttp\n    sdv \n    ```\n\n4.  **Set up your API Key (for LLM generation):**\n    To use the `llm_async` generation method, you need an API key from a provider like DeepSeek. You can pass this key directly via the command line.\n    For example, in `experiments/03_imbalance_impact.sh` and `04_method_comparison.sh`, set the `API_KEY` variable:\n    ```bash\n    API_KEY=\"your_deepseek_api_key_here\"\n    ```\n\n## How to Use the Framework\n\nThe primary entry point is `main.py`, which is controlled by a YAML configuration file and command-line arguments.\n\n### Understanding Configuration\n\nEach dataset has a corresponding `.yaml` file in the `yaml/` directory. These files control the basic experiment setup:\n\n```yaml\n# ModularCode/yaml/brazil.yaml\ndataname: brazil\ndatapath: \"./data/brazil_data.csv\"\ntest_size: 0.2\nrandom_state: 42\n\nunawareness: True       # Drop the gender column from features\nmodel: compare          # \"compare\", \"logistic_regression\", etc.\n\n# --- FAIRNESS EXTENSIONS ---\nfairness: true          # Enable fairness-aware training\nfair_technique: reweighting # Technique to use\n```\n\n### Running a Standard ML Experiment\n\nThis runs the standard pipeline: load data, preprocess, train model(s), and evaluate for performance and fairness.\n\n**Command:**\n```bash\npython main.py <path_to_yaml_config> [options]\n```\n\n**Examples:**\n\n1.  **Run model comparison for the Brazil dataset:**\n    *(This runs cross-validation for all models specified in `src/model.py`)*\n    ```bash\n    python main.py yaml/brazil.yaml\n    ```\n\n2.  **Run a single model (Random Forest) with fairness mitigation:**\n    *(The `--fairness` flag overrides the YAML setting if you want to force it on)*\n    ```bash\n    python main.py yaml/brazil.yaml --fairness\n    ```\n    *(Note: The `brazil.yaml` already has `model: compare` and `fairness: true`, so the script will run a full comparison with fairness interventions by default.)*\n\n3.  **Save results to a dedicated folder:**\n    ```bash\n    python main.py yaml/africa.yaml --save_results\n    ```\n\n### Running a Balanced Augmentation Experiment\n\nThis is the core feature for studying imbalance. It generates synthetic data to meet target ratios for a sensitive attribute (e.g., gender) and the outcome label (e.g., dropout status), then runs the ML pipeline on the newly balanced dataset.\n\n**Command:**\n```bash\npython main.py <path_to_config> --balanced --sensitive_ratio <0-1> --label_ratio <0-1> --method <name> [options]\n```\n\n**Arguments:**\n*   `--balanced`: Activates the data augmentation mode.\n*   `--sensitive_ratio`: The target ratio for the privileged group (e.g., `0.5` for a 50/50 male/female split).\n*   `--label_ratio`: The target ratio for the positive outcome (e.g., `0.5` for a 50/50 dropout/graduate split).\n*   `--method`: The data generation method. Choices: `faker`, `llm_async`, `ctgan`, `tvae`.\n*   `--api_key`: Required if `method` is `llm_async`.\n\n**Examples:**\n\n1.  **Balance the India dataset to 50/50 gender and dropout ratios using Faker:**\n    ```bash\n    python main.py yaml/india.yaml \\\n        --balanced \\\n        --sensitive_ratio 0.5 \\\n        --label_ratio 0.5 \\\n        --method faker \\\n        --save_results\n    ```\n\n2.  **Balance the Brazil dataset to have 30% male students and 70% dropout rate using the LLM method:**\n    ```bash\n    python main.py yaml/brazil.yaml \\\n        --balanced \\\n        --sensitive_ratio 0.3 \\\n        --label_ratio 0.7 \\\n        --method llm_async \\\n        --api_key \"your_deepseek_api_key_here\" \\\n        --fairness \\\n        --save_results\n    ```\n\n## The Reproducible Experimental Pipeline\n\nThe `experiments/` directory contains a series of shell scripts that automate the entire research process. **Run them in order** to reproduce the study's findings.\n\n### Experiment 1: Model Selection\n*   **Objective**: To identify the best-performing baseline ML model for each dataset.\n*   **Method**: Runs a 5x2 cross-validation comparing Logistic Regression, Decision Tree, and Random Forest.\n*   **Output**: Saves a `best_models.json` file, which is used by subsequent experiments.\n*   **How to Run**:\n    ```bash\n    bash experiments/01_model_selection.sh\n    ```\n\n### Experiment 2: Baseline Fairness Assessment\n*   **Objective**: To establish the baseline fairness and performance metrics for the best model on each original (unmodified) dataset.\n*   **Method**: Uses the `best_models.json` from Experiment 1 to run a detailed fairness analysis on each dataset.\n*   **Output**: A detailed report of fairness metrics (Demographic Parity, TPR Difference, etc.) for each dataset, which serves as the \"before\" state.\n*   **How to Run**:\n    ```bash\n    bash experiments/02_baseline_fairness.sh\n    ```\n\n### Experiment 3: Imbalance Impact Study\n*   **Objective**: To investigate a critical research question: **Can rebalancing a dataset make a failing fairness intervention succeed?**\n*   **Method**: Tests a wide range of imbalance scenarios (e.g., perfect balance, extreme majorities, reversed imbalances). For each scenario, it generates an augmented dataset and runs the fairness pipeline to see if the intervention's effectiveness improves. It specifically looks for \"breakthrough\" scenarios where bias is significantly reduced.\n*   **Output**: A rich set of results showing which data balance configurations are most effective for improving fairness.\n*   **How to Run**:\n    ```bash\n    bash experiments/03_imbalance_impact.sh\n    ```\n\n### Experiment 4: Method Selection Criteria Study\n*   **Objective**: To perform a head-to-head comparison between the `faker` and `llm_async` data generation methods.\n*   **Method**: Re-runs the most impactful scenarios from Experiment 3, once with Faker and once with the LLM. It compares their results on fairness improvement, accuracy cost, and reliability.\n*   **Output**: An evidence-based decision framework outlining when to choose Faker versus an LLM for fairness-aware data augmentation.\n*   **How to Run**:\n    ```bash\n    bash experiments/04_method_comparison.sh\n    ```\n\n## Source Code Modules (`src/`) Explained\n\n*   `dataload.py`: Handles loading the CSV files. It correctly handles encoding issues (like in the India dataset) and maps the target labels (e.g., 'DROPOUT', 'Graduate') to a binary format (1/0).\n*   `preprocess.py`: Implements a standard `scikit-learn` pipeline to prepare the feature data. It imputes missing values, standardizes numerical features, and one-hot encodes categorical features.\n*   `model.py`: Contains the training logic for the ML models and the `run_cross_validation` function used in Experiment 1.\n*   `fairness.py`: The heart of the fairness analysis.\n    *   `FairnessMetrics`: A class to calculate all key fairness metrics.\n    *   `FairnessMitigation`: A class that implements fairness techniques. Currently focuses on `reweighting`.\n    *   `run_fairness_aware_training`: The main function that trains a baseline model and a fairness-mitigated model and compares them.\n*   `utils.py`: A collection of essential helper functions for splitting data, extracting the sensitive attribute column (e.g., 'gender') from the raw data, and printing formatted fairness reports.\n*   `synthetic_generator.py`: Implements the `faker`-based data generator. It uses statistical patterns from the reference data and the Faker library to create realistic, but rule-based, synthetic samples.\n*   `llm_synthetic_generator.py`: Implements the advanced LLM-based generator. It uses pattern-based generation as a reliable fallback, creating more nuanced and contextually aware synthetic data points based on gender-faculty correlations and other discovered patterns.\n\n## Results\n\nAll outputs from running `main.py` or the experiment scripts are saved in the `results/` directory. A new timestamped sub-folder is created for each run (e.g., `results/experiment_20231027_103000/`).\n\nInside, you will find:\n*   **JSON files (`.json`)**: Machine-readable files containing detailed metrics, configurations, and analysis results. These are ideal for programmatic analysis and plotting.\n*   **Text summaries (`.txt`)**: Human-readable logs and summary reports, including the formatted fairness reports.\n*   **CSV files (`.csv`)**: Data-centric outputs, such as the comparison matrix from Experiment 4.\n*   **Augmented Datasets**: The balanced data augmentation experiments save the generated datasets in the `data/` folder for inspection.\n\n## Contributing\n\nContributions are welcome! Please feel free to open an issue or submit a pull request. Areas for potential contribution include:\n*   Adding new fairness mitigation techniques (e.g., adversarial debiasing, post-processing).\n*   Integrating new datasets.\n*   Adding more advanced ML models (e.g., XGBoost, Neural Networks).\n*   Improving the synthetic data generation logic.\n*   Expanding the experimental pipeline with new research questions.\n\n## License\n\nThis project is licensed under the MIT License. See the `LICENSE` file for details.\n>>>>>>> fairness-mitigation\n",
+ "hits": {
+  "st": [
+   {
+    "file": "ModularCode/src/CTGAN_TVAE_synthetic_generator.py",
+    "line": 9,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "warnings.filterwarnings('ignore')",
+     "",
+     "try:",
+     "    # Updated imports for SDV 1.23.0+",
+     "    from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.sampling import Condition",
+     "    SDV_AVAILABLE = True",
+     "    print(\"✓ SDV library loaded successfully with conditional sampling support\")"
+    ]
+   },
+   {
+    "file": "src/CTGAN_TVAE_synthetic_generator.py",
+    "line": 9,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "warnings.filterwarnings('ignore')",
+     "",
+     "try:",
+     "    # Updated imports for SDV 1.23.0+",
+     "    from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.sampling import Condition",
+     "    SDV_AVAILABLE = True",
+     "    print(\"✓ SDV library loaded successfully with conditional sampling support\")"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "ModularCode/src/CTGAN_TVAE_synthetic_generator.py",
+    "line": 10,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "try:",
+     "    # Updated imports for SDV 1.23.0+",
+     "    from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.sampling import Condition",
+     "    SDV_AVAILABLE = True",
+     "    print(\"✓ SDV library loaded successfully with conditional sampling support\")",
+     "except ImportError as e:"
+    ]
+   },
+   {
+    "file": "src/CTGAN_TVAE_synthetic_generator.py",
+    "line": 10,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "try:",
+     "    # Updated imports for SDV 1.23.0+",
+     "    from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.sampling import Condition",
+     "    SDV_AVAILABLE = True",
+     "    print(\"✓ SDV library loaded successfully with conditional sampling support\")",
+     "except ImportError as e:"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "ModularCode/src/CTGAN_TVAE_synthetic_generator.py",
+    "line": 9,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "warnings.filterwarnings('ignore')",
+     "",
+     "try:",
+     "    # Updated imports for SDV 1.23.0+",
+     "    from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.sampling import Condition",
+     "    SDV_AVAILABLE = True",
+     "    print(\"✓ SDV library loaded successfully with conditional sampling support\")"
+    ]
+   },
+   {
+    "file": "ModularCode/src/CTGAN_TVAE_synthetic_generator.py",
+    "line": 10,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "try:",
+     "    # Updated imports for SDV 1.23.0+",
+     "    from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.sampling import Condition",
+     "    SDV_AVAILABLE = True",
+     "    print(\"✓ SDV library loaded successfully with conditional sampling support\")",
+     "except ImportError as e:"
+    ]
+   },
+   {
+    "file": "ModularCode/src/CTGAN_TVAE_synthetic_generator.py",
+    "line": 11,
+    "text": "from sdv.sampling import Condition",
+    "context": [
+     "try:",
+     "    # Updated imports for SDV 1.23.0+",
+     "    from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.sampling import Condition",
+     "    SDV_AVAILABLE = True",
+     "    print(\"✓ SDV library loaded successfully with conditional sampling support\")",
+     "except ImportError as e:",
+     "    try:"
+    ]
+   },
+   {
+    "file": "ModularCode/src/CTGAN_TVAE_synthetic_generator.py",
+    "line": 17,
+    "text": "from sdv.tabular import CTGAN as CTGANSynthesizer, TVAE as TVAESynthesizer",
+    "context": [
+     "    print(\"✓ SDV library loaded successfully with conditional sampling support\")",
+     "except ImportError as e:",
+     "    try:",
+     "        # Fallback for older SDV versions",
+     "        from sdv.tabular import CTGAN as CTGANSynthesizer, TVAE as TVAESynthesizer",
+     "        SDV_AVAILABLE = True",
+     "        print(\"⚠ Using legacy SDV API - conditional sampling may be limited\")",
+     "    except ImportError:",
+     "        print(\"SDV library not found. Please install with: pip install sdv\")"
+    ]
+   },
+   {
+    "file": "src/CTGAN_TVAE_synthetic_generator.py",
+    "line": 9,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "warnings.filterwarnings('ignore')",
+     "",
+     "try:",
+     "    # Updated imports for SDV 1.23.0+",
+     "    from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.sampling import Condition",
+     "    SDV_AVAILABLE = True",
+     "    print(\"✓ SDV library loaded successfully with conditional sampling support\")"
+    ]
+   },
+   {
+    "file": "src/CTGAN_TVAE_synthetic_generator.py",
+    "line": 10,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "try:",
+     "    # Updated imports for SDV 1.23.0+",
+     "    from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.sampling import Condition",
+     "    SDV_AVAILABLE = True",
+     "    print(\"✓ SDV library loaded successfully with conditional sampling support\")",
+     "except ImportError as e:"
+    ]
+   },
+   {
+    "file": "src/CTGAN_TVAE_synthetic_generator.py",
+    "line": 11,
+    "text": "from sdv.sampling import Condition",
+    "context": [
+     "try:",
+     "    # Updated imports for SDV 1.23.0+",
+     "    from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.sampling import Condition",
+     "    SDV_AVAILABLE = True",
+     "    print(\"✓ SDV library loaded successfully with conditional sampling support\")",
+     "except ImportError as e:",
+     "    try:"
+    ]
+   },
+   {
+    "file": "src/CTGAN_TVAE_synthetic_generator.py",
+    "line": 17,
+    "text": "from sdv.tabular import CTGAN as CTGANSynthesizer, TVAE as TVAESynthesizer",
+    "context": [
+     "    print(\"✓ SDV library loaded successfully with conditional sampling support\")",
+     "except ImportError as e:",
+     "    try:",
+     "        # Fallback for older SDV versions",
+     "        from sdv.tabular import CTGAN as CTGANSynthesizer, TVAE as TVAESynthesizer",
+     "        SDV_AVAILABLE = True",
+     "        print(\"⚠ Using legacy SDV API - conditional sampling may be limited\")",
+     "    except ImportError:",
+     "        print(\"SDV library not found. Please install with: pip install sdv\")"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "ModularCode/src/CTGAN_TVAE_synthetic_generator.py",
+    "line": 9,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "warnings.filterwarnings('ignore')",
+     "",
+     "try:",
+     "    # Updated imports for SDV 1.23.0+",
+     "    from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.sampling import Condition",
+     "    SDV_AVAILABLE = True",
+     "    print(\"✓ SDV library loaded successfully with conditional sampling support\")"
+    ]
+   },
+   {
+    "file": "ModularCode/src/CTGAN_TVAE_synthetic_generator.py",
+    "line": 17,
+    "text": "from sdv.tabular import CTGAN as CTGANSynthesizer, TVAE as TVAESynthesizer",
+    "context": [
+     "    print(\"✓ SDV library loaded successfully with conditional sampling support\")",
+     "except ImportError as e:",
+     "    try:",
+     "        # Fallback for older SDV versions",
+     "        from sdv.tabular import CTGAN as CTGANSynthesizer, TVAE as TVAESynthesizer",
+     "        SDV_AVAILABLE = True",
+     "        print(\"⚠ Using legacy SDV API - conditional sampling may be limited\")",
+     "    except ImportError:",
+     "        print(\"SDV library not found. Please install with: pip install sdv\")"
+    ]
+   },
+   {
+    "file": "ModularCode/src/CTGAN_TVAE_synthetic_generator.py",
+    "line": 55,
+    "text": "self.model = CTGANSynthesizer(",
+    "context": [
+     "        self.metadata = self._create_metadata(prepared_data, dataset_name)",
+     "        ",
+     "        # Initialize and train CTGAN with updated API",
+     "        print(\"Initializing CTGAN with metadata...\")",
+     "        self.model = CTGANSynthesizer(",
+     "            metadata=self.metadata,",
+     "            epochs=self.epochs,",
+     "            batch_size=self.batch_size,",
+     "            verbose=self.verbose"
+    ]
+   },
+   {
+    "file": "src/CTGAN_TVAE_synthetic_generator.py",
+    "line": 9,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "warnings.filterwarnings('ignore')",
+     "",
+     "try:",
+     "    # Updated imports for SDV 1.23.0+",
+     "    from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.sampling import Condition",
+     "    SDV_AVAILABLE = True",
+     "    print(\"✓ SDV library loaded successfully with conditional sampling support\")"
+    ]
+   },
+   {
+    "file": "src/CTGAN_TVAE_synthetic_generator.py",
+    "line": 17,
+    "text": "from sdv.tabular import CTGAN as CTGANSynthesizer, TVAE as TVAESynthesizer",
+    "context": [
+     "    print(\"✓ SDV library loaded successfully with conditional sampling support\")",
+     "except ImportError as e:",
+     "    try:",
+     "        # Fallback for older SDV versions",
+     "        from sdv.tabular import CTGAN as CTGANSynthesizer, TVAE as TVAESynthesizer",
+     "        SDV_AVAILABLE = True",
+     "        print(\"⚠ Using legacy SDV API - conditional sampling may be limited\")",
+     "    except ImportError:",
+     "        print(\"SDV library not found. Please install with: pip install sdv\")"
+    ]
+   },
+   {
+    "file": "src/CTGAN_TVAE_synthetic_generator.py",
+    "line": 55,
+    "text": "self.model = CTGANSynthesizer(",
+    "context": [
+     "        self.metadata = self._create_metadata(prepared_data, dataset_name)",
+     "        ",
+     "        # Initialize and train CTGAN with updated API",
+     "        print(\"Initializing CTGAN with metadata...\")",
+     "        self.model = CTGANSynthesizer(",
+     "            metadata=self.metadata,",
+     "            epochs=self.epochs,",
+     "            batch_size=self.batch_size,",
+     "            verbose=self.verbose"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "ModularCode/src/CTGAN_TVAE_synthetic_generator.py",
+    "line": 9,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "warnings.filterwarnings('ignore')",
+     "",
+     "try:",
+     "    # Updated imports for SDV 1.23.0+",
+     "    from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.sampling import Condition",
+     "    SDV_AVAILABLE = True",
+     "    print(\"✓ SDV library loaded successfully with conditional sampling support\")"
+    ]
+   },
+   {
+    "file": "ModularCode/src/CTGAN_TVAE_synthetic_generator.py",
+    "line": 17,
+    "text": "from sdv.tabular import CTGAN as CTGANSynthesizer, TVAE as TVAESynthesizer",
+    "context": [
+     "    print(\"✓ SDV library loaded successfully with conditional sampling support\")",
+     "except ImportError as e:",
+     "    try:",
+     "        # Fallback for older SDV versions",
+     "        from sdv.tabular import CTGAN as CTGANSynthesizer, TVAE as TVAESynthesizer",
+     "        SDV_AVAILABLE = True",
+     "        print(\"⚠ Using legacy SDV API - conditional sampling may be limited\")",
+     "    except ImportError:",
+     "        print(\"SDV library not found. Please install with: pip install sdv\")"
+    ]
+   },
+   {
+    "file": "ModularCode/src/CTGAN_TVAE_synthetic_generator.py",
+    "line": 542,
+    "text": "self.model = TVAESynthesizer(",
+    "context": [
+     "        self.metadata = self._create_metadata(prepared_data, dataset_name)",
+     "        ",
+     "        # Initialize and train TVAE",
+     "        print(\"Initializing TVAE with metadata...\")",
+     "        self.model = TVAESynthesizer(",
+     "            metadata=self.metadata,",
+     "            epochs=self.epochs,",
+     "            batch_size=self.batch_size,",
+     "            verbose=self.verbose"
+    ]
+   },
+   {
+    "file": "src/CTGAN_TVAE_synthetic_generator.py",
+    "line": 9,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "warnings.filterwarnings('ignore')",
+     "",
+     "try:",
+     "    # Updated imports for SDV 1.23.0+",
+     "    from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.sampling import Condition",
+     "    SDV_AVAILABLE = True",
+     "    print(\"✓ SDV library loaded successfully with conditional sampling support\")"
+    ]
+   },
+   {
+    "file": "src/CTGAN_TVAE_synthetic_generator.py",
+    "line": 17,
+    "text": "from sdv.tabular import CTGAN as CTGANSynthesizer, TVAE as TVAESynthesizer",
+    "context": [
+     "    print(\"✓ SDV library loaded successfully with conditional sampling support\")",
+     "except ImportError as e:",
+     "    try:",
+     "        # Fallback for older SDV versions",
+     "        from sdv.tabular import CTGAN as CTGANSynthesizer, TVAE as TVAESynthesizer",
+     "        SDV_AVAILABLE = True",
+     "        print(\"⚠ Using legacy SDV API - conditional sampling may be limited\")",
+     "    except ImportError:",
+     "        print(\"SDV library not found. Please install with: pip install sdv\")"
+    ]
+   },
+   {
+    "file": "src/CTGAN_TVAE_synthetic_generator.py",
+    "line": 542,
+    "text": "self.model = TVAESynthesizer(",
+    "context": [
+     "        self.metadata = self._create_metadata(prepared_data, dataset_name)",
+     "        ",
+     "        # Initialize and train TVAE",
+     "        print(\"Initializing TVAE with metadata...\")",
+     "        self.model = TVAESynthesizer(",
+     "            metadata=self.metadata,",
+     "            epochs=self.epochs,",
+     "            batch_size=self.batch_size,",
+     "            verbose=self.verbose"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

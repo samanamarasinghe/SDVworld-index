@@ -1,0 +1,376 @@
+{
+ "repo": "danielrosehill/Claude-Synthetic-Data-Plugin",
+ "disk_kb": 20,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Synthetic Data\n\nGenerate synthetic datasets — from a schema, from a real source, or via LLM-driven persona generation. Includes utilities for PII replacement, real-to-synth transformation, and quality/privacy evaluation.\n\n## Skills\n\n- `tools-reference` — Reference card of recommended OSS tooling (SDV, Synthcity, Faker, Mimesis, DataSynthesizer, ydata-synthetic, Gretel, time-series and LLM options).\n- `setup-workspace` — Initialize a workspace folder (`inputs/`, `outputs/`, `reports/`, `configs/`) and a `requirements.txt`.\n- `tabular-from-schema` — Generate tabular data from a JSON schema (Faker/Mimesis + numpy distributions).\n- `tabular-from-real` — Fit SDV (`GaussianCopula`, `CTGAN`, `TVAE`) on a real CSV and sample synthetic rows preserving marginals + correlations.\n- `replace-pii` — Swap PII columns in a real dataset for realistic Faker values, with deterministic mapping for referential integrity.\n- `text-records-llm` — Generate synthetic text records (tickets, reviews, notes) via the Claude CLI with persona/style controls and dedup.\n- `real-to-synth-llm` — LLM-driven transformation of real records into synthetic counterparts that preserve semantic structure but change all specifics.\n- `evaluate-quality` — Fidelity, utility, and privacy diagnostics (SDMetrics for tabular; embedding-based leakage and n-gram diversity for text).\n\n## Installation\n\n```bash\nclaude plugins install synthetic-data@danielrosehill\n```\n\nOr, scoped to a single project:\n\n```bash\nclaude plugins install synthetic-data@danielrosehill --scope project\n```\n\n## License\n\nMIT\n",
+ "hits": {
+  "ct": [
+   {
+    "file": "skills/tools-reference/SKILL.md",
+    "line": 25,
+    "text": "- `CTGANSynthesizer` — neural-network-based, high fidelity on mixed types, slower to fit",
+    "context": [
+     "**Cons:** Slower for very high-dimensional data; assumes stationarity.",
+     "",
+     "**Key models:**",
+     "- `GaussianCopulaSynthesizer` — fast, general, works well for continuous/categorical mix",
+     "- `CTGANSynthesizer` — neural-network-based, high fidelity on mixed types, slower to fit",
+     "- `TVAESynthesizer` — variational autoencoder, good balance of speed/fidelity",
+     "- `HMASynthesizer` — multi-table, learns foreign-key relationships",
+     "",
+     "**Install:** `pip install sdv`  "
+    ]
+   },
+   {
+    "file": "skills/tabular-from-real/SKILL.md",
+    "line": 55,
+    "text": "# from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "   synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "   synthesizer.fit(real_data)",
+     "   ",
+     "   # Option B: High-fidelity mixed-type (CTGAN, slower)",
+     "   # from sdv.single_table import CTGANSynthesizer",
+     "   # synthesizer = CTGANSynthesizer(metadata, epochs=100)",
+     "   # synthesizer.fit(real_data)",
+     "   ```",
+     ""
+    ]
+   },
+   {
+    "file": "skills/tabular-from-real/SKILL.md",
+    "line": 56,
+    "text": "# synthesizer = CTGANSynthesizer(metadata, epochs=100)",
+    "context": [
+     "   synthesizer.fit(real_data)",
+     "   ",
+     "   # Option B: High-fidelity mixed-type (CTGAN, slower)",
+     "   # from sdv.single_table import CTGANSynthesizer",
+     "   # synthesizer = CTGANSynthesizer(metadata, epochs=100)",
+     "   # synthesizer.fit(real_data)",
+     "   ```",
+     "",
+     "4. **Sample synthetic data:**"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "skills/tools-reference/SKILL.md",
+    "line": 24,
+    "text": "- `GaussianCopulaSynthesizer` — fast, general, works well for continuous/categorical mix",
+    "context": [
+     "**Pros:** Mature, multi-table support, handles mixed types, row/column constraints, reversible transformations.  ",
+     "**Cons:** Slower for very high-dimensional data; assumes stationarity.",
+     "",
+     "**Key models:**",
+     "- `GaussianCopulaSynthesizer` — fast, general, works well for continuous/categorical mix",
+     "- `CTGANSynthesizer` — neural-network-based, high fidelity on mixed types, slower to fit",
+     "- `TVAESynthesizer` — variational autoencoder, good balance of speed/fidelity",
+     "- `HMASynthesizer` — multi-table, learns foreign-key relationships",
+     ""
+    ]
+   },
+   {
+    "file": "skills/tabular-from-real/SKILL.md",
+    "line": 35,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "2. **Load real data and detect metadata:**",
+     "   ```python",
+     "   import pandas as pd",
+     "   from sdv.metadata import SingleTableMetadata",
+     "   from sdv.single_table import GaussianCopulaSynthesizer",
+     "   ",
+     "   # Load real data",
+     "   real_data = pd.read_csv('real_data.csv')",
+     "   print(real_data.head())"
+    ]
+   },
+   {
+    "file": "skills/tabular-from-real/SKILL.md",
+    "line": 51,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "",
+     "3. **Fit the synthesizer:**",
+     "   ```python",
+     "   # Option A: Fast general-purpose (GaussianCopula)",
+     "   synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "   synthesizer.fit(real_data)",
+     "   ",
+     "   # Option B: High-fidelity mixed-type (CTGAN, slower)",
+     "   # from sdv.single_table import CTGANSynthesizer"
+    ]
+   }
+  ],
+  "hma": [
+   {
+    "file": "skills/tools-reference/SKILL.md",
+    "line": 27,
+    "text": "- `HMASynthesizer` — multi-table, learns foreign-key relationships",
+    "context": [
+     "**Key models:**",
+     "- `GaussianCopulaSynthesizer` — fast, general, works well for continuous/categorical mix",
+     "- `CTGANSynthesizer` — neural-network-based, high fidelity on mixed types, slower to fit",
+     "- `TVAESynthesizer` — variational autoencoder, good balance of speed/fidelity",
+     "- `HMASynthesizer` — multi-table, learns foreign-key relationships",
+     "",
+     "**Install:** `pip install sdv`  ",
+     "**Quality eval:** `pip install sdmetrics`",
+     ""
+    ]
+   },
+   {
+    "file": "skills/tabular-from-real/SKILL.md",
+    "line": 73,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "",
+     "5. **Optional: Multi-table synthesis (HMA):**",
+     "   ```python",
+     "   from sdv.metadata import MultiTableMetadata",
+     "   from sdv.multi_table import HMASynthesizer",
+     "   ",
+     "   # If you have multiple related tables:",
+     "   metadata = MultiTableMetadata.detect_from_dataframes({",
+     "       'customers': customers_df,"
+    ]
+   },
+   {
+    "file": "skills/tabular-from-real/SKILL.md",
+    "line": 88,
+    "text": "synthesizer = HMASynthesizer(metadata)",
+    "context": [
+     "           'foreign_key_columns': {'order_customer_id': 'customer_id'}",
+     "       }",
+     "   ])",
+     "   ",
+     "   synthesizer = HMASynthesizer(metadata)",
+     "   synthesizer.fit({'customers': customers_df, 'orders': orders_df})",
+     "   synthetic_tables = synthesizer.sample()",
+     "   ```",
+     ""
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "skills/tools-reference/SKILL.md",
+    "line": 26,
+    "text": "- `TVAESynthesizer` — variational autoencoder, good balance of speed/fidelity",
+    "context": [
+     "",
+     "**Key models:**",
+     "- `GaussianCopulaSynthesizer` — fast, general, works well for continuous/categorical mix",
+     "- `CTGANSynthesizer` — neural-network-based, high fidelity on mixed types, slower to fit",
+     "- `TVAESynthesizer` — variational autoencoder, good balance of speed/fidelity",
+     "- `HMASynthesizer` — multi-table, learns foreign-key relationships",
+     "",
+     "**Install:** `pip install sdv`  ",
+     "**Quality eval:** `pip install sdmetrics`"
+    ]
+   }
+  ],
+  "sm": [
+   {
+    "file": "skills/evaluate-quality/SKILL.md",
+    "line": 36,
+    "text": "from sdmetrics.reports.single_table import QualityReport, DiagnosticReport",
+    "context": [
+     "",
+     "2. **Run fidelity and diagnostic reports:**",
+     "   ```python",
+     "   import pandas as pd",
+     "   from sdmetrics.reports.single_table import QualityReport, DiagnosticReport",
+     "   from datetime import datetime",
+     "   import os",
+     "   ",
+     "   def evaluate_tabular(real_path, synth_path, output_dir):"
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "skills/tabular-from-real/SKILL.md",
+    "line": 35,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "2. **Load real data and detect metadata:**",
+     "   ```python",
+     "   import pandas as pd",
+     "   from sdv.metadata import SingleTableMetadata",
+     "   from sdv.single_table import GaussianCopulaSynthesizer",
+     "   ",
+     "   # Load real data",
+     "   real_data = pd.read_csv('real_data.csv')",
+     "   print(real_data.head())"
+    ]
+   },
+   {
+    "file": "skills/tabular-from-real/SKILL.md",
+    "line": 55,
+    "text": "# from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "   synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "   synthesizer.fit(real_data)",
+     "   ",
+     "   # Option B: High-fidelity mixed-type (CTGAN, slower)",
+     "   # from sdv.single_table import CTGANSynthesizer",
+     "   # synthesizer = CTGANSynthesizer(metadata, epochs=100)",
+     "   # synthesizer.fit(real_data)",
+     "   ```",
+     ""
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "skills/tabular-from-real/SKILL.md",
+    "line": 34,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "2. **Load real data and detect metadata:**",
+     "   ```python",
+     "   import pandas as pd",
+     "   from sdv.metadata import SingleTableMetadata",
+     "   from sdv.single_table import GaussianCopulaSynthesizer",
+     "   ",
+     "   # Load real data",
+     "   real_data = pd.read_csv('real_data.csv')"
+    ]
+   },
+   {
+    "file": "skills/tabular-from-real/SKILL.md",
+    "line": 72,
+    "text": "from sdv.metadata import MultiTableMetadata",
+    "context": [
+     "   ```",
+     "",
+     "5. **Optional: Multi-table synthesis (HMA):**",
+     "   ```python",
+     "   from sdv.metadata import MultiTableMetadata",
+     "   from sdv.multi_table import HMASynthesizer",
+     "   ",
+     "   # If you have multiple related tables:",
+     "   metadata = MultiTableMetadata.detect_from_dataframes({"
+    ]
+   }
+  ],
+  "mt": [
+   {
+    "file": "skills/tabular-from-real/SKILL.md",
+    "line": 73,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "",
+     "5. **Optional: Multi-table synthesis (HMA):**",
+     "   ```python",
+     "   from sdv.metadata import MultiTableMetadata",
+     "   from sdv.multi_table import HMASynthesizer",
+     "   ",
+     "   # If you have multiple related tables:",
+     "   metadata = MultiTableMetadata.detect_from_dataframes({",
+     "       'customers': customers_df,"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "skills/tabular-from-real/SKILL.md",
+    "line": 34,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "2. **Load real data and detect metadata:**",
+     "   ```python",
+     "   import pandas as pd",
+     "   from sdv.metadata import SingleTableMetadata",
+     "   from sdv.single_table import GaussianCopulaSynthesizer",
+     "   ",
+     "   # Load real data",
+     "   real_data = pd.read_csv('real_data.csv')"
+    ]
+   },
+   {
+    "file": "skills/tabular-from-real/SKILL.md",
+    "line": 35,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "2. **Load real data and detect metadata:**",
+     "   ```python",
+     "   import pandas as pd",
+     "   from sdv.metadata import SingleTableMetadata",
+     "   from sdv.single_table import GaussianCopulaSynthesizer",
+     "   ",
+     "   # Load real data",
+     "   real_data = pd.read_csv('real_data.csv')",
+     "   print(real_data.head())"
+    ]
+   },
+   {
+    "file": "skills/tabular-from-real/SKILL.md",
+    "line": 55,
+    "text": "# from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "   synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "   synthesizer.fit(real_data)",
+     "   ",
+     "   # Option B: High-fidelity mixed-type (CTGAN, slower)",
+     "   # from sdv.single_table import CTGANSynthesizer",
+     "   # synthesizer = CTGANSynthesizer(metadata, epochs=100)",
+     "   # synthesizer.fit(real_data)",
+     "   ```",
+     ""
+    ]
+   },
+   {
+    "file": "skills/tabular-from-real/SKILL.md",
+    "line": 72,
+    "text": "from sdv.metadata import MultiTableMetadata",
+    "context": [
+     "   ```",
+     "",
+     "5. **Optional: Multi-table synthesis (HMA):**",
+     "   ```python",
+     "   from sdv.metadata import MultiTableMetadata",
+     "   from sdv.multi_table import HMASynthesizer",
+     "   ",
+     "   # If you have multiple related tables:",
+     "   metadata = MultiTableMetadata.detect_from_dataframes({"
+    ]
+   },
+   {
+    "file": "skills/tabular-from-real/SKILL.md",
+    "line": 73,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "",
+     "5. **Optional: Multi-table synthesis (HMA):**",
+     "   ```python",
+     "   from sdv.metadata import MultiTableMetadata",
+     "   from sdv.multi_table import HMASynthesizer",
+     "   ",
+     "   # If you have multiple related tables:",
+     "   metadata = MultiTableMetadata.detect_from_dataframes({",
+     "       'customers': customers_df,"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "gc",
+  "hma",
+  "md",
+  "mt",
+  "sdv_any",
+  "sm",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

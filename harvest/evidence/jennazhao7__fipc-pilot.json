@@ -1,0 +1,546 @@
+{
+ "repo": "jennazhao7/fipc-pilot",
+ "disk_kb": 1242,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# FIPC Pilot — Fidelity-Induced Privacy Collapse (Gate 1)\n\nThe 48-hour experiment that decides whether the FIPC project is a go.\n\n**Question:** when a commercial LLM generates \"privacy-preserving\" synthetic data\nin a *generate → validate → repair* loop, does record-level leakage of the source\n**rise as the fidelity/utility validators get stricter** — and does the LLM leak\n**more than a non-copying statistical baseline** at the same validator levels?\n\nIf yes → the effect exists and is non-tautological → build the full study.\nIf no → retune once, else pivot. You'll know in a weekend for ~$30.\n\n---\n\n## Run it\n\n```bash\npip install -r requirements.txt\n\n# Offline first — no API key, no cost. Validates the whole pipeline on a mock LLM:\npython run_pilot.py --dry-run --trials 5\npython plot_pilot.py            # -> fipc_pilot_curve.png\n\n# Live (one OpenRouter key covers GPT / Claude / Gemini):\nexport OPENROUTER_API_KEY=sk-...\npython run_pilot.py --model openai/gpt-5        --out gpt5.json\npython run_pilot.py --model anthropic/claude-sonnet-4.5 --out claude.json\npython run_pilot.py --model google/gemini-2.5-pro       --out gemini.json\npython plot_pilot.py gpt5.json\n```\n\nCost control for the live run: defaults are 6 levels × 5 trials × up to 4 repair\nrounds ≈ a few hundred calls per model. Start with `--trials 2` to smoke-test cost.\n\n## What the run prints\n\n1. **Anti-tautology oracle** — whether a non-copying conditional resampler\n   (`StatBaseline`) can pass each validator level. **Every level must say PASS.**\n   If a level FAILS, that level structurally forces copying and is scientifically\n   worthless — loosen it before trusting any result. (This is the objection a\n   reviewer will raise first; the pilot checks it for you.)\n2. **Leakage vs validator level** — the effect. `*_excess` = metric on the source\n   (shown to model) minus the same metric on a **holdout** never shown to anyone.\n   Positive, rising excess = genuine record-level leakage, not population similarity.\n3. **Gate-1 verdict** — EFFECT PRESENT if L5 near-copy excess ≥ 0.10 or ≥2× over L0.\n\n## Files\n\n| File | Role |\n|------|------|\n| `source_data.py` | Synthetic source + holdout + planted canaries (all fake data). |\n| `validators.py` | Validator ladder L0–L5 (schema→marginals→corr→tail→utility). |\n| `generators.py` | `LLMGenerator` (repair loop) + `StatBaseline` (oracle/baseline) + mock. |\n| `leakage.py` | Exact/near copy, canary reproduction, **excess-over-holdout**. |\n| `run_pilot.py` | Orchestrates the sweep, prints oracle + curve + verdict. |\n| `plot_pilot.py` | Draws `fipc_pilot_curve.png` (embryo of the paper's Fig. 1). |\n\n## The three design choices that make this defensible (don't remove them)\n\n1. **Holdout control.** Every leakage metric is reported as source-minus-holdout.\n   This is what separates real leakage from \"the LLM makes realistic-looking rows.\"\n2. **Anti-tautology oracle.** A non-copying resampler must be able to pass every\n   level, proving the leakage the LLM shows is *excess*, not forced by the task.\n3. **Planted canaries.** Unambiguous, unique records → exact-reproduction is\n   impossible to hand-wave away.\n\n## After Gate 1 (not in this pilot)\n\nFull study adds: the paired include/exclude MIA (causal identification),\nmatched-utility frontier vs DP synthesizers, 3 models × more trials, rare-vs-common\nsplit, and variance over ≥5 seeds. See `FIPC_battle_plan.md`.\n\n## Ethics\n\nAll \"private\" data here is synthetic, generated from a known process. No real\nperson's data is used; leakage is measured against records we planted. This studies\na workflow *vulnerability* defensively — it produces no harmful content.\n",
+ "hits": {
+  "sdv_any": [
+   {
+    "file": "tools/verify_probe_source.py",
+    "line": 78,
+    "text": "import sdv",
+    "context": [
+     "import pandas as pd",
+     "from scipy import stats as st",
+     "",
+     "import sdmetrics",
+     "import sdv",
+     "",
+     "import probe_source",
+     "from src.baselines.sdv_wrap import fit_baseline",
+     "from src.scoring.quantile_floors import ("
+    ]
+   },
+   {
+    "file": "tools/dcr_normalizer_disclosure.py",
+    "line": 67,
+    "text": "import sdv",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "",
+     "import sdmetrics",
+     "import sdv",
+     "from sdmetrics.single_table.privacy.dcr_baseline_protection import (",
+     "    DCRBaselineProtection,",
+     ")",
+     "from sdmetrics.single_table.privacy.dcr_utils import calculate_dcr"
+    ]
+   },
+   {
+    "file": "tools/steerability_multisize.py",
+    "line": 27,
+    "text": "import sdv",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "",
+     "import sdmetrics",
+     "import sdv",
+     "",
+     "from src.baselines.sdv_wrap import fit_baseline, schema_to_sdv_metadata",
+     "from src.scoring.warrant_panel import declared_ranges, distance_matrix",
+     "from tools.warrant_gradedness_sweep import make_source"
+    ]
+   },
+   {
+    "file": "tools/dcr_attainment_sweep.py",
+    "line": 58,
+    "text": "import sdv",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "",
+     "import sdmetrics",
+     "import sdv",
+     "from sdmetrics.single_table.privacy.dcr_utils import calculate_dcr",
+     "",
+     "from src.baselines.sdv_wrap import schema_to_sdv_metadata",
+     "from src.harness.schema_coerce import ColumnSpec, TableSchema"
+    ]
+   },
+   {
+    "file": "tools/warrant_gradedness_sweep.py",
+    "line": 78,
+    "text": "import sdv",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "",
+     "import sdmetrics",
+     "import sdv",
+     "from sdmetrics.single_table.privacy.dcr_utils import calculate_dcr",
+     "",
+     "import source_data",
+     "from src.baselines.sdv_wrap import fit_baseline, schema_to_sdv_metadata"
+    ]
+   },
+   {
+    "file": "tools/steerability_replication.py",
+    "line": 36,
+    "text": "import sdv",
+    "context": [
+     "import pandas as pd",
+     "from scipy import stats as st",
+     "",
+     "import sdmetrics",
+     "import sdv",
+     "",
+     "from src.baselines.sdv_wrap import fit_baseline, schema_to_sdv_metadata",
+     "from src.scoring.warrant_panel import declared_ranges, distance_matrix",
+     "from tools.warrant_gradedness_sweep import make_source"
+    ]
+   },
+   {
+    "file": "tools/power_canary.py",
+    "line": 63,
+    "text": "import sdv",
+    "context": [
+     "import pandas as pd",
+     "from scipy import stats as st",
+     "",
+     "import sdmetrics",
+     "import sdv",
+     "",
+     "from src.baselines.sdv_wrap import fit_baseline, schema_to_sdv_metadata",
+     "from src.scoring.warrant_panel import distance_matrix, independent_marginals_sample",
+     "from tools.warrant_gradedness_sweep import make_source"
+    ]
+   },
+   {
+    "file": "tests/scoring/test_warrant_panel.py",
+    "line": 432,
+    "text": "import sdv",
+    "context": [
+     "",
+     "",
+     "def test_provenance_pins_shipped_implementations_and_free_parameters(sources, floors):",
+     "    import sdmetrics",
+     "    import sdv",
+     "",
+     "    synth = independent_marginals_sample(sources[200], SCHEMA, n=N_SYN, seed=6)",
+     "    provenance = warrant_panel(sources[200], synth, floors[200]).provenance",
+     ""
+    ]
+   },
+   {
+    "file": "tests/baselines/test_sdv_wrap.py",
+    "line": 85,
+    "text": "import sdv",
+    "context": [
+     "    assert not fitted.sample(50).equals(other.sample(50))",
+     "",
+     "",
+     "def test_report_records_provenance(fitted):",
+     "    import sdv",
+     "    report = fitted.report",
+     "    assert report[\"model\"] == \"gaussian_copula\"",
+     "    assert report[\"seed\"] == 7",
+     "    assert report[\"sdv_version\"] == sdv.__version__"
+    ]
+   },
+   {
+    "file": "src/scoring/warrant_panel.py",
+    "line": 94,
+    "text": "import sdv",
+    "context": [
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "import sdmetrics",
+     "import sdv",
+     "from sdmetrics.single_table import NewRowSynthesis",
+     "from sdmetrics.single_table.privacy.dcr_utils import calculate_dcr",
+     "",
+     "# Private sdmetrics APIs, used ONLY to reproduce the shipped distance exactly"
+    ]
+   },
+   {
+    "file": "src/baselines/sdv_wrap.py",
+    "line": 86,
+    "text": "import sdv",
+    "context": [
+     "from typing import Any, Dict, Iterator, List, Optional, Sequence",
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "import sdv",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    GaussianCopulaSynthesizer,"
+    ]
+   },
+   {
+    "file": "src/baselines/sdv_wrap.py",
+    "line": 87,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "import sdv",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    GaussianCopulaSynthesizer,",
+     "    TVAESynthesizer,"
+    ]
+   }
+  ],
+  "sm": [
+   {
+    "file": "tools/verify_probe_source.py",
+    "line": 77,
+    "text": "import sdmetrics",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "from scipy import stats as st",
+     "",
+     "import sdmetrics",
+     "import sdv",
+     "",
+     "import probe_source",
+     "from src.baselines.sdv_wrap import fit_baseline"
+    ]
+   },
+   {
+    "file": "tools/dcr_normalizer_disclosure.py",
+    "line": 66,
+    "text": "import sdmetrics",
+    "context": [
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "",
+     "import sdmetrics",
+     "import sdv",
+     "from sdmetrics.single_table.privacy.dcr_baseline_protection import (",
+     "    DCRBaselineProtection,",
+     ")"
+    ]
+   },
+   {
+    "file": "tools/dcr_normalizer_disclosure.py",
+    "line": 68,
+    "text": "from sdmetrics.single_table.privacy.dcr_baseline_protection import (",
+    "context": [
+     "import pandas as pd",
+     "",
+     "import sdmetrics",
+     "import sdv",
+     "from sdmetrics.single_table.privacy.dcr_baseline_protection import (",
+     "    DCRBaselineProtection,",
+     ")",
+     "from sdmetrics.single_table.privacy.dcr_utils import calculate_dcr",
+     ""
+    ]
+   },
+   {
+    "file": "tools/dcr_normalizer_disclosure.py",
+    "line": 71,
+    "text": "from sdmetrics.single_table.privacy.dcr_utils import calculate_dcr",
+    "context": [
+     "import sdv",
+     "from sdmetrics.single_table.privacy.dcr_baseline_protection import (",
+     "    DCRBaselineProtection,",
+     ")",
+     "from sdmetrics.single_table.privacy.dcr_utils import calculate_dcr",
+     "",
+     "import source_data",
+     "from src.baselines.sdv_wrap import schema_to_sdv_metadata",
+     "from src.scoring.warrant_panel import declared_ranges, distance_matrix"
+    ]
+   },
+   {
+    "file": "tools/steerability_multisize.py",
+    "line": 26,
+    "text": "import sdmetrics",
+    "context": [
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "",
+     "import sdmetrics",
+     "import sdv",
+     "",
+     "from src.baselines.sdv_wrap import fit_baseline, schema_to_sdv_metadata",
+     "from src.scoring.warrant_panel import declared_ranges, distance_matrix"
+    ]
+   },
+   {
+    "file": "tools/dcr_attainment_sweep.py",
+    "line": 57,
+    "text": "import sdmetrics",
+    "context": [
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "",
+     "import sdmetrics",
+     "import sdv",
+     "from sdmetrics.single_table.privacy.dcr_utils import calculate_dcr",
+     "",
+     "from src.baselines.sdv_wrap import schema_to_sdv_metadata"
+    ]
+   },
+   {
+    "file": "tools/dcr_attainment_sweep.py",
+    "line": 59,
+    "text": "from sdmetrics.single_table.privacy.dcr_utils import calculate_dcr",
+    "context": [
+     "import pandas as pd",
+     "",
+     "import sdmetrics",
+     "import sdv",
+     "from sdmetrics.single_table.privacy.dcr_utils import calculate_dcr",
+     "",
+     "from src.baselines.sdv_wrap import schema_to_sdv_metadata",
+     "from src.harness.schema_coerce import ColumnSpec, TableSchema",
+     ""
+    ]
+   },
+   {
+    "file": "tools/warrant_gradedness_sweep.py",
+    "line": 77,
+    "text": "import sdmetrics",
+    "context": [
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "",
+     "import sdmetrics",
+     "import sdv",
+     "from sdmetrics.single_table.privacy.dcr_utils import calculate_dcr",
+     "",
+     "import source_data"
+    ]
+   },
+   {
+    "file": "tools/warrant_gradedness_sweep.py",
+    "line": 79,
+    "text": "from sdmetrics.single_table.privacy.dcr_utils import calculate_dcr",
+    "context": [
+     "import pandas as pd",
+     "",
+     "import sdmetrics",
+     "import sdv",
+     "from sdmetrics.single_table.privacy.dcr_utils import calculate_dcr",
+     "",
+     "import source_data",
+     "from src.baselines.sdv_wrap import fit_baseline, schema_to_sdv_metadata",
+     "from src.harness.schema_coerce import ColumnSpec, TableSchema"
+    ]
+   },
+   {
+    "file": "tools/steerability_replication.py",
+    "line": 35,
+    "text": "import sdmetrics",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "from scipy import stats as st",
+     "",
+     "import sdmetrics",
+     "import sdv",
+     "",
+     "from src.baselines.sdv_wrap import fit_baseline, schema_to_sdv_metadata",
+     "from src.scoring.warrant_panel import declared_ranges, distance_matrix"
+    ]
+   },
+   {
+    "file": "tools/power_canary.py",
+    "line": 62,
+    "text": "import sdmetrics",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "from scipy import stats as st",
+     "",
+     "import sdmetrics",
+     "import sdv",
+     "",
+     "from src.baselines.sdv_wrap import fit_baseline, schema_to_sdv_metadata",
+     "from src.scoring.warrant_panel import distance_matrix, independent_marginals_sample"
+    ]
+   },
+   {
+    "file": "tests/scoring/test_gradedness_sweep.py",
+    "line": 35,
+    "text": "from sdmetrics.single_table.privacy.dcr_utils import calculate_dcr",
+    "context": [
+     "    matrix_metrics,",
+     "    pilot_schema,",
+     ")",
+     "",
+     "from sdmetrics.single_table.privacy.dcr_utils import calculate_dcr",
+     "",
+     "",
+     "@pytest.fixture(scope=\"module\")",
+     "def pilot():"
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "src/baselines/sdv_wrap.py",
+    "line": 88,
+    "text": "from sdv.single_table import (",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "import sdv",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    GaussianCopulaSynthesizer,",
+     "    TVAESynthesizer,",
+     ")"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "src/baselines/sdv_wrap.py",
+    "line": 87,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "import sdv",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    GaussianCopulaSynthesizer,",
+     "    TVAESynthesizer,"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "src/baselines/sdv_wrap.py",
+    "line": 89,
+    "text": "CTGANSynthesizer,",
+    "context": [
+     "import pandas as pd",
+     "import sdv",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    GaussianCopulaSynthesizer,",
+     "    TVAESynthesizer,",
+     ")",
+     ""
+    ]
+   },
+   {
+    "file": "src/baselines/sdv_wrap.py",
+    "line": 98,
+    "text": "\"ctgan\": CTGANSynthesizer,",
+    "context": [
+     "from src.harness.schema_coerce import TableSchema",
+     "",
+     "MODELS = {",
+     "    \"gaussian_copula\": GaussianCopulaSynthesizer,",
+     "    \"ctgan\": CTGANSynthesizer,",
+     "    \"tvae\": TVAESynthesizer,",
+     "}",
+     "",
+     "MC_SAMPLE_SIZE = 100_000"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "src/baselines/sdv_wrap.py",
+    "line": 90,
+    "text": "GaussianCopulaSynthesizer,",
+    "context": [
+     "import sdv",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    GaussianCopulaSynthesizer,",
+     "    TVAESynthesizer,",
+     ")",
+     "",
+     "from src.harness.schema_coerce import TableSchema"
+    ]
+   },
+   {
+    "file": "src/baselines/sdv_wrap.py",
+    "line": 97,
+    "text": "\"gaussian_copula\": GaussianCopulaSynthesizer,",
+    "context": [
+     "",
+     "from src.harness.schema_coerce import TableSchema",
+     "",
+     "MODELS = {",
+     "    \"gaussian_copula\": GaussianCopulaSynthesizer,",
+     "    \"ctgan\": CTGANSynthesizer,",
+     "    \"tvae\": TVAESynthesizer,",
+     "}",
+     ""
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "src/baselines/sdv_wrap.py",
+    "line": 91,
+    "text": "TVAESynthesizer,",
+    "context": [
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    GaussianCopulaSynthesizer,",
+     "    TVAESynthesizer,",
+     ")",
+     "",
+     "from src.harness.schema_coerce import TableSchema",
+     ""
+    ]
+   },
+   {
+    "file": "src/baselines/sdv_wrap.py",
+    "line": 99,
+    "text": "\"tvae\": TVAESynthesizer,",
+    "context": [
+     "",
+     "MODELS = {",
+     "    \"gaussian_copula\": GaussianCopulaSynthesizer,",
+     "    \"ctgan\": CTGANSynthesizer,",
+     "    \"tvae\": TVAESynthesizer,",
+     "}",
+     "",
+     "MC_SAMPLE_SIZE = 100_000",
+     ""
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "gc",
+  "md",
+  "sdv_any",
+  "sm",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

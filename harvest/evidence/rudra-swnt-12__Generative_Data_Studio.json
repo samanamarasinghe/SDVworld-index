@@ -1,0 +1,112 @@
+{
+ "repo": "rudra-swnt-12/Generative_Data_Studio",
+ "disk_kb": 213,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# 🧬 Generative Data Studio\n\n[](https://www.python.org)\n[](https://github.com/astral-sh/ruff)\n[](https://openai.com)\n\nA Python-based toolkit for **imputing**, **synthesizing**, **profiling**, and **validating** tabular data using AI.\n\nThis project is a comprehensive solution for common data scarcity and quality issues. It features a new **automated imputation** step to handle missing data, a **Synthetic Data Generator** using GANs to create high-fidelity data, and a standout **AI-powered validation loop**.\n\nAfter pre-processing and generating data, the tool:\n\n1.  Profiles both the *original* and *synthetic* datasets.\n2.  Feeds both statistical profiles to the **GPT-4-Turbo API**.\n3.  Generates a human-readable, executive-level quality report, with the AI acting as a \"Senior Data Analyst\" to validate the synthetic data's statistical integrity.\n\n-----\n\n## 🚀 Core Features\n\n  * **(NEW) Automated Data Imputation:** Before synthesis, the tool automatically detects and fills missing values (e.g., using `scikit-learn`'s `IterativeImputer`) to ensure the GAN model is trained on complete, high-quality data.\n  * **Synthetic Data Generation:** Uses `sdv` (Synthetic Data Vault) and the **CTGAN** model to learn the distributions of a real dataset and generate new, artificial data.\n  * **Automated Data Profiling:** Employs `ydata-profiling` to create detailed JSON reports of dataset statistics, distributions, correlations, and missing values.\n  * **AI-Powered Validation:** Leverages the `openai` API to perform a comparative analysis, offering a qualitative \"score\" and actionable insights on the synthetic data's quality.\n  * **Modular & Error-Proof:** Built with a clean `src` structure and custom exception classes (`src/exceptions.py` for `ValidatorError`, `ImputerError`, etc.) for robust error handling.\n\n-----\n\n## 🛠️ Tech Stack\n\n  * 🐍 **Python 3.10+**\n  * ⚡ **uv** (Package Manager)\n  * 🐼 **Pandas** (Data manipulation)\n  * 🤖 **SDV (Synthetic Data Vault)** (Core synthesis library - CTGAN)\n  * 📊 **ydata-profiling** (Data report generation)\n  * 🧠 **OpenAI** (AI validation)\n  * 🦾 **Scikit-learn** (Data imputation)\n\n-----\n\n## 📦 Installation & Setup\n\n1.  **Clone the repository:**\n\n    ```sh\n    git clone https://github.com/your-username/generative-data-studio.git\n    cd generative-data-studio\n    ```\n\n2.  **Create and activate the virtual environment:**\n\n    ```sh\n    uv venv\n    source .venv/bin/activate\n    # On Windows: .venv\\Scripts\\activate\n    ```\n\n3.  **Install dependencies:**\n    This project uses `pyproject.toml` and `uv.lock`. Sync the environment using:\n\n    ```sh\n    uv sync\n    ```\n\n4.  **Set up your API Key:**\n\n* Create a `.env` file in the root directory:\n    ```sh\n    touch .env\n    ```\n    * Add your OpenAI API key to the file:\n    ```\n    OPENAI_API_KEY=\"sk-...\"\n    ```\n\n5.  **Add your data:**\n\n* Place your sample dataset (which may contain missing values) at `data/input/data.csv`.\n\n-----\n\n## 🏃 How to Run\n\nTo run the complete pipeline (impute, synthesize, profile, and validate), simply execute the main script:\n\n```sh\npython main.py\n```\n\n### What happens:\n\n1.  `[Step 1]` Missing values in `data/input/data.csv` are imputed. The clean dataset is saved to `data/imputed/imputed_data.csv`.\n2.  `[Step 2]` A new synthetic dataset is generated from the imputed data and saved to `data/output/synthetic_data.csv`.\n3.  `[Step 3]` A profile of your original (unimputed) data is saved to `reports/original_report.json`.\n4.  `[Step 4]` A profile of the new synthetic data is saved to `reports/synthetic_report.json`.\n5.  `[Step 5]` The contents of both JSON reports are sent to the OpenAI API.\n6.  `[Done]` A final **AI Quality Report** is printed to your console.\n\n-----\n\n## 📁 Project Structure\n\n```\nGENERATIVE_DATA_STUDIO/\n│\n├── .venv/                   \n├── data/\n│   ├── input/\n│   │   └── data.csv          \n│   ├── imputed/\n│   │   └── imputed_data.csv  \n│   └── output/\n│       └── synthetic_data.csv \n│\n├── reports/\n│   ├── original_report.json   \n│   └── synthetic_report.json  \n│\n├── src/\n│   ├── __init__.py\n│   ├── config.py             \n│   ├── data_profiler.py      \n│   ├── exceptions.py         \n│   ├── imputer.py            \n│   ├── llm_validator.py      \n│   └── synthesizer.py        \n│\n├── .env                      \n├── .gitignore\n├── main.py                   \n├── pyproject.toml            \n├── README.md                 \n└── uv.lock                   \n```",
+ "hits": {
+  "st": [
+   {
+    "file": "src/synthesizer.py",
+    "line": 2,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from src.exceptions import SynthesizerError, DataLoaderError",
+     "",
+     "INPUT_CSV = \"data/input/data.csv\""
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "src/synthesizer.py",
+    "line": 3,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from src.exceptions import SynthesizerError, DataLoaderError",
+     "",
+     "INPUT_CSV = \"data/input/data.csv\"",
+     "OUTPUT_CSV = \"data/output/synthetic_data.csv\""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "src/synthesizer.py",
+    "line": 2,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from src.exceptions import SynthesizerError, DataLoaderError",
+     "",
+     "INPUT_CSV = \"data/input/data.csv\""
+    ]
+   },
+   {
+    "file": "src/synthesizer.py",
+    "line": 3,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from src.exceptions import SynthesizerError, DataLoaderError",
+     "",
+     "INPUT_CSV = \"data/input/data.csv\"",
+     "OUTPUT_CSV = \"data/output/synthetic_data.csv\""
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "src/synthesizer.py",
+    "line": 2,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from src.exceptions import SynthesizerError, DataLoaderError",
+     "",
+     "INPUT_CSV = \"data/input/data.csv\""
+    ]
+   },
+   {
+    "file": "src/synthesizer.py",
+    "line": 23,
+    "text": "synthesizer = CTGANSynthesizer(metadata, epochs=100)",
+    "context": [
+     "        raise DataLoaderError(f\"Error parsing CSV file: {input_csv}\")",
+     "    try:",
+     "        metadata = SingleTableMetadata()",
+     "        metadata.detect_from_dataframe(data)",
+     "        synthesizer = CTGANSynthesizer(metadata, epochs=100)",
+     "        synthesizer.fit(data)",
+     "        synthetic_data = synthesizer.sample(num_rows)",
+     "        synthetic_data.to_csv(output_csv, index=False)",
+     "    except Exception as e:"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "pyproject.toml": [
+   "    \"sdv>=1.28.0\","
+  ]
+ }
+}

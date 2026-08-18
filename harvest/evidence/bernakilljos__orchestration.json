@@ -1,0 +1,224 @@
+{
+ "repo": "bernakilljos/orchestration",
+ "disk_kb": 4567713,
+ "method": "partial_clone",
+ "tree_files": 6679,
+ "status": "ok",
+ "readme": "# Orchestration Kit v1.0 — Multi-AI Automation Framework\n\nClaude Opus 5 (default, 2026-07-24) + Codex + Haiku 4.5 (Review) + Fable 5 (Mythos-class) + Sonnet 5 (균형) — Plugin-Centric 멀티AI 오케스트레이션\n\n## 재발 방지 헌장 A~F (2026-08-12)\n\n이 kit 은 **6 카테고리 헌장** 으로 재발 방지 통합:\n- **A** 하드코딩·폴백 금지 · **B** 검증 · **C** 운영 안전 · **D** 조사·보고 · **E** UI/UX · **F** kit 고유\n\n상세: `CLAUDE.md § 7` · **총망라 매뉴얼**: `docs/install/README.md`\n\n## 다른 프로젝트 · 다른 세션에서 쓰는 법\n\n- **Claude.ai Projects**: `docs/install/README.md § Section 2` 를 System instructions 에 붙임 → 매 대화 자동 seed\n- **install target 배포**: `install.bat <target>` (kit 원본 → target 자동 배포)\n- **Web ↔ CLI 자동 브릿지**: `docs/install/README.md § Section 3` (4 방식 · Managed Agents API 완전 자동)\n- **참조 파일**: `docs/install/README.md § Section 1`\n\n---\n\n## 24/7 자동화 (v1.0+)\n\n- **SQLite 상태머신**: 원자적 워커·태스크·quota 관리 (`.claude/state/orca.db`, 8 테이블)\n- **Watchdog + 자동부활**: 죽은 워커 복구, quota-aware 지수 backoff (10m→20m→40m→2h)\n- **Budget ceiling**: 일일 비용 상한 초과 시 자동 breaker (신규 태스크 차단)\n- **Haiku 4.5 검증**: Gemini 대체 기본 검증자 (Prompt caching, 90% 비용 절감, 2개 병렬)\n- **4.7 라우팅**: Claude Opus 4.7 + Extended Thinking 우선, Codex/Gemini는 fallback (route.py)\n- **통합 메트릭**: SQLite 기반 성능·비용·quota 대시보드 (metrics-report.py)\n\n설정: `python .claude/scripts/init-state-db.py` → `.claude/scripts/watchdog-start.bat`  \n상태: `python .claude/scripts/route.py --status`  \n상세: [guide.txt](guide.txt) 섹션 7\n\n---\n\n## Quick Start\n\n### 방법 1: setup.exe (추천)\n[Releases](https://github.com/bernakilljos/orchestration/releases) 에서 **OrchestrationKit-Setup.exe** 다운로드 → 더블클릭 → 경로 선택 → 설치 끝\n\n### 방법 2: git clone\n```bat\ngit clone https://github.com/bernakilljos/orchestration.git\ncd orchestration\nsetup\\setup.bat C:\\work\\myproject\n```\n\n### 방법 3: 사일런트 설치\n```bat\nOrchestrationKit-Setup.exe /VERYSILENT /DIR=\"C:\\work\\myproject\"\n```\n\n### 설치 후\nClaude Code 실행 → 자동으로 환경 구성 완료  \n추가 MCP 필요 시: `/plug_dev`, `/plug_data` 등 슬래시 커맨드 실행\n\n## MCP 도구 설치\n\n카테고리별 설치 명령 (`/plug_design`, `/plug_dev`, ...) — 실제 동작하는 npm 패키지만 설치.\n상세: [guide.txt](guide.txt) 섹션 8\n\n---\n\n## 포함 항목\n\n| 카테고리 | 수량 | 내용 |\n|---------|------|------|\n| Skills | 38개 + 3개 | skill-01~38 (레거시) + exec_orca-auto, state_session, route_dispatch |\n| Hooks | 9개 명세 + 9개 스크립트 | hook-00~08 + Python/Shell 실행 스크립트 |\n| Agents | 6개 | team-lead, implementer, reviewer, architect, monitor, designer |\n| Plugins | 13개 | exec_orch, exec_voice, exec_learning, design_ppt/excel/word, review_qa, mcp_dev/data/collab/web/docs/media |\n| Commands | 20개 | loop-stop, plug_*, check-*, godmode, 10x, brief 등 |\n| Codex 연동 | AGENTS.md + .codex/ | Codex용 지시서 + MCP config.toml |\n\n---\n\n## AI 역할 분담\n\n| AI | 역할 | 명령어 |\n|----|------|--------|\n| Claude | 팀장: 설계·판단·승인·보완 | 대화에서 직접 |\n| Codex | 구현: 500줄+ 1차 구현 | `codex-a --auto` (단일) / `codex-auto 4` (병렬) |\n| Gemini | 검증: 리뷰·보안·문서화 | `gemini-a --verify` (단일) / `gemini-auto 2` (병렬) |\n\n### 명칭 정리\n```text\ncodex-a     = 단일 태스크 실행\ncodex-auto  = 병렬 구현 워커 (기본 4개)\ngemini-a    = 단일 검증 실행\ngemini-auto = 병렬 검증 워커 (기본 2개)\nclaude-auto = Claude 병렬 워커 (기본 3개)\n```\n\n---\n\n## 파이프라인\n\n```text\nHook → Planner → Executor → Validator → State → Retry\n  ↓        ↓          ↓           ↓         ↓       ↓\n사전확인  Claude    Codex 4개   Gemini 2개  스냅샷  3회재시도\n         설계      구현        검증        저장    →에스컬레이션\n```\n\n### 디자인 파이프라인\n```text\nPPT:   Claude → Canva → Mermaid → Figma\nExcel: Claude → openpyxl → 차트 → Google Sheets\nWord:  Claude → python-docx → Mermaid → PDF\n```\n\n---\n\n## 플러그인 구조 (plugins/)\n\n```text\nexec_orch      오케스트레이션 핵심 (pipeline.md)\nexec_voice     음성 STT·TTS·회의록·음성명령\nexec_learning  세션학습·패턴저장·요약\ndesign_ppt     PPT 자동생성\ndesign_excel   Excel 자동생성\ndesign_word    Word 자동생성\nreview_qa      코드리뷰·보안·품질\nmcp_dev        개발 MCP (GitHub·Docker·AWS)\nmcp_data       데이터 MCP (MySQL·MongoDB·BigQuery)\nmcp_collab     협업 MCP (Slack·Notion·Jira)\nmcp_web        웹자동화 MCP (Playwright·Puppeteer)\nmcp_docs       문서처리 MCP (PDF·DOCX·OCR)\nmcp_media      미디어 (Whisper·TTS·FFmpeg)\n```\n\n각 플러그인: `commands/` + `skills/` + `agents/` + `hooks/` + `codex/` + `rules.md`\n\n---\n\n## Setup Modules (11단계)\n\n| # | Module | 내용 |\n|---|--------|------|\n| 01 | core | .claude 폴더 + 설정 복사 |\n| 02 | defender | Windows Defender 예외 |\n| 03 | settings | Claude 글로벌 설정, PS UTF-8 |\n| 04 | commands | codex-a, gemini-a 등 글로벌 설치 |\n| 05 | services | status-push, remote-agent |\n| 06 | prereqs | Node.js, Claude Code, Cloudflared |\n| 07 | github | Git 초기화, GitHub repo 연동 |\n| 08 | plugins | install-plugins.ps1 (TTY 없이 안정 설치) |\n| 09 | finalize | exec_voice 도구 설치, 로컬LLM 감지, Claude 실행 |\n| 10 | video-restore | CodeFormer + Real-ESRGAN |\n| 11 | media-enhance | 오디오/PDF/PPT 의존성 |\n\n---\n\n## MCP 추가 설치\n\n기본 설치됨: `context7`, `playwright`, `thinking`  \n자동 연결 (claude.ai): Figma, Gamma, Gmail, Canva, Mermaid\n\n추가 설치 — Claude에서 실행:\n```text\n/plug_dev      GitHub, Docker, AWS, Vercel...\n/plug_data     MySQL, MongoDB, BigQuery...\n/plug_design   Canva, Figma, Gamma, PowerPoint...\n/plug_collab   Slack, Notion, Jira, Gmail...\n/plug_media    Whisper, TTS, FFmpeg\n/plug_all      전체 한번에\n```\n\n---\n\n## Codex 연동 (.codex/)\n\n```toml\n# .codex/config.toml\n[mcp_servers.filesystem]  # 파일 처리\n[mcp_servers.github]      # GitHub\n[mcp_servers.playwright]  # 웹 자동화\n[mcp_servers.figma]       # 디자인\n[mcp_servers.canva]       # 디자인\n[mcp_servers.mermaid]     # 다이어그램\n```\n\n`AGENTS.md` = Codex용 루트 지시서 (`CLAUDE.md` 대응)\n\n---\n\n## 확장\n\n```text\n새 플러그인:  plugins/내이름/commands/커맨드명.md\n새 스킬:     .claude/skills/exec_이름.md\n새 에이전트: .claude/agents/agent-07-name.md\n새 훅:       .claude/hooks/hook-09-name.md\n```\n",
+ "hits": {
+  "st": [
+   {
+    "file": "plugins/design_video/references/rms-enterprise-tech-toolkit.md",
+    "line": 96,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     ")",
+     "# ε=3.0 미만이면 개인정보 보호 우수",
+     "",
+     "# 합성데이터 — 실제 거래 데이터 대체",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "synthesizer.fit(real_transactions)",
+     "synthetic = synthesizer.sample(num_rows=10000)",
+     "# → AI 학습·PoC에 사용 (실제 고객 데이터 불필요)"
+    ]
+   },
+   {
+    "file": "plugins/design_video/references/rms-enterprise-tech-toolkit.md",
+    "line": 219,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "| **ydata-synthetic** | 시계열 합성 | `pip install ydata-synthetic` |",
+     "",
+     "```python",
+     "# SDV — RMS 거래 데이터 합성",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(real_transactions)"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "plugins/design_video/references/rms-enterprise-tech-toolkit.md",
+    "line": 220,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "```python",
+     "# SDV — RMS 거래 데이터 합성",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(real_transactions)",
+     ""
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "plugins/design_video/references/rms-enterprise-tech-toolkit.md",
+    "line": 230,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "synth.fit(real_transactions)",
+     "synthetic_data = synth.sample(num_rows=50000)",
+     "",
+     "# 품질 검증",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "quality = evaluate_quality(real_transactions, synthetic_data, metadata)",
+     "print(f\"합성데이터 품질: {quality.get_score():.2%}\")",
+     "# → \"합성데이터 품질: 89.3%\"",
+     "```"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "plugins/design_video/references/rms-enterprise-tech-toolkit.md",
+    "line": 96,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     ")",
+     "# ε=3.0 미만이면 개인정보 보호 우수",
+     "",
+     "# 합성데이터 — 실제 거래 데이터 대체",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "synthesizer.fit(real_transactions)",
+     "synthetic = synthesizer.sample(num_rows=10000)",
+     "# → AI 학습·PoC에 사용 (실제 고객 데이터 불필요)"
+    ]
+   },
+   {
+    "file": "plugins/design_video/references/rms-enterprise-tech-toolkit.md",
+    "line": 219,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "| **ydata-synthetic** | 시계열 합성 | `pip install ydata-synthetic` |",
+     "",
+     "```python",
+     "# SDV — RMS 거래 데이터 합성",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(real_transactions)"
+    ]
+   },
+   {
+    "file": "plugins/design_video/references/rms-enterprise-tech-toolkit.md",
+    "line": 220,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "```python",
+     "# SDV — RMS 거래 데이터 합성",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(real_transactions)",
+     ""
+    ]
+   },
+   {
+    "file": "plugins/design_video/references/rms-enterprise-tech-toolkit.md",
+    "line": 230,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "synth.fit(real_transactions)",
+     "synthetic_data = synth.sample(num_rows=50000)",
+     "",
+     "# 품질 검증",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "quality = evaluate_quality(real_transactions, synthetic_data, metadata)",
+     "print(f\"합성데이터 품질: {quality.get_score():.2%}\")",
+     "# → \"합성데이터 품질: 89.3%\"",
+     "```"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "plugins/design_video/references/rms-enterprise-tech-toolkit.md",
+    "line": 219,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "| **ydata-synthetic** | 시계열 합성 | `pip install ydata-synthetic` |",
+     "",
+     "```python",
+     "# SDV — RMS 거래 데이터 합성",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(real_transactions)"
+    ]
+   },
+   {
+    "file": "plugins/design_video/references/rms-enterprise-tech-toolkit.md",
+    "line": 225,
+    "text": "synth = CTGANSynthesizer(metadata, epochs=300)",
+    "context": [
+     "",
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(real_transactions)",
+     "",
+     "synth = CTGANSynthesizer(metadata, epochs=300)",
+     "synth.fit(real_transactions)",
+     "synthetic_data = synth.sample(num_rows=50000)",
+     "",
+     "# 품질 검증"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "plugins/design_video/references/rms-enterprise-tech-toolkit.md",
+    "line": 96,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     ")",
+     "# ε=3.0 미만이면 개인정보 보호 우수",
+     "",
+     "# 합성데이터 — 실제 거래 데이터 대체",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "synthesizer.fit(real_transactions)",
+     "synthetic = synthesizer.sample(num_rows=10000)",
+     "# → AI 학습·PoC에 사용 (실제 고객 데이터 불필요)"
+    ]
+   },
+   {
+    "file": "plugins/design_video/references/rms-enterprise-tech-toolkit.md",
+    "line": 97,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "# ε=3.0 미만이면 개인정보 보호 우수",
+     "",
+     "# 합성데이터 — 실제 거래 데이터 대체",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "synthesizer.fit(real_transactions)",
+     "synthetic = synthesizer.sample(num_rows=10000)",
+     "# → AI 학습·PoC에 사용 (실제 고객 데이터 불필요)",
+     "```"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ev",
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

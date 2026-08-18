@@ -1,0 +1,289 @@
+{
+ "repo": "matt-balda/bias2fair-synth",
+ "disk_kb": 772196,
+ "method": "partial_clone",
+ "tree_files": 6187,
+ "status": "ok",
+ "readme": "# Bias2Fair Synth\n\nEvaluation of the impact of synthetic data on algorithmic bias mitigation in machine learning models [CatBoost, Logistic Regression, SVM], focusing on datasets [COMPAS, Adult, Diabetes 130-US Hospitals for Years 1999-2008] and generators [CTGAN, Gaussian Copula, TVAE, TabDDM].\n\n---\n\n## Experimental Scenarios\n\nThe experiments are organized into six scenarios that allow isolating and comparing the effect of different intervention strategies on bias and predictive performance.\n\n---\n\n### S1 — Original (baseline without intervention)\n\nTraining and evaluating models on the original data, without any mitigation pre-processing or synthetic data generation. Serves as a baseline for comparison with all other scenarios.\n\n---\n\n### S2 — Pre-processing Mitigation\n\nApplication of three classic bias mitigation methods in the data pre-processing stage:\n\n| Method | Description |\n|--------|-----------|\n| **Reweighing** | Assigns different weights to instances to compensate for disparities between groups |\n| **DIRemover** (Disparate Impact Remover) | Transforms features to reduce disparate impact while maintaining predictive utility |\n| **LFR** (Learning Fair Representations) | Learns latent representations that satisfy fairness constraints |\n\n---\n\n### S3 — Synthetic Data on Entire Dataset\n\nSynthetic data generation applied to the entire dataset, **without generation condition** and **without conditional mitigation intent**. Works as an experimental control to distinguish the data augmentation effect from any deliberate mitigation effect.\n\nThe proportion of added synthetic data is controlled by the scale parameter **α**:\n\n$$\\alpha \\in \\{1.5,\\ 2,\\ 3\\}$$\n\n| α | Description |\n|---|-----------|\n| 1.5 | Increases the dataset by 50% with synthetic data |\n| 2 | Doubles the dataset size |\n| 3 | Triples the dataset size |\n\n---\n\n### S4 — Synthetic Oversampling of Minority Groups\n\nSynthetic data generation targeted at **minority groups**, based on the distributions of the majority group, aiming to **equalize proportions** between the sensitive attribute (race) and the outcome.\n\nThe intervention seeks to balance racial representation without altering the majority group's distribution.\n\n---\n\n### S5 — Synthetic Data by Subgroup (outcome × race)\n\nSynthetic data generation **exclusively for the underrepresented group** in the outcome, using cross-separation between sensitive attribute and outcome:\n\n| Subgroup | Description |\n|----------|-----------|\n| `african-american + yes` | African-American individuals with positive outcome |\n| `african-american + no` | African-American individuals with negative outcome |\n| `caucasian + yes` | Caucasian individuals with positive outcome |\n| `caucasian + no` | Caucasian individuals with negative outcome |\n\nFor each combination, synthetic data is generated for the **underrepresented class**, correcting specific imbalances within each race × outcome stratum.\n\n---\n\n### S6 — Hybrid Mitigation (Pre-processing + Synthetic Data)\n\nCombination of the **Reweighing** pre-processing mitigation method with the synthetic generation strategy of **S5** (synthetic data focused on the underrepresented group in the outcome).\n\nAllows evaluating the synergistic or complementary effect between weight correction and targeted subgroup augmentation.\n\n## Experimental Setup\n\n- 10 seeds\n- Z-score normalization\n- Train/test split of 80/20\n- Fit / transform / only train dataset\n\n---\n\n## How to Run\n\n### 1. Running the Experiment Pipeline\nThe main experiment script generates synthetic data, applies mitigators, trains models, and computes metrics. You can run it for one or multiple datasets sequentially.\n\n**Note on Logging & Execution:**\n- All experiment outputs and terminal logs are automatically saved to `experiment.log`.\n- To start a completely fresh run and wipe all existing results, use the `--clear` flag. This safely deletes the `outputs/` and `plots/` directories, and resets `experiment.log`.\n\n```bash\n# Run for a single dataset (e.g., adult)\npython scripts/run_experiment.py --dataset adult\n\n# Run for multiple datasets in sequence\npython scripts/run_experiment.py --dataset compas adult diabetes\n\n# Clear previous results and logs (start completely from scratch)\npython scripts/run_experiment.py --dataset compas --clear\n\n# To see all options\npython scripts/run_experiment.py --help\n```\n\n### 2. Generating Plots\nAll plotting scripts support processing multiple datasets in a single execution. The plots are saved automatically under `plots/<dataset_name>/...`.\n\n**Paper Plots (Trade-offs & Fairness vs Utility)**\n```bash\npython scripts/plots/generate_paper_plots.py --dataset compas adult diabetes\n```\n\n**Data Analysis & Fairness Overlaps (Bhattacharyya)**\n```bash\npython scripts/plots/plot_data_analysis_fairness.py --dataset compas adult diabetes\n```\n\n**Individual Synthetic Fidelity (Distributions & Correlations)**\n```bash\npython scripts/plots/plot_individual_synthetic_fidelity.py --dataset compas adult diabetes\n```\n\n**Utility Metrics (ROC, PR Curves & Accuracy Trends)**\n```bash\npython scripts/plots/plot_utility_metrics.py --dataset compas adult diabetes\n```\n\n**SDV Fidelity Heatmaps & KDE Overlays (JSD Analysis)**\n```bash\n# You can also specify the reference scenario for the JSD evaluation\npython scripts/plots/plot_sdv_fidelity.py --dataset compas adult diabetes --scenario S3_2.0\n```\n",
+ "hits": {
+  "st": [
+   {
+    "file": "scripts/run_experiment.py",
+    "line": 51,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "from catboost import CatBoostClassifier",
+     "from aif360.sklearn.preprocessing import Reweighing, LearnedFairRepresentations",
+     "from aif360.algorithms.preprocessing import DisparateImpactRemover",
+     "from aif360.datasets import BinaryLabelDataset",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling import Condition",
+     "from tqdm import tqdm",
+     ""
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "scripts/run_experiment.py",
+    "line": 52,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from aif360.sklearn.preprocessing import Reweighing, LearnedFairRepresentations",
+     "from aif360.algorithms.preprocessing import DisparateImpactRemover",
+     "from aif360.datasets import BinaryLabelDataset",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling import Condition",
+     "from tqdm import tqdm",
+     "",
+     "# Allow tensorflow warnings and errors"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "scripts/run_experiment.py",
+    "line": 51,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "from catboost import CatBoostClassifier",
+     "from aif360.sklearn.preprocessing import Reweighing, LearnedFairRepresentations",
+     "from aif360.algorithms.preprocessing import DisparateImpactRemover",
+     "from aif360.datasets import BinaryLabelDataset",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling import Condition",
+     "from tqdm import tqdm",
+     ""
+    ]
+   },
+   {
+    "file": "scripts/run_experiment.py",
+    "line": 52,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from aif360.sklearn.preprocessing import Reweighing, LearnedFairRepresentations",
+     "from aif360.algorithms.preprocessing import DisparateImpactRemover",
+     "from aif360.datasets import BinaryLabelDataset",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling import Condition",
+     "from tqdm import tqdm",
+     "",
+     "# Allow tensorflow warnings and errors"
+    ]
+   },
+   {
+    "file": "scripts/run_experiment.py",
+    "line": 53,
+    "text": "from sdv.sampling import Condition",
+    "context": [
+     "from aif360.algorithms.preprocessing import DisparateImpactRemover",
+     "from aif360.datasets import BinaryLabelDataset",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling import Condition",
+     "from tqdm import tqdm",
+     "",
+     "# Allow tensorflow warnings and errors",
+     "os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "scripts/run_experiment.py",
+    "line": 51,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "from catboost import CatBoostClassifier",
+     "from aif360.sklearn.preprocessing import Reweighing, LearnedFairRepresentations",
+     "from aif360.algorithms.preprocessing import DisparateImpactRemover",
+     "from aif360.datasets import BinaryLabelDataset",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling import Condition",
+     "from tqdm import tqdm",
+     ""
+    ]
+   },
+   {
+    "file": "scripts/run_experiment.py",
+    "line": 106,
+    "text": "return CTGANSynthesizer(metadata, enforce_min_max_values=True,",
+    "context": [
+     "def build_generator(name, metadata):",
+     "    if name == 'GaussianCopula':",
+     "        return GaussianCopulaSynthesizer(metadata)",
+     "    elif name == 'CTGAN':",
+     "        return CTGANSynthesizer(metadata, enforce_min_max_values=True,",
+     "                                enable_gpu=True, verbose=False)",
+     "    elif name == 'TVAE':",
+     "        return TVAESynthesizer(metadata, enforce_min_max_values=True,",
+     "                               enable_gpu=True, verbose=False)"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "scripts/run_experiment.py",
+    "line": 51,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "from catboost import CatBoostClassifier",
+     "from aif360.sklearn.preprocessing import Reweighing, LearnedFairRepresentations",
+     "from aif360.algorithms.preprocessing import DisparateImpactRemover",
+     "from aif360.datasets import BinaryLabelDataset",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling import Condition",
+     "from tqdm import tqdm",
+     ""
+    ]
+   },
+   {
+    "file": "scripts/run_experiment.py",
+    "line": 104,
+    "text": "return GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "",
+     "",
+     "def build_generator(name, metadata):",
+     "    if name == 'GaussianCopula':",
+     "        return GaussianCopulaSynthesizer(metadata)",
+     "    elif name == 'CTGAN':",
+     "        return CTGANSynthesizer(metadata, enforce_min_max_values=True,",
+     "                                enable_gpu=True, verbose=False)",
+     "    elif name == 'TVAE':"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "scripts/run_experiment.py",
+    "line": 51,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "from catboost import CatBoostClassifier",
+     "from aif360.sklearn.preprocessing import Reweighing, LearnedFairRepresentations",
+     "from aif360.algorithms.preprocessing import DisparateImpactRemover",
+     "from aif360.datasets import BinaryLabelDataset",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling import Condition",
+     "from tqdm import tqdm",
+     ""
+    ]
+   },
+   {
+    "file": "scripts/run_experiment.py",
+    "line": 109,
+    "text": "return TVAESynthesizer(metadata, enforce_min_max_values=True,",
+    "context": [
+     "    elif name == 'CTGAN':",
+     "        return CTGANSynthesizer(metadata, enforce_min_max_values=True,",
+     "                                enable_gpu=True, verbose=False)",
+     "    elif name == 'TVAE':",
+     "        return TVAESynthesizer(metadata, enforce_min_max_values=True,",
+     "                               enable_gpu=True, verbose=False)",
+     "    elif name == 'TabDDPM':",
+     "        return TabDDPMWrapper(metadata, device='cuda', steps=1000)",
+     "    raise ValueError(f'Unknown generator: {name}')"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "gc",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [
+  "plots/correlation/adult/S3_1.5/CTGAN",
+  "plots/correlation/adult/S3_2.0/CTGAN",
+  "plots/correlation/adult/S3_3.0/CTGAN",
+  "plots/correlation/adult/S4/CTGAN",
+  "plots/correlation/adult/S5/CTGAN",
+  "plots/correlation/adult/S6/CTGAN",
+  "plots/correlation/compas/S3_1.5/CTGAN",
+  "plots/correlation/compas/S3_2.0/CTGAN",
+  "plots/correlation/compas/S3_3.0/CTGAN",
+  "plots/correlation/compas/S4/CTGAN",
+  "plots/correlation/compas/S5/CTGAN",
+  "plots/correlation/compas/S6/CTGAN",
+  "plots/correlation/diabetes/S3_1.5/CTGAN",
+  "plots/correlation/diabetes/S3_2.0/CTGAN",
+  "plots/correlation/diabetes/S3_3.0/CTGAN",
+  "plots/correlation/diabetes/S4/CTGAN",
+  "plots/correlation/diabetes/S5/CTGAN",
+  "plots/correlation/diabetes/S6/CTGAN",
+  "plots/distributions/adult/S3_1.5/CTGAN",
+  "plots/distributions/adult/S3_2.0/CTGAN",
+  "plots/distributions/adult/S3_3.0/CTGAN",
+  "plots/distributions/adult/S4/CTGAN",
+  "plots/distributions/adult/S5/CTGAN",
+  "plots/distributions/adult/S6/CTGAN",
+  "plots/distributions/compas/S3_1.5/CTGAN",
+  "plots/distributions/compas/S3_2.0/CTGAN",
+  "plots/distributions/compas/S3_3.0/CTGAN",
+  "plots/distributions/compas/S4/CTGAN",
+  "plots/distributions/compas/S5/CTGAN",
+  "plots/distributions/compas/S6/CTGAN",
+  "plots/distributions/diabetes/S3_1.5/CTGAN",
+  "plots/distributions/diabetes/S3_2.0/CTGAN",
+  "plots/distributions/diabetes/S3_3.0/CTGAN",
+  "plots/distributions/diabetes/S4/CTGAN",
+  "plots/distributions/diabetes/S5/CTGAN",
+  "plots/distributions/diabetes/S6/CTGAN",
+  "synthetic_data/adult/S3_1.5/CTGAN",
+  "synthetic_data/adult/S3_2.0/CTGAN",
+  "synthetic_data/adult/S3_3.0/CTGAN",
+  "synthetic_data/adult/S4/CTGAN",
+  "synthetic_data/adult/S5/CTGAN",
+  "synthetic_data/adult/S6/CTGAN",
+  "synthetic_data/compas/S3_1.5/CTGAN",
+  "synthetic_data/compas/S3_2.0/CTGAN",
+  "synthetic_data/compas/S3_3.0/CTGAN",
+  "synthetic_data/compas/S4/CTGAN",
+  "synthetic_data/compas/S5/CTGAN",
+  "synthetic_data/compas/S6/CTGAN",
+  "synthetic_data/diabetes/S3_1.5/CTGAN",
+  "synthetic_data/diabetes/S3_2.0/CTGAN",
+  "synthetic_data/diabetes/S3_3.0/CTGAN",
+  "synthetic_data/diabetes/S4/CTGAN",
+  "synthetic_data/diabetes/S5/CTGAN",
+  "synthetic_data/diabetes/S6/CTGAN"
+ ],
+ "dependencies": {
+  "pyproject.toml": [
+   "    \"sdv (<1.36.0)\","
+  ],
+  "poetry.lock": [
+   "name = \"copulas\"",
+   "description = \"Create tabular synthetic data using copulas-based modeling.\"",
+   "    {file = \"copulas-0.14.1-py3-none-any.whl\", hash = \"sha256:6f010444385a304274e7587b45f56b860ca38b621529ad0f9bbd4024de91dd1d\"},",
+   "    {file = \"copulas-0.14.1.tar.gz\", hash = \"sha256:adec8f65c98f16816bde5a03e9e7e7b3df91f3fb22ef9fd5023ebba8dd1628c8\"},",
+   "dev = [\"Jinja2 (>=3.1.6,<3.2)\", \"Sphinx (>=7.4.7,<7.5)\", \"alabaster (>=0.7.16,<0.8)\", \"boto3 (>=1.37.18,<1.38)\", \"build (>=1.0.0)\", \"bump-my-version (>=0.18.3)\", \"copulas[test,tutorials]\", \"coverage (>=7.7.1,<7.8)\", \"docutils (>=0.21.2,<0.22)\", \"invoke\", \"lxml-html-clean (>=0.4.1,<0.5)\", \"myst_parser (>=3.0.1,<4.1)\", \"nbsphinx (>=0.9.7,<0.10)\", \"pip (>=9.0.1)\", \"ruff (>=0.3.2,<1)\", \"sphinx_rtd_theme (>=3.0.2,<3.1)\", \"sphinxcontrib-devhelp (>=2.0.0,<2.1)\", \"sphinxcontrib-htmlhelp (>=2.1.0,<2.2)\", \"sphinxcontrib_applehelp (>=2.0.0,<2.1)\", \"sphinxcontrib_qthelp (>=2.0.0,<2.1)\", \"sphinxcontrib_serializinghtml (>=2.0.0,<2.1)\", \"tabulate (>=0.9.0,<0.10)\", \"twine (>=1.10.0)\", \"urllib3 (>=1.26.20,<2.4)\", \"watchdog (>=1.0.1)\", \"wheel (>=0.30.0)\"]",
+   "test = [\"copulas[tutorials]\", \"pytest (>=6.2.5)\", \"pytest-cov (>=2.6.0)\", \"pytest-rerunfailures (>=10.3)\", \"tomli (>=2.0.0)\"]",
+   "name = \"ctgan\"",
+   "    {file = \"ctgan-0.12.1-py3-none-any.whl\", hash = \"sha256:38a3b83432643caa8381c74c49e6a079166efa40f8f6c3b7204db44d6d2c8f18\"},",
+   "    {file = \"ctgan-0.12.1.tar.gz\", hash = \"sha256:e545c2b1a752affba3de2933a5f8037228e837f7a73f5593399b52cfe9611bc7\"},",
+   "rdt = {version = \">=1.14.0\", markers = \"python_version < \\\"3.14\\\"\"}",
+   "dev = [\"build (>=1.0.0,<2)\", \"bump-my-version (>=0.18.3)\", \"coverage (>=4.5.1,<6)\", \"ctgan[test]\", \"invoke\", \"pip (>=9.0.1)\", \"ruff (>=0.4.5,<1)\", \"twine (>=1.10.0)\", \"watchdog (>=1.0.1,<5)\", \"wheel (>=0.30.0)\"]",
+   "name = \"rdt\"",
+   "    {file = \"rdt-1.21.0-py3-none-any.whl\", hash = \"sha256:8c8b886770c1b6e53ec92bfba12c09c62a4e999b214da6926bfe30ac01f0c7d6\"},",
+   "    {file = \"rdt-1.21.0.tar.gz\", hash = \"sha256:eff122123f2805f2b94fbe1f27f10a6eb6863daeacac3cd685a046bb4d7072e2\"},",
+   "copulas = [\"copulas (>=0.12.1) ; python_version < \\\"3.14\\\"\", \"copulas (>=0.14.0) ; python_version >= \\\"3.14\\\"\"]",
+   "dev = [\"build (>=1.0.0,<2)\", \"bump-my-version (>=0.18.3)\", \"coverage (>=4.5.12,<8)\", \"invoke\", \"pip (>=9.0.1)\", \"rdt[test]\", \"ruff (>=0.3.2,<1)\", \"tabulate (>=0.8.9,<1)\", \"twine (>=1.10.0)\", \"watchdog (>=1.0.1,<5)\", \"wheel (>=0.30.0)\"]",
+   "test = [\"jupyter (>=1.0.0,<2)\", \"pytest (>=3.4.2)\", \"pytest-cov (>=2.6.0)\", \"pytest-runner (>=2.11.1)\", \"pytest-subtests (>=0.5,<1.0)\", \"rdt[copulas]\", \"rdt[pyarrow]\", \"tomli (>=2.0.0,<3)\"]",
+   "name = \"sdmetrics\"",
+   "    {file = \"sdmetrics-0.28.0-py3-none-any.whl\", hash = \"sha256:b22dbab90f3b518132c326cf69a91a225c659da6bab146c15af1fe655df3c5a6\"},",
+   "    {file = \"sdmetrics-0.28.0.tar.gz\", hash = \"sha256:1b115e424e911303abde6a31de373678ba3e3d0818ed25c393d34abdc33d5432\"},"
+  ]
+ }
+}

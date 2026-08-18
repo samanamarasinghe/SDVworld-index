@@ -1,0 +1,173 @@
+{
+ "repo": "ArchFin/ASC_project",
+ "disk_kb": 71202,
+ "method": "partial_clone",
+ "tree_files": 657,
+ "status": "ok",
+ "readme": "# ASC_project: Hidden Markov Model (HMM) Pipeline for Entropic Mind Analysis\n\n## Overview\nThis project implements a robust pipeline for analyzing time-series data using a custom Hidden Markov Model (HMM) framework. The goal is to uncover hidden states underlying subjective feeling ratings, with a focus on understanding the concept of an \"Entropic mind.\" The pipeline is designed for interpretability, reproducibility, and extensibility.\n\n## Motivation\nA HMM is a statistical model that describes a system assumed to be a Markov process with unobserved (hidden) states. It is ideal for time-series data where you observe emissions (outputs) but not the underlying state sequence. This makes HMMs powerful for modeling transitions in psychological or physiological states, such as those hypothesized in altered states of consciousness.\n\n## Pipeline Structure\n\n### 1. Data Input and Preprocessing\n- **Input:** CSV file with time-series data (e.g., subjective ratings, conditions, session info).\n- **Preprocessing:**\n  - Data is split by subject/session/week as needed.\n  - Features (feelings) are selected based on configuration in `Breathwork.yaml`.\n  - Data is standardized (z-scored) for PCA and clustering.\n\n### 2. Principal Component Analysis (PCA)\n- **Purpose:** Reduce dimensionality and identify main axes of variation in feelings data.\n- **Outputs:**\n  - Bar plots of principal component loadings (which feelings drive each PC).\n  - Scatter plot of data in PC1/PC2 space.\n  - Explained variance ratio plot.\n- **Rationale:** PCA helps visualize structure and ensures clustering is not dominated by noise or redundant features.\n\n### 3. Custom HMM Clustering\n- **Model:**\n  - Uses a custom HMM with multivariate t-distribution emissions for robustness to outliers.\n  - Includes an extra \"transition\" state to capture periods of change between stable states.\n  - Parameters are initialized with KMeans and refined via EM-like training.\n- **Key Decisions:**\n  - t-distribution is chosen for its heavy tails, better modeling real-world data.\n  - Transition state allows explicit modeling of non-stationary periods.\n  - Multiple runs and state alignment ensure stability and reproducibility.\n\n### 4. Visualization and Interpretation\n- **State Sequence Plot:** Shows cluster assignment over time.\n- **Gamma Heatmap:** Visualizes state membership probabilities (uncertainty, transitions).\n- **Transition Matrix:** Heatmap of empirical transition probabilities.\n- **State Duration Distribution:** Histogram of how long each state persists.\n- **Cluster Feature Profiles:** Bar plots of mean feeling values per cluster.\n- **PCA Projections:** Data and cluster centers in PC space.\n- **Trajectory Plots:** Feeling time-courses with cluster/state shading and transition annotations.\n- **Middle State Validation:** Checks if the dominant cluster matches the \"neutral\" state (smallest L2 norm).\n\n### 5. Transition and Jump Analysis\n- **Transition Annotation:** Each transition is classified as abrupt or gradual based on gamma slope.\n- **Transition Metadata:** CSV output with timing, type, and condition frequencies before/during/after transitions.\n- **Jump Analysis:**\n  - Stability: Ratio of dominant cluster to others as a function of time step (jump).\n  - Consistency: Agreement of clustering across downsampling.\n  - Autocorrelation: Average ACF for each feeling.\n\n### 6. Neural Decoder Integration\n- **Purpose:** The neural decoder is an additional module designed to predict subjective feeling ratings or cluster assignments based on neural data.\n- **Input:** Neural data in a compatible format (e.g., EEG, fMRI, or other time-series neural signals).\n- **Preprocessing:**\n  - Neural data is aligned with subjective ratings or cluster assignments using timestamps.\n  - Features are extracted from the neural data (e.g., power spectral density, connectivity metrics).\n  - Data is standardized and optionally reduced in dimensionality using PCA.\n- **Model:**\n  - A regression or classification model (e.g., linear regression, random forest, or neural network) is trained to map neural features to subjective ratings or cluster labels.\n  - Cross-validation is used to evaluate model performance.\n- **Outputs:**\n  - Predicted ratings or cluster assignments.\n  - Performance metrics (e.g., R^2, accuracy, confusion matrix).\n  - Visualizations of feature importance or model predictions.\n\n### How to Use the Neural Decoder\n1. **Prepare Neural Data:** Ensure your neural data is preprocessed and aligned with the subjective ratings or cluster assignments.\n2. **Update Configuration:** Add the neural data file path and relevant parameters to `Breathwork.yaml`.\n3. **Run the Decoder Script:**\n   ```bash\n   python neural_decoder.py\n   ```\n4. **Review Outputs:** Check the output directory for performance metrics and visualizations.\n\n### Extending the Neural Decoder\n- **Add New Features:** Extract additional features from the neural data (e.g., time-frequency representations).\n- **Change Models:** Experiment with different machine learning models or hyperparameters.\n- **Integrate with Pipeline:** Use the decoder's predictions as additional inputs for the HMM pipeline or clustering analysis.\n\n## Configuration File: `Breathwork.yaml`\nThe `Breathwork.yaml` file contains all the necessary configurations for the pipeline. Key sections include:\n- **File Locations:** \n  - `filelocation_TET`: Path to the input CSV file.\n  - `savelocation_TET`: Directory to save outputs.\n- **Feelings and Differences:**\n  - Lists of feelings and their vectorized differences to include in the analysis.\n- **PCA and Clustering Parameters:**\n  - `no_dimensions_PCA`: Number of dimensions for PCA.\n  - `no_clust`: Number of clusters for KMeans.\n  - `no_states`: Optimal number of HMM states.\n- **Headers and Colors:**\n  - `headers`: Column indices for subject, week, and session.\n  - `colours`: Mapping of cluster indices to colors for visualization.\n\nEnsure this file is correctly configured before running the pipeline.\n\n## Outputs\n- **CSV files:** Cluster assignments, transition metadata.\n- **PNG plots:** All visualizations described above, saved to the configured output directory.\n- **Pickle files:** For saving transition data for further analysis.\n- **Text files:** Middle state validation results, cluster summaries.\n\n## How to Run\n1. **Install Dependencies:** Ensure you have Python 3.x and required libraries installed. Use `pip install -r requirements.txt` if a requirements file is provided.\n2. **Configure Settings:** Update `Breathwork.yaml` with the correct file paths and parameters.\n3. **Run the Main Script:**\n   ```bash\n   python HMM.py\n   ```\n4. **Review Outputs:** Check the output directory for visualizations, CSVs, and text files.\n\n## File Structure\n- `HMM_methods.py`: Core methods and classes for the pipeline.\n- `HMM.py`: Main script to initialize and run the pipeline.\n- `Breathwork.yaml`: Configuration file for paths, features, and parameters.\n- `loop_etc.py`: Utility functions for batch processing or repeated analyses.\n- `interative_etc.py`: Tools for interactive exploration, such as stepwise model fitting or parameter tuning.\n- `README.md`: This guide.\n- **Output Directory:** Contains PNGs, CSVs, pickles, and text files generated by the pipeline.\n\n## Extending or Modifying the Pipeline\n- **Add New Features:** Update the feelings list in `Breathwork.yaml` and ensure your CSV includes them.\n- **Change Model Parameters:** Adjust the number of states, iterations, or t-distribution settings in the YAML or code.\n- **Add Visualizations:** Extend the `Visualiser` or `CustomHMMClustering` classes.\n- **Use with New Data:** Ensure your data matches the expected format and update paths in the YAML.\n\n## Further Reading\n- For more on HMMs: [Wikipedia - Hidden Markov Model](https://en.wikipedia.org/wiki/Hidden_Markov_model)\n- For t-distribution HMMs: See literature on robust HMMs for time-series.\n- For PCA: [Wikipedia - Principal Component Analysis](https://en.wikipedia.org/wiki/Principal_component_analysis)\n\n---\nFor questions or contributions, contact: archie.finney@yahoo.co.uk\n\n",
+ "hits": {
+  "st": [
+   {
+    "file": "Simulated_data/Breathwork_sim.py",
+    "line": 18,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from scipy.stats import gaussian_kde",
+     "from sklearn.model_selection import ParameterGrid",
+     "from sklearn.linear_model import LogisticRegression",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "import logging",
+     "import json",
+     "import argparse"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "Simulated_data/Breathwork_sim.py",
+    "line": 17,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import matplotlib.pyplot as plt",
+     "from scipy.stats import gaussian_kde",
+     "from sklearn.model_selection import ParameterGrid",
+     "from sklearn.linear_model import LogisticRegression",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "import logging",
+     "import json"
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "Simulated_data/Breathwork_sim.py",
+    "line": 19,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "from sklearn.model_selection import ParameterGrid",
+     "from sklearn.linear_model import LogisticRegression",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "import logging",
+     "import json",
+     "import argparse",
+     "import itertools"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "Simulated_data/Breathwork_sim.py",
+    "line": 17,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import matplotlib.pyplot as plt",
+     "from scipy.stats import gaussian_kde",
+     "from sklearn.model_selection import ParameterGrid",
+     "from sklearn.linear_model import LogisticRegression",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "import logging",
+     "import json"
+    ]
+   },
+   {
+    "file": "Simulated_data/Breathwork_sim.py",
+    "line": 18,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from scipy.stats import gaussian_kde",
+     "from sklearn.model_selection import ParameterGrid",
+     "from sklearn.linear_model import LogisticRegression",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "import logging",
+     "import json",
+     "import argparse"
+    ]
+   },
+   {
+    "file": "Simulated_data/Breathwork_sim.py",
+    "line": 19,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "from sklearn.model_selection import ParameterGrid",
+     "from sklearn.linear_model import LogisticRegression",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "import logging",
+     "import json",
+     "import argparse",
+     "import itertools"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "Simulated_data/Breathwork_sim.py",
+    "line": 18,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from scipy.stats import gaussian_kde",
+     "from sklearn.model_selection import ParameterGrid",
+     "from sklearn.linear_model import LogisticRegression",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "import logging",
+     "import json",
+     "import argparse"
+    ]
+   },
+   {
+    "file": "Simulated_data/Breathwork_sim.py",
+    "line": 102,
+    "text": "model = CTGANSynthesizer(",
+    "context": [
+     "    best_score = -np.inf",
+     "    best_cfg   = None",
+     "    for i, cfg in enumerate(ParameterGrid(TUNE_GRID)):",
+     "        logging.info(f\"Tuning run {i+1}/{len(list(ParameterGrid(TUNE_GRID)))} with params: {cfg}\")",
+     "        model = CTGANSynthesizer(",
+     "            metadata=metadata,",
+     "            epochs=CTGAN_EPOCHS,",
+     "            cuda='mps',",
+     "            verbose=1,"
+    ]
+   },
+   {
+    "file": "Simulated_data/Breathwork_sim.py",
+    "line": 127,
+    "text": "model = CTGANSynthesizer(",
+    "context": [
+     "# 4. TRAIN FINAL CTGAN",
+     "# -----------------------------",
+     "def train_final_ctgan(df, metadata, cfg):",
+     "    logging.info(\"Step 4: Training final CTGAN model...\")",
+     "    model = CTGANSynthesizer(",
+     "        metadata=metadata,",
+     "        epochs=CTGAN_EPOCHS,",
+     "        cuda='mps',",
+     "        verbose=1,"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ev",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

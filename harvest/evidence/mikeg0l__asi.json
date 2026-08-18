@@ -1,0 +1,272 @@
+{
+ "repo": "mikeg0l/asi",
+ "disk_kb": 835,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "```\ncurl -O https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-arm64.sh\nbash Miniconda3-latest-MacOSX-arm64.sh\ncp .env.example .env\nconda create -n asi python=3.10 -y\nconda activate asi\npip install -r requirements.txt\n```\n\ndodać credentials do conf/local/credentials.yml\n\n## Uruchomienie (Sprint 6 — Streamlit + dane syntetyczne)\n\n### 0. Przygotowanie środowiska (raz)\n\n```bash\nconda activate asi\npip install -r requirements.txt\n# Seed bazy SQLite z water_potability.csv (tworzy data/01_raw/dataset.db, tabela water_potability):\npython scripts/seed_db.py\n# Wytrenuj model dla API (baseline -> data/06_models/baseline_model.pkl):\nkedro run\n# (opcjonalnie lepszy model: kedro run --pipeline=automl)\n```\n\n`conf/local/credentials.yml` musi zawierać połączenie do bazy:\n\n```yaml\ndb_credentials:\n  con: sqlite:///data/01_raw/dataset.db\n```\n\n> **W&B:** pipeline'y logują do Weights & Biases (`wandb.init`), więc przed `kedro run`\n> ustaw `WANDB_API_KEY` w `.env` albo wykonaj `wandb login`. Bez tego run zatrzyma się na\n> prompcie o klucz. Tryb offline: bash `WANDB_MODE=offline kedro run ...`,\n> PowerShell `$env:WANDB_MODE=\"offline\"; kedro run ...`.\n\n### 1. Pipeline danych syntetycznych (SDV)\n\n```bash\nkedro run --pipeline=synthetic\n```\n\nProdukuje `data/03_primary/synthetic_data.csv` oraz `data/08_reporting/synthetic_scores.json`\ni loguje `sdv/diagnostic_score` (~1.0) i `sdv/quality_score` (<1.0) do W&B.\n\n### 2. API (FastAPI) — osobny terminal\n\n```bash\nuvicorn api.main:app --reload      # http://127.0.0.1:8000/docs\n```\n\n### 3. Dashboard (Streamlit) — osobny terminal\n\n```bash\npython -m streamlit run app/streamlit_app.py   # http://localhost:8501\n```\n\nAdres API konfiguruje zmienna środowiskowa `API_URL` (domyślnie `http://127.0.0.1:8000`):\n\n```powershell\n# PowerShell (Windows)\n$env:API_URL = \"http://127.0.0.1:8000\"; python -m streamlit run app/streamlit_app.py\n```\n\n```bash\n# bash / zsh (Linux/macOS)\nAPI_URL=http://127.0.0.1:8000 python -m streamlit run app/streamlit_app.py\n```\n\nDashboard ma trzy zakładki: **Predykcja** (formularz → `/predict`), **Dane**\n(podgląd z SQLite + statystyki + histogram), **Dane syntetyczne** (generowanie SDV\ni porównanie z oryginałem).\n",
+ "hits": {
+  "st": [
+   {
+    "file": "app/streamlit_app.py",
+    "line": 25,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import requests",
+     "import streamlit as st",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "# --- 2. KONFIGURACJA ---",
+     "# API_URL z konfiguracji (zmienna środowiskowa), NIE hardcoded — zob. wymagania sprintu.",
+     "API_URL = os.environ.get(\"API_URL\", \"http://127.0.0.1:8000\")"
+    ]
+   },
+   {
+    "file": "src/asi_projekt/pipelines/synthetic/nodes.py",
+    "line": 10,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import wandb",
+     "from dotenv import load_dotenv",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "load_dotenv()",
+     "",
+     "logger = logging.getLogger(__name__)"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "app/streamlit_app.py",
+    "line": 24,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import matplotlib.pyplot as plt",
+     "import pandas as pd",
+     "import requests",
+     "import streamlit as st",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "# --- 2. KONFIGURACJA ---",
+     "# API_URL z konfiguracji (zmienna środowiskowa), NIE hardcoded — zob. wymagania sprintu."
+    ]
+   },
+   {
+    "file": "src/asi_projekt/pipelines/synthetic/nodes.py",
+    "line": 9,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import pandas as pd",
+     "import wandb",
+     "from dotenv import load_dotenv",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "load_dotenv()",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "app/streamlit_app.py",
+    "line": 24,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import matplotlib.pyplot as plt",
+     "import pandas as pd",
+     "import requests",
+     "import streamlit as st",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "# --- 2. KONFIGURACJA ---",
+     "# API_URL z konfiguracji (zmienna środowiskowa), NIE hardcoded — zob. wymagania sprintu."
+    ]
+   },
+   {
+    "file": "app/streamlit_app.py",
+    "line": 25,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import requests",
+     "import streamlit as st",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "# --- 2. KONFIGURACJA ---",
+     "# API_URL z konfiguracji (zmienna środowiskowa), NIE hardcoded — zob. wymagania sprintu.",
+     "API_URL = os.environ.get(\"API_URL\", \"http://127.0.0.1:8000\")"
+    ]
+   },
+   {
+    "file": "src/asi_projekt/pipelines/synthetic/nodes.py",
+    "line": 8,
+    "text": "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+    "context": [
+     "",
+     "import pandas as pd",
+     "import wandb",
+     "from dotenv import load_dotenv",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "load_dotenv()"
+    ]
+   },
+   {
+    "file": "src/asi_projekt/pipelines/synthetic/nodes.py",
+    "line": 9,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import pandas as pd",
+     "import wandb",
+     "from dotenv import load_dotenv",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "load_dotenv()",
+     ""
+    ]
+   },
+   {
+    "file": "src/asi_projekt/pipelines/synthetic/nodes.py",
+    "line": 10,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import wandb",
+     "from dotenv import load_dotenv",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "load_dotenv()",
+     "",
+     "logger = logging.getLogger(__name__)"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "app/streamlit_app.py",
+    "line": 25,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import requests",
+     "import streamlit as st",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "# --- 2. KONFIGURACJA ---",
+     "# API_URL z konfiguracji (zmienna środowiskowa), NIE hardcoded — zob. wymagania sprintu.",
+     "API_URL = os.environ.get(\"API_URL\", \"http://127.0.0.1:8000\")"
+    ]
+   },
+   {
+    "file": "app/streamlit_app.py",
+    "line": 59,
+    "text": "def fit_synthesizer(real_data: pd.DataFrame) -> GaussianCopulaSynthesizer:",
+    "context": [
+     "        return pd.read_sql(f\"SELECT * FROM {TABLE_NAME}\", conn)",
+     "",
+     "",
+     "@st.cache_resource",
+     "def fit_synthesizer(real_data: pd.DataFrame) -> GaussianCopulaSynthesizer:",
+     "    \"\"\"Trenuje synthesizer raz i cache'uje wytrenowany obiekt (fit jest kosztowny).\"\"\"",
+     "    metadata = Metadata.detect_from_dataframe(real_data)",
+     "    synth = GaussianCopulaSynthesizer(metadata)",
+     "    synth.fit(real_data)"
+    ]
+   },
+   {
+    "file": "app/streamlit_app.py",
+    "line": 62,
+    "text": "synth = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "@st.cache_resource",
+     "def fit_synthesizer(real_data: pd.DataFrame) -> GaussianCopulaSynthesizer:",
+     "    \"\"\"Trenuje synthesizer raz i cache'uje wytrenowany obiekt (fit jest kosztowny).\"\"\"",
+     "    metadata = Metadata.detect_from_dataframe(real_data)",
+     "    synth = GaussianCopulaSynthesizer(metadata)",
+     "    synth.fit(real_data)",
+     "    return synth",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "src/asi_projekt/pipelines/synthetic/nodes.py",
+    "line": 10,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import wandb",
+     "from dotenv import load_dotenv",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "load_dotenv()",
+     "",
+     "logger = logging.getLogger(__name__)"
+    ]
+   },
+   {
+    "file": "src/asi_projekt/pipelines/synthetic/nodes.py",
+    "line": 45,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "    \"\"\"",
+     "    real_data = _normalize_columns(real_data)",
+     "",
+     "    metadata = Metadata.detect_from_dataframe(real_data)",
+     "    synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "    synthesizer.fit(real_data)",
+     "",
+     "    synthetic = synthesizer.sample(num_rows=parameters[\"n_samples\"])",
+     "    logger.info(\"SDV: wygenerowano %d rekordów syntetycznych\", len(synthetic))"
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "src/asi_projekt/pipelines/synthetic/nodes.py",
+    "line": 8,
+    "text": "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+    "context": [
+     "",
+     "import pandas as pd",
+     "import wandb",
+     "from dotenv import load_dotenv",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "load_dotenv()"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ev",
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv"
+  ]
+ }
+}

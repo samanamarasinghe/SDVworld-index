@@ -1,0 +1,257 @@
+{
+ "repo": "haddadyousef/NBA-Draft-prediction",
+ "disk_kb": 69644,
+ "method": "partial_clone",
+ "tree_files": 213,
+ "status": "ok",
+ "readme": "NCAA-to-NBA Player Projection\n\nThis project analyzes how NCAA player performance translates into NBA outcomes. The workflow combines feature engineering, clustering, and synthetic data augmentation to train ensemble machine learning models that predict whether players will land in the Top 25%, Middle 50%, or Bottom 25% of NBA performance outcomes.\n\nRepository Structure:\n\nNBA-Draft-prediction/\n   README.md – Project description and usage instructions\n   requirements.txt – Python dependencies\n   data/ – Input data (CSV files)\n      college_stats_final.csv\n      nba_player_ratings_25_99_newv2.csv\n   predict_success.py – Main analysis pipeline\n\n   \n   final_runthru_SSAC - Output Data\n      new_methods_predictions/ - model results\n      \n      statistical_tests/ - ANOVA, Chi-sq, correlation, and information gain tests for each skill\n      \n      final_runthru_SSAC/ - SVI probabilities\n      \n         new_methods_predictions/(skill)/(model)\n         \n         sti_probabilities.csv - SVI prediction probabilities for each class\n         \n      accuracy_summary_barplot.png\n      \n      cluster_elbow_method.png\n      \n      cluster_success_rates.png\n      \n      player_clusters.png\n   \n   future runs will be saved to OUTPUT_FOLDER  \n\n\n\nSetup\n\nThis project requires Python 3.12  \n\nIt is recommended to use a virtual environment for isolation.\n\n1. Create a virtual environment\n\n\nFrom the project root:\n\nbrew install python@3.12 for Mac or winget install Python.Python.3.12 for Windows\n\npython3.12 -m venv venv312\n\n2. Activate the environment\n\nmacOS/Linux:\n\nsource venv312/bin/activate\n\nvenv312\\Scripts\\activate\n\n3. Install dependencies\n\nWith the environment activated, run:\n\n\npip install --upgrade pip\n\n\npip install -r requirements.txt\nOnce the environment is set up, you can run the pipeline with:\n\npython predict_success.py\n\nClone the repository and install the dependencies:\n\n> git clone https://github.com/haddadyousef/NBA-Draft-prediction\n\ncd NBA-Draft-prediction\n\npip install -r requirements.txt\n\nPython version: 3.12 or later\n\nCore libraries installed in requirements.txt: scikit-learn, tensorflow, torch, torch-geometric, sdv, xgboost, umap-learn, seaborn, matplotlib\n\nRunning the Pipeline\n\nTo execute the full workflow, run:\n\npredict_success.py\n\nThe pipeline performs the following steps:\n\nData preparation:\n\n-Loads and merges NCAA and NBA datasets\n\n-Applies feature engineering (per-40 stats, ratios, interaction effects)\n\n-Adds YearsPlayed and conference dummy variables\n\n-Player clustering\n\nP-erforms PCA + KMeans clustering on NCAA features\n\n-Generates cluster visualizations and elbow method plots\n\nStatistical analysis:\n\n-Runs correlation, ANOVA, information gain, and chi-square tests\n\n-Saves results as CSVs and annotated plots inside statistical_tests folder\n\n\nSkills: Rebounding, Shooting, Playmaking, Defense\n\nModels: Random Forest, HistGradientBoosting, XGBoost, and a Voting Ensemble\n\nUses stratified 5-fold cross-validation\n\nIncludes SMOTE oversampling and synthetic generation with TVAE/CTGAN\n\nAdds fold-specific cluster features\n\n\nEvaluation:\n\n-Saves confusion matrices, classification reports, and feature importances\n\nSaves Skill Translation Index (STI) probabilities\n\nProduces summary barplots of model accuracies\n\nAll outputs are written to the results folder.\n\nOutputs:\n\n\nCluster analyses\n\n   cluster_elbow_method.png: optimal number of clusters\n   \n   player_clusters.png: NCAA archetype visualization with PCA\n\nStatistical tests\n\n   CSVs and barplots for correlations, ANOVA, information gain, chi-square\n   Statistical summary tables per skill\n\nModel evaluation\n\n   Confusion matrices (PNG)\n   Classification reports (PNG and JSON)\n   Feature importance plots and CSV tables\n   SVI probabilities CSVs\n   Overall results\n   \n   accuracy_summary_barplot.png: grouped bar chart comparing model accuracies\n\n\nKey Findings\n\n   NCAA archetype clusters reveal meaningful developmental patterns such as “high DWS / high WS” defenders or “high AST / high STL / high TOV” playmakers.\n   \n   Certain clusters, such as strong rebounders or defenders, translate into NBA Top 25% success more frequently.\n   \n   Synthetic augmentation helps address class imbalance and improve predictions for rare Top 25% outcomes.\n   \n\n",
+ "hits": {
+  "st": [
+   {
+    "file": "predict_success.py",
+    "line": 10,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from sklearn.cluster import KMeans",
+     "from sklearn.manifold import TSNE",
+     "from sklearn.metrics import confusion_matrix",
+     "from sklearn.utils.class_weight import compute_class_weight",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sklearn.neighbors import NearestNeighbors",
+     "from torch_geometric.nn import GATConv"
+    ]
+   },
+   {
+    "file": "predict_success.py",
+    "line": 11,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "from sklearn.manifold import TSNE",
+     "from sklearn.metrics import confusion_matrix",
+     "from sklearn.utils.class_weight import compute_class_weight",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sklearn.neighbors import NearestNeighbors",
+     "from torch_geometric.nn import GATConv",
+     "from torch_geometric.nn import SAGEConv"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "predict_success.py",
+    "line": 12,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from sklearn.metrics import confusion_matrix",
+     "from sklearn.utils.class_weight import compute_class_weight",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sklearn.neighbors import NearestNeighbors",
+     "from torch_geometric.nn import GATConv",
+     "from torch_geometric.nn import SAGEConv",
+     "from torch_geometric.nn import APPNP"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "predict_success.py",
+    "line": 10,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from sklearn.cluster import KMeans",
+     "from sklearn.manifold import TSNE",
+     "from sklearn.metrics import confusion_matrix",
+     "from sklearn.utils.class_weight import compute_class_weight",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sklearn.neighbors import NearestNeighbors",
+     "from torch_geometric.nn import GATConv"
+    ]
+   },
+   {
+    "file": "predict_success.py",
+    "line": 11,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "from sklearn.manifold import TSNE",
+     "from sklearn.metrics import confusion_matrix",
+     "from sklearn.utils.class_weight import compute_class_weight",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sklearn.neighbors import NearestNeighbors",
+     "from torch_geometric.nn import GATConv",
+     "from torch_geometric.nn import SAGEConv"
+    ]
+   },
+   {
+    "file": "predict_success.py",
+    "line": 12,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from sklearn.metrics import confusion_matrix",
+     "from sklearn.utils.class_weight import compute_class_weight",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sklearn.neighbors import NearestNeighbors",
+     "from torch_geometric.nn import GATConv",
+     "from torch_geometric.nn import SAGEConv",
+     "from torch_geometric.nn import APPNP"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "predict_success.py",
+    "line": 10,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from sklearn.cluster import KMeans",
+     "from sklearn.manifold import TSNE",
+     "from sklearn.metrics import confusion_matrix",
+     "from sklearn.utils.class_weight import compute_class_weight",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sklearn.neighbors import NearestNeighbors",
+     "from torch_geometric.nn import GATConv"
+    ]
+   },
+   {
+    "file": "predict_success.py",
+    "line": 1385,
+    "text": "generator = CTGANSynthesizer(metadata, epochs=300)",
+    "context": [
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(data=df_hard)",
+     "    # Train generator",
+     "    if method == 'ctgan':",
+     "        generator = CTGANSynthesizer(metadata, epochs=300)",
+     "    else:",
+     "        generator = TVAESynthesizer(metadata, epochs=300)",
+     "    generator.fit(df_hard)",
+     "    synth = generator.sample(n_synth)"
+    ]
+   },
+   {
+    "file": "predict_success.py",
+    "line": 1509,
+    "text": "generator = CTGANSynthesizer(metadata, epochs=300)",
+    "context": [
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(data=synth_df)",
+     "",
+     "    if method == 'ctgan':",
+     "        generator = CTGANSynthesizer(metadata, epochs=300)",
+     "    else:",
+     "        generator = TVAESynthesizer(metadata, epochs=300)",
+     "",
+     "    generator.fit(synth_df)"
+    ]
+   },
+   {
+    "file": "predict_success.py",
+    "line": 1530,
+    "text": "generator = CTGANSynthesizer(metadata, epochs=300)",
+    "context": [
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(data=synth_df)",
+     "",
+     "    if method == 'ctgan':",
+     "        generator = CTGANSynthesizer(metadata, epochs=300)",
+     "    else:",
+     "        generator = TVAESynthesizer(metadata, epochs=300)",
+     "",
+     "    generator.fit(synth_df)"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "predict_success.py",
+    "line": 11,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "from sklearn.manifold import TSNE",
+     "from sklearn.metrics import confusion_matrix",
+     "from sklearn.utils.class_weight import compute_class_weight",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sklearn.neighbors import NearestNeighbors",
+     "from torch_geometric.nn import GATConv",
+     "from torch_geometric.nn import SAGEConv"
+    ]
+   },
+   {
+    "file": "predict_success.py",
+    "line": 1387,
+    "text": "generator = TVAESynthesizer(metadata, epochs=300)",
+    "context": [
+     "    # Train generator",
+     "    if method == 'ctgan':",
+     "        generator = CTGANSynthesizer(metadata, epochs=300)",
+     "    else:",
+     "        generator = TVAESynthesizer(metadata, epochs=300)",
+     "    generator.fit(df_hard)",
+     "    synth = generator.sample(n_synth)",
+     "    # Concatenate synthetic data with original training data",
+     "    X_aug = np.vstack([X, synth.drop('label', axis=1).values])"
+    ]
+   },
+   {
+    "file": "predict_success.py",
+    "line": 1511,
+    "text": "generator = TVAESynthesizer(metadata, epochs=300)",
+    "context": [
+     "",
+     "    if method == 'ctgan':",
+     "        generator = CTGANSynthesizer(metadata, epochs=300)",
+     "    else:",
+     "        generator = TVAESynthesizer(metadata, epochs=300)",
+     "",
+     "    generator.fit(synth_df)",
+     "    synth = generator.sample(n_synth)",
+     ""
+    ]
+   },
+   {
+    "file": "predict_success.py",
+    "line": 1532,
+    "text": "generator = TVAESynthesizer(metadata, epochs=300)",
+    "context": [
+     "",
+     "    if method == 'ctgan':",
+     "        generator = CTGANSynthesizer(metadata, epochs=300)",
+     "    else:",
+     "        generator = TVAESynthesizer(metadata, epochs=300)",
+     "",
+     "    generator.fit(synth_df)",
+     "    synth = generator.sample(n_synth)",
+     ""
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv"
+  ]
+ }
+}

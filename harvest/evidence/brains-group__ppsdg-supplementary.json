@@ -1,0 +1,716 @@
+{
+ "repo": "brains-group/ppsdg-supplementary",
+ "disk_kb": 2577,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Measuring Privacy Risks and Tradeoffs in Financial Synthetic Data Generation\n\nThis is the official codebase for the paper titled \"Measuring Privacy Risks and Tradeoffs in Financial Synthetic Data Generation\".\nBoth the model implementations as well as the evaluation configuration/scripts are included in this repository.\n\n## Getting Started\n\n1. Create a virtual environment using conda:\n\n```bash\nconda create -n ppsdg python=3.10 -y\n```\n\nIf using pixi, you can do:\n\n```bash\npixi install\n```\n\n2. Install the project as a package:\n\n```bash\npip install -e .[dev]\n```\n\n(the `[dev]` part is optional, it will install additional development dependencies)\n\nNow any script that contains `__main__` can be executed like this:\n\n```bash\npython -m ppsdg.<script_dir>.<script_name>\n```\n\nJust replace `/` with `.` and remove the `.py` extension.\n\n3. Create a `.env` file in the root directory of the project with the following\n   content. Refer to the `.env.example` file for more details:\n\nNote: When debugging, make sure to include `import ppsdg` at the top level so\nthat the environment variables are loaded correctly.\n\n## Datasets\n\nThe datasets can be loaded using [tabkit](https://github.com/inwonakng/tabkit)\npackage, which will take care of basic column type inference and preprocessing\n(if necessary), like the following:\n\n```python\nfrom tabkit import DatasetConfig, TableProcessorConfig, TableProcessor\n\nprocessor = TableProcessor(\n    dataset_config = DatasetConfig.from_yaml(\"config/dataset/bank_marketing.yaml\"),\n    config = TableProcessorConfig(), # use default\n).prepare() # this needs to be called to cache/load everything.\n\n```\n\n### Training synthesizer/generating data\n\nThis is handled by `ppsdg.evaluate.train_and_generate` script. If this\nrepository is installed as a package, the `train-gen` command is available. It\ntakes two configurations, one for the synthesizer and one for actually\ngenerating the synthetic data.\n",
+ "hits": {
+  "sm": [
+   {
+    "file": "ppsdg/experiments/e00_debug.py",
+    "line": 15,
+    "text": "from sdmetrics.reports.single_table import QualityReport",
+    "context": [
+     "import matplotlib.pyplot as plt",
+     "import numpy as np",
+     "import pandas as pd",
+     "import seaborn as sns",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "from tabkit.data import DatasetConfig, TableProcessor, TableProcessorConfig",
+     "",
+     "from ppsdg.evaluate.mle import EvalMLEConfig",
+     "from ppsdg.evaluate.privacy import EvalPrivacyConfig"
+    ]
+   },
+   {
+    "file": "ppsdg/models/tabdiff/metrics.py",
+    "line": 6,
+    "text": "from sdmetrics.reports.single_table import DiagnosticReport, QualityReport",
+    "context": [
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "import torch",
+     "from sdmetrics.reports.single_table import DiagnosticReport, QualityReport",
+     "from sdmetrics.single_table import LogisticDetection",
+     "from sklearn.preprocessing import OneHotEncoder",
+     "from tqdm import tqdm",
+     ""
+    ]
+   },
+   {
+    "file": "ppsdg/models/tabdiff/metrics.py",
+    "line": 7,
+    "text": "from sdmetrics.single_table import LogisticDetection",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "import torch",
+     "from sdmetrics.reports.single_table import DiagnosticReport, QualityReport",
+     "from sdmetrics.single_table import LogisticDetection",
+     "from sklearn.preprocessing import OneHotEncoder",
+     "from tqdm import tqdm",
+     "",
+     "# Metrics"
+    ]
+   },
+   {
+    "file": "ppsdg/models/tabdiff/eval/visualize_density.py",
+    "line": 10,
+    "text": "from sdmetrics.visualization import get_column_plot",
+    "context": [
+     "",
+     "import json",
+     "",
+     "# Metrics",
+     "from sdmetrics.visualization import get_column_plot",
+     "",
+     "import plotly.io as pio",
+     "from PIL import Image",
+     "from io import BytesIO"
+    ]
+   },
+   {
+    "file": "ppsdg/evaluate/privacy_metrics.py",
+    "line": 2,
+    "text": "from sdmetrics.single_table import DCRBaselineProtection, DCROverfittingProtection",
+    "context": [
+     "import pandas as pd",
+     "from sdmetrics.single_table import DCRBaselineProtection, DCROverfittingProtection",
+     "from .epsilon_estimate import get_eps_audit",
+     "from tqdm import tqdm",
+     "",
+     "PRIVACY_METRICS = {}"
+    ]
+   },
+   {
+    "file": "ppsdg/evaluate/synth_hpo.py",
+    "line": 16,
+    "text": "from sdmetrics.reports.single_table import QualityReport",
+    "context": [
+     "",
+     "import pandas as pd",
+     "import ray",
+     "from ray import tune",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    GaussianCopulaSynthesizer,",
+     "    TVAESynthesizer,"
+    ]
+   },
+   {
+    "file": "ppsdg/evaluate/groundhog.py",
+    "line": 16,
+    "text": "from sdmetrics.reports.single_table import QualityReport",
+    "context": [
+     "import joblib",
+     "import numpy as np",
+     "import pandas as pd",
+     "",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "from tabkit import DatasetConfig, TableProcessor",
+     "from tabkit.config import DATA_DIR",
+     "from tabkit.utils import Configuration",
+     ""
+    ]
+   },
+   {
+    "file": "ppsdg/evaluate/privacy.py",
+    "line": 11,
+    "text": "from sdmetrics.reports.single_table import QualityReport",
+    "context": [
+     "import json",
+     "from pathlib import Path",
+     "",
+     "import pandas as pd",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "from tabkit import DatasetConfig, TableProcessor",
+     "from tabkit.config import DATA_DIR",
+     "from tabkit.utils import Configuration",
+     ""
+    ]
+   },
+   {
+    "file": "ppsdg/scripts/example_sdmetrics_demo.py",
+    "line": 1,
+    "text": "from sdmetrics import load_demo",
+    "context": [
+     "from sdmetrics import load_demo",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "",
+     "real_data, synthetic_data, metadata = load_demo(modality='single_table')",
+     ""
+    ]
+   },
+   {
+    "file": "ppsdg/scripts/example_sdmetrics_demo.py",
+    "line": 2,
+    "text": "from sdmetrics.reports.single_table import QualityReport",
+    "context": [
+     "from sdmetrics import load_demo",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "",
+     "real_data, synthetic_data, metadata = load_demo(modality='single_table')",
+     "",
+     "my_report = QualityReport()"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "ppsdg/utils/get_sdv_metadata.py",
+    "line": 3,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "# Get sdv style metadata from tableprocessor",
+     "",
+     "from sdv.metadata import Metadata",
+     "from tabkit import ColumnMetadata, TableProcessor",
+     "",
+     "",
+     "def infer_sdtype(col_info: ColumnMetadata) -> dict[str, str]:"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "ppsdg/utils/get_sdv_metadata.py",
+    "line": 3,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "# Get sdv style metadata from tableprocessor",
+     "",
+     "from sdv.metadata import Metadata",
+     "from tabkit import ColumnMetadata, TableProcessor",
+     "",
+     "",
+     "def infer_sdtype(col_info: ColumnMetadata) -> dict[str, str]:"
+    ]
+   },
+   {
+    "file": "ppsdg/evaluate/train_and_generate.py",
+    "line": 12,
+    "text": "from sdv.single_table import (",
+    "context": [
+     "import joblib",
+     "import numpy as np",
+     "import pandas as pd",
+     "import torch",
+     "from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    GaussianCopulaSynthesizer,",
+     "    TVAESynthesizer,",
+     ")"
+    ]
+   },
+   {
+    "file": "ppsdg/evaluate/train_and_generate.py",
+    "line": 17,
+    "text": "from sdv.single_table.utils import detect_discrete_columns",
+    "context": [
+     "    CTGANSynthesizer,",
+     "    GaussianCopulaSynthesizer,",
+     "    TVAESynthesizer,",
+     ")",
+     "from sdv.single_table.utils import detect_discrete_columns",
+     "",
+     "from tabkit import DatasetConfig, TableProcessor, TableProcessorConfig",
+     "from tabkit.utils import Configuration",
+     ""
+    ]
+   },
+   {
+    "file": "ppsdg/evaluate/synth_hpo.py",
+    "line": 17,
+    "text": "from sdv.single_table import (",
+    "context": [
+     "import pandas as pd",
+     "import ray",
+     "from ray import tune",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    GaussianCopulaSynthesizer,",
+     "    TVAESynthesizer,",
+     ")"
+    ]
+   },
+   {
+    "file": "ppsdg/evaluate/groundhog.py",
+    "line": 21,
+    "text": "from sdv.single_table.utils import detect_discrete_columns",
+    "context": [
+     "from tabkit import DatasetConfig, TableProcessor",
+     "from tabkit.config import DATA_DIR",
+     "from tabkit.utils import Configuration",
+     "",
+     "from sdv.single_table.utils import detect_discrete_columns",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ..utils import get_data_dir, get_sdv_metadata",
+     "from .privacy_metrics import compute_metric",
+     "from sklearn.ensemble import RandomForestClassifier"
+    ]
+   }
+  ],
+  "ctgan_mod": [
+   {
+    "file": "ppsdg/models/iter_ctgan.py",
+    "line": 8,
+    "text": "from ctgan.data_sampler import DataSampler",
+    "context": [
+     "import pandas as pd",
+     "import torch",
+     "import torch.nn.functional as F",
+     "from tqdm import tqdm",
+     "from ctgan.data_sampler import DataSampler",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.synthesizers.base import random_state",
+     "from ctgan.synthesizers.ctgan import CTGAN, Discriminator, Generator",
+     "from torch.utils.data import DataLoader, TensorDataset"
+    ]
+   },
+   {
+    "file": "ppsdg/models/iter_ctgan.py",
+    "line": 9,
+    "text": "from ctgan.data_transformer import DataTransformer",
+    "context": [
+     "import torch",
+     "import torch.nn.functional as F",
+     "from tqdm import tqdm",
+     "from ctgan.data_sampler import DataSampler",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.synthesizers.base import random_state",
+     "from ctgan.synthesizers.ctgan import CTGAN, Discriminator, Generator",
+     "from torch.utils.data import DataLoader, TensorDataset",
+     "from torch.func import functional_call, vmap, grad"
+    ]
+   },
+   {
+    "file": "ppsdg/models/iter_ctgan.py",
+    "line": 10,
+    "text": "from ctgan.synthesizers.base import random_state",
+    "context": [
+     "import torch.nn.functional as F",
+     "from tqdm import tqdm",
+     "from ctgan.data_sampler import DataSampler",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.synthesizers.base import random_state",
+     "from ctgan.synthesizers.ctgan import CTGAN, Discriminator, Generator",
+     "from torch.utils.data import DataLoader, TensorDataset",
+     "from torch.func import functional_call, vmap, grad",
+     ""
+    ]
+   },
+   {
+    "file": "ppsdg/models/iter_ctgan.py",
+    "line": 11,
+    "text": "from ctgan.synthesizers.ctgan import CTGAN, Discriminator, Generator",
+    "context": [
+     "from tqdm import tqdm",
+     "from ctgan.data_sampler import DataSampler",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.synthesizers.base import random_state",
+     "from ctgan.synthesizers.ctgan import CTGAN, Discriminator, Generator",
+     "from torch.utils.data import DataLoader, TensorDataset",
+     "from torch.func import functional_call, vmap, grad",
+     "",
+     "class IterCTGAN(CTGAN):"
+    ]
+   },
+   {
+    "file": "ppsdg/models/dp_tvae.py",
+    "line": 11,
+    "text": "from ctgan.data_transformer import DataTransformer",
+    "context": [
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "import torch",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.synthesizers.base import random_state",
+     "from ctgan.synthesizers.tvae import TVAE, Decoder, Encoder, _loss_function",
+     "from torch.optim import Adam",
+     "from torch.utils.data import DataLoader, TensorDataset"
+    ]
+   },
+   {
+    "file": "ppsdg/models/dp_tvae.py",
+    "line": 12,
+    "text": "from ctgan.synthesizers.base import random_state",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "import torch",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.synthesizers.base import random_state",
+     "from ctgan.synthesizers.tvae import TVAE, Decoder, Encoder, _loss_function",
+     "from torch.optim import Adam",
+     "from torch.utils.data import DataLoader, TensorDataset",
+     "from tqdm import tqdm"
+    ]
+   },
+   {
+    "file": "ppsdg/models/dp_tvae.py",
+    "line": 13,
+    "text": "from ctgan.synthesizers.tvae import TVAE, Decoder, Encoder, _loss_function",
+    "context": [
+     "import pandas as pd",
+     "import torch",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.synthesizers.base import random_state",
+     "from ctgan.synthesizers.tvae import TVAE, Decoder, Encoder, _loss_function",
+     "from torch.optim import Adam",
+     "from torch.utils.data import DataLoader, TensorDataset",
+     "from tqdm import tqdm",
+     ""
+    ]
+   },
+   {
+    "file": "ppsdg/models/clip_ctgan.py",
+    "line": 8,
+    "text": "from ctgan.data_sampler import DataSampler",
+    "context": [
+     "import pandas as pd",
+     "import torch",
+     "import torch.nn.functional as F",
+     "from tqdm import tqdm",
+     "from ctgan.data_sampler import DataSampler",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.synthesizers.base import random_state",
+     "from ctgan.synthesizers.ctgan import CTGAN, Discriminator, Generator",
+     "from torch.utils.data import DataLoader, TensorDataset"
+    ]
+   },
+   {
+    "file": "ppsdg/models/clip_ctgan.py",
+    "line": 9,
+    "text": "from ctgan.data_transformer import DataTransformer",
+    "context": [
+     "import torch",
+     "import torch.nn.functional as F",
+     "from tqdm import tqdm",
+     "from ctgan.data_sampler import DataSampler",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.synthesizers.base import random_state",
+     "from ctgan.synthesizers.ctgan import CTGAN, Discriminator, Generator",
+     "from torch.utils.data import DataLoader, TensorDataset",
+     ""
+    ]
+   },
+   {
+    "file": "ppsdg/models/clip_ctgan.py",
+    "line": 10,
+    "text": "from ctgan.synthesizers.base import random_state",
+    "context": [
+     "import torch.nn.functional as F",
+     "from tqdm import tqdm",
+     "from ctgan.data_sampler import DataSampler",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.synthesizers.base import random_state",
+     "from ctgan.synthesizers.ctgan import CTGAN, Discriminator, Generator",
+     "from torch.utils.data import DataLoader, TensorDataset",
+     "",
+     "class ClipCTGAN(CTGAN):"
+    ]
+   },
+   {
+    "file": "ppsdg/models/clip_ctgan.py",
+    "line": 11,
+    "text": "from ctgan.synthesizers.ctgan import CTGAN, Discriminator, Generator",
+    "context": [
+     "from tqdm import tqdm",
+     "from ctgan.data_sampler import DataSampler",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.synthesizers.base import random_state",
+     "from ctgan.synthesizers.ctgan import CTGAN, Discriminator, Generator",
+     "from torch.utils.data import DataLoader, TensorDataset",
+     "",
+     "class ClipCTGAN(CTGAN):",
+     "    \"\"\"A CTGAN synthesizer with separate transformer training.\"\"\""
+    ]
+   },
+   {
+    "file": "ppsdg/models/batch_ctgan.py",
+    "line": 8,
+    "text": "from ctgan.data_sampler import DataSampler",
+    "context": [
+     "import pandas as pd",
+     "import torch",
+     "import torch.nn.functional as F",
+     "from tqdm import tqdm",
+     "from ctgan.data_sampler import DataSampler",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.synthesizers.base import random_state",
+     "from ctgan.synthesizers.ctgan import CTGAN, Discriminator, Generator",
+     "from torch.utils.data import DataLoader, TensorDataset"
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "ppsdg/evaluate/train_and_generate.py",
+    "line": 12,
+    "text": "from sdv.single_table import (",
+    "context": [
+     "import joblib",
+     "import numpy as np",
+     "import pandas as pd",
+     "import torch",
+     "from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    GaussianCopulaSynthesizer,",
+     "    TVAESynthesizer,",
+     ")"
+    ]
+   },
+   {
+    "file": "ppsdg/evaluate/synth_hpo.py",
+    "line": 17,
+    "text": "from sdv.single_table import (",
+    "context": [
+     "import pandas as pd",
+     "import ray",
+     "from ray import tune",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    GaussianCopulaSynthesizer,",
+     "    TVAESynthesizer,",
+     ")"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "ppsdg/evaluate/train_and_generate.py",
+    "line": 13,
+    "text": "CTGANSynthesizer,",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "import torch",
+     "from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    GaussianCopulaSynthesizer,",
+     "    TVAESynthesizer,",
+     ")",
+     "from sdv.single_table.utils import detect_discrete_columns"
+    ]
+   },
+   {
+    "file": "ppsdg/evaluate/train_and_generate.py",
+    "line": 160,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "    train_logs = None",
+     "    if config.synthesizer == \"original\":",
+     "        synthesizer = IdentitySynthesizer(data)",
+     "    elif config.synthesizer == \"ctgan\":",
+     "        synthesizer = CTGANSynthesizer(",
+     "            metadata,  # required",
+     "            enforce_rounding=False,",
+     "            epochs=300,",
+     "            verbose=True,"
+    ]
+   },
+   {
+    "file": "ppsdg/evaluate/synth_hpo.py",
+    "line": 18,
+    "text": "CTGANSynthesizer,",
+    "context": [
+     "import ray",
+     "from ray import tune",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    GaussianCopulaSynthesizer,",
+     "    TVAESynthesizer,",
+     ")",
+     "from tabkit import DatasetConfig, TableProcessor, TableProcessorConfig"
+    ]
+   },
+   {
+    "file": "ppsdg/evaluate/synth_hpo.py",
+    "line": 147,
+    "text": "return CTGANSynthesizer(metadata, **model_params)",
+    "context": [
+     "            metadata,",
+     "            **model_params,",
+     "        )",
+     "    elif config.model == \"ctgan\":",
+     "        return CTGANSynthesizer(metadata, **model_params)",
+     "    elif config.model == \"tvae\":",
+     "        return TVAESynthesizer(metadata, **model_params)",
+     "    elif config.model == \"tabdiff\":",
+     "        return TabDiffWrapper("
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "ppsdg/evaluate/train_and_generate.py",
+    "line": 14,
+    "text": "GaussianCopulaSynthesizer,",
+    "context": [
+     "import pandas as pd",
+     "import torch",
+     "from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    GaussianCopulaSynthesizer,",
+     "    TVAESynthesizer,",
+     ")",
+     "from sdv.single_table.utils import detect_discrete_columns",
+     ""
+    ]
+   },
+   {
+    "file": "ppsdg/evaluate/train_and_generate.py",
+    "line": 180,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "        )",
+     "        synthesizer.fit(data)",
+     "        train_logs = synthesizer._model.loss_values",
+     "    elif config.synthesizer == \"gaussian\":",
+     "        synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "        synthesizer.fit(data)",
+     "    elif config.synthesizer == \"dp_ctgan\":",
+     "        synthesizer = DPCTGAN(",
+     "            **(config.synthesizer_params or {}),"
+    ]
+   },
+   {
+    "file": "ppsdg/evaluate/synth_hpo.py",
+    "line": 19,
+    "text": "GaussianCopulaSynthesizer,",
+    "context": [
+     "from ray import tune",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    GaussianCopulaSynthesizer,",
+     "    TVAESynthesizer,",
+     ")",
+     "from tabkit import DatasetConfig, TableProcessor, TableProcessorConfig",
+     "from tabkit.config import DATA_DIR"
+    ]
+   },
+   {
+    "file": "ppsdg/evaluate/synth_hpo.py",
+    "line": 142,
+    "text": "return GaussianCopulaSynthesizer(",
+    "context": [
+     "    model_params = config.model_params.copy()",
+     "    if hp_override is not None:",
+     "        model_params.update(hp_override)",
+     "    if config.model == \"gaussian\":",
+     "        return GaussianCopulaSynthesizer(",
+     "            metadata,",
+     "            **model_params,",
+     "        )",
+     "    elif config.model == \"ctgan\":"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "ppsdg/evaluate/train_and_generate.py",
+    "line": 15,
+    "text": "TVAESynthesizer,",
+    "context": [
+     "import torch",
+     "from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    GaussianCopulaSynthesizer,",
+     "    TVAESynthesizer,",
+     ")",
+     "from sdv.single_table.utils import detect_discrete_columns",
+     "",
+     "from tabkit import DatasetConfig, TableProcessor, TableProcessorConfig"
+    ]
+   },
+   {
+    "file": "ppsdg/evaluate/train_and_generate.py",
+    "line": 170,
+    "text": "synthesizer = TVAESynthesizer(",
+    "context": [
+     "        )",
+     "        synthesizer.fit(data)",
+     "        train_logs = synthesizer._model.loss_values",
+     "    elif config.synthesizer == \"tvae\":",
+     "        synthesizer = TVAESynthesizer(",
+     "            metadata,  # required",
+     "            enforce_rounding=False,",
+     "            epochs=300,",
+     "            verbose=True,"
+    ]
+   },
+   {
+    "file": "ppsdg/evaluate/synth_hpo.py",
+    "line": 20,
+    "text": "TVAESynthesizer,",
+    "context": [
+     "from sdmetrics.reports.single_table import QualityReport",
+     "from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    GaussianCopulaSynthesizer,",
+     "    TVAESynthesizer,",
+     ")",
+     "from tabkit import DatasetConfig, TableProcessor, TableProcessorConfig",
+     "from tabkit.config import DATA_DIR",
+     "from tabkit.utils import Configuration, get_random_id"
+    ]
+   },
+   {
+    "file": "ppsdg/evaluate/synth_hpo.py",
+    "line": 149,
+    "text": "return TVAESynthesizer(metadata, **model_params)",
+    "context": [
+     "        )",
+     "    elif config.model == \"ctgan\":",
+     "        return CTGANSynthesizer(metadata, **model_params)",
+     "    elif config.model == \"tvae\":",
+     "        return TVAESynthesizer(metadata, **model_params)",
+     "    elif config.model == \"tabdiff\":",
+     "        return TabDiffWrapper(",
+     "            proc=proc,",
+     "            train_params=model_params,"
+    ]
+   }
+  ],
+  "gym": [
+   {
+    "file": "ppsdg/scripts/sdgym_custom_test.py",
+    "line": 1,
+    "text": "import sdgym",
+    "context": [
+     "import sdgym",
+     "",
+     "def train_synthesizer (data, metadata):",
+     "    print(data, metadata)",
+     "    return (data, metadata)"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ctgan_mod",
+  "gc",
+  "gym",
+  "md",
+  "sdv_any",
+  "sm",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "pyproject.toml": [
+   "  \"ctgan==0.11.0\",",
+   "  \"sdmetrics==0.21.0\",",
+   "  \"sdv==1.22.1\","
+  ]
+ }
+}

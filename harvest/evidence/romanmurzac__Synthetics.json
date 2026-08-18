@@ -1,0 +1,150 @@
+{
+ "repo": "romanmurzac/Synthetics",
+ "disk_kb": 131,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Synthetics\n\n## Overview\nThe **Synthetic** is a Python-based tool designed to generate synthetic multi-table datasets. It allows users to define constraints such as primary keys, foreign keys, regex validation, and numerical ranges. The generated data can be saved in multiple formats, including CSV, JSON, and Parquet.\n\n## Features\n- **Automatic metadata detection** for multi-table datasets\n- **Custom constraints support**, including:\n  - Primary keys\n  - Foreign keys\n  - Numerical range constraints\n  - Regular expression validation\n  - Fixed combinations\n- **Multi-table data synthesis** using the `HMASynthesizer`\n- **Configurable data generation** with a specified number of rows\n- **Flexible data export** to CSV, JSON, and Parquet formats\n\n## Installation\n\nEnsure you have Python 3.8+ installed, then install the required dependencies:\n\n\nClone the repository.\n```bash\ngit clone https://github.com/romanmurzac/PyProcData.git\n```\n\nCreate virtual environment and activate it.\n```bash\npython3 -m venv venv\n.venv/Scripts/activate\n```\n\nInstall dependencies.\n```bash\npip install -r requirements.txt\n```\n\nTests run:\n```bash\npytest tests/  \n```\n\n## Usage\nIn the `data/input_data` directory upload sample data files. Accepted formats are: CSV, JSON, and Parquet.\\\nIn the `config.config.json` file define for each table properties for each column that should be restricted.\n\n### Restriction options\n`primary_key` --> define the primary key in the table.\\\n`foreign_key` --> define the foreign key in the table. Provide the `reference` table and column.\\\n`range` --> define the numeric range that values in the column should fit in.\\\n`regex` --> define the regex pattern to be followed by the values in the column.\\\n`fixed_combinations` --> define columns that are interdependent.\n\n***Example***\n```json\n{\n  \"users\": {\n    \"user_id\": {\n      \"type\": \"primary_key\"\n    },\n    \"age\": {\n      \"type\": \"range\",\n      \"low\": 18,\n      \"high\": 80\n    },\n    \"email\": {\n      \"type\": \"regex\",\n      \"pattern\": \"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\\\.[a-zA-Z]{2,}$\"\n    }\n  },\n  \"orders\": {\n    \"order_id\": {\n      \"type\": \"primary_key\"\n    },\n    \"user_id\": {\n      \"type\": \"foreign_key\",\n      \"referenced_table\": \"users\",\n      \"referenced_column\": \"user_id\"\n    },\n    \"amount\": {\n      \"type\": \"range\",\n      \"low\": 0.01,\n      \"high\": 10000.00\n    },\n    \"status\": {\n      \"type\": \"fixed_combinations\",\n      \"columns\": [\"status\", \"orig\"]\n    }\n  }\n}\n\n```\n\n## File Structure\n```\nsynthetic/\n│── config/           \n│  │── config.json \n│── data/           \n│  │── input_data/\n│  │── output_data/\n│── src/  \n│── tests/\n│── .gitignore  \n│── LICENSE         \n│── README.md\n│── requirements.txt           \n```\n\n## ChangeLogs\n\n- Add dataset size to the config\n- Update to use Metadata class\n- Write to origin datatype\n- Generate based on config\n- Support multiple config files\n\n## License\nThis project is licensed under the MIT License.",
+ "hits": {
+  "hma": [
+   {
+    "file": "README.md",
+    "line": 14,
+    "text": "- **Multi-table data synthesis** using the `HMASynthesizer`",
+    "context": [
+     "  - Foreign keys",
+     "  - Numerical range constraints",
+     "  - Regular expression validation",
+     "  - Fixed combinations",
+     "- **Multi-table data synthesis** using the `HMASynthesizer`",
+     "- **Configurable data generation** with a specified number of rows",
+     "- **Flexible data export** to CSV, JSON, and Parquet formats",
+     "",
+     "## Installation"
+    ]
+   },
+   {
+    "file": "src/data_generator.py",
+    "line": 4,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import re",
+     "from sdv.metadata import MultiTableMetadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.constraints import Constraint",
+     "",
+     "",
+     "class SyntheticDataGenerator:"
+    ]
+   },
+   {
+    "file": "src/data_generator.py",
+    "line": 131,
+    "text": "synthesizer = HMASynthesizer(self.metadata)",
+    "context": [
+     "        Generates synthetic data based on the metadata and constraints.",
+     "        Returns:",
+     "            Dictionary containing synthetic data tables as Pandas DataFrames.",
+     "        \"\"\"",
+     "        synthesizer = HMASynthesizer(self.metadata)",
+     "        synthesizer.add_constraints(self.constraints)",
+     "        synthesizer.fit(self.data)",
+     "        return synthesizer.sample(self.size)",
+     ""
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "src/data_generator.py",
+    "line": 3,
+    "text": "from sdv.metadata import MultiTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "import re",
+     "from sdv.metadata import MultiTableMetadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.constraints import Constraint",
+     "",
+     ""
+    ]
+   }
+  ],
+  "mt": [
+   {
+    "file": "src/data_generator.py",
+    "line": 4,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import re",
+     "from sdv.metadata import MultiTableMetadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.constraints import Constraint",
+     "",
+     "",
+     "class SyntheticDataGenerator:"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "src/data_generator.py",
+    "line": 3,
+    "text": "from sdv.metadata import MultiTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "import re",
+     "from sdv.metadata import MultiTableMetadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.constraints import Constraint",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "src/data_generator.py",
+    "line": 4,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import re",
+     "from sdv.metadata import MultiTableMetadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.constraints import Constraint",
+     "",
+     "",
+     "class SyntheticDataGenerator:"
+    ]
+   },
+   {
+    "file": "src/data_generator.py",
+    "line": 5,
+    "text": "from sdv.constraints import Constraint",
+    "context": [
+     "import pandas as pd",
+     "import re",
+     "from sdv.metadata import MultiTableMetadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.constraints import Constraint",
+     "",
+     "",
+     "class SyntheticDataGenerator:",
+     "    \"\"\""
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "hma",
+  "md",
+  "mt",
+  "sdv_any"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv==1.18.0"
+  ]
+ }
+}

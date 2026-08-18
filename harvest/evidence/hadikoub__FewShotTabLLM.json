@@ -1,0 +1,233 @@
+{
+ "repo": "hadikoub/FewShotTabLLM",
+ "disk_kb": 131,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# FewShotTabLLM — Few-Shot LLMs as Synthetic Tabular Data Generators\n\nOfficial implementation of the paper **\"Few-Shot LLMs as Synthetic Tabular Data\nGenerators\"** (IEEE COMPSAC 2026) — see [Citation](#citation).\n\nFewShotTabLLM is a few-shot, **training-free** framework for generating\nhigh-quality synthetic tabular data with Large Language Models. The library\nprofiles your real dataset, builds schema-enriched few-shot prompts from\nrepresentative samples, and uses an LLM to generate new rows that preserve the\nstatistical properties of the original data — no dataset-specific training,\nfine-tuning, or preprocessing required.\n\nThree inference backends are supported -- pick the one that fits your setup:\n\n| Backend | Flag | GPU required on client? | Notes |\n|---|---|---|---|\n| **TensorRT-LLM** | `--backend tensorrt` | Yes | Highest throughput. Builds an engine on first run. |\n| **vLLM (local)** | `--backend vllm` | Yes | No engine build. Works with any HuggingFace model. |\n| **Remote vLLM** | `--backend remote-vllm` | No | HTTP calls to a deployed vLLM server. |\n\n## Quick Start\n\n```bash\n# Install (vLLM backend -- easiest to get started)\npython3 -m venv venv && source venv/bin/activate\npip install uv\nuv pip install -r requirements_vllm.txt\npip install vllm\nuv pip install flash-attn --no-build-isolation\npip install -e \".[dev]\"\n\n# Generate 5000 synthetic rows\npython tensorrt_sampling_optimized.py \\\n  --backend vllm \\\n  --dataset adult.csv --experiment my_experiment \\\n  --target-column income --k-shots 40 60 80 \\\n  --model Qwen/Qwen3-30B-A3B-Instruct-2507 \\\n  --n-rows 5000 --batch-size 25\n```\n\n---\n\n## Table of Contents\n\n- [Environment Setup](#environment-setup)\n- [Generating Synthetic Data](#generating-synthetic-data)\n  - [vLLM (local)](#vllm-local)\n  - [Remote vLLM](#remote-vllm)\n  - [TensorRT-LLM](#tensorrt-llm)\n- [CLI Parameter Reference](#cli-parameter-reference)\n- [How the Prompt Works](#how-the-prompt-works)\n- [Evaluating Synthetic Data](#evaluating-synthetic-data)\n- [Plotting Results](#plotting-results)\n- [Supported Models](#supported-models)\n- [Datasets](#datasets)\n- [Project Structure](#project-structure)\n- [License](#license)\n- [Citation](#citation)\n\n---\n\n## Environment Setup\n\n**Python 3.12** recommended (3.9--3.11 also supported).\n\nCreate a `.env` file (see `example.env`):\n```dotenv\n# GPU device\nCUDA_VISIBLE_DEVICES=0\n\n# Remote vLLM backend (optional)\nVLLM_SERVER_URL=http://localhost:8000\nVLLM_API_KEY=\n\n# Langfuse observability (optional -- leave blank to disable)\nLANGFUSE_SECRET_KEY=sk-lf-...\nLANGFUSE_PUBLIC_KEY=pk-lf-...\nLANGFUSE_BASE_URL=http://your-langfuse-host:3000\n```\n\n### vLLM Backend\n\n```bash\npython3 -m venv venv && source venv/bin/activate\npip install uv\nuv pip install -r requirements_vllm.txt\npip install vllm\nuv pip install flash-attn --no-build-isolation\npip install -e \".[dev]\"\n```\n\n### Remote vLLM Backend\n\nThe remote backend only needs `httpx` on the client (no GPU, no torch).\nThe heavy dependencies are on the server side.\n\n```bash\npython3 -m venv venv && source venv/bin/activate\npip install uv\nuv pip install -r requirements_vllm.txt\npip install -e \".[dev]\"\n```\n\n### TensorRT-LLM Backend\n\nRequires NVIDIA CUDA drivers, TensorRT-LLM, and a supported GPU.\n\n```bash\npip install uv\nuv pip install -r requirements_tensorrt.txt\nuv pip install torch==2.9.0 torchvision --index-url https://download.pytorch.org/whl/cu130\napt-get update && apt-get -y install libopenmpi-dev libzmq3-dev\npip install --upgrade pip setuptools && pip3 install tensorrt_llm\nuv pip install flash-attn --no-build-isolation\npip install -e \".[dev]\"\n```\n\n---\n\n## Generating Synthetic Data\n\nAll backends use the same CLI entry point: **`tensorrt_sampling_optimized.py`**.\nOutputs are saved to `experiments/{experiment_name}/datasets/synthetic/`.\n\n### vLLM (local)\n\n```bash\npython tensorrt_sampling_optimized.py \\\n  --backend vllm \\\n  --dataset adult.csv --experiment experiment_C2 \\\n  --target-column income --k-shots 40 60 80 \\\n  --model Qwen/Qwen3-30B-A3B-Instruct-2507 \\\n  --n-rows 5000 --batch-size 25 \\\n  --top-p 0.8 --top-k 20 --temperature 0.7 \\\n  --use-correlation-matrix\n```\n\n**Multi-GPU (tensor parallelism):**\n```bash\nCUDA_VISIBLE_DEVICES=0,1 python tensorrt_sampling_optimized.py \\\n  --backend vllm \\\n  --dataset adult.csv --experiment experiment_C2 \\\n  --target-column income --k-shots 40 60 80 \\\n  --model Qwen/Qwen3-30B-A3B-Instruct-2507 \\\n  --n-rows 5000 --batch-size 25 --tensor-parallel 2\n```\n\n### Remote vLLM\n\nSend prompts to a deployed vLLM server over HTTP. No local GPU needed.\n\n```bash\npython tensorrt_sampling_optimized.py \\\n  --backend remote-vllm \\\n  --server-url http://my-gpu-server:8000 \\\n  --model Qwen/Qwen3.5-122B-A10B \\\n  --dataset adult.csv --experiment experiment_C2 \\\n  --target-column income --k-shots 40 60 80 \\\n  --n-rows 5000 --batch-size 25 \\\n  --concurrent-requests 300 --request-timeout 600\n```\n\n**With API key (via env vars):**\n```bash\nexport VLLM_SERVER_URL=http://my-gpu-server:8000\nexport VLLM_API_KEY=my-secret-token\n\npython tensorrt_sampling_optimized.py \\\n  --backend remote-vllm \\\n  --model Qwen/Qwen3.5-122B-A10B \\\n  --dataset adult.csv --experiment experiment_C2 \\\n  --target-column income --k-shots 40 60 80 \\\n  --n-rows 5000 --batch-size 25\n```\n\n**Reasoning models (thinking mode):**\n\nThinking mode is fully supported on the remote-vllm backend but disabled by\ndefault. When enabled, the model reasons internally before producing tabular\noutput -- reasoning is returned in `message.reasoning_content` and the CSV\nrows in `message.content`. The code enforces a minimum of 65 536 max tokens\nwhen thinking is on to prevent the reasoning phase from exhausting the token\nbudget. If the budget is still exceeded (`finish_reason == \"length\"`), the\nbatch is treated as zero decoded rows and a warning is logged.\n\nKeep `--enable-thinking` off for throughput-oriented runs. Enable it when\nreasoning quality matters more than speed.\n\n```bash\n# Default (thinking disabled -- best throughput)\npython tensorrt_sampling_optimized.py \\\n  --backend remote-vllm \\\n  --server-url http://my-server:8000 \\\n  --model Qwen/Qwen3.5-122B-A10B \\\n  --dataset adult.csv --experiment experiment_C2 \\\n  --target-column income --k-shots 40 --n-rows 100\n\n# Enable thinking (supported -- higher quality, lower throughput)\npython tensorrt_sampling_optimized.py \\\n  --backend remote-vllm --enable-thinking \\\n  --server-url http://my-server:8000 \\\n  --model Qwen/Qwen3.5-122B-A10B \\\n  --dataset adult.csv --experiment experiment_C2 \\\n  --target-column income --k-shots 40 --n-rows 100\n```\n\n### TensorRT-LLM\n\nBuilds an optimized inference engine on first run (cached for subsequent runs).\n\n```bash\npython tensorrt_sampling_optimized.py \\\n  --backend tensorrt \\\n  --dataset adult.csv --experiment experiment_C2 \\\n  --target-column income --k-shots 40 60 80 \\\n  --model Qwen/Qwen3-30B-A3B-Instruct-2507 \\\n  --n-rows 5000 --batch-size 25 \\\n  --max-input-len 16384 --max-output-len 16384\n```\n\n**With date columns:**\n```bash\npython tensorrt_sampling_optimized.py \\\n  --backend vllm \\\n  --dataset orders.csv --experiment orders_experiment \\\n  --target-column product_category \\\n  --k-shots 120 --model Qwen/Qwen2.5-14B-Instruct \\\n  --n-rows 5000 --batch-size 25 \\\n  --date-columns order_date \\\n  --type-overrides product_code=text \\\n  --max-context-len 32768 --verbose\n```\n\n---\n\n## CLI Parameter Reference\n\n### Common Parameters (all backends)\n\n| Parameter | Default | Description |\n|---|---|---|\n| `--backend` | `tensorrt` | `tensorrt`, `vllm`, or `remote-vllm` |\n| `--dataset` | `adult.csv` | Path to training CSV |\n| `--experiment` | `experiment_C2` | Experiment name (output directory) |\n| `--target-column` | `income` | Target column for predictive mode |\n| `--k-shots` | `40 60 80 ...` | K-shot values (space-separated; runs one experiment per value) |\n| `--model` | `Qwen/Qwen3-30B-A3B-Instruct-2507` | Model name |\n| `--n-rows` | `5000` | Synthetic rows to generate |\n| `--batch-size` | `25` | Rows per prompt |\n| `--device` | `0` | GPU device ID (ignored when `--tensor-parallel > 1`) |\n| `--temperature` | `0.7` | Sampling temperature |\n| `--top-p` | `0.8` | Nucleus sampling |\n| `--top-k` | `20` | Top-k sampling |\n| `--min-p` | `0.0` | Minimum probability |\n| `--presence-penalty` | `1.5` | Penalise tokens already in prompt/output. Higher values encourage diversity |\n| `--repetition-penalty` | `1.0` | Multiplicative penalty for repeated tokens. Values > 1.0 discourage repetition |\n| `--float-precision` | `4` | Decimal places for floats |\n| `--encoding-format` | `json` | `json` (structured output, guided decoding) or `predictive` (legacy GReaT-style) |\n| `--date-columns` | `[]` | Columns to treat as datetime |\n| `--type-overrides` | `[]` | Override inferred column types as `col=type` pairs. Valid types: `categorical`, `integer`, `float`, `boolean`, `datetime`, `text`, `id` |\n| `--conditionals` | `[]` | Conditional constraints for generation (e.g., `--conditionals \"age=30\" \"income=>50K\"`) |\n| `--use-correlation-matrix` | `True` | Include correlations in prompt (disable with `--no-correlation-matrix`) |\n| `--permute` | `False` | Permute column order in prompts |\n| `--verbose` | `False` | Detailed logging |\n\n### vLLM-Specific Parameters\n\n| Parameter | Default | Description |\n|---|---|---|\n| `--tensor-parallel` | `1` | GPUs for tensor parallelism |\n| `--max-context-len` | auto | Context window cap (input + output) |\n\n### TensorRT-Specific Parameters\n\n| Parameter | Default | Description |\n|---|---|---|\n| `--max-input-len` | `16384` | Engine input length limit |\n| `--max-output-len` | `16384` | Engine output length limit |\n\n### Remote vLLM Parameters\n\n| Parameter | Default | Description |\n|---|---|---|\n| `--server-url` | `$VLLM_SERVER_URL` | Remote vLLM server URL |\n| `--api-key` | `$VLLM_API_KEY` | Bearer token for auth |\n| `--concurrent-requests` | `300` | Max in-flight HTTP requests |\n| `--request-timeout` | `600` | Per-request timeout (seconds) |\n| `--enable-thinking` | `False` | Enable reasoning mode (remote-vllm only). Reasoning in `message.reasoning_content`, output in `message.content`. Enforces 65 536 token floor. |\n| `--disable-lang-fuse` | `False` | Disable Langfuse tracing even when env vars are set (alias: `--disable-langfuse`) |\n\n---\n\n## Observability with Langfuse\n\nBoth the **remote-vllm** and **local vllm** backends have optional\n[Langfuse](https://langfuse.com) integration for full-pipeline observability.\nWhen enabled, each experiment run creates traces with the following hierarchy:\n\n```\nSession: {experiment_name}\n└─ profiling (span)                 -- schema inference & statistics\n└─ tabgen-generate (span)           -- one per generate() call\n     ├─ batch-1 (span)              -- one per batch iteration\n     │   ├─ llm-generation (generation)  -- one per LLM request\n     │   ├─ llm-generation (generation)\n     │   ├─ decoding (span)         -- decode results & success rate\n     │   └─ ...\n     ├─ batch-2 (span)\n     │   └─ ...\n     └─ ...\n```\n\n**What is traced:**\n\n| Stage | Data captured |\n|-------|---------------|\n| **Profiling** | Dataset shape, detected column types, profiling duration |\n| **Generation root** | All sampling params, model config, dataset metadata |\n| **Batch** | Prompt count, decode rate, timing |\n| **LLM generation** | Input prompt, output text, token usage, latency, finish reason |\n| **Decoding** | Rows decoded, empty texts, errors, decode success rate |\n\n**Additional features:**\n\n- **Session grouping** — all traces from one experiment are grouped by `session_id`\n  (defaults to the experiment name) for easy comparison in the Langfuse UI.\n- **Prompt management** — the generation prompt template is registered in Langfuse\n  and versioned automatically.  Changes across experiments are tracked.\n- **Dataset registration** — the real dataset schema and sample rows are registered\n  in Langfuse for reference.\n- **Score attachment** — evaluation metrics can be pushed back to generation traces:\n  - **Programmatically** via `tabgen.push_evaluation_scores({\"f1\": 0.87})`.\n  - **Automatically from `ml_eval.py`** — when a generation config file with a\n    `last_trace_id` exists (saved by `tensorrt_sampling_optimized.py`), running\n    `ml_eval.py` will push per-model ML scores (e.g. `ml_eval/XGBoost`,\n    `ml_eval/Average`) to the corresponding Langfuse trace.\n- **Trace URL logging** — the Langfuse UI URL for each trace is printed after\n  generation for quick inspection.\n\n### Setup\n\n1. Install Langfuse (included in `requirements_vllm.txt`, or install separately):\n   ```bash\n   pip install \"langfuse>=4.0.0\"\n   # or via extras:\n   pip install -e \".[observability]\"\n   ```\n\n2. Set environment variables in `.env`:\n   ```dotenv\n   LANGFUSE_SECRET_KEY=sk-lf-...\n   LANGFUSE_PUBLIC_KEY=pk-lf-...\n   LANGFUSE_BASE_URL=http://your-langfuse-host:3000\n   ```\n\n3. Run as usual -- tracing is automatic:\n   ```bash\n   python tensorrt_sampling_optimized.py \\\n     --backend remote-vllm \\\n     --server-url http://my-server:8000 \\\n     --model Qwen/Qwen3.5-9B \\\n     --dataset data.csv --experiment my_exp \\\n     --target-column target --k-shots 40 --n-rows 100\n   ```\n\n### Disabling Langfuse\n\nLangfuse is **enabled by default** when the environment variables are set.\nTo disable it without removing env vars:\n\n```bash\n# During generation:\npython tensorrt_sampling_optimized.py \\\n  --backend remote-vllm --disable-lang-fuse \\\n  ...\n\n# During evaluation:\npython ml_eval.py --disable-lang-fuse \\\n  --dataset data.csv --experiments my_exp \\\n  --synthetic-datasets real synthetic_llm_40_shots \\\n  --target-column target\n```\n\n### Fail-safe Behaviour\n\nThe integration is fully fail-safe:\n\n- **`langfuse` not installed** -- tracing is silently disabled; no import error.\n- **Environment variables missing** -- tracing is silently disabled.\n- **Langfuse server unreachable** -- a warning is logged; generation continues normally.\n- **Any tracing call fails mid-generation** -- the error is caught and logged at\n  DEBUG level; generation is never interrupted.\n\n---\n\n## How the Prompt Works\n\nEach prompt sent to the model contains:\n\n1. **Schema & Statistics** -- column types, min/max/mean/std, quantiles\n2. **Correlation Matrix** -- numerical feature correlations (if `--use-correlation-matrix`)\n3. **K-shot examples** -- `k` stratified-sampled real rows, encoded as JSON objects (default)\n   or GReaT-style `column is value` rows (`--encoding-format predictive`)\n4. **Generation instructions** -- format-specific output instructions\n\nWith the default JSON format, the model generates structured JSON objects that are\nvalidated via guided decoding on vLLM backends, resulting in higher decode success\nrates. The legacy `predictive` format uses numbered `col is val` lines.\n\nThe model generates `batch_size` new rows, which are parsed back into a DataFrame\nby the decoder.\n\n---\n\n## Evaluating Synthetic Data\n\n### ML Evaluation\n\n```bash\npython ml_eval.py \\\n  --dataset adult.csv \\\n  --experiments experiment_A2 experiment_B2 \\\n  --synthetic-datasets real ctgan tvae synthetic_llm_40_shots synthetic_llm_80_shots \\\n  --target-column income --task-type classification \\\n  --train-size 5000 --test-size 1000\n```\n\nResults are saved to `experiments/{experiment}/evaluation_reports/`.\n\n### Standalone Evaluator\n\nThe [`synthetic_data_evaluator`](https://github.com/sordi-ai/Synthetic-Data-Generation-Evaluator)\npackage — developed alongside this project and distributed separately — provides\na CLI and Python API for computing quality metrics (pMSE, TabSynDex, Hellinger,\nKS, DCR, disclosure protection, ML efficacy). It is also required by the\noptional MCP server below.\n\n```bash\ngit clone https://github.com/sordi-ai/Synthetic-Data-Generation-Evaluator.git\npip install -e Synthetic-Data-Generation-Evaluator/synthetic_data_evaluator/\nsynth-eval evaluate --real real.csv --synth synthetic.csv --report Similarity\n```\n\n### MCP Server\n\nAn optional MCP server exposes evaluation tools to AI assistants. See\n[mcp_server/README.md](mcp_server/README.md).\n\n---\n\n## Plotting Results\n\n```bash\npython plot_evaluation_graphs.py \\\n  --dataset adult.csv \\\n  --experiments experiment_C2 \\\n  --synthetic-datasets ctgan tvae synthetic_llm_40_shots synthetic_llm_80_shots\n```\n\nFigures are saved to `experiments/{experiment}/figures/`.\n\n---\n\n## Supported Models\n\n### Tested and Recommended\n\n| Model | Backends |\n|---|---|\n| `Qwen/Qwen3-30B-A3B-Instruct-2507` | tensorrt, vllm, remote-vllm |\n| `Qwen/Qwen3.5-122B-A10B` | remote-vllm |\n| `Qwen/Qwen3-4B-Instruct-2507` | tensorrt, vllm |\n| `Qwen/Qwen2.5-14B-Instruct` | vllm |\n| `Qwen/Qwen2.5-32B-Instruct` | vllm |\n| `Qwen/Qwen3.5-9B-Instruct` | vllm |\n| `Qwen/Qwen3.5-30B-A3B-FP8` | vllm |\n| `Qwen/Qwen3-Coder-30B-A3B-FP8` | vllm |\n\n### Also Supported (vLLM)\n\nAny HuggingFace model works with the vLLM and remote-vllm backends.\nAdditionally tested:\n- `google/gemma-3-27b-it`, `google/gemma-2-27b-it`, `google/gemma-2-9b-it`\n- `meta-llama/Meta-Llama-3.1-70B-Instruct`, `meta-llama/Meta-Llama-3.1-8B-Instruct`\n- `mistralai/Mistral-7B-Instruct-v0.3`\n\n### TensorRT-LLM Supported Models\n\nTensorRT requires model-specific engine builds. Tested:\n- `Qwen/Qwen3-30B-A3B-Instruct-2507`\n- `nvidia/Qwen3-30B-A3B-FP4`\n- `google/gemma-3-27b-it`, `google/gemma-2-27b-it`\n- `meta-llama/Meta-Llama-3.1-70B-Instruct`, `meta-llama/Meta-Llama-3.1-8B-Instruct`\n\n---\n\n## Datasets\n\nThe paper evaluates FewShotTabLLM on five public benchmark datasets (not\nbundled with this repository — download them and pass the CSV via `--dataset`):\n\n| Dataset | Task | Target column | Source |\n|---|---|---|---|\n| Adult | classification | `income` | [UCI ML Repository](https://doi.org/10.24432/C5XW20) |\n| Buddy | classification | `pet_category` | [Kaggle](https://www.kaggle.com/datasets/akash14/adopt-a-buddy) |\n| Child | classification | `Sick` | CHILD Bayesian network benchmark (Spiegelhalter et al., 1993) |\n| Diabetes | classification | `Outcome` | [Kaggle](https://www.kaggle.com/datasets/mathchi/diabetes-data-set) |\n| Housing | regression | `median_house_value` | [Kaggle](https://www.kaggle.com/datasets/camnugent/california-housing-prices) |\n\nBaselines compared in the paper: CTGAN, TVAE, TabDDPM, and Be-GReaT.\n\n---\n\n## Project Structure\n\n```\ntensorrt_sampling_optimized.py       # Main CLI entry-point (all backends)\nml_eval.py                           # ML evaluation script\nplot_evaluation_graphs.py            # Plotting script\n\nflash_tabgen_tensorrt/               # Core library package\n  core/\n    data_profiler.py                 # Dataset profiling & schema inference\n    encoding.py                      # Row encoding (json/predictive)\n    prompts.py                       # Few-shot prompt construction\n    decoder.py                       # LLM output -> DataFrame parsing\n    generator_vllm.py                # Local vLLM inference engine\n    generator_tensorrt.py            # TensorRT-LLM inference engine\n    generator_remote_vllm.py         # Remote HTTP inference (async/concurrent)\n    tabgen_vllm.py                   # High-level TabGen class (local vLLM)\n    tabgen_tensorrt.py               # High-level TabGen class (TensorRT)\n    tabgen_remote_vllm.py            # High-level TabGen class (remote vLLM)\n    langfuse_utils.py                # Langfuse observability integration\n\nservices/                            # Shared utilities\n  parsers.py                         # CLI argument parsers\n  sampling.py                        # Representative sample selection\n  logger_config.py                   # Logging setup\n  data_handler.py                    # Data loading helpers\n  plot_data_statistics.py            # Data statistics visualizations\n  plot_evaluation_scores.py          # Evaluation score plotting\n\nmcp_server/                          # MCP server for AI assistant integration\n  mcp_server.py                      # FastMCP tool definitions\n  core/                              # Server logic, schemas, validation\n  synthesizer/                       # CTGAN train/generate\n  tests/                             # MCP serve",
+ "hits": {
+  "md": [
+   {
+    "file": "mcp_server/core/synth_services.py",
+    "line": 13,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import glob",
+     "from typing import Any, Dict, List, Optional, Union",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from ..synthesizer.train import CTGANTrainer",
+     "from ..synthesizer.generate import CTGANGenerator",
+     ""
+    ]
+   },
+   {
+    "file": "mcp_server/synthesizer/train.py",
+    "line": 11,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "from typing import List, Optional, Union",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "from .synthesizer_base import Synthesizer",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "mcp_server/core/synth_services.py",
+    "line": 13,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import glob",
+     "from typing import Any, Dict, List, Optional, Union",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from ..synthesizer.train import CTGANTrainer",
+     "from ..synthesizer.generate import CTGANGenerator",
+     ""
+    ]
+   },
+   {
+    "file": "mcp_server/synthesizer/generate.py",
+    "line": 8,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "Loads a previously-saved model and samples new rows.",
+     "\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "from .synthesizer_base import Synthesizer",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "mcp_server/synthesizer/train.py",
+    "line": 11,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "from typing import List, Optional, Union",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "from .synthesizer_base import Synthesizer",
+     ""
+    ]
+   },
+   {
+    "file": "mcp_server/synthesizer/train.py",
+    "line": 12,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from typing import List, Optional, Union",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "from .synthesizer_base import Synthesizer",
+     "",
+     ""
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "mcp_server/synthesizer/generate.py",
+    "line": 8,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "Loads a previously-saved model and samples new rows.",
+     "\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "from .synthesizer_base import Synthesizer",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "mcp_server/synthesizer/train.py",
+    "line": 12,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from typing import List, Optional, Union",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "from .synthesizer_base import Synthesizer",
+     "",
+     ""
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "mcp_server/synthesizer/generate.py",
+    "line": 8,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "Loads a previously-saved model and samples new rows.",
+     "\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "from .synthesizer_base import Synthesizer",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "mcp_server/synthesizer/generate.py",
+    "line": 17,
+    "text": "self.synthesizer = CTGANSynthesizer.load(filepath=self.model_path)",
+    "context": [
+     "class CTGANGenerator(Synthesizer):",
+     "    \"\"\"Load a trained CTGAN model and sample synthetic rows.\"\"\"",
+     "",
+     "    def load_model(self) -> None:",
+     "        self.synthesizer = CTGANSynthesizer.load(filepath=self.model_path)",
+     "",
+     "    def generate(self, num_rows: int, filename: str) -> pd.DataFrame:",
+     "        \"\"\"Sample *num_rows* rows, export to CSV, and return the DataFrame.\"\"\"",
+     "        synthetic_data = self.synthesizer.sample(num_rows=num_rows)"
+    ]
+   },
+   {
+    "file": "mcp_server/synthesizer/train.py",
+    "line": 12,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from typing import List, Optional, Union",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "from .synthesizer_base import Synthesizer",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "mcp_server/synthesizer/train.py",
+    "line": 46,
+    "text": "\"\"\"CTGANSynthesizer``\"\"\"",
+    "context": [
+     "        epochs: int = 300,",
+     "        pac: int = 10,",
+     "        cuda: Union[bool, str] = True,",
+     "    ) -> None:",
+     "        \"\"\"CTGANSynthesizer``\"\"\"",
+     "",
+     "        self.synthesizer = CTGANSynthesizer(",
+     "            metadata,",
+     "            enforce_min_max_values=enforce_min_max_values,"
+    ]
+   },
+   {
+    "file": "mcp_server/synthesizer/train.py",
+    "line": 48,
+    "text": "self.synthesizer = CTGANSynthesizer(",
+    "context": [
+     "        cuda: Union[bool, str] = True,",
+     "    ) -> None:",
+     "        \"\"\"CTGANSynthesizer``\"\"\"",
+     "",
+     "        self.synthesizer = CTGANSynthesizer(",
+     "            metadata,",
+     "            enforce_min_max_values=enforce_min_max_values,",
+     "            enforce_rounding=enforce_rounding,",
+     "            locales=locales or [\"en_US\"],"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

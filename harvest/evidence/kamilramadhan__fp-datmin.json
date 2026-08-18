@@ -1,0 +1,402 @@
+{
+ "repo": "kamilramadhan/fp-datmin",
+ "disk_kb": 148,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Final Project Data Mining - Credit Card Fraud Detection\n\n## 📋 Deskripsi Proyek\n\nProyek ini bertujuan untuk mendeteksi transaksi penipuan kartu kredit menggunakan teknik machine learning dengan penanganan data tidak seimbang (imbalanced data). Dataset yang digunakan adalah **Credit Card Fraud Detection Dataset**.\n\n## 🎯 Tujuan\n\n1. Membangun model klasifikasi untuk mendeteksi transaksi fraud\n2. Mengatasi masalah ketidakseimbangan data menggunakan berbagai teknik\n3. Membandingkan performa model dengan berbagai skenario augmentasi data\n\n---\n\n## 📁 Struktur File\n\n```\nFP/\n├── FinalProjectDatmin.ipynb    # Notebook utama\n├── creditcard.csv              # Dataset (perlu diunduh terpisah)\n├── README.md                   # Dokumentasi proyek\n└── .gitignore                  # File gitignore\n```\n\n---\n\n## 🔧 Dependencies\n\n```python\nnumpy\npandas\nmatplotlib\nscikit-learn\nxgboost\nimbalanced-learn\nshap\nlime\nsdv (untuk CTGAN)\n```\n\n### Instalasi Dependencies\n\n```bash\npip install numpy pandas matplotlib scikit-learn xgboost imbalanced-learn shap lime sdv\n```\n\n---\n\n## 📊 Alur Proses (Pipeline)\n\n### 1. **Import Library dan Setup**\n- Import semua library yang diperlukan\n- Set random state untuk reproducibility (`RANDOM_STATE = 42`)\n\n### 2. **Load Data dan Preprocessing**\n- Load dataset `creditcard.csv`\n- Pisahkan fitur (X) dan target (y) - kolom `Class`\n- Split data menjadi train (80%) dan test (20%) dengan stratified sampling\n- Menggunakan `RobustScaler` untuk normalisasi fitur\n\n### 3. **Evaluasi Metrics**\nMetrics yang digunakan untuk evaluasi model:\n- **F1-Score**: Harmonic mean dari precision dan recall\n- **AUPRC (Area Under Precision-Recall Curve)**: Lebih cocok untuk imbalanced data dibanding AUC-ROC\n- **Confusion Matrix**: Visualisasi prediksi vs aktual\n\n---\n\n## 🧪 Skenario Eksperimen\n\n### **Skenario 1: Baseline (Tanpa Oversampling)**\n\nModel dilatih langsung pada data asli tanpa penanganan ketidakseimbangan.\n\n**Model yang digunakan:**\n- Random Forest Classifier\n- XGBoost Classifier\n\n**Pipeline:**\n```\nRobustScaler → Classifier\n```\n\n---\n\n### **Skenario 2: SMOTE (Synthetic Minority Over-sampling Technique)**\n\nSMOTE adalah teknik oversampling yang menghasilkan sampel sintetis untuk kelas minoritas dengan cara menginterpolasi antara sampel-sampel yang ada.\n\n**Cara Kerja SMOTE:**\n1. Memilih sampel dari kelas minoritas\n2. Mencari k-nearest neighbors dari sampel tersebut\n3. Membuat sampel sintetis baru di sepanjang garis yang menghubungkan sampel asli dengan tetangganya\n\n**Konfigurasi:**\n```python\nSMOTE(\n    random_state=42,\n    k_neighbors=3,\n    sampling_strategy=0.1  # Fraud menjadi 10% dari normal\n)\n```\n\n**Pipeline:**\n```\nRobustScaler → SMOTE → Classifier\n```\n\n**Referensi:**\n> Chawla, N. V., Bowyer, K. W., Hall, L. O., & Kegelmeyer, W. P. (2002). SMOTE: Synthetic Minority Over-sampling Technique. *Journal of Artificial Intelligence Research*, 16, 321-357.\n\n---\n\n### **Skenario 3: CTGAN (Conditional Tabular Generative Adversarial Network)**\n\nCTGAN adalah teknik generatif berbasis deep learning yang dirancang khusus untuk menghasilkan data tabular sintetis berkualitas tinggi.\n\n**Keunggulan CTGAN:**\n- Menangani data campuran (numerik dan kategorikal)\n- Menghasilkan data sintetis yang mempertahankan distribusi statistik data asli\n- Mengatasi masalah mode collapse pada data tabular\n- Lebih realistis dibanding interpolasi sederhana\n\n**Konfigurasi:**\n```python\nCTGANSynthesizer(\n    metadata,\n    epochs=10,\n    batch_size=64,\n    pac=1,\n    enforce_min_max_values=True,\n    enforce_rounding=False\n)\n```\n\n**Proses:**\n1. Subset data fraud untuk training CTGAN (max 300 sampel)\n2. Fit CTGAN pada data fraud only\n3. Generate sampel sintetis fraud\n4. Gabungkan dengan data original untuk training\n\n**Pipeline:**\n```\nData Original + Data Sintetis CTGAN → RobustScaler → Classifier\n```\n\n**Referensi:**\n> Xu, L., Skoularidou, M., Cuesta-Infante, A., & Veeramachaneni, K. (2019). Modeling Tabular Data using Conditional GAN. *Advances in Neural Information Processing Systems (NeurIPS)*, 32.\n\n---\n\n## 🤖 Model Machine Learning\n\n### Random Forest Classifier\n```python\nRandomForestClassifier(\n    n_estimators=120,\n    max_depth=18,\n    min_samples_split=4,\n    random_state=42,\n    n_jobs=-1\n)\n```\n\n### XGBoost Classifier\n```python\nXGBClassifier(\n    n_estimators=220,\n    max_depth=4,\n    learning_rate=0.07,\n    subsample=0.8,\n    colsample_bytree=0.8,\n    reg_lambda=1.0,\n    random_state=42,\n    eval_metric=\"logloss\",\n    n_jobs=-1,\n    tree_method=\"hist\"\n)\n```\n\n---\n\n## 📈 Hasil dan Evaluasi\n\n### Metrics Evaluasi\n| Model | Skenario | F1-Score | AUPRC |\n|-------|----------|----------|-------|\n| RF_Baseline | Baseline | - | - |\n| XGB_Baseline | Baseline | - | - |\n| RF_SMOTE | SMOTE(0.1) | - | - |\n| XGB_SMOTE | SMOTE(0.1) | - | - |\n| RF_CTGAN | CTGAN | - | - |\n| XGB_CTGAN | CTGAN | - | - |\n\n*Catatan: Jalankan notebook untuk mendapatkan hasil aktual*\n\n### Visualisasi\n1. **Confusion Matrix**: Untuk setiap kombinasi model dan skenario\n2. **Precision-Recall Curve**: Perbandingan semua model dalam satu plot\n\n---\n\n## 📝 Analisis Delta (Perbandingan)\n\nNotebook menyediakan fungsi `show_delta()` untuk membandingkan performa:\n- Baseline vs CTGAN\n- Peningkatan/penurunan F1 dan AUPRC\n\n**Kesimpulan:**\n- Jika AUPRC meningkat → Teknik augmentasi efektif\n- Jika AUPRC menurun → Teknik augmentasi belum efektif\n\n---\n\n## 🚀 Cara Menjalankan\n\n1. **Clone repository**\n   ```bash\n   git clone https://github.com/kamilramadhan/fp-datmin.git\n   cd fp-datmin\n   ```\n\n2. **Download dataset**\n   - Download `creditcard.csv` dari [Kaggle](https://www.kaggle.com/mlg-ulb/creditcardfraud)\n   - Letakkan di folder yang sama dengan notebook\n\n3. **Install dependencies**\n   ```bash\n   pip install -r requirements.txt\n   ```\n\n4. **Jalankan notebook**\n   - Buka `FinalProjectDatmin.ipynb` di Jupyter Notebook atau VS Code\n   - Run all cells\n\n---\n\n## 📚 Referensi\n\n1. Chawla, N. V., et al. (2002). SMOTE: Synthetic Minority Over-sampling Technique. *JAIR*, 16, 321-357.\n\n2. Xu, L., et al. (2019). Modeling Tabular Data using Conditional GAN. *NeurIPS*, 32.\n\n3. Shorten, C., & Khoshgoftaar, T. M. (2019). A survey on image data augmentation for deep learning. *Journal of Big Data*, 6(1), 1-48.\n\n4. Dal Pozzolo, A., et al. (2015). Calibrating Probability with Undersampling for Unbalanced Classification. *IEEE SSCI*.\n\n---\n\n## 👥 Kelompok 4\n\nFinal Project Data Mining - Semester 5\n\n---\n\n## 📄 Lisensi\n\nProyek ini dibuat untuk keperluan akademis.\n",
+ "hits": {
+  "ct": [
+   {
+    "file": "README.md",
+    "line": 126,
+    "text": "CTGANSynthesizer(",
+    "context": [
+     "- Lebih realistis dibanding interpolasi sederhana",
+     "",
+     "**Konfigurasi:**",
+     "```python",
+     "CTGANSynthesizer(",
+     "    metadata,",
+     "    epochs=10,",
+     "    batch_size=64,",
+     "    pac=1,"
+    ]
+   },
+   {
+    "file": "FinalProjectDatmin.ipynb",
+    "line": 110,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"import shap\\n\",",
+     "    \"from lime.lime_tabular import LimeTabularExplainer\\n\",",
+     "    \"\\n\",",
+     "    \"# CTGAN (SDV)\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"RANDOM_STATE = 42\\n\",",
+     "    \"np.random.seed(RANDOM_STATE)\\n\""
+    ]
+   },
+   {
+    "file": "FinalProjectDatmin.ipynb",
+    "line": 479,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"# ====== CTGAN (FAST & STABLE) ======\\n\",",
+     "    \"train_df = X_train.copy()\\n\",",
+     "    \"train_df[target_col] = y_train.values\\n\","
+    ]
+   },
+   {
+    "file": "FinalProjectDatmin.ipynb",
+    "line": 495,
+    "text": "\"ctgan = CTGANSynthesizer(\\n\",",
+    "context": [
+     "    \"# metadata untuk CTGAN (sesuai data yang dipakai fit)\\n\",",
+     "    \"metadata = SingleTableMetadata()\\n\",",
+     "    \"metadata.detect_from_dataframe(data=fraud_fit)\\n\",",
+     "    \"\\n\",",
+     "    \"ctgan = CTGANSynthesizer(\\n\",",
+     "    \"    metadata,\\n\",",
+     "    \"    epochs=10,          # bisa 10–20\\n\",",
+     "    \"    batch_size=64,      # stabil di laptop\\n\",",
+     "    \"    pac=1,              # penting biar tidak error assert pac\\n\","
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "FinalProjectDatmin.ipynb",
+    "line": 110,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"import shap\\n\",",
+     "    \"from lime.lime_tabular import LimeTabularExplainer\\n\",",
+     "    \"\\n\",",
+     "    \"# CTGAN (SDV)\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"RANDOM_STATE = 42\\n\",",
+     "    \"np.random.seed(RANDOM_STATE)\\n\""
+    ]
+   },
+   {
+    "file": "FinalProjectDatmin.ipynb",
+    "line": 479,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"# ====== CTGAN (FAST & STABLE) ======\\n\",",
+     "    \"train_df = X_train.copy()\\n\",",
+     "    \"train_df[target_col] = y_train.values\\n\","
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "FinalProjectDatmin.ipynb",
+    "line": 111,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"from lime.lime_tabular import LimeTabularExplainer\\n\",",
+     "    \"\\n\",",
+     "    \"# CTGAN (SDV)\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"RANDOM_STATE = 42\\n\",",
+     "    \"np.random.seed(RANDOM_STATE)\\n\"",
+     "   ]"
+    ]
+   },
+   {
+    "file": "FinalProjectDatmin.ipynb",
+    "line": 478,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "     \"output_type\": \"display_data\"",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"# ====== CTGAN (FAST & STABLE) ======\\n\",",
+     "    \"train_df = X_train.copy()\\n\","
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "FinalProjectDatmin.ipynb",
+    "line": 32,
+    "text": "\"Requirement already satisfied: botocore<2.0.0,>=1.31 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (1.42.5)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: typing-extensions in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from shap) (4.15.0)\\n\",",
+     "      \"Requirement already satisfied: pandas in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from shap) (2.3.3)\\n\",",
+     "      \"Requirement already satisfied: scikit-image>=0.12 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from lime) (0.24.0)\\n\",",
+     "      \"Requirement already satisfied: matplotlib in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from lime) (3.9.4)\\n\",",
+     "      \"Requirement already satisfied: botocore<2.0.0,>=1.31 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (1.42.5)\\n\",",
+     "      \"Requirement already satisfied: platformdirs>=4.0 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (4.4.0)\\n\",",
+     "      \"Requirement already satisfied: copulas>=0.12.1 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (0.12.3)\\n\",",
+     "      \"Requirement already satisfied: boto3<2.0.0,>=1.28 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (1.42.5)\\n\",",
+     "      \"Requirement already satisfied: graphviz>=0.13.2 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (0.21)\\n\","
+    ]
+   },
+   {
+    "file": "FinalProjectDatmin.ipynb",
+    "line": 33,
+    "text": "\"Requirement already satisfied: platformdirs>=4.0 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (4.4.0)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: pandas in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from shap) (2.3.3)\\n\",",
+     "      \"Requirement already satisfied: scikit-image>=0.12 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from lime) (0.24.0)\\n\",",
+     "      \"Requirement already satisfied: matplotlib in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from lime) (3.9.4)\\n\",",
+     "      \"Requirement already satisfied: botocore<2.0.0,>=1.31 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (1.42.5)\\n\",",
+     "      \"Requirement already satisfied: platformdirs>=4.0 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (4.4.0)\\n\",",
+     "      \"Requirement already satisfied: copulas>=0.12.1 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (0.12.3)\\n\",",
+     "      \"Requirement already satisfied: boto3<2.0.0,>=1.28 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (1.42.5)\\n\",",
+     "      \"Requirement already satisfied: graphviz>=0.13.2 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (0.21)\\n\",",
+     "      \"Requirement already satisfied: ctgan>=0.11.1 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (0.11.1)\\n\","
+    ]
+   },
+   {
+    "file": "FinalProjectDatmin.ipynb",
+    "line": 34,
+    "text": "\"Requirement already satisfied: copulas>=0.12.1 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (0.12.3)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: scikit-image>=0.12 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from lime) (0.24.0)\\n\",",
+     "      \"Requirement already satisfied: matplotlib in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from lime) (3.9.4)\\n\",",
+     "      \"Requirement already satisfied: botocore<2.0.0,>=1.31 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (1.42.5)\\n\",",
+     "      \"Requirement already satisfied: platformdirs>=4.0 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (4.4.0)\\n\",",
+     "      \"Requirement already satisfied: copulas>=0.12.1 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (0.12.3)\\n\",",
+     "      \"Requirement already satisfied: boto3<2.0.0,>=1.28 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (1.42.5)\\n\",",
+     "      \"Requirement already satisfied: graphviz>=0.13.2 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (0.21)\\n\",",
+     "      \"Requirement already satisfied: ctgan>=0.11.1 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (0.11.1)\\n\",",
+     "      \"Requirement already satisfied: rdt>=1.18.2 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (1.18.2)\\n\","
+    ]
+   },
+   {
+    "file": "FinalProjectDatmin.ipynb",
+    "line": 35,
+    "text": "\"Requirement already satisfied: boto3<2.0.0,>=1.28 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (1.42.5)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: matplotlib in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from lime) (3.9.4)\\n\",",
+     "      \"Requirement already satisfied: botocore<2.0.0,>=1.31 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (1.42.5)\\n\",",
+     "      \"Requirement already satisfied: platformdirs>=4.0 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (4.4.0)\\n\",",
+     "      \"Requirement already satisfied: copulas>=0.12.1 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (0.12.3)\\n\",",
+     "      \"Requirement already satisfied: boto3<2.0.0,>=1.28 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (1.42.5)\\n\",",
+     "      \"Requirement already satisfied: graphviz>=0.13.2 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (0.21)\\n\",",
+     "      \"Requirement already satisfied: ctgan>=0.11.1 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (0.11.1)\\n\",",
+     "      \"Requirement already satisfied: rdt>=1.18.2 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (1.18.2)\\n\",",
+     "      \"Requirement already satisfied: deepecho>=0.7.0 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (0.7.0)\\n\","
+    ]
+   },
+   {
+    "file": "FinalProjectDatmin.ipynb",
+    "line": 36,
+    "text": "\"Requirement already satisfied: graphviz>=0.13.2 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (0.21)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: botocore<2.0.0,>=1.31 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (1.42.5)\\n\",",
+     "      \"Requirement already satisfied: platformdirs>=4.0 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (4.4.0)\\n\",",
+     "      \"Requirement already satisfied: copulas>=0.12.1 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (0.12.3)\\n\",",
+     "      \"Requirement already satisfied: boto3<2.0.0,>=1.28 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (1.42.5)\\n\",",
+     "      \"Requirement already satisfied: graphviz>=0.13.2 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (0.21)\\n\",",
+     "      \"Requirement already satisfied: ctgan>=0.11.1 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (0.11.1)\\n\",",
+     "      \"Requirement already satisfied: rdt>=1.18.2 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (1.18.2)\\n\",",
+     "      \"Requirement already satisfied: deepecho>=0.7.0 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (0.7.0)\\n\",",
+     "      \"Requirement already satisfied: sdmetrics>=0.21.0 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (0.24.0)\\n\","
+    ]
+   },
+   {
+    "file": "FinalProjectDatmin.ipynb",
+    "line": 37,
+    "text": "\"Requirement already satisfied: ctgan>=0.11.1 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (0.11.1)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: platformdirs>=4.0 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (4.4.0)\\n\",",
+     "      \"Requirement already satisfied: copulas>=0.12.1 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (0.12.3)\\n\",",
+     "      \"Requirement already satisfied: boto3<2.0.0,>=1.28 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (1.42.5)\\n\",",
+     "      \"Requirement already satisfied: graphviz>=0.13.2 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (0.21)\\n\",",
+     "      \"Requirement already satisfied: ctgan>=0.11.1 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (0.11.1)\\n\",",
+     "      \"Requirement already satisfied: rdt>=1.18.2 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (1.18.2)\\n\",",
+     "      \"Requirement already satisfied: deepecho>=0.7.0 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (0.7.0)\\n\",",
+     "      \"Requirement already satisfied: sdmetrics>=0.21.0 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (0.24.0)\\n\",",
+     "      \"Requirement already satisfied: pyyaml>=6.0.1 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (6.0.3)\\n\","
+    ]
+   },
+   {
+    "file": "FinalProjectDatmin.ipynb",
+    "line": 38,
+    "text": "\"Requirement already satisfied: rdt>=1.18.2 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (1.18.2)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: copulas>=0.12.1 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (0.12.3)\\n\",",
+     "      \"Requirement already satisfied: boto3<2.0.0,>=1.28 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (1.42.5)\\n\",",
+     "      \"Requirement already satisfied: graphviz>=0.13.2 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (0.21)\\n\",",
+     "      \"Requirement already satisfied: ctgan>=0.11.1 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (0.11.1)\\n\",",
+     "      \"Requirement already satisfied: rdt>=1.18.2 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (1.18.2)\\n\",",
+     "      \"Requirement already satisfied: deepecho>=0.7.0 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (0.7.0)\\n\",",
+     "      \"Requirement already satisfied: sdmetrics>=0.21.0 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (0.24.0)\\n\",",
+     "      \"Requirement already satisfied: pyyaml>=6.0.1 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (6.0.3)\\n\",",
+     "      \"Requirement already satisfied: s3transfer<0.17.0,>=0.16.0 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from boto3<2.0.0,>=1.28->sdv) (0.16.0)\\n\","
+    ]
+   },
+   {
+    "file": "FinalProjectDatmin.ipynb",
+    "line": 39,
+    "text": "\"Requirement already satisfied: deepecho>=0.7.0 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (0.7.0)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: boto3<2.0.0,>=1.28 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (1.42.5)\\n\",",
+     "      \"Requirement already satisfied: graphviz>=0.13.2 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (0.21)\\n\",",
+     "      \"Requirement already satisfied: ctgan>=0.11.1 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (0.11.1)\\n\",",
+     "      \"Requirement already satisfied: rdt>=1.18.2 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (1.18.2)\\n\",",
+     "      \"Requirement already satisfied: deepecho>=0.7.0 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (0.7.0)\\n\",",
+     "      \"Requirement already satisfied: sdmetrics>=0.21.0 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (0.24.0)\\n\",",
+     "      \"Requirement already satisfied: pyyaml>=6.0.1 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (6.0.3)\\n\",",
+     "      \"Requirement already satisfied: s3transfer<0.17.0,>=0.16.0 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from boto3<2.0.0,>=1.28->sdv) (0.16.0)\\n\",",
+     "      \"Requirement already satisfied: jmespath<2.0.0,>=0.7.1 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from boto3<2.0.0,>=1.28->sdv) (1.0.1)\\n\","
+    ]
+   },
+   {
+    "file": "FinalProjectDatmin.ipynb",
+    "line": 40,
+    "text": "\"Requirement already satisfied: sdmetrics>=0.21.0 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (0.24.0)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: graphviz>=0.13.2 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (0.21)\\n\",",
+     "      \"Requirement already satisfied: ctgan>=0.11.1 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (0.11.1)\\n\",",
+     "      \"Requirement already satisfied: rdt>=1.18.2 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (1.18.2)\\n\",",
+     "      \"Requirement already satisfied: deepecho>=0.7.0 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (0.7.0)\\n\",",
+     "      \"Requirement already satisfied: sdmetrics>=0.21.0 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (0.24.0)\\n\",",
+     "      \"Requirement already satisfied: pyyaml>=6.0.1 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (6.0.3)\\n\",",
+     "      \"Requirement already satisfied: s3transfer<0.17.0,>=0.16.0 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from boto3<2.0.0,>=1.28->sdv) (0.16.0)\\n\",",
+     "      \"Requirement already satisfied: jmespath<2.0.0,>=0.7.1 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from boto3<2.0.0,>=1.28->sdv) (1.0.1)\\n\",",
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\n\","
+    ]
+   },
+   {
+    "file": "FinalProjectDatmin.ipynb",
+    "line": 41,
+    "text": "\"Requirement already satisfied: pyyaml>=6.0.1 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (6.0.3)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: ctgan>=0.11.1 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (0.11.1)\\n\",",
+     "      \"Requirement already satisfied: rdt>=1.18.2 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (1.18.2)\\n\",",
+     "      \"Requirement already satisfied: deepecho>=0.7.0 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (0.7.0)\\n\",",
+     "      \"Requirement already satisfied: sdmetrics>=0.21.0 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (0.24.0)\\n\",",
+     "      \"Requirement already satisfied: pyyaml>=6.0.1 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from sdv) (6.0.3)\\n\",",
+     "      \"Requirement already satisfied: s3transfer<0.17.0,>=0.16.0 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from boto3<2.0.0,>=1.28->sdv) (0.16.0)\\n\",",
+     "      \"Requirement already satisfied: jmespath<2.0.0,>=0.7.1 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from boto3<2.0.0,>=1.28->sdv) (1.0.1)\\n\",",
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\n\",",
+     "      \"Requirement already satisfied: urllib3<1.27,>=1.25.4 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from botocore<2.0.0,>=1.31->sdv) (1.26.20)\\n\","
+    ]
+   },
+   {
+    "file": "FinalProjectDatmin.ipynb",
+    "line": 110,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"import shap\\n\",",
+     "    \"from lime.lime_tabular import LimeTabularExplainer\\n\",",
+     "    \"\\n\",",
+     "    \"# CTGAN (SDV)\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"RANDOM_STATE = 42\\n\",",
+     "    \"np.random.seed(RANDOM_STATE)\\n\""
+    ]
+   },
+   {
+    "file": "FinalProjectDatmin.ipynb",
+    "line": 111,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"from lime.lime_tabular import LimeTabularExplainer\\n\",",
+     "    \"\\n\",",
+     "    \"# CTGAN (SDV)\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"RANDOM_STATE = 42\\n\",",
+     "    \"np.random.seed(RANDOM_STATE)\\n\"",
+     "   ]"
+    ]
+   }
+  ],
+  "ctgan_mod": [
+   {
+    "file": "FinalProjectDatmin.ipynb",
+    "line": 47,
+    "text": "\"Requirement already satisfied: torch>=1.13.0 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from ctgan>=0.11.1->sdv) (2.8.0)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: jmespath<2.0.0,>=0.7.1 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from boto3<2.0.0,>=1.28->sdv) (1.0.1)\\n\",",
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\n\",",
+     "      \"Requirement already satisfied: urllib3<1.27,>=1.25.4 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from botocore<2.0.0,>=1.31->sdv) (1.26.20)\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from copulas>=0.12.1->sdv) (6.3.1)\\n\",",
+     "      \"Requirement already satisfied: torch>=1.13.0 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from ctgan>=0.11.1->sdv) (2.8.0)\\n\",",
+     "      \"Requirement already satisfied: llvmlite<0.44,>=0.43.0dev0 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from numba>=0.54->shap) (0.43.0)\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from pandas->shap) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from pandas->shap) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: narwhals>=1.15.1 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (2.9.0)\\n\","
+    ]
+   }
+  ],
+  "rdt": [
+   {
+    "file": "FinalProjectDatmin.ipynb",
+    "line": 53,
+    "text": "\"Requirement already satisfied: Faker!=37.11.0,>=17 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from rdt>=1.18.2->sdv) (37.12.0)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from pandas->shap) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from pandas->shap) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: narwhals>=1.15.1 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (2.9.0)\\n\",",
+     "      \"Requirement already satisfied: six>=1.5 in /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/site-packages (from python-dateutil<3.0.0,>=2.1->b",
+     "      \"Requirement already satisfied: Faker!=37.11.0,>=17 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from rdt>=1.18.2->sdv) (37.12.0)\\n\",",
+     "      \"Requirement already satisfied: networkx>=2.8 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from scikit-image>=0.12->lime) (3.2.1)\\n\",",
+     "      \"Requirement already satisfied: tifffile>=2022.8.12 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from scikit-image>=0.12->lime) (2024.8.30)\\n\",",
+     "      \"Requirement already satisfied: lazy-loader>=0.4 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from scikit-image>=0.12->lime) (0.4)\\n\",",
+     "      \"Requirement already satisfied: pillow>=9.1 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from scikit-image>=0.12->lime) (11.3.0)\\n\","
+    ]
+   }
+  ],
+  "copulas": [
+   {
+    "file": "FinalProjectDatmin.ipynb",
+    "line": 46,
+    "text": "\"Requirement already satisfied: plotly>=5.10.0 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from copulas>=0.12.1->sdv) (6.3.1)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: s3transfer<0.17.0,>=0.16.0 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from boto3<2.0.0,>=1.28->sdv) (0.16.0)\\n\",",
+     "      \"Requirement already satisfied: jmespath<2.0.0,>=0.7.1 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from boto3<2.0.0,>=1.28->sdv) (1.0.1)\\n\",",
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\n\",",
+     "      \"Requirement already satisfied: urllib3<1.27,>=1.25.4 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from botocore<2.0.0,>=1.31->sdv) (1.26.20)\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from copulas>=0.12.1->sdv) (6.3.1)\\n\",",
+     "      \"Requirement already satisfied: torch>=1.13.0 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from ctgan>=0.11.1->sdv) (2.8.0)\\n\",",
+     "      \"Requirement already satisfied: llvmlite<0.44,>=0.43.0dev0 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from numba>=0.54->shap) (0.43.0)\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from pandas->shap) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /Users/feldaega/Library/Python/3.9/lib/python/site-packages (from pandas->shap) (2025.2)\\n\","
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "copulas",
+  "ct",
+  "ctgan_mod",
+  "md",
+  "rdt",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

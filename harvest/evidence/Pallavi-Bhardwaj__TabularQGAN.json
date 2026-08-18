@@ -1,0 +1,372 @@
+{
+ "repo": "Pallavi-Bhardwaj/TabularQGAN",
+ "disk_kb": 1010,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "## Introduction\nThis code is the official implementation accompanying [TabularQGAN: A Quantum Generative Model for Tabular Data](https://arxiv.org/abs/2505.22533) (Bhardwaj et al., 2025). If you use this code, please cite the paper (see [Citation](#citation)).\nIt provides the ability to train the TabularQGAN model and the classical benchmark models. \n \nIt is an adaptation of the open source code, qugen. For full documentation on the qugen library please see https://qutacquantum.github.io/qugen/\n \n \n## Installation \n\nThis repository declares ``requires-python = \">=3.10,<3.11\"`` in ``pyproject.toml``. We have **only tested** it with **Python 3.10.19** (``pyenv install 3.10.19 && pyenv local 3.10.19``).\n\n1) Create a virtual environment with Python 3.10.x using pyenv:\n\n   ``~/.pyenv/versions/3.10.19/bin/python -m venv .venv``\n\n2) Activate the environment: ``source .venv/bin/activate``\n3) Run ``pip install -e .`` to install the project in editable mode with the TabularQGAN code, SDV-based classical baselines, evaluation helpers, and plotting dependencies.\n\n\n## Instructions for training and running models\n\nThe script to train the modeles is called 'apps/ehr/train_tabularqgan.py' which is run from the command line. \n\nThe training data, model type, and hyperparameters can all be specified via command line arguments. An output of a sample of synthetic data from the trained model. \n\nThe tabularQGAN model also saves as pickle files the parameters at each epoch of training and as a csv  and a plot the asscoiated overall metric and KL metric for each epoch of training. \n\nEach model type also has a model handler, they are found in qugen/main/generator and are imported by the training script as needed. \n\nSteps (run from the repository root; place the raw Adult CSV as ``apps/ehr/training_data/adult.csv`` before step 1):\n\n1. Ingest and encode the data:\n\n   `python apps/ehr/data_ingestion_tabular_adults_census.py`\n\n2. Train TabularQGAN (example):\n\n   `python apps/ehr/train_tabularqgan.py adults_census_10_non_boolean qgan 2 3000 0.1 0.05 0.1 small 11`\n\n   These two commands are the minimal pipeline for the Adult census 10-qubit non-boolean setup.\n\n3. Select other model types, datasets, and hyperparameters via command line as needed: \n\n\n  The command line arguments for the script are as follows: \n  |Number | Name | Description |\n  |---|---|---|\n  | 0. | script | hyperparameter_train_discrete.py |\n  | 1. | data_set_name | str: Options are 'adult_census_10', 'adult_census_15', 'adults_census_10_non_boolean', 'adults_census_15_non_boolean' | \n  | 2. | model_type | str: Options are 'qgan', 'ctgan' and 'copulagan' | \n  | 3. | circuit_depth | int:  for number of layers |\n  | 4. | n_epochs| int: for number of epochs to train each model | \n  | 5. | lr_generator | float:  learning rate for the generator | \n  | 6. | lr_discriminator | float:  learning rate for the discriminator | \n  | 7. | batch_size_fraction | float:  batch size fraction for the training | \n  | 8. | classical_model_size | str:  options 'small', 'large' , for the layer width for the classical model.  | \n  | 9. | random_seed | int: random seed for initialising jax | \n\n\n4. The synthetic data is found at 'experiments/[model_name]/synethetic_data_[model_name].csv' for the tabularQGAN model and \n'experiments_classical/[model_name]/synethetic_data_[model_name].csv' for the classical models. Additional files produced in the experiments folder are-\n pickle files for each iteration, loss curve for KL divergence and overall metric and csv files with best overall metric and kl divergence\n\n## Notes\n\nFor convenience we have also included a json file with the best found configurations per model and dataset as reported in the paper, called 'best_config.json'.\n\nOnly the data processeing code for the adult census data set is provided here as the MIMIC-III dataset cannot not be distributed. See https://physionet.org/content/mimiciii/1.4/ for details.\n\n## Citation\n\n```bibtex\n@misc{bhardwaj2025tabularqganquantumgenerativemodel,\n      title={TabularQGAN: A Quantum Generative Model for Tabular Data}, \n      author={Pallavi Bhardwaj and Caitlin Jones and Lasse Dierich and Aleksandar Vučković},\n      year={2025},\n      eprint={2505.22533},\n      archivePrefix={arXiv},\n      primaryClass={cs.LG},\n      url={https://arxiv.org/abs/2505.22533}, \n}\n```\n\n## Contact\n\npallavi.bhardwaj@sap.com\n\n\n\n",
+ "hits": {
+  "st": [
+   {
+    "file": "qugen/main/generator/external_classical_tabular_gan.py",
+    "line": 1,
+    "text": "from sdv.single_table import CTGANSynthesizer, CopulaGANSynthesizer",
+    "context": [
+     "from sdv.single_table import CTGANSynthesizer, CopulaGANSynthesizer",
+     "",
+     "def classical_ctgan(original_data, epochs, metadata, generator_lr, discriminator_lr, batch_size, input_size,",
+     "                    num_hidden_layers_gen, num_dimensions_gen, num_hidden_layers_disc, num_dimensions_disc):",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "qugen/main/generator/external_classical_tabular_gan.py",
+    "line": 1,
+    "text": "from sdv.single_table import CTGANSynthesizer, CopulaGANSynthesizer",
+    "context": [
+     "from sdv.single_table import CTGANSynthesizer, CopulaGANSynthesizer",
+     "",
+     "def classical_ctgan(original_data, epochs, metadata, generator_lr, discriminator_lr, batch_size, input_size,",
+     "                    num_hidden_layers_gen, num_dimensions_gen, num_hidden_layers_disc, num_dimensions_disc):",
+     ""
+    ]
+   },
+   {
+    "file": "qugen/main/data/helper.py",
+    "line": 24,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import matplotlib.pyplot as plt",
+     "",
+     "import pandas as pd",
+     "from matplotlib.backends.backend_pdf import PdfPages",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "from qugen.main.visualization.tabular_plots import (",
+     "    heatmap_tabular,"
+    ]
+   },
+   {
+    "file": "qugen/main/data/helper.py",
+    "line": 25,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "",
+     "import pandas as pd",
+     "from matplotlib.backends.backend_pdf import PdfPages",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "from qugen.main.visualization.tabular_plots import (",
+     "    heatmap_tabular,",
+     "    joint_hist_plot_tabular,"
+    ]
+   },
+   {
+    "file": "benchmarks/be-great/run_benchmarks.py",
+    "line": 20,
+    "text": "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality",
+    "context": [
+     "from pathlib import Path",
+     "from types import MethodType",
+     "from sklearn import datasets",
+     "",
+     "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality",
+     "from sdv.evaluation.single_table import get_column_plot",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdmetrics.single_table import NewRowSynthesis",
+     ""
+    ]
+   },
+   {
+    "file": "benchmarks/be-great/run_benchmarks.py",
+    "line": 21,
+    "text": "from sdv.evaluation.single_table import get_column_plot",
+    "context": [
+     "from types import MethodType",
+     "from sklearn import datasets",
+     "",
+     "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality",
+     "from sdv.evaluation.single_table import get_column_plot",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdmetrics.single_table import NewRowSynthesis",
+     "",
+     "try:"
+    ]
+   },
+   {
+    "file": "benchmarks/be-great/run_benchmarks.py",
+    "line": 22,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from sklearn import datasets",
+     "",
+     "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality",
+     "from sdv.evaluation.single_table import get_column_plot",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdmetrics.single_table import NewRowSynthesis",
+     "",
+     "try:",
+     "    from transformers import set_seed as _hf_set_seed"
+    ]
+   },
+   {
+    "file": "apps/ehr/train_tabularqgan.py",
+    "line": 12,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from qugen.main.data.helper import tabular_feature_names, run_external_classical_tabular",
+     "import pandas as pd",
+     "import numpy as np",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from qugen.main.generator.tabular_qgan_model_handler import (",
+     "    TabularQGANModelHandler,",
+     ")",
+     "from qugen.main.data.data_handler import load_data"
+    ]
+   },
+   {
+    "file": "apps/ehr/evaluation_notebooks/tabularqgan_walkthrough.ipynb",
+    "line": 1534,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "   \"execution_count\": 19,",
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"\\n\",",
+     "    \"def overlap_counter(synthetic_samples: np.ndarray, training_data: np.ndarray) -> float:\\n\",",
+     "    \"    \\\"\\\"\\\"\\n\","
+    ]
+   },
+   {
+    "file": "apps/ehr/evaluation_notebooks/tabularqgan_walkthrough.ipynb",
+    "line": 1535,
+    "text": "\"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"\\n\",",
+     "    \"def overlap_counter(synthetic_samples: np.ndarray, training_data: np.ndarray) -> float:\\n\",",
+     "    \"    \\\"\\\"\\\"\\n\",",
+     "    \"    Fraction of synthetic samples that appear verbatim in the training set.\\n\","
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "qugen/main/generator/external_classical_tabular_gan.py",
+    "line": 1,
+    "text": "from sdv.single_table import CTGANSynthesizer, CopulaGANSynthesizer",
+    "context": [
+     "from sdv.single_table import CTGANSynthesizer, CopulaGANSynthesizer",
+     "",
+     "def classical_ctgan(original_data, epochs, metadata, generator_lr, discriminator_lr, batch_size, input_size,",
+     "                    num_hidden_layers_gen, num_dimensions_gen, num_hidden_layers_disc, num_dimensions_disc):",
+     ""
+    ]
+   },
+   {
+    "file": "qugen/main/generator/external_classical_tabular_gan.py",
+    "line": 10,
+    "text": "ctgan_synthesizer = CTGANSynthesizer(",
+    "context": [
+     "   # metadata = get_metadata(original_data)",
+     "    generator_dim = tuple([num_dimensions_gen for i in range(num_hidden_layers_gen)])",
+     "    discriminator_dim = tuple([num_dimensions_disc for i in range(num_hidden_layers_disc)])",
+     "",
+     "    ctgan_synthesizer = CTGANSynthesizer(",
+     "        metadata, # required",
+     "        enforce_rounding=True,",
+     "        epochs=epochs,",
+     "        verbose=True,"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "qugen/main/data/helper.py",
+    "line": 24,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import matplotlib.pyplot as plt",
+     "",
+     "import pandas as pd",
+     "from matplotlib.backends.backend_pdf import PdfPages",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "from qugen.main.visualization.tabular_plots import (",
+     "    heatmap_tabular,"
+    ]
+   },
+   {
+    "file": "benchmarks/be-great/run_benchmarks.py",
+    "line": 22,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from sklearn import datasets",
+     "",
+     "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality",
+     "from sdv.evaluation.single_table import get_column_plot",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdmetrics.single_table import NewRowSynthesis",
+     "",
+     "try:",
+     "    from transformers import set_seed as _hf_set_seed"
+    ]
+   },
+   {
+    "file": "apps/ehr/train_tabularqgan.py",
+    "line": 12,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from qugen.main.data.helper import tabular_feature_names, run_external_classical_tabular",
+     "import pandas as pd",
+     "import numpy as np",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from qugen.main.generator.tabular_qgan_model_handler import (",
+     "    TabularQGANModelHandler,",
+     ")",
+     "from qugen.main.data.data_handler import load_data"
+    ]
+   },
+   {
+    "file": "apps/ehr/evaluation_notebooks/tabularqgan_walkthrough.ipynb",
+    "line": 1534,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "   \"execution_count\": 19,",
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"\\n\",",
+     "    \"def overlap_counter(synthetic_samples: np.ndarray, training_data: np.ndarray) -> float:\\n\",",
+     "    \"    \\\"\\\"\\\"\\n\","
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "qugen/main/data/helper.py",
+    "line": 25,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "",
+     "import pandas as pd",
+     "from matplotlib.backends.backend_pdf import PdfPages",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "from qugen.main.visualization.tabular_plots import (",
+     "    heatmap_tabular,",
+     "    joint_hist_plot_tabular,"
+    ]
+   },
+   {
+    "file": "benchmarks/be-great/run_benchmarks.py",
+    "line": 20,
+    "text": "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality",
+    "context": [
+     "from pathlib import Path",
+     "from types import MethodType",
+     "from sklearn import datasets",
+     "",
+     "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality",
+     "from sdv.evaluation.single_table import get_column_plot",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdmetrics.single_table import NewRowSynthesis",
+     ""
+    ]
+   },
+   {
+    "file": "benchmarks/be-great/run_benchmarks.py",
+    "line": 21,
+    "text": "from sdv.evaluation.single_table import get_column_plot",
+    "context": [
+     "from types import MethodType",
+     "from sklearn import datasets",
+     "",
+     "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality",
+     "from sdv.evaluation.single_table import get_column_plot",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdmetrics.single_table import NewRowSynthesis",
+     "",
+     "try:"
+    ]
+   },
+   {
+    "file": "apps/ehr/evaluation_notebooks/tabularqgan_walkthrough.ipynb",
+    "line": 1535,
+    "text": "\"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"\\n\",",
+     "    \"def overlap_counter(synthetic_samples: np.ndarray, training_data: np.ndarray) -> float:\\n\",",
+     "    \"    \\\"\\\"\\\"\\n\",",
+     "    \"    Fraction of synthetic samples that appear verbatim in the training set.\\n\","
+    ]
+   }
+  ],
+  "sm": [
+   {
+    "file": "benchmarks/be-great/run_benchmarks.py",
+    "line": 23,
+    "text": "from sdmetrics.single_table import NewRowSynthesis",
+    "context": [
+     "",
+     "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality",
+     "from sdv.evaluation.single_table import get_column_plot",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdmetrics.single_table import NewRowSynthesis",
+     "",
+     "try:",
+     "    from transformers import set_seed as _hf_set_seed",
+     "except ImportError:  # pragma: no cover - transformers is expected but guard defensively"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ev",
+  "md",
+  "sdv_any",
+  "sm",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "pyproject.toml": [
+   "    \"sdmetrics==0.13.0\",",
+   "    \"sdv==1.9.0\","
+  ],
+  "setup.py": [
+   "    'sdmetrics==0.13.0',",
+   "    'sdv==1.9.0',"
+  ],
+  "benchmarks/be-great/requirements.txt": [
+   "sdv==1.28.0",
+   "sdmetrics==0.24.0"
+  ],
+  "benchmarks/be-great/pyproject.toml": [
+   "    \"sdv==1.28.0\",",
+   "    \"sdmetrics==0.24.0\","
+  ]
+ }
+}

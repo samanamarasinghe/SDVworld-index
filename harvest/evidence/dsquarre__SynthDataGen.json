@@ -1,0 +1,243 @@
+{
+ "repo": "dsquarre/SynthDataGen",
+ "disk_kb": 11433,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# SynthDataGen\n\nA tabular synthetic-data workflow centered on CART generation, global synthetic-quality evaluation, strict fold-local augmented classification evaluation, and repeated-CV regression benchmarking — with a real-only baseline included in every regression fold for direct comparison.\n\n## Pipeline Flowchart\n\n```mermaid\nflowchart TD\n    A([Start: run_all.py]) --> B[Load CSV/Excel from datasets/]\n    B --> C[Drop first column\\nSanitize column names]\n    C --> D[Interactive: Drop columns by index]\n    D --> E[Dn = max len_df, 500]\n    E --> F[Auto-generate metadata\\nnumerical / categorical]\n    F --> G[Interactive: Edit metadata types]\n    G --> H[Input: ROS target column index\\nor -1 to skip classification CV]\n    H --> I[Input: Regression target column index\\nor -1 to skip regression CV]\n    I --> J[Save sdv_metadata.json]\n    J --> K[impute_categorical_rf\\nFill categorical NaNs via RandomForestClassifier\\ntrained on numeric columns only]\n    K --> L[Create 3 imputed datasets\\niter = IterativeImputer\\nknn = KNNImputer\\nmi = median/mode + MissingIndicator columns]\n    L --> M[Build constraints\\nauto min/max per numeric column\\n+ interactive custom constraints]\n    M --> N[Input: rejection thresholds\\ndefaults: Marginal>=0.70, boundary>=0.99\\ncorr>=0.65, cov>=0.40\\nviolation<=0.001, propensity>=0.15]\n    N --> O[Input: CV repeats\\ndefault 3]\n    O --> P{For each imputation\\niter / knn / mi}\n\n    P --> Q[If ROS target set:\\napply ROS to imputed real data\\nbefore fitting CART]\n    Q --> R[Update metadata for branch\\nadd MI indicator cols if present]\n    R --> S[Global adaptive CART generation\\ngenerate_valid_samples_adaptive\\nmin_batch=500 max_batch=24000\\nmax_total=120x Dn max_fails=60 floor=0.01]\n\n    S --> T{Batch generation loop}\n    T --> U[Generate CART batch\\nin-memory persist=False]\n    U --> V[Apply ROS to batch\\nif ROS target set]\n    V --> W[drop_constraint_violators]\n    W --> X{evaluate_threshold_gate\\nvs imputed real reference}\n    X -->|Fail: any metric below threshold| Y[Increment failed_attempts\\nDecay acceptance rate estimate\\nretry if budget remains]\n    Y --> T\n    X -->|Pass: all metrics pass| Z[Accumulate valid rows]\n    Z --> T\n    T -->|Target rows reached| AA[Trim to exactly Dn rows\\nreset_index]\n\n    AA --> AB[MI cleanup:\\nremove indicator columns from\\nreal frame, outputs, metadata]\n    AB --> AC[evaluate_all\\ncompute quality metrics vs imputed real\\nMarginal boundary corr cov\\nviolation DCR NNDR WD MMD\\nFrechet log-cluster propensity\\nPCA plot per pair]\n    AC --> AD[Accumulate batch_results\\nImputation + Generator fields]\n\n    AD --> AE{Regression target\\nprovided?}\n    AE -->|Yes| AF[run_repeated_augmented_regression_cv\\nRepeatedKFold 5-fold x cv_repeats\\npersist=False fold-local CART]\n    AF --> AG{For each regression fold}\n    AG --> AH[Split real into train fold + test fold]\n    AH --> AI[Generate fold-capped synthetic rows\\nsize=min Dn, ceil ratio*len real_train\\nfrom train fold only\\ngate vs same train fold]\n    AI --> AJ[Build 2 training scenarios\\nper fold]\n    AJ --> AK[Scenario A: Augmented\\ntrain on real_train + synthetic_fold]\n    AJ --> AL[Scenario B: Real Only baseline\\ntrain on real_train only]\n    AK --> AM[_prepare_regression_features\\nfillna get_dummies align]\n    AL --> AM\n    AM --> AN[Train XGBRegressor + RandomForestRegressor\\nfor each scenario]\n    AN --> AO[Evaluate both on same\\nuntouched real test fold\\nMAE RMSE R2 MAPE]\n    AO --> AG\n    AG --> AP[Aggregate folds to summary\\nmean + std per Imputation/Regressor/Evaluation]\n    AP --> AE\n\n    AE --> AQ{ROS target\\nprovided?}\n    AQ -->|Yes| AR[run_repeated_augmented_cv\\nRepeatedStratifiedKFold 5-fold x cv_repeats\\npersist=False fold-local CART]\n    AR --> AS{For each classification fold}\n    AS --> AT[Split real into train fold + test fold]\n    AT --> AU[Generate fold-capped synthetic rows\\nsize=min Dn, ceil ratio*len real_train\\nfrom train fold only\\ngate vs same train fold]\n    AU --> AV[Apply ROS separately:\\nreal_train_ros + synthetic_ros]\n    AV --> AW[augmented_train =\\nreal_train_ros + synthetic_ros]\n    AW --> AX[_prepare_classification_data\\nfillna get_dummies align LabelEncode]\n    AX --> AY[Train RandomForestClassifier\\nTrain XGBClassifier\\nbinary or multiclass]\n    AY --> AZ[Evaluate on untouched real test fold\\naccuracy balanced_acc f1_macro roc_auc]\n    AZ --> AS\n    AS --> BA[Aggregate folds to summary\\nmean + std per Imputation/Classifier]\n    BA --> AQ\n\n    AQ --> P\n\n    P --> BB[Combine all_results across 3 imputations]\n    BB --> BC[Write evaluation_report.xlsx]\n    BC --> BD[save_metric_comparison_plots\\n1 bar chart per metric\\nCART imputation comparison\\nsaved to plots/]\n\n    BB --> BE{CV summary frames\\nnon-empty?}\n    BE -->|Yes| BF[Write augmented_cv_report.xlsx\\nsheets: summary + fold_scores]\n    BF --> BG\n\n    BE -->|No| BG{Regression summary\\nnon-empty?}\n    BG -->|Yes| BH[Write regression_report.xlsx\\nsheets: summary + fold_scores]\n    BH --> BI[save_regression_metric_plots\\n1 figure per metric\\n2 subplots: XGBoost left RF right\\ngrouped bars: Real Only vs Augmented\\nper imputation in plots/]\n    BI --> BJ\n\n    BG -->|No| BJ([Done])\n\n    style A fill:#2e7d32,color:#fff\n    style BJ fill:#2e7d32,color:#fff\n    style Y fill:#b71c1c,color:#fff\n    style X fill:#e65100,color:#fff\n    style AF fill:#1565c0,color:#fff\n    style AR fill:#1565c0,color:#fff\n    style AA fill:#6a1b9a,color:#fff\n```\n\n## Installation\n\n1. Clone the repository.\n2. Install the required dependencies:\n\n```bash\npip install -r requirements.txt\n```\n\n## Usage\n\n1. Place your dataset (CSV or Excel) in the `datasets/` folder.\n2. Run the main script:\n\n```bash\npython run_all.py\n```\n\n3. During execution, the script will ask for:\n    - a dataset file name from `datasets/`\n    - optional column indices to drop\n    - metadata edits (`n` for numerical, `c` for categorical)\n    - a ROS target column index for class balancing and augmented classification evaluation (`-1` to skip)\n    - a regression output column index for repeated-CV regression evaluation (`-1` to skip)\n    - optional custom constraint expressions such as `c0 > c1 * 1.5`\n    - optional metric rejection thresholds as `metric=value`\n    - the number of repeated CV repeats (default `3`)\n    - fold synthetic size mode for CV:\n      - `1` = 1:1 with train fold (`min(Dn, ceil(ratio × len(real_train)))`)\n      - `2` = full `Dn` synthetic rows per fold\n\n## Current Pipeline\n\n### 1. Data loading and cleanup\n\n- Reads CSV or Excel from `datasets/`.\n- Attempts to drop the first column automatically.\n- Sanitizes column names: spaces and special characters → `_`, leading and trailing underscores stripped.\n- Optionally drops user-selected columns by index.\n- Sets `Dn = max(len(df), 500)` as the fixed synthetic target size used everywhere.\n\n### 2. Metadata setup\n\n- Automatically infers each column as `numerical` or `categorical`.\n- Lets the user edit the inferred types interactively (`n` = numerical, `c` = categorical).\n- Saves the resulting schema to `sdv_metadata.json`.\n\n### 3. Initial categorical repair\n\n- Before the main imputations, missing categorical values are filled using a `RandomForestClassifier` trained only on available numerical columns (`impute_categorical_rf`).\n\n### 4. Imputation branches\n\nThree separate imputed versions of the real dataset are created in parallel:\n\n| Key | Method |\n|-----|--------|\n| `iter` | `IterativeImputer` (multivariate, iterative) |\n| `knn` | `KNNImputer` (5 neighbours) |\n| `mi` | Median/mode fill + `MissingIndicator` columns appended |\n\n### 5. Constraint construction\n\n- Auto-generates min/max constraints for every numerical column as pandas-eval expressions (`c0 >= min`, `c0 <= max`).\n- User can add custom cross-column constraints interactively (e.g. `c0 > c1 * 1.5`).\n- Constraints are enforced on synthetic rows only; the real data is never filtered.\n\n### 6. Configuration prompts\n\n- **Rejection thresholds** — default values shown; user can override any subset as `metric=value,...`:\n  - `Marginal >= 0.70`\n  - `boundary_score >= 0.99`\n  - `corr_score >= 0.65`\n  - `cov_score >= 0.40`\n  - `violation_rate <= 0.001`\n  - `propensity_score >= 0.15`\n- **CV repeats** — number of repeats for both classification and regression repeated k-fold (default `3`).\n- **Fold synthetic size mode (CV)** — choose how many synthetic rows are generated per fold:\n  - `1` (default): 1:1 with train fold (capped by `Dn`)\n  - `2`: full `Dn` rows per fold\n\n### 7. Per-imputation loop (runs for `iter`, `knn`, `mi`)\n\nThe following steps execute once per imputation branch.\n\n#### 7a. Pre-generation ROS\n\nIf a ROS target column was provided, `apply_ros` is called on the imputed real data before CART sees it. This balances class counts in the reference data going into the generator.\n\n#### 7b. Metadata sync\n\nThe branch-specific metadata is updated to include any extra columns added by `mi` (missing-indicator columns).\n\n#### 7c. Global adaptive CART generation\n\n`generate_valid_samples_adaptive` runs a capped batch loop:\n\n| Parameter | Value |\n|-----------|-------|\n| `min_batch_size` | 500 |\n| `max_batch_size` | 24000 |\n| `max_total_generated_multiplier` | 120 × Dn |\n| `max_failed_attempts` | 60 consecutive failed batches |\n| `acceptance_rate_floor` | 0.01 |\n| `model_retry_attempts` | 3 full generation retries before skipping model |\n| `fold_synthetic_ratio` | 1.0 (per-fold synthetic cap for CV) |\n| `use_full_fold_synthetic_target` | `False` by default (`True` when CV mode `2` is selected) |\n\nPer batch:\n1. CART generates a batch in-memory (`persist=False`, no per-batch file writes).\n2. If ROS target set, `apply_ros` is applied to the synthetic batch.\n3. `drop_constraint_violators` removes rows breaking any constraint.\n4. `evaluate_threshold_gate` computes all quality metrics against the imputed real reference and checks every threshold.\n5. Batch is **rejected** if any metric fails → failed-attempt counter increments, acceptance-rate estimate decays.\n6. Batch is **accepted** → rows accumulated.\n7. Loop exits when accumulated rows ≥ `Dn`.\n8. Output is trimmed to **exactly `Dn` rows** (`iloc[:Dn].reset_index(drop=True)`) — all imputation branches produce identical row counts.\n9. Only the final post-gate datasets are persisted: `datasets/{imp}real_data.xlsx` and `datasets/{imp}cart_data.xlsx`.\n10. If generation still fails, each model gets up to 3 full retries before being skipped.\n\n#### 7d. MI cleanup\n\nFor the `mi` branch, missing-indicator columns are stripped from the real frame, the generated outputs, and the metadata before any evaluation. This prevents indicator columns from leaking into metrics or downstream models.\n\n#### 7e. Global quality evaluation\n\n`evaluate_all` computes the following per real/synthetic pair and saves a PCA scatter plot:\n\n| Metric | Description |\n|--------|-------------|\n| `Marginal` | Mean KS complement (numerical) / TV complement (categorical) across columns |\n| `boundary_score` | Fraction of synthetic numerical values inside real min/max |\n| `corr_score` | Correlation matrix similarity (1 − normalised Frobenius norm) |\n| `cov_score` | Covariance matrix similarity (standardised, Frobenius norm) |\n| `violation_rate` | Fraction of synthetic rows violating constraints |\n| `DCR_mean` / `DCR_min` | Distance to closest real record (mean and minimum) |\n| `NNDR_mean` | Nearest-neighbour distance ratio (privacy check) |\n| `wd_score` | Mean Wasserstein distance across numerical columns |\n| `mmd_score` | Maximum Mean Discrepancy (RBF kernel) |\n| `fd_score` | Fréchet distance (multivariate Gaussian approximation) |\n| `log_cluster_score` | Mean log-likelihood of synthetic data under a GMM fitted on real data |\n| `propensity_score` | 1 − 2|AUC − 0.5| from an XGBoost real-vs-synthetic discriminator |\n\nResults accumulated with `Imputation` and `Generator` fields.\n\n#### 7f. Fold-local augmented regression CV (if regression target provided)\n\n`run_repeated_augmented_regression_cv` with `RepeatedKFold(n_splits=5, n_repeats=cv_repeats)`:\n\nFor each fold:\n1. Split **raw real** into `real_train` / `real_test`.\n2. Perform imputation **inside the fold** (fit on `real_train`, apply to `real_train` and `real_test`) according to the current imputation branch (`iter`, `knn`, or `mi`).\n3. Recompute fold constraints from `real_train` (train-only numeric min/max) and append custom user constraints.\n4. Generate fold-capped synthetic rows from fold-imputed `real_train` only (`persist=False`), gated vs that same fold-imputed `real_train`.\n  - if mode `1`: per-fold target = `min(Dn, ceil(fold_synthetic_ratio × len(real_train)))`\n  - if mode `2`: per-fold target = `Dn`\n  - default `fold_synthetic_ratio = 1.0`\n5. For regression generation gate, `propensity_score` threshold is removed (privacy metric excluded).\n6. Build **two training scenarios** evaluated against the same `real_test`:\n   - **Augmented**: `real_train + synthetic_fold`\n   - **Real Only** (baseline): `real_train` only\n7. `_prepare_regression_features`: fillna (median/mode), `get_dummies`, column alignment.\n8. Train fresh `XGBRegressor` + `RandomForestRegressor` for each scenario.\n9. Record `MAE`, `RMSE`, `R²`, `MAPE` for every combination of (fold, scenario, regressor).\n\nSummary aggregates mean ± std per `(Imputation, Synthetic_Model, Evaluation, Regressor)`.\n\n#### 7g. Fold-local augmented classification CV (if ROS target provided)\n\n`run_repeated_augmented_cv` with `RepeatedStratifiedKFold(n_splits=5, n_repeats=cv_repeats)`:\n\nFor each fold:\n1. Split **raw real** (stratified) into `real_train` / `real_test`.\n2. Perform imputation **inside the fold** (fit on `real_train`, apply to `real_train` and `real_test`) according to `iter`, `knn`, or `mi`.\n3. Recompute fold constraints from `real_train` (train-only numeric min/max) and append custom user constraints.\n4. Generate fold-capped synthetic rows from fold-imputed `real_train` only (`persist=False`), gated vs that same fold-imputed `real_train`.\n  - if mode `1`: per-fold target = `min(Dn, ceil(fold_synthetic_ratio × len(real_train)))`\n  - if mode `2`: per-fold target = `Dn`\n  - default `fold_synthetic_ratio = 1.0`\n5. Apply `apply_ros` separately to `real_train` and `synthetic_fold`.\n6. `augmented_train = real_train_ros + synthetic_ros`.\n7. `_prepare_classification_data`: fillna, `get_dummies`, align, `LabelEncoder`.\n8. Train `RandomForestClassifier(n_estimators=300)` and `XGBClassifier(n_estimators=300, max_depth=4, lr=0.05)` — binary or multiclass objective chosen automatically.\n9. Evaluate on untouched `real_test`: `accuracy`, `balanced_accuracy`, `f1_macro`, `roc_auc`.\n\nSummary aggregates mean ± std per `(Imputation, Synthetic_Model, Classifier)`.\n\n### 8. Output writing (after all 3 imputation branches complete)\n\n| File | Contents |\n|------|----------|\n| `datasets/{imp}real_data.xlsx` | Imputed real data used (per branch) |\n| `datasets/{imp}cart_data.xlsx` | Final global CART synthetic data (per branch) |\n| `evaluation_report.xlsx` | All global quality metrics across branches |\n| `augmented_cv_report.xlsx` | Classification CV summary + fold scores |\n| `regression_report.xlsx` | Regression CV summary + fold scores (Augmented vs Real Only) |\n\n### 9. Plots\n\n| File (in `plots/`) | Contents |\n|--------------------|----------|\n| `{imp}{key}_PCA.png` | PCA scatter: real vs synthetic per imputation/model pair |\n| `cart_imputation_compare_{metric}.png` | Bar chart comparing `iter`/`knn`/`mi` on each quality metric |\n| `regression_compare_{metric}.png` | 2-subplot figure (XGBoost left, RandomForest right); grouped bars per imputation: **Real Only** (light blue) vs **Augmented** (dark blue), one per metric (MAE, RMSE, R², MAPE) |\n\n## What Is Global vs Fold-Local\n\n### Global (persisted)\n\n- `datasets/{imp}real_data.xlsx` and `datasets/{imp}cart_data.xlsx`\n- these are final post-gate datasets (exactly `Dn` synthetic rows), not raw generator batches\n- `evaluation_report.xlsx`\n- PCA plots and CART imputation-comparison metric plots\n\n### Fold-local only (not saved to disk)\n\n- Synthetic datasets generated inside classification CV folds\n- Synthetic datasets generated inside regression CV folds\n- `augmented_cv_report.xlsx` and `regression_report.xlsx` are written from the aggregated fold results, but the individual fold-level synthetic DataFrames are discarded after use\n\n## Active and Inactive Models\n\n### Active\n\n- `CART` — synthetic generation (via custom `synthpop`)\n- `RandomForestClassifier` + `XGBClassifier` — classification evaluation\n- `XGBRegressor` + `RandomForestRegressor` — regression evaluation\n\n### Present but currently inactive\n\n- Gaussian Copula, CTGAN, CopulaGAN, TVAE (SDV-based)\n- CTAB-GAN+\n\n## Notes\n\n- Only CART is active for generation; all SDV/GAN generator calls are commented out in `run_all.py`.\n- The first column of the loaded dataset is dropped automatically if possible.\n- `mi` indicator columns are temporary — they are removed before evaluation so they do not pollute metrics or downstream models.\n- SDV metadata (`sdv_metadata.json`) is still written on every run even though SDV generators are not active.\n- Synthetic row count is always exactly `Dn` for all imputation branches because `generate_valid_samples_adaptive` trims its output to `iloc[:Dn]` before returning.\n\n\n",
+ "hits": {
+  "st": [
+   {
+    "file": "sdv_all.py",
+    "line": 18,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, CopulaGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "logging.getLogger('CopulaGANSynthesizer').setLevel(logging.ERROR)",
+     "logging.getLogger('TVAESynthesizer').setLevel(logging.ERROR)",
+     "",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, CopulaGANSynthesizer, TVAESynthesizer",
+     "",
+     "def run_gaussian_copula(df, num_rows, output_prefix):",
+     "    with open('sdv_metadata.json', 'r', encoding='utf-8') as f:",
+     "        meta_dict = json.load(f)"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "sdv_all.py",
+    "line": 17,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "logging.getLogger('CTGANSynthesizer').setLevel(logging.ERROR)",
+     "logging.getLogger('CopulaGANSynthesizer').setLevel(logging.ERROR)",
+     "logging.getLogger('TVAESynthesizer').setLevel(logging.ERROR)",
+     "",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, CopulaGANSynthesizer, TVAESynthesizer",
+     "",
+     "def run_gaussian_copula(df, num_rows, output_prefix):",
+     "    with open('sdv_metadata.json', 'r', encoding='utf-8') as f:"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "sdv_all.py",
+    "line": 17,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "logging.getLogger('CTGANSynthesizer').setLevel(logging.ERROR)",
+     "logging.getLogger('CopulaGANSynthesizer').setLevel(logging.ERROR)",
+     "logging.getLogger('TVAESynthesizer').setLevel(logging.ERROR)",
+     "",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, CopulaGANSynthesizer, TVAESynthesizer",
+     "",
+     "def run_gaussian_copula(df, num_rows, output_prefix):",
+     "    with open('sdv_metadata.json', 'r', encoding='utf-8') as f:"
+    ]
+   },
+   {
+    "file": "sdv_all.py",
+    "line": 18,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, CopulaGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "logging.getLogger('CopulaGANSynthesizer').setLevel(logging.ERROR)",
+     "logging.getLogger('TVAESynthesizer').setLevel(logging.ERROR)",
+     "",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, CopulaGANSynthesizer, TVAESynthesizer",
+     "",
+     "def run_gaussian_copula(df, num_rows, output_prefix):",
+     "    with open('sdv_metadata.json', 'r', encoding='utf-8') as f:",
+     "        meta_dict = json.load(f)"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "sdv_all.py",
+    "line": 13,
+    "text": "logging.getLogger('CTGANSynthesizer').setLevel(logging.ERROR)",
+    "context": [
+     "logging.getLogger('rdt').setLevel(logging.ERROR)",
+     "logging.getLogger('copulas').setLevel(logging.ERROR)",
+     "logging.getLogger('SingleTableSynthesizer').setLevel(logging.ERROR)",
+     "logging.getLogger('GaussianCopulaSynthesizer').setLevel(logging.ERROR)",
+     "logging.getLogger('CTGANSynthesizer').setLevel(logging.ERROR)",
+     "logging.getLogger('CopulaGANSynthesizer').setLevel(logging.ERROR)",
+     "logging.getLogger('TVAESynthesizer').setLevel(logging.ERROR)",
+     "",
+     "from sdv.metadata import Metadata"
+    ]
+   },
+   {
+    "file": "sdv_all.py",
+    "line": 18,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, CopulaGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "logging.getLogger('CopulaGANSynthesizer').setLevel(logging.ERROR)",
+     "logging.getLogger('TVAESynthesizer').setLevel(logging.ERROR)",
+     "",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, CopulaGANSynthesizer, TVAESynthesizer",
+     "",
+     "def run_gaussian_copula(df, num_rows, output_prefix):",
+     "    with open('sdv_metadata.json', 'r', encoding='utf-8') as f:",
+     "        meta_dict = json.load(f)"
+    ]
+   },
+   {
+    "file": "sdv_all.py",
+    "line": 33,
+    "text": "synthesizer = CTGANSynthesizer(metadata)",
+    "context": [
+     "def run_ctgan(df, num_rows, output_prefix):",
+     "    with open('sdv_metadata.json', 'r', encoding='utf-8') as f:",
+     "        meta_dict = json.load(f)",
+     "    metadata = Metadata.load_from_dict(meta_dict)",
+     "    synthesizer = CTGANSynthesizer(metadata)",
+     "    synthesizer.fit(df)",
+     "    synthetic_data = synthesizer.sample(num_rows=num_rows)",
+     "    return 'ctgan',synthetic_data",
+     ""
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "sdv_all.py",
+    "line": 12,
+    "text": "logging.getLogger('GaussianCopulaSynthesizer').setLevel(logging.ERROR)",
+    "context": [
+     "logging.getLogger('sdv').setLevel(logging.ERROR)",
+     "logging.getLogger('rdt').setLevel(logging.ERROR)",
+     "logging.getLogger('copulas').setLevel(logging.ERROR)",
+     "logging.getLogger('SingleTableSynthesizer').setLevel(logging.ERROR)",
+     "logging.getLogger('GaussianCopulaSynthesizer').setLevel(logging.ERROR)",
+     "logging.getLogger('CTGANSynthesizer').setLevel(logging.ERROR)",
+     "logging.getLogger('CopulaGANSynthesizer').setLevel(logging.ERROR)",
+     "logging.getLogger('TVAESynthesizer').setLevel(logging.ERROR)",
+     ""
+    ]
+   },
+   {
+    "file": "sdv_all.py",
+    "line": 18,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, CopulaGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "logging.getLogger('CopulaGANSynthesizer').setLevel(logging.ERROR)",
+     "logging.getLogger('TVAESynthesizer').setLevel(logging.ERROR)",
+     "",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, CopulaGANSynthesizer, TVAESynthesizer",
+     "",
+     "def run_gaussian_copula(df, num_rows, output_prefix):",
+     "    with open('sdv_metadata.json', 'r', encoding='utf-8') as f:",
+     "        meta_dict = json.load(f)"
+    ]
+   },
+   {
+    "file": "sdv_all.py",
+    "line": 24,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "def run_gaussian_copula(df, num_rows, output_prefix):",
+     "    with open('sdv_metadata.json', 'r', encoding='utf-8') as f:",
+     "        meta_dict = json.load(f)",
+     "    metadata = Metadata.load_from_dict(meta_dict)",
+     "    synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "    synthesizer.fit(df)",
+     "    synthetic_data = synthesizer.sample(num_rows=num_rows)",
+     "    return 'gaussian_copula', synthetic_data",
+     ""
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "sdv_all.py",
+    "line": 15,
+    "text": "logging.getLogger('TVAESynthesizer').setLevel(logging.ERROR)",
+    "context": [
+     "logging.getLogger('SingleTableSynthesizer').setLevel(logging.ERROR)",
+     "logging.getLogger('GaussianCopulaSynthesizer').setLevel(logging.ERROR)",
+     "logging.getLogger('CTGANSynthesizer').setLevel(logging.ERROR)",
+     "logging.getLogger('CopulaGANSynthesizer').setLevel(logging.ERROR)",
+     "logging.getLogger('TVAESynthesizer').setLevel(logging.ERROR)",
+     "",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, CopulaGANSynthesizer, TVAESynthesizer",
+     ""
+    ]
+   },
+   {
+    "file": "sdv_all.py",
+    "line": 18,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, CopulaGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "logging.getLogger('CopulaGANSynthesizer').setLevel(logging.ERROR)",
+     "logging.getLogger('TVAESynthesizer').setLevel(logging.ERROR)",
+     "",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, CopulaGANSynthesizer, TVAESynthesizer",
+     "",
+     "def run_gaussian_copula(df, num_rows, output_prefix):",
+     "    with open('sdv_metadata.json', 'r', encoding='utf-8') as f:",
+     "        meta_dict = json.load(f)"
+    ]
+   },
+   {
+    "file": "sdv_all.py",
+    "line": 52,
+    "text": "synthesizer = TVAESynthesizer(metadata)",
+    "context": [
+     "def run_tvae(df, num_rows, output_prefix):",
+     "    with open('sdv_metadata.json', 'r', encoding='utf-8') as f:",
+     "        meta_dict = json.load(f)",
+     "    metadata = Metadata.load_from_dict(meta_dict)",
+     "    synthesizer = TVAESynthesizer(metadata)",
+     "    synthesizer.fit(df)",
+     "    synthetic_data = synthesizer.sample(num_rows=num_rows)",
+     "    synthetic_data.to_excel(f'datasets/{output_prefix}tvae_synthetic_data.xlsx', index=False)",
+     "    return 'tvae', synthetic_data"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "gc",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv"
+  ]
+ }
+}

@@ -1,0 +1,121 @@
+{
+ "repo": "JPmarqs/seminario",
+ "disk_kb": 35,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# CTGAN vs Faker: Comparativo de Geração de Dados Sintéticos\n\n**Disciplina:** Linguagem de Programação\n**Data:** 2026\n\n---\n\n## 📋 Objetivo do Trabalho\n\nDemonstrar empiricamente as **vantagens do CTGAN** (IA generativa) sobre o **Faker** (abordagem tradicional baseada em regras) para geração de dados sintéticos.\n\n---\n\n## 🎯 Principais Conclusões\n\n| Aspecto | Faker | CTGAN |\n|---------|-------|-------|\n| **Preservação de correlações** | ❌ Não preserva | ✓ Preserva |\n| **Mecanismo** | Regras fixas + aleatoriedade | Rede neural generativa |\n| **Tempo de geração** | ~0.01s (instantâneo) | ~60-120s (treino) + <1s (geração) |\n| **Utilidade estatística** | Baixa | Alta |\n| **Privacidade** | Máxima | Alta |\n| **Indicado para** | Prototipação, testes simples | Pesquisa, ML, conformidade LGPD |\n\n---\n\n## 🚀 Instalação\n\n### Opção 1: Instalação Completa (Recomendada)\n\n```bash\npip install sdv faker pandas numpy matplotlib seaborn scipy\n```\n\n### Opção 2: Instalação Mínima (Apenas Faker)\n\n```bash\npip install faker pandas numpy matplotlib seaborn scipy\n```\n\n> **Nota:** Sem o SDV, o script usará uma simulação para demonstrar os conceitos.\n\n---\n\n## ▶️ Execução\n\n```bash\npython seminario.py\n```\n\n**Tempo estimado:** 2-3 minutos (com CTGAN)  \n**Saída:** \n- Tabelas comparativas no terminal\n- Gráfico: `comparativo_ctgan_faker.png`\n- Relatório: `relatorio_stack_e_*.json`\n\n---\n\n## 📊 Métricas Avaliadas\n\n### 1. Correlação Salário × Score de Crédito\n- **Dataset Real:** ~0.70 (correlação positiva forte)\n- **Faker:** ~0.05 (correlação destruída)\n- **CTGAN:** ~0.65-0.72 (correlação preservada)\n\n### 2. Kolmogorov-Smirnov (Distribuições)\nMede quão similares são as distribuições marginais de cada coluna.\n\n### 3. Tempo de Processamento\n- Faker: instantâneo\n- CTGAN: requer treinamento prévio\n\n---\n\n## 🧠 Fundamentação Teórica\n\n### Por que o Faker falha em preservar correlações?\n\nO Faker gera **cada coluna independentemente**, sem considerar relações entre variáveis. No mundo real:\n\n- Pessoas com maior escolaridade tendem a ter maior salário\n- Pessoas com maior salário tendem a ter melhor score de crédito\n- **Conclusão:** Escolaridade e score devem estar correlacionados\n\nO Faker não captura essa relação → **dados pouco realistas**.\n\n### Como o CTGAN preserva correlações?\n\nO CTGAN usa **Redes Generativas Adversariais (GANs)**:\n\n```\n┌─────────────┐         ┌─────────────┐\n│  Gerador    │ ──────→ │ Dados Falsos │\n│  (cria)     │         │              │\n└─────────────┘         └──────┬──────┘\n                               │\n┌─────────────┐         ┌──────▼──────┐\n│  Dados Reais│ ──────→ │ Discriminador│\n│             │         │  (compara)   │\n└─────────────┘         └─────────────┘\n```\n\n- O **Gerador** aprende a distribuição conjunta dos dados\n- O **Discriminador** tenta distinguir real vs. falso\n- Após treino: Gerador produz dados estatisticamente similares aos reais\n\n---\n\n## 📁 Estrutura do Projeto\n\n```\nseminario/\n├── tst.py                          # Script principal\n├── README.md                       # Este arquivo\n├── comparativo_ctgan_faker.png     # Gráfico gerado\n├── relatorio_stack_e_*.json        # Relatório detalhado\n└── requirements.txt                # Dependências\n```\n\n---\n\n## 📚 Referências Bibliográficas\n\n1. **XU, L. et al.** Modeling Tabular Data using Conditional GAN. *NeurIPS*, 2019.  \n   → Artigo original do CTGAN. Disponível: https://proceedings.neurips.cc/paper/2019/hash/254ed7d2de3b23ab10936522dd547b78-Abstract.html\n\n2. **ANPD.** Guia de Privacidade e Proteção de Dados Pessoais. 2024.  \n   → Contexto LGPD para dados sintéticos.\n\n3. **SDV - Synthetic Data Vault.** MIT, 2024.  \n   → Documentação: https://sdv.dev/\n\n4. **GOODFELLOW, I. et al.** Generative Adversarial Networks. 2014.  \n   → Artigo fundador das GANs.\n\n---\n\n## 💡 Dicas para Apresentação\n\n### Slide 1: Problema\n> \"Como gerar dados sintéticos realistas sem violar privacidade?\"\n\n### Slide 2: Abordagens\n- **Faker:** Regras manuais, rápido, mas não preserva padrões\n- **CTGAN:** IA que aprende padrões, mais lento, mas fiel aos dados reais\n\n### Slide 3: Demonstração\nRode o script e mostre os gráficos comparativos.\n\n### Slide 4: Conclusão\n> \"CTGAN supera Faker em fidelidade estatística, sendo ideal para pesquisa e conformidade LGPD.\"\n\n---\n\n## ⚠️ Limitações\n\n- CTGAN requer tempo de treinamento (não é instantâneo)\n- Em datasets muito pequenos (<100 linhas), pode haver overfitting\n- Não é adequado para dados com relações temporais complexas (use RNNs)\n\n---\n",
+ "hits": {
+  "st": [
+   {
+    "file": "main.py",
+    "line": 16,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from faker import Faker",
+     "",
+     "try:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    SDV_DISPONIVEL = True",
+     "except ImportError:",
+     "    SDV_DISPONIVEL = False",
+     "    print(\"⚠️  SDV não encontrado. Execute: pip install sdv\")"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "main.py",
+    "line": 15,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "from faker import Faker",
+     "",
+     "try:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    SDV_DISPONIVEL = True",
+     "except ImportError:",
+     "    SDV_DISPONIVEL = False"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "main.py",
+    "line": 15,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "from faker import Faker",
+     "",
+     "try:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    SDV_DISPONIVEL = True",
+     "except ImportError:",
+     "    SDV_DISPONIVEL = False"
+    ]
+   },
+   {
+    "file": "main.py",
+    "line": 16,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from faker import Faker",
+     "",
+     "try:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    SDV_DISPONIVEL = True",
+     "except ImportError:",
+     "    SDV_DISPONIVEL = False",
+     "    print(\"⚠️  SDV não encontrado. Execute: pip install sdv\")"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "main.py",
+    "line": 16,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from faker import Faker",
+     "",
+     "try:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    SDV_DISPONIVEL = True",
+     "except ImportError:",
+     "    SDV_DISPONIVEL = False",
+     "    print(\"⚠️  SDV não encontrado. Execute: pip install sdv\")"
+    ]
+   },
+   {
+    "file": "main.py",
+    "line": 151,
+    "text": "ctgan = CTGANSynthesizer(",
+    "context": [
+     "            metadata.update_column(col, sdtype=sdt)",
+     "    # — CTGAN —",
+     "    print(\"\\n  Treinando CTGAN (pode demorar alguns minutos)...\")",
+     "    t0 = time.time()",
+     "    ctgan = CTGANSynthesizer(",
+     "        metadata,",
+     "        epochs=500,",
+     "        batch_size=100,",
+     "        generator_dim=(256, 256),"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

@@ -1,0 +1,118 @@
+{
+ "repo": "surajc-15/tbml-backend",
+ "disk_kb": 15071,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Federated Graph Neural Network for Anti-Money Laundering (AML)\n\nThis repository contains a full-scale, privacy-preserving Anti-Money Laundering (AML) and Trade-Based Money Laundering (TBML) detection engine. It utilizes **Heterogeneous Graph Neural Networks (GNNs)** combined with **Federated Learning** to securely learn money laundering topologies across multiple isolated bank databases (Data Silos) without sharing raw KYC data.\n\n## 🏗️ Architecture\n\nThe project is structured into four distinct execution phases:\n\n1. **`graph_database/` (Data Infrastructure Layer)**\n   - Houses the Docker infrastructure for Apache Kafka and Memgraph (Neo4j-compatible).\n   - Contains `neo4j_ingestion.py` which digests raw CSVs (KYC, SWIFT transfers, Trade Documents) and builds isolated, local topological graphs for Bank A, Bank B, and Bank C.\n2. **`federated_learning/` (AI Training Layer)**\n   - Powered by **Flower (`flwr`)**.\n   - `client.py`: Each bank runs a PyTorch GNN (`GATv2Conv`) on its local Memgraph context to learn money laundering shapes.\n   - `server.py`: Averages the mathematical weights from all banks into a central `global_model.npz` (Federated Averaging), achieving global intelligence without breaking data privacy laws.\n3. **`streaming_pipeline/` (Real-time Inference Engine)**\n   - Simulates live production.\n   - `kafka_producer.py` streams synthetic transactions into Kafka.\n   - `inference.py` catches live streams, fetches the live topological context from Memgraph, and calculates a rigorous deterministic Threat Score. Highly suspicious transactions automatically generate an Explainable `STR_Report` Node that is physically committed back into the Graph Database.\n4. **`dashboard_api/` (Presentation Layer)**\n   - Reserved space for building visualization GUIs on top of recently generated STRs.\n\n---\n\n## 🛠️ Setup Instructions\n\n### 1. Prerequisites\n- **Docker & Docker-Compose** (To run Kafka and Memgraph databases)\n- **Python 3.9+** \n- Virtual Environment initialized (`python -m venv .venv`)\n- Install requirements (e.g. `pip install neo4j kafka-python torch flwr numpy pandas`)\n\n### 2. Bootstrapping the Infrastructure\nStart the Kafka Message Broker and the three isolated Memgraph instances (representing Banks A, B, and C):\n```bash\ncd graph_database\ndocker-compose up -d\ncd ..\n```\n\n### 3. Data Ingestion\nBuild the initial graph data inside the Memgraph clusters from your raw `data/Banks/` CSVs:\n```bash\npython graph_database/neo4j_ingestion.py\n```\n\n### 4. Running the Real-Time Inference Stream\nBecause the `global_model.npz` weights are already compiled, you can immediately test the live streaming pipeline.\n\n**Terminal 1: Start the Inference Engine**\nListen to the Kafka message stream and run real-time scoring logic:\n```bash\npython streaming_pipeline/inference.py\n```\n\n**Terminal 2: Start the Transaction Producer**\nRapid-fire 50 live transactions into the Kafka queue to watch the inference engine catch them:\n```bash\npython streaming_pipeline/kafka_producer.py\n```\n\n*(You will immediately see Terminal 1 light up with AI Score Breakdowns, STR Generation IDs, and explainable reasons for fraud limits!)*\n\n---\n## 🧠 Logic Breakdown (Deterministic Override)\nThe inference script operates on a deterministic Ground-Truth algorithm derived from the synthetic data generation logic:\n*   **`w1` (Sleepy Shell)**: heavily weights towards high dormancy.\n*   **`w2` (TBML)**: parses customs documents for massive price deviations and Dark Fleet ('DARK') AIS vessel activity.\n*   **`w3` (Topology Proxy)**: detects when the sender is rapidly fanning out or receiving high amounts of transactions mimicking Smurfing/Structuring layers.\nIf the combined components exceed `< 0.70>`, an immutable STR Flag is drawn in the database.\n",
+ "hits": {
+  "md": [
+   {
+    "file": "utilities/gen.py",
+    "line": 3,
+    "text": "from sdv.metadata import MultiTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.metadata import MultiTableMetadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "",
+     "# ================================",
+     "# 1. LOAD DATA"
+    ]
+   }
+  ],
+  "mt": [
+   {
+    "file": "utilities/gen.py",
+    "line": 4,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.metadata import MultiTableMetadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "",
+     "# ================================",
+     "# 1. LOAD DATA",
+     "# ================================"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "utilities/gen.py",
+    "line": 3,
+    "text": "from sdv.metadata import MultiTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.metadata import MultiTableMetadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "",
+     "# ================================",
+     "# 1. LOAD DATA"
+    ]
+   },
+   {
+    "file": "utilities/gen.py",
+    "line": 4,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.metadata import MultiTableMetadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "",
+     "# ================================",
+     "# 1. LOAD DATA",
+     "# ================================"
+    ]
+   }
+  ],
+  "hma": [
+   {
+    "file": "utilities/gen.py",
+    "line": 4,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.metadata import MultiTableMetadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "",
+     "# ================================",
+     "# 1. LOAD DATA",
+     "# ================================"
+    ]
+   },
+   {
+    "file": "utilities/gen.py",
+    "line": 48,
+    "text": "synthesizer = HMASynthesizer(metadata, verbose=True)",
+    "context": [
+     "# 4. TRAIN MODEL",
+     "# ================================",
+     "print(\"🚀 Training HMA Synthesizer...\")",
+     "",
+     "synthesizer = HMASynthesizer(metadata, verbose=True)",
+     "synthesizer.fit(data)",
+     "",
+     "# ================================",
+     "# 5. GENERATE DATA"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "hma",
+  "md",
+  "mt",
+  "sdv_any"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv"
+  ]
+ }
+}

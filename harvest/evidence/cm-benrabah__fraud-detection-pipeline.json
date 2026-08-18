@@ -1,0 +1,284 @@
+{
+ "repo": "cm-benrabah/fraud-detection-pipeline",
+ "disk_kb": 2440,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# PaySim Synthetic Dataset Fraud Detection\nThis example uses Xgboost model to detect mobile payment fraud trained using a synthetic dataset generated using GAN model. This dataset is from Kaggle. For details, see https://www.kaggle.com/ntnu-testimon/paysim1/home\n\nFor more detail, see the python notebook **PaySim Synthetic Dataset Fraud Detection.ipynb**\n\"# fraud-detection-pipeline\" \n\"# fraud-detection-pipeline\" \n\n\n# 💳 Fraud Detection Pipeline\n\nThis project aims to detect fraudulent financial transactions using machine learning on synthetically generated data based on the PaySim dataset. The goal is to build a robust and reproducible fraud detection pipeline that simulates real-world conditions, using tools like XGBoost for classification.\n\n---\n\n## 📁 Project Structure\n\n```plaintext\nfraud-detection-pipeline/\n├── data/                  # (Ignored) Synthetic dataset files\n├── notebooks/             # Jupyter notebooks for exploration and training\n├── src/                   # Source code\n│   ├── data_generator.py  # (Optional) CTGAN data generation\n│   ├── model_training.py  # XGBoost training script\n│   └── utils.py           # Helper functions\n├── requirements.txt\n├── .gitignore\n└── README.md\n```\n---\n\n## 🧪 Synthetic Data Generation\n\nThe dataset used in this project was generated using **CTGAN (Conditional GAN for Tabular Data)**. This ensures:\n\n- Realistic synthetic transactions\n- Preservation of relationships between categorical and numerical features\n- Class balance control for fraud detection scenarios\n\n**Features modeled include**:\n- `type`: Type of transaction (e.g., TRANSFER, CASH_OUT)\n- `amount`: Amount of money transacted\n- `oldbalanceOrg`, `newbalanceOrig`: Balance before and after for sender\n- `oldbalanceDest`, `newbalanceDest`: Balance before and after for receiver\n- `isFraud`: Target variable indicating fraud\n\nThe synthetic dataset is split into training, validation, and testing sets.\n\n> **Note**: Data files are ignored via `.gitignore` to keep the repository lightweight.\n\n---\n\n## 🎯 Model: XGBoost Classifier\n\nThe project uses **XGBoost**, a scalable gradient boosting system, to classify fraudulent transactions.\n\n### ✅ Why XGBoost?\n\n- High performance with tabular data\n- Built-in handling of class imbalance\n- Easy to interpret feature importance\n- Fast training on large datasets\n\n### 🧠 Training Workflow\n\n1. Preprocess data:\n   - Label encoding of categorical variables\n   - Normalization (if needed)\n\n2. Train/Test Split\n\n3. Model Training:\n   ```python\n   from xgboost import XGBClassifier\n\n   model = XGBClassifier(scale_pos_weight=30)  # handles class imbalance\n   model.fit(X_train, y_train)\n\n\n---\n\n## 📊 Launching the Streamlit Dashboard\n\nA simple user interface was developed using **Streamlit** to visualize predictions or explore the dataset.\n\n### ▶️ Command to Run\n\nFrom the root of the project, run the following command:\n\n```bash\nstreamlit run src/dashboard.py\n```\n\n## 📊 Streamlit Interface – Visualization Example\n\nBelow is a preview of the Streamlit interface used to explore the model's predictions:\n\n![Aperçu Streamlit](data/streamlit_dashboard.png)\n\n> 📸 This screenshot shows real-time predictions on simulated transactions.\n\n\n",
+ "hits": {
+  "sdv_any": [
+   {
+    "file": "temp/Untitled.ipynb",
+    "line": 31,
+    "text": "\"from sdv.tabular import CTGAN, GaussianCopula\\n\",",
+    "context": [
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.tabular import CTGAN, GaussianCopula\\n\",",
+     "    \"\\n\",",
+     "    \"# Load your Paysim dataset\\n\",",
+     "    \"df = pd.read_csv(r'D:\\\\PS_20174392719_1491204439457_log.csv\\\\PS_20174392719_1491204439457_log.csv')\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "temp/Data_gen(GaussianCopula).ipynb",
+    "line": 11,
+    "text": "\"from sdv.tabular import CTGAN, GaussianCopula\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.tabular import CTGAN, GaussianCopula\\n\",",
+     "    \"\\n\",",
+     "    \"# Load your Paysim dataset\\n\",",
+     "    \"df = pd.read_csv(r'D:\\\\PS_20174392719_1491204439457_log.csv\\\\PS_20174392719_1491204439457_log.csv')\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "src/ctgan_gen_2.py",
+    "line": 1,
+    "text": "from sdv.single_table import CTGANSynthesizer  # or TVAESynthesizer, CopulaGANSynthesizer",
+    "context": [
+     "from sdv.single_table import CTGANSynthesizer  # or TVAESynthesizer, CopulaGANSynthesizer",
+     "import pandas as pd",
+     "import time",
+     "import pickle  # if you used pickle to save/load",
+     ""
+    ]
+   },
+   {
+    "file": "src/Dashboard.py",
+    "line": 5,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import streamlit as st",
+     "import pandas as pd",
+     "import xgboost as xgb",
+     "import time",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from collections import deque",
+     "",
+     "# Load GAN model",
+     "model = CTGANSynthesizer.load(\"../Models/ctgan_model_CPU.pkl\")"
+    ]
+   },
+   {
+    "file": "src/ctgan_train.py",
+    "line": 5,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "# -*- coding: utf-8 -*-",
+     "",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import torch",
+     "import time",
+     "from datetime import datetime"
+    ]
+   },
+   {
+    "file": "src/ctgan_train.py",
+    "line": 6,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import torch",
+     "import time",
+     "from datetime import datetime",
+     "from tqdm import tqdm"
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "src/ctgan_gen_2.py",
+    "line": 1,
+    "text": "from sdv.single_table import CTGANSynthesizer  # or TVAESynthesizer, CopulaGANSynthesizer",
+    "context": [
+     "from sdv.single_table import CTGANSynthesizer  # or TVAESynthesizer, CopulaGANSynthesizer",
+     "import pandas as pd",
+     "import time",
+     "import pickle  # if you used pickle to save/load",
+     ""
+    ]
+   },
+   {
+    "file": "src/Dashboard.py",
+    "line": 5,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import streamlit as st",
+     "import pandas as pd",
+     "import xgboost as xgb",
+     "import time",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from collections import deque",
+     "",
+     "# Load GAN model",
+     "model = CTGANSynthesizer.load(\"../Models/ctgan_model_CPU.pkl\")"
+    ]
+   },
+   {
+    "file": "src/ctgan_train.py",
+    "line": 5,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "# -*- coding: utf-8 -*-",
+     "",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import torch",
+     "import time",
+     "from datetime import datetime"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "src/ctgan_gen_2.py",
+    "line": 1,
+    "text": "from sdv.single_table import CTGANSynthesizer  # or TVAESynthesizer, CopulaGANSynthesizer",
+    "context": [
+     "from sdv.single_table import CTGANSynthesizer  # or TVAESynthesizer, CopulaGANSynthesizer",
+     "import pandas as pd",
+     "import time",
+     "import pickle  # if you used pickle to save/load",
+     ""
+    ]
+   },
+   {
+    "file": "src/ctgan_gen_2.py",
+    "line": 7,
+    "text": "model = CTGANSynthesizer.load(\"../Models/ctgan_model_CPU.pkl\")",
+    "context": [
+     "import time",
+     "import pickle  # if you used pickle to save/load",
+     "",
+     "# Example if you saved using .save()",
+     "model = CTGANSynthesizer.load(\"../Models/ctgan_model_CPU.pkl\")",
+     "",
+     "# OR if you saved using pickle",
+     "# with open(\"ctgan_model.pkl\", \"rb\") as f:",
+     "#     model = pickle.load(f)"
+    ]
+   },
+   {
+    "file": "src/Dashboard.py",
+    "line": 5,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import streamlit as st",
+     "import pandas as pd",
+     "import xgboost as xgb",
+     "import time",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from collections import deque",
+     "",
+     "# Load GAN model",
+     "model = CTGANSynthesizer.load(\"../Models/ctgan_model_CPU.pkl\")"
+    ]
+   },
+   {
+    "file": "src/Dashboard.py",
+    "line": 9,
+    "text": "model = CTGANSynthesizer.load(\"../Models/ctgan_model_CPU.pkl\")",
+    "context": [
+     "from sdv.single_table import CTGANSynthesizer",
+     "from collections import deque",
+     "",
+     "# Load GAN model",
+     "model = CTGANSynthesizer.load(\"../Models/ctgan_model_CPU.pkl\")",
+     "",
+     "# Load XGBoost model",
+     "xgb_model = xgb.Booster()",
+     "xgb_model.load_model(\"../Models/xgboost_model.json\")"
+    ]
+   },
+   {
+    "file": "src/ctgan_train.py",
+    "line": 5,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "# -*- coding: utf-8 -*-",
+     "",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import torch",
+     "import time",
+     "from datetime import datetime"
+    ]
+   },
+   {
+    "file": "src/ctgan_train.py",
+    "line": 21,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "# Initialize metadata and model",
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(data)",
+     "",
+     "synthesizer = CTGANSynthesizer(",
+     "    metadata,",
+     "    epochs=100,",
+     "    batch_size=500,",
+     "    #cuda=torch.cuda.is_available(),"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "src/ctgan_gen_2.py",
+    "line": 1,
+    "text": "from sdv.single_table import CTGANSynthesizer  # or TVAESynthesizer, CopulaGANSynthesizer",
+    "context": [
+     "from sdv.single_table import CTGANSynthesizer  # or TVAESynthesizer, CopulaGANSynthesizer",
+     "import pandas as pd",
+     "import time",
+     "import pickle  # if you used pickle to save/load",
+     ""
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "src/ctgan_train.py",
+    "line": 6,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import torch",
+     "import time",
+     "from datetime import datetime",
+     "from tqdm import tqdm"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

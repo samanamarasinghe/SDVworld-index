@@ -1,0 +1,52 @@
+{
+ "repo": "AdrianRaposo/TFM_Bayesian_Network_Agentic_RAG",
+ "disk_kb": 59360,
+ "method": "partial_clone",
+ "tree_files": 3022,
+ "status": "ok",
+ "readme": "# TFM - Bayesian Network Agentic RAG\n\nThis repository contains the code developed for the master's thesis. The project implements an **agentic retrieval-augmented generation (RAG)** system focused on scientific literature about **Bayesian networks**.\n\nThe system covers the complete pipeline: document acquisition, OCR-based document processing, database ingestion, hybrid retrieval, agentic query routing, conversational response generation, and evaluation.\n\n## General Architecture\n\nThe project is organized as a modular pipeline:\n\n1. Scientific documents are collected from bibliographic sources.\n2. PDFs are converted into Markdown using OCR tools.\n3. Abstracts, bibliography, tables, metadata, and text chunks are extracted.\n4. The processed information is ingested into a PostgreSQL database.\n5. Embeddings are generated and stored for semantic retrieval.\n6. An Agentic RAG application routes each user query to the appropriate tool.\n7. The system is evaluated through retrieval, generation, and router benchmarks.\n\n![General architecture](docs/images/general_architecture.png)\n\n## Repository Structure\n\n### `00_BBDD`\n\nContains the SQL DDL script used to create the PostgreSQL database schema.\n\nIt defines the required extensions, including `vector`, `unaccent`, `uuid-ossp`, and `pg_trgm`, and creates the main tables used by the system:\n\n- `doc`: processed documents.\n- `chunk`: document chunks with embeddings and full-text search vectors.\n- `doc_abstract`: abstracts and their embeddings.\n- `doc_metadata`: bibliographic metadata.\n- `doc_author`: normalized author information.\n- `doc_reference`: extracted bibliography entries.\n- `doc_table`: tables extracted from papers.\n\n### `01_DocumentsAdquisition`\n\nThis module is responsible for collecting the scientific documents used in the corpus.\n\nIt supports document acquisition from:\n\n- APA-style bibliography entries.\n- Web of Science exports containing DOI information.\n- Open-access PDF discovery through the Unpaywall API.\n\nWhen a direct PDF link is not available, the scripts attempt to inspect the landing page and locate a downloadable PDF. The module also stores metadata and logs failed downloads for later inspection.\n\n### `02_DocumentsProcessing`\n\nThis module transforms raw PDFs into structured and clean textual artifacts ready for ingestion.\n\nMain responsibilities:\n\n- Run OCR processing with Mistral OCR or Nougat.\n- Convert papers into Markdown.\n- Extract abstracts using OCR-tolerant rules.\n- Extract bibliography entries and tables.\n- Detect document language.\n- Clean Markdown content.\n- Split papers into token-controlled chunks.\n- Preserve formulas, code blocks, and tables through placeholders and metadata.\n\nThe main outputs are cleaned Markdown files, abstract files, metadata JSON files, bibliography/table JSON files, and chunk JSON files.\n\n### `03_DataIngestion`\n\nThis module loads the processed artifacts into PostgreSQL.\n\nIt checks that each document has all required files before ingestion and avoids inserting duplicated documents. For each valid paper, it inserts:\n\n- Document-level metadata.\n- Authors.\n- Abstracts.\n- Bibliography entries.\n- Extracted tables.\n- Text chunks.\n- Embeddings generated with `sentence-transformers`.\n\nThis step prepares the database for both lexical retrieval and dense vector retrieval.\n\n### `04_AgenticRAG`\n\nThis is the main conversational application. It uses **Chainlit** for the user interface and **LangGraph** to define the agentic workflow.\n\nThe core component is a router node that classifies each user query into one of four categories:\n\n- `BN`: domain-specific questions about Bayesian Networks. These are answered through RAG.\n- `MD`: metadata questions. These are translated into SQL and answered using database results.\n- `CC`: casual conversation or general chat.\n- `OOC`: out-of-scope questions.\n\nMain components:\n\n- `app.py`: Chainlit entry point and response streaming.\n- `graph/agent_graph.py`: LangGraph state, nodes, and routing logic.\n- `services/retrieval.py`: hybrid retrieval pipeline combining BM25, dense retrieval over abstracts, dense retrieval over chunks, and re-ranking.\n- `services/llm.py`: LLM chains for routing, RAG, SQL generation, and final responses.\n- `tools/rag.py`: RAG node for Bayesian Network questions.\n- `tools/metadata.py`: natural-language-to-SQL node for metadata queries.\n- `tools/chitchat.py`: conversational fallback node.\n- `tools/oos.py`: out-of-scope response node.\n- `prompts/`: prompt templates used by the different nodes.\n\n![Agentic RAG graph](docs/images/agentic_rag_graph.png)\n\n### `05_Evaluation`\n\nThis module contains the experimental evaluation code.\n\nIt includes scripts for:\n\n- Embedding model benchmarking.\n- Query generation.\n- Golden chunk selection.\n- RAG dataset generation.\n- Generation evaluation.\n- Router evaluation.\n- Result visualization.\n\nThe objective of this module is to compare different configurations and support the methodological decisions described in the thesis.\n\n\n## Installation\n\nCreate a virtual environment and install the dependencies:\n\n```bash\npython -m venv venv\npip install -r requirements.txt\n```\n\nPyTorch should be installed according to the available hardware. The `requirements.txt` file includes notes for CPU and CUDA installations.\n\n## Configuration\n\nThe project uses environment variables for database and LLM configuration. These variables can be defined in a `.env` file:\n\n```env\nDB_HOST=\nDB_PORT=\nDB_DATABASE=\nDB_USER=\nDB_PASSWORD=\nDB_SCHEMA=\nOPENAI_API_KEY=\nOPENAI_API_MODEL=\nOPENAI_API_MODEL_ROUTER=\n```\n\nEach module also contains its own `config.py` file, where paths and execution parameters are defined.\n\n## Typical Execution Flow\n\nA typical execution order is:\n\n```bash\npython 01_DocumentsAdquisition/WOSDocumentsDownload.py\npython 02_DocumentsProcessing/MistralOCRProcessing.py\npython 02_DocumentsProcessing/LanguageDetection.py\npython 02_DocumentsProcessing/AbstractExtractor.py\npython 02_DocumentsProcessing/BibliographyTableExtraction.py\npython 02_DocumentsProcessing/Chunking.py\npython 03_DataIngestion/DataIngestion.py\n```\n\nTo run the conversational application:\n\n```bash\ncd 04_AgenticRAG\nchainlit run app.py\n```\n\nTo run the evaluation module:\n\n```bash\ncd 05_Evaluation\n\n# Embedding evaluation\npython EMB_SelectingGoldenChunks.py\npython EMB_GenerateQueries.py\npython EMB_Benchmarking.py\n\n# Generation evaluation\npython GEN_Generation.py\npython GEN_Benchmarking.py\npython GEN_ShowResults.py\npython GEN_ResultsPlots.py\n\n# Router evaluation\npython ROUTER_Benchmarking.py\n```\n\nThe exact scripts to execute depend on the experiment being reproduced. Evaluation paths, model names, database schemas, and output files are configured in `05_Evaluation/eval_config.py`.\n\n## Project Goal\n\nThe goal of the project is to build and evaluate an agentic RAG system capable of answering questions about Bayesian Networks using a custom scientific corpus. The system combines semantic retrieval, lexical retrieval, metadata querying, and automatic intent routing in a single conversational workflow.\n",
+ "hits": {
+  "ct": [
+   {
+    "file": "00_Data/CLEANED/CLEANED_MD/Comparison of Synthetic Data Generation Techniques for Control Group Survival Data in Oncology Clini.md",
+    "line": 148,
+    "text": "4. CTGAN: The CTGANSynthesizer module included in the Python package sdv version 1.3 was utilized.",
+    "context": [
+     "",
+     "1. CART: The synthpop package version 1.8 in R was utilized, specifying the cart method for the syn function's method argument.",
+     "2. RF: The synthpop package version 1.8 in R was used, specifying the Ranger method for the syn function's method argument.",
+     "3. BN: The bnlearn package version 4.9 in R was used to conduct structural learning through the score-based algorithm hill-climbing, followed by parameter estimation using the bn.fit function. The def",
+     "4. CTGAN: The CTGANSynthesizer module included in the Python package sdv version 1.3 was utilized.",
+     "In all these generation methods, to ensure the absence of conflicting data concerning the relationship between PFS and OS, constraints were set to ensure that the values of PFS and OS were greater tha",
+     "To ensure the reproducibility of SPD generation, 1000 random numbers were generated as seed values using the Mersenne Twister algorithm. The same seed value set was used for all generation methods.",
+     "",
+     "# Statistical Analysis "
+    ]
+   }
+  ],
+  "copulas": [
+   {
+    "file": "00_Data/CLEANED/CLEANED_MD/A Copula-Based Bayesian Network for Modeling Compound Flood Hazard from Riverine and Coastal Interac.md",
+    "line": 25,
+    "text": "To better capture the behavior of compound events, previous researchers have focused on the statistical dependence between river and coastal floods since it is inherently linked with the joint probability analysis [30-32]. The strength of the statistical dependence between flood hazards is usually q",
+    "context": [
+     "Modeling flood hazards in coastal catchments is a complex undertaking. Synoptic meteorological conditions can generate both considerable rainfall and anomalously high coastal water levels. For example",
+     "",
+     "Despite increasing scientific recognition of compound flooding [14], regulatory flood hazard maps seldom systematically include the impacts of riverine and coastal interactions [17]. One typical appro",
+     "",
+     "To better capture the behavior of compound events, previous researchers have focused on the statistical dependence between river and coastal floods since it is inherently linked with the joint probabi",
+     "",
+     "To model compound flood events at the catchment scale, multiple boundary conditions are needed such that a univariate or bivariate analysis alone may not be sufficient to characterize the flood hazard",
+     "",
+     "between tributaries clearly becomes important to identify possible combinations. Consequently, in order to derive the flood extent and its associated annual exceedance probability, a realistic spatial"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "copulas",
+  "ct"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

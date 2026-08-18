@@ -1,0 +1,213 @@
+{
+ "repo": "smudgerwth/comp7705_model",
+ "disk_kb": 33487,
+ "method": "partial_clone",
+ "tree_files": 55,
+ "status": "ok",
+ "readme": "# **AI Health Insurance Prediction \\- Model and Server**\n\nAn AI-powered backend server that utilizes user health data from mobile & wearable devices to calculate a health score, predict insurance premiums, and provide a list of recommended insurance plans.\n\n## **Project Overview**\n\nThis project aims to deliver an innovative Insurtech solution. By analyzing a user's daily health metrics, our AI models can:\n\n1. **Assess a Personalized Health Score**: Quantify the user's current health status.  \n2. **Dynamically Predict Insurance Premiums**: Offer premium discounts based on the health score, incentivizing users to maintain a healthy lifestyle.  \n3. **Recommend Suitable Insurance Plans**: Provide customized insurance product suggestions based on the user's profile and health analysis.\n\nThe system is designed to provide insurance companies with a more accurate risk assessment tool while rewarding end-users for their healthy habits.\n\n## **System Architecture**\n\nThe data flow is designed for efficient and secure processing of user data:\n\n<img width=\"839\" height=\"1061\" alt=\"螢幕截圖 2025-07-13 下午2 39 40\" src=\"https://github.com/user-attachments/assets/7c0e227c-c48e-4c25-9974-8f7d17d7409e\" />\n\n1. **Data Collection**: The client application securely gathers health data from the user's phone and wearable devices (e.g., Apple Watch, Fitbit).  \n2. **API Request**: The app sends the data via an encrypted HTTPS request to the backend server.  \n3. **Model Prediction**: The server preprocesses the data and feeds it into the AI models for analysis.  \n4. **Return Results**: The models return the health score and base premium. The server then calculates the final premium based on a discount logic and returns the complete analysis to the app.\n\n## **AI Model Details**\n\nOur core prediction engine consists of two main models, with a configurable option for the health score calculation.\n\n* **1\\. Health Score Model (Configurable)**: Predicts a user's health score.  \n  * **Option A (Neural Network)**: A model built with TensorFlow/Keras (health\\_score\\_nn\\_model.keras).  \n  * **Option B (Random Forest)**: A model built with Scikit-learn (random\\_forest\\_health\\_score\\_model.joblib).  \n  * **Input Features**:  \n    * Age: User's age.  \n    * BMI: User's Body Mass Index.  \n    * Exercise\\_Frequency: Derived from steps (0-6 scale).  \n    * Sleep\\_Hours: Average hours of sleep.  \n    * Smoking\\_Status: 1 for smoker, 0 for non-smoker.  \n* **2\\. Insurance Premium Model**: Predicts the base insurance premium before any health-based discounts.  \n  * **Model Type**: A Neural Network model (insurance\\_nn\\_model\\_no\\_child.keras).  \n  * **Input Features**:  \n    * age: User's age.  \n    * sex: 1 for male, 0 for female.  \n    * bmi: User's Body Mass Index.  \n    * smoker: 1 for smoker, 0 for non-smoker.  \n    * *Engineered Features*: age\\_bmi, bmi\\_smoker, age\\_smoker, age\\_group, bmi\\_category.\n\n## **API Documentation**\n\n### **POST /predict**\n\nThis is the core endpoint that receives user health data and returns a full prediction analysis.\n\n#### **Request Body**\n\n```json\n{  \n  \"age\": 35,  \n  \"bmi\": 24.5,  \n  \"sex\": 1,  \n  \"smoker\": 0,  \n  \"steps\": 12050,  \n  \"sleepHours\": 7.5,  \n  \"heartRate\": 65  \n}\n```\n\n* **age** (number, required): User's age.  \n* **bmi** (number, required): User's Body Mass Index.  \n* **sex** (integer): User's gender (1 for male, 0 for female). Defaults to 1\\.  \n* **smoker** (integer): Smoking status (1 for smoker, 0 for non-smoker). Defaults to 0\\.  \n* **steps** (integer): Average daily steps. Defaults to 5000\\.  \n* **sleepHours** (number): Average hours of sleep per night. Defaults to 7\\.  \n* **heartRate** (number): Average resting heart rate. Defaults to 72\\.\n\n#### **Success Response (200 OK)**\n\n**Example (Approved with Surcharge):**\n\n```json\n{  \n  \"age_group\": 4,  \n  \"base_premium\": 26571.271484375,  \n  \"bmi_category\": \"normal\",  \n  \"discount_rate\": \"-50.0%\",  \n  \"exercise_frequency\": 0,  \n  \"final_premium\": 39856.91,  \n  \"health_assessment\": \"Approved! Moderate risk applicant - 150% premium applied\",  \n  \"health_model_used\": \"Neural Network\",  \n  \"health_score\": 62.1,  \n  \"raw_model_output\": 62.1021,  \n  \"recommendation_list\": {  \n    \"error\": null,  \n    \"plans\": [  \n      {  \n        \"certification-no\": \"S00012-01-000-03\",  \n        \"company-name\": \"Bolttech Insurance (Hong Kong) Company Limited\",  \n        \"plan-doc-url\": \"https://www.vhis.gov.hk/doc/certifiedplan/sp/S00012/S00012-01-000-03-PlanDoc-e.pdf\",  \n        \"plan-name\": \"VChoice Voluntary Health Insurance Plan\",  \n        \"premium\": 6736  \n      },  \n      {  \n        \"certification-no\": \"S00014-01-000-02\",  \n        \"company-name\": \"AXA China Region Insurance Company (Bermuda) Limited\",  \n        \"plan-doc-url\": \"https://www.vhis.gov.hk/doc/certifiedplan/sp/S00014/S00014-01-000-02-PlanDoc-e.pdf\",  \n        \"plan-name\": \"AXA WiseGuard Medical Insurance Plan\",  \n        \"premium\": 7511  \n      }  \n    ]  \n  },  \n  \"steps_converted\": 1000  \n}\n```\n\n**Example (Rejected):**\n\n```json\n{  \n  \"base_premium\": 32040.5,  \n  \"health_score\": 38.7,  \n  \"discount_rate\": \"N/A\",  \n  \"final_premium\": 0.0,  \n  \"health_assessment\": \"Reject! Application declined due to critical health risk\",  \n  \"recommendation_list\": {  \n    \"error\": \"Application rejected, no plans available.\",  \n    \"plans\": []  \n  },  \n  \"age_group\": 4,  \n  \"bmi_category\": \"obese\",  \n  \"exercise_frequency\": 0,  \n  \"health_model_used\": \"Neural Network\",  \n  \"raw_model_output\": 38.7,  \n  \"steps_converted\": 1500  \n}\n```\n\n#### **Error Response (400 Bad Request)**\n\n```json\n{  \n  \"error\": \"Missing required parameters\",  \n  \"expected\": [\"age\", \"bmi\"],  \n  \"received\": [\"smoker\"]  \n}\n```\n\n## **Installation and Setup**\n\nFollow these steps to set up and run the server in a local environment.\n\n1. **Clone the Repository**\n\n```shell\ngit clone https://github.com/smudgerwth/comp7705_model.git  \ncd comp7705_model\n```\n\n2.   \n   **Create a Virtual Environment**\n\n```shell\npython -m venv venv  \nsource venv/bin/activate  # On Windows, use `venv\\Scripts\\activate`\n```\n\n3.   \n   **Install Dependencies**\n\n    Create a `requirements.txt` file with the following content:\n\n```\nFlask  \npandas  \nnumpy  \nscikit-learn  \njoblib  \ntensorflow\n```\n\n4.   \n   Then, run the installation command:\n\n```shell\npip install -r requirements.txt\n```\n\n5.   \n   **Place Model Files**\n\n    Ensure the following model and scaler files are in the root directory of the project:\n\n```\nhealth_score_nn_model.keras  \nrandom_forest_health_score_model.joblib  \ninsurance_nn_model_no_child.keras  \nscaler.pkl  \npreprocessor.pkl  \nhealth_score_scaler.pkl  \n```\n\n6.   \n   **Run the Server**\n\n    For development:\n\n```shell\npython api_server_rf_health_score.py\n```\n\n7.   \n   The server will start on `http://localhost:5050`.\n\n    For production, it is recommended to use a WSGI server like Gunicorn:\n\n```shell\ngunicorn --workers 4 --bind 0.0.0.0:5050 api_server_rf_health_score:app\n```\n\n### **Optional: Retraining the Models**\n\nIf you wish to retrain the models with the original datasets, you can download them from the links below. Place the contents of each zip file into a corresponding folder within the project directory. You will then need to run the training scripts (not included in this server setup).\n\n* CASData Training: [Download Link](https://connecthkuhk-my.sharepoint.com/:u:/g/personal/yiklchan_connect_hku_hk/EY4Qu3dH-sZApc_rKJlHNyEBX4il7oH7tbVe7G6wYov0YA)  \n* HealthScoreData: [Download Link](https://connecthkuhk-my.sharepoint.com/:u:/g/personal/yiklchan_connect_hku_hk/EYlplKsNXllCrlGiu2ZSw78BzZHBIH7KCY-qIznmeQgumw)  \n* insurance\\_data: [Download Link](https://connecthkuhk-my.sharepoint.com/:u:/g/personal/yiklchan_connect_hku_hk/ETfkZ4ogHilIrQyLoBQQUbEBkVZlpeNciEAD54mEP5mF0A?e=cw3kfp)\n\n## **Usage Example (cURL)**\n\nYou can test the endpoint using curl or any API client.\n\n```shell\ncurl -X POST http://localhost:5050/predict \\  \n-H \"Content-Type: application/json\" \\  \n-d '{  \n    \"age\": 40,  \n    \"bmi\": 28,  \n    \"sex\": 0,  \n    \"smoker\": 0,  \n    \"steps\": 7500,  \n    \"sleepHours\": 6.5,  \n    \"heartRate\": 75  \n}'\n```\n\n## **Data Privacy and Security**\n\nWe take user data privacy and security very seriously.\n\n* **Transport Encryption**: All communication between the client and server is enforced over TLS 1.2+.  \n* **Data Anonymization**: All Personally Identifiable Information (PII) is removed or hashed during data analysis and model training.  \n* **Access Control**: The API endpoints should be protected by a robust authentication/authorization mechanism in a production environment.  \n\n## **License**\n\nThis project is licensed under the [MIT License](https://www.google.com/search?q=LICENSE).\n",
+ "hits": {
+  "st": [
+   {
+    "file": "CASData Training/synthetic_health_data_generator.py",
+    "line": 3,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "def generate_synthetic_data(num_users=None):",
+     "    # 1. Load and clean data"
+    ]
+   },
+   {
+    "file": "HealthScoreData/synthetic_health_score_data_gererator.py",
+    "line": 2,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer  # 新版本中的类名",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer  # 新版本中的类名",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# 1. 加载原始数据",
+     "df_original = pd.read_csv(\"synthetic_health_data.csv\")"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "CASData Training/synthetic_health_data_generator.py",
+    "line": 4,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "def generate_synthetic_data(num_users=None):",
+     "    # 1. Load and clean data",
+     "    original_df = pd.read_csv('aw_fb_data.csv')"
+    ]
+   },
+   {
+    "file": "HealthScoreData/synthetic_health_score_data_gererator.py",
+    "line": 3,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer  # 新版本中的类名",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# 1. 加载原始数据",
+     "df_original = pd.read_csv(\"synthetic_health_data.csv\")",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "CASData Training/synthetic_health_data_generator.py",
+    "line": 3,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "def generate_synthetic_data(num_users=None):",
+     "    # 1. Load and clean data"
+    ]
+   },
+   {
+    "file": "CASData Training/synthetic_health_data_generator.py",
+    "line": 4,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "def generate_synthetic_data(num_users=None):",
+     "    # 1. Load and clean data",
+     "    original_df = pd.read_csv('aw_fb_data.csv')"
+    ]
+   },
+   {
+    "file": "HealthScoreData/synthetic_health_score_data_gererator.py",
+    "line": 2,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer  # 新版本中的类名",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer  # 新版本中的类名",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# 1. 加载原始数据",
+     "df_original = pd.read_csv(\"synthetic_health_data.csv\")"
+    ]
+   },
+   {
+    "file": "HealthScoreData/synthetic_health_score_data_gererator.py",
+    "line": 3,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer  # 新版本中的类名",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# 1. 加载原始数据",
+     "df_original = pd.read_csv(\"synthetic_health_data.csv\")",
+     ""
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "CASData Training/synthetic_health_data_generator.py",
+    "line": 3,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "def generate_synthetic_data(num_users=None):",
+     "    # 1. Load and clean data"
+    ]
+   },
+   {
+    "file": "CASData Training/synthetic_health_data_generator.py",
+    "line": 31,
+    "text": "demo_synthesizer = GaussianCopulaSynthesizer(demographics_metadata)",
+    "context": [
+     "    demographics_metadata = SingleTableMetadata()",
+     "    demographics_metadata.detect_from_dataframe(demographics_df)",
+     "    demographics_metadata.set_primary_key('user_id')",
+     "    ",
+     "    demo_synthesizer = GaussianCopulaSynthesizer(demographics_metadata)",
+     "    demo_synthesizer.fit(demographics_df)",
+     "    unique_users = demo_synthesizer.sample(num_users)",
+     "",
+     "    # 5. Generate activity data"
+    ]
+   },
+   {
+    "file": "CASData Training/synthetic_health_data_generator.py",
+    "line": 38,
+    "text": "activity_synthesizer = GaussianCopulaSynthesizer(activity_metadata)",
+    "context": [
+     "",
+     "    # 5. Generate activity data",
+     "    activity_metadata = SingleTableMetadata()",
+     "    activity_metadata.detect_from_dataframe(original_df[activity_columns])",
+     "    activity_synthesizer = GaussianCopulaSynthesizer(activity_metadata)",
+     "    activity_synthesizer.fit(original_df[activity_columns])",
+     "",
+     "    # 6. Create full dataset",
+     "    synthetic_data = []"
+    ]
+   },
+   {
+    "file": "HealthScoreData/synthetic_health_score_data_gererator.py",
+    "line": 2,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer  # 新版本中的类名",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer  # 新版本中的类名",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# 1. 加载原始数据",
+     "df_original = pd.read_csv(\"synthetic_health_data.csv\")"
+    ]
+   },
+   {
+    "file": "HealthScoreData/synthetic_health_score_data_gererator.py",
+    "line": 13,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(df_original)",
+     "",
+     "# 3. 初始化并训练模型",
+     "synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "synthesizer.fit(df_original)",
+     "",
+     "# 4. 生成新数据",
+     "df_new = synthesizer.sample(num_rows=200000)"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

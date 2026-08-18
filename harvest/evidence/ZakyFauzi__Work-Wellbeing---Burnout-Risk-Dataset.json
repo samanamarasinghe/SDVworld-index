@@ -1,0 +1,137 @@
+{
+ "repo": "ZakyFauzi/Work-Wellbeing---Burnout-Risk-Dataset",
+ "disk_kb": 5293,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Remote Workforce Health Index - Synthetic Dataset\n\nDataset ini adalah data sintetis untuk analisis kesejahteraan kerja karyawan remote/hybrid, dengan fokus pada prediksi risiko burnout.\n\nFile utama di folder ini:\n- `generate_remote_workforce_synthetic_data.ipynb`: notebook pembangkit data sintetis.\n- `work_wellbeing_dataset.csv`: hasil data sintetis (30.000 baris).\n\n## Tujuan Dataset\nDataset dirancang untuk:\n- Simulasi data HR/People Analytics tanpa menggunakan data pribadi asli.\n- Eksperimen machine learning klasifikasi `Burnout_Risk`.\n- Analisis hubungan kausal antar faktor kerja remote seperti jam kerja, intensitas meeting, dan kualitas internet.\n\n## Ringkasan Dataset\n- Nama dataset: `Remote Workforce Health Index`\n- Jumlah baris: `30000`\n- Jumlah kolom: `10`\n- Target: `Burnout_Risk` (`Low`, `Medium`, `High`)\n\n## Data Dictionary\n| Kolom | Tipe Data | Skala/Atribut | Deskripsi |\n| --- | --- | --- | --- |\n| `Employee_ID` | Integer | Nominal | ID unik karyawan (inkremental). |\n| `Work_Location` | String | Nominal | Lokasi kerja utama: `Home`, `Office`, `Coworking`. |\n| `Avg_Working_Hours` | Float | Numerik | Rata-rata jam kerja per hari (rentang dibatasi 6.0-13.0). |\n| `Meeting_Intensity` | Integer | Numerik | Rata-rata jam meeting/call per hari (0-10). |\n| `Internet_Reliability` | Categorical | Ordinal | Stabilitas koneksi: `Poor`, `Fair`, `Good`, `Excellent`. |\n| `Seniority_Level` | Categorical | Ordinal | Level jabatan: `Junior`, `Mid`, `Senior`. |\n| `Work_Life_Balance` | Integer | Ordinal | Skor keseimbangan kerja-hidup (1-5). |\n| `Daily_Mood_Note` | String | Text | Catatan suasana hati harian untuk kebutuhan NLP. |\n| `Sentiment_Score` | Float | Numerik | Skor sentimen pada rentang -1.0 sampai 1.0. |\n| `Burnout_Risk` | Categorical | Target | Label risiko burnout: `Low`, `Medium`, `High`. |\n\n## Metode Sintesis Data\nGenerator menggunakan pendekatan hibrida:\n- Rule-based causal generator (aturan sebab-akibat) sebagai fondasi pola utama.\n- SDV (`GaussianCopulaSynthesizer`) untuk memperkaya variasi dan hubungan multivariat.\n- Post-processing agar data tetap konsisten dengan aturan bisnis setelah sampling.\n\n### Alur Kausal (Causal-Link)\n1. Tentukan profil dasar: `Seniority_Level` dan `Work_Location`.\n2. Tentukan `Internet_Reliability` berdasarkan `Work_Location`.\n3. Bentuk `Meeting_Intensity` dari baseline senioritas + Gaussian noise.\n4. Hitung `Avg_Working_Hours` dari baseline jam kerja + pengaruh meeting + bias lokasi.\n5. Hitung `Work_Life_Balance` dari penalti jam kerja tinggi, meeting tinggi, dan kualitas internet buruk.\n6. Tentukan `Burnout_Risk` dengan kombinasi threshold rules + probabilistic scoring.\n7. Turunkan `Sentiment_Score` dari WLB + penyesuaian burnout + kualitas internet + noise.\n8. Bentuk `Daily_Mood_Note` dari template berbasis sentimen dengan variasi dari `Faker`.\n9. Finalisasi `Employee_ID` secara inkremental.\n\n## Detail Logika yang Diimplementasikan\n- Senior cenderung memiliki intensitas meeting lebih tinggi dibanding Mid/Junior.\n- `Office` cenderung memiliki internet lebih stabil (`Good`/`Excellent`) dibanding `Home`.\n- Jam kerja meningkat seiring intensitas meeting, dengan bias tambahan pada `Home`.\n- WLB turun ketika:\n  - `Avg_Working_Hours` tinggi,\n  - `Meeting_Intensity` tinggi,\n  - `Internet_Reliability` rendah (`Poor`/`Fair`).\n- Burnout cenderung tinggi pada kombinasi WLB rendah + jam kerja panjang.\n- Sentimen berkorelasi positif dengan WLB dan negatif dengan burnout.\n\n## Dependensi\nNotebook menggunakan package berikut:\n- `pandas`\n- `numpy`\n- `faker`\n- `sdv`\n- `pyarrow` (opsional jika menyimpan parquet)\n\nInstalasi sudah disiapkan dalam notebook melalui cell:\n```python\n%pip install -q pandas numpy faker sdv pyarrow\n```\n\n## Cara Menjalankan\n1. Buka `generate_remote_workforce_synthetic_data.ipynb`.\n2. Jalankan cell dari atas ke bawah secara berurutan.\n3. Pastikan semua dependensi terinstal.\n4. Setelah selesai, file `work_wellbeing_dataset.csv` akan terbuat/terbarui.\n\n## Quality Checks yang Disediakan di Notebook\nNotebook menampilkan cek cepat untuk memvalidasi pola data:\n- Proporsi `Burnout_Risk`.\n- Rata-rata `Work_Life_Balance` per kategori burnout.\n- Rata-rata `Avg_Working_Hours` per kategori burnout.\n- Rata-rata `Sentiment_Score` per kategori burnout.\n\nChecks ini membantu memastikan data sintetis masih masuk akal secara bisnis.\n\n## Catatan Penting\n- Dataset ini sintetis, bukan data riil karyawan.\n- Tidak boleh dianggap sebagai ground truth epidemiologis/psikologis.\n- Distribusi dapat sedikit berubah jika parameter generator diubah.\n- Reproducibility didukung dengan `SEED = 42` pada notebook.\n\n## Ide Penggunaan\n- Klasifikasi burnout (`Low/Medium/High`) dengan model ML.\n- Feature importance untuk melihat faktor paling berpengaruh terhadap burnout.\n- Eksperimen NLP pada `Daily_Mood_Note` (sentiment, topic, text classification).\n- Simulasi intervensi kebijakan kerja (contoh: mengurangi meeting intensity).\n\n## Struktur Folder\n- `README.md`\n- `generate_remote_workforce_synthetic_data.ipynb`\n- `work_wellbeing_dataset.csv`\n",
+ "hits": {
+  "st": [
+   {
+    "file": "generate_remote_workforce_synthetic_data.ipynb",
+    "line": 57,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "    \"import pandas as pd\\n\",",
+     "    \"\\n\",",
+     "    \"from faker import Faker\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"SEED = 42\\n\",",
+     "    \"N_ROWS = 30000\\n\",",
+     "    \"\\n\","
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "generate_remote_workforce_synthetic_data.ipynb",
+    "line": 56,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"import numpy as np\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"\\n\",",
+     "    \"from faker import Faker\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"SEED = 42\\n\",",
+     "    \"N_ROWS = 30000\\n\","
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "generate_remote_workforce_synthetic_data.ipynb",
+    "line": 56,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"import numpy as np\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"\\n\",",
+     "    \"from faker import Faker\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"SEED = 42\\n\",",
+     "    \"N_ROWS = 30000\\n\","
+    ]
+   },
+   {
+    "file": "generate_remote_workforce_synthetic_data.ipynb",
+    "line": 57,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "    \"import pandas as pd\\n\",",
+     "    \"\\n\",",
+     "    \"from faker import Faker\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"SEED = 42\\n\",",
+     "    \"N_ROWS = 30000\\n\",",
+     "    \"\\n\","
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "generate_remote_workforce_synthetic_data.ipynb",
+    "line": 57,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "    \"import pandas as pd\\n\",",
+     "    \"\\n\",",
+     "    \"from faker import Faker\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"SEED = 42\\n\",",
+     "    \"N_ROWS = 30000\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "generate_remote_workforce_synthetic_data.ipynb",
+    "line": 569,
+    "text": "\"    synthesizer = GaussianCopulaSynthesizer(\\n\",",
+    "context": [
+     "    \"try:\\n\",",
+     "    \"    metadata = SingleTableMetadata()\\n\",",
+     "    \"    metadata.detect_from_dataframe(causal_df[train_cols])\\n\",",
+     "    \"\\n\",",
+     "    \"    synthesizer = GaussianCopulaSynthesizer(\\n\",",
+     "    \"        metadata=metadata,\\n\",",
+     "    \"        enforce_min_max_values=True,\\n\",",
+     "    \"        enforce_rounding=False\\n\",",
+     "    \"    )\\n\","
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 38,
+    "text": "- SDV (`GaussianCopulaSynthesizer`) untuk memperkaya variasi dan hubungan multivariat.",
+    "context": [
+     "",
+     "## Metode Sintesis Data",
+     "Generator menggunakan pendekatan hibrida:",
+     "- Rule-based causal generator (aturan sebab-akibat) sebagai fondasi pola utama.",
+     "- SDV (`GaussianCopulaSynthesizer`) untuk memperkaya variasi dan hubungan multivariat.",
+     "- Post-processing agar data tetap konsisten dengan aturan bisnis setelah sampling.",
+     "",
+     "### Alur Kausal (Causal-Link)",
+     "1. Tentukan profil dasar: `Seniority_Level` dan `Work_Location`."
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

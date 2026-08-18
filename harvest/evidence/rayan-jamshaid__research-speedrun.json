@@ -1,0 +1,233 @@
+{
+ "repo": "rayan-jamshaid/research-speedrun",
+ "disk_kb": 48,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Research Speedrun: Clinical Prediction Pipeline\n\nA robust, modular machine learning pipeline designed to process clinical data (based on MIMIC-III and MIMIC-IV datasets) to predict clinical outcomes such as mortality.\n\n---\n\n## 📂 Project Structure\n\n```bash\nResearch Speedrun/\n├── data/                       # Dataset directory\n│   ├── mimic_iii_processed.csv # Validation/external dataset\n│   └── mimic_iv_processed.csv  # Primary training/development dataset\n├── EDA/                        # Exploratory Data Analysis\n│   └── CSV_file_maker.ipynb    # Data exploration & initial preparation\n├── Outlier/                    # Outlier handling module\n│   ├── Outlier.py              # Outlier detection methods (IQR, Modified Z-score)\n│   └── __init__.py\n├── Imputers/                   # Missing data imputation module\n│   ├── Imputer.py              # Imputation wrappers (Iterative, etc.)\n│   └── __init__.py\n├── Smoother/                   # Feature smoothing module\n│   ├── Smoother.py             # Winsorization smoothing to clip remaining outliers\n│   └── __init__.py\n├── Generators/                 # Resampling & data balancing module\n│   ├── Generator.py            # Oversampling (SMOTE) and Downsampling methods\n│   └── __init__.py\n├── Models/                     # ML Model implementations\n│   ├── Models.py               # CatBoost and XGBoost training and evaluation\n│   └── __init__.py\n├── Writers/                    # Output formatting and export module\n│   ├── Writer.py               # Exports results to Markdown, HTML, and CSV\n│   └── __init__.py\n├── list_processor.py           # Main orchestration script\n├── requirements.txt            # Python package dependencies\n└── README.md                   # Project documentation (this file)\n```\n\n---\n\n## ⚙️ ML Pipeline Flow\n\nThe execution in `list_processor.py` follows a sequential multi-stage process:\n\n```mermaid\ngraph TD\n    A[Import MIMIC-IV & MIMIC-III Data] --> B[Outlier Removal (IQR / Modified Z-Score)]\n    B --> C[Imputation (Iterative Imputer)]\n    C --> D[Smoothening (Winsorization)]\n    D --> E[Train / Val / Test Split]\n    E --> F[Class Balancing (SMOTE / Downsampler)]\n    F --> G[Model Training & Evaluation (CatBoost / XGBoost)]\n    G --> H[Export Results (MD, HTML, CSV)]\n```\n\n---\n\n## 🚀 How to Run\n\n1. **Activate the Virtual Environment**:\n   ```powershell\n   .\\venv\\Scripts\\activate\n   ```\n2. **Install Dependencies**:\n   ```bash\n   pip install -r requirements.txt\n   ```\n3. **Execute the Pipeline**:\n   ```bash\n   python list_processor.py\n   ```\n\n---\n\n## 🖥️ GPU Support (Automatic Detection)\n\nTo utilize GPU resources if available, the classifiers support native hardware acceleration.\n\n### 1. CatBoost GPU configuration:\nAdd `task_type=\"GPU\"` to the instantiation.\n```python\nmodel = CatBoostClassifier(\n    iterations=500,\n    learning_rate=0.05,\n    depth=6,\n    task_type=\"GPU\",\n    verbose=False\n)\n```\n\n### 2. XGBoost GPU configuration:\nAdd `device=\"cuda\"` (XGBoost 2.0+) or `tree_method=\"hist\", device=\"cuda\"` to the instantiation.\n```python\nmodel = XGBClassifier(\n    n_estimators=500,\n    learning_rate=0.05,\n    max_depth=6,\n    device=\"cuda\"\n)\n```\n\n### Automatic Implementation Example in `Models/Models.py`\n```python\nfrom catboost.utils import get_gpu_device_count\n\n# Check if GPU is present\nhas_gpu = False\ntry:\n    has_gpu = get_gpu_device_count() > 0\nexcept Exception:\n    pass\n\n# For CatBoost\nparams = {\"iterations\": 500, \"learning_rate\": 0.05}\nif has_gpu:\n    params[\"task_type\"] = \"GPU\"\n\n# For XGBoost\nxgb_params = {\"n_estimators\": 500, \"learning_rate\": 0.05}\nif has_gpu:\n    xgb_params[\"device\"] = \"cuda\"\n```\n\n---\n\n## 🔍 Hyperparameter Tuning: Grid-Search CV\n\nTo perform Grid Search Cross-Validation (Grid-Search CV) for the models, wrap them using Scikit-Learn's `GridSearchCV`.\n\n### Implementation Example\n\nHere is how you can implement `GridSearchCV` in the pipeline:\n\n```python\nfrom sklearn.model_selection import GridSearchCV, StratifiedKFold\n\n# 1. Define parameter grid for tuning\nparam_grid = {\n    'depth': [4, 6, 8],\n    'learning_rate': [0.01, 0.05, 0.1],\n    'l2_leaf_reg': [1, 3, 5]\n}\n\n# 2. Instantiate base estimator\nbase_model = CatBoostClassifier(\n    iterations=500, \n    verbose=False,\n    task_type=\"GPU\" if has_gpu else \"CPU\"\n)\n\n# 3. Setup GridSearchCV\ncv_strategy = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)\ngrid_search = GridSearchCV(\n    estimator=base_model,\n    param_grid=param_grid,\n    cv=cv_strategy,\n    scoring='roc_auc',\n    n_jobs=-1,  # Use all CPU cores for parallel tuning\n    verbose=1\n)\n\n# 4. Fit on training data\ngrid_search.fit(X_train, y_train)\n\n# 5. Extract the best model and parameters\nbest_model = grid_search.best_estimator_\nbest_params = grid_search.best_params_\nprint(f\"Best Parameters: {best_params}\")\n```\n\n---\n\n## 📊 Dataset Columns Reference\n\nThe processed dataset contains the following variables:\n\n| # | Column Name | Non-Null Count | Dtype | Description / Category |\n|---|-------------|----------------|-------|------------------------|\n| 0 | sex | 666 | str | Demographics |\n| 1 | age | 666 | int64 | Demographics |\n| 2 | race | 666 | str | Demographics |\n| 3 | insurance | 666 | str | Demographics |\n| 4 | myocardial_infarction | 666 | int64 | Comorbidities |\n| 5 | congestive_heart_failure | 666 | int64 | Comorbidities |\n| 6 | peripheral_vascular_disease | 666 | int64 | Comorbidities |\n| 7 | cerebrovascular_disease | 666 | int64 | Comorbidities |\n| 8 | dementia | 666 | int64 | Comorbidities |\n| 9 | chronic_pulmonary_disease | 666 | int64 | Comorbidities |\n| 10 | rheumatic_disease | 666 | int64 | Comorbidities |\n| 11 | peptic_ulcer_disease | 666 | int64 | Comorbidities |\n| 12 | diabetes | 666 | int64 | Comorbidities |\n| 13 | paraplegia | 666 | int64 | Comorbidities |\n| 14 | renal_disease | 666 | int64 | Comorbidities |\n| 15 | malignant_cancer | 666 | int64 | Comorbidities |\n| 16 | severe_liver_disease | 666 | int64 | Comorbidities |\n| 17 | aids | 666 | int64 | Comorbidities |\n| 18 | rbc_avg | 484 | float64 | Lab Values |\n| 19 | wbc_avg | 630 | float64 | Lab Values |\n| 20 | hgb_avg | 645 | float64 | Lab Values |\n| 21 | plt_avg | 645 | float64 | Lab Values |\n| 22 | rdw_avg | 642 | float64 | Lab Values |\n| 23 | hct_avg | 649 | float64 | Lab Values |\n| 24 | aptt_avg | 593 | float64 | Lab Values |\n| 25 | pt_avg | 612 | float64 | Lab Values |\n| 26 | inr_avg | 611 | float64 | Lab Values |\n| 27 | bicarbonate_avg | 648 | float64 | Lab Values |\n| 28 | lactate_avg | 114 | float64 | Lab Values |\n| 29 | base_excess_avg | 302 | float64 | Lab Values |\n| 30 | anion_gap_avg | 651 | float64 | Lab Values |\n| 31 | chloride_avg | 626 | float64 | Lab Values |\n| 32 | calcium_avg | 582 | float64 | Lab Values |\n| 33 | sodium_avg | 523 | float64 | Lab Values |\n| 34 | potassium_avg | 570 | float64 | Lab Values |\n| 35 | glucose_avg | 652 | float64 | Lab Values |\n| 36 | creatinine_avg | 449 | float64 | Lab Values |\n| 37 | bun_avg | 649 | float64 | Lab Values |\n| 38 | tbil_avg | 575 | float64 | Lab Values |\n| 39 | albumin_avg | 450 | float64 | Lab Values |\n| 40 | alt_avg | 562 | float64 | Lab Values |\n| 41 | ast_avg | 566 | float64 | Lab Values |\n| 42 | alp_avg | 562 | float64 | Lab Values |\n| 43 | fibrinogen_avg | 160 | float64 | Lab Values |\n| 44 | dbil_avg | 112 | float64 | Lab Values |\n| 45 | temperature_avg | 0 | float64 | Vitals |\n| 46 | map_avg | 293 | float64 | Vitals |\n| 47 | sbp_avg | 455 | float64 | Vitals |\n| 48 | dbp_avg | 456 | float64 | Vitals |\n| 49 | heart_rate_avg | 452 | float64 | Vitals |\n| 50 | respiratory_rate_avg | 456 | float64 | Vitals |\n| 51 | o2_avg | 457 | float64 | Vitals |\n| 52 | weight_avg | 380 | float64 | Physical metrics |\n| 53 | height_avg | 58 | float64 | Physical metrics |\n| 54 | bmi_avg | 47 | float64 | Physical metrics |\n| 55 | mortality_flag | 666 | int64 | **Target Variable** |",
+ "hits": {
+  "st": [
+   {
+    "file": "Generators/Generator.py",
+    "line": 4,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from imblearn.over_sampling import SMOTE as ImblearnSMOTE",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.sampling import Condition",
+     "from sdv.single_table import CopulaGANSynthesizer",
+     "from sdv.single_table import TVAESynthesizer",
+     ""
+    ]
+   },
+   {
+    "file": "Generators/Generator.py",
+    "line": 6,
+    "text": "from sdv.single_table import CopulaGANSynthesizer",
+    "context": [
+     "from imblearn.over_sampling import SMOTE as ImblearnSMOTE",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.sampling import Condition",
+     "from sdv.single_table import CopulaGANSynthesizer",
+     "from sdv.single_table import TVAESynthesizer",
+     "",
+     "",
+     "def _has_cuda() -> bool:"
+    ]
+   },
+   {
+    "file": "Generators/Generator.py",
+    "line": 7,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.sampling import Condition",
+     "from sdv.single_table import CopulaGANSynthesizer",
+     "from sdv.single_table import TVAESynthesizer",
+     "",
+     "",
+     "def _has_cuda() -> bool:",
+     "    \"\"\""
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "Generators/Generator.py",
+    "line": 3,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import pandas as pd",
+     "from imblearn.over_sampling import SMOTE as ImblearnSMOTE",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.sampling import Condition",
+     "from sdv.single_table import CopulaGANSynthesizer",
+     "from sdv.single_table import TVAESynthesizer"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "Generators/Generator.py",
+    "line": 3,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import pandas as pd",
+     "from imblearn.over_sampling import SMOTE as ImblearnSMOTE",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.sampling import Condition",
+     "from sdv.single_table import CopulaGANSynthesizer",
+     "from sdv.single_table import TVAESynthesizer"
+    ]
+   },
+   {
+    "file": "Generators/Generator.py",
+    "line": 4,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from imblearn.over_sampling import SMOTE as ImblearnSMOTE",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.sampling import Condition",
+     "from sdv.single_table import CopulaGANSynthesizer",
+     "from sdv.single_table import TVAESynthesizer",
+     ""
+    ]
+   },
+   {
+    "file": "Generators/Generator.py",
+    "line": 5,
+    "text": "from sdv.sampling import Condition",
+    "context": [
+     "import pandas as pd",
+     "from imblearn.over_sampling import SMOTE as ImblearnSMOTE",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.sampling import Condition",
+     "from sdv.single_table import CopulaGANSynthesizer",
+     "from sdv.single_table import TVAESynthesizer",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "Generators/Generator.py",
+    "line": 6,
+    "text": "from sdv.single_table import CopulaGANSynthesizer",
+    "context": [
+     "from imblearn.over_sampling import SMOTE as ImblearnSMOTE",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.sampling import Condition",
+     "from sdv.single_table import CopulaGANSynthesizer",
+     "from sdv.single_table import TVAESynthesizer",
+     "",
+     "",
+     "def _has_cuda() -> bool:"
+    ]
+   },
+   {
+    "file": "Generators/Generator.py",
+    "line": 7,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.sampling import Condition",
+     "from sdv.single_table import CopulaGANSynthesizer",
+     "from sdv.single_table import TVAESynthesizer",
+     "",
+     "",
+     "def _has_cuda() -> bool:",
+     "    \"\"\""
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "Generators/Generator.py",
+    "line": 4,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from imblearn.over_sampling import SMOTE as ImblearnSMOTE",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.sampling import Condition",
+     "from sdv.single_table import CopulaGANSynthesizer",
+     "from sdv.single_table import TVAESynthesizer",
+     ""
+    ]
+   },
+   {
+    "file": "Generators/Generator.py",
+    "line": 227,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "        # Resolve GPU flag: auto-detect when not explicitly set",
+     "        use_cuda = _has_cuda() if cuda is None else cuda",
+     "",
+     "        # Create and train CTGAN",
+     "        synthesizer = CTGANSynthesizer(",
+     "            metadata,",
+     "            epochs=epochs,",
+     "            verbose=True,",
+     "            cuda=use_cuda"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "Generators/Generator.py",
+    "line": 7,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.sampling import Condition",
+     "from sdv.single_table import CopulaGANSynthesizer",
+     "from sdv.single_table import TVAESynthesizer",
+     "",
+     "",
+     "def _has_cuda() -> bool:",
+     "    \"\"\""
+    ]
+   },
+   {
+    "file": "Generators/Generator.py",
+    "line": 358,
+    "text": "synthesizer = TVAESynthesizer(",
+    "context": [
+     "",
+     "        # Resolve GPU flag: auto-detect when not explicitly set",
+     "        use_cuda = _has_cuda() if cuda is None else cuda",
+     "",
+     "        synthesizer = TVAESynthesizer(",
+     "            metadata,",
+     "            epochs=epochs,",
+     "            verbose=True,",
+     "            cuda=use_cuda"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv"
+  ]
+ }
+}

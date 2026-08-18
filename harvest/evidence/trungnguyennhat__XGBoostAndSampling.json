@@ -1,0 +1,272 @@
+{
+ "repo": "trungnguyennhat/XGBoostAndSampling",
+ "disk_kb": 7333,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "## Dự án Phát hiện Gian lận Thẻ tín dụng (Credit Card Fraud Detection)\n\nDự án này tập trung vào việc xây dựng mô hình phân loại gian lận giao dịch thẻ tín dụng bằng mô hình hồi quy cơ bản **Logistic Regression** (làm baseline) và mô hình nâng cao **XGBoost**, kết hợp với nhiều kỹ thuật **Data Resampling** khác nhau để giải quyết vấn đề mất cân bằng dữ liệu cực kỳ nghiêm trọng (Imbalanced Data).\n\n### Tổng quan Dataset\n\n* **Nguồn:** [Kaggle - Credit Card Fraud Detection](https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud)\n* **Đặc điểm:** Tập dữ liệu chứa các giao dịch được thực hiện bởi thẻ tín dụng trong hai ngày, trong đó có 492 vụ gian lận trên tổng số 284,807 giao dịch.\n* **Lưu ý:** Do giới hạn kích thước file, tập dữ liệu `creditcard.csv` không được đính kèm trong repository này. Bạn cần tải về và đặt ở thư mục gốc.\n\n---\n\n### Cấu trúc thư mục\n\n```text\n.\n├── ketqua/                     # Chứa file kết quả kết quả định lượng và confused matrix\n├── visualization/              # Chứa các biểu đồ phân tích đặc trưng dữ liệu\n├── creditcard.csv              # Dataset (Tải riêng)\n├── preprocessing.py            # Tiền xử lý, Feature Engineering và các hàm Sampling\n├── data_visualization.py       # File tạo các biểu đồ phân tích dữ liệu\n├── learning_visualization.py   # File tạo các biểu đồ phân tích trong quá trình học\n├── run.py                      # File huấn luyện và đánh giá mô hình\n├── README.md                   # Tài liệu hướng dẫn\n└── .gitignore                  # Các file không đẩy lên Git (.csv)\n\n```\n\n---\n\n### Các kỹ thuật Sampling sử dụng\n\nDự án thử nghiệm và so sánh 4 phương pháp cân bằng dữ liệu:\n\n1. **Undersampling:** Sử dụng `RandomUnderSampler` để giảm bớt số lượng mẫu của lớp đa số.\n2. **Oversampling:** Sử dụng `BorderlineSMOTE` để tạo thêm các mẫu giả lập dựa trên ranh giới giữa hai lớp.\n3. **CTGAN (Conditional GAN):** Sử dụng mạng GAN để sinh dữ liệu giả lập cho lớp thiểu số (Gian lận).\n4. **TVAE (Tabular Variational Autoencoder):** Sử dụng mô hình Autoencoder để học phân phối của dữ liệu gian lận và sinh mẫu mới.\n\n---\n\n### Hướng dẫn thực hiện\n\n#### 1. Cài đặt thư viện\n\nYêu cầu Python 3.8+. Cài đặt các thư viện cần thiết:\n\n```bash\npip install pandas matplotlib seaborn scikit-learn xgboost imbalanced-learn sdv\n\n```\n\n#### 2. Phân tích dữ liệu\n\nChạy script sau để tạo các biểu đồ phân phối và tương quan trong thư mục `visualization/`:\n\n```bash\npython data_visualization.py\n\n```\n\n#### 3. Huấn luyện và Đánh giá\n\nChạy script chính để huấn luyện mô hình Logistic Regression và XGBoost với lần lượt 4 phương pháp sampling:\n\n```bash\npython run.py\n```\n\nSau khi chạy xong:\n\n* File `ketqua/results.txt` sẽ lưu so sánh các chỉ số (Accuracy, Precision, Recall, F1-Score) giữa hai mô hình.\n* Các ảnh ma trận nhầm lẫn (`confusion_matrix`) cho từng mô hình và phương pháp sampling sẽ được lưu vào thư mục `ketqua/`.\n\n---\n\n### Quy trình xử lý dữ liệu (Preprocessing)\n\n1. **Feature Treatment:** Giữ nguyên đặc trưng `Time` là đại lượng liên tục (thời gian trôi qua kể từ giao dịch đầu tiên) thay vì chia theo giờ trong ngày nhằm tránh các giả định sai về múi giờ bắt đầu.\n2. **Scaling:** Sử dụng `MinMaxScaler` để đưa tất cả các đặc trưng (bao gồm cả `Time` và `Amount`) về khoảng $[0, 1]$.\n3. **Threshold:** Sử dụng các ngưỡng phân loại phù hợp (Logistic Regression: mặc định 0.5, XGBoost: 0.65) để tối ưu hóa khả năng nhận diện gian lận trên dữ liệu mất cân bằng.\n\n---\n\n### Kết quả mong đợi\n\nMô hình sẽ được đánh giá dựa trên các chỉ số ưu tiên cho dữ liệu mất cân bằng:\n\n* **Accuracy:** đo tỷ lệ dự đoán đúng trên toàn bộ tập kiểm tra.\n* **Precision:** đo tỷ lệ giao dịch thực sự gian lận trong số những giao dịch mà mô hình dự đoán là gian lận.\n* **Recall:** đo tỷ lệ giao dịch gian lận được mô hình phát hiện đúng.\n* **F1-score:** là trung bình điều hòa giữa Precision và Recall.",
+ "hits": {
+  "st": [
+   {
+    "file": "all.ipynb",
+    "line": 83,
+    "text": "\"from sdv.single_table import CTGANSynthesizer, TVAESynthesizer\\n\",",
+    "context": [
+     "    \"import numpy as np\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\",",
+     "    \"import seaborn as sns\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer, TVAESynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sklearn.model_selection import train_test_split\\n\",",
+     "    \"from sklearn.preprocessing import MinMaxScaler, StandardScaler\\n\",",
+     "    \"from imblearn.under_sampling import RandomUnderSampler\\n\","
+    ]
+   },
+   {
+    "file": "preprocessing.py",
+    "line": 2,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.preprocessing import MinMaxScaler",
+     "from imblearn.under_sampling import RandomUnderSampler"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "all.ipynb",
+    "line": 84,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"import matplotlib.pyplot as plt\\n\",",
+     "    \"import seaborn as sns\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer, TVAESynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sklearn.model_selection import train_test_split\\n\",",
+     "    \"from sklearn.preprocessing import MinMaxScaler, StandardScaler\\n\",",
+     "    \"from imblearn.under_sampling import RandomUnderSampler\\n\",",
+     "    \"from imblearn.over_sampling import BorderlineSMOTE\\n\","
+    ]
+   },
+   {
+    "file": "preprocessing.py",
+    "line": 3,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.preprocessing import MinMaxScaler",
+     "from imblearn.under_sampling import RandomUnderSampler",
+     "from imblearn.over_sampling import BorderlineSMOTE"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "all.ipynb",
+    "line": 83,
+    "text": "\"from sdv.single_table import CTGANSynthesizer, TVAESynthesizer\\n\",",
+    "context": [
+     "    \"import numpy as np\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\",",
+     "    \"import seaborn as sns\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer, TVAESynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sklearn.model_selection import train_test_split\\n\",",
+     "    \"from sklearn.preprocessing import MinMaxScaler, StandardScaler\\n\",",
+     "    \"from imblearn.under_sampling import RandomUnderSampler\\n\","
+    ]
+   },
+   {
+    "file": "all.ipynb",
+    "line": 84,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"import matplotlib.pyplot as plt\\n\",",
+     "    \"import seaborn as sns\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer, TVAESynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sklearn.model_selection import train_test_split\\n\",",
+     "    \"from sklearn.preprocessing import MinMaxScaler, StandardScaler\\n\",",
+     "    \"from imblearn.under_sampling import RandomUnderSampler\\n\",",
+     "    \"from imblearn.over_sampling import BorderlineSMOTE\\n\","
+    ]
+   },
+   {
+    "file": "preprocessing.py",
+    "line": 2,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.preprocessing import MinMaxScaler",
+     "from imblearn.under_sampling import RandomUnderSampler"
+    ]
+   },
+   {
+    "file": "preprocessing.py",
+    "line": 3,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.preprocessing import MinMaxScaler",
+     "from imblearn.under_sampling import RandomUnderSampler",
+     "from imblearn.over_sampling import BorderlineSMOTE"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "all.ipynb",
+    "line": 83,
+    "text": "\"from sdv.single_table import CTGANSynthesizer, TVAESynthesizer\\n\",",
+    "context": [
+     "    \"import numpy as np\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\",",
+     "    \"import seaborn as sns\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer, TVAESynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sklearn.model_selection import train_test_split\\n\",",
+     "    \"from sklearn.preprocessing import MinMaxScaler, StandardScaler\\n\",",
+     "    \"from imblearn.under_sampling import RandomUnderSampler\\n\","
+    ]
+   },
+   {
+    "file": "all.ipynb",
+    "line": 729,
+    "text": "\"    ctgan = CTGANSynthesizer(\\n\",",
+    "context": [
+     "    \"    \\n\",",
+     "    \"    metadata = SingleTableMetadata()\\n\",",
+     "    \"    metadata.detect_from_dataframe(fraud_data)\\n\",",
+     "    \"\\n\",",
+     "    \"    ctgan = CTGANSynthesizer(\\n\",",
+     "    \"        metadata,\\n\",",
+     "    \"        epochs=100,\\n\",",
+     "    \"        batch_size=min(100, len(fraud_data)),\\n\",",
+     "    \"        generator_dim=(128, 128),\\n\","
+    ]
+   },
+   {
+    "file": "preprocessing.py",
+    "line": 2,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.preprocessing import MinMaxScaler",
+     "from imblearn.under_sampling import RandomUnderSampler"
+    ]
+   },
+   {
+    "file": "preprocessing.py",
+    "line": 45,
+    "text": "ctgan = CTGANSynthesizer(",
+    "context": [
+     "    ",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(fraud_data)",
+     "",
+     "    ctgan = CTGANSynthesizer(",
+     "        metadata,",
+     "        epochs=100,",
+     "        batch_size=min(100, len(fraud_data)),",
+     "        generator_dim=(128, 128),"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "all.ipynb",
+    "line": 83,
+    "text": "\"from sdv.single_table import CTGANSynthesizer, TVAESynthesizer\\n\",",
+    "context": [
+     "    \"import numpy as np\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\",",
+     "    \"import seaborn as sns\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer, TVAESynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sklearn.model_selection import train_test_split\\n\",",
+     "    \"from sklearn.preprocessing import MinMaxScaler, StandardScaler\\n\",",
+     "    \"from imblearn.under_sampling import RandomUnderSampler\\n\","
+    ]
+   },
+   {
+    "file": "all.ipynb",
+    "line": 768,
+    "text": "\"    tvae = TVAESynthesizer(\\n\",",
+    "context": [
+     "    \"    \\n\",",
+     "    \"    metadata = SingleTableMetadata()\\n\",",
+     "    \"    metadata.detect_from_dataframe(fraud_data)\\n\",",
+     "    \"\\n\",",
+     "    \"    tvae = TVAESynthesizer(\\n\",",
+     "    \"        metadata,\\n\",",
+     "    \"        epochs=100,\\n\",",
+     "    \"        batch_size=500\\n\",",
+     "    \"    )\\n\","
+    ]
+   },
+   {
+    "file": "preprocessing.py",
+    "line": 2,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.preprocessing import MinMaxScaler",
+     "from imblearn.under_sampling import RandomUnderSampler"
+    ]
+   },
+   {
+    "file": "preprocessing.py",
+    "line": 19,
+    "text": "tvae = TVAESynthesizer(",
+    "context": [
+     "    ",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(fraud_data)",
+     "",
+     "    tvae = TVAESynthesizer(",
+     "        metadata,",
+     "        epochs=100,",
+     "        batch_size=500",
+     "    )"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv"
+  ]
+ }
+}

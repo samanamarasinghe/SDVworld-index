@@ -1,0 +1,121 @@
+{
+ "repo": "kritikamandale/Plasticrete_ai",
+ "disk_kb": 3709,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# PlastiCrete AI\n\nAn explainable machine learning platform that predicts 7 mechanical and physical properties of plastic waste composite construction materials from 8 mix design inputs — replacing ₹5,000–₹20,000 lab tests with millisecond inference.\n\n---\n\n## Module status\n\n| Module | Status | Description |\n|--------|--------|-------------|\n| **M1 — Prediction** | ✅ Active | Ensemble (XGBoost + RF + DNN) property predictor |\n| **M2 — Optimisation** | ✅ Active | XGBoost-surrogate constrained optimisation via Optuna |\n| **M3 — Sustainability** | ✅ Active | Embodied carbon (LCA), BIS compliance, IGBC/GRIHA/LEED scorer |\n| **M4 — Recommendation** | ✅ Active | RF classifier + FAISS RAG application recommender |\n\n---\n\n## Quick start\n\n```bash\ncd plasticrete_ai\npip install -r requirements.txt\npython pipeline/run_m1_training.py\nuvicorn deployment.api.app:app --port 8000\n```\n\nOptional flags:\n```bash\npython pipeline/run_m1_training.py --tune-xgb      # Optuna HPO (~2 hrs)\npython pipeline/run_m1_training.py --no-transfer    # skip DNN transfer learning\npython pipeline/run_m1_training.py --no-ctgan       # skip CTGAN augmentation\n```\n\n---\n\n## File tree\n\n```\nplasticrete_ai/\n├── README.md\n├── requirements.txt\n├── .env.example\n├── configs/\n│   ├── m1_config.yaml\n│   ├── m2_config.yaml\n│   ├── m3_config.yaml\n│   └── m4_config.yaml\n├── data/\n│   ├── raw/                    ← immutable source CSVs\n│   ├── processed/              ← master_dataset.csv\n│   ├── augmented/              ← CTGAN synthetic rows\n│   └── external/               ← BIS tables, ICE factors\n├── modules/\n│   ├── m1_prediction/\n│   │   ├── __init__.py         ← PUBLIC CONTRACT\n│   │   ├── CONTRACT.md\n│   │   ├── utils/schema.py     ← SINGLE SOURCE OF TRUTH\n│   │   ├── utils/data_loader.py\n│   │   ├── utils/preprocessor.py\n│   │   ├── utils/feature_engineering.py\n│   │   ├── model/xgboost_model.py\n│   │   ├── model/random_forest_model.py\n│   │   ├── model/dnn_model.py\n│   │   ├── model/ensemble.py\n│   │   ├── model/trainer.py\n│   │   ├── model/evaluator.py\n│   │   ├── explainability/shap_explainer.py\n│   │   ├── explainability/lime_explainer.py\n│   │   └── explainability/pdp_ice_plots.py\n│   ├── m2_optimization/        ← surrogate-model optimiser (Optuna)\n│   ├── m3_sustainability/      ← LCA + BIS + green rating scorer\n│   └── m4_recommendation/      ← RF classifier + FAISS RAG\n├── models/m1/                  ← trained artefacts\n├── pipeline/\n│   ├── run_data_pipeline.py\n│   └── run_m1_training.py\n├── deployment/\n│   ├── api/app.py              ← FastAPI\n│   └── frontend/streamlit_app.py\n└── docs/\n```\n\n---\n\n## M1 → M2/M3/M4 contract\n\n```python\nimport modules.m1_prediction as m1\n\n# At startup\nm1.load_ensemble(\"models/m1/\", config)\n\n# Single prediction (M3, M4, API)\nresult = m1.predict({\n    \"plastic_type\":    \"PET\",\n    \"replacement_pct\": 15.0,\n    \"particle_size_mm\": 4.0,\n    \"wc_ratio\":        0.45,\n    \"additive_type\":   \"fly_ash\",\n    \"additive_pct\":    10.0,\n    \"curing_temp_c\":   27.0,\n    \"curing_days\":     28,\n})\n# result.compressive_strength_mpa → float or None\n# result.ci_low, result.ci_high   → Dict[str, float]\n# result.shap_values              → Dict[str, Dict[str, float]]\n\n# Batch prediction (M2 optimisation loop — no SHAP, fast)\nprep = m1.get_preprocessor()\nX = prep.transform_input(input_dict)          # (1, n_features)\nmeans, ci_low, ci_high = m1.predict_batch(X) # each (1, 7)\n```\n\n`PredictionResult` field → column order mapping:\n\n| Index | Field | Unit |\n|-------|-------|------|\n| 0 | compressive_strength_mpa | MPa |\n| 1 | flexural_strength_mpa | MPa |\n| 2 | split_tensile_mpa | MPa |\n| 3 | density_kgm3 | kg/m³ |\n| 4 | water_absorption_pct | % |\n| 5 | thermal_conductivity_wm | W/m·K |\n| 6 | durability_index | 0–100 |\n\n---\n\n## Data checklist\n\nPlace these files in `data/raw/` (see `docs/DATA_EXTRACTION_GUIDE.md`):\n\n| File | DOI | Rows |\n|------|-----|------|\n| `uci_yeh_concrete.csv` | auto-fetched via ucimlrepo | 1030 |\n| `mendeley_rubberized.csv` | Mendeley | ~1200 |\n| `nayir_yilmaz_2024.csv` | 10.1016/nayir_yilmaz_2024 | ~428 |\n| `nafees_2022.csv` | 10.3390/ma15010221 | ~640 |\n| `chong_shi_2023.csv` | J. Clean. Prod. 2023 | 103 |\n| `alkharisi_dahish_2025.csv` | 10.1016/alkharisi_dahish_2025 | ~296 |\n| `manual_extraction.csv` | team-extracted | TBD |\n\n---\n\n## Expected performance (R² on held-out test set)\n\n| Target | Expected R² range |\n|--------|--------------------|\n| compressive_strength_mpa | 0.88 – 0.94 |\n| flexural_strength_mpa | 0.82 – 0.90 |\n| split_tensile_mpa | 0.80 – 0.88 |\n| density_kgm3 | 0.90 – 0.96 |\n| water_absorption_pct | 0.75 – 0.85 |\n| thermal_conductivity_wm | 0.65 – 0.78 |\n| durability_index | 0.70 – 0.82 |\n",
+ "hits": {
+  "st": [
+   {
+    "file": "plasticrete_ai/modules/m1_prediction/model/trainer.py",
+    "line": 188,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "        return ensemble",
+     "",
+     "    def _ctgan_augment(self, df: pd.DataFrame) -> Optional[pd.DataFrame]:",
+     "        try:",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "            from sdv.metadata import SingleTableMetadata",
+     "        except ImportError:",
+     "            logger.warning(\"sdv/ctgan not installed â€” skipping augmentation\")",
+     "            return None"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "plasticrete_ai/modules/m1_prediction/model/trainer.py",
+    "line": 189,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "    def _ctgan_augment(self, df: pd.DataFrame) -> Optional[pd.DataFrame]:",
+     "        try:",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "            from sdv.metadata import SingleTableMetadata",
+     "        except ImportError:",
+     "            logger.warning(\"sdv/ctgan not installed â€” skipping augmentation\")",
+     "            return None",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "plasticrete_ai/modules/m1_prediction/model/trainer.py",
+    "line": 188,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "        return ensemble",
+     "",
+     "    def _ctgan_augment(self, df: pd.DataFrame) -> Optional[pd.DataFrame]:",
+     "        try:",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "            from sdv.metadata import SingleTableMetadata",
+     "        except ImportError:",
+     "            logger.warning(\"sdv/ctgan not installed â€” skipping augmentation\")",
+     "            return None"
+    ]
+   },
+   {
+    "file": "plasticrete_ai/modules/m1_prediction/model/trainer.py",
+    "line": 189,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "    def _ctgan_augment(self, df: pd.DataFrame) -> Optional[pd.DataFrame]:",
+     "        try:",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "            from sdv.metadata import SingleTableMetadata",
+     "        except ImportError:",
+     "            logger.warning(\"sdv/ctgan not installed â€” skipping augmentation\")",
+     "            return None",
+     ""
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "plasticrete_ai/modules/m1_prediction/model/trainer.py",
+    "line": 188,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "        return ensemble",
+     "",
+     "    def _ctgan_augment(self, df: pd.DataFrame) -> Optional[pd.DataFrame]:",
+     "        try:",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "            from sdv.metadata import SingleTableMetadata",
+     "        except ImportError:",
+     "            logger.warning(\"sdv/ctgan not installed â€” skipping augmentation\")",
+     "            return None"
+    ]
+   },
+   {
+    "file": "plasticrete_ai/modules/m1_prediction/model/trainer.py",
+    "line": 215,
+    "text": "synth = CTGANSynthesizer(metadata, epochs=epochs, batch_size=500, verbose=False)",
+    "context": [
+     "        try:",
+     "            metadata = SingleTableMetadata()",
+     "            metadata.detect_from_dataframe(train_data)",
+     "",
+     "            synth = CTGANSynthesizer(metadata, epochs=epochs, batch_size=500, verbose=False)",
+     "            synth.fit(train_data)",
+     "            syn_df = synth.sample(num_rows=n_synthetic)",
+     "",
+     "            # Rejection sampling: clip to valid ranges"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

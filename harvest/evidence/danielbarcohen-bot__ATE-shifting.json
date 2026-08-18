@@ -1,0 +1,173 @@
+{
+ "repo": "danielbarcohen-bot/ATE-shifting",
+ "disk_kb": 472316,
+ "method": "partial_clone",
+ "tree_files": 24924,
+ "status": "ok",
+ "readme": "# Steering Causal Effect through Data Preparation Pipeline Search\n\n## Overview\n\nData preparation is a fundamental stage in data science workflows, yet in observational causal analysis, even standard data preparation choices can substantially alter estimated effects. This project presents a general framework that automatically constructs data preparation pipelines capable of **steering an estimated causal effect** into a user-specified target range.\n\n## Search Algorithms\n\nThe framework provides several strategies to navigate the exponential search space of pipelines:\n\n### 1. Exact & Pruned Search\n* **Brute Force (`brute`)**: Explores all possible combinations. **Guarantees the shortest sequence** to reach the target ATE, but has high computational complexity.\n* **Pruned (`OE`)**: An optimized version of brute force. It leverages **Observational Equivalence** to prune sequences that produce identical data states, significantly reducing redundant computations while maintaining the shortest-path guarantee.\n\n### 2. Probabilistic & LLM Search\n* **Probe (`probe`)**: Uses probability-guided search to find a solution. While it does not guarantee the shortest path, it offers a **very fast search** suitable for large spaces.\n* **LLM Variants**: Leverages Large Language Models to guide the synthesis via:\n    * `llm_zero_shot`\n    * `llm_few_shot`\n    * `llm_cot` (Chain of Thought)\n\n### 3. Baselines & Automl\n* **Random (`random`)**: Explores sequences of a fixed length randomly.\n* **Auto-Sklearn**: Includes both a vanilla version and a specialized **ATE-based score function** version.\n---\n\n## Repository Structure\n\n* `main.py`: The primary entry point for executing searches.\n* `experiments.py`: Contains all experiment definitions, target ATEs, and configurations.\n* `data_loader.py`: Specialized classes for loading and preprocessing the four core datasets.\n* `utils.py`: The library of available data transformation functions used during the search.\n* `search_methods`: Holds the search method classes. each search method has function search that searches sequence that steers the ATE into given range, respecting max sequence length.\n* `prompts.py`: Contains the different prompts to the LLM.\n---\n\n## Data & Transformations\n\n### Supported Datasets\nThe framework includes loading classes for four real-world datasets in `data_loader.py`:\n1.  **Twins**: Mortality data for twin births in the USA.\n2.  **ACS**: American Community Survey data.\n3.  **Lalonde**: Employment data from the National Supported Work program.\n4.  **IHDP**: Infant Health and Development Program.\n\n### Transformation Logic\nTransformations are treated as the \"building blocks\" of the synthesized programs.\n* **Location:** All functional logic for transformations resides in `utils.py`.\n* **Definition:** Each experiment includes a dictionary mapping the **Transformation Name** to its corresponding **Function**.\n\n---\n### Experiment Configuration\nExperiments are defined in `experiments.py`. Each experiment requires the following parameters:\n* `df`: The input dataset.\n* `transformations_dict`: Dictionary of available functions.\n* `common_causes`: List of columns to treat as confounders.\n* `target_ate`: The goal ATE.\n* `epsilon`: The tolerance range around the target.\n* `max_length`: Maximum number of transformations allowed.\n* `sequence_length`: (Required only for `random` baseline experiments).\n\n\n## Running Experiments\n\nExperiments are configured in `experiments.py`. Each experiment definition includes the dataframe, the transformation dictionary, confounder columns, the **target ATE**, **epsilon** (tolerance), and **max_length** (search depth).\n\n### Command Syntax\nTo run an experiment, provide the Experiment ID and the desired Algorithm Name to `main.py`:\n\n```bash\npython main.py <EXP_ID> <ALG_NAME>",
+ "hits": {
+  "sdv_any": [
+   {
+    "file": "notebooks_new/abhi1701__biomass-yield-forecasting__SD_2_OH_non-local_SVC_TVAE_1k-checkpoint.ipynb",
+    "line": 1,
+    "text": "{\"cells\": [{\"cell_type\": \"code\", \"execution_count\": 1, \"id\": \"43a6d61b\", \"metadata\": {}, \"outputs\": [{\"data\": {\"text/html\": [\"<div>\\n\", \"<style scoped>\\n\", \"    .dataframe tbody tr th:only-of-type {\\n\", \"        vertical-align: middle;\\n\", \"    }\\n\", \"\\n\", \"    .dataframe tbody tr th {\\n\", \"        ",
+    "context": [
+     "{\"cells\": [{\"cell_type\": \"code\", \"execution_count\": 1, \"id\": \"43a6d61b\", \"metadata\": {}, \"outputs\": [{\"data\": {\"text/html\": [\"<div>\\n\", \"<style scoped>\\n\", \"    .dataframe tbody tr th:only-of-type {\\n"
+    ]
+   },
+   {
+    "file": "notebooks_new/abhi1701__biomass-yield-forecasting__KY_WI_2_GA_3Class_RF_DT_2k_CTGAN-Copy7.ipynb",
+    "line": 1,
+    "text": "{\"cells\": [{\"cell_type\": \"code\", \"execution_count\": 1, \"id\": \"43a6d61b\", \"metadata\": {}, \"outputs\": [{\"data\": {\"text/html\": [\"<div>\\n\", \"<style scoped>\\n\", \"    .dataframe tbody tr th:only-of-type {\\n\", \"        vertical-align: middle;\\n\", \"    }\\n\", \"\\n\", \"    .dataframe tbody tr th {\\n\", \"        ",
+    "context": [
+     "{\"cells\": [{\"cell_type\": \"code\", \"execution_count\": 1, \"id\": \"43a6d61b\", \"metadata\": {}, \"outputs\": [{\"data\": {\"text/html\": [\"<div>\\n\", \"<style scoped>\\n\", \"    .dataframe tbody tr th:only-of-type {\\n"
+    ]
+   },
+   {
+    "file": "notebooks_new/abhi1701__biomass-yield-forecasting__HighmoreSD8_local_p8std_3Class_MLP.ipynb",
+    "line": 1,
+    "text": "{\"cells\": [{\"cell_type\": \"code\", \"execution_count\": 1, \"id\": \"43a6d61b\", \"metadata\": {}, \"outputs\": [{\"data\": {\"text/html\": [\"<div>\\n\", \"<style scoped>\\n\", \"    .dataframe tbody tr th:only-of-type {\\n\", \"        vertical-align: middle;\\n\", \"    }\\n\", \"\\n\", \"    .dataframe tbody tr th {\\n\", \"        ",
+    "context": [
+     "{\"cells\": [{\"cell_type\": \"code\", \"execution_count\": 1, \"id\": \"43a6d61b\", \"metadata\": {}, \"outputs\": [{\"data\": {\"text/html\": [\"<div>\\n\", \"<style scoped>\\n\", \"    .dataframe tbody tr th:only-of-type {\\n"
+    ]
+   },
+   {
+    "file": "notebooks_new/thejonathanvancetrance__SNLT__OH8_local_p5std_3Class_xgb-checkpoint.ipynb",
+    "line": 1,
+    "text": "{\"cells\": [{\"cell_type\": \"code\", \"execution_count\": 37, \"id\": \"43a6d61b\", \"metadata\": {}, \"outputs\": [{\"data\": {\"text/html\": [\"<div>\\n\", \"<style scoped>\\n\", \"    .dataframe tbody tr th:only-of-type {\\n\", \"        vertical-align: middle;\\n\", \"    }\\n\", \"\\n\", \"    .dataframe tbody tr th {\\n\", \"       ",
+    "context": [
+     "{\"cells\": [{\"cell_type\": \"code\", \"execution_count\": 37, \"id\": \"43a6d61b\", \"metadata\": {}, \"outputs\": [{\"data\": {\"text/html\": [\"<div>\\n\", \"<style scoped>\\n\", \"    .dataframe tbody tr th:only-of-type {\\"
+    ]
+   },
+   {
+    "file": "notebooks_new/thejonathanvancetrance__SNLT__HighmoreSD8_local_p8std_3Class_MLP.ipynb",
+    "line": 1,
+    "text": "{\"cells\": [{\"cell_type\": \"code\", \"execution_count\": 1, \"id\": \"43a6d61b\", \"metadata\": {}, \"outputs\": [{\"data\": {\"text/html\": [\"<div>\\n\", \"<style scoped>\\n\", \"    .dataframe tbody tr th:only-of-type {\\n\", \"        vertical-align: middle;\\n\", \"    }\\n\", \"\\n\", \"    .dataframe tbody tr th {\\n\", \"        ",
+    "context": [
+     "{\"cells\": [{\"cell_type\": \"code\", \"execution_count\": 1, \"id\": \"43a6d61b\", \"metadata\": {}, \"outputs\": [{\"data\": {\"text/html\": [\"<div>\\n\", \"<style scoped>\\n\", \"    .dataframe tbody tr th:only-of-type {\\n"
+    ]
+   },
+   {
+    "file": "notebooks_new/thejonathanvancetrance__SNLT__KY_WI_2_GA_3Class_MLP_CTG_1k_p88StdDev-Copy3.ipynb",
+    "line": 1,
+    "text": "{\"cells\": [{\"cell_type\": \"code\", \"execution_count\": 1, \"id\": \"43a6d61b\", \"metadata\": {}, \"outputs\": [{\"data\": {\"text/html\": [\"<div>\\n\", \"<style scoped>\\n\", \"    .dataframe tbody tr th:only-of-type {\\n\", \"        vertical-align: middle;\\n\", \"    }\\n\", \"\\n\", \"    .dataframe tbody tr th {\\n\", \"        ",
+    "context": [
+     "{\"cells\": [{\"cell_type\": \"code\", \"execution_count\": 1, \"id\": \"43a6d61b\", \"metadata\": {}, \"outputs\": [{\"data\": {\"text/html\": [\"<div>\\n\", \"<style scoped>\\n\", \"    .dataframe tbody tr th:only-of-type {\\n"
+    ]
+   },
+   {
+    "file": "notebooks_new/thejonathanvancetrance__SNLT__KY_WI_2_GA_3Class_RF_DT_1k_CTG_lr_2e5-Copy3.ipynb",
+    "line": 1,
+    "text": "{\"cells\": [{\"cell_type\": \"code\", \"execution_count\": 1, \"id\": \"43a6d61b\", \"metadata\": {}, \"outputs\": [{\"data\": {\"text/html\": [\"<div>\\n\", \"<style scoped>\\n\", \"    .dataframe tbody tr th:only-of-type {\\n\", \"        vertical-align: middle;\\n\", \"    }\\n\", \"\\n\", \"    .dataframe tbody tr th {\\n\", \"        ",
+    "context": [
+     "{\"cells\": [{\"cell_type\": \"code\", \"execution_count\": 1, \"id\": \"43a6d61b\", \"metadata\": {}, \"outputs\": [{\"data\": {\"text/html\": [\"<div>\\n\", \"<style scoped>\\n\", \"    .dataframe tbody tr th:only-of-type {\\n"
+    ]
+   },
+   {
+    "file": "notebooks_new/abhi1701__biomass-yield-forecasting__ForDA_noPretrain_Wooster_OH_SVR_SITS_30_R48_MAE43_sMAPE2540_s1p5.ipynb",
+    "line": 1,
+    "text": "{\"cells\": [{\"cell_type\": \"code\", \"execution_count\": 1, \"id\": \"43a6d61b\", \"metadata\": {\"scrolled\": true}, \"outputs\": [{\"data\": {\"text/html\": [\"<div>\\n\", \"<style scoped>\\n\", \"    .dataframe tbody tr th:only-of-type {\\n\", \"        vertical-align: middle;\\n\", \"    }\\n\", \"\\n\", \"    .dataframe tbody tr th",
+    "context": [
+     "{\"cells\": [{\"cell_type\": \"code\", \"execution_count\": 1, \"id\": \"43a6d61b\", \"metadata\": {\"scrolled\": true}, \"outputs\": [{\"data\": {\"text/html\": [\"<div>\\n\", \"<style scoped>\\n\", \"    .dataframe tbody tr th:"
+    ]
+   },
+   {
+    "file": "notebooks_new/abhi1701__biomass-yield-forecasting__KY_WI_2_GA_3Class_MLP_CTG_1k_p88StdDev-Copy3.ipynb",
+    "line": 1,
+    "text": "{\"cells\": [{\"cell_type\": \"code\", \"execution_count\": 1, \"id\": \"43a6d61b\", \"metadata\": {}, \"outputs\": [{\"data\": {\"text/html\": [\"<div>\\n\", \"<style scoped>\\n\", \"    .dataframe tbody tr th:only-of-type {\\n\", \"        vertical-align: middle;\\n\", \"    }\\n\", \"\\n\", \"    .dataframe tbody tr th {\\n\", \"        ",
+    "context": [
+     "{\"cells\": [{\"cell_type\": \"code\", \"execution_count\": 1, \"id\": \"43a6d61b\", \"metadata\": {}, \"outputs\": [{\"data\": {\"text/html\": [\"<div>\\n\", \"<style scoped>\\n\", \"    .dataframe tbody tr th:only-of-type {\\n"
+    ]
+   },
+   {
+    "file": "notebooks_new/abhi1701__biomass-yield-forecasting__SD_Beresford_1999-2010_to_2011_multivariate_KNN_MAE39_R90_CORRECTED-2.ipynb",
+    "line": 1,
+    "text": "{\"cells\": [{\"cell_type\": \"code\", \"execution_count\": 1, \"id\": \"43a6d61b\", \"metadata\": {\"scrolled\": false}, \"outputs\": [{\"data\": {\"text/html\": [\"<div>\\n\", \"<style scoped>\\n\", \"    .dataframe tbody tr th:only-of-type {\\n\", \"        vertical-align: middle;\\n\", \"    }\\n\", \"\\n\", \"    .dataframe tbody tr t",
+    "context": [
+     "{\"cells\": [{\"cell_type\": \"code\", \"execution_count\": 1, \"id\": \"43a6d61b\", \"metadata\": {\"scrolled\": false}, \"outputs\": [{\"data\": {\"text/html\": [\"<div>\\n\", \"<style scoped>\\n\", \"    .dataframe tbody tr th"
+    ]
+   },
+   {
+    "file": "notebooks_new/thejonathanvancetrance__SNLT__KY_WI_2_GA_3Class_MLP_5k-1013-Copy1.ipynb",
+    "line": 1,
+    "text": "{\"cells\": [{\"cell_type\": \"code\", \"execution_count\": 1, \"id\": \"43a6d61b\", \"metadata\": {}, \"outputs\": [{\"data\": {\"text/html\": [\"<div>\\n\", \"<style scoped>\\n\", \"    .dataframe tbody tr th:only-of-type {\\n\", \"        vertical-align: middle;\\n\", \"    }\\n\", \"\\n\", \"    .dataframe tbody tr th {\\n\", \"        ",
+    "context": [
+     "{\"cells\": [{\"cell_type\": \"code\", \"execution_count\": 1, \"id\": \"43a6d61b\", \"metadata\": {}, \"outputs\": [{\"data\": {\"text/html\": [\"<div>\\n\", \"<style scoped>\\n\", \"    .dataframe tbody tr th:only-of-type {\\n"
+    ]
+   },
+   {
+    "file": "notebooks_new/thejonathanvancetrance__SNLT__KY_WI_2_GA_3Class_KNN_logReg_SVC_1k_TVAE-Copy4.ipynb",
+    "line": 1,
+    "text": "{\"cells\": [{\"cell_type\": \"code\", \"execution_count\": 1, \"id\": \"43a6d61b\", \"metadata\": {}, \"outputs\": [{\"data\": {\"text/html\": [\"<div>\\n\", \"<style scoped>\\n\", \"    .dataframe tbody tr th:only-of-type {\\n\", \"        vertical-align: middle;\\n\", \"    }\\n\", \"\\n\", \"    .dataframe tbody tr th {\\n\", \"        ",
+    "context": [
+     "{\"cells\": [{\"cell_type\": \"code\", \"execution_count\": 1, \"id\": \"43a6d61b\", \"metadata\": {}, \"outputs\": [{\"data\": {\"text/html\": [\"<div>\\n\", \"<style scoped>\\n\", \"    .dataframe tbody tr th:only-of-type {\\n"
+    ]
+   }
+  ],
+  "ctgan_mod": [
+   {
+    "file": "notebooks_new/kevoa__Cancer-Prediction-__04_model_trainer.ipynb",
+    "line": 1,
+    "text": "{\"cells\": [{\"cell_type\": \"code\", \"execution_count\": 1, \"metadata\": {}, \"outputs\": [], \"source\": [\"import os\"]}, {\"cell_type\": \"code\", \"execution_count\": 2, \"metadata\": {}, \"outputs\": [{\"data\": {\"text/plain\": [\"'c:\\\\\\\\Cancer-Prediction-\\\\\\\\research'\"]}, \"execution_count\": 2, \"metadata\": {}, \"output_t",
+    "context": [
+     "{\"cells\": [{\"cell_type\": \"code\", \"execution_count\": 1, \"metadata\": {}, \"outputs\": [], \"source\": [\"import os\"]}, {\"cell_type\": \"code\", \"execution_count\": 2, \"metadata\": {}, \"outputs\": [{\"data\": {\"text/"
+    ]
+   },
+   {
+    "file": "notebooks/sababaganoosh__ML-Ops-Final__HDR and ADASYN Model Comparison.ipynb",
+    "line": 1,
+    "text": "{\"cells\": [{\"cell_type\": \"markdown\", \"metadata\": {\"_cell_guid\": \"f32b4bb9-8c9e-4c30-856d-8bef43fce488\", \"_kg_hide-output\": false, \"_uuid\": \"d15cee3ba1ff6caae0f85bc8c41fec6fa2168a3a\"}, \"source\": [\"# Predictive analysis of Bank Marketing\\n\", \"\\n\", \"#### Problem Statement\\n\", \"The data is related with ",
+    "context": [
+     "{\"cells\": [{\"cell_type\": \"markdown\", \"metadata\": {\"_cell_guid\": \"f32b4bb9-8c9e-4c30-856d-8bef43fce488\", \"_kg_hide-output\": false, \"_uuid\": \"d15cee3ba1ff6caae0f85bc8c41fec6fa2168a3a\"}, \"source\": [\"# Pr"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "notebooks_new/mbaak__synthsonic__intrusion_categorical_variables_bayesian_network_reweighted.ipynb",
+    "line": 1,
+    "text": "{\"cells\": [{\"cell_type\": \"code\", \"execution_count\": null, \"metadata\": {}, \"outputs\": [], \"source\": [\"!pip install -U ../../../tm/SDGym\"]}, {\"cell_type\": \"code\", \"execution_count\": null, \"metadata\": {}, \"outputs\": [], \"source\": [\"import sdgym\\n\", \"from sdgym import load_dataset\\n\", \"from sdgym import",
+    "context": [
+     "{\"cells\": [{\"cell_type\": \"code\", \"execution_count\": null, \"metadata\": {}, \"outputs\": [], \"source\": [\"!pip install -U ../../../tm/SDGym\"]}, {\"cell_type\": \"code\", \"execution_count\": null, \"metadata\": {}"
+    ]
+   },
+   {
+    "file": "notebooks/sababaganoosh__ML-Ops-Final__HDR and ADASYN Model Comparison.ipynb",
+    "line": 1,
+    "text": "{\"cells\": [{\"cell_type\": \"markdown\", \"metadata\": {\"_cell_guid\": \"f32b4bb9-8c9e-4c30-856d-8bef43fce488\", \"_kg_hide-output\": false, \"_uuid\": \"d15cee3ba1ff6caae0f85bc8c41fec6fa2168a3a\"}, \"source\": [\"# Predictive analysis of Bank Marketing\\n\", \"\\n\", \"#### Problem Statement\\n\", \"The data is related with ",
+    "context": [
+     "{\"cells\": [{\"cell_type\": \"markdown\", \"metadata\": {\"_cell_guid\": \"f32b4bb9-8c9e-4c30-856d-8bef43fce488\", \"_kg_hide-output\": false, \"_uuid\": \"d15cee3ba1ff6caae0f85bc8c41fec6fa2168a3a\"}, \"source\": [\"# Pr"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "notebooks_new/mbaak__synthsonic__intrusion_categorical_variables_bayesian_network_reweighted.ipynb",
+    "line": 1,
+    "text": "{\"cells\": [{\"cell_type\": \"code\", \"execution_count\": null, \"metadata\": {}, \"outputs\": [], \"source\": [\"!pip install -U ../../../tm/SDGym\"]}, {\"cell_type\": \"code\", \"execution_count\": null, \"metadata\": {}, \"outputs\": [], \"source\": [\"import sdgym\\n\", \"from sdgym import load_dataset\\n\", \"from sdgym import",
+    "context": [
+     "{\"cells\": [{\"cell_type\": \"code\", \"execution_count\": null, \"metadata\": {}, \"outputs\": [], \"source\": [\"!pip install -U ../../../tm/SDGym\"]}, {\"cell_type\": \"code\", \"execution_count\": null, \"metadata\": {}"
+    ]
+   }
+  ],
+  "gym": [
+   {
+    "file": "notebooks_new/mbaak__synthsonic__intrusion_categorical_variables_bayesian_network_reweighted.ipynb",
+    "line": 1,
+    "text": "{\"cells\": [{\"cell_type\": \"code\", \"execution_count\": null, \"metadata\": {}, \"outputs\": [], \"source\": [\"!pip install -U ../../../tm/SDGym\"]}, {\"cell_type\": \"code\", \"execution_count\": null, \"metadata\": {}, \"outputs\": [], \"source\": [\"import sdgym\\n\", \"from sdgym import load_dataset\\n\", \"from sdgym import",
+    "context": [
+     "{\"cells\": [{\"cell_type\": \"code\", \"execution_count\": null, \"metadata\": {}, \"outputs\": [], \"source\": [\"!pip install -U ../../../tm/SDGym\"]}, {\"cell_type\": \"code\", \"execution_count\": null, \"metadata\": {}"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ctgan_mod",
+  "gym",
+  "sdv_any",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

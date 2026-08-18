@@ -1,0 +1,221 @@
+{
+ "repo": "BohdanPavliuk/CVG",
+ "disk_kb": 233,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# CVG\n\nTwo-table vine-copula synthetic data generator and evaluation framework.\n\n## Setup\n\n### Prerequisites\n\n- Python 3.12+\n- [uv](https://docs.astral.sh/uv/) — fast Python package and project manager\n\n### Install uv\n\n```bash\ncurl -LsSf https://astral.sh/uv/install.sh | sh\n```\n\n### Create environment and install dependencies\n\n```bash\nuv sync\n```\n\nThis creates a `.venv` virtual environment and installs all project dependencies.\n\n### Install dev dependencies (Jupyter support)\n\n```bash\nuv sync --group dev\n```\n\n### Use the package in Jupyter\n\n```bash\nuv pip install -e .\n```\n\n## Walk-through: UCI Online Retail\n\nEnd-to-end example — download the UCI Online Retail dataset, prepare it into\nthe two-table parent/child layout, fit the generator, and produce a synthetic\ncopy.\n\n### 1. Download the raw data\n\n```bash\nuv run python scripts/download_data.py\n```\n\nFetches a public datasets bundle (~8 MB compressed) from Google Drive and\nextracts it into `data/raw/`:\n\n- `data/raw/uci_retail/online_retail.csv` — raw UCI Online Retail (id 352)\n- `data/raw/rossmann/historical.csv`, `data/raw/rossmann/store.csv` —\n  SyntheRela Rossmann subsample (2014-07-31 .. 2014-09-30)\n\nThe Drive file ID is hardcoded in `scripts/download_data.py` — change\n`DRIVE_FILE_ID` there if you mirror the bundle elsewhere.\n\n### 2. Prepare the relational tables\n\n```bash\nuv run python src/prepare_data_uci.py \\\n    --input data/raw/uci_retail/online_retail.csv \\\n    --output-dir data/prepared/uci\n```\n\nProduces in `data/prepared/uci/`:\n\n- `customers.csv` — parent table (one row per customer)\n- `purchases.csv` — child table (one row per invoice)\n- `metadata.yml`, `prep_report.txt` — provenance for this prep run\n\n### 3. Fit the generator\n\n```bash\nuv run python src/fit_generator_v1.py \\\n    --data-dir data/prepared/uci \\\n    --metadata configs/uci_online_retail_generator_v1.yaml \\\n    --output-dir artifacts/uci\n```\n\nWrites fitted artifacts (K-means, parent vine, per-cluster child vines, and\nan `artifact_manifest.yml`) to `artifacts/uci/`.\n\n### 4. Generate synthetic data\n\n```bash\nuv run python src/generate_data_v1.py \\\n    --artifacts-dir artifacts/uci \\\n    --real-data-dir data/prepared/uci \\\n    --output-dir data/synthetic/uci \\\n    --scale 1.0\n```\n\nWrites `synthetic_customers.csv` and `synthetic_purchases.csv` to\n`data/synthetic/uci/`. Use `--scale` to produce a sample sized as a fraction\nof the real parent table, or `--n-parent N` to request an exact parent\nrow count. `--random-state` controls reproducibility.\n\n### 5. Evaluate the synthetic data\n\n```bash\nuv run python src/evaluate_method.py \\\n    --real-data-dir data/prepared/uci \\\n    --metadata configs/uci_online_retail_evaluator.yaml \\\n    --synthetic-dir data/synthetic/uci \\\n    --method-name v1 \\\n    --output-dir experiments/uci/v1\n```\n\nCompares the synthetic tables in `--synthetic-dir` against the real tables\nin `--real-data-dir` and writes the Level 1/2/3 fidelity metrics\n(marginals, correlations, tail dependence, relational consistency) plus\nplots and a Markdown report into `--output-dir`. `--method-name` is just a\nlabel that propagates into the report and the per-method CSV filenames so\nmultiple methods can be aggregated downstream.\n\nNote that step 5 uses a different metadata file (`*_evaluator.yaml`) than\nstep 3 (`*_generator_v1.yaml`): the evaluator config declares column roles,\ntail-dependence pairs, and aggregate-consistency targets, while the\ngenerator config declares the modelled-column list and per-column\nconstraints/transforms.\n",
+ "hits": {
+  "md": [
+   {
+    "file": "eda/run_comparison_cvg_uci_1.ipynb",
+    "line": 378,
+    "text": "\"from sdv.metadata import Metadata\\n\",",
+    "context": [
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from evaluator.metadata import TableSpec\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"from sdv.multi_table import HMASynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"\\n\",",
+     "    \"def reconcile(syn_df: pd.DataFrame, spec: TableSpec,\\n\","
+    ]
+   },
+   {
+    "file": "eda/run_comparison_cvg_rossmann.ipynb",
+    "line": 418,
+    "text": "\"from sdv.metadata import Metadata\\n\",",
+    "context": [
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from evaluator.metadata import TableSpec\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"from sdv.multi_table import HMASynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"\\n\",",
+     "    \"def reconcile(syn_df: pd.DataFrame, spec: TableSpec,\\n\","
+    ]
+   }
+  ],
+  "mt": [
+   {
+    "file": "eda/run_comparison_cvg_uci_1.ipynb",
+    "line": 379,
+    "text": "\"from sdv.multi_table import HMASynthesizer\\n\",",
+    "context": [
+     "   ],",
+     "   \"source\": [",
+     "    \"from evaluator.metadata import TableSpec\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"from sdv.multi_table import HMASynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"\\n\",",
+     "    \"def reconcile(syn_df: pd.DataFrame, spec: TableSpec,\\n\",",
+     "    \"              real_columns: list[str], label: str) -> pd.DataFrame:\\n\","
+    ]
+   },
+   {
+    "file": "eda/run_comparison_cvg_rossmann.ipynb",
+    "line": 419,
+    "text": "\"from sdv.multi_table import HMASynthesizer\\n\",",
+    "context": [
+     "   ],",
+     "   \"source\": [",
+     "    \"from evaluator.metadata import TableSpec\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"from sdv.multi_table import HMASynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"\\n\",",
+     "    \"def reconcile(syn_df: pd.DataFrame, spec: TableSpec,\\n\",",
+     "    \"              real_columns: list[str], label: str) -> pd.DataFrame:\\n\","
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "eda/run_comparison_cvg_uci_1.ipynb",
+    "line": 378,
+    "text": "\"from sdv.metadata import Metadata\\n\",",
+    "context": [
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from evaluator.metadata import TableSpec\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"from sdv.multi_table import HMASynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"\\n\",",
+     "    \"def reconcile(syn_df: pd.DataFrame, spec: TableSpec,\\n\","
+    ]
+   },
+   {
+    "file": "eda/run_comparison_cvg_uci_1.ipynb",
+    "line": 379,
+    "text": "\"from sdv.multi_table import HMASynthesizer\\n\",",
+    "context": [
+     "   ],",
+     "   \"source\": [",
+     "    \"from evaluator.metadata import TableSpec\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"from sdv.multi_table import HMASynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"\\n\",",
+     "    \"def reconcile(syn_df: pd.DataFrame, spec: TableSpec,\\n\",",
+     "    \"              real_columns: list[str], label: str) -> pd.DataFrame:\\n\","
+    ]
+   },
+   {
+    "file": "eda/run_comparison_cvg_rossmann.ipynb",
+    "line": 418,
+    "text": "\"from sdv.metadata import Metadata\\n\",",
+    "context": [
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from evaluator.metadata import TableSpec\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"from sdv.multi_table import HMASynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"\\n\",",
+     "    \"def reconcile(syn_df: pd.DataFrame, spec: TableSpec,\\n\","
+    ]
+   },
+   {
+    "file": "eda/run_comparison_cvg_rossmann.ipynb",
+    "line": 419,
+    "text": "\"from sdv.multi_table import HMASynthesizer\\n\",",
+    "context": [
+     "   ],",
+     "   \"source\": [",
+     "    \"from evaluator.metadata import TableSpec\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"from sdv.multi_table import HMASynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"\\n\",",
+     "    \"def reconcile(syn_df: pd.DataFrame, spec: TableSpec,\\n\",",
+     "    \"              real_columns: list[str], label: str) -> pd.DataFrame:\\n\","
+    ]
+   }
+  ],
+  "hma": [
+   {
+    "file": "eda/run_comparison_cvg_uci_1.ipynb",
+    "line": 379,
+    "text": "\"from sdv.multi_table import HMASynthesizer\\n\",",
+    "context": [
+     "   ],",
+     "   \"source\": [",
+     "    \"from evaluator.metadata import TableSpec\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"from sdv.multi_table import HMASynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"\\n\",",
+     "    \"def reconcile(syn_df: pd.DataFrame, spec: TableSpec,\\n\",",
+     "    \"              real_columns: list[str], label: str) -> pd.DataFrame:\\n\","
+    ]
+   },
+   {
+    "file": "eda/run_comparison_cvg_uci_1.ipynb",
+    "line": 443,
+    "text": "\"    hma = HMASynthesizer(sdv_md)\\n\",",
+    "context": [
+     "    \"    sdv_md.validate()\\n\",",
+     "    \"    sdv_md.validate_data(hma_input)\\n\",",
+     "    \"\\n\",",
+     "    \"    t0 = time.time()\\n\",",
+     "    \"    hma = HMASynthesizer(sdv_md)\\n\",",
+     "    \"    hma.fit(hma_input)\\n\",",
+     "    \"    hma_fit_seconds = time.time() - t0\\n\",",
+     "    \"\\n\",",
+     "    \"    t0 = time.time()\\n\","
+    ]
+   },
+   {
+    "file": "eda/run_comparison_cvg_rossmann.ipynb",
+    "line": 419,
+    "text": "\"from sdv.multi_table import HMASynthesizer\\n\",",
+    "context": [
+     "   ],",
+     "   \"source\": [",
+     "    \"from evaluator.metadata import TableSpec\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"from sdv.multi_table import HMASynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"\\n\",",
+     "    \"def reconcile(syn_df: pd.DataFrame, spec: TableSpec,\\n\",",
+     "    \"              real_columns: list[str], label: str) -> pd.DataFrame:\\n\","
+    ]
+   },
+   {
+    "file": "eda/run_comparison_cvg_rossmann.ipynb",
+    "line": 489,
+    "text": "\"    hma = HMASynthesizer(sdv_md)\\n\",",
+    "context": [
+     "    \"    sdv_md.validate()\\n\",",
+     "    \"    sdv_md.validate_data(hma_input)\\n\",",
+     "    \"\\n\",",
+     "    \"    t0 = time.time()\\n\",",
+     "    \"    hma = HMASynthesizer(sdv_md)\\n\",",
+     "    \"    hma.fit(hma_input)\\n\",",
+     "    \"    hma_fit_seconds = time.time() - t0\\n\",",
+     "    \"\\n\",",
+     "    \"    t0 = time.time()\\n\","
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "hma",
+  "md",
+  "mt",
+  "sdv_any"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "pyproject.toml": [
+   "    \"sdv\","
+  ]
+ }
+}

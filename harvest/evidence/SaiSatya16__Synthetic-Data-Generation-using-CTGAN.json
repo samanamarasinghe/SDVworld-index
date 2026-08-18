@@ -1,0 +1,311 @@
+{
+ "repo": "SaiSatya16/Synthetic-Data-Generation-using-CTGAN",
+ "disk_kb": 285,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Synthetic Data Generation using CTGAN\n\nA Flask-based web application for generating realistic synthetic datasets using Conditional Tabular GANs (CTGAN). This project was developed for the PWC Cyber Hackathon 2024: Fiercest Competitor 3.0 to address the challenge of creating privacy-compliant test data for financial institutions.\n\n## 🌟 Features\n\n- Generate synthetic data for two types of datasets:\n  - Employee Dataset (personal information)\n  - PCI Dataset (payment card information)\n- Multiple output formats supported:\n  - CSV\n  - Excel\n  - JSON\n  - Doc\n- Dynamic data generation (1,000 to 10,000 records)\n- Secure user authentication system\n- Privacy-compliant synthetic data generation\n- Luhn algorithm validation for credit card numbers\n- Responsive Vue.js frontend interface\n\n## 🛠️ Technology Stack\n\n### Backend\n- Flask - Web framework\n- Flask-RESTful - REST API implementation\n- SQLAlchemy - Database ORM\n- Flask-Security - Authentication and authorization\n- SDV (Synthetic Data Vault) - Synthetic data generation\n- CTGAN - Deep learning model for synthetic data\n\n### Frontend\n- Vue.js 2.7\n- Vue Router\n- Bootstrap 5\n- Custom CSS\n\n### Database\n- SQLite\n- Redis (for caching)\n\n## 🚀 Installation\n\n1. Clone the repository:\n```bash\ngit clone https://github.com/SaiSatya16/Synthetic-Data-Generation-using-CTGAN\ncd Synthetic-Data-Generation-using-CTGAN\n```\n\n2. Create and activate a virtual environment:\n```bash\npython -m venv venv\nsource venv/bin/activate  # On Windows: venv\\Scripts\\activate\n```\n\n3. Install Python dependencies:\n```bash\npip install -r requirements.txt\n```\n\n4. Initialize the database:\n```bash\npython upload_initial_data.py\n```\n\n5. Run the application:\n```bash\npython app.py\n```\n\nThe application will be available at `http://localhost:5000`\n\n## 💻 Usage\n\n1. Log in to the application using your credentials\n2. Select the dataset type (Employee or PCI)\n3. Choose the desired output format\n4. Specify the number of records (1,000-10,000)\n5. Click \"Generate and Download Data\"\n\n## 📁 Project Structure\n\n```bash\nsynthetic-data-generator/\n├── app.py                 # Main application file\n├── api.py                 # API endpoints and data generation logic\n├── config.py             # Configuration settings\n├── model.py              # Database models\n├── sec.py                # Security configurations\n├── static/               # Static files\n│   ├── style.css\n│   └── vue/             # Vue.js components\n├── templates/            # HTML templates\n│   └── index.html\n└── content/             # Data storage\n```\n\n## 🔒 Security Features\n\n- Token-based authentication\n- Password hashing\n- Role-based access control\n- Session management\n- CSRF protection\n- Inactivity timeout (30 minutes)\n\n## ⚙️ Data Generation Details\n\n### Employee Dataset Fields\n- Name\n- User ID\n- Email\n- SSN\n- Blood group\n- Gender\n- Address\n- Date of birth\n- U.S. Driver License Number\n\n### PCI Dataset Fields\n- Card holder name\n- Security code/CVV\n- Expiration date\n- Credit Card number\n- Card provider\n\n## Overview\nThis project utilizes two advanced approaches for synthetic data generation:\n1. CTGAN (Conditional Tabular GAN) for single-table synthesis\n2. HMA (Hierarchical Multi-Agent) Synthesizer for initial data generation\n\n## Architecture\n\n### Data Generation Pipeline\n```bash\nRaw Data Sample → HMA Synthesizer → Initial Synthetic Data → CTGAN → Final Synthetic Data\n```\n\n## Components Breakdown\n\n### 1. HMA Synthesizer Implementation\n```bash\nsynthesizer = HMASynthesizer(metadata)\nsynthesizer.fit(data)\nsynthetic_data = synthesizer.sample(scale=1)\n```\nThe HMA Synthesizer:\n- Creates hierarchical relationships between different data fields\n- Maintains statistical properties of the original data\n- Preserves complex relationships between columns\n\n### 2. CTGAN (Conditional Tabular GAN)\n```bash\nsynthesizer = CTGANSynthesizer(metadata, epochs=70)\nsynthesizer.fit(synthetic_data)\nsynthetic_data = synthesizer.sample(num_rows=num_rows)\n```\n\nCTGAN key features:\n- Uses conditional vectors to handle discrete columns\n- Employs mode-specific normalization for continuous columns\n- Trains for 70 epochs to ensure data quality\n- Generates high-quality synthetic data that preserves relationships and patterns\n\n## Metadata Configuration\n\nFor Employee Dataset:\n```bash\nmetadata.update_column(\n    table_name='data-bMNd0cfWfQLiuieC0Y0FN',\n    column_name='name',\n    sdtype='name'\n)\nmetadata.update_column(\n    table_name='data-bMNd0cfWfQLiuieC0Y0FN',\n    column_name='License',\n    sdtype='license_plate'\n)\nmetadata.update_column(\n    table_name='data-bMNd0cfWfQLiuieC0Y0FN',\n    column_name='address',\n    sdtype='address',\n    pii=True\n)\n```\n\nFor PCI Dataset:\n```bash\nmetadata.update_column(\n    table_name='findata',\n    column_name='card_holder_name',\n    sdtype='name'\n)\nmetadata.update_column(\n    table_name='findata',\n    column_name='expiration_date',\n    sdtype='date'\n)\n```\n\n## Data Validation and Quality Assurance\n\n### 1. Metadata Validation\n```bash\nmetadata.validate()\nmetadata.validate_data(data=data)\n```\n\n### 2. Credit Card Number Validation (Luhn Algorithm)\n```bash\ndef luhn_checksum(card_number):\n    def digits_of(n):\n        return [int(d) for d in str(n)]\n    digits = digits_of(card_number)\n    odd_digits = digits[-1::-2]\n    even_digits = digits[-2::-2]\n    checksum = 0\n    checksum += sum(odd_digits)\n    for d in even_digits:\n        checksum += sum(digits_of(d*2))\n    return checksum % 10\n```\n\n## Data Types and Constraints\n\n### Employee Dataset Fields\n- Name: Synthetic personal names\n- License: Valid format license plates\n- Address: PII-protected addresses\n- Date of Birth: Valid dates within reasonable range\n- SSN: Properly formatted synthetic SSNs\n- Email: Valid email format\n- Blood Group: Standard blood group types\n- Gender: Balanced distribution\n\n### PCI Dataset Fields\n- Card Holder Name: Synthetic names\n- Expiration Date: Valid future dates\n- Credit Card Numbers: Luhn algorithm validated\n- CVV: 3-4 digit secure codes\n- Card Provider: Major card providers\n\n## Privacy and Security Measures\n\n1. **Data Anonymization**\n   - PII fields are marked and specially handled\n   - No real data is used or exposed\n   - Generated data cannot be traced back to real individuals\n\n2. **Compliance**\n   - Generated data adheres to financial industry standards\n   - Credit card numbers pass Luhn algorithm validation\n   - Date formats follow standard conventions\n\n## Usage Examples\n\n### 1. Generating Employee Data\n```bash\ndef generate_employee(num_rows):\n    data = load_csvs(folder_name='content/')\n    metadata = Metadata.detect_from_dataframes(data)\n    # Configure metadata...\n    synthesizer = CTGANSynthesizer(metadata, epochs=70)\n    synthesizer.fit(synthetic_data['data-bMNd0cfWfQLiuieC0Y0FN'])\n    synthetic_data = synthesizer.sample(num_rows=num_rows)\n    return synthetic_data\n```\n\n### 2. Generating PCI Data\n```bash\ndef generate_pci(num_rows):\n    data = load_csvs(folder_name='content2/')\n    metadata = Metadata.detect_from_dataframes(data)\n    # Configure metadata...\n    synthesizer = CTGANSynthesizer(metadata, epochs=70)\n    synthesizer.fit(synthetic_data['findata'])\n    synthetic_data = synthesizer.sample(num_rows=num_rows)\n    return synthetic_data\n```\n\n## Output Formats\n\nThe system supports multiple output formats:\n1. CSV: Direct tabular format\n2. Excel: Formatted spreadsheet\n3. JSON: Structured data format\n4. Doc: Word document with formatted table\n\n## Best Practices\n\n1. **Data Quality**\n   - Always validate metadata before generation\n   - Check statistical distributions of generated data\n   - Verify relationships between columns\n\n2. **Performance**\n   - Use appropriate batch sizes for generation\n   - Cache frequently used metadata\n   - Monitor memory usage for large datasets\n\n3. **Security**\n   - Regularly update validation rules\n   - Monitor for potential data leakage\n   - Maintain proper access controls\n\n## Limitations and Considerations\n\n1. **Generation Limits**\n   - Minimum: 1,000 records\n   - Maximum: 10,000 records per request\n   - Consider memory constraints\n\n2. **Quality Trade-offs**\n   - Higher epochs = better quality but slower generation\n   - Complex relationships may require additional validation\n   - Some rare combinations might be under-represented\n\n3. **Performance Considerations**\n   - Large datasets may require batch processing\n   - Complex metadata increases generation time\n   - Consider caching for frequently used configurations\n\n\n## 🏆 Acknowledgments\n\nThis project was developed as part of the PWC Cyber Hackathon 2024: Fiercest Competitor 3.0 challenge.",
+ "hits": {
+  "ct": [
+   {
+    "file": "README.md",
+    "line": 153,
+    "text": "synthesizer = CTGANSynthesizer(metadata, epochs=70)",
+    "context": [
+     "- Preserves complex relationships between columns",
+     "",
+     "### 2. CTGAN (Conditional Tabular GAN)",
+     "```bash",
+     "synthesizer = CTGANSynthesizer(metadata, epochs=70)",
+     "synthesizer.fit(synthetic_data)",
+     "synthetic_data = synthesizer.sample(num_rows=num_rows)",
+     "```",
+     ""
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 262,
+    "text": "synthesizer = CTGANSynthesizer(metadata, epochs=70)",
+    "context": [
+     "def generate_employee(num_rows):",
+     "    data = load_csvs(folder_name='content/')",
+     "    metadata = Metadata.detect_from_dataframes(data)",
+     "    # Configure metadata...",
+     "    synthesizer = CTGANSynthesizer(metadata, epochs=70)",
+     "    synthesizer.fit(synthetic_data['data-bMNd0cfWfQLiuieC0Y0FN'])",
+     "    synthetic_data = synthesizer.sample(num_rows=num_rows)",
+     "    return synthetic_data",
+     "```"
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 274,
+    "text": "synthesizer = CTGANSynthesizer(metadata, epochs=70)",
+    "context": [
+     "def generate_pci(num_rows):",
+     "    data = load_csvs(folder_name='content2/')",
+     "    metadata = Metadata.detect_from_dataframes(data)",
+     "    # Configure metadata...",
+     "    synthesizer = CTGANSynthesizer(metadata, epochs=70)",
+     "    synthesizer.fit(synthetic_data['findata'])",
+     "    synthetic_data = synthesizer.sample(num_rows=num_rows)",
+     "    return synthetic_data",
+     "```"
+    ]
+   },
+   {
+    "file": "api.py",
+    "line": 8,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.datasets.local import load_csvs",
+     "from sdv.metadata import Metadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from flask import request, jsonify",
+     "import random",
+     "from datetime import datetime, timedelta",
+     "from docx import Document"
+    ]
+   },
+   {
+    "file": "api.py",
+    "line": 71,
+    "text": "synthesizer = CTGANSynthesizer(metadata, epochs=70)",
+    "context": [
+     "    synthetic_data = synthesizer.sample(scale=1)",
+     "    synthetic_data['data-bMNd0cfWfQLiuieC0Y0FN'].head(3)",
+     "",
+     "",
+     "    synthesizer = CTGANSynthesizer(metadata, epochs=70)",
+     "    synthesizer.fit(synthetic_data['data-bMNd0cfWfQLiuieC0Y0FN'])",
+     "    real_data = synthetic_data['data-bMNd0cfWfQLiuieC0Y0FN']",
+     "    synthetic_data = synthesizer.sample(num_rows=num_rows)",
+     "    synthetic_data.head()"
+    ]
+   },
+   {
+    "file": "api.py",
+    "line": 122,
+    "text": "synthesizer = CTGANSynthesizer(metadata, epochs=70)",
+    "context": [
+     "    synthetic_data = synthesizer.sample(scale=1)",
+     "    synthetic_data['findata'].head(3)",
+     "",
+     "",
+     "    synthesizer = CTGANSynthesizer(metadata, epochs=70)",
+     "    synthesizer.fit(synthetic_data['findata'])",
+     "    real_data = synthetic_data['findata']",
+     "    synthetic_data = synthesizer.sample(num_rows=num_rows)",
+     "    synthetic_data.head()"
+    ]
+   }
+  ],
+  "hma": [
+   {
+    "file": "README.md",
+    "line": 142,
+    "text": "synthesizer = HMASynthesizer(metadata)",
+    "context": [
+     "## Components Breakdown",
+     "",
+     "### 1. HMA Synthesizer Implementation",
+     "```bash",
+     "synthesizer = HMASynthesizer(metadata)",
+     "synthesizer.fit(data)",
+     "synthetic_data = synthesizer.sample(scale=1)",
+     "```",
+     "The HMA Synthesizer:"
+    ]
+   },
+   {
+    "file": "api.py",
+    "line": 7,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "api=Api()",
+     "import pandas as pd",
+     "from sdv.datasets.local import load_csvs",
+     "from sdv.metadata import Metadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from flask import request, jsonify",
+     "import random",
+     "from datetime import datetime, timedelta"
+    ]
+   },
+   {
+    "file": "api.py",
+    "line": 65,
+    "text": "synthesizer = HMASynthesizer(metadata)",
+    "context": [
+     "    # in the future, you can reload the metadata object from the file",
+     "    # metadata = Metadata.load_from_json('metadata.json')",
+     "",
+     "",
+     "    synthesizer = HMASynthesizer(metadata)",
+     "    synthesizer.fit(data)",
+     "    synthetic_data = synthesizer.sample(scale=1)",
+     "    synthetic_data['data-bMNd0cfWfQLiuieC0Y0FN'].head(3)",
+     ""
+    ]
+   },
+   {
+    "file": "api.py",
+    "line": 116,
+    "text": "synthesizer = HMASynthesizer(metadata)",
+    "context": [
+     "    # in the future, you can reload the metadata object from the file",
+     "    # metadata = Metadata.load_from_json('metadata.json')",
+     "",
+     "",
+     "    synthesizer = HMASynthesizer(metadata)",
+     "    synthesizer.fit(data)",
+     "    synthetic_data = synthesizer.sample(scale=1)",
+     "    synthetic_data['findata'].head(3)",
+     ""
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "api.py",
+    "line": 8,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.datasets.local import load_csvs",
+     "from sdv.metadata import Metadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from flask import request, jsonify",
+     "import random",
+     "from datetime import datetime, timedelta",
+     "from docx import Document"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "api.py",
+    "line": 6,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "from flask import make_response, jsonify",
+     "api=Api()",
+     "import pandas as pd",
+     "from sdv.datasets.local import load_csvs",
+     "from sdv.metadata import Metadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from flask import request, jsonify",
+     "import random"
+    ]
+   }
+  ],
+  "mt": [
+   {
+    "file": "api.py",
+    "line": 7,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "api=Api()",
+     "import pandas as pd",
+     "from sdv.datasets.local import load_csvs",
+     "from sdv.metadata import Metadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from flask import request, jsonify",
+     "import random",
+     "from datetime import datetime, timedelta"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "api.py",
+    "line": 5,
+    "text": "from sdv.datasets.local import load_csvs",
+    "context": [
+     "from flask_restful import Resource, Api, reqparse, fields, marshal_with",
+     "from flask import make_response, jsonify",
+     "api=Api()",
+     "import pandas as pd",
+     "from sdv.datasets.local import load_csvs",
+     "from sdv.metadata import Metadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from flask import request, jsonify"
+    ]
+   },
+   {
+    "file": "api.py",
+    "line": 6,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "from flask import make_response, jsonify",
+     "api=Api()",
+     "import pandas as pd",
+     "from sdv.datasets.local import load_csvs",
+     "from sdv.metadata import Metadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from flask import request, jsonify",
+     "import random"
+    ]
+   },
+   {
+    "file": "api.py",
+    "line": 7,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "api=Api()",
+     "import pandas as pd",
+     "from sdv.datasets.local import load_csvs",
+     "from sdv.metadata import Metadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from flask import request, jsonify",
+     "import random",
+     "from datetime import datetime, timedelta"
+    ]
+   },
+   {
+    "file": "api.py",
+    "line": 8,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.datasets.local import load_csvs",
+     "from sdv.metadata import Metadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from flask import request, jsonify",
+     "import random",
+     "from datetime import datetime, timedelta",
+     "from docx import Document"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "hma",
+  "md",
+  "mt",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "copulas==0.11.1",
+   "ctgan==0.10.1",
+   "rdt==1.12.4",
+   "sdmetrics==0.16.0",
+   "sdv==1.17.0"
+  ]
+ }
+}

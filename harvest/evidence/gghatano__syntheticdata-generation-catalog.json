@@ -1,0 +1,1478 @@
+{
+ "repo": "gghatano/syntheticdata-generation-catalog",
+ "disk_kb": 462,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# syntheticdata-generation-catalog\n\nPython 製 OSS ライブラリを対象に、**表形式データの合成データ生成手法**を調査・比較するプロジェクト。\n単一表 / 複数表（リレーション付き）/ 時系列の 3 種類のデータ構造について、有用性・安全性・実装の扱いやすさを実験ベースで評価する。\n\n検証結果はカタログサイトとして公開している:\n**https://gghatano.github.io/syntheticdata-generation-catalog/**\n\n## 何を比較しているか\n\n### 対象ライブラリ\n\n| ID   | ライブラリ                | 単一表 | 複数表 | 時系列 | 備考                           |\n| ---- | ------------------------ | :----: | :----: | :----: | ------------------------------ |\n| L-01 | [SDV](https://sdv.dev/)                  |   ○    |   ○    |   ○    | 基盤ライブラリ。GaussianCopula / CTGAN / TVAE / HMA / PAR を網羅 |\n| L-02 | [SynthCity](https://github.com/vanderschaarlab/synthcity)            |   ○    |   △    |   ○    | 研究比較・評価指標が豊富 (ADS-GAN, Normalizing Flow など) |\n| L-03 | [MOSTLY AI SDK](https://mostly.ai/) |   ○    |   ○    |   ○    | 実務志向。API キー必要 |\n| L-04 | [ydata-synthetic](https://github.com/ydataai/ydata-synthetic)      |   ○    |   ×    |   ○    | 時系列比較用 |\n| L-05 | [RealTabFormer](https://github.com/worldbank/REaLTabFormer)        |   ○    |   ○    |   ×    | Transformer ベース複数表合成 |\n\n### 評価軸\n\n- **統計的類似度** — SDMetrics（Column Shapes / Column Pair Trends）\n- **機械学習有用性** — TSTR（Train on Synthetic, Test on Real）\n- **プライバシー** — 最近傍距離・再識別リスク\n- **実装の成熟度** — 学習時間・依存関係・ドキュメント量\n\n### 実験データセット\n\nUCI Adult / Insurance / Companies / Hotel Reservation / IMDB / Olist EC / 株価時系列 / IoT センサー の 8 ケース。詳細はカタログサイトの「実験事例」を参照。\n\n## リポジトリ構成\n\n```\nlibs/                  各ライブラリの uv 環境（独立）\n  common/              実験管理ヘルパー（experiment.py）\n  sdv/                 SDV 実験スクリプト（phase1/2/3）\n  synthcity/           SynthCity 実験スクリプト\n  mostlyai/            MOSTLY AI SDK 実験スクリプト\n  ydata/               ydata-synthetic 実験スクリプト\n  realtabformer/       RealTabFormer 実験スクリプト\n  evaluation/          評価専用環境（SDMetrics / scikit-learn）\ndata/\n  raw/                 ダウンロード元データ（gitignore）\n  processed/           前処理済みデータ（gitignore）\nresults/\n  phase1/              単一表実験の結果\n  phase2/              複数表実験の結果\n  phase3/              時系列実験の結果\n  evaluation/          統合結果（all_results.json, summary.json）\n  metadata/            実験メタデータ（git 管理）\ndocs/\n  spec-phase0.md       仕様書\n  tasks/               タスク定義 + progress.json\n  catalog/             カタログサイト（React + Vite + TS）\n```\n\n## クイックスタート\n\n### 前提\n\n- [uv](https://docs.astral.sh/uv/) がインストール済み（pip / venv は使用しない）\n- Python 3.10 以上\n\n### 1 つのライブラリで実験を回す例（SDV）\n\n```bash\n# 環境セットアップ\ncd libs/sdv && uv sync\n\n# データ準備（data/processed/ に共通入力を配置）\nuv run python prepare_data.py\n\n# Phase 1（単一表）実行 → results/phase1/sdv_*.csv が出力される\nuv run python run_phase1.py\n```\n\n他のライブラリも同じパターンで `cd libs/<name> && uv run python run_phase<N>.py`。\n\n### 評価とまとめ\n\n```bash\ncd libs/evaluation && uv sync\n\n# 全ライブラリの CSV を走査して評価指標を再計算\nuv run python sdmetrics_phase1.py\nuv run python tstr_phase1.py\nuv run python privacy_phase1.py\n\n# 全 Phase の結果を統合\nuv run python aggregate_results.py\n```\n\n### 進捗確認\n\n```bash\ncat docs/tasks/progress.json | python3 -m json.tool\n```\n\n## カタログサイト（GitHub Pages）\n\n```bash\ncd docs/catalog\nnpm install\nnpm run dev          # ローカル開発サーバー\nnpm test -- --run    # Unit テスト\nnpm run test:e2e     # E2E テスト（初回は npx playwright install --with-deps chromium）\n```\n\n`main` への push で `.github/workflows/deploy-pages.yml` が走り、自動デプロイされる。\n\n## ブランチ戦略\n\n```\nmain          安定版（develop からのマージのみ）\n  └ develop   統合・動作確認用\n      └ feature/issue-<番号>-<概要>   個別タスクの作業ブランチ\n```\n\n`main` への直接 push は禁止。feature → develop → main の順で PR を作成する。\n\n## 実験結果の不変性\n\n合成データ CSV は **append-only**（同一条件の再実行を除き上書き禁止）。\nパラメータやデータセットを変えた追加実験は新しいファイル名で保存する:\n\n```\nresults/<phase>/<library>_<model>_<条件サフィックス>.csv\n例: sdv_ctgan_100ep.csv, sdv_ctgan_10ep_census.csv\n```\n\n詳細なルールは [CLAUDE.md](./CLAUDE.md#実験結果の命名規則と不変性) を参照。\n\n## ドキュメント\n\n- [`CLAUDE.md`](./CLAUDE.md) — プロジェクト規約・コーディングルール・自律実行時の判断基準\n- [`docs/spec-phase0.md`](./docs/spec-phase0.md) — 仕様書（対象・スコープ・データ・評価軸）\n- [`docs/tasks/`](./docs/tasks/) — タスク定義（00 setup → 05 evaluation）\n- [`docs/evaluation-knowledge.md`](./docs/evaluation-knowledge.md) — 評価指標の解釈ガイド\n- [`docs/catalog/README.md`](./docs/catalog/README.md) — カタログサイトの開発・SPA ルーティングの制約\n",
+ "hits": {
+  "md": [
+   {
+    "file": "docs/tasks/03-phase2-multi-table.md",
+    "line": 61,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "    with open(PROGRESS_FILE, 'w') as f:",
+     "        json.dump(progress, f, indent=2)",
+     "",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.metadata import Metadata",
+     "import sdv",
+     "",
+     "# D2 データの読み込み",
+     "metadata_dict = json.load(open(os.path.join(ROOT, 'data/raw/d2_metadata.json')))"
+    ]
+   },
+   {
+    "file": "docs/tasks/04-phase3-timeseries.md",
+    "line": 71,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "real_data = pd.read_csv(REAL_DATA_PATH)",
+     "",
+     "from sdv.sequential import PARSynthesizer",
+     "from sdv.metadata import Metadata",
+     "import sdv",
+     "",
+     "metadata = Metadata.load_from_dict(json.load(open(METADATA_PATH)))",
+     ""
+    ]
+   },
+   {
+    "file": "docs/tasks/02-phase1-single-table.md",
+    "line": 86,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "上記共通ヘルパーの後に:",
+     "",
+     "```python",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "import sdv",
+     "",
+     "metadata = Metadata.load_from_dict(json.load(open(METADATA_PATH)))",
+     ""
+    ]
+   },
+   {
+    "file": "libs/evaluation/eval_stock.py",
+    "line": 35,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "    print(\"NASDAQ data not found. Running prepare_data + run_phase3...\")",
+     "    # prepare_data.py 相当の処理",
+     "    from sdv.datasets.demo import download_demo",
+     "    from sdv.sequential import PARSynthesizer",
+     "    from sdv.metadata import Metadata",
+     "    import sdv",
+     "",
+     "    data, meta = download_demo(modality='sequential', dataset_name='nasdaq100_2019')",
+     "    data.to_csv(REAL_CSV, index=False)"
+    ]
+   },
+   {
+    "file": "libs/evaluation/eval_hotel.py",
+    "line": 45,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "    sys.path.insert(0, os.path.join(ROOT, 'libs'))",
+     "",
+     "    from sdv.datasets.demo import download_demo",
+     "    from sdv.multi_table import HMASynthesizer",
+     "    from sdv.metadata import Metadata",
+     "    import sdv",
+     "",
+     "    data, meta = download_demo(modality='multi_table', dataset_name='fake_hotels')",
+     "    os.makedirs(os.path.join(ROOT, 'data/raw'), exist_ok=True)"
+    ]
+   },
+   {
+    "file": "libs/evaluation/eval_iot_weather.py",
+    "line": 34,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "if not os.path.exists(REAL_CSV) or not os.path.exists(SYNTH_CSV):",
+     "    print(\"Weather data not found. Generating via SDV download_demo...\")",
+     "    from sdv.datasets.demo import download_demo",
+     "    from sdv.sequential import PARSynthesizer",
+     "    from sdv.metadata import Metadata",
+     "    import sdv",
+     "",
+     "    data, meta = download_demo(modality='sequential', dataset_name='daily_weather_2020')",
+     "    data.to_csv(REAL_CSV, index=False)"
+    ]
+   },
+   {
+    "file": "libs/sdv/run_phase3.py",
+    "line": 28,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "real_data = pd.read_csv(REAL_DATA_PATH)",
+     "",
+     "from sdv.sequential import PARSynthesizer",
+     "from sdv.metadata import Metadata",
+     "import sdv",
+     "",
+     "metadata = Metadata.load_from_dict(json.load(open(METADATA_PATH)))",
+     ""
+    ]
+   },
+   {
+    "file": "libs/sdv/run_phase2.py",
+    "line": 21,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "sys.path.insert(0, os.path.join(ROOT, 'libs'))",
+     "from common.experiment import ExperimentRun, build_run_log, update_progress, update_manifest",
+     "",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.metadata import Metadata",
+     "import sdv",
+     "",
+     "metadata_path = os.path.join(ROOT, 'data/raw/d2_metadata.json')",
+     "if not os.path.exists(metadata_path):"
+    ]
+   },
+   {
+    "file": "libs/sdv/run_additional_experiments.py",
+    "line": 24,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "from sdv.datasets.demo import download_demo",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.metadata import Metadata",
+     "import sdv",
+     "",
+     "env = {",
+     "    'python_version': platform.python_version(),"
+    ]
+   },
+   {
+    "file": "libs/sdv/run_phase1.py",
+    "line": 31,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "real_data = pd.read_csv(REAL_DATA_PATH)",
+     "print(f\"Loaded real data: {len(real_data)} rows, {len(real_data.columns)} columns\")",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "import sdv",
+     "",
+     "metadata = Metadata.load_from_dict(json.load(open(METADATA_PATH)))",
+     ""
+    ]
+   },
+   {
+    "file": "libs/sdv/run_olist_hma.py",
+    "line": 38,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "    with open(PROGRESS_FILE, 'w') as f:",
+     "        json.dump(progress, f, indent=2)",
+     "",
+     "",
+     "from sdv.metadata import Metadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "import sdv",
+     "",
+     "update_progress('issue-65-sdv-hma', 'in_progress')"
+    ]
+   }
+  ],
+  "mt": [
+   {
+    "file": "docs/tasks/03-phase2-multi-table.md",
+    "line": 60,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "    progress['tasks'][task_id] = entry",
+     "    with open(PROGRESS_FILE, 'w') as f:",
+     "        json.dump(progress, f, indent=2)",
+     "",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.metadata import Metadata",
+     "import sdv",
+     "",
+     "# D2 データの読み込み"
+    ]
+   },
+   {
+    "file": "libs/evaluation/eval_imdb.py",
+    "line": 44,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "",
+     "if not real_exists or not synth_exists:",
+     "    print(\"IMDB data not found. Generating via SDV download_demo...\")",
+     "    from sdv.datasets.demo import download_demo",
+     "    from sdv.multi_table import HMASynthesizer",
+     "    import sdv",
+     "",
+     "    data, meta = download_demo(modality='multi_table', dataset_name='imdb_small')",
+     "    with open(META_JSON, 'w') as f:"
+    ]
+   },
+   {
+    "file": "libs/evaluation/eval_hotel.py",
+    "line": 44,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "    print(\"Hotel data not found. Generating via SDV...\")",
+     "    sys.path.insert(0, os.path.join(ROOT, 'libs'))",
+     "",
+     "    from sdv.datasets.demo import download_demo",
+     "    from sdv.multi_table import HMASynthesizer",
+     "    from sdv.metadata import Metadata",
+     "    import sdv",
+     "",
+     "    data, meta = download_demo(modality='multi_table', dataset_name='fake_hotels')"
+    ]
+   },
+   {
+    "file": "libs/sdv/run_phase2.py",
+    "line": 20,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "",
+     "sys.path.insert(0, os.path.join(ROOT, 'libs'))",
+     "from common.experiment import ExperimentRun, build_run_log, update_progress, update_manifest",
+     "",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.metadata import Metadata",
+     "import sdv",
+     "",
+     "metadata_path = os.path.join(ROOT, 'data/raw/d2_metadata.json')"
+    ]
+   },
+   {
+    "file": "libs/sdv/run_additional_experiments.py",
+    "line": 23,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "from common.experiment import ExperimentRun, build_run_log, update_manifest",
+     "",
+     "from sdv.datasets.demo import download_demo",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.metadata import Metadata",
+     "import sdv",
+     "",
+     "env = {"
+    ]
+   },
+   {
+    "file": "libs/sdv/run_olist_hma.py",
+    "line": 39,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "        json.dump(progress, f, indent=2)",
+     "",
+     "",
+     "from sdv.metadata import Metadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "import sdv",
+     "",
+     "update_progress('issue-65-sdv-hma', 'in_progress')",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "docs/tasks/03-phase2-multi-table.md",
+    "line": 60,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "    progress['tasks'][task_id] = entry",
+     "    with open(PROGRESS_FILE, 'w') as f:",
+     "        json.dump(progress, f, indent=2)",
+     "",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.metadata import Metadata",
+     "import sdv",
+     "",
+     "# D2 データの読み込み"
+    ]
+   },
+   {
+    "file": "docs/tasks/03-phase2-multi-table.md",
+    "line": 61,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "    with open(PROGRESS_FILE, 'w') as f:",
+     "        json.dump(progress, f, indent=2)",
+     "",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.metadata import Metadata",
+     "import sdv",
+     "",
+     "# D2 データの読み込み",
+     "metadata_dict = json.load(open(os.path.join(ROOT, 'data/raw/d2_metadata.json')))"
+    ]
+   },
+   {
+    "file": "docs/tasks/03-phase2-multi-table.md",
+    "line": 62,
+    "text": "import sdv",
+    "context": [
+     "        json.dump(progress, f, indent=2)",
+     "",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.metadata import Metadata",
+     "import sdv",
+     "",
+     "# D2 データの読み込み",
+     "metadata_dict = json.load(open(os.path.join(ROOT, 'data/raw/d2_metadata.json')))",
+     "metadata = Metadata.load_from_dict(metadata_dict)"
+    ]
+   },
+   {
+    "file": "docs/tasks/01-data-preparation.md",
+    "line": 84,
+    "text": "from sdv.datasets.demo import download_demo",
+    "context": [
+     "# --- D1: 単一表データ ---",
+     "print(\"=== D1: 単一表データ (Adult) ===\")",
+     "update_progress('01-data-preparation', 'in_progress', current_step='D1')",
+     "try:",
+     "    from sdv.datasets.demo import download_demo",
+     "",
+     "    real_data, metadata = download_demo(modality='single_table', dataset_name='adult')",
+     "    real_data.to_csv(os.path.join(RAW_DIR, 'd1_adult.csv'), index=False)",
+     "    with open(os.path.join(RAW_DIR, 'd1_adult_metadata.json'), 'w') as f:"
+    ]
+   },
+   {
+    "file": "docs/tasks/04-phase3-timeseries.md",
+    "line": 70,
+    "text": "from sdv.sequential import PARSynthesizer",
+    "context": [
+     "    sys.exit(1)",
+     "",
+     "real_data = pd.read_csv(REAL_DATA_PATH)",
+     "",
+     "from sdv.sequential import PARSynthesizer",
+     "from sdv.metadata import Metadata",
+     "import sdv",
+     "",
+     "metadata = Metadata.load_from_dict(json.load(open(METADATA_PATH)))"
+    ]
+   },
+   {
+    "file": "docs/tasks/04-phase3-timeseries.md",
+    "line": 71,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "real_data = pd.read_csv(REAL_DATA_PATH)",
+     "",
+     "from sdv.sequential import PARSynthesizer",
+     "from sdv.metadata import Metadata",
+     "import sdv",
+     "",
+     "metadata = Metadata.load_from_dict(json.load(open(METADATA_PATH)))",
+     ""
+    ]
+   },
+   {
+    "file": "docs/tasks/04-phase3-timeseries.md",
+    "line": 72,
+    "text": "import sdv",
+    "context": [
+     "real_data = pd.read_csv(REAL_DATA_PATH)",
+     "",
+     "from sdv.sequential import PARSynthesizer",
+     "from sdv.metadata import Metadata",
+     "import sdv",
+     "",
+     "metadata = Metadata.load_from_dict(json.load(open(METADATA_PATH)))",
+     "",
+     "results = {}"
+    ]
+   },
+   {
+    "file": "docs/tasks/00-setup.md",
+    "line": 196,
+    "text": "'sdv': ('libs/sdv', 'import sdv; print(sdv.__version__)'),",
+    "context": [
+     "import json, subprocess, os",
+     "",
+     "results = {}",
+     "checks = {",
+     "    'sdv': ('libs/sdv', 'import sdv; print(sdv.__version__)'),",
+     "    'synthcity': ('libs/synthcity', 'import synthcity; print(getattr(synthcity, \\\"__version__\\\", \\\"unknown\\\"))'),",
+     "    'mostlyai': ('libs/mostlyai', 'import mostlyai; print(getattr(mostlyai, \\\"__version__\\\", \\\"unknown\\\"))'),",
+     "    'ydata': ('libs/ydata', 'import ydata_synthetic; print(getattr(ydata_synthetic, \\\"__version__\\\", \\\"unknown\\\"))'),",
+     "    'evaluation': ('libs/evaluation', 'import sdmetrics; print(sdmetrics.__version__)'),"
+    ]
+   },
+   {
+    "file": "docs/tasks/02-phase1-single-table.md",
+    "line": 85,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "",
+     "上記共通ヘルパーの後に:",
+     "",
+     "```python",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "import sdv",
+     "",
+     "metadata = Metadata.load_from_dict(json.load(open(METADATA_PATH)))"
+    ]
+   },
+   {
+    "file": "docs/tasks/02-phase1-single-table.md",
+    "line": 86,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "上記共通ヘルパーの後に:",
+     "",
+     "```python",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "import sdv",
+     "",
+     "metadata = Metadata.load_from_dict(json.load(open(METADATA_PATH)))",
+     ""
+    ]
+   },
+   {
+    "file": "docs/tasks/02-phase1-single-table.md",
+    "line": 87,
+    "text": "import sdv",
+    "context": [
+     "",
+     "```python",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "import sdv",
+     "",
+     "metadata = Metadata.load_from_dict(json.load(open(METADATA_PATH)))",
+     "",
+     "results = {}"
+    ]
+   },
+   {
+    "file": "libs/evaluation/eval_fake_companies.py",
+    "line": 30,
+    "text": "from sdv.datasets.demo import download_demo",
+    "context": [
+     "SYNTH_GC = os.path.join(OUTPUT_DIR, 'sdv_gaussiancopula_fake_companies.csv')",
+     "",
+     "if not os.path.exists(RAW_CSV) or not os.path.exists(SYNTH_GC):",
+     "    print(\"Fake Companies data not found. Generating via SDV download_demo...\")",
+     "    from sdv.datasets.demo import download_demo",
+     "    from sdv.single_table import GaussianCopulaSynthesizer",
+     "    import sdv",
+     "",
+     "    fc_data, fc_meta = download_demo(modality='single_table', dataset_name='fake_companies')"
+    ]
+   }
+  ],
+  "hma": [
+   {
+    "file": "docs/tasks/03-phase2-multi-table.md",
+    "line": 60,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "    progress['tasks'][task_id] = entry",
+     "    with open(PROGRESS_FILE, 'w') as f:",
+     "        json.dump(progress, f, indent=2)",
+     "",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.metadata import Metadata",
+     "import sdv",
+     "",
+     "# D2 データの読み込み"
+    ]
+   },
+   {
+    "file": "docs/tasks/03-phase2-multi-table.md",
+    "line": 87,
+    "text": "synthesizer = HMASynthesizer(metadata)",
+    "context": [
+     "update_progress('03-phase2', 'in_progress', current_step='sdv')",
+     "",
+     "try:",
+     "    start = time.time()",
+     "    synthesizer = HMASynthesizer(metadata)",
+     "    synthesizer.fit(data)",
+     "    synth_data = synthesizer.sample()  # dict of DataFrames",
+     "    elapsed = time.time() - start",
+     ""
+    ]
+   },
+   {
+    "file": "docs/catalog/scripts/add_case_scripts.py",
+    "line": 43,
+    "text": "\"description\": \"SDV HMASynthesizer で hotels / guests を外部キー整合性付きで合成\"},",
+    "context": [
+     "    \"hotel-reservation-multitable\": [",
+     "        {\"role\": \"prepare\", \"library\": \"sdv\", \"path\": \"libs/sdv/prepare_data.py\",",
+     "         \"description\": \"SDV demo (Fake Hotels) を取得し複数表メタデータも保存\"},",
+     "        {\"role\": \"synthesize\", \"library\": \"sdv\", \"path\": \"libs/sdv/run_phase2.py\",",
+     "         \"description\": \"SDV HMASynthesizer で hotels / guests を外部キー整合性付きで合成\"},",
+     "        {\"role\": \"evaluate\", \"library\": \"evaluation\", \"path\": \"libs/evaluation/eval_hotel.py\",",
+     "         \"description\": \"FK 整合性チェック + 単表 SDMetrics による評価\"},",
+     "    ],",
+     "    \"imdb-movie-database\": ["
+    ]
+   },
+   {
+    "file": "docs/catalog/scripts/add_case_scripts.py",
+    "line": 51,
+    "text": "\"description\": \"SDV HMASynthesizer で IMDB 7テーブル + 多対多リレーションを合成\"},",
+    "context": [
+     "    \"imdb-movie-database\": [",
+     "        {\"role\": \"prepare\", \"library\": \"sdv\", \"path\": \"libs/sdv/prepare_data.py\",",
+     "         \"description\": \"SDV demo (IMDB Small) を取得し7テーブル分のメタデータを保存\"},",
+     "        {\"role\": \"synthesize\", \"library\": \"sdv\", \"path\": \"libs/sdv/run_additional_experiments.py\",",
+     "         \"description\": \"SDV HMASynthesizer で IMDB 7テーブル + 多対多リレーションを合成\"},",
+     "        {\"role\": \"evaluate\", \"library\": \"evaluation\", \"path\": \"libs/evaluation/eval_imdb.py\",",
+     "         \"description\": \"6リレーションすべての FK 整合性 + 単表 SDMetrics による評価\"},",
+     "    ],",
+     "    \"olist-ec-transactions\": ["
+    ]
+   },
+   {
+    "file": "docs/catalog/scripts/add_case_scripts.py",
+    "line": 59,
+    "text": "\"description\": \"SDV HMASynthesizer で Olist 7/7 テーブルを合成（FK 6本維持）\"},",
+    "context": [
+     "    \"olist-ec-transactions\": [",
+     "        {\"role\": \"prepare\", \"library\": \"sdv\", \"path\": \"libs/sdv/prepare_olist.py\",",
+     "         \"description\": \"Brazilian E-Commerce (Olist) 7テーブルを uniformly sample (5000 customers ベース) し processed に保存\"},",
+     "        {\"role\": \"synthesize\", \"library\": \"sdv\", \"path\": \"libs/sdv/run_olist_hma.py\",",
+     "         \"description\": \"SDV HMASynthesizer で Olist 7/7 テーブルを合成（FK 6本維持）\"},",
+     "        {\"role\": \"synthesize\", \"library\": \"realtabformer\", \"path\": \"libs/realtabformer/run_olist.py\",",
+     "         \"description\": \"REaLTabFormer で orders → order_items の親子1ペアを合成（数値分布精度比較用）\"},",
+     "        {\"role\": \"evaluate\", \"library\": \"evaluation\", \"path\": \"libs/evaluation/eval_olist.py\",",
+     "         \"description\": \"FK 整合性 + 件数分布 + 単変量分布 + 結合 TSTR (review_score 予測) による評価\"},"
+    ]
+   },
+   {
+    "file": "libs/evaluation/eval_imdb.py",
+    "line": 44,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "",
+     "if not real_exists or not synth_exists:",
+     "    print(\"IMDB data not found. Generating via SDV download_demo...\")",
+     "    from sdv.datasets.demo import download_demo",
+     "    from sdv.multi_table import HMASynthesizer",
+     "    import sdv",
+     "",
+     "    data, meta = download_demo(modality='multi_table', dataset_name='imdb_small')",
+     "    with open(META_JSON, 'w') as f:"
+    ]
+   },
+   {
+    "file": "libs/evaluation/eval_imdb.py",
+    "line": 56,
+    "text": "synthesizer = HMASynthesizer(meta)",
+    "context": [
+     "        csv_path = os.path.join(ROOT, f'data/raw/d_imdb_{tname}.csv')",
+     "        df.to_csv(csv_path, index=False)",
+     "        print(f\"  Saved real {tname}: {len(df)} rows\")",
+     "",
+     "    synthesizer = HMASynthesizer(meta)",
+     "    synthesizer.fit(data)",
+     "    synth_data = synthesizer.sample()",
+     "",
+     "    for tname, df in synth_data.items():"
+    ]
+   },
+   {
+    "file": "libs/evaluation/eval_hotel.py",
+    "line": 44,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "    print(\"Hotel data not found. Generating via SDV...\")",
+     "    sys.path.insert(0, os.path.join(ROOT, 'libs'))",
+     "",
+     "    from sdv.datasets.demo import download_demo",
+     "    from sdv.multi_table import HMASynthesizer",
+     "    from sdv.metadata import Metadata",
+     "    import sdv",
+     "",
+     "    data, meta = download_demo(modality='multi_table', dataset_name='fake_hotels')"
+    ]
+   },
+   {
+    "file": "libs/evaluation/eval_hotel.py",
+    "line": 58,
+    "text": "synthesizer = HMASynthesizer(meta)",
+    "context": [
+     "        csv_path = os.path.join(ROOT, f'data/processed/d2_{tname}.csv')",
+     "        df.to_csv(csv_path, index=False)",
+     "        print(f\"  Saved real {tname}: {len(df)} rows\")",
+     "",
+     "    synthesizer = HMASynthesizer(meta)",
+     "    synthesizer.fit(data)",
+     "    synth_data = synthesizer.sample()",
+     "",
+     "    for tname, df in synth_data.items():"
+    ]
+   },
+   {
+    "file": "libs/sdv/run_phase2.py",
+    "line": 20,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "",
+     "sys.path.insert(0, os.path.join(ROOT, 'libs'))",
+     "from common.experiment import ExperimentRun, build_run_log, update_progress, update_manifest",
+     "",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.metadata import Metadata",
+     "import sdv",
+     "",
+     "metadata_path = os.path.join(ROOT, 'data/raw/d2_metadata.json')"
+    ]
+   },
+   {
+    "file": "libs/sdv/run_phase2.py",
+    "line": 67,
+    "text": "synthesizer = HMASynthesizer(metadata)",
+    "context": [
+     "    dataset=dataset_info,",
+     "    params={\"random_seed\": 42},",
+     ")",
+     "with run_hma:",
+     "    synthesizer = HMASynthesizer(metadata)",
+     "    synthesizer.fit(data)",
+     "    synth_data = synthesizer.sample()",
+     "",
+     "    table_csv_paths = {}"
+    ]
+   },
+   {
+    "file": "libs/sdv/run_additional_experiments.py",
+    "line": 23,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "from common.experiment import ExperimentRun, build_run_log, update_manifest",
+     "",
+     "from sdv.datasets.demo import download_demo",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.metadata import Metadata",
+     "import sdv",
+     "",
+     "env = {"
+    ]
+   }
+  ],
+  "sm": [
+   {
+    "file": "docs/tasks/03-phase2-multi-table.md",
+    "line": 207,
+    "text": "from sdmetrics.reports.multi_table import QualityReport",
+    "context": [
+     "OUTPUT_DIR = os.path.join(ROOT, 'results/phase2')",
+     "",
+     "metadata_dict = json.load(open(os.path.join(ROOT, 'data/raw/d2_metadata.json')))",
+     "",
+     "from sdmetrics.reports.multi_table import QualityReport",
+     "",
+     "# 元データの読み込み",
+     "real_data = {}",
+     "for csv_file in sorted(glob.glob(os.path.join(ROOT, 'data/processed/d2_*.csv'))):"
+    ]
+   },
+   {
+    "file": "docs/tasks/00-setup.md",
+    "line": 200,
+    "text": "'evaluation': ('libs/evaluation', 'import sdmetrics; print(sdmetrics.__version__)'),",
+    "context": [
+     "    'sdv': ('libs/sdv', 'import sdv; print(sdv.__version__)'),",
+     "    'synthcity': ('libs/synthcity', 'import synthcity; print(getattr(synthcity, \\\"__version__\\\", \\\"unknown\\\"))'),",
+     "    'mostlyai': ('libs/mostlyai', 'import mostlyai; print(getattr(mostlyai, \\\"__version__\\\", \\\"unknown\\\"))'),",
+     "    'ydata': ('libs/ydata', 'import ydata_synthetic; print(getattr(ydata_synthetic, \\\"__version__\\\", \\\"unknown\\\"))'),",
+     "    'evaluation': ('libs/evaluation', 'import sdmetrics; print(sdmetrics.__version__)'),",
+     "}",
+     "",
+     "for name, (cwd, cmd) in checks.items():",
+     "    try:"
+    ]
+   },
+   {
+    "file": "docs/tasks/02-phase1-single-table.md",
+    "line": 333,
+    "text": "from sdmetrics.reports.single_table import QualityReport, DiagnosticReport",
+    "context": [
+     "",
+     "real_data = pd.read_csv(REAL_DATA_PATH)",
+     "metadata_dict = json.load(open(METADATA_PATH))",
+     "",
+     "from sdmetrics.reports.single_table import QualityReport, DiagnosticReport",
+     "",
+     "eval_results = {}",
+     "",
+     "for synth_file in sorted(glob.glob(os.path.join(OUTPUT_DIR, '*.csv'))):"
+    ]
+   },
+   {
+    "file": "libs/evaluation/sdmetrics_phase1.py",
+    "line": 23,
+    "text": "from sdmetrics.reports.single_table import QualityReport, DiagnosticReport",
+    "context": [
+     "    metadata_dict = metadata_raw['tables'][table_name]",
+     "else:",
+     "    metadata_dict = metadata_raw",
+     "",
+     "from sdmetrics.reports.single_table import QualityReport, DiagnosticReport",
+     "",
+     "eval_results = {}",
+     "",
+     "for synth_file in sorted(glob.glob(os.path.join(OUTPUT_DIR, '*.csv'))):"
+    ]
+   },
+   {
+    "file": "libs/evaluation/eval_fake_companies.py",
+    "line": 81,
+    "text": "from sdmetrics.reports.single_table import QualityReport, DiagnosticReport",
+    "context": [
+     "# ============================================================",
+     "# 2. SDMetrics 評価",
+     "# ============================================================",
+     "print(\"\\n=== SDMetrics Evaluation ===\")",
+     "from sdmetrics.reports.single_table import QualityReport, DiagnosticReport",
+     "",
+     "for name, path in synth_files.items():",
+     "    try:",
+     "        synth = pd.read_csv(path)"
+    ]
+   },
+   {
+    "file": "libs/evaluation/eval_stock.py",
+    "line": 81,
+    "text": "from sdmetrics.reports.single_table import QualityReport, DiagnosticReport",
+    "context": [
+     "# 2. SDMetrics 評価（single-table として評価）",
+     "# ============================================================",
+     "print(\"\\n=== SDMetrics Evaluation ===\")",
+     "try:",
+     "    from sdmetrics.reports.single_table import QualityReport, DiagnosticReport",
+     "",
+     "    quality = QualityReport()",
+     "    quality.generate(real_data, synth_data, metadata_dict)",
+     ""
+    ]
+   },
+   {
+    "file": "libs/evaluation/eval_imdb.py",
+    "line": 90,
+    "text": "from sdmetrics.reports.multi_table import QualityReport, DiagnosticReport",
+    "context": [
+     "# 2. SDMetrics Multi-Table 評価",
+     "# ============================================================",
+     "print(\"\\n=== SDMetrics Multi-Table Evaluation ===\")",
+     "try:",
+     "    from sdmetrics.reports.multi_table import QualityReport, DiagnosticReport",
+     "",
+     "    metadata_dict = json.load(open(META_JSON))",
+     "",
+     "    quality = QualityReport()"
+    ]
+   },
+   {
+    "file": "libs/evaluation/eval_olist.py",
+    "line": 274,
+    "text": "from sdmetrics.reports.multi_table import QualityReport",
+    "context": [
+     "    real_sub = {t: real_tables[t].copy() for t in common}",
+     "    synth_sub = {t: synth_tables[t].copy() for t in common}",
+     "",
+     "    try:",
+     "        from sdmetrics.reports.multi_table import QualityReport",
+     "        report = QualityReport()",
+     "        report.generate(real_sub, synth_sub, sub_meta, verbose=False)",
+     "        return {",
+     "            'quality_score': float(report.get_score()),"
+    ]
+   },
+   {
+    "file": "libs/evaluation/eval_hotel.py",
+    "line": 96,
+    "text": "from sdmetrics.reports.multi_table import QualityReport, DiagnosticReport",
+    "context": [
+     "# 2. SDMetrics Multi-Table 評価",
+     "# ============================================================",
+     "print(\"\\n=== SDMetrics Multi-Table Evaluation ===\")",
+     "try:",
+     "    from sdmetrics.reports.multi_table import QualityReport, DiagnosticReport",
+     "",
+     "    metadata_raw = json.load(open(METADATA_PATH))",
+     "    # metadata_dict は tables を含む形式",
+     "    metadata_dict = metadata_raw"
+    ]
+   },
+   {
+    "file": "libs/evaluation/eval_iot_weather.py",
+    "line": 80,
+    "text": "from sdmetrics.reports.single_table import QualityReport, DiagnosticReport",
+    "context": [
+     "# 2. SDMetrics 評価",
+     "# ============================================================",
+     "print(\"\\n=== SDMetrics Evaluation ===\")",
+     "try:",
+     "    from sdmetrics.reports.single_table import QualityReport, DiagnosticReport",
+     "",
+     "    quality = QualityReport()",
+     "    quality.generate(real_data, synth_data, metadata_dict)",
+     "    diag = DiagnosticReport()"
+    ]
+   },
+   {
+    "file": "libs/evaluation/eval_insurance.py",
+    "line": 86,
+    "text": "from sdmetrics.reports.single_table import QualityReport, DiagnosticReport",
+    "context": [
+     "# ============================================================",
+     "# 2. SDMetrics 評価",
+     "# ============================================================",
+     "print(\"\\n=== SDMetrics Evaluation ===\")",
+     "from sdmetrics.reports.single_table import QualityReport, DiagnosticReport",
+     "",
+     "for name, path in synth_files.items():",
+     "    try:",
+     "        synth = pd.read_csv(path)"
+    ]
+   }
+  ],
+  "sq": [
+   {
+    "file": "docs/tasks/04-phase3-timeseries.md",
+    "line": 70,
+    "text": "from sdv.sequential import PARSynthesizer",
+    "context": [
+     "    sys.exit(1)",
+     "",
+     "real_data = pd.read_csv(REAL_DATA_PATH)",
+     "",
+     "from sdv.sequential import PARSynthesizer",
+     "from sdv.metadata import Metadata",
+     "import sdv",
+     "",
+     "metadata = Metadata.load_from_dict(json.load(open(METADATA_PATH)))"
+    ]
+   },
+   {
+    "file": "libs/evaluation/eval_stock.py",
+    "line": 34,
+    "text": "from sdv.sequential import PARSynthesizer",
+    "context": [
+     "if not os.path.exists(REAL_CSV) or not os.path.exists(SYNTH_CSV):",
+     "    print(\"NASDAQ data not found. Running prepare_data + run_phase3...\")",
+     "    # prepare_data.py 相当の処理",
+     "    from sdv.datasets.demo import download_demo",
+     "    from sdv.sequential import PARSynthesizer",
+     "    from sdv.metadata import Metadata",
+     "    import sdv",
+     "",
+     "    data, meta = download_demo(modality='sequential', dataset_name='nasdaq100_2019')"
+    ]
+   },
+   {
+    "file": "libs/evaluation/eval_iot_weather.py",
+    "line": 33,
+    "text": "from sdv.sequential import PARSynthesizer",
+    "context": [
+     "",
+     "if not os.path.exists(REAL_CSV) or not os.path.exists(SYNTH_CSV):",
+     "    print(\"Weather data not found. Generating via SDV download_demo...\")",
+     "    from sdv.datasets.demo import download_demo",
+     "    from sdv.sequential import PARSynthesizer",
+     "    from sdv.metadata import Metadata",
+     "    import sdv",
+     "",
+     "    data, meta = download_demo(modality='sequential', dataset_name='daily_weather_2020')"
+    ]
+   },
+   {
+    "file": "libs/sdv/run_phase3.py",
+    "line": 27,
+    "text": "from sdv.sequential import PARSynthesizer",
+    "context": [
+     "    sys.exit(1)",
+     "",
+     "real_data = pd.read_csv(REAL_DATA_PATH)",
+     "",
+     "from sdv.sequential import PARSynthesizer",
+     "from sdv.metadata import Metadata",
+     "import sdv",
+     "",
+     "metadata = Metadata.load_from_dict(json.load(open(METADATA_PATH)))"
+    ]
+   }
+  ],
+  "par": [
+   {
+    "file": "docs/tasks/04-phase3-timeseries.md",
+    "line": 70,
+    "text": "from sdv.sequential import PARSynthesizer",
+    "context": [
+     "    sys.exit(1)",
+     "",
+     "real_data = pd.read_csv(REAL_DATA_PATH)",
+     "",
+     "from sdv.sequential import PARSynthesizer",
+     "from sdv.metadata import Metadata",
+     "import sdv",
+     "",
+     "metadata = Metadata.load_from_dict(json.load(open(METADATA_PATH)))"
+    ]
+   },
+   {
+    "file": "docs/tasks/04-phase3-timeseries.md",
+    "line": 87,
+    "text": "synthesizer = PARSynthesizer(metadata, epochs=128)",
+    "context": [
+     "update_progress('04-phase3', 'in_progress', current_step='sdv')",
+     "",
+     "try:",
+     "    start = time.time()",
+     "    synthesizer = PARSynthesizer(metadata, epochs=128)",
+     "    synthesizer.fit(real_data)",
+     "    synth_data = synthesizer.sample(num_sequences=real_data[metadata.sequence_key].nunique())",
+     "    elapsed = time.time() - start",
+     ""
+    ]
+   },
+   {
+    "file": "docs/catalog/scripts/add_case_scripts.py",
+    "line": 69,
+    "text": "\"description\": \"SDV PARSynthesizer (128ep) で銘柄別の日次株価時系列を合成\"},",
+    "context": [
+     "    \"stock-price-timeseries\": [",
+     "        {\"role\": \"prepare\", \"library\": \"sdv\", \"path\": \"libs/sdv/prepare_data.py\",",
+     "         \"description\": \"SDV demo (NASDAQ 100 2019) を取得し時系列メタデータを保存\"},",
+     "        {\"role\": \"synthesize\", \"library\": \"sdv\", \"path\": \"libs/sdv/run_phase3.py\",",
+     "         \"description\": \"SDV PARSynthesizer (128ep) で銘柄別の日次株価時系列を合成\"},",
+     "        {\"role\": \"evaluate\", \"library\": \"evaluation\", \"path\": \"libs/evaluation/eval_stock.py\",",
+     "         \"description\": \"SDMetrics + 自己相関乖離 + DCR による評価\"},",
+     "    ],",
+     "    \"iot-sensor-monitoring\": ["
+    ]
+   },
+   {
+    "file": "libs/evaluation/eval_stock.py",
+    "line": 34,
+    "text": "from sdv.sequential import PARSynthesizer",
+    "context": [
+     "if not os.path.exists(REAL_CSV) or not os.path.exists(SYNTH_CSV):",
+     "    print(\"NASDAQ data not found. Running prepare_data + run_phase3...\")",
+     "    # prepare_data.py 相当の処理",
+     "    from sdv.datasets.demo import download_demo",
+     "    from sdv.sequential import PARSynthesizer",
+     "    from sdv.metadata import Metadata",
+     "    import sdv",
+     "",
+     "    data, meta = download_demo(modality='sequential', dataset_name='nasdaq100_2019')"
+    ]
+   },
+   {
+    "file": "libs/evaluation/eval_stock.py",
+    "line": 45,
+    "text": "synthesizer = PARSynthesizer(meta, epochs=128)",
+    "context": [
+     "        json.dump(meta.to_dict(), f, indent=2)",
+     "    print(f\"  Downloaded: {len(data)} rows\")",
+     "",
+     "    # PAR 128ep で合成",
+     "    synthesizer = PARSynthesizer(meta, epochs=128)",
+     "    synthesizer.fit(data)",
+     "",
+     "    meta_dict = meta.to_dict()",
+     "    seq_key = None"
+    ]
+   },
+   {
+    "file": "libs/evaluation/eval_iot_weather.py",
+    "line": 33,
+    "text": "from sdv.sequential import PARSynthesizer",
+    "context": [
+     "",
+     "if not os.path.exists(REAL_CSV) or not os.path.exists(SYNTH_CSV):",
+     "    print(\"Weather data not found. Generating via SDV download_demo...\")",
+     "    from sdv.datasets.demo import download_demo",
+     "    from sdv.sequential import PARSynthesizer",
+     "    from sdv.metadata import Metadata",
+     "    import sdv",
+     "",
+     "    data, meta = download_demo(modality='sequential', dataset_name='daily_weather_2020')"
+    ]
+   },
+   {
+    "file": "libs/evaluation/eval_iot_weather.py",
+    "line": 44,
+    "text": "synthesizer = PARSynthesizer(meta, epochs=64)",
+    "context": [
+     "        json.dump(meta.to_dict(), f, indent=2)",
+     "    print(f\"  Downloaded: {len(data)} rows\")",
+     "",
+     "    # PAR 64ep で合成",
+     "    synthesizer = PARSynthesizer(meta, epochs=64)",
+     "    synthesizer.fit(data)",
+     "",
+     "    meta_dict = meta.to_dict()",
+     "    seq_key = None"
+    ]
+   },
+   {
+    "file": "libs/sdv/run_phase3.py",
+    "line": 27,
+    "text": "from sdv.sequential import PARSynthesizer",
+    "context": [
+     "    sys.exit(1)",
+     "",
+     "real_data = pd.read_csv(REAL_DATA_PATH)",
+     "",
+     "from sdv.sequential import PARSynthesizer",
+     "from sdv.metadata import Metadata",
+     "import sdv",
+     "",
+     "metadata = Metadata.load_from_dict(json.load(open(METADATA_PATH)))"
+    ]
+   },
+   {
+    "file": "libs/sdv/run_phase3.py",
+    "line": 68,
+    "text": "synthesizer = PARSynthesizer(metadata, epochs=128)",
+    "context": [
+     "    dataset=dataset_info,",
+     "    params={\"random_seed\": 42, \"epochs\": 128, \"num_sequences\": int(num_seq)},",
+     ")",
+     "with run_par:",
+     "    synthesizer = PARSynthesizer(metadata, epochs=128)",
+     "    synthesizer.fit(real_data)",
+     "    synth_data = synthesizer.sample(num_sequences=num_seq)",
+     "    csv_path = os.path.join(OUTPUT_DIR, 'sdv_par.csv')",
+     "    synth_data.to_csv(csv_path, index=False)"
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "docs/tasks/02-phase1-single-table.md",
+    "line": 85,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "",
+     "上記共通ヘルパーの後に:",
+     "",
+     "```python",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "import sdv",
+     "",
+     "metadata = Metadata.load_from_dict(json.load(open(METADATA_PATH)))"
+    ]
+   },
+   {
+    "file": "libs/evaluation/eval_fake_companies.py",
+    "line": 31,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "if not os.path.exists(RAW_CSV) or not os.path.exists(SYNTH_GC):",
+     "    print(\"Fake Companies data not found. Generating via SDV download_demo...\")",
+     "    from sdv.datasets.demo import download_demo",
+     "    from sdv.single_table import GaussianCopulaSynthesizer",
+     "    import sdv",
+     "",
+     "    fc_data, fc_meta = download_demo(modality='single_table', dataset_name='fake_companies')",
+     "    fc_data.to_csv(RAW_CSV, index=False)"
+    ]
+   },
+   {
+    "file": "libs/evaluation/eval_insurance.py",
+    "line": 38,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "    print(\"Insurance data not found. Generating via SDV download_demo...\")",
+     "    sys.path.insert(0, os.path.join(ROOT, 'libs'))",
+     "",
+     "    from sdv.datasets.demo import download_demo",
+     "    from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "    import sdv",
+     "",
+     "    ins_data, ins_meta = download_demo(modality='single_table', dataset_name='insurance')",
+     "    ins_data.to_csv(RAW_CSV, index=False)"
+    ]
+   },
+   {
+    "file": "libs/sdv/run_additional_experiments.py",
+    "line": 22,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "sys.path.insert(0, os.path.join(ROOT, 'libs'))",
+     "from common.experiment import ExperimentRun, build_run_log, update_manifest",
+     "",
+     "from sdv.datasets.demo import download_demo",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.metadata import Metadata",
+     "import sdv",
+     ""
+    ]
+   },
+   {
+    "file": "libs/sdv/run_phase1.py",
+    "line": 30,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "",
+     "real_data = pd.read_csv(REAL_DATA_PATH)",
+     "print(f\"Loaded real data: {len(real_data)} rows, {len(real_data.columns)} columns\")",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "import sdv",
+     "",
+     "metadata = Metadata.load_from_dict(json.load(open(METADATA_PATH)))"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "docs/tasks/02-phase1-single-table.md",
+    "line": 85,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "",
+     "上記共通ヘルパーの後に:",
+     "",
+     "```python",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "import sdv",
+     "",
+     "metadata = Metadata.load_from_dict(json.load(open(METADATA_PATH)))"
+    ]
+   },
+   {
+    "file": "docs/tasks/02-phase1-single-table.md",
+    "line": 114,
+    "text": "ctgan = CTGANSynthesizer(metadata, epochs=100)",
+    "context": [
+     "",
+     "# --- CTGAN ---",
+     "try:",
+     "    start = time.time()",
+     "    ctgan = CTGANSynthesizer(metadata, epochs=100)",
+     "    ctgan.fit(real_data)",
+     "    synth_ctgan = ctgan.sample(num_rows=len(real_data))",
+     "    elapsed = time.time() - start",
+     "    synth_ctgan.to_csv(os.path.join(OUTPUT_DIR, 'sdv_ctgan.csv'), index=False)"
+    ]
+   },
+   {
+    "file": "libs/evaluation/eval_insurance.py",
+    "line": 38,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "    print(\"Insurance data not found. Generating via SDV download_demo...\")",
+     "    sys.path.insert(0, os.path.join(ROOT, 'libs'))",
+     "",
+     "    from sdv.datasets.demo import download_demo",
+     "    from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "    import sdv",
+     "",
+     "    ins_data, ins_meta = download_demo(modality='single_table', dataset_name='insurance')",
+     "    ins_data.to_csv(RAW_CSV, index=False)"
+    ]
+   },
+   {
+    "file": "libs/evaluation/eval_insurance.py",
+    "line": 55,
+    "text": "ctgan = CTGANSynthesizer(ins_meta, epochs=50)",
+    "context": [
+     "    synth_gc.to_csv(SYNTH_GC, index=False)",
+     "    print(f\"  GaussianCopula generated: {len(synth_gc)} rows\")",
+     "",
+     "    # CTGAN 50ep",
+     "    ctgan = CTGANSynthesizer(ins_meta, epochs=50)",
+     "    ctgan.fit(ins_data)",
+     "    synth_ctgan = ctgan.sample(num_rows=len(ins_data))",
+     "    synth_ctgan.to_csv(SYNTH_CTGAN, index=False)",
+     "    print(f\"  CTGAN 50ep generated: {len(synth_ctgan)} rows\")"
+    ]
+   },
+   {
+    "file": "libs/sdv/run_additional_experiments.py",
+    "line": 22,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "sys.path.insert(0, os.path.join(ROOT, 'libs'))",
+     "from common.experiment import ExperimentRun, build_run_log, update_manifest",
+     "",
+     "from sdv.datasets.demo import download_demo",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.metadata import Metadata",
+     "import sdv",
+     ""
+    ]
+   },
+   {
+    "file": "libs/sdv/run_additional_experiments.py",
+    "line": 77,
+    "text": "ctgan = CTGANSynthesizer(ins_meta, epochs=50)",
+    "context": [
+     "        dataset=ins_dataset,",
+     "        params={\"random_seed\": 42, \"num_rows\": len(ins_data), \"epochs\": 50},",
+     "    )",
+     "    with run_ins_ctgan:",
+     "        ctgan = CTGANSynthesizer(ins_meta, epochs=50)",
+     "        ctgan.fit(ins_data)",
+     "        synth = ctgan.sample(num_rows=len(ins_data))",
+     "        csv_path = os.path.join(ROOT, 'results/phase1/sdv_ctgan_50ep_insurance.csv')",
+     "        synth.to_csv(csv_path, index=False)"
+    ]
+   },
+   {
+    "file": "libs/sdv/run_phase1.py",
+    "line": 30,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "",
+     "real_data = pd.read_csv(REAL_DATA_PATH)",
+     "print(f\"Loaded real data: {len(real_data)} rows, {len(real_data.columns)} columns\")",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "import sdv",
+     "",
+     "metadata = Metadata.load_from_dict(json.load(open(METADATA_PATH)))"
+    ]
+   },
+   {
+    "file": "libs/sdv/run_phase1.py",
+    "line": 82,
+    "text": "ctgan = CTGANSynthesizer(metadata, epochs=100)",
+    "context": [
+     "    dataset=dataset_info,",
+     "    params={\"random_seed\": RANDOM_SEED, \"num_rows\": len(real_data), \"epochs\": 100},",
+     ")",
+     "with run_ctgan:",
+     "    ctgan = CTGANSynthesizer(metadata, epochs=100)",
+     "    ctgan.fit(real_data)",
+     "    synth_ctgan = ctgan.sample(num_rows=len(real_data))",
+     "    csv_path = os.path.join(OUTPUT_DIR, 'sdv_ctgan.csv')",
+     "    synth_ctgan.to_csv(csv_path, index=False)"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "docs/tasks/02-phase1-single-table.md",
+    "line": 85,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "",
+     "上記共通ヘルパーの後に:",
+     "",
+     "```python",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "import sdv",
+     "",
+     "metadata = Metadata.load_from_dict(json.load(open(METADATA_PATH)))"
+    ]
+   },
+   {
+    "file": "docs/tasks/02-phase1-single-table.md",
+    "line": 100,
+    "text": "gc = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "",
+     "# --- GaussianCopula ---",
+     "try:",
+     "    start = time.time()",
+     "    gc = GaussianCopulaSynthesizer(metadata)",
+     "    gc.fit(real_data)",
+     "    synth_gc = gc.sample(num_rows=len(real_data))",
+     "    elapsed = time.time() - start",
+     "    synth_gc.to_csv(os.path.join(OUTPUT_DIR, 'sdv_gaussiancopula.csv'), index=False)"
+    ]
+   },
+   {
+    "file": "libs/evaluation/eval_fake_companies.py",
+    "line": 31,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "if not os.path.exists(RAW_CSV) or not os.path.exists(SYNTH_GC):",
+     "    print(\"Fake Companies data not found. Generating via SDV download_demo...\")",
+     "    from sdv.datasets.demo import download_demo",
+     "    from sdv.single_table import GaussianCopulaSynthesizer",
+     "    import sdv",
+     "",
+     "    fc_data, fc_meta = download_demo(modality='single_table', dataset_name='fake_companies')",
+     "    fc_data.to_csv(RAW_CSV, index=False)"
+    ]
+   },
+   {
+    "file": "libs/evaluation/eval_fake_companies.py",
+    "line": 41,
+    "text": "gc = GaussianCopulaSynthesizer(fc_meta)",
+    "context": [
+     "    with open(meta_json_path, 'w') as f:",
+     "        json.dump(fc_meta.to_dict(), f, indent=2)",
+     "    print(f\"  Downloaded: {len(fc_data)} rows, {len(fc_data.columns)} cols\")",
+     "",
+     "    gc = GaussianCopulaSynthesizer(fc_meta)",
+     "    gc.fit(fc_data)",
+     "    synth = gc.sample(num_rows=len(fc_data))",
+     "    synth.to_csv(SYNTH_GC, index=False)",
+     "    print(f\"  GaussianCopula generated: {len(synth)} rows\")"
+    ]
+   },
+   {
+    "file": "libs/evaluation/eval_insurance.py",
+    "line": 38,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "    print(\"Insurance data not found. Generating via SDV download_demo...\")",
+     "    sys.path.insert(0, os.path.join(ROOT, 'libs'))",
+     "",
+     "    from sdv.datasets.demo import download_demo",
+     "    from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "    import sdv",
+     "",
+     "    ins_data, ins_meta = download_demo(modality='single_table', dataset_name='insurance')",
+     "    ins_data.to_csv(RAW_CSV, index=False)"
+    ]
+   },
+   {
+    "file": "libs/evaluation/eval_insurance.py",
+    "line": 48,
+    "text": "gc = GaussianCopulaSynthesizer(ins_meta)",
+    "context": [
+     "        json.dump(ins_meta.to_dict(), f, indent=2)",
+     "    print(f\"  Downloaded: {len(ins_data)} rows, {len(ins_data.columns)} cols\")",
+     "",
+     "    # GaussianCopula",
+     "    gc = GaussianCopulaSynthesizer(ins_meta)",
+     "    gc.fit(ins_data)",
+     "    synth_gc = gc.sample(num_rows=len(ins_data))",
+     "    synth_gc.to_csv(SYNTH_GC, index=False)",
+     "    print(f\"  GaussianCopula generated: {len(synth_gc)} rows\")"
+    ]
+   },
+   {
+    "file": "libs/sdv/run_additional_experiments.py",
+    "line": 22,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "sys.path.insert(0, os.path.join(ROOT, 'libs'))",
+     "from common.experiment import ExperimentRun, build_run_log, update_manifest",
+     "",
+     "from sdv.datasets.demo import download_demo",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.metadata import Metadata",
+     "import sdv",
+     ""
+    ]
+   },
+   {
+    "file": "libs/sdv/run_additional_experiments.py",
+    "line": 59,
+    "text": "gc = GaussianCopulaSynthesizer(ins_meta)",
+    "context": [
+     "        dataset=ins_dataset,",
+     "        params={\"random_seed\": 42, \"num_rows\": len(ins_data)},",
+     "    )",
+     "    with run_ins_gc:",
+     "        gc = GaussianCopulaSynthesizer(ins_meta)",
+     "        gc.fit(ins_data)",
+     "        synth = gc.sample(num_rows=len(ins_data))",
+     "        csv_path = os.path.join(ROOT, 'results/phase1/sdv_gaussiancopula_insurance.csv')",
+     "        synth.to_csv(csv_path, index=False)"
+    ]
+   },
+   {
+    "file": "libs/sdv/run_additional_experiments.py",
+    "line": 154,
+    "text": "gc = GaussianCopulaSynthesizer(fc_meta)",
+    "context": [
+     "        dataset=fc_dataset,",
+     "        params={\"random_seed\": 42, \"num_rows\": len(fc_data)},",
+     "    )",
+     "    with run_fc:",
+     "        gc = GaussianCopulaSynthesizer(fc_meta)",
+     "        gc.fit(fc_data)",
+     "        synth = gc.sample(num_rows=len(fc_data))",
+     "        csv_path = os.path.join(ROOT, 'results/phase1/sdv_gaussiancopula_fake_companies.csv')",
+     "        synth.to_csv(csv_path, index=False)"
+    ]
+   },
+   {
+    "file": "libs/sdv/run_phase1.py",
+    "line": 30,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "",
+     "real_data = pd.read_csv(REAL_DATA_PATH)",
+     "print(f\"Loaded real data: {len(real_data)} rows, {len(real_data.columns)} columns\")",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "import sdv",
+     "",
+     "metadata = Metadata.load_from_dict(json.load(open(METADATA_PATH)))"
+    ]
+   },
+   {
+    "file": "libs/sdv/run_phase1.py",
+    "line": 61,
+    "text": "gc = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "    dataset=dataset_info,",
+     "    params={\"random_seed\": RANDOM_SEED, \"num_rows\": len(real_data)},",
+     ")",
+     "with run_gc:",
+     "    gc = GaussianCopulaSynthesizer(metadata)",
+     "    gc.fit(real_data)",
+     "    synth_gc = gc.sample(num_rows=len(real_data))",
+     "    csv_path = os.path.join(OUTPUT_DIR, 'sdv_gaussiancopula.csv')",
+     "    synth_gc.to_csv(csv_path, index=False)"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "gc",
+  "hma",
+  "md",
+  "mt",
+  "par",
+  "sdv_any",
+  "sm",
+  "sq",
+  "st"
+ ],
+ "vendored_dirs": [
+  "libs/sdv"
+ ],
+ "dependencies": {
+  "libs/evaluation/pyproject.toml": [
+   "    \"sdv>=1.0\",",
+   "    \"sdmetrics\","
+  ],
+  "libs/sdv/pyproject.toml": [
+   "name = \"synth-sdv\"",
+   "    \"sdv>=1.0\","
+  ]
+ }
+}

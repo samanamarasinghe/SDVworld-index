@@ -1,0 +1,784 @@
+{
+ "repo": "Aadii1506/synthetic-data-lakehouse",
+ "disk_kb": 62,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Synthetic Data Lakehouse\n\nProduction pipeline: **real Kaggle/OpenAPI data** → medallion lakehouse → **SDV** synthetic data → **Ollama** validation → **Airflow** orchestration → **PySpark/Databricks** at scale.\n\n## Browser URLs (local Docker)\n\n| Service | URL | Login |\n|---------|-----|-------|\n| **Airflow** | http://localhost:8080 | admin / admin |\n| **Dashboard** | http://localhost:8501 | — |\n| **Ollama API** | http://localhost:11434 | — |\n| **Source Postgres** | localhost:5433 | source_user / source_pass |\n\n## One command to run everything\n\n```powershell\ncopy .env.example .env\nollama pull llama3.2\n\n# Full stack: Docker + fetch + ETL + synthetic + dashboard + open browser\n.\\run.ps1 -WithDocker -WithDashboard -OpenBrowser\n\n# Or without Docker (Ollama already running on host):\n.\\run.ps1 -WithDashboard\n```\n\nEquivalent:\n```powershell\npython run.py --with-docker --with-dashboard --open-browser\n```\n\n`run.py` steps automatically:\n1. Create `.env` if missing  \n2. Start Docker (optional) + wait for Ollama & Airflow  \n3. Fetch real data (OpenAPI/Kaggle)  \n4. Bronze → Silver → Gold → Ollama validation → SDV synthetic  \n5. Print results + start dashboard  \n\n| Flag | Meaning |\n|------|---------|\n| `--with-docker` | Start Airflow, Ollama, Postgres, Dashboard containers |\n| `--with-dashboard` | Keep Streamlit on http://localhost:8501 |\n| `--open-browser` | Open URLs when ready |\n| `--source kaggle` | Use Kaggle dataset |\n| `--skip-fetch` | Reuse existing landing data |\n\n---\n\n## Manual steps (optional)\n\n### Configure environment\n\n```powershell\ncopy .env.example .env\n# DATA_SOURCE=openapi | kaggle\n# OLLAMA_MOCK=false\n```\n\n### Browser URLs\n\n| Service | URL |\n|---------|-----|\n| **Airflow** | http://localhost:8080 (admin/admin) |\n| **Dashboard** | http://localhost:8501 |\n| **Ollama** | http://localhost:11434 |\n\n---\n\n## Data sources (`DATA_SOURCE`)\n\n| Value | Description | Credentials |\n|-------|-------------|-------------|\n| `openapi` | [Fake Store API](https://fakestoreapi.com) + [DummyJSON](https://dummyjson.com) users/carts | None |\n| `kaggle` | [carrie1/ecommerce-data](https://www.kaggle.com/datasets/carrie1/ecommerce-data) Online Retail CSV | `KAGGLE_USERNAME` + `KAGGLE_KEY` |\n| `postgres` | Read from source DB after load | Docker `source-db` |\n\n```powershell\n# OpenAPI (default)\npython scripts/fetch_real_data.py --source openapi\n\n# Kaggle\n$env:KAGGLE_USERNAME=\"your_user\"\n$env:KAGGLE_KEY=\"your_key\"\npython scripts/fetch_real_data.py --source kaggle\n```\n\n---\n\n## Ollama (real, not mocked)\n\n- Set `OLLAMA_MOCK=false` in `.env`\n- `OLLAMA_BASE_URL=http://localhost:11434` when Ollama runs on host\n- Inside Docker Airflow/dashboard: `http://ollama:11434`\n- If Ollama is on host but apps in Docker: `http://host.docker.internal:11434`\n\n```powershell\npython scripts/wait_for_ollama.py\npython scripts/run_local_pipeline.py\n```\n\n---\n\n## Architecture\n\n```\nOpenAPI / Kaggle / Postgres\n        ↓\n   Airflow 01_ingestion (fetch → validate)\n        ↓\n   Bronze → Silver → Gold (02_transformation)\n        ↓\n   Quality checks (04_quality_validation)\n        ↓\n   Ollama gate → SDV → Ollama validate (03_synthetic)\n```\n\n---\n\n## Project layout\n\n```\npipeline/data_sources/   # kaggle_loader, openapi_loader\ndashboard/app.py         # Streamlit UI :8501\ndocker/docker-compose.yml\nscripts/fetch_real_data.py\nscripts/run_local_pipeline.py\nscripts/start_stack.ps1\n```\n\n---\n\n## Tests\n\n```powershell\npytest tests/unit -q\n```\n\n## Windows + SDV\n\nIf PyTorch fails (`c10.dll`), the pipeline uses a statistical bootstrap synthesizer locally; use **Docker/Linux** for full CTGAN, or fix PyTorch CPU in `etl_env`.\n",
+ "hits": {
+  "st": [
+   {
+    "file": "pipeline/synthetic_gen.py",
+    "line": 21,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "SDV_AVAILABLE = True",
+     "try:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import GaussianCopulaSynthesizer",
+     "except (OSError, ImportError) as exc:",
+     "    SDV_AVAILABLE = False",
+     "    logger.warning(\"SDV not available on this host (%s). Using bootstrap fallback.\", exc)",
+     ""
+    ]
+   },
+   {
+    "file": "pipeline/synthetic_gen.py",
+    "line": 92,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "        model_path = None",
+     "    else:",
+     "        metadata = build_metadata(real_df)",
+     "        if synthesizer_type == \"ctgan\":",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "",
+     "            synthesizer = CTGANSynthesizer(",
+     "                metadata,",
+     "                epochs=settings.sdv_epochs,"
+    ]
+   },
+   {
+    "file": "databricks/notebooks/04_synthetic_generation.py",
+    "line": 27,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "# Export gold customer_360 to pandas for SDV (driver-bound for moderate size)",
+     "gold_df = spark.read.format(\"delta\").load(GOLD_PATH).toPandas()",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(gold_df)",
+     "if \"customer_id\" in gold_df.columns:"
+    ]
+   },
+   {
+    "file": "synthetic/sdv_models/generate_data.py",
+    "line": 8,
+    "text": "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, TVAESynthesizer",
+    "context": [
+     "",
+     "from pathlib import Path",
+     "",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, TVAESynthesizer",
+     "",
+     "SYNTHESIZER_MAP = {",
+     "    \"ctgan\": CTGANSynthesizer,",
+     "    \"tvae\": TVAESynthesizer,"
+    ]
+   },
+   {
+    "file": "synthetic/sdv_models/train_synthesizer.py",
+    "line": 6,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "",
+     "import pandas as pd",
+     "import json",
+     "from pathlib import Path",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.metadata import SingleTableMetadata, MultiTableMetadata",
+     "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality",
+     "import matplotlib.pyplot as plt"
+    ]
+   },
+   {
+    "file": "synthetic/sdv_models/train_synthesizer.py",
+    "line": 224,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "    comparison = pipeline.run_multi_model_comparison(df, metadata)",
+     "    print(f\"Model comparison: {comparison}\")",
+     "    ",
+     "    # Generate final synthetic dataset",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    best = CTGANSynthesizer.load(comparison[\"model_path\"])",
+     "    synthetic_df = best.sample(num_rows=len(df) * 5)",
+     "    synthetic_df.to_parquet(\"/tmp/synthetic/customers/final.parquet\", index=False)",
+     "    "
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "pipeline/synthetic_gen.py",
+    "line": 20,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "logger = logging.getLogger(__name__)",
+     "",
+     "SDV_AVAILABLE = True",
+     "try:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import GaussianCopulaSynthesizer",
+     "except (OSError, ImportError) as exc:",
+     "    SDV_AVAILABLE = False",
+     "    logger.warning(\"SDV not available on this host (%s). Using bootstrap fallback.\", exc)"
+    ]
+   },
+   {
+    "file": "databricks/notebooks/04_synthetic_generation.py",
+    "line": 26,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "# Export gold customer_360 to pandas for SDV (driver-bound for moderate size)",
+     "gold_df = spark.read.format(\"delta\").load(GOLD_PATH).toPandas()",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(gold_df)"
+    ]
+   },
+   {
+    "file": "synthetic/sdv_models/train_synthesizer.py",
+    "line": 8,
+    "text": "from sdv.metadata import SingleTableMetadata, MultiTableMetadata",
+    "context": [
+     "import json",
+     "from pathlib import Path",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.metadata import SingleTableMetadata, MultiTableMetadata",
+     "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality",
+     "import matplotlib.pyplot as plt",
+     "",
+     ""
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "pipeline/synthetic_gen.py",
+    "line": 134,
+    "text": "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+    "context": [
+     "    \"\"\"SDV quality + statistical checks; persist report JSON.\"\"\"",
+     "    settings.ensure_dirs()",
+     "",
+     "    if SDV_AVAILABLE:",
+     "        from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "",
+     "        metadata = build_metadata(real_df)",
+     "        quality_report = evaluate_quality(real_df, synthetic_df, metadata)",
+     "        diagnostic_report = run_diagnostic(real_df, synthetic_df, metadata)"
+    ]
+   },
+   {
+    "file": "synthetic/sdv_models/train_synthesizer.py",
+    "line": 9,
+    "text": "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality",
+    "context": [
+     "from pathlib import Path",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.metadata import SingleTableMetadata, MultiTableMetadata",
+     "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality",
+     "import matplotlib.pyplot as plt",
+     "",
+     "",
+     "class SyntheticDataPipeline:"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "pipeline/synthetic_gen.py",
+    "line": 20,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "logger = logging.getLogger(__name__)",
+     "",
+     "SDV_AVAILABLE = True",
+     "try:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import GaussianCopulaSynthesizer",
+     "except (OSError, ImportError) as exc:",
+     "    SDV_AVAILABLE = False",
+     "    logger.warning(\"SDV not available on this host (%s). Using bootstrap fallback.\", exc)"
+    ]
+   },
+   {
+    "file": "pipeline/synthetic_gen.py",
+    "line": 21,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "SDV_AVAILABLE = True",
+     "try:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import GaussianCopulaSynthesizer",
+     "except (OSError, ImportError) as exc:",
+     "    SDV_AVAILABLE = False",
+     "    logger.warning(\"SDV not available on this host (%s). Using bootstrap fallback.\", exc)",
+     ""
+    ]
+   },
+   {
+    "file": "pipeline/synthetic_gen.py",
+    "line": 92,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "        model_path = None",
+     "    else:",
+     "        metadata = build_metadata(real_df)",
+     "        if synthesizer_type == \"ctgan\":",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "",
+     "            synthesizer = CTGANSynthesizer(",
+     "                metadata,",
+     "                epochs=settings.sdv_epochs,"
+    ]
+   },
+   {
+    "file": "pipeline/synthetic_gen.py",
+    "line": 134,
+    "text": "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+    "context": [
+     "    \"\"\"SDV quality + statistical checks; persist report JSON.\"\"\"",
+     "    settings.ensure_dirs()",
+     "",
+     "    if SDV_AVAILABLE:",
+     "        from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "",
+     "        metadata = build_metadata(real_df)",
+     "        quality_report = evaluate_quality(real_df, synthetic_df, metadata)",
+     "        diagnostic_report = run_diagnostic(real_df, synthetic_df, metadata)"
+    ]
+   },
+   {
+    "file": "databricks/notebooks/04_synthetic_generation.py",
+    "line": 26,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "# Export gold customer_360 to pandas for SDV (driver-bound for moderate size)",
+     "gold_df = spark.read.format(\"delta\").load(GOLD_PATH).toPandas()",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(gold_df)"
+    ]
+   },
+   {
+    "file": "databricks/notebooks/04_synthetic_generation.py",
+    "line": 27,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "# Export gold customer_360 to pandas for SDV (driver-bound for moderate size)",
+     "gold_df = spark.read.format(\"delta\").load(GOLD_PATH).toPandas()",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(gold_df)",
+     "if \"customer_id\" in gold_df.columns:"
+    ]
+   },
+   {
+    "file": "synthetic/sdv_models/generate_data.py",
+    "line": 8,
+    "text": "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, TVAESynthesizer",
+    "context": [
+     "",
+     "from pathlib import Path",
+     "",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, TVAESynthesizer",
+     "",
+     "SYNTHESIZER_MAP = {",
+     "    \"ctgan\": CTGANSynthesizer,",
+     "    \"tvae\": TVAESynthesizer,"
+    ]
+   },
+   {
+    "file": "synthetic/sdv_models/train_synthesizer.py",
+    "line": 6,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "",
+     "import pandas as pd",
+     "import json",
+     "from pathlib import Path",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.metadata import SingleTableMetadata, MultiTableMetadata",
+     "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality",
+     "import matplotlib.pyplot as plt"
+    ]
+   },
+   {
+    "file": "synthetic/sdv_models/train_synthesizer.py",
+    "line": 7,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import json",
+     "from pathlib import Path",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.metadata import SingleTableMetadata, MultiTableMetadata",
+     "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality",
+     "import matplotlib.pyplot as plt",
+     ""
+    ]
+   },
+   {
+    "file": "synthetic/sdv_models/train_synthesizer.py",
+    "line": 8,
+    "text": "from sdv.metadata import SingleTableMetadata, MultiTableMetadata",
+    "context": [
+     "import json",
+     "from pathlib import Path",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.metadata import SingleTableMetadata, MultiTableMetadata",
+     "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality",
+     "import matplotlib.pyplot as plt",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "synthetic/sdv_models/train_synthesizer.py",
+    "line": 9,
+    "text": "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality",
+    "context": [
+     "from pathlib import Path",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.metadata import SingleTableMetadata, MultiTableMetadata",
+     "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality",
+     "import matplotlib.pyplot as plt",
+     "",
+     "",
+     "class SyntheticDataPipeline:"
+    ]
+   },
+   {
+    "file": "synthetic/sdv_models/train_synthesizer.py",
+    "line": 224,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "    comparison = pipeline.run_multi_model_comparison(df, metadata)",
+     "    print(f\"Model comparison: {comparison}\")",
+     "    ",
+     "    # Generate final synthetic dataset",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    best = CTGANSynthesizer.load(comparison[\"model_path\"])",
+     "    synthetic_df = best.sample(num_rows=len(df) * 5)",
+     "    synthetic_df.to_parquet(\"/tmp/synthetic/customers/final.parquet\", index=False)",
+     "    "
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "pipeline/synthetic_gen.py",
+    "line": 92,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "        model_path = None",
+     "    else:",
+     "        metadata = build_metadata(real_df)",
+     "        if synthesizer_type == \"ctgan\":",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "",
+     "            synthesizer = CTGANSynthesizer(",
+     "                metadata,",
+     "                epochs=settings.sdv_epochs,"
+    ]
+   },
+   {
+    "file": "pipeline/synthetic_gen.py",
+    "line": 94,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "        metadata = build_metadata(real_df)",
+     "        if synthesizer_type == \"ctgan\":",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "",
+     "            synthesizer = CTGANSynthesizer(",
+     "                metadata,",
+     "                epochs=settings.sdv_epochs,",
+     "                batch_size=min(500, max(len(real_df), 10)),",
+     "                verbose=True,"
+    ]
+   },
+   {
+    "file": "synthetic/sdv_models/generate_data.py",
+    "line": 8,
+    "text": "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, TVAESynthesizer",
+    "context": [
+     "",
+     "from pathlib import Path",
+     "",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, TVAESynthesizer",
+     "",
+     "SYNTHESIZER_MAP = {",
+     "    \"ctgan\": CTGANSynthesizer,",
+     "    \"tvae\": TVAESynthesizer,"
+    ]
+   },
+   {
+    "file": "synthetic/sdv_models/generate_data.py",
+    "line": 11,
+    "text": "\"ctgan\": CTGANSynthesizer,",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, TVAESynthesizer",
+     "",
+     "SYNTHESIZER_MAP = {",
+     "    \"ctgan\": CTGANSynthesizer,",
+     "    \"tvae\": TVAESynthesizer,",
+     "    \"gaussian_copula\": GaussianCopulaSynthesizer,",
+     "}",
+     ""
+    ]
+   },
+   {
+    "file": "synthetic/sdv_models/generate_data.py",
+    "line": 24,
+    "text": "cls = SYNTHESIZER_MAP.get(synthesizer_type, CTGANSynthesizer)",
+    "context": [
+     "    output_path: str,",
+     "    synthesizer_type: str = \"ctgan\",",
+     ") -> pd.DataFrame:",
+     "    \"\"\"Load a saved synthesizer and sample rows to parquet.\"\"\"",
+     "    cls = SYNTHESIZER_MAP.get(synthesizer_type, CTGANSynthesizer)",
+     "    synthesizer = cls.load(model_path)",
+     "    synthetic_df = synthesizer.sample(num_rows=num_rows)",
+     "    out = Path(output_path)",
+     "    out.parent.mkdir(parents=True, exist_ok=True)"
+    ]
+   },
+   {
+    "file": "synthetic/sdv_models/train_synthesizer.py",
+    "line": 6,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "",
+     "import pandas as pd",
+     "import json",
+     "from pathlib import Path",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.metadata import SingleTableMetadata, MultiTableMetadata",
+     "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality",
+     "import matplotlib.pyplot as plt"
+    ]
+   },
+   {
+    "file": "synthetic/sdv_models/train_synthesizer.py",
+    "line": 44,
+    "text": ") -> CTGANSynthesizer:",
+    "context": [
+     "        self, ",
+     "        df: pd.DataFrame, ",
+     "        metadata: SingleTableMetadata,",
+     "        epochs: int = 200",
+     "    ) -> CTGANSynthesizer:",
+     "        \"\"\"Train CTGAN - best for complex tabular distributions\"\"\"",
+     "        synthesizer = CTGANSynthesizer(",
+     "            metadata,",
+     "            enforce_min_max_values=True,"
+    ]
+   },
+   {
+    "file": "synthetic/sdv_models/train_synthesizer.py",
+    "line": 46,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "        metadata: SingleTableMetadata,",
+     "        epochs: int = 200",
+     "    ) -> CTGANSynthesizer:",
+     "        \"\"\"Train CTGAN - best for complex tabular distributions\"\"\"",
+     "        synthesizer = CTGANSynthesizer(",
+     "            metadata,",
+     "            enforce_min_max_values=True,",
+     "            enforce_rounding=True,",
+     "            epochs=epochs,"
+    ]
+   },
+   {
+    "file": "synthetic/sdv_models/train_synthesizer.py",
+    "line": 224,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "    comparison = pipeline.run_multi_model_comparison(df, metadata)",
+     "    print(f\"Model comparison: {comparison}\")",
+     "    ",
+     "    # Generate final synthetic dataset",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    best = CTGANSynthesizer.load(comparison[\"model_path\"])",
+     "    synthetic_df = best.sample(num_rows=len(df) * 5)",
+     "    synthetic_df.to_parquet(\"/tmp/synthetic/customers/final.parquet\", index=False)",
+     "    "
+    ]
+   },
+   {
+    "file": "synthetic/sdv_models/train_synthesizer.py",
+    "line": 225,
+    "text": "best = CTGANSynthesizer.load(comparison[\"model_path\"])",
+    "context": [
+     "    print(f\"Model comparison: {comparison}\")",
+     "    ",
+     "    # Generate final synthetic dataset",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    best = CTGANSynthesizer.load(comparison[\"model_path\"])",
+     "    synthetic_df = best.sample(num_rows=len(df) * 5)",
+     "    synthetic_df.to_parquet(\"/tmp/synthetic/customers/final.parquet\", index=False)",
+     "    ",
+     "    print(f\"Generated {len(synthetic_df)} synthetic records\")"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "pipeline/synthetic_gen.py",
+    "line": 21,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "SDV_AVAILABLE = True",
+     "try:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import GaussianCopulaSynthesizer",
+     "except (OSError, ImportError) as exc:",
+     "    SDV_AVAILABLE = False",
+     "    logger.warning(\"SDV not available on this host (%s). Using bootstrap fallback.\", exc)",
+     ""
+    ]
+   },
+   {
+    "file": "pipeline/synthetic_gen.py",
+    "line": 101,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "                batch_size=min(500, max(len(real_df), 10)),",
+     "                verbose=True,",
+     "            )",
+     "        else:",
+     "            synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "",
+     "        logger.info(\"Training SDV %s...\", synthesizer_type)",
+     "        synthesizer.fit(real_df)",
+     "        synthetic_df = synthesizer.sample(num_rows=num_rows)"
+    ]
+   },
+   {
+    "file": "databricks/notebooks/04_synthetic_generation.py",
+    "line": 27,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "# Export gold customer_360 to pandas for SDV (driver-bound for moderate size)",
+     "gold_df = spark.read.format(\"delta\").load(GOLD_PATH).toPandas()",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(gold_df)",
+     "if \"customer_id\" in gold_df.columns:"
+    ]
+   },
+   {
+    "file": "databricks/notebooks/04_synthetic_generation.py",
+    "line": 34,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "metadata.detect_from_dataframe(gold_df)",
+     "if \"customer_id\" in gold_df.columns:",
+     "    metadata.set_primary_key(\"customer_id\")",
+     "",
+     "synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "synthesizer.fit(gold_df)",
+     "synthetic_df = synthesizer.sample(num_rows=len(gold_df) * 2)",
+     "",
+     "# Write back to Delta"
+    ]
+   },
+   {
+    "file": "synthetic/sdv_models/generate_data.py",
+    "line": 8,
+    "text": "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, TVAESynthesizer",
+    "context": [
+     "",
+     "from pathlib import Path",
+     "",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, TVAESynthesizer",
+     "",
+     "SYNTHESIZER_MAP = {",
+     "    \"ctgan\": CTGANSynthesizer,",
+     "    \"tvae\": TVAESynthesizer,"
+    ]
+   },
+   {
+    "file": "synthetic/sdv_models/generate_data.py",
+    "line": 13,
+    "text": "\"gaussian_copula\": GaussianCopulaSynthesizer,",
+    "context": [
+     "",
+     "SYNTHESIZER_MAP = {",
+     "    \"ctgan\": CTGANSynthesizer,",
+     "    \"tvae\": TVAESynthesizer,",
+     "    \"gaussian_copula\": GaussianCopulaSynthesizer,",
+     "}",
+     "",
+     "",
+     "def generate_data("
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "synthetic/sdv_models/generate_data.py",
+    "line": 8,
+    "text": "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, TVAESynthesizer",
+    "context": [
+     "",
+     "from pathlib import Path",
+     "",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, TVAESynthesizer",
+     "",
+     "SYNTHESIZER_MAP = {",
+     "    \"ctgan\": CTGANSynthesizer,",
+     "    \"tvae\": TVAESynthesizer,"
+    ]
+   },
+   {
+    "file": "synthetic/sdv_models/generate_data.py",
+    "line": 12,
+    "text": "\"tvae\": TVAESynthesizer,",
+    "context": [
+     "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, TVAESynthesizer",
+     "",
+     "SYNTHESIZER_MAP = {",
+     "    \"ctgan\": CTGANSynthesizer,",
+     "    \"tvae\": TVAESynthesizer,",
+     "    \"gaussian_copula\": GaussianCopulaSynthesizer,",
+     "}",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "synthetic/sdv_models/train_synthesizer.py",
+    "line": 6,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "",
+     "import pandas as pd",
+     "import json",
+     "from pathlib import Path",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.metadata import SingleTableMetadata, MultiTableMetadata",
+     "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality",
+     "import matplotlib.pyplot as plt"
+    ]
+   },
+   {
+    "file": "synthetic/sdv_models/train_synthesizer.py",
+    "line": 66,
+    "text": ") -> TVAESynthesizer:",
+    "context": [
+     "        self,",
+     "        df: pd.DataFrame,",
+     "        metadata: SingleTableMetadata,",
+     "        epochs: int = 200",
+     "    ) -> TVAESynthesizer:",
+     "        \"\"\"Train TVAE - good for speed and capturing distributions\"\"\"",
+     "        synthesizer = TVAESynthesizer(",
+     "            metadata,",
+     "            enforce_min_max_values=True,"
+    ]
+   },
+   {
+    "file": "synthetic/sdv_models/train_synthesizer.py",
+    "line": 68,
+    "text": "synthesizer = TVAESynthesizer(",
+    "context": [
+     "        metadata: SingleTableMetadata,",
+     "        epochs: int = 200",
+     "    ) -> TVAESynthesizer:",
+     "        \"\"\"Train TVAE - good for speed and capturing distributions\"\"\"",
+     "        synthesizer = TVAESynthesizer(",
+     "            metadata,",
+     "            enforce_min_max_values=True,",
+     "            enforce_rounding=True,",
+     "            epochs=epochs,"
+    ]
+   }
+  ],
+  "mt": [
+   {
+    "file": "synthetic/sdv_models/train_synthesizer.py",
+    "line": 7,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import json",
+     "from pathlib import Path",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.metadata import SingleTableMetadata, MultiTableMetadata",
+     "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality",
+     "import matplotlib.pyplot as plt",
+     ""
+    ]
+   }
+  ],
+  "hma": [
+   {
+    "file": "synthetic/sdv_models/train_synthesizer.py",
+    "line": 7,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import json",
+     "from pathlib import Path",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.metadata import SingleTableMetadata, MultiTableMetadata",
+     "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality",
+     "import matplotlib.pyplot as plt",
+     ""
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ev",
+  "gc",
+  "hma",
+  "md",
+  "mt",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "# Synthetic Data (SDV)",
+   "sdv==1.9.0",
+   "ctgan==0.8.0",
+   "copulas==0.9.2",
+   "rdt==1.11.0"
+  ]
+ }
+}

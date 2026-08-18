@@ -1,0 +1,335 @@
+{
+ "repo": "Gaurav-Verma07/Arbitrum",
+ "disk_kb": 632,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "\n\n\n# Smart Wallet : Simplifying User-Friendly Wallets with Enhanced Security\nIn the rapidly evolving landscape of blockchain technology, the Account Abstraction Project emerges as a pioneering solution to tackle the challenges of key management and user accessibility within the Ethereum ecosystem. Born from the desire to empower users, including those unfamiliar with intricate technicalities, this project reimagines the way users interact with Ethereum by introducing an innovative approach to wallet management.\n### Purpose\nAt its core, the Account Abstraction Project was conceived to eradicate the complexities associated with key management while enabling even the least tech-savvy individuals to seamlessly navigate the world of cryptocurrency wallets. The primary objective was to create a user-centric solution that ensures robust security, simplified usability, and universal accessibility. This project addresses the prevalent issues of poor key handling and the need for users to maintain ETH balances for gas payments, paving the way for a more inclusive and user-friendly blockchain experience.\n### Project Goals\nThe Account Abstraction Project sets its sights on a grand mission: to onboard billions of users to Ethereum while guaranteeing their security and fostering a sense of trust in the system. This ambitious goal is underpinned by a steadfast commitment to democratizing access to the Ethereum network, making it approachable for a diverse range of users spanning generations and technical backgrounds.\n### How the Project Addresses the Challenge\nThe crux of the Account Abstraction Project lies in the ingenious utilization of smart contracts to abstract away the complexities of key management. By introducing a logic contract that leverages proxy mechanisms and deterministic addresses using the create2 opcode, the project ensures consistent addresses across multiple blockchain networks. This means that users can seamlessly transition between different chains while retaining a familiar and unchanging address.\n\nThrough this innovation, the project revolutionizes the way users interact with Ethereum. Smart contract wallets become the conduit for users to interface with the blockchain, enabling a multitude of benefits that were previously unattainable:\n\n   - Enhanced Security: Users can define custom security rules, reducing the risk of unauthorized access to their accounts. Moreover, the ability to recover accounts in the event of lost keys adds an extra layer of security.\n\n   - Convenience and Accessibility: The project's design empowers users to share their account security across trusted devices or individuals, promoting secure collaboration and account management.\n\n   - Gas Efficiency: Users can seamlessly delegate gas payments, allowing them to cover transaction costs for others or have their fees sponsored by external parties.\n\n   - Transaction Batching: The streamlined interface enables users to bundle multiple transactions into a single action, simplifying complex processes and reducing transaction clutter.\n\n   - Innovation Potential: Developers now have an expanded canvas to create innovative dApps and wallet solutions that provide seamless user experiences, thanks to the improved support for smart contract wallets.\n### Installation\nTo get started with the Account Abstraction Project and explore its innovative features, follow these simple installation steps. The project was developed using Hardhat and is hosted on GitHub for easy access.\n\n   - Clone the Repository: Begin by cloning the project repository to your local machine using the following command:\n\n```shell\ngit clone https://github.com/ARNO-0/Arbitrum_AA.git\n```\n- Navigate to the Project Directory: Move into the project directory using the cd command:\n\n```shell\ncd Arbitrum_AA\n```\n- Install Dependencies: Before you can start exploring the project, make sure to install its dependencies. Use the following command:\n```shell\nyarn install\n```\n\n# Usage\n\n### SmartWalletFactory.sol Contract Usage Guide\n    \nThe SmartWalletFactory contract is designed to facilitate the creation and management of smart wallets on the EVM based blockchains. It leverages the Create2 functionality to deploy deterministic instances(Proxy) of smart wallets and provides methods to interact with these wallets.\n\n#### Deploying the SmartWalletFactory Contract\n\n- To deploy the SmartWalletFactory contract, we'll need to provide a unique bytes32 salt value as an argument to its constructor. This salt value plays a crucial role in the deployment process of the implementation contract, which serves as the logic for proxies across various chains. By utilizing this salt during deployment, you ensure that the resulting implementation address remains consistent across different blockchain networks. This uniformity in implementation addresses facilitates seamless cross-chain interaction and synchronization.\n\n#### Creating a New Smart Wallet\n-  To create a new smart wallet, call the `createSmartWallet` function with the following parameters:\n\n    - entryPoint: The address of the entry point contract.  EntryPoint is a singleton smart contract that handles the verification and execution logic for transactions..\n    - walletOwner: The address that will own the new smart wallet.\n    - upgradeDelay: The upgrade delay (in seconds) for the implementation contract.\n\n- This function will deploy a new smart wallet instance using the provided parameters and emit an event with the address of the new smart wallet proxy.The created smart wallet will inherit the logic from the common implementation contract.\n#### Getting the Address of a Smart Wallet\n- Use the `getWalletAddress` function to compute the address of a new smart wallet without actually deploying it. Provide the same parameters as when creating a new smart wallet. This can be useful for verification purposes before deployment.\n\n### SmartWalletProxy.sol Contract Usage Guide\n- The `SmartWalletProxy` contract serves as a proxy for the SmartWallet implementation, allowing for upgradability and efficient interaction with the smart wallet logic.\n- Ownership and Upgrades:\n\n    - The contract owner has the exclusive ability to upgrade the implementation logic of the smart wallet. Use the `upgradeTo` function, providing the address of the new logic implementation.\n- Calling Smart Wallet Logic:\n\n    - The proxy facilitates seamless interaction with the underlying smart wallet logic. Calls to the proxy's functions are delegated to the current implementation, enabling operations like transferring assets, executing transactions, and more.    \n\n### SmartWallet(Logic) Contract Usage Guide\n\nThe `SmartWallet` contract serves as the implementation logic for the smart wallet proxy. It contains a set of functions that allow users to interact with the contract, manage assets, execute transactions, and more. Additionally, the contract is designed to receive assets on multiple chains. Below is an overview of the key functionalities and how to use them:\n\n### Transferring Tokens\n- To transfer ERC20 tokens, use the `transferERC20` function by providing the following parameters:\n    -  `token`: The address of the ERC20 token contract.\n    -    `to`: The address to which tokens will be transferred.\n     -   `amount`: The amount of tokens to transfer.\n\n-    To transfer ETH, use the transferETH function by providing the following parameters:\n       - `to`: The address to which ETH will be transferred.\n       - `amount`: The amount of ETH to transfer.\n\n-    To transfer ERC721 tokens, use the transferERC721 function by providing the following parameters:\n       - `collection`: The address of the ERC721 token contract.\n       - `tokenId`: The ID of the token to transfer.\n       - `to`: The address to which the token will be transferred.\n\n-    To transfer ERC1155 tokens, use the transferERC1155 function by providing the following parameters:\n       - `collection`: The address of the ERC1155 token contract.\n       - `tokenId`: The ID of the token to transfer.\n       - `to`: The address to which tokens will be transferred.\n       - `amount`: The amount of tokens to transfer.\n### Recovery Wallet Management: `addRescueWallet` and `revokeRescueWallet` Functionality\n- The `addRescueWallet` and `revokeRescueWallet` functions are designed to manage a list of recovery wallets that can be used to regain access to the smart wallet in case of emergencies. The `addRescueWallet` function allows the owner to add multiple recovery wallet addresses to the list, and the`revokeRescueWallet` function allows the owner to remove a specific recovery wallet address from the list. The recovery wallet list is intended to provide additional security and a way to regain control over the smart wallet when needed.\n\n#### Adding Recovery Wallets (`addRescueWallet`)\n\nThe `addRescueWallet` function allows the owner to add recovery wallets to the list. To use this function:\n\n  -  Call the `addRescueWallet` function with the following parameters:\n       - `_recoveryWallets`: An array of addresses representing the recovery wallets to be added.\n       - `threshold`: A uint16 value indicating the minimum number of recovery wallets required to regain access.\n\n#### Revoking Recovery Wallets (`revokeRescueWallet`)\n\nThe `revokeRescueWallet` function allows the owner to remove a recovery wallet from the list. To use this function:\n\n  -  Call the `revokeRescueWallet` function with the following parameters:\n      -  `_recoveryWallet`: The address of the recovery wallet to be removed.\n      -  `threshold`: A uint16 value indicating the minimum number of recovery wallets required to regain access.\n### EntryPoint Address Configuration\n- The `setEntryPointAddress` function allows the owner of the smart wallet to update the address of the associated `EntryPoint` contract. The `EntryPoint` contract is responsible for handling the verification and execution logic for transactions. This function enables the owner to reconfigure the smart wallet to interact with a new instance of the `EntryPoint` contract, providing flexibility and adaptability to changes in the underlying logic.     \n- To change the EntryPoint address, call the `setEntryPointAddress` function with the following parameter:\n\n   - `_newEntryPointAddress`: The new address of the EntryPoint contract that the smart wallet will interact with.\n\n\n### Ownership Management\n\n   - Transfer ownership of the smart wallet using the `transferOwnership` function by providing the new owner's address.   \n### Flexible Transaction Execution: execute and executeBatch Functions\n\n- The `execute` and `executeBatch` functions provide a versatile way for the smart wallet owner or the designated entry point contract to execute transactions. These functions allow transactions to be performed on both external contracts and the smart wallet contract itself, enhancing the smart wallet's utility and flexibility.\n\n#### `execute` Function:\n\nThe `execute` function is accessible to both the owner and the designated entry point contract, enabling them to initiate transactions on external contracts or the smart wallet contract.\n- Call the `execute` function with the following parameters:\n     -  `_target`: The address of the target contract. It can be an external contract or the smart wallet contract itself.\n    -  `_value`: The amount of ETH to include in the transaction.\n    - `_data`: The transaction data to execute on the target contract.\n\n#### `executeBatch` Function:\n\nThe `executeBatch` function enables the owner or the designated entry point contract to execute a batch of transactions on external contracts or the smart wallet contract.\n\n\n\n   - Call the executeBatch function with arrays of the following parameters:\n       - `_target`: An array of target contract addresses or the smart wallet's address.\n       - `_value`: An array of ETH values to be sent with each transaction.\n      -  `_data`: An array of transaction data to execute on each target contract.    \n\n### Validating and Processing User Operations: `validateUserOps` Function\n\nThe `validateUserOps` function is a crucial element of the Ethereum Improvement Proposal (EIP) 4337, designed to verify and execute User Operations within the context of Account Abstraction Using Alt Mempool. This function is intended to be called exclusively by the singleton entrypoint contract, ensuring the integrity of transactions, managing necessary fund deposits for transaction fees, and verifying the user's signature.\n\n\n### Managing Gas Fee Funds in EntryPoint Contract\n`getDeposite()`\n\n- The getDeposite() function retrieves the current deposit amount held by the smart wallet in the EntryPoint contract. This deposit serves as a fund that can be used to cover gas fees for gasless transactions initiated by the smart wallet.\n`addDeposite()`\n\n- The addDeposite() function allows the owner of the smart wallet to add additional funds to the deposit held in the EntryPoint contract. These added funds can be utilized to facilitate gasless transactions, ensuring that the smart wallet can cover the associated gas costs effectively.\n\n`withdrawDepositeTo()`\n - The withdrawDepositeTo function enables the owner of the smart wallet to withdraw funds from the gas fee deposit held within the EntryPoint contract. This function facilitates the withdrawal of a specified amount of funds to the designated recipient address.\n-  To withdraw gas fee funds from the wallet's deposit in the EntryPoint contract, follow these steps:\n\n    - Call the `withdrawDepositeTo` function with the following parameters:\n       - `to`: The recipient's address to which the funds will be transferred.\n       - `amount`: The amount of funds to be withdrawn.\n\n    The function will perform an external call to the EntryPoint contract using the provided parameters.\n\n### Additional Functions\n\nTo retrieve essential information from the smart wallet, you can use the following functions:\n\n`entryPoint()`\n\n- The entryPoint() function allows you to get the address of the entry point contract associated with the smart wallet. This contract serves as the primary interaction point for the smart wallet's functionality.\n\n`nonce()`\n\n- The nonce() function enables you to obtain the current nonce value associated with the smart wallet. The nonce is used to track and manage user operations and transactions.\n\n`owner()`\n\n- The owner() function lets you retrieve the address of the owner of the smart wallet. The owner has the authority to manage and control the smart wallet's functionalities.\n\n# Key Features\n\nExperience the robust feature set that the SmartWallet contract brings to the table, elevating the efficiency and versatility of your smart wallet solution:\n\n   - Gas Fee Management: Seamlessly oversee gas fee requirements for gasless transactions by upholding a dedicated deposit within the EntryPoint contract.\n\n\n   - Precise Transaction Execution: Execute transactions effortlessly to engage with diverse contracts on the blockchain, seamlessly integrating with decentralized applications (dApps).\n\n   - ERC1155 Token Transfer: Effortlessly transfer ERC1155 tokens to designated addresses, streamlining the exchange and interaction with non-fungible tokens (NFTs).\n\n   - Ownership Authority: Maintain command over the smart wallet's ownership, enabling designated owners to govern and supervise wallet functionalities with precision.\n\n   - Nonce Monitoring: Keep meticulous tabs on nonces for systematic management of user operations and meticulous transaction sequencing.\n\n  \n   - Gasless Transaction Empowerment: Enable the execution of gasless transactions by judiciously deploying the deposited funds to defray gas fees, optimizing the user transaction experience.\n\n  \n\n  -  Smart Contract Evolution: Initiate smart contract upgrades while retaining unwavering ownership and mastery over the wallet's operational dynamics.\n\n   - ERC721 Token Facilitation: Facilitate seamless ERC721 token transfers to designated recipients, enabling swift and smooth exchange of distinct tokens.\n\nThese meticulously curated features collectively empower the SmartWallet contract to emerge as a versatile, sophisticated, and user-centric solution tailored to the intricacies of transaction management, asset governance, and gas fee optimization within the blockchain ecosystem.\n\n# Deployed Contract Addresses\n\n#### SmartWalletFactory Contract Address\n- [sepolia](https://sepolia.etherscan.io/address/0xe65cdb885918b47fbd516061dac42ce976cd28bd)\n- [avalanche testnet](https://testnet.snowtrace.io/address/0x1206f86bfbc37e3a2f87a85865bccb18c1d19b86)\n- [Arbitrum testnet]()\n#### SmartWallet Contract Addresses\n- [sepolia](https://sepolia.etherscan.io/address/0x46c0C0bf6A37314D009f3AD736c20feBF396a92B)\n- [avalanche testnet](https://testnet.snowtrace.io/address/0x61fde233a97397b060580b8217ffd3395d3b62db)\n- [Arbitrum testnet]()",
+ "hits": {
+  "ev": [
+   {
+    "file": "synd_comparison.ipynb",
+    "line": 144,
+    "text": "\"from sdv.evaluation import evaluate\\n\",",
+    "context": [
+     "      \"source\": [",
+     "        \"from sdv.tabular import TVAE\\n\",",
+     "        \"from sdv.tabular import CTGAN\\n\",",
+     "        \"\\n\",",
+     "        \"from sdv.evaluation import evaluate\\n\",",
+     "        \"\\n\",",
+     "        \"import warnings\\n\",",
+     "        \"warnings.filterwarnings('ignore')\"",
+     "      ]"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "synd_comparison.ipynb",
+    "line": 56,
+    "text": "\"\\u001b[?25hCollecting Faker<15,>=10 (from sdv==0.18.0)\\n\",",
+    "context": [
+     "          \"text\": [",
+     "            \"Collecting sdv==0.18.0\\n\",",
+     "            \"  Downloading sdv-0.18.0-py2.py3-none-any.whl (103 kB)\\n\",",
+     "            \"\\u001b[2K     \\u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\u001b[0m \\u001b[32m103.2/103.2 kB\\u001b[0m \\u001b[31m2.1 MB/s\\u001b[0m eta \\u001b[36m0:00:00\\u001b[0m\\n\",",
+     "            \"\\u001b[?25hCollecting Faker<15,>=10 (from sdv==0.18.0)\\n\",",
+     "            \"  Downloading Faker-14.2.1-py3-none-any.whl (1.6 MB)\\n\",",
+     "            \"\\u001b[2K     \\u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\u001b[0m \\u001b[32m1.6/1.6 MB\\u001b[0m \\u001b[31m9.3 MB/s\\u001b[0m eta \\u001b[36m0:00:00\\u001b[0m\\n\",",
+     "            \"\\u001b[?25hRequirement already satisfied: graphviz<1,>=0.13.2 in /usr/local/lib/python3.10/dist-packages (from sdv==0.18.0) (0.20.1)\\n\",",
+     "            \"Requirement already satisfied: tqdm<5,>=4.15 in /usr/local/lib/python3.10/dist-packages (from sdv==0.18.0) (4.66.1)\\n\","
+    ]
+   },
+   {
+    "file": "synd_comparison.ipynb",
+    "line": 59,
+    "text": "\"\\u001b[?25hRequirement already satisfied: graphviz<1,>=0.13.2 in /usr/local/lib/python3.10/dist-packages (from sdv==0.18.0) (0.20.1)\\n\",",
+    "context": [
+     "            \"\\u001b[2K     \\u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\u001b[0m \\u001b[32m103.2/103.2 kB\\u001b[0m \\u001b[31m2.1 MB/s\\u001b[0m eta \\u001b[36m0:00:00\\u001b[0m\\n\",",
+     "            \"\\u001b[?25hCollecting Faker<15,>=10 (from sdv==0.18.0)\\n\",",
+     "            \"  Downloading Faker-14.2.1-py3-none-any.whl (1.6 MB)\\n\",",
+     "            \"\\u001b[2K     \\u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\u001b[0m \\u001b[32m1.6/1.6 MB\\u001b[0m \\u001b[31m9.3 MB/s\\u001b[0m eta \\u001b[36m0:00:00\\u001b[0m\\n\",",
+     "            \"\\u001b[?25hRequirement already satisfied: graphviz<1,>=0.13.2 in /usr/local/lib/python3.10/dist-packages (from sdv==0.18.0) (0.20.1)\\n\",",
+     "            \"Requirement already satisfied: tqdm<5,>=4.15 in /usr/local/lib/python3.10/dist-packages (from sdv==0.18.0) (4.66.1)\\n\",",
+     "            \"Collecting copulas<0.9,>=0.8.0 (from sdv==0.18.0)\\n\",",
+     "            \"  Downloading copulas-0.8.0-py2.py3-none-any.whl (53 kB)\\n\",",
+     "            \"\\u001b[2K     \\u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\u001b[0m \\u001b[32m53.6/53.6 kB\\u001b[0m \\u001b[31m5.9 MB/s\\u001b[0m eta \\u001b[36m0:00:00\\u001b[0m\\n\","
+    ]
+   },
+   {
+    "file": "synd_comparison.ipynb",
+    "line": 60,
+    "text": "\"Requirement already satisfied: tqdm<5,>=4.15 in /usr/local/lib/python3.10/dist-packages (from sdv==0.18.0) (4.66.1)\\n\",",
+    "context": [
+     "            \"\\u001b[?25hCollecting Faker<15,>=10 (from sdv==0.18.0)\\n\",",
+     "            \"  Downloading Faker-14.2.1-py3-none-any.whl (1.6 MB)\\n\",",
+     "            \"\\u001b[2K     \\u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\u001b[0m \\u001b[32m1.6/1.6 MB\\u001b[0m \\u001b[31m9.3 MB/s\\u001b[0m eta \\u001b[36m0:00:00\\u001b[0m\\n\",",
+     "            \"\\u001b[?25hRequirement already satisfied: graphviz<1,>=0.13.2 in /usr/local/lib/python3.10/dist-packages (from sdv==0.18.0) (0.20.1)\\n\",",
+     "            \"Requirement already satisfied: tqdm<5,>=4.15 in /usr/local/lib/python3.10/dist-packages (from sdv==0.18.0) (4.66.1)\\n\",",
+     "            \"Collecting copulas<0.9,>=0.8.0 (from sdv==0.18.0)\\n\",",
+     "            \"  Downloading copulas-0.8.0-py2.py3-none-any.whl (53 kB)\\n\",",
+     "            \"\\u001b[2K     \\u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\u001b[0m \\u001b[32m53.6/53.6 kB\\u001b[0m \\u001b[31m5.9 MB/s\\u001b[0m eta \\u001b[36m0:00:00\\u001b[0m\\n\",",
+     "            \"\\u001b[?25hCollecting ctgan<0.8,>=0.7.0 (from sdv==0.18.0)\\n\","
+    ]
+   },
+   {
+    "file": "synd_comparison.ipynb",
+    "line": 61,
+    "text": "\"Collecting copulas<0.9,>=0.8.0 (from sdv==0.18.0)\\n\",",
+    "context": [
+     "            \"  Downloading Faker-14.2.1-py3-none-any.whl (1.6 MB)\\n\",",
+     "            \"\\u001b[2K     \\u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\u001b[0m \\u001b[32m1.6/1.6 MB\\u001b[0m \\u001b[31m9.3 MB/s\\u001b[0m eta \\u001b[36m0:00:00\\u001b[0m\\n\",",
+     "            \"\\u001b[?25hRequirement already satisfied: graphviz<1,>=0.13.2 in /usr/local/lib/python3.10/dist-packages (from sdv==0.18.0) (0.20.1)\\n\",",
+     "            \"Requirement already satisfied: tqdm<5,>=4.15 in /usr/local/lib/python3.10/dist-packages (from sdv==0.18.0) (4.66.1)\\n\",",
+     "            \"Collecting copulas<0.9,>=0.8.0 (from sdv==0.18.0)\\n\",",
+     "            \"  Downloading copulas-0.8.0-py2.py3-none-any.whl (53 kB)\\n\",",
+     "            \"\\u001b[2K     \\u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\u001b[0m \\u001b[32m53.6/53.6 kB\\u001b[0m \\u001b[31m5.9 MB/s\\u001b[0m eta \\u001b[36m0:00:00\\u001b[0m\\n\",",
+     "            \"\\u001b[?25hCollecting ctgan<0.8,>=0.7.0 (from sdv==0.18.0)\\n\",",
+     "            \"  Downloading ctgan-0.7.4-py2.py3-none-any.whl (26 kB)\\n\","
+    ]
+   },
+   {
+    "file": "synd_comparison.ipynb",
+    "line": 64,
+    "text": "\"\\u001b[?25hCollecting ctgan<0.8,>=0.7.0 (from sdv==0.18.0)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: tqdm<5,>=4.15 in /usr/local/lib/python3.10/dist-packages (from sdv==0.18.0) (4.66.1)\\n\",",
+     "            \"Collecting copulas<0.9,>=0.8.0 (from sdv==0.18.0)\\n\",",
+     "            \"  Downloading copulas-0.8.0-py2.py3-none-any.whl (53 kB)\\n\",",
+     "            \"\\u001b[2K     \\u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\u001b[0m \\u001b[32m53.6/53.6 kB\\u001b[0m \\u001b[31m5.9 MB/s\\u001b[0m eta \\u001b[36m0:00:00\\u001b[0m\\n\",",
+     "            \"\\u001b[?25hCollecting ctgan<0.8,>=0.7.0 (from sdv==0.18.0)\\n\",",
+     "            \"  Downloading ctgan-0.7.4-py2.py3-none-any.whl (26 kB)\\n\",",
+     "            \"Collecting deepecho<0.5,>=0.4.0 (from sdv==0.18.0)\\n\",",
+     "            \"  Downloading deepecho-0.4.2-py2.py3-none-any.whl (29 kB)\\n\",",
+     "            \"Collecting rdt<2,>=1.3.0 (from sdv==0.18.0)\\n\","
+    ]
+   },
+   {
+    "file": "synd_comparison.ipynb",
+    "line": 66,
+    "text": "\"Collecting deepecho<0.5,>=0.4.0 (from sdv==0.18.0)\\n\",",
+    "context": [
+     "            \"  Downloading copulas-0.8.0-py2.py3-none-any.whl (53 kB)\\n\",",
+     "            \"\\u001b[2K     \\u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\u001b[0m \\u001b[32m53.6/53.6 kB\\u001b[0m \\u001b[31m5.9 MB/s\\u001b[0m eta \\u001b[36m0:00:00\\u001b[0m\\n\",",
+     "            \"\\u001b[?25hCollecting ctgan<0.8,>=0.7.0 (from sdv==0.18.0)\\n\",",
+     "            \"  Downloading ctgan-0.7.4-py2.py3-none-any.whl (26 kB)\\n\",",
+     "            \"Collecting deepecho<0.5,>=0.4.0 (from sdv==0.18.0)\\n\",",
+     "            \"  Downloading deepecho-0.4.2-py2.py3-none-any.whl (29 kB)\\n\",",
+     "            \"Collecting rdt<2,>=1.3.0 (from sdv==0.18.0)\\n\",",
+     "            \"  Downloading rdt-1.7.0-py2.py3-none-any.whl (70 kB)\\n\",",
+     "            \"\\u001b[2K     \\u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\u001b[0m \\u001b[32m70.5/70.5 kB\\u001b[0m \\u001b[31m7.6 MB/s\\u001b[0m eta \\u001b[36m0:00:00\\u001b[0m\\n\","
+    ]
+   },
+   {
+    "file": "synd_comparison.ipynb",
+    "line": 68,
+    "text": "\"Collecting rdt<2,>=1.3.0 (from sdv==0.18.0)\\n\",",
+    "context": [
+     "            \"\\u001b[?25hCollecting ctgan<0.8,>=0.7.0 (from sdv==0.18.0)\\n\",",
+     "            \"  Downloading ctgan-0.7.4-py2.py3-none-any.whl (26 kB)\\n\",",
+     "            \"Collecting deepecho<0.5,>=0.4.0 (from sdv==0.18.0)\\n\",",
+     "            \"  Downloading deepecho-0.4.2-py2.py3-none-any.whl (29 kB)\\n\",",
+     "            \"Collecting rdt<2,>=1.3.0 (from sdv==0.18.0)\\n\",",
+     "            \"  Downloading rdt-1.7.0-py2.py3-none-any.whl (70 kB)\\n\",",
+     "            \"\\u001b[2K     \\u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\u001b[0m \\u001b[32m70.5/70.5 kB\\u001b[0m \\u001b[31m7.6 MB/s\\u001b[0m eta \\u001b[36m0:00:00\\u001b[0m\\n\",",
+     "            \"\\u001b[?25hCollecting sdmetrics<0.10,>=0.9.0 (from sdv==0.18.0)\\n\",",
+     "            \"  Downloading sdmetrics-0.9.3-py2.py3-none-any.whl (142 kB)\\n\","
+    ]
+   },
+   {
+    "file": "synd_comparison.ipynb",
+    "line": 71,
+    "text": "\"\\u001b[?25hCollecting sdmetrics<0.10,>=0.9.0 (from sdv==0.18.0)\\n\",",
+    "context": [
+     "            \"  Downloading deepecho-0.4.2-py2.py3-none-any.whl (29 kB)\\n\",",
+     "            \"Collecting rdt<2,>=1.3.0 (from sdv==0.18.0)\\n\",",
+     "            \"  Downloading rdt-1.7.0-py2.py3-none-any.whl (70 kB)\\n\",",
+     "            \"\\u001b[2K     \\u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\u001b[0m \\u001b[32m70.5/70.5 kB\\u001b[0m \\u001b[31m7.6 MB/s\\u001b[0m eta \\u001b[36m0:00:00\\u001b[0m\\n\",",
+     "            \"\\u001b[?25hCollecting sdmetrics<0.10,>=0.9.0 (from sdv==0.18.0)\\n\",",
+     "            \"  Downloading sdmetrics-0.9.3-py2.py3-none-any.whl (142 kB)\\n\",",
+     "            \"\\u001b[2K     \\u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\u001b[0m \\u001b[32m142.7/142.7 kB\\u001b[0m \\u001b[31m12.2 MB/s\\u001b[0m eta \\u001b[36m0:00:00\\u001b[0m\\n\",",
+     "            \"\\u001b[?25hRequirement already satisfied: cloudpickle<3.0,>=2.1.0 in /usr/local/lib/python3.10/dist-packages (from sdv==0.18.0) (2.2.1)\\n\",",
+     "            \"Requirement already satisfied: numpy<2,>=1.23.3 in /usr/local/lib/python3.10/dist-packages (from sdv==0.18.0) (1.23.5)\\n\","
+    ]
+   },
+   {
+    "file": "synd_comparison.ipynb",
+    "line": 74,
+    "text": "\"\\u001b[?25hRequirement already satisfied: cloudpickle<3.0,>=2.1.0 in /usr/local/lib/python3.10/dist-packages (from sdv==0.18.0) (2.2.1)\\n\",",
+    "context": [
+     "            \"\\u001b[2K     \\u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\u001b[0m \\u001b[32m70.5/70.5 kB\\u001b[0m \\u001b[31m7.6 MB/s\\u001b[0m eta \\u001b[36m0:00:00\\u001b[0m\\n\",",
+     "            \"\\u001b[?25hCollecting sdmetrics<0.10,>=0.9.0 (from sdv==0.18.0)\\n\",",
+     "            \"  Downloading sdmetrics-0.9.3-py2.py3-none-any.whl (142 kB)\\n\",",
+     "            \"\\u001b[2K     \\u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\u001b[0m \\u001b[32m142.7/142.7 kB\\u001b[0m \\u001b[31m12.2 MB/s\\u001b[0m eta \\u001b[36m0:00:00\\u001b[0m\\n\",",
+     "            \"\\u001b[?25hRequirement already satisfied: cloudpickle<3.0,>=2.1.0 in /usr/local/lib/python3.10/dist-packages (from sdv==0.18.0) (2.2.1)\\n\",",
+     "            \"Requirement already satisfied: numpy<2,>=1.23.3 in /usr/local/lib/python3.10/dist-packages (from sdv==0.18.0) (1.23.5)\\n\",",
+     "            \"Requirement already satisfied: pandas<2,>=1.5.0 in /usr/local/lib/python3.10/dist-packages (from sdv==0.18.0) (1.5.3)\\n\",",
+     "            \"Requirement already satisfied: matplotlib<4,>=3.6.0 in /usr/local/lib/python3.10/dist-packages (from copulas<0.9,>=0.8.0->sdv==0.18.0) (3.7.1)\\n\",",
+     "            \"Requirement already satisfied: scipy<2,>=1.9.2 in /usr/local/lib/python3.10/dist-packages (from copulas<0.9,>=0.8.0->sdv==0.18.0) (1.11.2)\\n\","
+    ]
+   },
+   {
+    "file": "synd_comparison.ipynb",
+    "line": 75,
+    "text": "\"Requirement already satisfied: numpy<2,>=1.23.3 in /usr/local/lib/python3.10/dist-packages (from sdv==0.18.0) (1.23.5)\\n\",",
+    "context": [
+     "            \"\\u001b[?25hCollecting sdmetrics<0.10,>=0.9.0 (from sdv==0.18.0)\\n\",",
+     "            \"  Downloading sdmetrics-0.9.3-py2.py3-none-any.whl (142 kB)\\n\",",
+     "            \"\\u001b[2K     \\u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\u001b[0m \\u001b[32m142.7/142.7 kB\\u001b[0m \\u001b[31m12.2 MB/s\\u001b[0m eta \\u001b[36m0:00:00\\u001b[0m\\n\",",
+     "            \"\\u001b[?25hRequirement already satisfied: cloudpickle<3.0,>=2.1.0 in /usr/local/lib/python3.10/dist-packages (from sdv==0.18.0) (2.2.1)\\n\",",
+     "            \"Requirement already satisfied: numpy<2,>=1.23.3 in /usr/local/lib/python3.10/dist-packages (from sdv==0.18.0) (1.23.5)\\n\",",
+     "            \"Requirement already satisfied: pandas<2,>=1.5.0 in /usr/local/lib/python3.10/dist-packages (from sdv==0.18.0) (1.5.3)\\n\",",
+     "            \"Requirement already satisfied: matplotlib<4,>=3.6.0 in /usr/local/lib/python3.10/dist-packages (from copulas<0.9,>=0.8.0->sdv==0.18.0) (3.7.1)\\n\",",
+     "            \"Requirement already satisfied: scipy<2,>=1.9.2 in /usr/local/lib/python3.10/dist-packages (from copulas<0.9,>=0.8.0->sdv==0.18.0) (1.11.2)\\n\",",
+     "            \"Requirement already satisfied: scikit-learn<2,>=1.1.3 in /usr/local/lib/python3.10/dist-packages (from ctgan<0.8,>=0.7.0->sdv==0.18.0) (1.2.2)\\n\","
+    ]
+   },
+   {
+    "file": "synd_comparison.ipynb",
+    "line": 76,
+    "text": "\"Requirement already satisfied: pandas<2,>=1.5.0 in /usr/local/lib/python3.10/dist-packages (from sdv==0.18.0) (1.5.3)\\n\",",
+    "context": [
+     "            \"  Downloading sdmetrics-0.9.3-py2.py3-none-any.whl (142 kB)\\n\",",
+     "            \"\\u001b[2K     \\u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\u001b[0m \\u001b[32m142.7/142.7 kB\\u001b[0m \\u001b[31m12.2 MB/s\\u001b[0m eta \\u001b[36m0:00:00\\u001b[0m\\n\",",
+     "            \"\\u001b[?25hRequirement already satisfied: cloudpickle<3.0,>=2.1.0 in /usr/local/lib/python3.10/dist-packages (from sdv==0.18.0) (2.2.1)\\n\",",
+     "            \"Requirement already satisfied: numpy<2,>=1.23.3 in /usr/local/lib/python3.10/dist-packages (from sdv==0.18.0) (1.23.5)\\n\",",
+     "            \"Requirement already satisfied: pandas<2,>=1.5.0 in /usr/local/lib/python3.10/dist-packages (from sdv==0.18.0) (1.5.3)\\n\",",
+     "            \"Requirement already satisfied: matplotlib<4,>=3.6.0 in /usr/local/lib/python3.10/dist-packages (from copulas<0.9,>=0.8.0->sdv==0.18.0) (3.7.1)\\n\",",
+     "            \"Requirement already satisfied: scipy<2,>=1.9.2 in /usr/local/lib/python3.10/dist-packages (from copulas<0.9,>=0.8.0->sdv==0.18.0) (1.11.2)\\n\",",
+     "            \"Requirement already satisfied: scikit-learn<2,>=1.1.3 in /usr/local/lib/python3.10/dist-packages (from ctgan<0.8,>=0.7.0->sdv==0.18.0) (1.2.2)\\n\",",
+     "            \"Requirement already satisfied: torch>=1.11.0 in /usr/local/lib/python3.10/dist-packages (from ctgan<0.8,>=0.7.0->sdv==0.18.0) (2.0.1+cu118)\\n\","
+    ]
+   },
+   {
+    "file": "synd_comparison.ipynb",
+    "line": 141,
+    "text": "\"from sdv.tabular import TVAE\\n\",",
+    "context": [
+     "          ]",
+     "        }",
+     "      ],",
+     "      \"source\": [",
+     "        \"from sdv.tabular import TVAE\\n\",",
+     "        \"from sdv.tabular import CTGAN\\n\",",
+     "        \"\\n\",",
+     "        \"from sdv.evaluation import evaluate\\n\",",
+     "        \"\\n\","
+    ]
+   }
+  ],
+  "ctgan_mod": [
+   {
+    "file": "synd_comparison.ipynb",
+    "line": 79,
+    "text": "\"Requirement already satisfied: scikit-learn<2,>=1.1.3 in /usr/local/lib/python3.10/dist-packages (from ctgan<0.8,>=0.7.0->sdv==0.18.0) (1.2.2)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: numpy<2,>=1.23.3 in /usr/local/lib/python3.10/dist-packages (from sdv==0.18.0) (1.23.5)\\n\",",
+     "            \"Requirement already satisfied: pandas<2,>=1.5.0 in /usr/local/lib/python3.10/dist-packages (from sdv==0.18.0) (1.5.3)\\n\",",
+     "            \"Requirement already satisfied: matplotlib<4,>=3.6.0 in /usr/local/lib/python3.10/dist-packages (from copulas<0.9,>=0.8.0->sdv==0.18.0) (3.7.1)\\n\",",
+     "            \"Requirement already satisfied: scipy<2,>=1.9.2 in /usr/local/lib/python3.10/dist-packages (from copulas<0.9,>=0.8.0->sdv==0.18.0) (1.11.2)\\n\",",
+     "            \"Requirement already satisfied: scikit-learn<2,>=1.1.3 in /usr/local/lib/python3.10/dist-packages (from ctgan<0.8,>=0.7.0->sdv==0.18.0) (1.2.2)\\n\",",
+     "            \"Requirement already satisfied: torch>=1.11.0 in /usr/local/lib/python3.10/dist-packages (from ctgan<0.8,>=0.7.0->sdv==0.18.0) (2.0.1+cu118)\\n\",",
+     "            \"Requirement already satisfied: python-dateutil>=2.4 in /usr/local/lib/python3.10/dist-packages (from Faker<15,>=10->sdv==0.18.0) (2.8.2)\\n\",",
+     "            \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.10/dist-packages (from pandas<2,>=1.5.0->sdv==0.18.0) (2023.3.post1)\\n\",",
+     "            \"Requirement already satisfied: psutil<6,>=5.7 in /usr/local/lib/python3.10/dist-packages (from rdt<2,>=1.3.0->sdv==0.18.0) (5.9.5)\\n\","
+    ]
+   },
+   {
+    "file": "synd_comparison.ipynb",
+    "line": 80,
+    "text": "\"Requirement already satisfied: torch>=1.11.0 in /usr/local/lib/python3.10/dist-packages (from ctgan<0.8,>=0.7.0->sdv==0.18.0) (2.0.1+cu118)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: pandas<2,>=1.5.0 in /usr/local/lib/python3.10/dist-packages (from sdv==0.18.0) (1.5.3)\\n\",",
+     "            \"Requirement already satisfied: matplotlib<4,>=3.6.0 in /usr/local/lib/python3.10/dist-packages (from copulas<0.9,>=0.8.0->sdv==0.18.0) (3.7.1)\\n\",",
+     "            \"Requirement already satisfied: scipy<2,>=1.9.2 in /usr/local/lib/python3.10/dist-packages (from copulas<0.9,>=0.8.0->sdv==0.18.0) (1.11.2)\\n\",",
+     "            \"Requirement already satisfied: scikit-learn<2,>=1.1.3 in /usr/local/lib/python3.10/dist-packages (from ctgan<0.8,>=0.7.0->sdv==0.18.0) (1.2.2)\\n\",",
+     "            \"Requirement already satisfied: torch>=1.11.0 in /usr/local/lib/python3.10/dist-packages (from ctgan<0.8,>=0.7.0->sdv==0.18.0) (2.0.1+cu118)\\n\",",
+     "            \"Requirement already satisfied: python-dateutil>=2.4 in /usr/local/lib/python3.10/dist-packages (from Faker<15,>=10->sdv==0.18.0) (2.8.2)\\n\",",
+     "            \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.10/dist-packages (from pandas<2,>=1.5.0->sdv==0.18.0) (2023.3.post1)\\n\",",
+     "            \"Requirement already satisfied: psutil<6,>=5.7 in /usr/local/lib/python3.10/dist-packages (from rdt<2,>=1.3.0->sdv==0.18.0) (5.9.5)\\n\",",
+     "            \"Requirement already satisfied: plotly<6,>=5.10.0 in /usr/local/lib/python3.10/dist-packages (from sdmetrics<0.10,>=0.9.0->sdv==0.18.0) (5.15.0)\\n\","
+    ]
+   }
+  ],
+  "sm": [
+   {
+    "file": "synd_comparison.ipynb",
+    "line": 84,
+    "text": "\"Requirement already satisfied: plotly<6,>=5.10.0 in /usr/local/lib/python3.10/dist-packages (from sdmetrics<0.10,>=0.9.0->sdv==0.18.0) (5.15.0)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: torch>=1.11.0 in /usr/local/lib/python3.10/dist-packages (from ctgan<0.8,>=0.7.0->sdv==0.18.0) (2.0.1+cu118)\\n\",",
+     "            \"Requirement already satisfied: python-dateutil>=2.4 in /usr/local/lib/python3.10/dist-packages (from Faker<15,>=10->sdv==0.18.0) (2.8.2)\\n\",",
+     "            \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.10/dist-packages (from pandas<2,>=1.5.0->sdv==0.18.0) (2023.3.post1)\\n\",",
+     "            \"Requirement already satisfied: psutil<6,>=5.7 in /usr/local/lib/python3.10/dist-packages (from rdt<2,>=1.3.0->sdv==0.18.0) (5.9.5)\\n\",",
+     "            \"Requirement already satisfied: plotly<6,>=5.10.0 in /usr/local/lib/python3.10/dist-packages (from sdmetrics<0.10,>=0.9.0->sdv==0.18.0) (5.15.0)\\n\",",
+     "            \"Requirement already satisfied: contourpy>=1.0.1 in /usr/local/lib/python3.10/dist-packages (from matplotlib<4,>=3.6.0->copulas<0.9,>=0.8.0->sdv==0.18.0) (1.1.0)\\n\",",
+     "            \"Requirement already satisfied: cycler>=0.10 in /usr/local/lib/python3.10/dist-packages (from matplotlib<4,>=3.6.0->copulas<0.9,>=0.8.0->sdv==0.18.0) (0.11.0)\\n\",",
+     "            \"Requirement already satisfied: fonttools>=4.22.0 in /usr/local/lib/python3.10/dist-packages (from matplotlib<4,>=3.6.0->copulas<0.9,>=0.8.0->sdv==0.18.0) (4.42.1)\\n\",",
+     "            \"Requirement already satisfied: kiwisolver>=1.0.1 in /usr/local/lib/python3.10/dist-packages (from matplotlib<4,>=3.6.0->copulas<0.9,>=0.8.0->sdv==0.18.0) (1.4.5)\\n\","
+    ]
+   }
+  ],
+  "rdt": [
+   {
+    "file": "synd_comparison.ipynb",
+    "line": 83,
+    "text": "\"Requirement already satisfied: psutil<6,>=5.7 in /usr/local/lib/python3.10/dist-packages (from rdt<2,>=1.3.0->sdv==0.18.0) (5.9.5)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: scikit-learn<2,>=1.1.3 in /usr/local/lib/python3.10/dist-packages (from ctgan<0.8,>=0.7.0->sdv==0.18.0) (1.2.2)\\n\",",
+     "            \"Requirement already satisfied: torch>=1.11.0 in /usr/local/lib/python3.10/dist-packages (from ctgan<0.8,>=0.7.0->sdv==0.18.0) (2.0.1+cu118)\\n\",",
+     "            \"Requirement already satisfied: python-dateutil>=2.4 in /usr/local/lib/python3.10/dist-packages (from Faker<15,>=10->sdv==0.18.0) (2.8.2)\\n\",",
+     "            \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.10/dist-packages (from pandas<2,>=1.5.0->sdv==0.18.0) (2023.3.post1)\\n\",",
+     "            \"Requirement already satisfied: psutil<6,>=5.7 in /usr/local/lib/python3.10/dist-packages (from rdt<2,>=1.3.0->sdv==0.18.0) (5.9.5)\\n\",",
+     "            \"Requirement already satisfied: plotly<6,>=5.10.0 in /usr/local/lib/python3.10/dist-packages (from sdmetrics<0.10,>=0.9.0->sdv==0.18.0) (5.15.0)\\n\",",
+     "            \"Requirement already satisfied: contourpy>=1.0.1 in /usr/local/lib/python3.10/dist-packages (from matplotlib<4,>=3.6.0->copulas<0.9,>=0.8.0->sdv==0.18.0) (1.1.0)\\n\",",
+     "            \"Requirement already satisfied: cycler>=0.10 in /usr/local/lib/python3.10/dist-packages (from matplotlib<4,>=3.6.0->copulas<0.9,>=0.8.0->sdv==0.18.0) (0.11.0)\\n\",",
+     "            \"Requirement already satisfied: fonttools>=4.22.0 in /usr/local/lib/python3.10/dist-packages (from matplotlib<4,>=3.6.0->copulas<0.9,>=0.8.0->sdv==0.18.0) (4.42.1)\\n\","
+    ]
+   }
+  ],
+  "copulas": [
+   {
+    "file": "synd_comparison.ipynb",
+    "line": 77,
+    "text": "\"Requirement already satisfied: matplotlib<4,>=3.6.0 in /usr/local/lib/python3.10/dist-packages (from copulas<0.9,>=0.8.0->sdv==0.18.0) (3.7.1)\\n\",",
+    "context": [
+     "            \"\\u001b[2K     \\u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\u001b[0m \\u001b[32m142.7/142.7 kB\\u001b[0m \\u001b[31m12.2 MB/s\\u001b[0m eta \\u001b[36m0:00:00\\u001b[0m\\n\",",
+     "            \"\\u001b[?25hRequirement already satisfied: cloudpickle<3.0,>=2.1.0 in /usr/local/lib/python3.10/dist-packages (from sdv==0.18.0) (2.2.1)\\n\",",
+     "            \"Requirement already satisfied: numpy<2,>=1.23.3 in /usr/local/lib/python3.10/dist-packages (from sdv==0.18.0) (1.23.5)\\n\",",
+     "            \"Requirement already satisfied: pandas<2,>=1.5.0 in /usr/local/lib/python3.10/dist-packages (from sdv==0.18.0) (1.5.3)\\n\",",
+     "            \"Requirement already satisfied: matplotlib<4,>=3.6.0 in /usr/local/lib/python3.10/dist-packages (from copulas<0.9,>=0.8.0->sdv==0.18.0) (3.7.1)\\n\",",
+     "            \"Requirement already satisfied: scipy<2,>=1.9.2 in /usr/local/lib/python3.10/dist-packages (from copulas<0.9,>=0.8.0->sdv==0.18.0) (1.11.2)\\n\",",
+     "            \"Requirement already satisfied: scikit-learn<2,>=1.1.3 in /usr/local/lib/python3.10/dist-packages (from ctgan<0.8,>=0.7.0->sdv==0.18.0) (1.2.2)\\n\",",
+     "            \"Requirement already satisfied: torch>=1.11.0 in /usr/local/lib/python3.10/dist-packages (from ctgan<0.8,>=0.7.0->sdv==0.18.0) (2.0.1+cu118)\\n\",",
+     "            \"Requirement already satisfied: python-dateutil>=2.4 in /usr/local/lib/python3.10/dist-packages (from Faker<15,>=10->sdv==0.18.0) (2.8.2)\\n\","
+    ]
+   },
+   {
+    "file": "synd_comparison.ipynb",
+    "line": 78,
+    "text": "\"Requirement already satisfied: scipy<2,>=1.9.2 in /usr/local/lib/python3.10/dist-packages (from copulas<0.9,>=0.8.0->sdv==0.18.0) (1.11.2)\\n\",",
+    "context": [
+     "            \"\\u001b[?25hRequirement already satisfied: cloudpickle<3.0,>=2.1.0 in /usr/local/lib/python3.10/dist-packages (from sdv==0.18.0) (2.2.1)\\n\",",
+     "            \"Requirement already satisfied: numpy<2,>=1.23.3 in /usr/local/lib/python3.10/dist-packages (from sdv==0.18.0) (1.23.5)\\n\",",
+     "            \"Requirement already satisfied: pandas<2,>=1.5.0 in /usr/local/lib/python3.10/dist-packages (from sdv==0.18.0) (1.5.3)\\n\",",
+     "            \"Requirement already satisfied: matplotlib<4,>=3.6.0 in /usr/local/lib/python3.10/dist-packages (from copulas<0.9,>=0.8.0->sdv==0.18.0) (3.7.1)\\n\",",
+     "            \"Requirement already satisfied: scipy<2,>=1.9.2 in /usr/local/lib/python3.10/dist-packages (from copulas<0.9,>=0.8.0->sdv==0.18.0) (1.11.2)\\n\",",
+     "            \"Requirement already satisfied: scikit-learn<2,>=1.1.3 in /usr/local/lib/python3.10/dist-packages (from ctgan<0.8,>=0.7.0->sdv==0.18.0) (1.2.2)\\n\",",
+     "            \"Requirement already satisfied: torch>=1.11.0 in /usr/local/lib/python3.10/dist-packages (from ctgan<0.8,>=0.7.0->sdv==0.18.0) (2.0.1+cu118)\\n\",",
+     "            \"Requirement already satisfied: python-dateutil>=2.4 in /usr/local/lib/python3.10/dist-packages (from Faker<15,>=10->sdv==0.18.0) (2.8.2)\\n\",",
+     "            \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.10/dist-packages (from pandas<2,>=1.5.0->sdv==0.18.0) (2023.3.post1)\\n\","
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "copulas",
+  "ctgan_mod",
+  "ev",
+  "rdt",
+  "sdv_any",
+  "sm"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

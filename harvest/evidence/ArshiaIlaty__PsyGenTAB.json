@@ -1,0 +1,219 @@
+{
+ "repo": "ArshiaIlaty/PsyGenTAB",
+ "disk_kb": 71,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# PSyGenTAB\n\n### Privacy-Preserving Synthetic Tabular Data Generation via Constrained Optimization\n\nPSyGenTAB is a **model-agnostic framework** for generating synthetic tabular data with **explicit and controllable privacy–utility trade-offs**.\n\nThe framework formulates synthetic data generation as a **constrained optimization problem** and enforces privacy using the **Augmented Lagrangian Method (ALM)**. It integrates multi-dimensional utility and privacy metrics and works with both transformer-based and GAN-based tabular generators.\n\n---\n\n## 🚀 Features\n\n* Constrained optimization formulation for synthetic data generation\n* Explicit privacy threshold enforcement\n* Composite utility and privacy metrics\n* Sampling-time ALM optimization\n* Compatible with:\n\n  * REaLTabFormer (Transformer-based)\n  * CTAB-GAN+ (GAN-based)\n* Model-agnostic design (no architectural modification required)\n\n---\n\n## 📂 Repository Structure\n\n```\n.\n├── README.md\n├── RTF+ALM.ipynb                    # REaLTabFormer + ALM (training + generation)\n├── CTAB GAN+ ALM.ipynb              # CTAB-GAN+ + ALM (training + generation)\n├── eval/                            # Evaluation scripts (privacy, utility, fidelity)\n│   ├── evaluate_all.py              # Main entrypoint to reproduce paper evaluations\n│   ├── commercial_tools_scores.py   # Evaluation of commercial synthetic data tools\n│   ├── statistical_fidelity_analysis.py\n│   ├── ml_utility_evaluation.py\n│   └── adverserial_attacks.py\n└── data/\n    └── CTAB-GAN-Plus-outputs/       # Example synthetic outputs from CTAB-GAN+ (CSV)\n```\n\nThe evaluation scripts expect an `ALM_Paper/` folder under `eval/` containing the **original** and **synthetic** CSVs for all datasets used in the paper (e.g. `diabetes_health_indicators_original.csv`, `*_synthetic_alm.csv`, `*_synthetic_rtf.csv`, etc.).\nIf you are a reviewer, this folder is provided as part of the **supplementary material / data archive**; after downloading it, place it at:\n\n```\nPsyGenTAB/eval/ALM_Paper/\n```\n\n---\n\n## 🧠 Method Overview\n\nWe optimize the following constrained objective:\n\n```\nL = Q − λ * max(0, P_min − P) − (μ/2) * (P_min − P)^2\n```\n\nWhere:\n\n* `Q` = composite utility score\n* `P` = privacy score\n* `P_min` = required privacy threshold\n* `λ, μ` = adaptive ALM multipliers\n\nALM outer iterations progressively enforce privacy constraints while preserving data fidelity.\n\n---\n\n## 📊 Datasets Used\n\nExperiments were conducted on:\n\n* Adult Census Income\n* Breast Cancer Wisconsin (Diagnostic)\n* Diabetes Health Indicators\n* PIR Vision Office\n* Vietnam Banking Transactions\n\n\n\n---\n\n## ⚙️ Environment Setup\n\n**Recommended Python version:** 3.9–3.11\n\nAll core dependencies for the evaluation scripts and notebooks are listed in `requirements.txt`.\n\n1. **Create and activate a virtual environment**\n   - On macOS / Linux:\n     ```bash\n     python3 -m venv .venv\n     source .venv/bin/activate\n     ```\n   - On Windows (PowerShell):\n     ```powershell\n     python -m venv .venv\n     .venv\\Scripts\\Activate.ps1\n     ```\n\n2. **Install dependencies**\n   ```bash\n   pip install --upgrade pip\n   pip install -r requirements.txt\n   ```\n\n3. (Optional, for GPU) Install a CUDA-enabled build of PyTorch following the instructions from the official PyTorch documentation.\n\n\n## ▶️ Reproducing Evaluation Results (Command Line)\n\nThe main entrypoint to reproduce the paper’s evaluation tables and figures is `eval/evaluate_all.py`.\n\nFrom the repository root:\n\n```bash\ncd PsyGenTAB\npython -m venv .venv\nsource .venv/bin/activate          # or .venv\\Scripts\\Activate.ps1 on Windows\npip install -r requirements.txt\n\n# Ensure ALM_Paper/ with original + synthetic CSVs is present:\n# PsyGenTAB/eval/ALM_Paper/...\n\npython eval/evaluate_all.py\n```\n\nBy default, this:\n\n- Evaluates **11 datasets** (e.g. `diabetes_health_indicators`, `adult_census_income`, `breast_cancer`, `vn_banking`, `lung_cancer`, `obesity`, `hypothyroid`, `liver_disorders`, `heart_failure_clinical_records`, `pir_vision_office`).\n- Compares **ALM** vs **RTF** synthetic data.\n- Writes per-dataset JSON reports and an aggregated `evaluation_summary.json` under:\n\n```\neval/ALM_Paper/evaluation_reports/\n```\n\n### Optional components and external tools\n\nSome evaluation components depend on external libraries that may be slow or licensed differently:\n\n- **SDMetrics reports** (via `sdmetrics` / `sdv`)\n- **MostlyAI QA reports** (via `mostlyai`)\n- **Privacy attack framework** (via `privacy_evaluation_framework`, if available)\n\nYou can:\n\n- **Disable specific components**:\n  ```bash\n  python eval/evaluate_all.py --skip-components privacy_attacks sdmetrics mostlyai_qa\n  ```\n- **Run only a subset of datasets**:\n  ```bash\n  python eval/evaluate_all.py --datasets diabetes_health_indicators adult_census_income\n  ```\n\n\n## ▶️ Running Experiments from Notebooks\n\nThe two main notebooks are:\n\n- `RTF+ALM.ipynb`\n- `CTAB GAN+ ALM.ipynb`\n\nEach notebook:\n\n- Trains the underlying generator (REaLTabFormer or CTAB-GAN+).\n- Generates synthetic datasets at different privacy–utility operating points.\n- Saves synthetic CSVs expected by the evaluation scripts.\n\nThese notebooks may require **additional, model-specific dependencies** (e.g. REaLTabFormer and CTAB-GAN+ packages).\nWe recommend using the same virtual environment as above, and installing any extra packages indicated at the top of each notebook.\n\nTo run a notebook:\n\n```bash\npython -m venv .venv\nsource .venv/bin/activate\npip install -r requirements.txt\npip install jupyter\njupyter notebook\n```\n\nThen open the desired notebook and execute all cells.\n\n---\n\n## 🔐 Privacy Note\n\nThis framework reduces memorization and re-identification risk through constrained optimization.\nIt does **not** provide formal differential privacy guarantees unless explicitly integrated with DP mechanisms.\n\n---\n\n## 📄 Citation\n\nIf you use this repository in academic work, please cite the associated paper (citation details will be added upon publication).\n\n---\n\n## 📬 Support\n\nFor questions, reproducibility issues, or suggestions, please open an issue in this repository.\n\n\n",
+ "hits": {
+  "md": [
+   {
+    "file": "eval/commercial_tools_scores.py",
+    "line": 50,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "try:",
+     "    from sdmetrics.reports.single_table import DiagnosticReport, QualityReport",
+     "    # SDMetadata is part of sdv package, not a separate package",
+     "    try:",
+     "        from sdv.metadata import SingleTableMetadata",
+     "    except ImportError:",
+     "        # Fallback: try sdmetadata if it exists",
+     "        from sdmetadata import SingleTableMetadata",
+     "    SDMETRICS_AVAILABLE = True"
+    ]
+   },
+   {
+    "file": "eval/commercial_tools_scores.py",
+    "line": 418,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    try:",
+     "        # Import here to ensure it's available",
+     "        from sdmetrics.reports.single_table import DiagnosticReport, QualityReport",
+     "        try:",
+     "            from sdv.metadata import SingleTableMetadata",
+     "        except ImportError:",
+     "            from sdmetadata import SingleTableMetadata",
+     "        ",
+     "        real_data = pd.read_csv(real_path)"
+    ]
+   },
+   {
+    "file": "eval/evaluate_all.py",
+    "line": 84,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "try:",
+     "    from sdmetrics.reports.single_table import DiagnosticReport, QualityReport",
+     "    # SDMetadata is part of sdv package, not a separate package",
+     "    try:",
+     "        from sdv.metadata import SingleTableMetadata",
+     "    except ImportError:",
+     "        # Fallback: try sdmetadata if it exists",
+     "        from sdmetadata import SingleTableMetadata",
+     "    SDMETRICS_AVAILABLE = True"
+    ]
+   },
+   {
+    "file": "eval/evaluate_all.py",
+    "line": 592,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    try:",
+     "        # Import here to ensure it's available",
+     "        from sdmetrics.reports.single_table import DiagnosticReport, QualityReport",
+     "        try:",
+     "            from sdv.metadata import SingleTableMetadata",
+     "        except ImportError:",
+     "            from sdmetadata import SingleTableMetadata",
+     "        ",
+     "        real_data = pd.read_csv(real_path)"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "eval/commercial_tools_scores.py",
+    "line": 50,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "try:",
+     "    from sdmetrics.reports.single_table import DiagnosticReport, QualityReport",
+     "    # SDMetadata is part of sdv package, not a separate package",
+     "    try:",
+     "        from sdv.metadata import SingleTableMetadata",
+     "    except ImportError:",
+     "        # Fallback: try sdmetadata if it exists",
+     "        from sdmetadata import SingleTableMetadata",
+     "    SDMETRICS_AVAILABLE = True"
+    ]
+   },
+   {
+    "file": "eval/commercial_tools_scores.py",
+    "line": 418,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    try:",
+     "        # Import here to ensure it's available",
+     "        from sdmetrics.reports.single_table import DiagnosticReport, QualityReport",
+     "        try:",
+     "            from sdv.metadata import SingleTableMetadata",
+     "        except ImportError:",
+     "            from sdmetadata import SingleTableMetadata",
+     "        ",
+     "        real_data = pd.read_csv(real_path)"
+    ]
+   },
+   {
+    "file": "eval/evaluate_all.py",
+    "line": 84,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "try:",
+     "    from sdmetrics.reports.single_table import DiagnosticReport, QualityReport",
+     "    # SDMetadata is part of sdv package, not a separate package",
+     "    try:",
+     "        from sdv.metadata import SingleTableMetadata",
+     "    except ImportError:",
+     "        # Fallback: try sdmetadata if it exists",
+     "        from sdmetadata import SingleTableMetadata",
+     "    SDMETRICS_AVAILABLE = True"
+    ]
+   },
+   {
+    "file": "eval/evaluate_all.py",
+    "line": 592,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    try:",
+     "        # Import here to ensure it's available",
+     "        from sdmetrics.reports.single_table import DiagnosticReport, QualityReport",
+     "        try:",
+     "            from sdv.metadata import SingleTableMetadata",
+     "        except ImportError:",
+     "            from sdmetadata import SingleTableMetadata",
+     "        ",
+     "        real_data = pd.read_csv(real_path)"
+    ]
+   }
+  ],
+  "sm": [
+   {
+    "file": "eval/commercial_tools_scores.py",
+    "line": 47,
+    "text": "from sdmetrics.reports.single_table import DiagnosticReport, QualityReport",
+    "context": [
+     "warnings.filterwarnings('ignore')",
+     "",
+     "# Try importing SDMetrics and MostlyAI",
+     "try:",
+     "    from sdmetrics.reports.single_table import DiagnosticReport, QualityReport",
+     "    # SDMetadata is part of sdv package, not a separate package",
+     "    try:",
+     "        from sdv.metadata import SingleTableMetadata",
+     "    except ImportError:"
+    ]
+   },
+   {
+    "file": "eval/commercial_tools_scores.py",
+    "line": 416,
+    "text": "from sdmetrics.reports.single_table import DiagnosticReport, QualityReport",
+    "context": [
+     "def evaluate_with_sdmetrics(real_path: str, synthetic_path: str, verbose: bool = True) -> Dict:",
+     "    \"\"\"Evaluate using SDMetrics.\"\"\"",
+     "    try:",
+     "        # Import here to ensure it's available",
+     "        from sdmetrics.reports.single_table import DiagnosticReport, QualityReport",
+     "        try:",
+     "            from sdv.metadata import SingleTableMetadata",
+     "        except ImportError:",
+     "            from sdmetadata import SingleTableMetadata"
+    ]
+   },
+   {
+    "file": "eval/evaluate_all.py",
+    "line": 81,
+    "text": "from sdmetrics.reports.single_table import DiagnosticReport, QualityReport",
+    "context": [
+     "    return real[common].copy(), synth[common].copy()",
+     "",
+     "# Try importing SDMetrics and MostlyAI",
+     "try:",
+     "    from sdmetrics.reports.single_table import DiagnosticReport, QualityReport",
+     "    # SDMetadata is part of sdv package, not a separate package",
+     "    try:",
+     "        from sdv.metadata import SingleTableMetadata",
+     "    except ImportError:"
+    ]
+   },
+   {
+    "file": "eval/evaluate_all.py",
+    "line": 590,
+    "text": "from sdmetrics.reports.single_table import DiagnosticReport, QualityReport",
+    "context": [
+     "def evaluate_with_sdmetrics(real_path: str, synthetic_path: str, verbose: bool = True) -> Dict:",
+     "    \"\"\"Evaluate using SDMetrics.\"\"\"",
+     "    try:",
+     "        # Import here to ensure it's available",
+     "        from sdmetrics.reports.single_table import DiagnosticReport, QualityReport",
+     "        try:",
+     "            from sdv.metadata import SingleTableMetadata",
+     "        except ImportError:",
+     "            from sdmetadata import SingleTableMetadata"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "md",
+  "sdv_any",
+  "sm"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdmetrics",
+   "sdv"
+  ]
+ }
+}

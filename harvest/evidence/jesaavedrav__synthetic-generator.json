@@ -1,0 +1,346 @@
+{
+ "repo": "jesaavedrav/synthetic-generator",
+ "disk_kb": 59,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Cardiovascular Synthetic Data Generator\n\nSistema completo para generar datos sintéticos de enfermedades cardiovasculares usando Machine Learning (CTGAN), streaming con Kafka, y almacenamiento en Snowflake para análisis.\n\n## Arquitectura\n\n```\nDataset Kaggle (CSV)\n ↓\n[FastAPI Service] → Entrena modelo CTGAN\n ↓\n[API Endpoints] → Genera datos sintéticos\n ↓\n[Kafka Producer] → Topic: cardiovascular-data\n ↓\n[Kafka Consumer] → Lee mensajes en batch\n ↓\n[Snowflake Writer] → Inserta en tablas\n ↓\nSnowflake Data Warehouse (Analytics)\n```\n\n## Componentes\n\n1. **FastAPI Service**: API REST para entrenar modelos y generar datos\n2. **Synthetic Generator**: Módulo CTGAN para generar datos realistas\n3. **Kafka Producer**: Streaming de datos sintéticos\n4. **Kafka Consumer**: Consumidor que lee del topic\n5. **Snowflake Writer**: Persiste datos en Snowflake\n6. **Docker Compose**: Infraestructura completa (Kafka, Zookeeper, servicios)\n\n## Inicio Rápido\n\n### Prerrequisitos\n\n- Python 3.11+\n- Docker & Docker Compose\n- Cuenta de Snowflake\n- Kaggle API credentials (opcional, para descargar dataset)\n\n### 1. Clonar y Configurar\n\n```bash\n# Navegar al directorio\ncd synthetic_generator\n\n# Ejecutar setup\nchmod +x scripts/setup.sh\n./scripts/setup.sh\n```\n\n### 2. Configurar Variables de Entorno\n\nEditar `.env` con tus credenciales de Snowflake:\n\n```bash\n# Snowflake Configuration\nSNOWFLAKE_ACCOUNT=tu_cuenta\nSNOWFLAKE_USER=tu_usuario\nSNOWFLAKE_PASSWORD=tu_password\nSNOWFLAKE_WAREHOUSE=tu_warehouse\nSNOWFLAKE_DATABASE=CARDIOVASCULAR_DB\nSNOWFLAKE_SCHEMA=SYNTHETIC_DATA\nSNOWFLAKE_TABLE=PATIENT_DATA\n```\n\n### 3. Descargar Dataset\n\n```bash\n# Opción 1: Usando script (requiere Kaggle API configurado)\npython scripts/download_dataset.py\n\n# Opción 2: Manual\n# Descargar desde: https://www.kaggle.com/datasets/alphiree/cardiovascular-diseases-risk-prediction-dataset\n# Colocar en: ./data/CVD_cleaned.csv\n```\n\n### 4. Iniciar Infraestructura\n\n```bash\n# Iniciar todos los servicios\ndocker-compose up -d\n\n# Ver logs\ndocker-compose logs -f\n\n# Verificar servicios\ndocker-compose ps\n```\n\n## Endpoints de la API\n\n### Base URL: `http://localhost:8000`\n\n#### Health Check\n```bash\nGET /health\n```\n\n#### Métodos de Generación Disponibles\n```bash\nGET /train/methods\n\n# Response:\n{\n  \"methods\": [\n    {\n      \"method\": \"ctgan\",\n      \"name\": \"CTGANGenerator\",\n      \"description\": \"Generates synthetic cardiovascular disease data using CTGAN\"\n    }\n  ],\n  \"default_method\": \"ctgan\"\n}\n```\n\n#### Listar Datasets Disponibles\n```bash\nGET /datasets\n\n# Response:\n{\n  \"datasets\": [\n    {\n      \"name\": \"CVD_cleaned.csv\",\n      \"path\": \"./data/CVD_cleaned.csv\",\n      \"size_bytes\": 45678901,\n      \"modified_at\": \"2025-11-11T10:00:00\"\n    }\n  ],\n  \"total_count\": 1\n}\n```\n\n#### Entrenar Modelo\n```bash\nPOST /train\nContent-Type: application/json\n\n{\n \"dataset_path\": \"./data/CVD_cleaned.csv\",\n \"model_name\": \"cardiovascular_model\",\n \"method\": \"ctgan\",\n \"epochs\": 300,\n \"overwrite_existing\": false\n}\n\n# Response: Retorna inmediatamente con task_id\n{\n \"status\": \"started\",\n \"message\": \"Training task initiated. Use task_id to check progress.\",\n \"task_id\": \"550e8400-e29b-41d4-a716-446655440000\"\n}\n```\n\n#### Verificar Estado del Entrenamiento\n```bash\nGET /train/status/{task_id}\n\n# Response mientras está entrenando:\n{\n \"task_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n \"status\": \"running\",\n \"message\": \"Training in progress (45.0%)\",\n \"progress\": 45.0,\n \"started_at\": \"2025-11-11T10:30:00\",\n \"completed_at\": null,\n \"error\": null,\n \"result\": null\n}\n\n# Response cuando termina:\n{\n \"task_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n \"status\": \"completed\",\n \"message\": \"Training completed successfully\",\n \"progress\": 100.0,\n \"started_at\": \"2025-11-11T10:30:00\",\n \"completed_at\": \"2025-11-11T10:45:00\",\n \"error\": null,\n \"result\": {\n \"model_path\": \"./models/cardiovascular_model.pkl\",\n \"training_time\": 900.5,\n \"dataset_rows\": 308854\n }\n}\n```\n\n#### Listar Todas las Tareas de Entrenamiento\n```bash\nGET /train/tasks\n```\n\n#### Generar Datos Sintéticos\n```bash\nPOST /generate\nContent-Type: application/json\n\n{\n \"num_samples\": 100,\n \"send_to_kafka\": true\n}\n```\n\n#### Streaming a Kafka\n```bash\nPOST /stream\nContent-Type: application/json\n\n{\n \"num_samples\": 1000,\n \"batch_size\": 50,\n \"interval_seconds\": 2.0\n}\n```\n\n#### Información del Modelo\n```bash\nGET /model/info\n```\n\n## Uso\n\n### 1. Entrenar el Modelo\n\n```bash\n# Iniciar entrenamiento (retorna inmediatamente)\ncurl -X POST http://localhost:8000/train \\\n -H \"Content-Type: application/json\" \\\n -d '{\n \"dataset_path\": \"./data/CVD_cleaned.csv\",\n \"epochs\": 300\n }'\n\n# Response:\n# {\n# \"status\": \"started\",\n# \"task_id\": \"abc-123-xyz\",\n# \"message\": \"Training task initiated...\"\n# }\n\n# Verificar progreso\ncurl http://localhost:8000/train/status/abc-123-xyz\n\n# Ver todas las tareas\ncurl http://localhost:8000/train/tasks\n```\n\n### 2. Generar Datos y Enviar a Kafka\n\n```bash\ncurl -X POST http://localhost:8000/generate \\\n -H \"Content-Type: application/json\" \\\n -d '{\n \"num_samples\": 100,\n \"send_to_kafka\": true\n }'\n```\n\n### 3. Streaming Continuo\n\n```bash\ncurl -X POST http://localhost:8000/stream \\\n -H \"Content-Type: application/json\" \\\n -d '{\n \"num_samples\": 10000,\n \"batch_size\": 100,\n \"interval_seconds\": 5.0\n }'\n```\n\n## Interfaces Web\n\n- **API Docs (Swagger)**: http://localhost:8000/docs\n- **Kafka UI**: http://localhost:8080\n- **Alternative API Docs (ReDoc)**: http://localhost:8000/redoc\n\n## Estructura del Dataset\n\nEl dataset de Kaggle contiene las siguientes columnas:\n\n- `general_health`: Estado de salud general\n- `checkup`: Última revisión médica\n- `exercise`: Hábitos de ejercicio\n- `heart_disease`: Presencia de enfermedad cardíaca\n- `skin_cancer`, `other_cancer`: Historial de cáncer\n- `depression`: Historial de depresión\n- `diabetes`: Estado de diabetes\n- `arthritis`: Presencia de artritis\n- `sex`: Género\n- `age_category`: Categoría de edad\n- `height_cm`, `weight_kg`, `bmi`: Medidas físicas\n- `smoking_history`: Historial de tabaquismo\n- `alcohol_consumption`: Consumo de alcohol\n- `fruit_consumption`: Consumo de frutas\n- `green_vegetables_consumption`: Consumo de vegetales verdes\n- `fried_potato_consumption`: Consumo de papas fritas\n\n## Estructura del Proyecto\n\n```\nsynthetic_generator/\n app/\n main.py # FastAPI application\n models/\n schemas.py # Pydantic models\n services/\n generator_factory.py # Factory pattern (NEW)\n synthetic_generator.py # CTGAN generator\n kafka_producer.py # Kafka producer\n utils/\n logger.py # Logging setup\n task_tracker.py # Training task tracking\n consumer/\n kafka_consumer.py # Kafka consumer\n snowflake_writer.py # Snowflake integration\n config/\n settings.py # Configuration\n scripts/\n download_dataset.py # Dataset downloader\n setup.sh # Setup script\n test_api.py # API tests\n test_factory.py # Factory pattern tests (NEW)\n monitor_training.py # Training monitor\n data/ # Dataset files\n models/ # Trained models\n logs/ # Application logs\n docker-compose.yml # Docker services\n Dockerfile.api # API container\n Dockerfile.consumer # Consumer container\n requirements.txt # Python dependencies\n .env.example # Environment variables template\n```\n\n## Factory Pattern - Múltiples Métodos de Generación\n\nEl sistema ahora soporta múltiples algoritmos de generación mediante un **Factory Pattern extensible**:\n\n### Métodos Disponibles\n- ✅ **CTGAN** (Conditional Tabular GAN) - Implementado\n- 🔄 **TVAE** (Tabular Variational AutoEncoder) - Futuro\n- 🔄 **Gaussian Copula** - Futuro\n\n### Nuevos Endpoints\n\n```bash\n# Listar métodos disponibles\nGET /train/methods\n\n# Listar datasets disponibles\nGET /datasets\n\n# Entrenar con método específico\nPOST /train\n{\n  \"method\": \"ctgan\",\n  \"model_name\": \"my_model\",\n  \"overwrite_existing\": false\n}\n```\n\n### Testing Factory\n\n```bash\nmake test-factory\n```\n\n## Servicios Docker\n\n- **zookeeper**: Coordinación de Kafka (puerto 2181)\n- **kafka**: Message broker (puerto 9092)\n- **kafka-ui**: Interfaz web para Kafka (puerto 8080)\n- **api-producer**: FastAPI service (puerto 8000)\n- **consumer**: Snowflake consumer\n\n## Testing\n\n```bash\n# Test API endpoints\npython scripts/test_api.py\n\n# Test con curl\ncurl http://localhost:8000/health\n```\n\n## Análisis en Snowflake\n\nUna vez que los datos están en Snowflake, puedes realizar análisis:\n\n```sql\n-- Ver registros recientes\nSELECT * FROM CARDIOVASCULAR_DB.SYNTHETIC_DATA.PATIENT_DATA\nORDER BY ingested_at DESC\nLIMIT 100;\n\n-- Estadísticas por categoría de edad\nSELECT \n age_category,\n COUNT(*) as count,\n AVG(bmi) as avg_bmi,\n SUM(CASE WHEN heart_disease = 'Yes' THEN 1 ELSE 0 END) as heart_disease_count\nFROM CARDIOVASCULAR_DB.SYNTHETIC_DATA.PATIENT_DATA\nGROUP BY age_category;\n\n-- Distribución de enfermedades cardíacas\nSELECT \n heart_disease,\n COUNT(*) as count,\n ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER (), 2) as percentage\nFROM CARDIOVASCULAR_DB.SYNTHETIC_DATA.PATIENT_DATA\nGROUP BY heart_disease;\n```\n\n## Desarrollo\n\n### Instalar dependencias localmente\n\n```bash\npython -m venv venv\nsource venv/bin/activate # En Windows: venv\\Scripts\\activate\npip install -r requirements.txt\n```\n\n### Ejecutar servicios localmente (sin Docker)\n\n```bash\n# Terminal 1: Kafka (con Docker)\ndocker-compose up kafka zookeeper\n\n# Terminal 2: FastAPI\npython -m uvicorn app.main:app --reload\n\n# Terminal 3: Consumer\npython -m consumer.kafka_consumer\n```\n\n## Seguridad\n\n- Nunca commitear el archivo `.env` con credenciales reales\n- Usar variables de entorno para información sensible\n- Rotar credenciales de Snowflake regularmente\n- Limitar acceso a topics de Kafka en producción\n\n## Notas Técnicas\n\n### CTGAN\n- Modelo generativo especializado en datos tabulares\n- Captura distribuciones complejas y correlaciones\n- Entrenamiento puede tomar 5-30 minutos dependiendo del dataset\n\n### Kafka\n- Topic auto-creado al enviar primer mensaje\n- Retención de mensajes: 7 días (configurable)\n- Consumer group permite procesamiento paralelo\n\n### Snowflake\n- Tabla creada automáticamente al iniciar consumer\n- Índices automáticos en timestamp de ingesta\n- Optimizado para queries analíticas\n\n## Contribución\n\n1. Fork el proyecto\n2. Crear feature branch (`git checkout -b feature/AmazingFeature`)\n3. Commit cambios (`git commit -m 'Add some AmazingFeature'`)\n4. Push a branch (`git push origin feature/AmazingFeature`)\n5. Abrir Pull Request\n\n## Licencia\n\nEste proyecto es de código abierto y está disponible bajo la Licencia MIT.\n\n## Créditos\n\n- Dataset: [Cardiovascular Diseases Risk Prediction](https://www.kaggle.com/datasets/alphiree/cardiovascular-diseases-risk-prediction-dataset)\n- SDV/CTGAN: [Synthetic Data Vault](https://sdv.dev/)\n- FastAPI: [FastAPI Framework](https://fastapi.tiangolo.com/)\n\n## Soporte\n\nPara preguntas o problemas:\n1. Revisar la documentación en `/docs`\n2. Verificar logs: `docker-compose logs -f`\n3. Abrir un issue en el repositorio\n\n---\n\n**Cardiovascular Synthetic Data Generator - Professional Data Analysis Tool**\n",
+ "hits": {
+  "st": [
+   {
+    "file": "app/services/gaussian_copula_generator.py",
+    "line": 9,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "from pathlib import Path",
+     "from loguru import logger",
+     "import time",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from config import get_settings",
+     "from app.services.generator_factory import ("
+    ]
+   },
+   {
+    "file": "app/services/tvae_generator.py",
+    "line": 9,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "from pathlib import Path",
+     "from loguru import logger",
+     "import time",
+     "",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from config import get_settings",
+     "from app.services.generator_factory import ("
+    ]
+   },
+   {
+    "file": "app/services/synthetic_generator.py",
+    "line": 9,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from pathlib import Path",
+     "from loguru import logger",
+     "import time",
+     "",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from config import get_settings",
+     "from app.services.generator_factory import ("
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "app/services/gaussian_copula_generator.py",
+    "line": 10,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from loguru import logger",
+     "import time",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from config import get_settings",
+     "from app.services.generator_factory import (",
+     "    BaseSyntheticGenerator,"
+    ]
+   },
+   {
+    "file": "app/services/tvae_generator.py",
+    "line": 10,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from loguru import logger",
+     "import time",
+     "",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from config import get_settings",
+     "from app.services.generator_factory import (",
+     "    BaseSyntheticGenerator,"
+    ]
+   },
+   {
+    "file": "app/services/synthetic_generator.py",
+    "line": 10,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from loguru import logger",
+     "import time",
+     "",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from config import get_settings",
+     "from app.services.generator_factory import (",
+     "    BaseSyntheticGenerator,"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "app/services/gaussian_copula_generator.py",
+    "line": 9,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "from pathlib import Path",
+     "from loguru import logger",
+     "import time",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from config import get_settings",
+     "from app.services.generator_factory import ("
+    ]
+   },
+   {
+    "file": "app/services/gaussian_copula_generator.py",
+    "line": 10,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from loguru import logger",
+     "import time",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from config import get_settings",
+     "from app.services.generator_factory import (",
+     "    BaseSyntheticGenerator,"
+    ]
+   },
+   {
+    "file": "app/services/tvae_generator.py",
+    "line": 9,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "from pathlib import Path",
+     "from loguru import logger",
+     "import time",
+     "",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from config import get_settings",
+     "from app.services.generator_factory import ("
+    ]
+   },
+   {
+    "file": "app/services/tvae_generator.py",
+    "line": 10,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from loguru import logger",
+     "import time",
+     "",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from config import get_settings",
+     "from app.services.generator_factory import (",
+     "    BaseSyntheticGenerator,"
+    ]
+   },
+   {
+    "file": "app/services/synthetic_generator.py",
+    "line": 9,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from pathlib import Path",
+     "from loguru import logger",
+     "import time",
+     "",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from config import get_settings",
+     "from app.services.generator_factory import ("
+    ]
+   },
+   {
+    "file": "app/services/synthetic_generator.py",
+    "line": 10,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from loguru import logger",
+     "import time",
+     "",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from config import get_settings",
+     "from app.services.generator_factory import (",
+     "    BaseSyntheticGenerator,"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "app/services/gaussian_copula_generator.py",
+    "line": 9,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "from pathlib import Path",
+     "from loguru import logger",
+     "import time",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from config import get_settings",
+     "from app.services.generator_factory import ("
+    ]
+   },
+   {
+    "file": "app/services/gaussian_copula_generator.py",
+    "line": 82,
+    "text": "self.model = GaussianCopulaSynthesizer(metadata=self.metadata)",
+    "context": [
+     "            progress_callback(20.0)",
+     "",
+     "        # Initialize Gaussian Copula",
+     "        logger.info(\"Initializing Gaussian Copula...\")",
+     "        self.model = GaussianCopulaSynthesizer(metadata=self.metadata)",
+     "",
+     "        if progress_callback:",
+     "            progress_callback(30.0)",
+     ""
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "app/services/tvae_generator.py",
+    "line": 9,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "from pathlib import Path",
+     "from loguru import logger",
+     "import time",
+     "",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from config import get_settings",
+     "from app.services.generator_factory import ("
+    ]
+   },
+   {
+    "file": "app/services/tvae_generator.py",
+    "line": 82,
+    "text": "self.model = TVAESynthesizer(",
+    "context": [
+     "            progress_callback(15.0)",
+     "",
+     "        # Initialize TVAE",
+     "        logger.info(f\"Initializing TVAE with {epochs} epochs and batch_size {batch_size}...\")",
+     "        self.model = TVAESynthesizer(",
+     "            metadata=self.metadata, epochs=epochs, batch_size=batch_size",
+     "        )",
+     "",
+     "        if progress_callback:"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "app/services/synthetic_generator.py",
+    "line": 9,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from pathlib import Path",
+     "from loguru import logger",
+     "import time",
+     "",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from config import get_settings",
+     "from app.services.generator_factory import ("
+    ]
+   },
+   {
+    "file": "app/services/synthetic_generator.py",
+    "line": 86,
+    "text": "self.model = CTGANSynthesizer(",
+    "context": [
+     "            progress_callback(15.0)  # Metadata created",
+     "",
+     "        # Initialize CTGAN",
+     "        logger.info(f\"Initializing CTGAN with {epochs} epochs and batch_size {batch_size}...\")",
+     "        self.model = CTGANSynthesizer(",
+     "            metadata=self.metadata, epochs=epochs, batch_size=batch_size, verbose=True",
+     "        )",
+     "",
+     "        if progress_callback:"
+    ]
+   },
+   {
+    "file": ".github/copilot-instructions.md",
+    "line": 35,
+    "text": "- Uses SDV library's `CTGANSynthesizer` (not raw CTGAN)",
+    "context": [
+     "    task_tracker.update_task_progress(task_id, pct)",
+     "```",
+     "",
+     "### 2. CTGAN Training Mechanics",
+     "- Uses SDV library's `CTGANSynthesizer` (not raw CTGAN)",
+     "- Progress estimation: 5% data load → 10% metadata → 15% init → 20-90% training → 95% save",
+     "- **No native progress from SDV** - we estimate based on time/epochs",
+     "- Model saved as pickle to `./models/{model_name}.pkl`",
+     "- Metadata detection automatic from pandas DataFrame"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "gc",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv==1.8.0",
+   "ctgan==0.8.0"
+  ],
+  "pyproject.toml": [
+   "description = \"Synthetic cardiovascular data generator using CTGAN with Kafka streaming and Snowflake analytics\"",
+   "keywords = [\"synthetic-data\", \"ctgan\", \"kafka\", \"snowflake\", \"healthcare\", \"cardiovascular\"]",
+   "    \"sdv>=1.8.0\",",
+   "    \"ctgan>=0.8.0\","
+  ]
+ }
+}

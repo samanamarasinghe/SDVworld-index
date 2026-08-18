@@ -1,0 +1,308 @@
+{
+ "repo": "cris1618/KAN_synth",
+ "disk_kb": 50,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "<p align=\"center\">\n  <a href=\"https://pypi.org/project/KAN-synth/\"><img src=\"https://img.shields.io/pypi/v/KAN-synth.svg?color=orange&label=pypi\" alt=\"pypi\"></a>\n  <img src=\"https://img.shields.io/pypi/dm/KAN-synth.svg?color=grey&label=downloads\" alt=\"downloads\">\n  <img src=\"https://img.shields.io/pypi/l/KAN-synth.svg?color=brightgreen&label=license\" alt=\"license\">\n  <img src=\"https://img.shields.io/pypi/pyversions/KAN-synth.svg?label=python\" alt=\"python\">\n</p>\n\n# Kolmogorov–Arnold Networks for Tabular Data Synthesis\n\n**KAN_synth** is an open-source Python package for generating high-fidelity synthetic tabular data using Kolmogorov–Arnold Networks (KANs). It extends the original [CTGAN](https://github.com/sdv-dev/CTGAN) and [TVAE](https://github.com/sdv-dev/CTGAN) models from the Synthetic Data Vault (SDV) by replacing their MLP-based architectures with KAN-based components. \n\nThis project was developed for research (undergraduate thesis) and practical evaluation of KAN-based generative models, particularly in comparison to traditional GANs and VAEs on tabular data synthesis tasks.\n\n## Overview\n\nThe KAN_synth repository is structured into several components:\n\n### Models (`models/`)\nKAN-based generative models for tabular data:\n- **KAN_CTGAN**: Fully KAN-based implementation of CTGAN.\n- **HYBRID_KAN_CTGAN**: CTGAN with only the first layer replaced by KAN.\n- **Disc_KAN_CTGAN**: CTGAN with a KAN-based discriminator only.\n- **Gen_KAN_CTGAN**: CTGAN with a KAN-based generator only.\n- **KAN_TVAE**: Full KAN-based variant of TVAE.\n- **HYBRID_KAN_TVAE**: TVAE where one intermediate layer is replaced by a KAN block.\n\n### Evaluation Scripts (`benchmarks/`)\nNon-reusable scripts developed to:\n- Train and evaluate each model on various datasets.\n- Measure similarity and ML utility.\n- Aggregate and visualize results.\n\n### Data Generation Scripts (`data_gen/`)\nStandalone scripts for generating synthetic datasets using each model for internal benchmarking and experimentation purposes.\n\n### Utilities (`utilities/`)\nFunctions to compute:\n- Overall similarity between real and synthetic datasets\n- Model evaluation metrics (MAE, RMSE, R² for regression; Accuracy, F1, etc. for classification)\n- Visualizations of ML utility scores across models\n\n### Tests (`test/`)\nUnit tests for model importability, synthetic generation routines, and ML pipeline sanity checks using `pytest`.\n\nThe full model descriptions can be found in the thesis work at: [Not yet published].\n\n## Installation\n\nOnce the package is published on [PyPI](https://pypi.org), it can be installed via `pip`:\n\n```bash\npip install KAN-synth\n```\n\nAll required packages are listed in `requirements.txt`, and will be automatically installed when using:\n\n```bash\npip install -r requirements.txt\n```\n\nSince these models are based on the original CTGAN and TVAE architectures, the same data preprocessing principles apply:\n\n- Continuous columns must be represented as floats.\n- Discrete columns must be represented as integers or strings.\n- The input dataset should not contain any missing values.\n\nFor additional details, refer to the original CTGAN repository: [https://github.com/sdv-dev/CTGAN](https://github.com/sdv-dev/CTGAN)\n\n### Local Development Installation\nif you'd like to install the package locally for development or experimentation:\n\n```bash\ngit clone https://github.com/cris1618/KAN_synth.git\ncd KAN_synth\npip install -e .\n```\n\nThe `-e` flag installs the package in \"editable\" mode, meaning any changes you make to the code will immediately affect the installed version without needing to reinstall.\n\n## Usage Example\nHere's a minimal working example to train a KAN-based synthesizer and generate synthetic tabular data using the `KAN_CTGAN` model.\n\n```python\nfrom KAN_synth import KAN_CTGAN\nimport pandas as pd\n\n# Load real tabular data (pandas DataFrame)\ndf = pd.read_csv(\"your_dataset.csv\")\n\n# Define the discrete columns (if any)\ndiscrete_columns = [\"column_a\", \"column_b\"]  # Modify as needed\n\n# Initialize the synthesizer\nsynthesizer = KAN_CTGAN(\n    epochs=100, \n    verbose=True, \n    grid_size_gen=5,  \n    spline_order_gen=3,\n    grid_size_desc=5,\n    spline_order_desc=3\n)\n\n# Train the model on your data\nsynthesizer.fit(df, discrete_columns)\n\n# Sample 1000 synthetic rows\nsynthetic_data = synthesizer.sample(1000)\n\n# Save or explore the results\nsynthetic_data.to_csv(\"synthetic_output.csv\", index=False)\n```\n\nYou can replace KAN_CTGAN with any of the other available models, such as:\n\n- `HYBRID_KAN_CTGAN`\n- `Disc_KAN_CTGAN`\n- `Gen_KAN_CTGAN`\n- `KAN_TVAE`\n- `HYBRID_KAN_TVAE`\n\nEach supports similar training and sampling APIs compatible with the original CTGAN and TVAE interfaces.",
+ "hits": {
+  "ctgan_mod": [
+   {
+    "file": "src/KAN_synth/data_gen/TVAE_Data_Generation_test.py",
+    "line": 23,
+    "text": "from ctgan import TVAE",
+    "context": [
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "import torch",
+     "from ctgan import TVAE",
+     "from KAN_synth.models.KAN_TVAE_code import KAN_TVAE",
+     "from KAN_synth.models.Hybrid_TVAE_code import HYBRID_KAN_TVAE",
+     "",
+     "print(torch.cuda.is_available(), torch.version.cuda)"
+    ]
+   },
+   {
+    "file": "src/KAN_synth/data_gen/CTGAN_Data_Generation_test.py",
+    "line": 24,
+    "text": "from ctgan import CTGAN",
+    "context": [
+     "\"\"\"",
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from ctgan import CTGAN",
+     "import torch",
+     "from KAN_synth.models.KAN_CTGAN_code import KAN_CTGAN",
+     "from KAN_synth.models.Hybrid_CTGAN_code import HYBRID_KAN_CTGAN",
+     "from KAN_synth.models.Disc_KAN_CTGAN_code import Disc_KAN_CTGAN"
+    ]
+   },
+   {
+    "file": "src/KAN_synth/models/Hybrid_TVAE_code.py",
+    "line": 38,
+    "text": "from ctgan.data_transformer import DataTransformer",
+    "context": [
+     "from torch.optim import Adam",
+     "from torch.utils.data import DataLoader, TensorDataset",
+     "from tqdm import tqdm",
+     "",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.synthesizers.base import BaseSynthesizer, random_state",
+     "",
+     "# (*) Additional import for Kolmogorov–Arnold Networks",
+     "from KAN_synth.models.KAN_code import KANLinear"
+    ]
+   },
+   {
+    "file": "src/KAN_synth/models/Hybrid_TVAE_code.py",
+    "line": 39,
+    "text": "from ctgan.synthesizers.base import BaseSynthesizer, random_state",
+    "context": [
+     "from torch.utils.data import DataLoader, TensorDataset",
+     "from tqdm import tqdm",
+     "",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.synthesizers.base import BaseSynthesizer, random_state",
+     "",
+     "# (*) Additional import for Kolmogorov–Arnold Networks",
+     "from KAN_synth.models.KAN_code import KANLinear",
+     ""
+    ]
+   },
+   {
+    "file": "src/KAN_synth/models/Hybrid_CTGAN_code.py",
+    "line": 33,
+    "text": "from ctgan.data_sampler import DataSampler",
+    "context": [
+     "import torch.nn as nn",
+     "from torch import optim",
+     "from torch.nn import BatchNorm1d, Linear, Module, ReLU, Sequential, functional",
+     "from tqdm import tqdm",
+     "from ctgan.data_sampler import DataSampler",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.errors import InvalidDataError",
+     "from ctgan.synthesizers.base import BaseSynthesizer, random_state",
+     ""
+    ]
+   },
+   {
+    "file": "src/KAN_synth/models/Hybrid_CTGAN_code.py",
+    "line": 34,
+    "text": "from ctgan.data_transformer import DataTransformer",
+    "context": [
+     "from torch import optim",
+     "from torch.nn import BatchNorm1d, Linear, Module, ReLU, Sequential, functional",
+     "from tqdm import tqdm",
+     "from ctgan.data_sampler import DataSampler",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.errors import InvalidDataError",
+     "from ctgan.synthesizers.base import BaseSynthesizer, random_state",
+     "",
+     "# (*) Additional import for Kolmogorov–Arnold Networks"
+    ]
+   },
+   {
+    "file": "src/KAN_synth/models/Hybrid_CTGAN_code.py",
+    "line": 35,
+    "text": "from ctgan.errors import InvalidDataError",
+    "context": [
+     "from torch.nn import BatchNorm1d, Linear, Module, ReLU, Sequential, functional",
+     "from tqdm import tqdm",
+     "from ctgan.data_sampler import DataSampler",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.errors import InvalidDataError",
+     "from ctgan.synthesizers.base import BaseSynthesizer, random_state",
+     "",
+     "# (*) Additional import for Kolmogorov–Arnold Networks",
+     "from KAN_synth.models.KAN_code import KANLinear"
+    ]
+   },
+   {
+    "file": "src/KAN_synth/models/Hybrid_CTGAN_code.py",
+    "line": 36,
+    "text": "from ctgan.synthesizers.base import BaseSynthesizer, random_state",
+    "context": [
+     "from tqdm import tqdm",
+     "from ctgan.data_sampler import DataSampler",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.errors import InvalidDataError",
+     "from ctgan.synthesizers.base import BaseSynthesizer, random_state",
+     "",
+     "# (*) Additional import for Kolmogorov–Arnold Networks",
+     "from KAN_synth.models.KAN_code import KANLinear",
+     ""
+    ]
+   },
+   {
+    "file": "src/KAN_synth/models/Disc_KAN_CTGAN_code.py",
+    "line": 31,
+    "text": "from ctgan.data_sampler import DataSampler",
+    "context": [
+     "import torch",
+     "from torch import optim",
+     "from torch.nn import BatchNorm1d, Dropout, Linear, Module, ReLU, Sequential, functional",
+     "from tqdm import tqdm",
+     "from ctgan.data_sampler import DataSampler",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.errors import InvalidDataError",
+     "from ctgan.synthesizers.base import BaseSynthesizer, random_state",
+     ""
+    ]
+   },
+   {
+    "file": "src/KAN_synth/models/Disc_KAN_CTGAN_code.py",
+    "line": 32,
+    "text": "from ctgan.data_transformer import DataTransformer",
+    "context": [
+     "from torch import optim",
+     "from torch.nn import BatchNorm1d, Dropout, Linear, Module, ReLU, Sequential, functional",
+     "from tqdm import tqdm",
+     "from ctgan.data_sampler import DataSampler",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.errors import InvalidDataError",
+     "from ctgan.synthesizers.base import BaseSynthesizer, random_state",
+     "",
+     "# (*) Additional import for Kolmogorov–Arnold Networks"
+    ]
+   },
+   {
+    "file": "src/KAN_synth/models/Disc_KAN_CTGAN_code.py",
+    "line": 33,
+    "text": "from ctgan.errors import InvalidDataError",
+    "context": [
+     "from torch.nn import BatchNorm1d, Dropout, Linear, Module, ReLU, Sequential, functional",
+     "from tqdm import tqdm",
+     "from ctgan.data_sampler import DataSampler",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.errors import InvalidDataError",
+     "from ctgan.synthesizers.base import BaseSynthesizer, random_state",
+     "",
+     "# (*) Additional import for Kolmogorov–Arnold Networks",
+     "from KAN_synth.models.KAN_code import KANLinear"
+    ]
+   },
+   {
+    "file": "src/KAN_synth/models/Disc_KAN_CTGAN_code.py",
+    "line": 34,
+    "text": "from ctgan.synthesizers.base import BaseSynthesizer, random_state",
+    "context": [
+     "from tqdm import tqdm",
+     "from ctgan.data_sampler import DataSampler",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.errors import InvalidDataError",
+     "from ctgan.synthesizers.base import BaseSynthesizer, random_state",
+     "",
+     "# (*) Additional import for Kolmogorov–Arnold Networks",
+     "from KAN_synth.models.KAN_code import KANLinear",
+     ""
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "src/KAN_synth/benchmarks/Benchmarks.py",
+    "line": 37,
+    "text": "synthetizers = [\"GaussianCopulaSynthesizer\", \"CTGANSynthesizer\", \"TVAESynthesizer\"]",
+    "context": [
+     "from KAN_synth.models.Gen_KAN_CTGAN_code import Gen_KAN_CTGAN",
+     "from ctgan import CTGAN, TVAE",
+     "",
+     "# Models to test",
+     "synthetizers = [\"GaussianCopulaSynthesizer\", \"CTGANSynthesizer\", \"TVAESynthesizer\"]",
+     "",
+     "# ORIGINAL MODELS BUT MANUALLY IMPORTED",
+     "def get_trained_synthesizer_ORIGINAL_CTGAN(data, metadata):",
+     "    discrete = ["
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "src/KAN_synth/benchmarks/Benchmarks.py",
+    "line": 37,
+    "text": "synthetizers = [\"GaussianCopulaSynthesizer\", \"CTGANSynthesizer\", \"TVAESynthesizer\"]",
+    "context": [
+     "from KAN_synth.models.Gen_KAN_CTGAN_code import Gen_KAN_CTGAN",
+     "from ctgan import CTGAN, TVAE",
+     "",
+     "# Models to test",
+     "synthetizers = [\"GaussianCopulaSynthesizer\", \"CTGANSynthesizer\", \"TVAESynthesizer\"]",
+     "",
+     "# ORIGINAL MODELS BUT MANUALLY IMPORTED",
+     "def get_trained_synthesizer_ORIGINAL_CTGAN(data, metadata):",
+     "    discrete = ["
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "src/KAN_synth/benchmarks/Benchmarks.py",
+    "line": 37,
+    "text": "synthetizers = [\"GaussianCopulaSynthesizer\", \"CTGANSynthesizer\", \"TVAESynthesizer\"]",
+    "context": [
+     "from KAN_synth.models.Gen_KAN_CTGAN_code import Gen_KAN_CTGAN",
+     "from ctgan import CTGAN, TVAE",
+     "",
+     "# Models to test",
+     "synthetizers = [\"GaussianCopulaSynthesizer\", \"CTGANSynthesizer\", \"TVAESynthesizer\"]",
+     "",
+     "# ORIGINAL MODELS BUT MANUALLY IMPORTED",
+     "def get_trained_synthesizer_ORIGINAL_CTGAN(data, metadata):",
+     "    discrete = ["
+    ]
+   }
+  ],
+  "gym": [
+   {
+    "file": "src/KAN_synth/benchmarks/Benchmarks.py",
+    "line": 26,
+    "text": "import sdgym",
+    "context": [
+     "- Output file path should be customized for local or cluster usage.",
+     "",
+     "\"\"\"",
+     "",
+     "import sdgym",
+     "from sdgym import create_single_table_synthesizer",
+     "from KAN_synth.models.KAN_CTGAN_code import KAN_CTGAN",
+     "from KAN_synth.models.KAN_TVAE_code import KAN_TVAE",
+     "from KAN_synth.models.Hybrid_CTGAN_code import HYBRID_KAN_CTGAN"
+    ]
+   },
+   {
+    "file": "src/KAN_synth/benchmarks/Benchmarks.py",
+    "line": 27,
+    "text": "from sdgym import create_single_table_synthesizer",
+    "context": [
+     "",
+     "\"\"\"",
+     "",
+     "import sdgym",
+     "from sdgym import create_single_table_synthesizer",
+     "from KAN_synth.models.KAN_CTGAN_code import KAN_CTGAN",
+     "from KAN_synth.models.KAN_TVAE_code import KAN_TVAE",
+     "from KAN_synth.models.Hybrid_CTGAN_code import HYBRID_KAN_CTGAN",
+     "from KAN_synth.models.Hybrid_TVAE_code import HYBRID_KAN_TVAE"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ctgan_mod",
+  "gc",
+  "gym",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "ctgan",
+   "sdgym"
+  ],
+  "pyproject.toml": [
+   "description = \"Synthetic data generation using KAN-enhanced CTGAN/TVAE architectures\""
+  ]
+ }
+}

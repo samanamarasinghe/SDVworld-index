@@ -1,0 +1,594 @@
+{
+ "repo": "li003454/5541-NLP-PROJECT",
+ "disk_kb": 394717,
+ "method": "partial_clone",
+ "tree_files": 843,
+ "status": "ok",
+ "readme": "# LogicDiff: LLM-Guided Compress–Generate–Restore for Trustworthy Tabular Synthesis\n\nLogicDiff builds on the official TabDDPM implementation (“TabDDPM: Modelling Tabular Data with Diffusion Models” [paper](https://arxiv.org/abs/2209.15421)).\n\n## $${\\color[RGB]{18, 119, 211}\\Huge\\text{Fantastic Four}}$$ <img src=\"docs/fantastic-four.jpg\" width=\"50\" height=\"50\" />\n\nMohamed Khalil - khali178@umn.edu\n\nNitish Poojari - pooja011@umn.edu\n\nTyler Chan - chen7751@umn.edu\n\nWeifu Li - li003454@umn.edu\n\n\n\n\n<!-- ## Results\nYou can view all the results and build your own tables with this [notebook](notebooks/Reports.ipynb). -->\n\n## Setup the environment\n1. Install [conda](https://docs.conda.io/en/latest/miniconda.html) (just to manage the env).\n2. Run the following commands\n    ```bash\n    export REPO_DIR=/path/to/the/code\n    cd $REPO_DIR\n\n    conda create -n tabmdm python=3.9.7\n    conda activate tabmdm\n\n    pip install torch==1.10.1+cu111 -f https://download.pytorch.org/whl/torch_stable.html\n    pip install -r requirements.txt\n\n    # if the following commands do not succeed, update conda\n    conda env config vars set PYTHONPATH=${PYTHONPATH}:${REPO_DIR}\n    conda env config vars set PROJECT_DIR=${REPO_DIR}\n\n    conda deactivate\n    conda activate tabmdm\n    ```\n\n<!-- ## Running the experiments\n\nHere we describe the neccesary info for reproducing the experimental results.  \nUse `agg_results.ipynb` to print results for all dataset and all methods. -->\n\n### Datasets\n\nTo download the datasets, run:\n\n``` bash\nconda activate tddpm\ncd $PROJECT_DIR\nwget \"https://www.dropbox.com/s/rpckvcs3vx7j605/data.tar?dl=0\" -O data.tar\ntar -xvf data.tar\n```\n\n### File structure\n`tab-ddpm/` -- implementation of the proposed method  \n`tuned_models/` -- tuned hyperparameters of evaluation model (CatBoost or MLP)\n\n\nLLM compression folder (`llm/`):\n- Utilities to compress a raw CSV/Parquet into a core dataset and metadata.\n- `make_dataset_compressed.py` runs the full pipeline and generates schema.   json, relations.json,compression_meta.json, and X_c.npy.\n- `llm_to_relations.py` extracts RH (hierarchy), RM (math), and RT (temporal) rules into relations.json.\n- If `config.toml` is produced, it is an auto-generated training config template; see CONFIG_DESCRIPTION.md.\n\nAll main scripts are in `scripts/` folder:\n\n- `scripts/pipeline.py` are used to train, sample and eval TabDDPM using a given config  \n- `scripts/tune_ddpm.py` -- tune hyperparameters of TabDDPM\n- `scripts/eval_[catboost|mlp|simple].py` -- evaluate synthetic data using a tuned evaluation model or simple models\n- `scripts/eval_seeds.py` -- eval using multiple sampling and multuple eval seeds\n- `scripts/eval_seeds_simple.py` --  eval using multiple sampling and multuple eval seeds (for simple models)\n- `scripts/tune_evaluation_model.py` -- tune hyperparameters of eval model (CatBoost or MLP)\n- `scripts/resample_privacy.py` -- privacy calculation \n- `scripts/restore_table.py` -- restore a compressed dataset back to the original column space using compression_meta.json\n- `scripts/validate_restorer.py` -- round-trip check: compressed arrays → restored CSV → re-encoded arrays\n- `scripts/compute_dcr.py` -- compute DCR-style privacy metric between real and synthetic datasets\n\nComprehensive analysis (`comprehensive_analysis.py`):\n\n- `comprehensive_analysis.py` -- end-to-end evaluation script that generates summary plots and metrics (WD/JS/correlation L2, plus optional TSTR utility via CatBoost) for a given --dataset and --exp directory\n\nExperiments folder (`exp/`):\n- All results and synthetic data are stored in `exp/[ds_name]/[exp_name]/` folder\n- `exp/[ds_name]/config.toml` is a base config for tuning TabDDPM\n- `exp/[ds_name]/eval_[catboost|mlp].json` stores results of evaluation (`scripts/eval_seeds.py`)  \n\nTo understand the structure of `config.toml` file, read `CONFIG_DESCRIPTION.md`.\n\nBaselines:\n- `CTAB-GAN/` --  [official repo](https://github.com/Team-TUD/CTAB-GAN)\n- `CTAB-GAN-Plus/` -- [official repo](https://github.com/Team-TUD/CTAB-GAN-Plus)\n\n### Examples\n<ins>Run LLM Compression </ins>\n\nExample: \n```bash\npython make_dataset_compressed.py --data insurance.csv --schema schema.json --model \"models/gemini-2.5-flash\" --do-split \n```\n\nNeed to pass Google Gemini API key as well otherwise it should be in the ```os.getenv```, if not the program will fail. \n\nExample with API key:\n\n``` bash\npython make_dataset_compressed.py --data insurance.csv --schema schema.json --model \"models/gemini-2.5-flash\" --api-key \"API_KEY_HERE\" --do-split \n```\nSchema.json should be created by user with descriptions of the columns along with the target column. The format should be as such:\n\n```json\n{\n  \"columns\": [\n    {\"name\": \"age\", \"dtype\": \"float\", \"desc\": \"age is a numeric quantity. min=18, max=64\"},\n    {\"name\": \"sex\", \"dtype\": \"categorical\", \"desc\": \"sex is a categorical/text field. examples=['male','female']\"},\n    {\"name\": \"bmi\", \"dtype\": \"float\", \"desc\": \"bmi is a numeric quantity. min=15.96, max=53.13\"},\n    {\"name\": \"children\", \"dtype\": \"float\", \"desc\": \"children is a numeric quantity. min=0, max=5\"},\n    {\"name\": \"smoker\", \"dtype\": \"categorical\", \"desc\": \"smoker is a categorical/text field. examples=['no','yes']\"},\n    {\"name\": \"region\", \"dtype\": \"categorical\", \"desc\": \"region is a categorical/text field. examples=['southeast','southwest','northwest']\"},\n    {\"name\": \"charges\", \"dtype\": \"float\", \"desc\": \"charges is a numeric quantity. min=1121.87, max=63770.42\"}\n  ],\n  \"target\": \"charges\"\n}\n```\n\nIf no schema.json file is provided, then calling the program requires target to be specified as such:\n\n```bash\npython make_dataset_compressed.py --data insurance.csv --target \"charges\" --model \"models/gemini-2.5-flash\" --do-split\n```\n\n<ins>Run TabDDPM tuning.</ins>   \n\nTemplate and example (`--eval_seeds` is optional): \n```bash\npython scripts/tune_ddpm.py [ds_name] [train_size] synthetic [catboost|mlp] [exp_name] --eval_seeds\npython scripts/tune_ddpm.py churn2 6500 synthetic catboost ddpm_tune --eval_seeds\n```\n\n<ins>Run TabDDPM pipeline.</ins>   \n\nTemplate and example  (`--train`, `--sample`, `--eval` are optional): \n```bash\npython scripts/pipeline.py --config [path_to_your_config] --train --sample --eval\npython scripts/pipeline.py --config exp/churn2/ddpm_md4_smart_norm/config.toml --train --sample\n```\nIt takes approximately 7min to run the script above (NVIDIA GeForce RTX 2080 Ti).  \n\n<ins>Run evaluation over seeds</ins>   \nBefore running evaluation, you have to train the model with the given hyperparameters (the example above).  \n\nTemplate and example: \n```bash\npython scripts/eval_seeds.py --config [path_to_your_config] [n_eval_seeds] [ddpm|smote|ctabgan|ctabgan-plus|tvae] synthetic [catboost|mlp] [n_sample_seeds]\npython scripts/eval_seeds.py --config exp/churn2/ddpm_md4_smart_norm/config.toml 10 ddpm synthetic catboost 5\n```\n\n<ins>Run some analysis</ins>\n\nRuns the comprehensive evaluation on an experiment folder, including distribution plots and summary metrics. You can optionally run downstream utility (TSTR) using CatBoost/MLP.\n\nexample:\n```bash\npython comprehensive_analysis.py --dataset adult --exp ddpm_md4_smart_norm  --use-catboost --use-mlp --catboost-task-type CPU --torch-device cuda:0\n```\n\nOutputs (written under `exp/[dataset]/[exp]/`):\n\n- `numeric_distributions.png` — real vs synthetic numeric feature distributions\n- `categorical_distributions.png` — real vs synthetic categorical feature distributions\n- `summary_metrics.csv` — aggregated metrics (e.g., WD/JS/correlation L2, plus utility metrics if enabled)\n- `tstr_results.json` — TSTR utility results (only if --use-catboost and/or --use-mlp is enabled)\n\nTo run DCR evalution, here is an example:\n```bash\npython scripts/compute_dcr.py --dataset adult --exp ddpm_md4_smart_norm\n```\n\n\n<ins>Restore a compressed dataset</ins>\n\nRestores a compressed split (X_num_*, X_cat_*, y_*) back to the original column space using `compression_meta.json` + `feature_split_manifest.json`.\n\nTemplate and example:\n```bash\npython scripts/restore_table.py --meta-dir [meta_dir] --data-dir [compressed_dir] --splits [train|val|test] --output-dir [out_dir]\n\npython scripts/restore_table.py --meta-dir adult_files --data-dir exp/compressed_adult/ddpm_md4_smart_norm --splits train --output-dir restored/compressed_adult_synth\n```\n\nOutputs:\n\n- `[out_dir]/train_restored.csv` (and/or val_restored.csv, test_restored.csv)\n\n\n<ins>Validate the restorer (round-trip check)</ins>\n\nChecks that restoration is consistent by re-encoding the restored CSV back into compressed arrays and comparing with the original .npy files.\n\nTemplate and example:\n\n```bash\npython scripts/validate_restorer.py --meta-dir [meta_dir] --data-dir [compressed_dir] --csv [restored_csv] --split [train|val|test]\n\npython scripts/validate_restorer.py --meta-dir adult_files --data-dir exp/compressed_adult/ddpm_md4_smart_norm --csv restored/compressed_adult_synth/train_restored.csv --split train\n```\n\nOutputs:\n\n- Printed summary in the terminal (e.g., allclose/equal + mismatch counts).\n",
+ "hits": {
+  "tvae": [
+   {
+    "file": "baselines/CTGAN/train_sample_tvae.py",
+    "line": 5,
+    "text": "from CTGAN.ctgan import TVAESynthesizer",
+    "context": [
+     "import lib",
+     "import os",
+     "import numpy as np",
+     "import argparse",
+     "from CTGAN.ctgan import TVAESynthesizer",
+     "from pathlib import Path",
+     "import torch",
+     "import pickle",
+     "import warnings"
+    ]
+   },
+   {
+    "file": "baselines/CTGAN/train_sample_tvae.py",
+    "line": 41,
+    "text": "synthesizer =  TVAESynthesizer(",
+    "context": [
+     "",
+     "    train_params[\"batch_size\"] = min(y_train.shape[0], train_params[\"batch_size\"])",
+     "",
+     "    print(train_params)",
+     "    synthesizer =  TVAESynthesizer( ",
+     "                    **train_params,",
+     "                    device=device",
+     "                ) ",
+     "    "
+    ]
+   },
+   {
+    "file": "baselines/CTGAN/CTGAN/ctgan/__init__.py",
+    "line": 11,
+    "text": "from .synthesizers.tvae import TVAESynthesizer",
+    "context": [
+     "__version__ = '0.5.2.dev0'",
+     "",
+     "from .demo import load_demo",
+     "from .synthesizers.ctgan import CTGANSynthesizer",
+     "from .synthesizers.tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    'CTGANSynthesizer',",
+     "    'TVAESynthesizer',"
+    ]
+   },
+   {
+    "file": "baselines/CTGAN/CTGAN/ctgan/__init__.py",
+    "line": 15,
+    "text": "'TVAESynthesizer',",
+    "context": [
+     "from .synthesizers.tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    'CTGANSynthesizer',",
+     "    'TVAESynthesizer',",
+     "    'load_demo'",
+     ")"
+    ]
+   },
+   {
+    "file": "baselines/CTGAN/CTGAN/ctgan/synthesizers/__init__.py",
+    "line": 4,
+    "text": "from .tvae import TVAESynthesizer",
+    "context": [
+     "\"\"\"Synthesizers module.\"\"\"",
+     "",
+     "from .ctgan import CTGANSynthesizer",
+     "from .tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    'CTGANSynthesizer',",
+     "    'TVAESynthesizer'"
+    ]
+   },
+   {
+    "file": "baselines/CTGAN/CTGAN/ctgan/synthesizers/__init__.py",
+    "line": 8,
+    "text": "'TVAESynthesizer'",
+    "context": [
+     "from .tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    'CTGANSynthesizer',",
+     "    'TVAESynthesizer'",
+     ")",
+     "",
+     "",
+     "def get_all_synthesizers():"
+    ]
+   },
+   {
+    "file": "baselines/CTGAN/CTGAN/ctgan/synthesizers/tvae.py",
+    "line": 1,
+    "text": "\"\"\"TVAESynthesizer module.\"\"\"",
+    "context": [
+     "\"\"\"TVAESynthesizer module.\"\"\"",
+     "",
+     "import numpy as np",
+     "import torch",
+     "from torch.nn import Linear, Module, Parameter, ReLU, Sequential"
+    ]
+   },
+   {
+    "file": "baselines/CTGAN/CTGAN/ctgan/synthesizers/tvae.py",
+    "line": 15,
+    "text": "\"\"\"Encoder for the TVAESynthesizer.",
+    "context": [
+     "from .base import BaseSynthesizer, random_state",
+     "",
+     "",
+     "class Encoder(Module):",
+     "    \"\"\"Encoder for the TVAESynthesizer.",
+     "",
+     "    Args:",
+     "        data_dim (int):",
+     "            Dimensions of the data."
+    ]
+   },
+   {
+    "file": "baselines/CTGAN/CTGAN/ctgan/synthesizers/tvae.py",
+    "line": 51,
+    "text": "\"\"\"Decoder for the TVAESynthesizer.",
+    "context": [
+     "        return mu, std, logvar",
+     "",
+     "",
+     "class Decoder(Module):",
+     "    \"\"\"Decoder for the TVAESynthesizer.",
+     "",
+     "    Args:",
+     "        embedding_dim (int):",
+     "            Size of the input vector."
+    ]
+   },
+   {
+    "file": "baselines/CTGAN/CTGAN/ctgan/synthesizers/tvae.py",
+    "line": 103,
+    "text": "class TVAESynthesizer(BaseSynthesizer):",
+    "context": [
+     "    KLD = -0.5 * torch.sum(1 + logvar - mu**2 - logvar.exp())",
+     "    return sum(loss) * factor / x.size()[0], KLD / x.size()[0]",
+     "",
+     "",
+     "class TVAESynthesizer(BaseSynthesizer):",
+     "    \"\"\"TVAESynthesizer.\"\"\"",
+     "",
+     "    def __init__(",
+     "        self,"
+    ]
+   },
+   {
+    "file": "baselines/CTGAN/CTGAN/ctgan/synthesizers/tvae.py",
+    "line": 104,
+    "text": "\"\"\"TVAESynthesizer.\"\"\"",
+    "context": [
+     "    return sum(loss) * factor / x.size()[0], KLD / x.size()[0]",
+     "",
+     "",
+     "class TVAESynthesizer(BaseSynthesizer):",
+     "    \"\"\"TVAESynthesizer.\"\"\"",
+     "",
+     "    def __init__(",
+     "        self,",
+     "        embedding_dim=128,"
+    ]
+   },
+   {
+    "file": "baselines/CTGAN/CTGAN/tests/unit/synthesizer/test_tvae.py",
+    "line": 1,
+    "text": "\"\"\"TVAESynthesizer unit testing module.\"\"\"",
+    "context": [
+     "\"\"\"TVAESynthesizer unit testing module.\"\"\"",
+     "",
+     "from unittest import TestCase",
+     "",
+     ""
+    ]
+   }
+  ],
+  "ctgan_mod": [
+   {
+    "file": "baselines/CTGAN/CTGAN/README.md",
+    "line": 91,
+    "text": "from ctgan import CTGANSynthesizer",
+    "context": [
+     "In this example we load the [Adult Census Dataset](https://archive.ics.uci.edu/ml/datasets/adult) which is a built-in demo dataset. We then model it using the **CTGANSynthesizer** and generate a synth",
+     "",
+     "",
+     "```python3",
+     "from ctgan import CTGANSynthesizer",
+     "from ctgan import load_demo",
+     "",
+     "data = load_demo()",
+     ""
+    ]
+   },
+   {
+    "file": "baselines/CTGAN/CTGAN/README.md",
+    "line": 92,
+    "text": "from ctgan import load_demo",
+    "context": [
+     "",
+     "",
+     "```python3",
+     "from ctgan import CTGANSynthesizer",
+     "from ctgan import load_demo",
+     "",
+     "data = load_demo()",
+     "",
+     "# Names of the columns that are discrete"
+    ]
+   },
+   {
+    "file": "baselines/CTGAN/CTGAN/ctgan/__main__.py",
+    "line": 5,
+    "text": "from ctgan.data import read_csv, read_tsv, write_tsv",
+    "context": [
+     "\"\"\"CLI.\"\"\"",
+     "",
+     "import argparse",
+     "",
+     "from ctgan.data import read_csv, read_tsv, write_tsv",
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+     "",
+     "",
+     "def _parse_args():"
+    ]
+   },
+   {
+    "file": "baselines/CTGAN/CTGAN/ctgan/__main__.py",
+    "line": 6,
+    "text": "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+    "context": [
+     "",
+     "import argparse",
+     "",
+     "from ctgan.data import read_csv, read_tsv, write_tsv",
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+     "",
+     "",
+     "def _parse_args():",
+     "    parser = argparse.ArgumentParser(description='CTGAN Command Line Interface')"
+    ]
+   },
+   {
+    "file": "baselines/CTGAN/CTGAN/tests/unit/test_data_transformer.py",
+    "line": 9,
+    "text": "from ctgan.data_transformer import ColumnTransformInfo, DataTransformer, SpanInfo",
+    "context": [
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "",
+     "from ctgan.data_transformer import ColumnTransformInfo, DataTransformer, SpanInfo",
+     "",
+     "",
+     "class TestDataTransformer(TestCase):",
+     ""
+    ]
+   },
+   {
+    "file": "baselines/CTGAN/CTGAN/tests/unit/synthesizer/test_ctgan.py",
+    "line": 10,
+    "text": "from ctgan.data_transformer import SpanInfo",
+    "context": [
+     "import pandas as pd",
+     "import pytest",
+     "import torch",
+     "",
+     "from ctgan.data_transformer import SpanInfo",
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer, Discriminator, Generator, Residual",
+     "",
+     "",
+     "class TestDiscriminator(TestCase):"
+    ]
+   },
+   {
+    "file": "baselines/CTGAN/CTGAN/tests/unit/synthesizer/test_ctgan.py",
+    "line": 11,
+    "text": "from ctgan.synthesizers.ctgan import CTGANSynthesizer, Discriminator, Generator, Residual",
+    "context": [
+     "import pytest",
+     "import torch",
+     "",
+     "from ctgan.data_transformer import SpanInfo",
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer, Discriminator, Generator, Residual",
+     "",
+     "",
+     "class TestDiscriminator(TestCase):",
+     ""
+    ]
+   },
+   {
+    "file": "baselines/CTGAN/CTGAN/tests/unit/synthesizer/test_base.py",
+    "line": 9,
+    "text": "from ctgan.synthesizers.base import BaseSynthesizer, random_state",
+    "context": [
+     "",
+     "import numpy as np",
+     "import torch",
+     "",
+     "from ctgan.synthesizers.base import BaseSynthesizer, random_state",
+     "",
+     "",
+     "@patch('ctgan.synthesizers.base.torch')",
+     "@patch('ctgan.synthesizers.base.np.random')"
+    ]
+   },
+   {
+    "file": "baselines/CTGAN/CTGAN/tests/integration/synthesizer/test_ctgan.py",
+    "line": 18,
+    "text": "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "import pytest",
+     "",
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+     "",
+     "",
+     "def test_ctgan_no_categoricals():",
+     "    \"\"\"Test the CTGANSynthesizer with no categorical values.\"\"\""
+    ]
+   },
+   {
+    "file": "baselines/CTGAN/CTGAN/tests/integration/synthesizer/test_tvae.py",
+    "line": 16,
+    "text": "from ctgan.synthesizers.tvae import TVAESynthesizer",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "from sklearn import datasets",
+     "",
+     "from ctgan.synthesizers.tvae import TVAESynthesizer",
+     "",
+     "",
+     "def test_tvae(tmpdir):",
+     "    \"\"\"Test the TVAESynthesizer load/save methods.\"\"\""
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "baselines/CTGAN/CTGAN/README.md",
+    "line": 87,
+    "text": "In this example we load the [Adult Census Dataset](https://archive.ics.uci.edu/ml/datasets/adult) which is a built-in demo dataset. We then model it using the **CTGANSynthesizer** and generate a synthetic copy of it.",
+    "context": [
+     "",
+     "* **Continuous Columns**: can contain any numerical value.",
+     "* **Discrete Columns**: contain a finite number values, whether these are string values or not.",
+     "",
+     "In this example we load the [Adult Census Dataset](https://archive.ics.uci.edu/ml/datasets/adult) which is a built-in demo dataset. We then model it using the **CTGANSynthesizer** and generate a synth",
+     "",
+     "",
+     "```python3",
+     "from ctgan import CTGANSynthesizer"
+    ]
+   },
+   {
+    "file": "baselines/CTGAN/CTGAN/README.md",
+    "line": 91,
+    "text": "from ctgan import CTGANSynthesizer",
+    "context": [
+     "In this example we load the [Adult Census Dataset](https://archive.ics.uci.edu/ml/datasets/adult) which is a built-in demo dataset. We then model it using the **CTGANSynthesizer** and generate a synth",
+     "",
+     "",
+     "```python3",
+     "from ctgan import CTGANSynthesizer",
+     "from ctgan import load_demo",
+     "",
+     "data = load_demo()",
+     ""
+    ]
+   },
+   {
+    "file": "baselines/CTGAN/CTGAN/README.md",
+    "line": 109,
+    "text": "ctgan = CTGANSynthesizer(epochs=10)",
+    "context": [
+     "    'native-country',",
+     "    'income'",
+     "]",
+     "",
+     "ctgan = CTGANSynthesizer(epochs=10)",
+     "ctgan.fit(data, discrete_columns)",
+     "",
+     "# Synthetic copy",
+     "samples = ctgan.sample(1000)"
+    ]
+   },
+   {
+    "file": "baselines/CTGAN/CTGAN/ctgan/__init__.py",
+    "line": 10,
+    "text": "from .synthesizers.ctgan import CTGANSynthesizer",
+    "context": [
+     "__email__ = 'dailabmit@gmail.com'",
+     "__version__ = '0.5.2.dev0'",
+     "",
+     "from .demo import load_demo",
+     "from .synthesizers.ctgan import CTGANSynthesizer",
+     "from .synthesizers.tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    'CTGANSynthesizer',"
+    ]
+   },
+   {
+    "file": "baselines/CTGAN/CTGAN/ctgan/__init__.py",
+    "line": 14,
+    "text": "'CTGANSynthesizer',",
+    "context": [
+     "from .synthesizers.ctgan import CTGANSynthesizer",
+     "from .synthesizers.tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    'CTGANSynthesizer',",
+     "    'TVAESynthesizer',",
+     "    'load_demo'",
+     ")"
+    ]
+   },
+   {
+    "file": "baselines/CTGAN/CTGAN/ctgan/__main__.py",
+    "line": 6,
+    "text": "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+    "context": [
+     "",
+     "import argparse",
+     "",
+     "from ctgan.data import read_csv, read_tsv, write_tsv",
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+     "",
+     "",
+     "def _parse_args():",
+     "    parser = argparse.ArgumentParser(description='CTGAN Command Line Interface')"
+    ]
+   },
+   {
+    "file": "baselines/CTGAN/CTGAN/ctgan/__main__.py",
+    "line": 70,
+    "text": "model = CTGANSynthesizer.load(args.load)",
+    "context": [
+     "    else:",
+     "        data, discrete_columns = read_csv(args.data, args.metadata, args.header, args.discrete)",
+     "",
+     "    if args.load:",
+     "        model = CTGANSynthesizer.load(args.load)",
+     "    else:",
+     "        generator_dim = [int(x) for x in args.generator_dim.split(',')]",
+     "        discriminator_dim = [int(x) for x in args.discriminator_dim.split(',')]",
+     "        model = CTGANSynthesizer("
+    ]
+   },
+   {
+    "file": "baselines/CTGAN/CTGAN/ctgan/__main__.py",
+    "line": 74,
+    "text": "model = CTGANSynthesizer(",
+    "context": [
+     "        model = CTGANSynthesizer.load(args.load)",
+     "    else:",
+     "        generator_dim = [int(x) for x in args.generator_dim.split(',')]",
+     "        discriminator_dim = [int(x) for x in args.discriminator_dim.split(',')]",
+     "        model = CTGANSynthesizer(",
+     "            embedding_dim=args.embedding_dim, generator_dim=generator_dim,",
+     "            discriminator_dim=discriminator_dim, generator_lr=args.generator_lr,",
+     "            generator_decay=args.generator_decay, discriminator_lr=args.discriminator_lr,",
+     "            discriminator_decay=args.discriminator_decay, batch_size=args.batch_size,"
+    ]
+   },
+   {
+    "file": "baselines/CTGAN/CTGAN/ctgan/synthesizers/__init__.py",
+    "line": 3,
+    "text": "from .ctgan import CTGANSynthesizer",
+    "context": [
+     "\"\"\"Synthesizers module.\"\"\"",
+     "",
+     "from .ctgan import CTGANSynthesizer",
+     "from .tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    'CTGANSynthesizer',"
+    ]
+   },
+   {
+    "file": "baselines/CTGAN/CTGAN/ctgan/synthesizers/__init__.py",
+    "line": 7,
+    "text": "'CTGANSynthesizer',",
+    "context": [
+     "from .ctgan import CTGANSynthesizer",
+     "from .tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    'CTGANSynthesizer',",
+     "    'TVAESynthesizer'",
+     ")",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "baselines/CTGAN/CTGAN/ctgan/synthesizers/ctgan.py",
+    "line": 1,
+    "text": "\"\"\"CTGANSynthesizer module.\"\"\"",
+    "context": [
+     "\"\"\"CTGANSynthesizer module.\"\"\"",
+     "",
+     "import warnings",
+     "",
+     "import numpy as np"
+    ]
+   },
+   {
+    "file": "baselines/CTGAN/CTGAN/ctgan/synthesizers/ctgan.py",
+    "line": 18,
+    "text": "\"\"\"Discriminator for the CTGANSynthesizer.\"\"\"",
+    "context": [
+     "from .base import BaseSynthesizer, random_state",
+     "",
+     "",
+     "class Discriminator(Module):",
+     "    \"\"\"Discriminator for the CTGANSynthesizer.\"\"\"",
+     "",
+     "    def __init__(self, input_dim, discriminator_dim, pac=10):",
+     "        super(Discriminator, self).__init__()",
+     "        dim = input_dim * pac"
+    ]
+   }
+  ],
+  "rdt": [
+   {
+    "file": "baselines/CTGAN/CTGAN/ctgan/data_transformer.py",
+    "line": 7,
+    "text": "from rdt.transformers import BayesGMMTransformer, OneHotEncodingTransformer",
+    "context": [
+     "from collections import namedtuple",
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from rdt.transformers import BayesGMMTransformer, OneHotEncodingTransformer",
+     "",
+     "SpanInfo = namedtuple('SpanInfo', ['dim', 'activation_fn'])",
+     "ColumnTransformInfo = namedtuple(",
+     "    'ColumnTransformInfo', ["
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ctgan_mod",
+  "rdt",
+  "tvae"
+ ],
+ "vendored_dirs": [
+  "baselines/CTGAN"
+ ],
+ "dependencies": {
+  "requirements.txt": [
+   "rdt==0.6.4"
+  ],
+  "baselines/CTGAN/CTGAN/setup.py": [
+   "    'rdt>=0.6.2,<0.7',",
+   "            'ctgan=ctgan.__main__:main'",
+   "    keywords='ctgan CTGAN',",
+   "    name='ctgan',",
+   "    packages=find_packages(include=['ctgan', 'ctgan.*']),",
+   "    url='https://github.com/sdv-dev/CTGAN',"
+  ],
+  "baselines/CTGAN/CTGAN/setup.cfg": [
+   "[bumpversion:file:ctgan/__init__.py]",
+   "\tctgan/data.py:T001"
+  ],
+  "baselines/CTGAN/CTGAN/conda/meta.yaml": [
+   "{% set name = 'ctgan' %}",
+   "    - ctgan=ctgan.__main__:main",
+   "    - rdt >=0.6.2,<0.7",
+   "    - rdt >=0.6.2,<0.7",
+   "  home: \"https://github.com/sdv-dev/CTGAN\"",
+   "    - sdv-dev"
+  ]
+ }
+}

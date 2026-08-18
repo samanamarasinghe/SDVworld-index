@@ -1,0 +1,496 @@
+{
+ "repo": "gdiaz95/Synthetic_data_generation",
+ "disk_kb": 540,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "\n# Synthetic Data Generation — NPGC and baselines\n\n[![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org)\n[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)\n\nThis repository provides code to reproduce the experiments presented in the cited paper. For using NPGC as a Python package, see the [NPGC repository](https://github.com/gdiaz95/NPGC).\n\nA compact, reproducible pipeline for training, evaluating, and comparing tabular synthetic data generators (NPGC and several baselines).\n\n## Citation\n\nGabriel Diaz Ramos, Lorenzo Luzi, Debshila Basu Mallick, and Richard Baraniuk. *Stable and Privacy-Preserving Synthetic Educational Data with Empirical Marginals: A Copula-Based Approach*. Proceedings of the 19th International Conference on Educational Data Mining, pp. 267–279. International Educational Data Mining Society, 2026. [PDF](https://educationaldatamining.org/wp-content/uploads/2026/proceedings/2026.EDM.full-papers/2026.EDM.full-papers.119.pdf) | [DOI](https://doi.org/10.5281/zenodo.21040131)\n\nBibTeX:\n\n```bibtex\n@inproceedings{diazramos2026npgc,\n  title={Stable and Privacy-Preserving Synthetic Educational Data with Empirical Marginals: A Copula-Based Approach},\n  author={Diaz Ramos, Gabriel and Luzi, Lorenzo and Basu Mallick, Debshila and Baraniuk, Richard},\n  booktitle={Proceedings of the 19th International Conference on Educational Data Mining},\n  publisher={International Educational Data Mining Society},\n  pages={267--279},\n  year={2026},\n  doi={10.5281/zenodo.21040131}\n}\n```\n\n## Table of contents\n\n- [Quick start](#quick-start)\n- [Repository layout](#repository-layout)\n- [Methods implemented](#methods-implemented)\n- [Datasets](#datasets)\n- [Environment setup](#environment-setup)\n- [Running experiments](#running-experiments)\n- [OpenStax release generation](#openstax-release-generation)\n- [Plotting and aggregation](#plotting-and-aggregation)\n- [Output structure](#output-structure)\n- [Goals](#goals)\n- [Reproducibility notes](#reproducibility-notes)\n- [Funding](#funding)\n\n---\n\n## Quick start\n\nInstall dependencies and run a single test experiment:\n\n```bash\npoetry install\nsource .venv/bin/activate\nprintf \"CUDA_VISIBLE_DEVICES=0\\n\" > .env\npython3 script/gaussian_copula.py --dataset car_evaluation --iterations 1\n```\n\nExample (what to look for): a new run creates `reports/car_evaluation/<method>/1.json` and images under `images/car_evaluation/`.\n\n---\n\n## Repository layout\n\n```text\n.\n├── experiments/\n│   ├── run_all.sh\n│   └── run_npgc_only.sh\n├── script/\n│   ├── CTGAN.py\n│   ├── CopulaGAN.py\n│   ├── Gauss_corr.py\n│   ├── gaussian_copula.py\n│   ├── npgc_script.py\n│   ├── TVAE.py\n│   └── Plot_reports.py\n├── src/\n│   ├── correlator.py\n│   ├── image_plotter.py\n│   ├── loader.py\n│   ├── metrics.py\n│   └── non_parametric.py\n├── pyproject.toml\n└── README.md\n```\n\n---\n\n## Methods implemented\n\nTop-level scripts:\n\n- `script/CTGAN.py`\n- `script/CopulaGAN.py`\n- `script/TVAE.py`\n- `script/gaussian_copula.py`\n- `script/npgc_script.py` (NPGC)\n- `script/Gauss_corr.py` (baseline)\n\nCLI pattern:\n\n```bash\npython3 script/<method>.py --dataset <dataset_name> --iterations <n>\n```\n\n---\n\n## Datasets\n\nDatasets are loaded in `src/loader.py` via `ucimlrepo`.\n\nSupported names: `adults`, `car_evaluation`, `balance_scale`, `nursery`, `student_performance`, `student_dropout_success`.\n\n---\n\n## Environment setup\n\n1) Python environment\n\nThis project uses Poetry (`pyproject.toml` + `poetry.lock`). For reproducible installs:\n\n```bash\npoetry install\n# optionally: source .venv/bin/activate\n```\n\n1) GPU / CPU selection\n\nCreate a `.env` in the repo root, for example:\n\n```env\nCUDA_VISIBLE_DEVICES=0\n# or leave empty for CPU-only\nSDG_MAX_BLAS_THREADS=32\n# Optional safety limit used only if CTGAN/CopulaGAN/TVAE hit a thread-related fit error\n```\n\n---\n\n## Running experiments\n\nRun all configured experiments:\n\n```bash\nbash experiments/run_all.sh\n```\n\nRun only the NPGC method:\n\n```bash\nbash experiments/run_npgc_only.sh\n```\n\nRun a single method manually (example):\n\n```bash\npython3 script/CTGAN.py --dataset adults --iterations 10\n```\n\n---\n\n## OpenStax release generation\n\nGenerates synthetic OpenStax activity data and saves all release files to `Openstax_test_data/`.\n\n**Step 1 — generate data and activity comparison plot:**\n\n```bash\npython3 script/generate_openstax_release.py\n```\n\n**Step 2 — generate aggregated comparison plots:**\n\n```bash\npython3 script/Plot_reports.py\n```\n\nOr run both steps at once:\n\n```bash\nbash experiments/run_openstax_release.sh\n```\n\nOutput written to `Openstax_test_data/`:\n\n- `assignable_original_release.csv` — original activity records (n=1509)\n- `assignable_synthetic_release.csv` — synthetic activity records (n=1982)\n- `orig_activity.csv` / `synth_activity.csv` — TikZ-ready marginal distributions\n- `openstax_activity_comparison.png` — marginal distribution comparison plot\n\n---\n\n## Plotting and aggregation\n\nAggregate and visualize metrics:\n\n```bash\npython3 script/Plot_reports.py\n```\n\nThis reads `reports/` and generates comparison plots under `images/`.\n\n---\n\n## Output structure\n\nPrimary artifacts written during runs:\n\n- `metadata/<dataset>/metadata.json`\n- `models/<dataset>/<method>/<iteration>/synthesizer.pkl`\n- `reports/<dataset>/<method>/<iteration>.json`\n- Per-run plots written by `src/image_plotter.py` under `images/`\n\n`images/` overview (examples):\n\n```text\nimages/\n├── <dataset>/\n│   ├── <method>/\n│   │   └── <iteration>/\n│   │       └── <column>.png\n│   └── metrics/\n│       └── <metric>_comparison.png\n└── report_average_comparison/\n    └── avg_<metric>_comparison.png\n```\n\n- `images/<dataset>/<method>/<iteration>/<column>.png` are univariate histograms for each feature at each iteration.\n- `images/<dataset>/metrics/<metric>_comparison.png` compare the same metric across all methods for that dataset.\n- `images/report_average_comparison/avg_<metric>_comparison.png` show aggregated metric comparisons across all datasets.\n- `adults` includes a special `adults_comparison/` output with per-metric summaries across the 10 iterations.\n\n`reports/` overview:\n\n```text\nreports/\n├── <dataset>/\n│   ├── <method>/\n│   │   └── <iteration>.json\n│   └── report_dataset.json\n└── report_averages/\n    └── report_averages.json\n```\n\n- `reports/<dataset>/<method>/<iteration>.json` contains per-run metrics for that method and iteration.\n- `reports/<dataset>/report_dataset.json` contains average metrics aggregated for that dataset.\n- `reports/report_averages/report_averages.json` contains metrics averaged across all datasets.\n\n---\n\n## Goals\n\n- Generate high-quality synthetic tabular datasets using multiple methods.\n- Measure synthetic quality with SDV diagnostics and QA metrics.\n- Evaluate downstream utility using TSTR (train on synthetic, test on real).\n\nEvaluation outputs per run include SDV quality/diagnostic reports, QA metrics, TSTR scores, and timing information — all saved to `reports/`.\n\n---\n\n## Reproducibility notes\n\n- Scripts set a global seed (`SEED = 42`) and derive per-iteration seeds.\n- Iterative training is used by most methods; iteration `i+1` may depend on synthetic data from iteration `i`.\n- The first iteration typically splits real data into train/holdout for QA evaluation.\n\n---\n\n## Funding\n\nThis research is supported by the National Science Foundation under Award No. 2153481.\n",
+ "hits": {
+  "st": [
+   {
+    "file": "script/CopulaGAN.py",
+    "line": 14,
+    "text": "from sdv.single_table import CopulaGANSynthesizer",
+    "context": [
+     "import os",
+     "import sys",
+     "import time",
+     "from sklearn.model_selection import train_test_split",
+     "from sdv.single_table import CopulaGANSynthesizer",
+     "from xgboost import XGBClassifier",
+     "from sklearn.metrics import accuracy_score",
+     "import argparse",
+     "import random"
+    ]
+   },
+   {
+    "file": "script/CTGAN.py",
+    "line": 8,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "synthetic data using the CTGAN model. It logs training losses and evaluation",
+     "scores to Weights & Biases, allowing runs to be updated.",
+     "\"\"\"",
+     "import os",
+     "from sdv.single_table import CTGANSynthesizer",
+     "import sys",
+     "import time",
+     "from sklearn.model_selection import train_test_split",
+     "from xgboost import XGBClassifier"
+    ]
+   },
+   {
+    "file": "script/gaussian_copula.py",
+    "line": 14,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import os",
+     "import sys",
+     "import time",
+     "from sklearn.model_selection import train_test_split",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from xgboost import XGBClassifier",
+     "from sklearn.metrics import accuracy_score",
+     "import argparse",
+     "import random"
+    ]
+   },
+   {
+    "file": "script/TVAE.py",
+    "line": 15,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import os",
+     "import sys",
+     "import time",
+     "from sklearn.model_selection import train_test_split",
+     "from sdv.single_table import TVAESynthesizer",
+     "from xgboost import XGBClassifier",
+     "from sklearn.metrics import accuracy_score",
+     "import argparse",
+     "import random"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "script/CopulaGAN.py",
+    "line": 14,
+    "text": "from sdv.single_table import CopulaGANSynthesizer",
+    "context": [
+     "import os",
+     "import sys",
+     "import time",
+     "from sklearn.model_selection import train_test_split",
+     "from sdv.single_table import CopulaGANSynthesizer",
+     "from xgboost import XGBClassifier",
+     "from sklearn.metrics import accuracy_score",
+     "import argparse",
+     "import random"
+    ]
+   },
+   {
+    "file": "script/CTGAN.py",
+    "line": 8,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "synthetic data using the CTGAN model. It logs training losses and evaluation",
+     "scores to Weights & Biases, allowing runs to be updated.",
+     "\"\"\"",
+     "import os",
+     "from sdv.single_table import CTGANSynthesizer",
+     "import sys",
+     "import time",
+     "from sklearn.model_selection import train_test_split",
+     "from xgboost import XGBClassifier"
+    ]
+   },
+   {
+    "file": "script/gaussian_copula.py",
+    "line": 14,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import os",
+     "import sys",
+     "import time",
+     "from sklearn.model_selection import train_test_split",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from xgboost import XGBClassifier",
+     "from sklearn.metrics import accuracy_score",
+     "import argparse",
+     "import random"
+    ]
+   },
+   {
+    "file": "script/TVAE.py",
+    "line": 15,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import os",
+     "import sys",
+     "import time",
+     "from sklearn.model_selection import train_test_split",
+     "from sdv.single_table import TVAESynthesizer",
+     "from xgboost import XGBClassifier",
+     "from sklearn.metrics import accuracy_score",
+     "import argparse",
+     "import random"
+    ]
+   },
+   {
+    "file": "src/metrics.py",
+    "line": 10,
+    "text": "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality",
+    "context": [
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.preprocessing import OrdinalEncoder, LabelEncoder",
+     "from sklearn.base import clone",
+     "from sklearn.compose import ColumnTransformer",
+     "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality",
+     "import json",
+     "import warnings",
+     "",
+     "\"\"\"Evaluation helpers for similarity, utility, and report persistence.\"\"\""
+    ]
+   },
+   {
+    "file": "src/loader.py",
+    "line": 7,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import time",
+     "from contextlib import contextmanager",
+     "import pandas as pd",
+     "from ucimlrepo import fetch_ucirepo",
+     "from sdv.metadata import Metadata",
+     "from sdv.utils import load_synthesizer",
+     "",
+     "\"\"\"Utilities for loading datasets and persisting synthesizer artifacts.\"\"\"",
+     ""
+    ]
+   },
+   {
+    "file": "src/loader.py",
+    "line": 8,
+    "text": "from sdv.utils import load_synthesizer",
+    "context": [
+     "from contextlib import contextmanager",
+     "import pandas as pd",
+     "from ucimlrepo import fetch_ucirepo",
+     "from sdv.metadata import Metadata",
+     "from sdv.utils import load_synthesizer",
+     "",
+     "\"\"\"Utilities for loading datasets and persisting synthesizer artifacts.\"\"\"",
+     "",
+     "_THREAD_LIMITED_SYNTHESIZERS = {\"CTGANSynthesizer\", \"CopulaGANSynthesizer\", \"TVAESynthesizer\"}"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "script/generate_openstax_release.py",
+    "line": 10,
+    "text": "from src.non_parametric import NonParamGaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), \"..\"))",
+     "sys.path.insert(0, project_root)",
+     "",
+     "from src.non_parametric import NonParamGaussianCopulaSynthesizer",
+     "",
+     "RELEASE_DIR = os.path.join(project_root, \"Openstax_test_data\")",
+     "os.makedirs(RELEASE_DIR, exist_ok=True)",
+     ""
+    ]
+   },
+   {
+    "file": "script/generate_openstax_release.py",
+    "line": 43,
+    "text": "synth = NonParamGaussianCopulaSynthesizer()",
+    "context": [
+     "",
+     "# --- 2. Generate synthetic data matching paper's sample size ---",
+     "NUM_SYNTHETIC_SAMPLES = 1982",
+     "",
+     "synth = NonParamGaussianCopulaSynthesizer()",
+     "synth.fit(original_df)",
+     "synthetic_df = synth.sample(NUM_SYNTHETIC_SAMPLES)",
+     "",
+     "# --- 3. Validation plot ---"
+    ]
+   },
+   {
+    "file": "script/gaussian_copula.py",
+    "line": 14,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import os",
+     "import sys",
+     "import time",
+     "from sklearn.model_selection import train_test_split",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from xgboost import XGBClassifier",
+     "from sklearn.metrics import accuracy_score",
+     "import argparse",
+     "import random"
+    ]
+   },
+   {
+    "file": "script/gaussian_copula.py",
+    "line": 81,
+    "text": "synthesizer_to_fit = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "            train_data = current_training_data",
+     "        print(f\"Training data shape: {train_data.shape}, Holdout data shape: {holdout_data.shape}\")",
+     "",
+     "        # 1. Load or fit the model",
+     "        synthesizer_to_fit = GaussianCopulaSynthesizer(metadata)",
+     "        np.random.seed(SEED + 1000 + i)",
+     "",
+     "        # Pass it to the new generic function",
+     "        synthesizer, training_time = load_or_train_synthesizer("
+    ]
+   },
+   {
+    "file": "src/non_parametric.py",
+    "line": 17,
+    "text": "__all__ = [\"NonParamGaussianCopulaSynthesizer\"]",
+    "context": [
+     "import pandas as pd",
+     "import os",
+     "from scipy.stats import norm, rankdata",
+     "",
+     "__all__ = [\"NonParamGaussianCopulaSynthesizer\"]",
+     "",
+     "LOGGER = logging.getLogger(__name__)",
+     "",
+     "class NonParamGaussianCopulaSynthesizer:"
+    ]
+   },
+   {
+    "file": "src/non_parametric.py",
+    "line": 21,
+    "text": "class NonParamGaussianCopulaSynthesizer:",
+    "context": [
+     "__all__ = [\"NonParamGaussianCopulaSynthesizer\"]",
+     "",
+     "LOGGER = logging.getLogger(__name__)",
+     "",
+     "class NonParamGaussianCopulaSynthesizer:",
+     "    \"\"\"",
+     "    Custom Gaussian Copula Synthesizer using Empirical CDF for marginals.",
+     "    Structure inspired by SDV's GaussianCopulaSynthesizer but fully self-contained.",
+     "    \"\"\""
+    ]
+   },
+   {
+    "file": "src/non_parametric.py",
+    "line": 24,
+    "text": "Structure inspired by SDV's GaussianCopulaSynthesizer but fully self-contained.",
+    "context": [
+     "",
+     "class NonParamGaussianCopulaSynthesizer:",
+     "    \"\"\"",
+     "    Custom Gaussian Copula Synthesizer using Empirical CDF for marginals.",
+     "    Structure inspired by SDV's GaussianCopulaSynthesizer but fully self-contained.",
+     "    \"\"\"",
+     "    ",
+     "    def __init__(self, enforce_min_max_values=True, epsilon=1.0):",
+     "        self.enforce_min_max_values = enforce_min_max_values"
+    ]
+   },
+   {
+    "file": "src/non_parametric.py",
+    "line": 38,
+    "text": "LOGGER.info(\"Fitting NonParamGaussianCopulaSynthesizer...\")",
+    "context": [
+     "        \"\"\"Fit the model to the table.\"\"\"",
+     "        self._validate_data(data)",
+     "        eps = epsilon if epsilon is not None else self.epsilon",
+     "        LOGGER.info(f\"Fitting with differential privacy epsilon={eps}...\")",
+     "        LOGGER.info(\"Fitting NonParamGaussianCopulaSynthesizer...\")",
+     "        ",
+     "        # 1. Learn Marginals & Transform to Z (The \"Fit\" step)",
+     "        self._model_state = self._learn_distributions_and_correlation(data, epsilon=eps)",
+     "        self._fitted = True"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "script/CTGAN.py",
+    "line": 8,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "synthetic data using the CTGAN model. It logs training losses and evaluation",
+     "scores to Weights & Biases, allowing runs to be updated.",
+     "\"\"\"",
+     "import os",
+     "from sdv.single_table import CTGANSynthesizer",
+     "import sys",
+     "import time",
+     "from sklearn.model_selection import train_test_split",
+     "from xgboost import XGBClassifier"
+    ]
+   },
+   {
+    "file": "script/CTGAN.py",
+    "line": 77,
+    "text": "synthesizer_to_fit = CTGANSynthesizer(metadata, verbose=True)",
+    "context": [
+     "            train_data = current_training_data",
+     "        print(f\"Training data shape: {train_data.shape}, Holdout data shape: {holdout_data.shape}\")",
+     "",
+     "        # 1. Load or train the model (was_trained is ignored in the logging logic)",
+     "        synthesizer_to_fit = CTGANSynthesizer(metadata, verbose=True)",
+     "        torch.manual_seed(SEED + 1000 + i)",
+     "",
+     "        # Pass it to the new generic function",
+     "        synthesizer, training_time = load_or_train_synthesizer("
+    ]
+   },
+   {
+    "file": "src/loader.py",
+    "line": 12,
+    "text": "_THREAD_LIMITED_SYNTHESIZERS = {\"CTGANSynthesizer\", \"CopulaGANSynthesizer\", \"TVAESynthesizer\"}",
+    "context": [
+     "from sdv.utils import load_synthesizer",
+     "",
+     "\"\"\"Utilities for loading datasets and persisting synthesizer artifacts.\"\"\"",
+     "",
+     "_THREAD_LIMITED_SYNTHESIZERS = {\"CTGANSynthesizer\", \"CopulaGANSynthesizer\", \"TVAESynthesizer\"}",
+     "_THREAD_ENV_VARS = (\"OPENBLAS_NUM_THREADS\", \"MKL_NUM_THREADS\", \"OMP_NUM_THREADS\")",
+     "",
+     "",
+     "@contextmanager"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "script/TVAE.py",
+    "line": 15,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import os",
+     "import sys",
+     "import time",
+     "from sklearn.model_selection import train_test_split",
+     "from sdv.single_table import TVAESynthesizer",
+     "from xgboost import XGBClassifier",
+     "from sklearn.metrics import accuracy_score",
+     "import argparse",
+     "import random"
+    ]
+   },
+   {
+    "file": "script/TVAE.py",
+    "line": 87,
+    "text": "synthesizer_to_fit = TVAESynthesizer(metadata)",
+    "context": [
+     "        else:",
+     "            train_data = current_training_data",
+     "        print(f\"Training data shape: {train_data.shape}, Holdout data shape: {holdout_data.shape}\")",
+     "",
+     "        synthesizer_to_fit = TVAESynthesizer(metadata)",
+     "        torch.manual_seed(SEED + 1000 + i)",
+     "        # Pass it to the new generic function",
+     "        synthesizer, training_time = load_or_train_synthesizer(",
+     "            training_data=train_data,"
+    ]
+   },
+   {
+    "file": "src/loader.py",
+    "line": 12,
+    "text": "_THREAD_LIMITED_SYNTHESIZERS = {\"CTGANSynthesizer\", \"CopulaGANSynthesizer\", \"TVAESynthesizer\"}",
+    "context": [
+     "from sdv.utils import load_synthesizer",
+     "",
+     "\"\"\"Utilities for loading datasets and persisting synthesizer artifacts.\"\"\"",
+     "",
+     "_THREAD_LIMITED_SYNTHESIZERS = {\"CTGANSynthesizer\", \"CopulaGANSynthesizer\", \"TVAESynthesizer\"}",
+     "_THREAD_ENV_VARS = (\"OPENBLAS_NUM_THREADS\", \"MKL_NUM_THREADS\", \"OMP_NUM_THREADS\")",
+     "",
+     "",
+     "@contextmanager"
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "src/metrics.py",
+    "line": 10,
+    "text": "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality",
+    "context": [
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.preprocessing import OrdinalEncoder, LabelEncoder",
+     "from sklearn.base import clone",
+     "from sklearn.compose import ColumnTransformer",
+     "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality",
+     "import json",
+     "import warnings",
+     "",
+     "\"\"\"Evaluation helpers for similarity, utility, and report persistence.\"\"\""
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "src/loader.py",
+    "line": 7,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import time",
+     "from contextlib import contextmanager",
+     "import pandas as pd",
+     "from ucimlrepo import fetch_ucirepo",
+     "from sdv.metadata import Metadata",
+     "from sdv.utils import load_synthesizer",
+     "",
+     "\"\"\"Utilities for loading datasets and persisting synthesizer artifacts.\"\"\"",
+     ""
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ev",
+  "gc",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv>=1.27,<2.0",
+   "# Deep learning backend used by CTGAN/TVAE/CopulaGAN"
+  ],
+  "pyproject.toml": [
+   "    \"sdv (>=1.27.0,<2.0.0)\","
+  ],
+  "poetry.lock": [
+   "name = \"copulas\"",
+   "description = \"Create tabular synthetic data using copulas-based modeling.\"",
+   "    {file = \"copulas-0.14.1-py3-none-any.whl\", hash = \"sha256:6f010444385a304274e7587b45f56b860ca38b621529ad0f9bbd4024de91dd1d\"},",
+   "    {file = \"copulas-0.14.1.tar.gz\", hash = \"sha256:adec8f65c98f16816bde5a03e9e7e7b3df91f3fb22ef9fd5023ebba8dd1628c8\"},",
+   "dev = [\"Jinja2 (>=3.1.6,<3.2)\", \"Sphinx (>=7.4.7,<7.5)\", \"alabaster (>=0.7.16,<0.8)\", \"boto3 (>=1.37.18,<1.38)\", \"build (>=1.0.0)\", \"bump-my-version (>=0.18.3)\", \"copulas[test,tutorials]\", \"coverage (>=7.7.1,<7.8)\", \"docutils (>=0.21.2,<0.22)\", \"invoke\", \"lxml-html-clean (>=0.4.1,<0.5)\", \"myst_parser (>=3.0.1,<4.1)\", \"nbsphinx (>=0.9.7,<0.10)\", \"pip (>=9.0.1)\", \"ruff (>=0.3.2,<1)\", \"sphinx_rtd_theme (>=3.0.2,<3.1)\", \"sphinxcontrib-devhelp (>=2.0.0,<2.1)\", \"sphinxcontrib-htmlhelp (>=2.1.0,<2.2)\", \"sphinxcontrib_applehelp (>=2.0.0,<2.1)\", \"sphinxcontrib_qthelp (>=2.0.0,<2.1)\", \"sphinxcontrib_serializinghtml (>=2.0.0,<2.1)\", \"tabulate (>=0.9.0,<0.10)\", \"twine (>=1.10.0)\", \"urllib3 (>=1.26.20,<2.4)\", \"watchdog (>=1.0.1)\", \"wheel (>=0.30.0)\"]",
+   "test = [\"copulas[tutorials]\", \"pytest (>=6.2.5)\", \"pytest-cov (>=2.6.0)\", \"pytest-rerunfailures (>=10.3)\", \"tomli (>=2.0.0)\"]",
+   "name = \"ctgan\"",
+   "    {file = \"ctgan-0.12.1-py3-none-any.whl\", hash = \"sha256:38a3b83432643caa8381c74c49e6a079166efa40f8f6c3b7204db44d6d2c8f18\"},",
+   "    {file = \"ctgan-0.12.1.tar.gz\", hash = \"sha256:e545c2b1a752affba3de2933a5f8037228e837f7a73f5593399b52cfe9611bc7\"},",
+   "rdt = {version = \">=1.14.0\", markers = \"python_version < \\\"3.14\\\"\"}",
+   "dev = [\"build (>=1.0.0,<2)\", \"bump-my-version (>=0.18.3)\", \"coverage (>=4.5.1,<6)\", \"ctgan[test]\", \"invoke\", \"pip (>=9.0.1)\", \"ruff (>=0.4.5,<1)\", \"twine (>=1.10.0)\", \"watchdog (>=1.0.1,<5)\", \"wheel (>=0.30.0)\"]",
+   "name = \"rdt\"",
+   "    {file = \"rdt-1.20.0-py3-none-any.whl\", hash = \"sha256:e239edde36fd2bc1de51c119d93105a074adc8fdd6aa1941fa50af61ccb65dac\"},",
+   "    {file = \"rdt-1.20.0.tar.gz\", hash = \"sha256:2f68e62f1a722cccea8b2ac44cfb2b1ade6e632f54684d84cf6e86c2c5fce773\"},",
+   "copulas = [\"copulas (>=0.12.1) ; python_version < \\\"3.14\\\"\", \"copulas (>=0.14.0) ; python_version >= \\\"3.14\\\"\"]",
+   "dev = [\"build (>=1.0.0,<2)\", \"bump-my-version (>=0.18.3)\", \"coverage (>=4.5.12,<8)\", \"invoke\", \"pip (>=9.0.1)\", \"rdt[test]\", \"ruff (>=0.3.2,<1)\", \"tabulate (>=0.8.9,<1)\", \"twine (>=1.10.0)\", \"watchdog (>=1.0.1,<5)\", \"wheel (>=0.30.0)\"]",
+   "test = [\"jupyter (>=1.0.0,<2)\", \"pytest (>=3.4.2)\", \"pytest-cov (>=2.6.0)\", \"pytest-runner (>=2.11.1)\", \"pytest-subtests (>=0.5,<1.0)\", \"rdt[copulas]\", \"rdt[pyarrow]\", \"tomli (>=2.0.0,<3)\"]",
+   "name = \"sdmetrics\"",
+   "    {file = \"sdmetrics-0.28.0-py3-none-any.whl\", hash = \"sha256:b22dbab90f3b518132c326cf69a91a225c659da6bab146c15af1fe655df3c5a6\"},",
+   "    {file = \"sdmetrics-0.28.0.tar.gz\", hash = \"sha256:1b115e424e911303abde6a31de373678ba3e3d0818ed25c393d34abdc33d5432\"},"
+  ]
+ }
+}

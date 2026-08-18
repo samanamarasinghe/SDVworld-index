@@ -1,0 +1,125 @@
+{
+ "repo": "Niranjan1342/SynGenX",
+ "disk_kb": 173,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# SynGenX\n\n**SynGenX** is an ML-based intelligent synthetic database generation and validation platform.\n\nUpload a CSV dataset, generate privacy-preserving synthetic data (CTGAN), run AutoML, view analytics, and download PDF reports — all from a modern React dashboard.\n\n---\n\n## Architecture\n\n| Component | Tech | Port (default) | Role |\n|-----------|------|----------------|------|\n| **frontend** | React + Vite + Tailwind | `5173` | Dashboard UI |\n| **backend** | Node.js + Express | `4000` | API gateway, Supabase, calls AI engine |\n| **ai_engine** | Python + FastAPI | `8000` | ML: cleaning, analytics, CTGAN, AutoML, PDF |\n| **database** | Supabase | — | PostgreSQL + file storage |\n\n**Data flow**\n\n1. User uploads CSV in the **frontend**\n2. **Backend** saves the file to Supabase Storage and metadata to Postgres\n3. **Backend** calls the **AI engine** for profiling, synthetic data, training, reports\n4. Results are stored in Supabase; the **frontend** reads them via the backend API\n\n---\n\n## Prerequisites\n\nInstall these before you start:\n\n| Tool | Version (recommended) | Check |\n|------|------------------------|-------|\n| **Node.js** | 18+ or 20+ | `node -v` |\n| **npm** | 9+ | `npm -v` |\n| **Python** | 3.10 – 3.12 | `python --version` |\n| **Git** | any | `git --version` |\n\nOptional:\n\n- **Supabase account** (free tier is fine) — [https://supabase.com](https://supabase.com)\n- **Firebase** (optional mirror) — only if you set `FIREBASE_SERVICE_ACCOUNT_JSON` in backend\n\n> **Note (Windows):** First-time `pip install` for the AI engine can take **10–30 minutes** (PyTorch, SDV, XGBoost). The terminal may look “stuck” while downloading — that is normal.\n\n---\n\n## Step 1 — Clone / open the project\n\n```bash\ncd \"path/to/SynGenX .../syngenx\"\n```\n\nAll commands below assume your working directory is the **`syngenx/`** folder (where `frontend/`, `backend/`, and `ai_engine/` live).\n\n---\n\n## Step 2 — Supabase setup (database + storage)\n\n### 2.1 Create a Supabase project\n\n1. Go to [https://supabase.com](https://supabase.com) and sign in.\n2. Click **New project** → choose name, password, region → wait until ready.\n\n### 2.2 Create database tables\n\n1. In Supabase: **SQL** → **New query**\n2. Open this file in the repo: `database/supabase/schema.sql`\n3. Copy all SQL → paste in the editor → **Run**\n\nThis creates: `users`, `datasets`, `analysis_results`, `synthetic_datasets`, `reports`.\n\n### 2.3 Create storage buckets\n\n1. Supabase → **Storage** → **New bucket**\n2. Create three **private** buckets (names must match exactly):\n\n   - `datasets`\n   - `synthetic-datasets`\n   - `reports`\n\n### 2.4 Get API keys\n\n1. Supabase → **Project Settings** → **API**\n2. Copy:\n   - **Project URL** → `SUPABASE_URL`\n   - **anon public** key → `SUPABASE_ANON_KEY`\n   - **service_role** key → `SUPABASE_SERVICE_ROLE_KEY` (backend only — keep secret)\n\nMore detail: [database/supabase/README.md](database/supabase/README.md)\n\n---\n\n## Step 3 — Environment variables\n\n### 3.1 Backend (`backend/.env`)\n\n```bash\ncd backend\ncopy .env.example .env    # Windows\n# cp .env.example .env    # macOS/Linux\n```\n\nEdit `backend/.env`:\n\n```env\nPORT=4000\nNODE_ENV=development\n\nSUPABASE_URL=https://YOUR_PROJECT.supabase.co\nSUPABASE_ANON_KEY=your_anon_key\nSUPABASE_SERVICE_ROLE_KEY=your_service_role_key\n\nSUPABASE_DATASETS_BUCKET=datasets\nSUPABASE_SYNTHETIC_BUCKET=synthetic-datasets\nSUPABASE_REPORTS_BUCKET=reports\n\nAI_ENGINE_URL=http://localhost:8000\nWEB_ORIGIN=http://localhost:5173\n\n# Optional — Firebase Firestore mirror\n# FIREBASE_SERVICE_ACCOUNT_JSON=C:\\path\\to\\firebase-service-account.json\n```\n\n### 3.2 Frontend (`frontend/.env`)\n\n```bash\ncd ../frontend\ncopy .env.example .env\n```\n\nEdit `frontend/.env`:\n\n```env\nVITE_API_BASE_URL=http://localhost:4000/api\n```\n\nThe Vite dev server proxies `/api` to the backend if you omit `VITE_API_BASE_URL`.\n\n### 3.3 AI engine (`ai_engine/.env`) — optional\n\n```bash\ncd ../ai_engine\ncopy .env.example .env\n```\n\nDefaults work for local dev; no Supabase keys required in the AI engine for normal use.\n\n---\n\n## Step 4 — Install dependencies\n\nOpen **three separate terminals** (PowerShell or CMD). Keep each running after you start the service.\n\n### Terminal 1 — AI engine (Python)\n\n```powershell\ncd syngenx\\ai_engine\n\npython -m venv .venv\n.\\.venv\\Scripts\\activate\n\npip install -r requirements.txt\n\nuvicorn app.main:app --reload --host 0.0.0.0 --port 8000\n```\n\n**Success:** you should see:\n\n```text\nINFO:     Uvicorn running on http://0.0.0.0:8000\nINFO:     Application startup complete.\n```\n\n**Test:** open [http://localhost:8000/health](http://localhost:8000/health) → `{\"ok\":true,\"service\":\"syngenx-ai-engine\"}`\n\n> Leave this terminal open. Press `Ctrl+C` to stop.\n\n### Terminal 2 — Backend (Node)\n\n```powershell\ncd syngenx\\backend\n\nnpm install\nnpm run dev\n```\n\n**Success:**\n\n```text\nSynGenX backend listening on http://localhost:4000\n```\n\n**Test:** [http://localhost:4000/health](http://localhost:4000/health) and [http://localhost:4000/api/health](http://localhost:4000/api/health)\n\n### Terminal 3 — Frontend (React)\n\n```powershell\ncd syngenx\\frontend\n\nnpm install\nnpm run dev\n```\n\n**Success:** Vite prints a local URL, usually [http://localhost:5173](http://localhost:5173)\n\n---\n\n## Step 5 — Run the app (end-to-end workflow)\n\n1. Open **http://localhost:5173** in your browser.\n2. Go to **Upload & Generate**:\n   - Upload a `.csv` file\n   - Select a **target column** (required for model training)\n   - Click **Upload to Supabase**\n   - Set **synthetic rows** → **Generate synthetic & train models**\n   - Use **Download Synthetic Dataset** when the button enables\n3. Check other pages (they refresh after upload/training):\n   - **Dashboard** — dataset count, quality score, best model\n   - **Analytics** — quality and statistics\n   - **Model Training** — train on selected dataset\n   - **Model Comparison** — bar chart + metrics table\n   - **Recommendation** — best model\n   - **Reports** — generate and download PDF\n\n---\n\n## Quick reference — URLs\n\n| Service | URL |\n|---------|-----|\n| Frontend | http://localhost:5173 |\n| Backend API | http://localhost:4000/api |\n| Backend health | http://localhost:4000/health |\n| AI engine | http://localhost:8000 |\n| AI health | http://localhost:8000/health |\n\n---\n\n## API endpoints (backend)\n\n| Method | Endpoint | Description |\n|--------|----------|-------------|\n| GET | `/api/health` | API health check |\n| POST | `/api/upload-dataset` | Upload CSV (multipart `file`, optional `targetColumn`) |\n| GET | `/api/datasets` | List datasets |\n| GET | `/api/analytics?datasetId=` | Latest analytics for a dataset |\n| POST | `/api/generate-synthetic-data` | Body: `{ datasetId, rows }` |\n| GET | `/api/download-synthetic?datasetId=` | Signed URL for synthetic CSV |\n| POST | `/api/train-models` | Body: `{ datasetId, nTrials }` |\n| POST | `/api/datasets/:id/report` | Generate PDF report |\n| GET | `/api/download-report?datasetId=` | Signed URL for PDF |\n\n---\n\n## Troubleshooting\n\n### `Supabase is not configured`\n\n- Create `backend/.env` from `.env.example`\n- Set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`\n- Restart backend: `npm run dev`\n\n### Upload fails / storage error\n\n- Confirm buckets `datasets`, `synthetic-datasets`, `reports` exist in Supabase Storage\n- Confirm `schema.sql` was run successfully\n\n### AI engine / pip “stuck”\n\n- Wait for downloads to finish (large packages: `torch`, `sdv`, `xgboost`)\n- Use a stable network; retry: `pip install -r requirements.txt`\n\n### `ModuleNotFoundError: fastapi`\n\n- Activate the venv: `.\\.venv\\Scripts\\activate`\n- Install again inside the venv\n\n### Frontend cannot reach API\n\n- Backend must run on port **4000**\n- Check `VITE_API_BASE_URL=http://localhost:4000/api` in `frontend/.env`\n- Restart frontend after changing `.env`\n\n### Model training fails — “Target column is not set”\n\n- Re-upload the CSV and choose **target column** before training\n- Or upload again with target selected in the Upload page\n\n### Synthetic generation is slow\n\n- CTGAN training is CPU-heavy; small CSVs are faster\n- For demos, try **1000–5000** synthetic rows first\n\n### Reports not generating\n\n- Ensure AI engine is running on port **8000**\n- Ensure dataset was uploaded and analyzed first\n- Check backend terminal for error messages\n\n---\n\n## Project structure\n\n```text\nsyngenx/\n├── frontend/          # React dashboard\n├── backend/           # Express API + Supabase\n├── ai_engine/         # FastAPI ML service\n├── database/\n│   └── supabase/      # schema.sql + setup notes\n├── modules/           # Module documentation\n├── infra/             # docker-compose (optional)\n└── README.md          # This file\n```\n\n---\n\n## Production build (optional)\n\n```powershell\n# Frontend\ncd frontend\nnpm run build\nnpm run preview\n\n# Backend\ncd backend\nnpm start\n\n# AI engine (no reload)\ncd ai_engine\n.\\.venv\\Scripts\\activate\nuvicorn app.main:app --host 0.0.0.0 --port 8000\n```\n\n---\n\n## Further reading\n\n- [AI engine details](ai_engine/README.md)\n- [Supabase schema setup](database/supabase/README.md)\n- [Frontend (Vite)](frontend/README.md)\n\n---\n\n## License\n\nPrivate / academic project — adjust as needed for your submission or deployment.\n",
+ "hits": {
+  "st": [
+   {
+    "file": "ai_engine/app/modules/synthetic.py",
+    "line": 16,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "    Uses SDV (CTGAN). This can be slow; in production this should run async.",
+     "    \"\"\"",
+     "    try:",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "    except Exception as e:  # pragma: no cover",
+     "        raise RuntimeError(",
+     "            \"SDV/CTGAN is not available in this environment. Install 'sdv' (and its dependencies).\"",
+     "        ) from e"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "ai_engine/app/modules/synthetic.py",
+    "line": 15,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    Train CTGAN on a single-table dataset and generate synthetic rows.",
+     "    Uses SDV (CTGAN). This can be slow; in production this should run async.",
+     "    \"\"\"",
+     "    try:",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "    except Exception as e:  # pragma: no cover",
+     "        raise RuntimeError(",
+     "            \"SDV/CTGAN is not available in this environment. Install 'sdv' (and its dependencies).\""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "ai_engine/app/modules/synthetic.py",
+    "line": 15,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    Train CTGAN on a single-table dataset and generate synthetic rows.",
+     "    Uses SDV (CTGAN). This can be slow; in production this should run async.",
+     "    \"\"\"",
+     "    try:",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "    except Exception as e:  # pragma: no cover",
+     "        raise RuntimeError(",
+     "            \"SDV/CTGAN is not available in this environment. Install 'sdv' (and its dependencies).\""
+    ]
+   },
+   {
+    "file": "ai_engine/app/modules/synthetic.py",
+    "line": 16,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "    Uses SDV (CTGAN). This can be slow; in production this should run async.",
+     "    \"\"\"",
+     "    try:",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "    except Exception as e:  # pragma: no cover",
+     "        raise RuntimeError(",
+     "            \"SDV/CTGAN is not available in this environment. Install 'sdv' (and its dependencies).\"",
+     "        ) from e"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "ai_engine/app/modules/synthetic.py",
+    "line": 16,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "    Uses SDV (CTGAN). This can be slow; in production this should run async.",
+     "    \"\"\"",
+     "    try:",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "    except Exception as e:  # pragma: no cover",
+     "        raise RuntimeError(",
+     "            \"SDV/CTGAN is not available in this environment. Install 'sdv' (and its dependencies).\"",
+     "        ) from e"
+    ]
+   },
+   {
+    "file": "ai_engine/app/modules/synthetic.py",
+    "line": 25,
+    "text": "synth = CTGANSynthesizer(metadata, enforce_min_max_values=True, enforce_rounding=False)",
+    "context": [
+     "",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(data=df)",
+     "",
+     "    synth = CTGANSynthesizer(metadata, enforce_min_max_values=True, enforce_rounding=False)",
+     "    synth.fit(df)",
+     "    sampled = synth.sample(num_rows=int(rows))",
+     "",
+     "    meta = {"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "ai_engine/requirements.txt": [
+   "sdv"
+  ]
+ }
+}

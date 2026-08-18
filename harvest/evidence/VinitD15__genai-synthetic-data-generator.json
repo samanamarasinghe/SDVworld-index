@@ -1,0 +1,339 @@
+{
+ "repo": "VinitD15/genai-synthetic-data-generator",
+ "disk_kb": 458,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# GenData — AI-Powered Synthetic Data Generation\n\nA full-stack platform that generates realistic, privacy-safe synthetic datasets for ML training, analytics, testing, and research — across healthcare, finance, agriculture, cybersecurity, e-commerce, and more.\n\nInstead of generating generic fake rows, GenData either **extracts real structure from your own documents** (PDFs, reports, images, invoices, CSVs) and generates synthetic data that mirrors it, or lets you **describe a dataset in plain English** and turns that prompt into a full schema and dataset — with privacy checks and quality scoring built in.\n\nBuilt with **Next.js** on the frontend and **FastAPI (Python)** on the backend.\n\n---\n\n## Features\n\n### Two Ways to Generate Data\n- **Extraction-based generation** — upload a PDF, invoice, medical report, image, or CSV; the system extracts structure and content, then generates a synthetic dataset that mirrors the real patterns without exposing the original data.\n- **Prompt/schema-based generation** — describe what you want in natural language, pick a template, or define a schema directly; an LLM converts the prompt into a structured generation spec (columns, types, constraints) before generating rows.\n\n### Domain-Aware Generation (7 domains)\nHealthcare, finance, agriculture, cybersecurity, e-commerce, text analytics, and general ML tabular/text datasets — each with its own schema definitions, formatters, and post-processing rules (e.g. finance transactions get realistic amount distributions, healthcare gets clinically-consistent lab values).\n\n### Hybrid Generation Engine\nRather than relying on one method, generation blends three approaches depending on the domain and data available:\n- **LLM-based row generation** (Groq-hosted Llama models) for realistic, context-aware content\n- **SDV (Synthetic Data Vault)** — statistical/generative modeling learned from a reference dataset, with domain-specific post-processing for finance, healthcare, e-commerce, cybersecurity, and ML data\n- **Rule engine + Faker**, including a locale-aware generator for realistic **Indian names, phone numbers, cities, and addresses** — plus a correlated-field generator so related columns (e.g. age ↔ occupation) stay logically consistent\n- A **reference-data learner** that auto-detects the domain of an uploaded CSV and learns its statistical patterns to extend into new synthetic rows\n\n### Real Computer-Vision & Medical AI (not just LLM wrappers)\n- **Plant disease detection** — a locally-run EfficientNet-B3 model (trained on PlantVillage, 38 disease classes) analyzes crop images and returns a diagnosis plus treatment recommendations, for agriculture-domain extraction.\n- **Chest X-ray / medical image analysis** — TorchXRayVision (DenseNet-121) classifies pathologies from medical images; the model is pre-warmed at server startup so the first real request isn't slow.\n- **Healthcare OCR + RAG** — a dedicated document extractor pulls text from medical reports/scans, chunks it, and retrieves relevant context to ground diagnosis verification and risk assessment.\n- **Medical risk engine** — assesses extracted lab values/entities and flags risk levels.\n\n### AI Prompt Intelligence\n- Prompt-to-schema conversion with domain auto-detection\n- Dynamic schema inference from natural language\n- A dedicated \"generate/prompt/v2\" flow that also accepts file uploads alongside a prompt\n\n### Validation, Privacy & Quality\n- **PII detection** via Microsoft Presidio (with an automatic regex-based fallback if Presidio/spaCy isn't available), so sensitive data never leaks into \"synthetic\" output\n- Responsible-AI checks and dataset quality scoring (a dedicated metrics engine + quality report)\n- Schema and row-count validation against the generation spec\n- A `/verify-diagnosis` endpoint for validating AI-generated healthcare diagnoses\n\n### Auth, Export & Dashboard\n- **Clerk-based authentication** (JWT verification via JWKS) protecting API access, with a dev-mode bypass flag for local testing\n- Dataset export to CSV, Excel, and JSON, plus PDF report generation for healthcare and agriculture datasets\n- An overview dashboard tracking recent datasets, recent activity, usage stats, and available templates\n\n### Reliability\n- **3-tier LLM fallback**: Groq (fast hosted inference) → local Ollama models, so generation keeps working if the hosted API is rate-limited or down\n- Rate limiting via SlowAPI to protect the backend from abuse\n\n---\n\n## Architecture\n\n```\nUser\n │\n ▼\nFrontend (Next.js) — Login/Sign-up, Dashboard, File Upload, Reports, Exports\n │  HTTP/JSON\n ▼\nAuthentication Layer — Clerk JWT verification, role access\n │\n ▼\nFastAPI Backend — API routes, business services, request validation\n │\n ├── Extractors ──────── OCR · Vision analysis (plant disease, X-ray) · Document parsing\n ├── Prompt Engine ────── Domain detection · Schema building · Prompt formatting\n └── Generation Engine ── LLM generation · SDV · Faker · Rule engine\n        │\n        ▼\n   LLM Client — Groq (text + vision) · Ollama fallback · TorchXRayVision (DenseNet)\n        │\n        ▼\n   Validation, Quality & Privacy Layer — Schema check · Row-count check · Quality score · PII scan (Presidio)\n        │\n        ▼\n   Database & File Storage — Users · Sessions · Uploaded files · Generated datasets\n        │\n        ▼\n   Output — Dashboard view · CSV/Excel/JSON export · PDF reports\n```\n\n---\n\n## Tech Stack\n\n**Frontend**\n- Next.js 14 / React 18, Tailwind CSS\n- `@clerk/nextjs` for authentication\n- `@tanstack/react-table` for dataset previews\n- `xlsx` for client-side spreadsheet handling\n\n**Backend**\n- FastAPI + Uvicorn, SlowAPI for rate limiting\n- Groq API (Llama models, text + vision) with local Ollama fallback\n- SDV (Synthetic Data Vault) + Faker for statistical/rule-based generation\n- Presidio (analyzer + anonymizer) + spaCy for PII detection, with regex fallback\n- PyTorch, torchvision, timm — EfficientNet-B3 for plant disease classification\n- TorchXRayVision — DenseNet-121 for medical image pathology analysis\n- PyMuPDF, pdfminer.six, pdfplumber, pytesseract, pdf2image — document/OCR extraction\n- python-docx, python-pptx, openpyxl — multi-format file parsing\n- ReportLab — PDF report generation\n- PyJWT + cryptography + bcrypt — auth/token handling\n\n---\n\n## Getting Started\n\n### Frontend\n```bash\ncd frontend\nnpm install\nnpm run dev\n```\nOpen [http://localhost:3000](http://localhost:3000). You'll need Clerk API keys in `frontend/.env.local` (`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`).\n\n### Backend\n```bash\ncd backend\npip install -r requirements.txt\npython run.py\n```\n- Swagger UI: [http://localhost:8000/docs](http://localhost:8000/docs)\n- Set `GROQ_API_KEY` in `backend/.env` (and optionally point to a local Ollama instance as fallback)\n- For local dev without Clerk configured, set `APP_ENV=development` and `ALLOW_DEV_AUTH_BYPASS=true`\n\nFirst run will download the EfficientNet-B3 and TorchXRayVision model weights automatically (via `timm`/`torchxrayvision`).\n\n---\n\n## Key API Endpoints\n\n| Endpoint | Description |\n|---|---|\n| `POST /api/extract` | Upload and extract structured data from a file |\n| `POST /api/extract/agriculture/bulk` | Bulk agriculture image extraction (plant disease detection) |\n| `POST /api/generate` | Generate a synthetic dataset from an extraction session |\n| `POST /api/generate/prompt/v2` | Generate a dataset from a natural-language prompt |\n| `POST /api/generate/prompt/v2/upload` | Prompt + file upload combined generation |\n| `POST /api/generate/prompt/excel` \\| `/csv` | Generate and export directly to Excel/CSV |\n| `POST /verify-diagnosis` | Validate an AI-generated healthcare diagnosis |\n| `POST /api/evaluate` | Evaluate dataset quality |\n| `GET /api/datasets/` | List generated datasets |\n| `GET /api/export/{dataset_id}` | Export a dataset |\n| `DELETE /api/datasets/{dataset_id}` | Delete a dataset |\n| `GET /api/overview/stats` \\| `/recent-datasets` \\| `/recent-activities` \\| `/templates` | Dashboard analytics |\n| `GET /health` | Health check |\n\n---\n\n## Project Structure\n\n```\n├── frontend/                      # Next.js app (Clerk auth, dashboard, extraction UI, exports)\n├── backend/\n│   ├── run.py                      # Entry point (uvicorn)\n│   ├── app/\n│   │   ├── main.py                 # FastAPI app + route registration\n│   │   ├── auth.py                 # Clerk JWT verification\n│   │   ├── generator.py            # Core generation orchestration\n│   │   ├── reference_data_learner.py\n│   │   ├── rule_engine.py          # Rule-based generation logic\n│   │   ├── privacy.py              # Presidio-based PII detection\n│   │   ├── correlated_generator.py # Locale-aware, correlated field generation\n│   │   ├── engines/                # SDV, hybrid, EfficientNet, quality/metrics engines\n│   │   ├── healthcare/             # OCR, RAG, risk engine, PDF export for medical data\n│   │   └── routes/                 # extract, generate, generate_v2, export, overview, verify\n│   ├── extractors/                 # Domain-specific extractors (agriculture, finance, healthcare, text)\n│   ├── pdf_reports/                 # Standalone PDF report builders\n│   └── tests/                       # Backend test suite\n```\n\n---\n\n## Known Limitations\n\n- Session data is stored in memory and doesn't persist across restarts without a full database setup.\n- Depends on external AI APIs (Groq) — performance and availability vary with API rate limits and network latency.\n- Healthcare workflows (OCR + vision + RAG) are more resource-intensive and slower than tabular generation.\n- Deployment\n- Large file uploads and dataset generation increase CPU/memory usage significantly.\n\n## Future Enhancements\n\n- Support for additional LLM providers (GPT, Claude, Gemini) for model redundancy\n- Full cloud-based architecture for scalability\n- Domain-specific model upgrades for agriculture and healthcare extraction accuracy\n",
+ "hits": {
+  "st": [
+   {
+    "file": "backend/app/generator.py",
+    "line": 2046,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "",
+     "def _generate_with_sdv(reference_df: pd.DataFrame, n_rows: int) -> pd.DataFrame:",
+     "\tfrom sdv.metadata import SingleTableMetadata",
+     "\tfrom sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "\tmetadata = SingleTableMetadata()",
+     "\tmetadata.detect_from_dataframe(reference_df)",
+     ""
+    ]
+   },
+   {
+    "file": "backend/app/engines/sdv_config.py",
+    "line": 14,
+    "text": "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, TVAESynthesizer",
+    "context": [
+     "logger = logging.getLogger(__name__)",
+     "",
+     "try:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, TVAESynthesizer",
+     "",
+     "    HAS_SDV = True",
+     "except Exception:  # pragma: no cover",
+     "    SingleTableMetadata = object  # type: ignore"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "backend/app/generator.py",
+    "line": 2045,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "\treturn result",
+     "",
+     "",
+     "def _generate_with_sdv(reference_df: pd.DataFrame, n_rows: int) -> pd.DataFrame:",
+     "\tfrom sdv.metadata import SingleTableMetadata",
+     "\tfrom sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "\tmetadata = SingleTableMetadata()",
+     "\tmetadata.detect_from_dataframe(reference_df)"
+    ]
+   },
+   {
+    "file": "backend/app/engines/sdv_config.py",
+    "line": 13,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "logger = logging.getLogger(__name__)",
+     "",
+     "try:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, TVAESynthesizer",
+     "",
+     "    HAS_SDV = True",
+     "except Exception:  # pragma: no cover"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "backend/app/generator.py",
+    "line": 2045,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "\treturn result",
+     "",
+     "",
+     "def _generate_with_sdv(reference_df: pd.DataFrame, n_rows: int) -> pd.DataFrame:",
+     "\tfrom sdv.metadata import SingleTableMetadata",
+     "\tfrom sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "\tmetadata = SingleTableMetadata()",
+     "\tmetadata.detect_from_dataframe(reference_df)"
+    ]
+   },
+   {
+    "file": "backend/app/generator.py",
+    "line": 2046,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "",
+     "def _generate_with_sdv(reference_df: pd.DataFrame, n_rows: int) -> pd.DataFrame:",
+     "\tfrom sdv.metadata import SingleTableMetadata",
+     "\tfrom sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "\tmetadata = SingleTableMetadata()",
+     "\tmetadata.detect_from_dataframe(reference_df)",
+     ""
+    ]
+   },
+   {
+    "file": "backend/app/engines/sdv_config.py",
+    "line": 13,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "logger = logging.getLogger(__name__)",
+     "",
+     "try:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, TVAESynthesizer",
+     "",
+     "    HAS_SDV = True",
+     "except Exception:  # pragma: no cover"
+    ]
+   },
+   {
+    "file": "backend/app/engines/sdv_config.py",
+    "line": 14,
+    "text": "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, TVAESynthesizer",
+    "context": [
+     "logger = logging.getLogger(__name__)",
+     "",
+     "try:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, TVAESynthesizer",
+     "",
+     "    HAS_SDV = True",
+     "except Exception:  # pragma: no cover",
+     "    SingleTableMetadata = object  # type: ignore"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "backend/app/generator.py",
+    "line": 2046,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "",
+     "def _generate_with_sdv(reference_df: pd.DataFrame, n_rows: int) -> pd.DataFrame:",
+     "\tfrom sdv.metadata import SingleTableMetadata",
+     "\tfrom sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "\tmetadata = SingleTableMetadata()",
+     "\tmetadata.detect_from_dataframe(reference_df)",
+     ""
+    ]
+   },
+   {
+    "file": "backend/app/generator.py",
+    "line": 2051,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "",
+     "\tmetadata = SingleTableMetadata()",
+     "\tmetadata.detect_from_dataframe(reference_df)",
+     "",
+     "\tsynthesizer = GaussianCopulaSynthesizer(metadata)",
+     "\tsynthesizer.fit(reference_df)",
+     "\treturn synthesizer.sample(num_rows=n_rows)",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "backend/app/engines/sdv_config.py",
+    "line": 14,
+    "text": "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, TVAESynthesizer",
+    "context": [
+     "logger = logging.getLogger(__name__)",
+     "",
+     "try:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, TVAESynthesizer",
+     "",
+     "    HAS_SDV = True",
+     "except Exception:  # pragma: no cover",
+     "    SingleTableMetadata = object  # type: ignore"
+    ]
+   },
+   {
+    "file": "backend/app/engines/sdv_config.py",
+    "line": 20,
+    "text": "GaussianCopulaSynthesizer = object  # type: ignore",
+    "context": [
+     "    HAS_SDV = True",
+     "except Exception:  # pragma: no cover",
+     "    SingleTableMetadata = object  # type: ignore",
+     "    CTGANSynthesizer = object  # type: ignore",
+     "    GaussianCopulaSynthesizer = object  # type: ignore",
+     "    TVAESynthesizer = object  # type: ignore",
+     "    HAS_SDV = False",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "backend/app/engines/sdv_config.py",
+    "line": 106,
+    "text": "return GaussianCopulaSynthesizer(",
+    "context": [
+     "                batch_size=500,",
+     "                enforce_rounding=True,",
+     "            )",
+     "",
+     "        return GaussianCopulaSynthesizer(",
+     "            metadata,",
+     "            enforce_min_max_values=True,",
+     "            enforce_rounding=True,",
+     "        )"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "backend/app/engines/sdv_config.py",
+    "line": 14,
+    "text": "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, TVAESynthesizer",
+    "context": [
+     "logger = logging.getLogger(__name__)",
+     "",
+     "try:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, TVAESynthesizer",
+     "",
+     "    HAS_SDV = True",
+     "except Exception:  # pragma: no cover",
+     "    SingleTableMetadata = object  # type: ignore"
+    ]
+   },
+   {
+    "file": "backend/app/engines/sdv_config.py",
+    "line": 19,
+    "text": "CTGANSynthesizer = object  # type: ignore",
+    "context": [
+     "",
+     "    HAS_SDV = True",
+     "except Exception:  # pragma: no cover",
+     "    SingleTableMetadata = object  # type: ignore",
+     "    CTGANSynthesizer = object  # type: ignore",
+     "    GaussianCopulaSynthesizer = object  # type: ignore",
+     "    TVAESynthesizer = object  # type: ignore",
+     "    HAS_SDV = False",
+     ""
+    ]
+   },
+   {
+    "file": "backend/app/engines/sdv_config.py",
+    "line": 91,
+    "text": "return CTGANSynthesizer(",
+    "context": [
+     "        metadata = self.detect_metadata(df)",
+     "        choice = self.choose_synthesizer(df)",
+     "",
+     "        if choice == \"ctgan\":",
+     "            return CTGANSynthesizer(",
+     "                metadata,",
+     "                epochs=200,",
+     "                batch_size=500,",
+     "                enforce_rounding=True,"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "backend/app/engines/sdv_config.py",
+    "line": 14,
+    "text": "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, TVAESynthesizer",
+    "context": [
+     "logger = logging.getLogger(__name__)",
+     "",
+     "try:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, TVAESynthesizer",
+     "",
+     "    HAS_SDV = True",
+     "except Exception:  # pragma: no cover",
+     "    SingleTableMetadata = object  # type: ignore"
+    ]
+   },
+   {
+    "file": "backend/app/engines/sdv_config.py",
+    "line": 21,
+    "text": "TVAESynthesizer = object  # type: ignore",
+    "context": [
+     "except Exception:  # pragma: no cover",
+     "    SingleTableMetadata = object  # type: ignore",
+     "    CTGANSynthesizer = object  # type: ignore",
+     "    GaussianCopulaSynthesizer = object  # type: ignore",
+     "    TVAESynthesizer = object  # type: ignore",
+     "    HAS_SDV = False",
+     "",
+     "",
+     "@dataclass"
+    ]
+   },
+   {
+    "file": "backend/app/engines/sdv_config.py",
+    "line": 99,
+    "text": "return TVAESynthesizer(",
+    "context": [
+     "                enforce_rounding=True,",
+     "            )",
+     "",
+     "        if choice == \"tvae\":",
+     "            return TVAESynthesizer(",
+     "                metadata,",
+     "                epochs=200,",
+     "                batch_size=500,",
+     "                enforce_rounding=True,"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "gc",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "backend/requirements.txt": [
+   "sdv==1.14.0"
+  ]
+ }
+}

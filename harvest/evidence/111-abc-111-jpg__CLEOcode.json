@@ -1,0 +1,314 @@
+{
+ "repo": "111-abc-111-jpg/CLEOcode",
+ "disk_kb": 12966,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# CLEO: Reinforcement Learning-Optimized Synthetic Data Generation\n\n## Overview\n\nCLEO  is a novel synthetic data generation framework that leverages Reinforcement Learning (RL) to optimize Gaussian Mixture Model (GMM) hyperparameters. The framework generates high-quality synthetic data that maintains both statistical fidelity to the original data and utility for downstream machine learning tasks, while ensuring strong privacy protection.\n\n**Application Domain**: CLEO is particularly designed for medical privacy data synthesis, addressing the critical need for privacy-preserving data sharing in healthcare research while maintaining data utility for clinical decision support and research applications.\n\n## Quick Start\n\nHere are the main commands to get started:\n\n```bash\n# Generate synthetic data using CLEO\npython main_rl_optimization.py\n\n# Evaluate synthetic data (Fidelity & Utility)\npython -m evaluator.independent_evaluator\n\n# Evaluate privacy protection\npython privacy.py\n\n# Evaluate downstream task performance\npython downstream.py\n\n# Compare with baseline models\npython compare_all_models.py\n\n# Run ablation experiments\npython ablation_evaluate.py\n```\n\n## Key Features\n\n- **Reinforcement Learning Optimization**: Uses Q-Learning to automatically discover optimal GMM hyperparameters without manual tuning\n- **Triple Evaluation Framework**: Comprehensive assessment through fidelity (statistical similarity), utility (downstream task performance), and privacy (data protection)\n- **Medical Data Focus**: Specifically designed for healthcare/medical data with support for mixed-type features (continuous and categorical)\n- **Data Preprocessing**: Includes domain-driven denoising and cleaning modules to improve data quality\n- **Feedback Mechanisms**: Incorporates feedback loops to refine the optimization process iteratively\n- **Privacy Protection**: Evaluates privacy risks using DCR and NNAA metrics to prevent sensitive data leakage\n- **Downstream Task Evaluation**: Benchmarks synthetic data using tree-based models (RF, XGBoost, GBDT) with 5-fold cross-validation for robust assessment\n- **Comprehensive Evaluation**: Supports comparison with baseline methods (TVAE, Copula, CTGAN) for benchmarking\n\n## Project Structure\n\n```\n.\n├── rl_agent/              # Reinforcement Learning optimization module\n│   ├── main_rl_optimization.py    # Main RL optimization script\n│   ├── rl_optimizer.py            # RL optimizer implementation\n│   └── q_learning_agent.py        # Q-Learning agent\n├── evaluator/             # Evaluation modules\n│   ├── independent_evaluator.py  # Main evaluation framework\n│   ├── fidelity_evaluator.py      # Statistical fidelity metrics\n│   └── utility_evaluator_2.py     # Downstream task utility metrics\n├── ablation/              # Ablation study components\n│   ├── ablation_runner.py         # Ablation experiment runner\n│   \n├── visualization/         # Visualization tools\n├── privacy.py             # Privacy evaluation module (DCR & NNAA)\n├── downstream.py          # Downstream task evaluation (Tree models)\n├── compare_all_models.py  # Model comparison script\n├── ablation_evaluate.py       # Ablation evaluation\n└── results/               # Output files and reports\n```\n\n## Installation\n\n### Prerequisites\n\n- Python 3.9+\n- Required packages:\n  - pandas\n  - numpy\n  - scikit-learn\n  - scipy\n  - matplotlib\n  - seaborn\n\n### Setup\n\n1.Install dependencies:\n\n```bash\npip install -r requirements.txt\n```\n\n2.Prepare your data:\n- Place your training data as `train.csv`\n- Place your test data as `test.csv`\n- Ensure data files are in CSV format with appropriate encoding (GBK or UTF-8)\n\n## Usage\n\n### 1. Generate Synthetic Data with CLEO\n\nUse the RL optimization module to generate synthetic data:\n\n```bash\npython main_rl_optimization.py\n```\n\n**Note**: If running from the root directory, you may need to use:\n```bash\npython rl_agent/main_rl_optimization.py\n```\n\nThis command will:\n- Initialize the RL optimizer with your training and test data\n- Run Q-Learning optimization for 30 episodes to find optimal GMM hyperparameters\n- Generate synthetic data matching the size of your training set\n- Save the optimized synthetic data to `synthetic_data_gmm_optimized.csv`\n- Save the trained RL agent to `results/rl_optimizer_agent.pkl`\n\n### 2. Evaluate Synthetic Data\n\nEvaluate the quality of generated synthetic data using the independent evaluator:\n\n```bash\npython -m evaluator.independent_evaluator\n```\n\nThis evaluation includes:\n- **Fidelity Metrics**: Total Variation Distance (TVD), Kolmogorov-Smirnov (KS) test, Jensen-Shannon (JS) divergence, and correlation preservation\n- **Utility Metrics**: Train-on-Synthetic-Test-on-Real (TSTR) performance compared to baseline\n- **Combined Score**: Weighted combination of fidelity and utility scores\n\nResults are saved to `results/evaluation_report.txt`.\n\n### 3. Evaluate Privacy Protection\n\nAssess the privacy protection capabilities of the generated synthetic data:\n\n```bash\npython privacy.py\n```\n\nThis evaluation includes:\n- **DCR (Distance to Closest Record)**: Measures the minimum Euclidean distance from each synthetic record to the nearest real record. Higher distances indicate better privacy protection.\n- **NNAA (Nearest Neighbor Adversarial Accuracy)**: Simulates an adversary attack using 1-NN classifier. A score close to 0.5 (random guess) indicates good privacy protection.\n- **Exact Match Detection**: Counts the number of synthetic records that exactly match real records (privacy leakage).\n\nResults include:\n- Average DCR distance\n- Number of exact matches (privacy leaks)\n- NNAA score with privacy risk assessment\n- Visualization saved to `Figure_Privacy_DCR.png`\n\n**Privacy Assessment Criteria**:\n- **Good Privacy**: DCR > 0, NNAA ≈ 0.5 (0.45-0.55), Zero exact matches\n- **Privacy Risk**: NNAA > 0.6 or presence of exact matches\n\n### 4. Evaluate Downstream Task Performance\n\nBenchmark the synthetic data using tree-based machine learning models:\n\n```bash\npython downstream.py\n```\n\nThis evaluation:\n- Uses **5-fold stratified cross-validation** for robust assessment\n- Compares **TSTR (Train on Synthetic, Test on Real)** vs **TRTR (Train on Real, Test on Real)**\n- Evaluates three tree-based models:\n  - **Random Forest**: Ensemble of decision trees\n  - **Gradient Boosting (GBDT)**: Sequential boosting model\n  - **XGBoost**: Optimized gradient boosting framework\n- Reports **AUC scores** and performance gap between synthetic and real data\n\nResults are saved to `results/final_table3_tree.csv` with:\n- Real data AUC (baseline)\n- CLEO synthetic data AUC\n- Performance gap percentage\n\n**Performance Interpretation**:\n- **Gap < 5%**: Excellent utility preservation\n- **Gap 5-10%**: Good utility preservation\n- **Gap > 10%**: May require further optimization\n\n### 5. Compare with Baseline Models\n\nCompare CLEO against other synthetic data generation methods:\n\n```bash\npython compare_all_models.py\n```\n\nThis script evaluates:\n- **CLEO (Ours)**: Our proposed method\n- **TVAE**: Tabular Variational Autoencoder\n- **Copula**: Copula-based generation\n- **CTGAN**: Conditional Tabular GAN\n\nThe comparison results are saved to `results/final_comparison_table.csv`.\n\n### 6. Run Ablation Studies\n\nPerform ablation experiments to analyze the contribution of each component:\n\n```bash\npython main_ablation_run.py\n```\n\n**Note**: If the script is not found in the root directory, use:\n```bash\npython ablation/ablation_runner.py\n```\n\nThe ablation study evaluates:\n- **CLEO-Full**: Complete system with all components\n- **w/o Clean**: Without data preprocessing\n- **w/o RL**: Without reinforcement learning optimization\n- **w/o Feedback**: Without feedback mechanisms\n\nResults demonstrate the contribution of each component to the overall performance.\n\n## Evaluation Metrics\n\nCLEO employs a comprehensive three-dimensional evaluation framework:\n\n### 1. Fidelity Metrics (Statistical Similarity)\n\nMeasures how well synthetic data preserves the statistical properties of real data:\n\n- **TVD (Total Variation Distance)**: Measures distributional differences between real and synthetic data\n- **KS (Kolmogorov-Smirnov)**: Tests statistical similarity for continuous variables\n- **JS (Jensen-Shannon Divergence)**: Quantifies distribution divergence using information theory\n- **Correlation Score**: Preserves pairwise feature correlations\n\n**Fidelity Score**: Weighted combination of the above metrics (default weights: KS=0.30, JS=0.30, Corr=0.20, TVD=0.20)\n\n### 2. Utility Metrics (Downstream Task Performance)\n\nEvaluates the practical usefulness of synthetic data for machine learning tasks:\n\n- **TSTR (Train on Synthetic, Test on Real)**: Performance when training models on synthetic data and testing on real data\n- **TRTR (Train on Real, Test on Real)**: Baseline performance using real data\n- **Performance Gap**: Percentage difference between TSTR and TRTR\n- **Multiple Models**: Evaluated using Random Forest, Gradient Boosting, XGBoost, and Neural Networks\n- **Cross-Validation**: Uses 5-fold stratified cross-validation for robust assessment\n\n**Utility Score**: Normalized TSTR performance relative to TRTR baseline\n\n### 3. Privacy Metrics (Data Protection)\n\nAssesses privacy protection and risk of data leakage:\n\n- **DCR (Distance to Closest Record)**: \n  - Measures the minimum Euclidean distance from each synthetic record to the nearest real record\n  - Higher DCR values indicate better privacy protection\n  - Zero distance indicates exact match (privacy leakage)\n  \n- **NNAA (Nearest Neighbor Adversarial Accuracy)**:\n  - Simulates an adversary attack scenario using 1-NN classifier\n  - Attempts to distinguish between real and synthetic records\n  - Score of 0.5 (random guess) indicates good privacy protection\n  - Score > 0.6 suggests potential privacy risk\n\n- **Exact Match Count**: Number of synthetic records that exactly match real records\n\n**Privacy Assessment**:\n- **Excellent**: DCR > 0, NNAA ∈ [0.45, 0.55], Zero exact matches\n- **Good**: DCR > 0, NNAA ∈ [0.40, 0.60], Minimal exact matches\n- **Risk**: NNAA > 0.6 or significant exact matches\n\n### Combined Score\n\nThe overall evaluation combines fidelity and utility:\n```\nCombined Score = α × Fidelity + (1 - α) × Utility\n```\nwhere α = 0.5 by default (can be adjusted based on application requirements).\n\n**Note**: Privacy metrics are evaluated separately as they represent a different dimension of data quality (protection vs. utility).\n\n## Output Files\n\nAfter running the scripts, you will find:\n\n**Generated Data**:\n- `synthetic_data_gmm_optimized.csv`: Optimized synthetic data generated by CLEO\n\n**Model Files**:\n- `results/rl_optimizer_agent.pkl`: Trained RL agent model\n\n**Evaluation Reports**:\n- `results/evaluation_report.txt`: Detailed fidelity and utility evaluation report\n- `results/final_comparison_table.csv`: Model comparison results (CLEO vs. baselines)\n- `results/final_table3_tree.csv`: Downstream task evaluation results (tree models)\n- `results/ablation_report.txt`: Ablation study results\n\n**Visualization Files**:\n- `Figure_Privacy_DCR.png`: Privacy DCR distribution histogram\n- `results/rl_training_history.png`: RL optimization training history\n- `results/comprehensive_scores.png`: Comprehensive evaluation scores\n- `results/correlation_heatmap.png`: Feature correlation heatmap\n- `results/tstr_results.png`: TSTR performance visualization\n- Various other visualization files in the `results/` directory\n\n## Configuration\n\nKey configuration parameters can be adjusted in the scripts:\n\n- **Discrete Columns**: Specify which columns are categorical/discrete\n- **Target Column**: The target variable for utility evaluation\n- **Alpha (α)**: Weight for fidelity vs. utility in combined score\n- **Optimization Episodes**: Number of RL training episodes (default: 30)\n- **Random Seeds**: Seeds for reproducibility in utility evaluation\n\n\n\n## Contact\n\nFor questions or issues, please open an issue on GitHub \n\n\n\n",
+ "hits": {
+  "st": [
+   {
+    "file": "gan.py",
+    "line": 2,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import warnings",
+     "import os",
+     ""
+    ]
+   },
+   {
+    "file": "TVAE.py",
+    "line": 3,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "import warnings",
+     "import chardet",
+     "import os",
+     "import sys"
+    ]
+   },
+   {
+    "file": "copula.py",
+    "line": 3,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "import warnings",
+     "import os",
+     "",
+     "# 忽略 sdv 可能产生的一些特定警告"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "gan.py",
+    "line": 3,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import warnings",
+     "import os",
+     "",
+     "# ================= 配置区域 ================="
+    ]
+   },
+   {
+    "file": "TVAE.py",
+    "line": 2,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "import warnings",
+     "import chardet",
+     "import os"
+    ]
+   },
+   {
+    "file": "copula.py",
+    "line": 2,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "import warnings",
+     "import os",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "gan.py",
+    "line": 2,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import warnings",
+     "import os",
+     ""
+    ]
+   },
+   {
+    "file": "gan.py",
+    "line": 3,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import warnings",
+     "import os",
+     "",
+     "# ================= 配置区域 ================="
+    ]
+   },
+   {
+    "file": "TVAE.py",
+    "line": 2,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "import warnings",
+     "import chardet",
+     "import os"
+    ]
+   },
+   {
+    "file": "TVAE.py",
+    "line": 3,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "import warnings",
+     "import chardet",
+     "import os",
+     "import sys"
+    ]
+   },
+   {
+    "file": "copula.py",
+    "line": 2,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "import warnings",
+     "import os",
+     ""
+    ]
+   },
+   {
+    "file": "copula.py",
+    "line": 3,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "import warnings",
+     "import os",
+     "",
+     "# 忽略 sdv 可能产生的一些特定警告"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "gan.py",
+    "line": 2,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import warnings",
+     "import os",
+     ""
+    ]
+   },
+   {
+    "file": "gan.py",
+    "line": 86,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "",
+     "#初始化和训练CTGAN模型",
+     "print(\"\\n开始初始化 CTGAN 合成器...\")",
+     "",
+     "synthesizer = CTGANSynthesizer(",
+     "    metadata=metadata,",
+     "    #轮次为500次",
+     "    epochs=500,",
+     "    #批次大小为500"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "TVAE.py",
+    "line": 3,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "import warnings",
+     "import chardet",
+     "import os",
+     "import sys"
+    ]
+   },
+   {
+    "file": "TVAE.py",
+    "line": 72,
+    "text": "print(\"Initializing TVAESynthesizer...\")",
+    "context": [
+     "             metadata.update_column(column_name='类型', sdtype='boolean')",
+     "             print(\"Explicitly set '类型' sdtype to 'boolean'.\")",
+     "",
+     "        # 6. 初始化 TVAE 合成器",
+     "        print(\"Initializing TVAESynthesizer...\")",
+     "        synthesizer = TVAESynthesizer(",
+     "            metadata,",
+     "            epochs=600 ",
+     "        )"
+    ]
+   },
+   {
+    "file": "TVAE.py",
+    "line": 73,
+    "text": "synthesizer = TVAESynthesizer(",
+    "context": [
+     "             print(\"Explicitly set '类型' sdtype to 'boolean'.\")",
+     "",
+     "        # 6. 初始化 TVAE 合成器",
+     "        print(\"Initializing TVAESynthesizer...\")",
+     "        synthesizer = TVAESynthesizer(",
+     "            metadata,",
+     "            epochs=600 ",
+     "        )",
+     ""
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "copula.py",
+    "line": 3,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "import warnings",
+     "import os",
+     "",
+     "# 忽略 sdv 可能产生的一些特定警告"
+    ]
+   },
+   {
+    "file": "copula.py",
+    "line": 48,
+    "text": "print(\"正在初始化 GaussianCopulaSynthesizer...\")",
+    "context": [
+     "            metadata.update_column(column_name='ID', sdtype='id')",
+     "            print(\"已将 'ID' 列的 sdtype 更新为 'id'。\")",
+     "",
+     "        # 4. 初始化 GaussianCopula 合成器",
+     "        print(\"正在初始化 GaussianCopulaSynthesizer...\")",
+     "        synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "",
+     "        # 5. 训练模型",
+     "        print(\"开始训练模型...\")"
+    ]
+   },
+   {
+    "file": "copula.py",
+    "line": 49,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "            print(\"已将 'ID' 列的 sdtype 更新为 'id'。\")",
+     "",
+     "        # 4. 初始化 GaussianCopula 合成器",
+     "        print(\"正在初始化 GaussianCopulaSynthesizer...\")",
+     "        synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "",
+     "        # 5. 训练模型",
+     "        print(\"开始训练模型...\")",
+     "        synthesizer.fit(df_clean)"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "gc",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

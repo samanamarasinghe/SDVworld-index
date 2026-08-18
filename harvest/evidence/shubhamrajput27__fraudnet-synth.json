@@ -1,0 +1,355 @@
+{
+ "repo": "shubhamrajput27/fraudnet-synth",
+ "disk_kb": 346,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# FraudNet-Synth\n\nPrivacy-Preserving Fraud Detection using Federated Learning and Synthetic Data Augmentation.\n\nFinal-year B.E. CSE project (AY 2025–26), PES Institute of Technology & Management, Shivamogga — VTU, Belagavi.\nGuide: Dr. Chethan L S. Team: Palleti Pradeepa (4PM23CS070), Prachi Yadav (4PM23CS074), Sathvik D (4PM23CS096), Shubham Kumar Singh (4PM23CS101).\n\nFour simulated banks holding non-IID shards of the ULB Credit Card Fraud dataset jointly train a fraud classifier via Flower/FedAvg, with client-adaptive synthetic data augmentation — CTGAN for data-rich banks, LLM schema-and-few-shot generation for data-poor banks — gated by a shared fidelity/diversity/PII validation layer.\n\nSee [`CLAUDE.md`](CLAUDE.md) for the full project brief (locked stack, architecture, privacy invariant, evaluation philosophy) and [`PLAN.md`](PLAN.md) for the phased implementation plan and progress log.\n\n**Status:** All 8 phases complete. Headline finding: **federated_augmented** scores best (F1\n0.6146), beating federated_real, both isolated arms, and both centralized arms — see\n[`docs/final_report.md`](docs/final_report.md) for the full write-up (architecture, methodology,\nresults, honest comparison to literature, limitations) and\n[`docs/phase7_results.md`](docs/phase7_results.md) for the results table and convergence plots\n(regenerate via `ml/.venv/Scripts/python.exe -m experiments.generate_report`).\n[`docs/presentation_deck.md`](docs/presentation_deck.md) has a slide-by-slide outline and\n[`docs/demo_script.md`](docs/demo_script.md) a click-by-click live-demo checklist. `PLAN.md` has\nthe full dated progress log across all eight phases.\n\n**Running it locally:**\n```\n# One command (Windows, PowerShell) — opens three labeled windows:\n.\\start_demo.ps1\n\n# ...or manually, one per terminal:\nml/.venv/Scripts/python.exe -m uvicorn orchestrator.main:app --port 8000   # orchestrator\ncd gateway && npm install && npm start                                     # gateway\ncd dashboard && npm install && npm run dev                                 # dashboard\n```\nThen open the dashboard's printed local URL (default `http://localhost:5173`) and sign in with\nthe `ADMIN_USERNAME`/`ADMIN_PASSWORD` set in `.env`.\n\n**Running the test suite:**\n```\nml/.venv/Scripts/python.exe -m pytest      # 40 Python tests (ml/, orchestrator/)\ncd gateway && npm test                      # 13 Node tests\n```\n",
+ "hits": {
+  "ct": [
+   {
+    "file": "PLAN.md",
+    "line": 132,
+    "text": "CTGAN engine (`sdv==1.37.4` `CTGANSynthesizer`, `enable_gpu=False`): verified empirically that",
+    "context": [
+     "  prototype rows** (per-column median / 25th-percentile / 75th-percentile combinations), never",
+     "  real transaction rows — resolves the apparent tension in D1 between \"include few-shot examples\"",
+     "  and \"never send raw rows to the API\". Confirmed explicitly with the user 2026-08-03; CLAUDE.md",
+     "  D1 updated to match.",
+     "  CTGAN engine (`sdv==1.37.4` `CTGANSynthesizer`, `enable_gpu=False`): verified empirically that",
+     "  `batch_size` must be a multiple of `pac` (default 10) or `ctgan` raises a bare `AssertionError`",
+     "  — not documented anywhere, found by testing against Bank B's real 38 fraud rows. Live-verified",
+     "  end-to-end on Banks A (310 real fraud rows -> 310 candidates) and B (38 -> 38 candidates).",
+     "  LLM engine (`groq==1.6.0`, model `llama-3.3-70b-versatile`, `response_format=json_object`,"
+    ]
+   },
+   {
+    "file": "CLAUDE.md",
+    "line": 40,
+    "text": "| Statistical generator | SDV / CTGAN (`sdv`'s `CTGANSynthesizer`) | Offline, zero-cost, CPU |",
+    "context": [
+     "",
+     "| Layer | Technology | Why locked |",
+     "|---|---|---|",
+     "| FL framework | Flower (`flwr`) | Best rated for research prototyping; CPU-feasible |",
+     "| Statistical generator | SDV / CTGAN (`sdv`'s `CTGANSynthesizer`) | Offline, zero-cost, CPU |",
+     "| LLM generator | Groq API (free tier) | Free-tier availability; Schema Mode only |",
+     "| Classifier | Small PyTorch MLP (D2) | Clean `state_dict()` averaging for FedAvg |",
+     "| Orchestration API | FastAPI | Async; unifies augmentation + FL orchestration |",
+     "| Gateway | Node.js + Express | Auth, run management, DB persistence |"
+    ]
+   },
+   {
+    "file": "docs/final_report.md",
+    "line": 127,
+    "text": "Banks A and B (data-rich) use **Augment Mode**: `sdv`'s `CTGANSynthesizer`, trained per-client on",
+    "context": [
+     "Bank C 34,005 rows/15 fraud, Bank D 34,005 rows/15 fraud, global holdout 56,746 rows/95 fraud.",
+     "",
+     "### 5.2 Phase 2 — Client-Adaptive Augmentation",
+     "",
+     "Banks A and B (data-rich) use **Augment Mode**: `sdv`'s `CTGANSynthesizer`, trained per-client on",
+     "that client's own real fraud rows only. Banks C and D (data-poor) use **Schema Mode**: since",
+     "`V1`–`V28` are anonymized PCA components with no semantic meaning an LLM prompt could ground on,",
+     "the Groq prompt instead injects per-column statistics (mean/std/min/max/quartiles) and top-k",
+     "pairwise correlations computed locally, plus three synthetic *prototype* few-shot rows built from"
+    ]
+   },
+   {
+    "file": "ml/requirements.txt",
+    "line": 15,
+    "text": "#     pin is needed; CTGANSynthesizer comes from `sdv.single_table`.",
+    "context": [
+     "#     and `sdmetrics==0.28.2` declare a hard `pandas<3.0.0` constraint. Installing pandas 3.x",
+     "#     here would make `pip install -r requirements.txt` unresolvable. This is not a guess —",
+     "#     confirmed by reading both packages' requires_dist.",
+     "#   - `sdv` pulls in `ctgan>=0.11.1` and `sdmetrics>=0.28.1` transitively — no separate `ctgan`",
+     "#     pin is needed; CTGANSynthesizer comes from `sdv.single_table`.",
+     "#   - `pandera` needs the `[pandas]` extra for the pandas backend (DataFrameSchema); the bare",
+     "#     `pandera` package alone does not vendor it.",
+     "#   - torch 2.13.0 has a published CPU-only wheel for cp313 win_amd64 on the PyTorch package",
+     "#     index (confirmed by listing https://download.pytorch.org/whl/cpu/torch/)."
+    ]
+   },
+   {
+    "file": "ml/requirements.txt",
+    "line": 65,
+    "text": "sdv==1.37.4             # provides CTGANSynthesizer; pulls in ctgan, sdmetrics, rdt, copulas, deepecho",
+    "context": [
+     "numpy==2.5.1",
+     "scikit-learn==1.9.0",
+     "",
+     "# --- Synthetic data generation (Augment Mode) ---",
+     "sdv==1.37.4             # provides CTGANSynthesizer; pulls in ctgan, sdmetrics, rdt, copulas, deepecho",
+     "",
+     "# --- Validation layer (Phase 3) ---",
+     "sdmetrics==0.28.2",
+     "pandera[pandas]==0.32.1"
+    ]
+   },
+   {
+    "file": "ml/augmentation/ctgan_engine.py",
+    "line": 15,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from dataclasses import dataclass",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "FEATURE_COLUMNS = [\"Time\"] + [f\"V{i}\" for i in range(1, 29)] + [\"Amount\"]",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "ml/augmentation/ctgan_engine.py",
+    "line": 36,
+    "text": "\"\"\"Fits one CTGANSynthesizer per instance, trained on a single client's real fraud rows.\"\"\"",
+    "context": [
+     "    return max(pac, candidate)",
+     "",
+     "",
+     "class CTGANEngine:",
+     "    \"\"\"Fits one CTGANSynthesizer per instance, trained on a single client's real fraud rows.\"\"\"",
+     "",
+     "    def __init__(self, config: CTGANEngineConfig | None = None):",
+     "        self.config = config or CTGANEngineConfig()",
+     "        self._synthesizer: CTGANSynthesizer | None = None"
+    ]
+   },
+   {
+    "file": "ml/augmentation/ctgan_engine.py",
+    "line": 40,
+    "text": "self._synthesizer: CTGANSynthesizer | None = None",
+    "context": [
+     "    \"\"\"Fits one CTGANSynthesizer per instance, trained on a single client's real fraud rows.\"\"\"",
+     "",
+     "    def __init__(self, config: CTGANEngineConfig | None = None):",
+     "        self.config = config or CTGANEngineConfig()",
+     "        self._synthesizer: CTGANSynthesizer | None = None",
+     "        self._n_train_rows: int = 0",
+     "",
+     "    def fit(self, fraud_rows: pd.DataFrame) -> None:",
+     "        if fraud_rows.empty:"
+    ]
+   },
+   {
+    "file": "ml/augmentation/ctgan_engine.py",
+    "line": 52,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "        self._n_train_rows = len(features)",
+     "        batch_size = _valid_batch_size(len(features), self.config.pac, self.config.max_batch_size)",
+     "",
+     "        metadata = Metadata.detect_from_dataframe(features, table_name=\"fraud_rows\")",
+     "        synthesizer = CTGANSynthesizer(",
+     "            metadata,",
+     "            epochs=self.config.epochs,",
+     "            batch_size=batch_size,",
+     "            pac=self.config.pac,"
+    ]
+   },
+   {
+    "file": "ml/augmentation/README.md",
+    "line": 3,
+    "text": "Phase 2. Client-adaptive synthetic data generation: `ctgan_engine` (SDV's `CTGANSynthesizer`) for data-rich Banks A/B (Augment Mode), `llm_engine` (Groq API, probability-aware prompting per D1) for data-poor Banks C/D (Schema Mode). Never sends raw rows to the LLM API — aggregate statistics and few-",
+    "context": [
+     "# ml/augmentation/",
+     "",
+     "Phase 2. Client-adaptive synthetic data generation: `ctgan_engine` (SDV's `CTGANSynthesizer`) for data-rich Banks A/B (Augment Mode), `llm_engine` (Groq API, probability-aware prompting per D1) for da"
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "ml/augmentation/ctgan_engine.py",
+    "line": 15,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from dataclasses import dataclass",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "FEATURE_COLUMNS = [\"Time\"] + [f\"V{i}\" for i in range(1, 29)] + [\"Amount\"]",
+     "",
+     ""
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "ml/augmentation/ctgan_engine.py",
+    "line": 14,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "\"\"\"",
+     "from dataclasses import dataclass",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "FEATURE_COLUMNS = [\"Time\"] + [f\"V{i}\" for i in range(1, 29)] + [\"Amount\"]",
+     ""
+    ]
+   },
+   {
+    "file": "ml/validation/fidelity.py",
+    "line": 12,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "confirmed empirically, not documented clearly).",
+     "\"\"\"",
+     "import pandas as pd",
+     "from sdmetrics.reports import QualityReport",
+     "from sdv.metadata import Metadata",
+     "",
+     "FEATURE_COLUMNS = [\"Time\"] + [f\"V{i}\" for i in range(1, 29)] + [\"Amount\"]",
+     "TABLE_NAME = \"fraud\"",
+     ""
+    ]
+   },
+   {
+    "file": "ml/validation/novelty.py",
+    "line": 11,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "what CLAUDE.md's D6 calls the \"novelty/nearest-neighbour distance floor\".",
+     "\"\"\"",
+     "import pandas as pd",
+     "from sdmetrics.single_table import NewRowSynthesis",
+     "from sdv.metadata import Metadata",
+     "",
+     "FEATURE_COLUMNS = [\"Time\"] + [f\"V{i}\" for i in range(1, 29)] + [\"Amount\"]",
+     "TABLE_NAME = \"fraud\"",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "ml/augmentation/ctgan_engine.py",
+    "line": 14,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "\"\"\"",
+     "from dataclasses import dataclass",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "FEATURE_COLUMNS = [\"Time\"] + [f\"V{i}\" for i in range(1, 29)] + [\"Amount\"]",
+     ""
+    ]
+   },
+   {
+    "file": "ml/augmentation/ctgan_engine.py",
+    "line": 15,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from dataclasses import dataclass",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "FEATURE_COLUMNS = [\"Time\"] + [f\"V{i}\" for i in range(1, 29)] + [\"Amount\"]",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "ml/validation/fidelity.py",
+    "line": 12,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "confirmed empirically, not documented clearly).",
+     "\"\"\"",
+     "import pandas as pd",
+     "from sdmetrics.reports import QualityReport",
+     "from sdv.metadata import Metadata",
+     "",
+     "FEATURE_COLUMNS = [\"Time\"] + [f\"V{i}\" for i in range(1, 29)] + [\"Amount\"]",
+     "TABLE_NAME = \"fraud\"",
+     ""
+    ]
+   },
+   {
+    "file": "ml/validation/novelty.py",
+    "line": 11,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "what CLAUDE.md's D6 calls the \"novelty/nearest-neighbour distance floor\".",
+     "\"\"\"",
+     "import pandas as pd",
+     "from sdmetrics.single_table import NewRowSynthesis",
+     "from sdv.metadata import Metadata",
+     "",
+     "FEATURE_COLUMNS = [\"Time\"] + [f\"V{i}\" for i in range(1, 29)] + [\"Amount\"]",
+     "TABLE_NAME = \"fraud\"",
+     ""
+    ]
+   }
+  ],
+  "sm": [
+   {
+    "file": "ml/validation/fidelity.py",
+    "line": 11,
+    "text": "from sdmetrics.reports import QualityReport",
+    "context": [
+     "full `Metadata.to_dict()` output including the `tables` key, not just the per-table sub-dict —",
+     "confirmed empirically, not documented clearly).",
+     "\"\"\"",
+     "import pandas as pd",
+     "from sdmetrics.reports import QualityReport",
+     "from sdv.metadata import Metadata",
+     "",
+     "FEATURE_COLUMNS = [\"Time\"] + [f\"V{i}\" for i in range(1, 29)] + [\"Amount\"]",
+     "TABLE_NAME = \"fraud\""
+    ]
+   },
+   {
+    "file": "ml/validation/novelty.py",
+    "line": 10,
+    "text": "from sdmetrics.single_table import NewRowSynthesis",
+    "context": [
+     "score drops proportionally when real rows are injected as duplicates, confirming it measures",
+     "what CLAUDE.md's D6 calls the \"novelty/nearest-neighbour distance floor\".",
+     "\"\"\"",
+     "import pandas as pd",
+     "from sdmetrics.single_table import NewRowSynthesis",
+     "from sdv.metadata import Metadata",
+     "",
+     "FEATURE_COLUMNS = [\"Time\"] + [f\"V{i}\" for i in range(1, 29)] + [\"Amount\"]",
+     "TABLE_NAME = \"fraud\""
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "sm",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "ml/requirements.txt": [
+   "#   - pandas is deliberately capped at 2.3.3, NOT the current latest 3.0.5. Both `sdv==1.37.4`",
+   "#     and `sdmetrics==0.28.2` declare a hard `pandas<3.0.0` constraint. Installing pandas 3.x",
+   "#   - `sdv` pulls in `ctgan>=0.11.1` and `sdmetrics>=0.28.1` transitively — no separate `ctgan`",
+   "#     pin is needed; CTGANSynthesizer comes from `sdv.single_table`.",
+   "#     equivalent was executed). Two-package pairwise checks (sdv/sdmetrics vs pandas) were done;",
+   "#     pulls, sdv's boto3/botocore pulls) are unverified.",
+   "#   - CTGAN's behavior/convergence on the tiny fraud-row counts Banks C/D will hold (D5) is",
+   "pandas==2.3.3          # capped <3.0 — see VERIFIED note above (sdv/sdmetrics constraint)",
+   "sdv==1.37.4             # provides CTGANSynthesizer; pulls in ctgan, sdmetrics, rdt, copulas, deepecho",
+   "sdmetrics==0.28.2"
+  ]
+ }
+}

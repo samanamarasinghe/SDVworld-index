@@ -1,0 +1,299 @@
+{
+ "repo": "UAnjana000/Banking-Statement-Transactions-using-NLP",
+ "disk_kb": 83062,
+ "method": "partial_clone",
+ "tree_files": 108,
+ "status": "ok",
+ "readme": "\n---\n\n# FinUnderWrite\n\nBank-agnostic banking transaction intelligence platform (`finunderwrite` package). Ingests statements in arbitrary formats (PDF native/scanned, CSV, XLSX), normalizes them into a frozen `CanonicalTransaction` schema, and builds toward underwriting features and financial profiles.\n\n## Pipeline\n\n```\nraw files -> Inventory -> Parser -> Schema Detection -> Normalizer -> CanonicalTransaction[]\n  -> (future) Merchant Extractor -> Categorizer -> Behaviour -> Profile -> Features / Synthetic\n```\n\n## Requirements\n\n- Python 3.12+\n- [Tesseract OCR](https://github.com/tesseract-ocr/tesseract) (scanned PDFs)\n- [Poppler](https://poppler.freedesktop.org/) (PDF to image for OCR)\n\n### Windows setup\n\n```powershell\nwinget install Python.Python.3.12\nwinget install tesseract-ocr.tesseract\nwinget install oschwartz10612.Poppler\n```\n\nRestart your shell after installing so PATH updates apply. If binaries are not found, set paths in `.env`:\n\n```env\nFINUNDERWRITE_TESSERACT_CMD=C:\\Program Files\\Tesseract-OCR\\tesseract.exe\nFINUNDERWRITE_POPPLER_PATH=C:\\path\\to\\poppler\\Library\\bin\n```\n\n### Linux (Debian/Ubuntu)\n\n```bash\nsudo apt-get update && sudo apt-get install -y tesseract-ocr poppler-utils\n```\n\n## Project setup\n\n```powershell\ncd \"d:\\NLP project 1\"\npy -3.12 -m venv .venv\n.\\.venv\\Scripts\\Activate.ps1\npython -m pip install --upgrade pip\npip install -r requirements.txt\npython -m spacy download en_core_web_sm\npre-commit install\ncopy .env.example .env\n```\n\nEditable install (recommended for development):\n\n```powershell\npip install -e \".[dev]\"\n```\n\n## Usage\n\n```powershell\n# Scan a folder and profile each file\nfinunderwrite inventory data/raw\n\n# Or via module\npython -m finunderwrite.cli inventory data/raw\n```\n\n## Data directories\n\n| Path | Purpose |\n|------|---------|\n| `data/raw/` | Original statements (gitignored - never commit PII) |\n| `data/interim/` | Parsed raw tables |\n| `data/processed/` | Normalized transactions |\n\nSynthetic test fixtures live in `tests/fixtures/` and are safe to commit.\n\n## Quality checks\n\n```powershell\nruff check src tests config\nruff format src tests config\nmypy\npytest --cov=finunderwrite --cov-report=term-missing\n```\n\n## Module status\n\nSee [`PROJECT_STATE.json`](PROJECT_STATE.json) for machine-readable build state.\n\nImplemented: contracts, inventory, parser, schema detection, normalizer, merchant (extract/categorize/enrich), behaviour, recurring, profile, features, synthetic (offline), persistence, API, CLI, tests.\n\n## Merchant intelligence\n\n- Extraction: rules-driven (config/merchant_rules.yaml) merchant + payment_mode parsing with rapidfuzz canonicalization.\n- Categorization: hybrid tiers - rules (config/category_map.yaml) -> char-ngram TF-IDF + LogisticRegression (scikit-learn, persisted via joblib) -> optional LLM (Groq, OpenAI-compatible), OFF by default via FINUNDERWRITE_LLM_ENRICH_ENABLED.\n- Enrichment: request path reads the DB cache only and queues misses; the offline finunderwrite enrich-batch command is the only bulk-network path (httpx + tenacity, robots.txt + rate limit).\n\n```powershell\nfinunderwrite train-categorizer   # build + persist the Tier 2 model\nfinunderwrite enrich-batch        # offline: drain queue, populate enrichment cache\n```\n\n## Analytics pipeline (offline vs serving)\n\n- Behaviour learning, recurring detection, profile building, and feature engineering are pure pandas/numpy (deterministic, no torch) and run in both the offline pipeline and the serving runtime.\n- Synthetic data generation is OFFLINE-ONLY: `finunderwrite synth-generate <feature_table.csv> --n 1000 --method gaussian_copula|ctgan|tvae`. It requires `pip install -r requirements-ml.txt` (sdv + torch) and raises at import if that stack is absent, so it can never load on the web dyno. Generated datasets are saved to `data/processed/synthetic/` and registered in the DB for the API to serve.\n\n## API + web UI\n\nRun locally:\n\n```powershell\nuvicorn finunderwrite.api:app --reload\n```\n\nOpen `http://127.0.0.1:8000/` for the dashboard (upload a statement, inspect transactions / profile / features). OpenAPI docs remain at `/docs`.\n\nAPI endpoints: `GET /health`, `POST /statements` (CSV + native PDF parsed synchronously; scanned PDFs return `202` and are deferred to the offline OCR batch), `GET /transactions`, `GET /profile/{customer_id}`, `GET /features/{customer_id}`, `GET /synthetic?n=100|1000|10000` (serves pre-generated datasets only).\n\n## Database + migrations\n\nDriven by `FINUNDERWRITE_DATABASE_URL` (or `DATABASE_URL`): defaults to `sqlite:///local.db` for dev, Postgres for deploy (e.g. `postgresql+psycopg://user:pass@host/db`). DuckDB is a read-only local analytics layer over processed files.\n\n```powershell\nalembic upgrade head        # apply migrations\nalembic revision --autogenerate -m \"change\"   # create a new migration\n```\n\n\nOptional env / secrets in Space settings:\n\n| Variable | Default | Notes |\n|---|---|---|\n| `PORT` | `7860` | Spaces app port |\n| `WEB_CONCURRENCY` | `1` | Keep low on free CPU |\n| `FINUNDERWRITE_DATABASE_URL` | SQLite in-container | Set to Neon/Supabase Postgres if you need persistence across sleeps |\n| `FINUNDERWRITE_LLM_ENRICH_ENABLED` | `false` | Keep off on free tier |\n| `FINUNDERWRITE_ENRICHER` | `null` | Keep null on free tier |\n| `FINUNDERWRITE_ENABLE_CAMELOT_FALLBACK` | `false` | Opt-in camelot after pdfplumber + text fallback; keep off on free Render |\n\nNotes:\n\n- `Dockerfile` targets Spaces (UID 1000, port 7860) and still works locally with Docker.\n- Free Spaces sleep when idle; first request after sleep is a cold start.\n- Offline vs serving split unchanged: OCR / training / synth stay offline; the Space serves CSV/native PDF ingest + profiles.\n\n\n",
+ "hits": {
+  "st": [
+   {
+    "file": "src/finunderwrite/synthetic/generate.py",
+    "line": 60,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "",
+     "def _make_synthesizer(method: str, metadata: Any) -> Any:",
+     "    if method == \"gaussian_copula\":",
+     "        from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "        return GaussianCopulaSynthesizer(metadata)",
+     "    if method == \"ctgan\":",
+     "        from sdv.single_table import CTGANSynthesizer"
+    ]
+   },
+   {
+    "file": "src/finunderwrite/synthetic/generate.py",
+    "line": 64,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "        from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "        return GaussianCopulaSynthesizer(metadata)",
+     "    if method == \"ctgan\":",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "",
+     "        return CTGANSynthesizer(metadata)",
+     "    if method == \"tvae\":",
+     "        from sdv.single_table import TVAESynthesizer"
+    ]
+   },
+   {
+    "file": "src/finunderwrite/synthetic/generate.py",
+    "line": 68,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "        from sdv.single_table import CTGANSynthesizer",
+     "",
+     "        return CTGANSynthesizer(metadata)",
+     "    if method == \"tvae\":",
+     "        from sdv.single_table import TVAESynthesizer",
+     "",
+     "        return TVAESynthesizer(metadata)",
+     "    msg = f\"Unknown method: {method}. Choose from {VALID_METHODS}.\"",
+     "    raise ValueError(msg)"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "src/finunderwrite/synthetic/generate.py",
+    "line": 51,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    privacy: dict[str, Any] = field(default_factory=dict)",
+     "",
+     "",
+     "def _build_metadata(real: pd.DataFrame) -> Any:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(real)",
+     "    return metadata"
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "src/finunderwrite/synthetic/generate.py",
+    "line": 76,
+    "text": "from sdv.evaluation.single_table import (",
+    "context": [
+     "    raise ValueError(msg)",
+     "",
+     "",
+     "def _fidelity_report(real: pd.DataFrame, synthetic: pd.DataFrame, metadata: Any) -> dict[str, Any]:",
+     "    from sdv.evaluation.single_table import (",
+     "        evaluate_quality,",
+     "        run_diagnostic,",
+     "    )",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "src/finunderwrite/synthetic/generate.py",
+    "line": 51,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    privacy: dict[str, Any] = field(default_factory=dict)",
+     "",
+     "",
+     "def _build_metadata(real: pd.DataFrame) -> Any:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(real)",
+     "    return metadata"
+    ]
+   },
+   {
+    "file": "src/finunderwrite/synthetic/generate.py",
+    "line": 60,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "",
+     "def _make_synthesizer(method: str, metadata: Any) -> Any:",
+     "    if method == \"gaussian_copula\":",
+     "        from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "        return GaussianCopulaSynthesizer(metadata)",
+     "    if method == \"ctgan\":",
+     "        from sdv.single_table import CTGANSynthesizer"
+    ]
+   },
+   {
+    "file": "src/finunderwrite/synthetic/generate.py",
+    "line": 64,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "        from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "        return GaussianCopulaSynthesizer(metadata)",
+     "    if method == \"ctgan\":",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "",
+     "        return CTGANSynthesizer(metadata)",
+     "    if method == \"tvae\":",
+     "        from sdv.single_table import TVAESynthesizer"
+    ]
+   },
+   {
+    "file": "src/finunderwrite/synthetic/generate.py",
+    "line": 68,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "        from sdv.single_table import CTGANSynthesizer",
+     "",
+     "        return CTGANSynthesizer(metadata)",
+     "    if method == \"tvae\":",
+     "        from sdv.single_table import TVAESynthesizer",
+     "",
+     "        return TVAESynthesizer(metadata)",
+     "    msg = f\"Unknown method: {method}. Choose from {VALID_METHODS}.\"",
+     "    raise ValueError(msg)"
+    ]
+   },
+   {
+    "file": "src/finunderwrite/synthetic/generate.py",
+    "line": 76,
+    "text": "from sdv.evaluation.single_table import (",
+    "context": [
+     "    raise ValueError(msg)",
+     "",
+     "",
+     "def _fidelity_report(real: pd.DataFrame, synthetic: pd.DataFrame, metadata: Any) -> dict[str, Any]:",
+     "    from sdv.evaluation.single_table import (",
+     "        evaluate_quality,",
+     "        run_diagnostic,",
+     "    )",
+     ""
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "src/finunderwrite/synthetic/generate.py",
+    "line": 64,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "        from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "        return GaussianCopulaSynthesizer(metadata)",
+     "    if method == \"ctgan\":",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "",
+     "        return CTGANSynthesizer(metadata)",
+     "    if method == \"tvae\":",
+     "        from sdv.single_table import TVAESynthesizer"
+    ]
+   },
+   {
+    "file": "src/finunderwrite/synthetic/generate.py",
+    "line": 66,
+    "text": "return CTGANSynthesizer(metadata)",
+    "context": [
+     "        return GaussianCopulaSynthesizer(metadata)",
+     "    if method == \"ctgan\":",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "",
+     "        return CTGANSynthesizer(metadata)",
+     "    if method == \"tvae\":",
+     "        from sdv.single_table import TVAESynthesizer",
+     "",
+     "        return TVAESynthesizer(metadata)"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "src/finunderwrite/synthetic/generate.py",
+    "line": 60,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "",
+     "def _make_synthesizer(method: str, metadata: Any) -> Any:",
+     "    if method == \"gaussian_copula\":",
+     "        from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "        return GaussianCopulaSynthesizer(metadata)",
+     "    if method == \"ctgan\":",
+     "        from sdv.single_table import CTGANSynthesizer"
+    ]
+   },
+   {
+    "file": "src/finunderwrite/synthetic/generate.py",
+    "line": 62,
+    "text": "return GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "def _make_synthesizer(method: str, metadata: Any) -> Any:",
+     "    if method == \"gaussian_copula\":",
+     "        from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "        return GaussianCopulaSynthesizer(metadata)",
+     "    if method == \"ctgan\":",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "",
+     "        return CTGANSynthesizer(metadata)"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "src/finunderwrite/synthetic/generate.py",
+    "line": 68,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "        from sdv.single_table import CTGANSynthesizer",
+     "",
+     "        return CTGANSynthesizer(metadata)",
+     "    if method == \"tvae\":",
+     "        from sdv.single_table import TVAESynthesizer",
+     "",
+     "        return TVAESynthesizer(metadata)",
+     "    msg = f\"Unknown method: {method}. Choose from {VALID_METHODS}.\"",
+     "    raise ValueError(msg)"
+    ]
+   },
+   {
+    "file": "src/finunderwrite/synthetic/generate.py",
+    "line": 70,
+    "text": "return TVAESynthesizer(metadata)",
+    "context": [
+     "        return CTGANSynthesizer(metadata)",
+     "    if method == \"tvae\":",
+     "        from sdv.single_table import TVAESynthesizer",
+     "",
+     "        return TVAESynthesizer(metadata)",
+     "    msg = f\"Unknown method: {method}. Choose from {VALID_METHODS}.\"",
+     "    raise ValueError(msg)",
+     "",
+     ""
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ev",
+  "gc",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "# The heavy ML stack (sdv, synthcity, torch, spacy, sentence-transformers) lives"
+  ],
+  "pyproject.toml": [
+   "ml = [\"sdv\", \"synthcity\", \"spacy\", \"sentence-transformers\"]",
+   "    # Offline-only ML module; requires sdv/torch that are never installed here."
+  ]
+ }
+}

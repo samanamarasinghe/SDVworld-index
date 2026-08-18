@@ -1,0 +1,410 @@
+{
+ "repo": "sivaramanlatchapathi/SynthData",
+ "disk_kb": 12,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# SynthData\n\n**SynthData** is a Python package designed for generating synthetic tabular data. It learns from real data and creates new data that mimics the statistical properties and correlations of the original dataset. This is particularly useful for augmenting datasets, preserving privacy, and testing data-driven applications.\n\n## Features\n\n*   **Multiple Synthesis Models**:\n    *   `GaussianCopulaSynthesizer`: Models multivariate distributions using Gaussian Copulas.\n    *   `CTGANSynthesizer`: Implements Conditional Tabular GAN for complex data types.\n    *   `TVAESynthesizer`: Uses a Tabular Variational Autoencoder.\n*   **Intuitive API**: A consistent, object-oriented API for all synthesizers.\n*   **Metadata Handling**: Automatic metadata detection with options for manual overrides.\n*   **Data Quality Evaluation**: Comprehensive reports and visualizations to compare synthetic data with real data.\n\n## Installation\n\nYou can install SynthData using pip:\n\n```bash\npip install synthdata\n```\n\nAlternatively, if you have the source code, you can install it directly:\n\n```bash\npip install .\n```\n\n## Quick Start\n\nHere's a basic example of how to use SynthData:\n\n```python\nimport pandas as pd\nfrom synthdata.synthesizers import GaussianCopulaSynthesizer\nfrom synthdata.evaluation import quality_report, visualize_distributions\nfrom synthdata.metadata import detect_metadata\n\n# 1. Load your real data\ndata = {\n    'age': [25, 30, 35, 40, 45, 28, 32, 38, 42, 48],\n    'salary': [50000, 60000, 70000, 80000, 90000, 55000, 65000, 75000, 85000, 95000],\n    'city': ['New York', 'London', 'Paris', 'Tokyo', 'New York', 'London', 'Paris', 'Tokyo', 'New York', 'London']\n}\nreal_data_df = pd.DataFrame(data)\n\n# 2. (Optional) Detect or define metadata\n# If metadata is not provided, it will be detected automatically.\nmetadata = detect_metadata(real_data_df)\n# You can also manually define it:\n# metadata = {\n#     \"columns\": {\n#         \"age\": {\"sdtype\": \"numerical\", \"computer_representation\": \"Integer\"},\n#         \"salary\": {\"sdtype\": \"numerical\", \"computer_representation\": \"Integer\"},\n#         \"city\": {\"sdtype\": \"categorical\"}\n#     }\n# }\n\n# 3. Initialize and fit the synthesizer\nsynthesizer = GaussianCopulaSynthesizer(metadata)\nsynthesizer.fit(real_data_df)\n\n# 4. Generate synthetic data\nsynthetic_data_df = synthesizer.sample(num_rows=100)\n\nprint(\"Synthetic Data Sample:\")\nprint(synthetic_data_df.head())\n\n# 5. Evaluate the quality of the synthetic data\nreport = quality_report(real_data_df, synthetic_data_df, metadata)\nprint(\"\\nQuality Report:\")\nprint(report)\n\n# 6. Visualize distributions for a specific column\nvisualize_distributions(real_data_df, synthetic_data_df, column_name='salary')\n```\n\n## API Documentation\n\n### Synthesizers\n\nAll synthesizers share a common API:\n\n*   `synthdata.synthesizers.<Model>Synthesizer(metadata: dict)`: Initializes the synthesizer.\n*   `fit(real_data: pd.DataFrame)`: Trains the model on the real data.\n*   `sample(num_rows: int) -> pd.DataFrame`: Generates synthetic data.\n\n### Evaluation\n\n*   `synthdata.evaluation.quality_report(real_data: pd.DataFrame, synthetic_data: pd.DataFrame, metadata: dict) -> dict`: Generates a quality report.\n*   `synthdata.evaluation.visualize_distributions(real_data: pd.DataFrame, synthetic_data: pd.DataFrame, column_name: str)`: Plots column distributions.\n\n### Metadata\n\n*   `synthdata.metadata.detect_metadata(data: pd.DataFrame) -> dict`: Automatically infers metadata from a DataFrame.\n\n## Contributing\n\nContributions are welcome! Please refer to the project's issue tracker on GitHub.\n\n## License\n\nThis project is licensed under the MIT License.\n",
+ "hits": {
+  "ct": [
+   {
+    "file": "__init__.py",
+    "line": 10,
+    "text": "CTGANSynthesizer,",
+    "context": [
+     "",
+     "from .metadata import detect_metadata",
+     "from .synthesizers import (",
+     "    GaussianCopulaSynthesizer,",
+     "    CTGANSynthesizer,",
+     "    TVAESynthesizer",
+     ")",
+     "from .evaluation import quality_report, visualize_distributions",
+     ""
+    ]
+   },
+   {
+    "file": "__init__.py",
+    "line": 18,
+    "text": "\"CTGANSynthesizer\",",
+    "context": [
+     "",
+     "__all__ = [",
+     "    \"detect_metadata\",",
+     "    \"GaussianCopulaSynthesizer\",",
+     "    \"CTGANSynthesizer\",",
+     "    \"TVAESynthesizer\",",
+     "    \"quality_report\",",
+     "    \"visualize_distributions\",",
+     "]"
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 9,
+    "text": "*   `CTGANSynthesizer`: Implements Conditional Tabular GAN for complex data types.",
+    "context": [
+     "## Features",
+     "",
+     "*   **Multiple Synthesis Models**:",
+     "    *   `GaussianCopulaSynthesizer`: Models multivariate distributions using Gaussian Copulas.",
+     "    *   `CTGANSynthesizer`: Implements Conditional Tabular GAN for complex data types.",
+     "    *   `TVAESynthesizer`: Uses a Tabular Variational Autoencoder.",
+     "*   **Intuitive API**: A consistent, object-oriented API for all synthesizers.",
+     "*   **Metadata Handling**: Automatic metadata detection with options for manual overrides.",
+     "*   **Data Quality Evaluation**: Comprehensive reports and visualizations to compare synthetic data with real data."
+    ]
+   },
+   {
+    "file": "synthesizer/__init__.py",
+    "line": 7,
+    "text": "from .ctgan import CTGANSynthesizer",
+    "context": [
+     "\"\"\"",
+     "",
+     "from .base import BaseSynthesizer",
+     "from .gaussian_copula import GaussianCopulaSynthesizer",
+     "from .ctgan import CTGANSynthesizer",
+     "from .tvae import TVAESynthesizer",
+     "",
+     "__all__ = [",
+     "    \"BaseSynthesizer\","
+    ]
+   },
+   {
+    "file": "synthesizer/__init__.py",
+    "line": 13,
+    "text": "\"CTGANSynthesizer\",",
+    "context": [
+     "",
+     "__all__ = [",
+     "    \"BaseSynthesizer\",",
+     "    \"GaussianCopulaSynthesizer\",",
+     "    \"CTGANSynthesizer\",",
+     "    \"TVAESynthesizer\",",
+     "]"
+    ]
+   },
+   {
+    "file": "synthesizer/ctgan.py",
+    "line": 6,
+    "text": "# from ctgan import CTGANSynthesizer as CTGANModel # Example if wrapping",
+    "context": [
+     "Conditional Tabular GAN (CTGAN) Synthesizer.",
+     "\"\"\"",
+     "from typing import Dict, Any",
+     "import pandas as pd",
+     "# from ctgan import CTGANSynthesizer as CTGANModel # Example if wrapping",
+     "",
+     "from .base import BaseSynthesizer",
+     "from synthdata.metadata import detect_metadata",
+     ""
+    ]
+   },
+   {
+    "file": "synthesizer/ctgan.py",
+    "line": 11,
+    "text": "class CTGANSynthesizer(BaseSynthesizer):",
+    "context": [
+     "",
+     "from .base import BaseSynthesizer",
+     "from synthdata.metadata import detect_metadata",
+     "",
+     "class CTGANSynthesizer(BaseSynthesizer):",
+     "    \"\"\"",
+     "    An implementation of the Conditional Tabular GAN (Generative Adversarial Network) model.",
+     "",
+     "    Suitable for handling mixed-type data and capturing complex correlations."
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "__init__.py",
+    "line": 9,
+    "text": "GaussianCopulaSynthesizer,",
+    "context": [
+     "__version__ = \"0.1.0\"",
+     "",
+     "from .metadata import detect_metadata",
+     "from .synthesizers import (",
+     "    GaussianCopulaSynthesizer,",
+     "    CTGANSynthesizer,",
+     "    TVAESynthesizer",
+     ")",
+     "from .evaluation import quality_report, visualize_distributions"
+    ]
+   },
+   {
+    "file": "__init__.py",
+    "line": 17,
+    "text": "\"GaussianCopulaSynthesizer\",",
+    "context": [
+     "from .evaluation import quality_report, visualize_distributions",
+     "",
+     "__all__ = [",
+     "    \"detect_metadata\",",
+     "    \"GaussianCopulaSynthesizer\",",
+     "    \"CTGANSynthesizer\",",
+     "    \"TVAESynthesizer\",",
+     "    \"quality_report\",",
+     "    \"visualize_distributions\","
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 8,
+    "text": "*   `GaussianCopulaSynthesizer`: Models multivariate distributions using Gaussian Copulas.",
+    "context": [
+     "",
+     "## Features",
+     "",
+     "*   **Multiple Synthesis Models**:",
+     "    *   `GaussianCopulaSynthesizer`: Models multivariate distributions using Gaussian Copulas.",
+     "    *   `CTGANSynthesizer`: Implements Conditional Tabular GAN for complex data types.",
+     "    *   `TVAESynthesizer`: Uses a Tabular Variational Autoencoder.",
+     "*   **Intuitive API**: A consistent, object-oriented API for all synthesizers.",
+     "*   **Metadata Handling**: Automatic metadata detection with options for manual overrides."
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 35,
+    "text": "from synthdata.synthesizers import GaussianCopulaSynthesizer",
+    "context": [
+     "Here's a basic example of how to use SynthData:",
+     "",
+     "```python",
+     "import pandas as pd",
+     "from synthdata.synthesizers import GaussianCopulaSynthesizer",
+     "from synthdata.evaluation import quality_report, visualize_distributions",
+     "from synthdata.metadata import detect_metadata",
+     "",
+     "# 1. Load your real data"
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 60,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "#     }",
+     "# }",
+     "",
+     "# 3. Initialize and fit the synthesizer",
+     "synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "synthesizer.fit(real_data_df)",
+     "",
+     "# 4. Generate synthetic data",
+     "synthetic_data_df = synthesizer.sample(num_rows=100)"
+    ]
+   },
+   {
+    "file": "synthesizer/__init__.py",
+    "line": 6,
+    "text": "from .gaussian_copula import GaussianCopulaSynthesizer",
+    "context": [
+     "Synthesizers module for generating synthetic data.",
+     "\"\"\"",
+     "",
+     "from .base import BaseSynthesizer",
+     "from .gaussian_copula import GaussianCopulaSynthesizer",
+     "from .ctgan import CTGANSynthesizer",
+     "from .tvae import TVAESynthesizer",
+     "",
+     "__all__ = ["
+    ]
+   },
+   {
+    "file": "synthesizer/__init__.py",
+    "line": 12,
+    "text": "\"GaussianCopulaSynthesizer\",",
+    "context": [
+     "from .tvae import TVAESynthesizer",
+     "",
+     "__all__ = [",
+     "    \"BaseSynthesizer\",",
+     "    \"GaussianCopulaSynthesizer\",",
+     "    \"CTGANSynthesizer\",",
+     "    \"TVAESynthesizer\",",
+     "]"
+    ]
+   },
+   {
+    "file": "synthesizer/gaussian_copula.py",
+    "line": 13,
+    "text": "class GaussianCopulaSynthesizer(BaseSynthesizer):",
+    "context": [
+     "",
+     "from .base import BaseSynthesizer",
+     "from synthdata.metadata import detect_metadata",
+     "",
+     "class GaussianCopulaSynthesizer(BaseSynthesizer):",
+     "    \"\"\"",
+     "    Synthesizer based on modeling the multivariate distribution using Gaussian Copulas.",
+     "",
+     "    It handles numerical and categorical data by fitting distributions to numerical"
+    ]
+   },
+   {
+    "file": "synthesizer/gaussian_copula.py",
+    "line": 80,
+    "text": "print(\"GaussianCopulaSynthesizer fitted.\")",
+    "context": [
+     "        for col in categorical_cols:",
+     "            self._categorical_frequencies[col] = data[col].value_counts(normalize=True)",
+     "",
+     "        if self.verbose:",
+     "            print(\"GaussianCopulaSynthesizer fitted.\")",
+     "",
+     "    def sample(self, num_rows: int) -> pd.DataFrame:",
+     "        \"\"\"Generate synthetic data.\"\"\"",
+     "        if not self._fitted or self.metadata is None or self._correlation_matrix is None:"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "__init__.py",
+    "line": 11,
+    "text": "TVAESynthesizer",
+    "context": [
+     "from .metadata import detect_metadata",
+     "from .synthesizers import (",
+     "    GaussianCopulaSynthesizer,",
+     "    CTGANSynthesizer,",
+     "    TVAESynthesizer",
+     ")",
+     "from .evaluation import quality_report, visualize_distributions",
+     "",
+     "__all__ = ["
+    ]
+   },
+   {
+    "file": "__init__.py",
+    "line": 19,
+    "text": "\"TVAESynthesizer\",",
+    "context": [
+     "__all__ = [",
+     "    \"detect_metadata\",",
+     "    \"GaussianCopulaSynthesizer\",",
+     "    \"CTGANSynthesizer\",",
+     "    \"TVAESynthesizer\",",
+     "    \"quality_report\",",
+     "    \"visualize_distributions\",",
+     "]"
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 10,
+    "text": "*   `TVAESynthesizer`: Uses a Tabular Variational Autoencoder.",
+    "context": [
+     "",
+     "*   **Multiple Synthesis Models**:",
+     "    *   `GaussianCopulaSynthesizer`: Models multivariate distributions using Gaussian Copulas.",
+     "    *   `CTGANSynthesizer`: Implements Conditional Tabular GAN for complex data types.",
+     "    *   `TVAESynthesizer`: Uses a Tabular Variational Autoencoder.",
+     "*   **Intuitive API**: A consistent, object-oriented API for all synthesizers.",
+     "*   **Metadata Handling**: Automatic metadata detection with options for manual overrides.",
+     "*   **Data Quality Evaluation**: Comprehensive reports and visualizations to compare synthetic data with real data.",
+     ""
+    ]
+   },
+   {
+    "file": "synthesizer/__init__.py",
+    "line": 8,
+    "text": "from .tvae import TVAESynthesizer",
+    "context": [
+     "",
+     "from .base import BaseSynthesizer",
+     "from .gaussian_copula import GaussianCopulaSynthesizer",
+     "from .ctgan import CTGANSynthesizer",
+     "from .tvae import TVAESynthesizer",
+     "",
+     "__all__ = [",
+     "    \"BaseSynthesizer\",",
+     "    \"GaussianCopulaSynthesizer\","
+    ]
+   },
+   {
+    "file": "synthesizer/__init__.py",
+    "line": 14,
+    "text": "\"TVAESynthesizer\",",
+    "context": [
+     "__all__ = [",
+     "    \"BaseSynthesizer\",",
+     "    \"GaussianCopulaSynthesizer\",",
+     "    \"CTGANSynthesizer\",",
+     "    \"TVAESynthesizer\",",
+     "]"
+    ]
+   },
+   {
+    "file": "synthesizer/tvae.py",
+    "line": 11,
+    "text": "class TVAESynthesizer(BaseSynthesizer):",
+    "context": [
+     "",
+     "from .base import BaseSynthesizer",
+     "from synthdata.metadata import detect_metadata",
+     "",
+     "class TVAESynthesizer(BaseSynthesizer):",
+     "    \"\"\"",
+     "    An implementation of a Tabular Variational Autoencoder.",
+     "",
+     "    Provides another deep learning-based approach to data generation."
+    ]
+   }
+  ],
+  "ctgan_mod": [
+   {
+    "file": "synthesizer/ctgan.py",
+    "line": 6,
+    "text": "# from ctgan import CTGANSynthesizer as CTGANModel # Example if wrapping",
+    "context": [
+     "Conditional Tabular GAN (CTGAN) Synthesizer.",
+     "\"\"\"",
+     "from typing import Dict, Any",
+     "import pandas as pd",
+     "# from ctgan import CTGANSynthesizer as CTGANModel # Example if wrapping",
+     "",
+     "from .base import BaseSynthesizer",
+     "from synthdata.metadata import detect_metadata",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "synthesizer/tvae.py",
+    "line": 6,
+    "text": "# from sdv.tabular import TVAE as TVAEModel # Example if wrapping",
+    "context": [
+     "Tabular Variational Autoencoder (TVAE) Synthesizer.",
+     "\"\"\"",
+     "from typing import Dict, Any",
+     "import pandas as pd",
+     "# from sdv.tabular import TVAE as TVAEModel # Example if wrapping",
+     "",
+     "from .base import BaseSynthesizer",
+     "from synthdata.metadata import detect_metadata",
+     ""
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ctgan_mod",
+  "gc",
+  "sdv_any",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "pyproject.toml": [
+   "    \"tensorflow>=2.5.0\",   # For TVAE and potentially CTGAN",
+   "    \"torch>=1.9.0\",      # For CTGAN and potentially TVAE"
+  ]
+ }
+}

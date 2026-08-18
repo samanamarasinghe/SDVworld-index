@@ -1,0 +1,272 @@
+{
+ "repo": "monochandan/Text-CheckWorthy-Classification",
+ "disk_kb": 10091,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Check Worthiness Estimetion of Text Data\n\nWith the rapid rise of online misinformation, it's increasingly important to prioritize which claims are worth fact-checking. Check-worthiness estimation tackles this by classifying whether a statement like a tweet or debate quote-merits verification. However, challenges such as subjectivity, data imbalance, and linguistic ambiguity make this task difficult.\n\nWhile recent benchmarks like CheckThat! Lab at [CLEF 2024](http://clef2024.clef-initiative.eu/index.php?page=Pages/lab_pages/checkthat.html) have seen dominance from transformer-based and LLM-based models (e.g., RoBERTa, GPT-4, LLaMA2), these often demand high computational resources. Whether using transformer-based models or traditional machine learning approaches, my focus was on efficiently addressing this problem in a trustworthy manner, while keeping in mind the variety and complexity of textual data. This project explores different approachs of ensemble-based traditional ML models, supported by resampling techniques, can remain competitive. I have conduct  experiment with [QLoRA](https://arxiv.org/abs/2305.14314) for memory-efficient fine-tuning of large models, offering a practical alternative to resource-heavy approaches.\n\n\nThis research addresses the growing need to identify claims worth fact-checking, especially in the age of widespread misinformation. Focusing on English-language datasets from U.S. presidential debate transcripts, we apply a range of resampling methods to tackle data imbalance and explore multiple machine learning approaches from traditional models to fine-tuned LLMs using memory-efficient techniques like QLoRA.\n\n## Key contributions include :\n\n- How to handle huge ammount of imbalance text data.\n  \n- Prompt engineering (few shot, zero shot) for data labeling and data processing.\n\n- Tweet data scrapping for validate the model, prompt engineering for label automation.\n  \n- Laveraging Data pruning techniques with LLM prompt engineering and  varies NLP libraries.\n\n- Evaluation of linguistic, contextual, and semantic features.\n\n- Ensemble strategies that significantly boost performance.\n\n- Benchmarking on CLEF 2024's CheckThat! dataset and additional tweet data.\n\n- Preliminary results show ensemble-based classical models outperform current CLEF 2024 LLM-based baselines.\n\n- Fine-tuning state of the art LLM Model with [QLoRA](https://huggingface.co/docs/peft/main/en/developer_guides/quantization) also give better performance compared to LoRA.\n  \n<!-- - Using both structured and unstructured data sources, create [retrieval-augmented LLM pipelines](https://github.com/monochandan/RAG-LLM-pipeline) for claim checkworthiness development. which will highlight the value of the RAG system in determining check worthiness. -->\n\n### Custom [Ensemble](https://github.com/monochandan/Text-CheckWorthy-Classification-Master-Thesis/blob/main/Ensembling_techniques/Ensemble.py) Learning\nImplemented advanced **blending and stacking ensembles** using:\n- Manual out-of-fold training and prediction logic\n- Integration of diverse base models (e.g., XGBoost, Logistic Regression, Decision Tree, Random Forest, Ada Boost, Gradient Boosting, Light GBM, KNN)\n- Final meta-learner trained on base model predictions\nAchieved improved F1 scores compared to traditional ensemble methods (e.g., VotingClassifier).\n\n\n## Used LLM models till now:\n- gemini-1.5-flash - prompt engineering for class label automation for scrapped tweet .\n<!-- falcon-7b - data pruning by using prompt engineering.-->\n- [BERT](https://github.com/monochandan/Text-CheckWorthy-Classification-Master-Thesis/blob/main/LLM/PEFT-BERT-QLoRa--got-result_1.ipynb) - LLM model for text classification.\n- multilingual BERT\n- xlm-RoBERTa\n<!--- mistral-7b -  LLM model for text classification. (working)-->\n\n\n## Classical model used till now Hyperparameter Tuned for [English](https://github.com/monochandan/Text-CheckWorthy-Classification-Master-Thesis/blob/main/hp-tuning/hp-tuning.ipynb), [Arabic](https://github.com/monochandan/Text-CheckWorthy-Classification-Master-Thesis/blob/main/hp-tuning/arabic_hp_tuning.ipynb) and [Spanish]()\n- Random Forest\n- XGB\n- Decision Tree\n- KNN\n- GDB\n- LGBM\n- ADB\n\n### BenchMark Dataset from [CLEF2024](https://gitlab.com/checkthat_lab/clef2024-checkthat-lab/-/tree/main/task1/data)\n<table>\n  <tr>\n    <td><img width=\"1080\" height=\"960\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/fb19c0cd-8a72-4d6b-ba79-31c39aa6f934\" /></td>\n      <!--<td><img width=\"567\" height=\"455\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/36c503fd-e726-456e-89c8-a5269982c679\" /></td>-->\n  </tr>\n</table>\n\n# English\n## [Data Used](https://gitlab.com/checkthat_lab/clef2024-checkthat-lab/-/tree/main/task1/data)\n<Table border=\"1\">\n  <tr>\n    <th>Dataset</th>\n    <th>Not CheckWorthy</th>\n    <th>CheckWorthy</th>\n  </tr>\n  <td>Training Data</td>\n  <td align=\"center\">17087</td>\n  <td align=\"center\">5413</td>\n</tr> \n  <tr>\n  <td>UnderSampled Training Data</td>\n  <td align=\"center\">7189</td>\n  <td align=\"center\"> 5408</td>\n</tr>\n<tr>\n  <td>Dev Data (hyperparametr Tuning)</td>\n  <td align=\"center\">794</td>\n  <td align=\"center\"> 238</td>\n</tr>\n\n<tr>\n  <td>Dev Test Data (Model Test)</td>\n  <td align=\"center\">210</td>\n  <td align=\"center\"> 108</td>\n</tr>\n<tr>\n  <td>Test Data (Model Test)</td>\n  <td align=\"center\">253</td>\n  <td align=\"center\"> 88</td>\n</tr>\n\n<tr>\n  <td>Tweet Data (Model Test)</td>\n  <td align=\"center\">124</td>\n  <td align=\"center\">107</td>\n</tr>\n</Table>\n\n## Trained on Benchmark DataSet and tested on Test data\n<table border=\"1\">\n  <tr>\n    <th>Models</th>\n    <th>Accuracy</th>\n    <th>Precision</th>\n    <th>Recall</th>\n    <th>F1 Score</th\n  </tr>\n  <tr>\n    <th>XGBoost</th>\n    <th>0.830</th>\n    <th>0.8222</th>\n    <th>0.830</th>\n    <th>0.821</th>\n  </tr>\n  <tr>\n    <th>Gradient Boosting</th>\n    <th>0.798</th>\n    <th>0.789</th>\n    <th>0.798</th>\n    <th>0.768</th>\n  </tr>\n\n  \n   <tr>\n    <th>Light GBM</th>\n    <th>0.8333</th>\n    <th>0.837</th>\n    <th>0.833</th>\n    <th>0.8111</th>\n  </tr>\n\n  <tr>\n    <th>Logistic Regression</th>\n    <th>0.748</th>\n    <th>0.816</th>\n    <th>0.748</th>\n    <th>0.763</th>\n</th>\n  </tr>\n\n  <tr>\n    <th>Voating Classifier (Soft: XGB + GDB + LR)</th>\n    <th>0.833</th>\n    <th>0.825</th>\n    <th>0.833</th>\n    <th>0.825</th>\n  </tr>\n\n   <tr>\n    <th>Voating Classifier (Hard: XGB + LGBM + ADB + LR)</th>\n    <th>0.836</th>\n    <th>0.850</th>\n    <th>0.836</th>\n    <th>0.811</th>\n  </tr>\n  \n <tr>\n    <th>Voating Classifier (Hard: XGB + GDB + LR)</th>\n    <th>0.878</th>\n    <th>0.881</th>\n    <th>0.877</th>\n    <th>0.878</th>\n  </tr>\n\n  \n</table>\n\n## Performance of classicial ML models on Undersampled English Dataset and tested on dev test dataset\n\n<table border = \"1\">\n <tr>\n   <th>Model</th>\n   <th>Accuracy</th>\n   <th>Precision</th>\n   <th>Recall</th>\n   <th>F1</th>\n </tr> \n  \n  <tr>\n   <th>Decision Tree</th>\n   <th>0.709</th>\n   <th>0.714</th>\n   <th>0.709</th>\n   <th>0.711</th>\n  </tr> \n  \n  <tr>\n      <th>KNN</th>\n   <th>0.671</th>\n   <th>0.657</th>\n   <th>0.671</th>\n   <th>0.660</th>\n  </tr> \n  \n  <tr>\n      <th>XGBoost</th>\n   <th>0.867</th>\n   <th>0.872</th>\n   <th>0.867</th>\n   <th>0.868</th>\n  </tr> \n  \n  <tr>\n      <th>Random Forest</th>\n   <th>0.728</th>\n   <th>0.717</th>\n   <th>0.728</th>\n   <th>0.714</th>\n  </tr> \n  \n  <tr>\n      <th>Gradient Boosting</th>\n   <th>0.861</th>\n   <th>0.860</th>\n   <th>0.861</th>\n   <th>0.857</th>\n  </tr> \n  \n  <tr>\n      <th>Light GBM</th>\n   <th>0.845</th>\n   <th>0.843</th>\n   <th>0.845</th>\n   <th>0.842</th>\n  </tr> \n  \n  <tr>\n      <th>Ada Boost</th>\n   <th>0.813</th>\n   <th>0.815</th>\n   <th>0.813</th>\n   <th>0.803</th>\n  </tr> \n  \n  <tr>\n      <th>Logistic Regression</th>\n   <th>0.851</th>\n   <th>0.874</th>\n   <th>0.851</th>\n   <th>0.855</th>\n  </tr> \n  \n  <tr>\n      <th>Voating Classifier (Soft: XGb + GDB + LR)</th>\n   <th>0.884</th>\n   <th>0.889</th>\n   <th>0.883</th>\n   <th>0.884</th>\n  </tr> \n  \n  <tr>\n      <th>Voating Classifier (Hard: XGb + LGBM + ADb  + LR)</th>\n   <th>0.864</th>\n   <th>0.863</th>\n   <th>0.864</th>\n   <th>0.862</th>\n  </tr> \n  \n  <tr>\n      <th>Voating Classifier (Hard: XGb + GDB + LR)</th>\n   <th>0.877</th>\n   <th>0.881</th>\n   <th>0.877</th>\n   <th>0.878</th>\n  </tr> \n</table>\n\n## Performance of different models on the original dataset and evaluated on dev test data\n\n<table border = \"1\">\n <tr>\n   <th>Model</th>\n   <th>Accuracy</th>\n   <th>Precision</th>\n   <th>Recall</th>\n   <th>F1</th>\n </tr> \n  \n  <tr>\n   <th>Decision Tree</th>\n   <th>0.718</th>\n   <th>0.720</th>\n   <th>0.718</th>\n   <th>0.719</th>\n  </tr> \n  \n  <tr>\n      <th>KNN</th>\n   <th>0.687</th>\n   <th>0.685</th>\n   <th>0.687</th>\n   <th>0.615</th>\n  </tr> \n  \n  <tr>\n      <th>XGBoost</th>\n   <th>0.791</th>\n   <th>0.824</th>\n   <th>0.791</th>\n   <th>0.764</th>\n  </tr> \n  \n  <tr>\n      <th>Random Forest</th>\n   <th>0.753</th>\n   <th>0.746</th>\n   <th>0.753</th>\n   <th>0.746</th>\n  </tr> \n  \n  <tr>\n      <th>Gradient Boosting</th>\n   <th>0.801</th>\n   <th>0.831</th>\n   <th>0.801</th>\n   <th>0.777</th>\n  </tr> \n  \n  <tr>\n      <th>Light GBM</th>\n   <th>0.807</th>\n   <th>0.828</th>\n   <th>0.807</th>\n   <th>0.788</th>\n  </tr> \n  \n  <tr>\n      <th>Ada Boost</th>\n   <th>0.785</th>\n   <th>0.814</th>\n   <th>0.785</th>\n   <th>0.757</th>\n  </tr> \n  \n  <tr>\n      <th>Logistic Regression</th>\n   <th>0.851</th>\n   <th>0.857</th>\n   <th>0.851</th>\n   <th>0.844</th>\n  </tr> \n  \n  <tr>\n      <th>Voating Classifier (Soft: XGb + GDB + LR)</th>\n   <th>0.813</th>\n   <th>0.840</th>\n   <th>0.813</th>\n   <th>0.793</th>\n  </tr> \n</table>\n\n## Performance of different classifiers on the undersampled dataset (evaluated on test data):\n\n<table border = \"1\">\n <tr>\n   <th>Model</th>\n   <th>Accuracy</th>\n   <th>Precision</th>\n   <th>Recall</th>\n   <th>F1</th>\n </tr> \n  \n  <tr>\n   <th>KNN</th>\n   <th>0.669</th>\n   <th>0.641</th>\n   <th>0.669</th>\n   <th>0.653</th>\n  </tr> \n  \n  <tr>\n      <th>XGBoost</th>\n   <th>0.718</th>\n   <th>0.785</th>\n   <th>0.718</th>\n   <th>0.735</th>\n  </tr> \n  \n  <tr>\n      <th>Gradient Boosting</th>\n   <th>0.780</th>\n   <th>0.790</th>\n   <th>0.780</th>\n   <th>0.784</th>\n  </tr> \n  \n  <tr>\n      <th>Light GBM</th>\n   <th>0.812</th>\n   <th>0.812</th>\n   <th>0.812</th>\n   <th>0.812</th>\n  </tr> \n  \n  <tr>\n      <th>Ada Boost</th>\n   <th>0.7333</th>\n   <th>0.701</th>\n   <th>0.733</th>\n   <th>0.709</th>\n  </tr> \n  \n  <tr>\n      <th>Logistic Regression</th>\n   <th>0.724</th>\n   <th>0.814</th>\n   <th>0.724</th>\n   <th>0.741</th>\n  </tr> \n  \n  <tr>\n      <th>Voating Classifier (Soft: XGB + GDB + LR)</th>\n   <th>0.777</th>\n   <th>0.818</th>\n   <th>0.777</th>\n   <th>0.788</th>\n  </tr> \n  \n  \n  \n  <tr>\n      <th>Voating Classifier (Hard: XGb +  LGBM + ADB + LR)</th>\n   <th>0.806</th>\n   <th>0.808</th>\n   <th>0.806</th>\n   <th>0.807</th>\n  </tr> \n</table>\n\n## Performance of classifier trained on undersampled dataset , evaluated on tweet data\n\n### Query for tweet data scrapping:\n``QUERY = \"COVID OR vaccine OR pandemic OR lockdown OR #COVID19 OR \" \\\n        \"#VaccineMandate elections OR Biden OR Trump OR Joe Biden OR \" \\\n        \"DOGE OR FBI OR Donald Trump OR Ukraine OR Russia OR \" \\\n        \"Middle East Crisis OR South Asia Crisis OR UN meeting OR\" \\\n        \" US Congress OR US Republic OR geopolitics OR War OR\" \\\n        \" #Politics OR #Election2025  OR #UkraineRussiaWar OR\" \\\n        \" #Trump OR #DOGE OR #Trump2025 #MiddleEastCrisis OR\" \\\n        \" #Geopolitics OR #USRepublic OR #USCongress OR #Bangladesh (COVID OR\" \\\n        \" OR OR vaccine OR OR OR pandemic OR OR OR lockdown OR OR OR\" \\\n        \" #COVID19 OR OR OR #VaccineMandate OR elections OR OR OR\" \\\n        \" Biden OR OR OR Trump OR OR OR Joe OR Biden OR OR OR\" \\\n        \" DOGE OR OR OR FBI OR OR OR Donald OR Trump OR OR OR\" \\\n        \" Ukraine OR OR OR Russia OR OR OR Middle OR \" \\\n        \"East OR Crisis OR OR OR South OR Asia OR Crisis OR OR OR\" \\\n        \" UN OR meeting OR OR OR US OR Congress OR OR OR US OR\" \\\n        \" Republic OR OR OR geopolitics OR OR OR War OR OR OR\" \\\n        \" #Politics OR OR OR #Election2025 OR OR OR #UkraineRussiaWar OR OR OR\" \\\n        \" #Trump OR OR OR #DOGE OR OR OR #Trump2025 OR #MiddleEastCrisis OR OR OR\" \\\n        \" #Geopolitics OR OR OR #USRepublic OR OR OR #USCongress OR OR OR #Bangladesh)\" \\\n        \" lang:en until:2022-12-31 since:2020-01-01\"\n        ``\n<table border = \"1\">\n <tr>\n   <th>Model</th>\n   <th>Accuracy</th>\n   <th>Precision</th>\n   <th>Recall</th>\n   <th>F1</th>\n </tr> \n  \n  <tr>\n   <th>Decision Tree</th>\n   <th>0.641</th>\n   <th>0.698</th>\n   <th>0.641</th>\n   <th>0.625</th>\n  </tr> \n  \n  <tr>\n      <th>XGBoost</th>\n   <th>0.623</th>\n   <th>0.659</th>\n   <th>0.623</th>\n   <th>0.613</th>\n  </tr> \n  \n  <tr>\n      <th>Gradient Boosting</th>\n   <th>0.654</th>\n   <th>0.653</th>\n   <th>0.654</th>\n   <th>0.653</th>\n  </tr> \n  \n  <tr>\n      <th>Light GBM</th>\n   <th>0.649</th>\n   <th>0.648</th>\n   <th>0.649</th>\n   <th>0.648</th>\n  </tr> \n  \n  <tr>\n      <th>Ada Boost</th>\n   <th>0.632</th>\n   <th>0.639</th>\n   <th>0.632</th>\n   <th>0.616</th>\n  </tr> \n  \n  <tr>\n      <th>Logistic Regression</th>\n   <th>0.688</th>\n   <th>0.740</th>\n   <th>0.688</th>\n   <th>0.678</th>\n  </tr> \n  \n  <tr>\n      <th>Voating Classifier (Soft: XGB + GDB + LR)</th>\n   <th>0.658</th>\n   <th>0.675</th>\n   <th>0.658</th>\n   <th>0.656</th>\n  </tr> \n  \n  \n  \n  <tr>\n      <th>Voating Classifier (Hard: XGb +  LGBM + ADB + LR)</th>\n   <th>0.671</th>\n   <th>0.670</th>\n   <th>0.671</th>\n   <th>0.670</th>\n  </tr> \n</table>\n        \n\n\n## Performance of LLMs for english dataset across different evaluation datasets:\n<table border = \"1\">\n <tr>\n   <th>Model</th>\n   <th>Dataset</th>\n   <th>Accuracy</th>\n   <th>Precision</th>\n   <th>F1</th>\n </tr> \n  \n  <tr>\n   <th>DBERTa (epoch : 8)</th>\n   <th>Test Data</th>\n   <th>0.836</th>\n   <th>0.834</th>\n   <th>0.819</th>\n  </tr> \n  \n  <tr>\n   <th>DBERTa (epoch : 8)</th>\n   <th>Dev Test Data</th>\n   <th>0.851</th>\n   <th>0.861</th>\n   <th>0.843</th>\n  </tr>\n\n  <tr>\n   <th>DBERTa (epoch : 8)</th>\n   <th>Tweet Data</th>\n   <th>0.779</th>\n   <th>0.788</th>\n   <th>0.775</th>\n  </tr>\n  \n  <tr>\n      <th>BERT (QLoRA, Undersampled, Hyperparametered tuned with optuna, 40 epoch)</th>\n   <th>Test Data</th>\n   <th>0.839</th>\n   <th>0.834</th>\n   <th>0.825</th>\n  </tr> \n\n  <tr>\n      <th>BERT (QLoRA, Undersampled, Hyperparametered tuned with optuna, 40 epoch)</th>\n   <th>Dev Test Data</th>\n   <th>0.804</th>\n   <th>0.819</th>\n   <th>0.8786</th>\n  </tr> \n\n  <tr>\n      <th>BERT (QLoRA, Undersampled, Hyperparametered tuned with optuna, 40 epoch)</th>\n   <th>Tweet Data</th>\n   <th>0.745</th>\n   <th>0.750</th>\n   <th>0.741</th>\n  </tr> \n  \n  <tr>\n      <th>RoBERTa - Base (25 epochs)</th>\n   <th>Test Data</th>\n   <th>0.821</th>\n   <th>0.818</th>\n   <th>0.819</th>\n  </tr> \n\n   <tr>\n      <th>RoBERTa - Base (25 epochs)</th>\n   <th>Dev Test Data</th>\n   <th>0.848</th>\n   <th>0.847</th>\n   <th>0.847</th>\n  </tr> \n\n   <tr>\n      <th>RoBERTa - Base (25 epochs)</th>\n   <th>Tweet Data</th>\n   <th>0.736</th>\n   <th>0.739</th>\n   <th>0.736</th>\n  </tr> \n  \n  \n</table>\n\n<!-- ###########################################################################################################################--->\n# Dutch\n\n## [Data Used](https://gitlab.com/checkthat_lab/clef2024-checkthat-lab/-/tree/main/task1/data)\n<table border=\"1\">\n<tr>\n  <th>Dataset</th>\n  <th>CheckWorthy</th>\n  <th> Not Checkworthy</th>\n</tr>\n<tr>\n  <td>Training Data</td>\n  <td align=\"center\">405</td>\n  <td align=\"center\">590</td>\n</tr> \n<tr>\n  <td>Dev Data (hyperparametr Tuning)</td>\n  <td align=\"center\">102</td>\n  <td align=\"center\"> 150 </td>\n</tr>\n\n<tr>\n  <td>Dev Test Data (Model Test)</td>\n  <td align=\"center\">316</td>\n  <td align=\"center\"> 350 </td>\n</tr>\n\n<tr>\n  <td>Test Data (Model Test)</td>\n  <td align=\"center\">397</td>\n  <td align=\"center\">603</td>\n</tr>\n</table>\n\n## Result\n<table border=\"1\">\n  <tr>\n    <th>Models</th>\n    <th>Accuracy</th>\n    <th>Precision</th>\n    <th>Recall</th>\n    <th>F1 Score</th>\n  </tr>\n  <tr>\n    <th>KNN Classifier</th>\n    <th>0.518</th>\n    <th>0.521</th>\n    <th>0.518</th>\n    <th>0.518</th>\n  </tr>\n  <tr>\n    <th>Decision Tree Classifier</th>\n    <th>0.538</th>\n    <th>0.545</th>\n    <th>0.538</th>\n    <th>0.534</th>\n  </tr>\n\n  \n   <tr>\n    <th>Light GBM</th>\n    <th>0.506</th>\n    <th>0.506</th>\n    <th>0.506</th>\n    <th>0.506</th>\n  </tr>\n\n  <tr>\n    <th>Gradient Boosting</th>\n    <th>0.498</th>\n    <th>0.493</th>\n    <th>0.498</th>\n    <th>0.492</th>\n  </tr>\n\n  <tr>\n    <th>Random Forest</th>\n    <th>0.494</th>\n    <th>0.500</th>\n    <th>0.494</th>\n    <th>0.489</th>\n  </tr>\n\n   <tr>\n    <th>Voting(Soft: XGB + GDB + LR)</th>\n    <th>0.505</th>\n    <th>0.507</th>\n    <th>0.505</th>\n    <th>0.504</th>\n  </tr>\n\n  <tr>\n    <th>Voating(Soft: decision tree + KNN + random forest + XGB)</th>\n    <th>0.508</th>\n    <th>0.522</th>\n    <th>0.508</th>\n    <th>0.490</th>\n  </tr>\n\n  <tr>\n    <th>Voating (Hard: Decision TRee + KNN  + Random Forest + XGB)</th>\n    <th>0.520</th>\n    <th>0.525</th>\n    <th>0.520</th>\n    <th>0.517</th>\n  </tr>\n\n</table>\n\n\n\n\n\n\n<!-- ############################################################################################################################--->\n\n# Arabic\n\n## [Data Used](https://gitlab.com/checkthat_lab/clef2024-checkthat-lab/-/tree/main/task1/data)\n<table border=\"1\">\n<tr>\n  <th>Dataset</th>\n  <th>Not CheckWorthy</th>\n  <th>Checkworthy</th>\n</tr>\n<tr>\n  <td>Training Data</td>\n  <td align=\"center\">5090</td>\n  <td align=\"center\">2243</td>\n</tr> \n<tr>\n  <td>Dev Data (hyperparametr Tuning)</td>\n  <td align=\"center\">682</td>\n  <td align=\"center\"> 411 </td>\n</tr>\n\n<tr>\n  <td>Dev Test Data (Model Test)</td>\n  <td align=\"center\">377</td>\n  <td align=\"center\"> 123 </td>\n</tr>\n</table>\n\n## Best performance on the Arabic dataset (Dev-Test data):\n\n<table border=\"1\">\n  <tr>\n    <th>Models</th>\n    <th>Accuracy</th>\n    <th>Precision</th>\n    <th>Recall</th>\n    <th>F1 Score</th>\n    \n  </tr>\n  <tr>\n    <th>Random Forest Classifier</th>\n    <th>0.754</th>\n    <th>0.569</th>\n    <th>0.754</th>\n    <th>0.648</th>\n    \n  </tr>\n  <tr>\n    <th>XGB Classifier</th>\n    <th>0.572</th>\n    <th>0.698</th>\n    <th>0.572</th>\n    <th>0.602</th>\n    \n  </tr>\n\n  \n   <tr>\n    <th>Logistic Regression</th>\n    <th>0.538</th>\n    <th>0.700</th>\n    <th>0.538</th>\n    <th>0.568</th>\n     \n  </tr>\n\n  <tr>\n    <th>Voating Classifier (soft: RF + XGB + DT + KNN)</th>\n    <th>0.486</th>\n    <th>0.706</th>\n    <th>0.486</th>\n    <th>0.508</th>\n   \n  </tr>\n\n  <tr>\n    <th>Voating Classifier (hard: RF + XGB + DT + KNN)</th>\n    <th>0.478</th>\n    <th>0.703</th>\n    <th>0.478</th>\n    <th>0.499</th>\n   \n  </tr>\n\n  \n</table>\n\n<!-- ############################################################################################################################--->\n# Spanish\n\n## [Data Used](https://gitlab.com/checkthat_lab/clef2024-checkthat-lab/-/tree/main/task1/data)\n<table border=\"1\">\n<tr>\n  <th>Dataset</th>\n  <th>Not CheckWorthy</th>\n  <th>Checkworthy</th>\n</tr>\n<tr>\n  <td>Training Data</td>\n  <td align=\"center\">16862</td>\n  <td align=\"center\">3182</td>\n</tr> \n<tr>\n  <td>Dev Data (hyperparametr Tuning)</td>\n  <td align=\"center\">4296</td>\n  <td align=\"center\">704</td>\n</tr>\n\n<tr>\n  <td>Dev Test Data (Model Test)</td>\n  <td align=\"center\">4491</td>\n  <td align=\"center\">509</td>\n</tr>\n</table>\n\n## Best performing model on the spanish data set (dev-test):\n<table border=\"1\">\n  <tr>\n    <th>Models</th>\n    <th>Accuracy</th>\n    <th>Precision</th>\n    <th>Recall</th>\n    <th>F1 Score</th>\n    \n  </tr>\n  <tr>\n    <th>Gradient Boosting</th>\n    <th>0.900</th>\n    <th>0.872</th>\n    <th>0.900</th>\n    <th>0.874</th>\n\n  </tr>\n  <tr>\n    <th>Light GBM</th>\n    <th>0.878</th>\n    <th>0.835</th>\n    <th>0.878</th>\n    <th>0.852</th>\n\n  </tr>\n\n  \n   <tr>\n    <th>AdaBoost</th>\n    <th>0.898</th>\n    <th>0.863</th>\n    <th>0.898</th>\n    <th>0.859</th>",
+ "hits": {
+  "ct": [
+   {
+    "file": "all_related_mats.txt",
+    "line": 349,
+    "text": "PerformanceAlert: Using the CTGANSynthesizer on this data is not recommended. To model this data, CTGAN will generate a large number of columns.",
+    "context": [
+     "Data Synthesizing - X_train, marged_data[label] -- array of minor data -- 2d array -- dataframe -- synthesize",
+     "",
+     "We recommend preprocessing discrete columns that can have many values, using 'update_transformers'. Or you may drop columns that are not necessary to model. (Exit this script using ctrl-C)",
+     "",
+     "PerformanceAlert: Using the CTGANSynthesizer on this data is not recommended. To model this data, CTGAN will generate a large number of columns.",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "data_sampling_code/model_with_best_f1_new_pca_sampling_technq.ipynb",
+    "line": 1,
+    "text": "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyNHKWgWArmcjFIDOgxiwvcO\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"language_info\":{\"name\":\"python\"},\"accelerator\":\"GPU\"},\"cells\":[{\"cell_type\":\"markdown\",\"source\":[\"Trying to",
+    "context": [
+     "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyNHKWgWArmcjFIDOgxiwvcO\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"languag"
+    ]
+   },
+   {
+    "file": "classical_model/model_with_best_f1_new_pca.ipynb",
+    "line": 1,
+    "text": "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyNIi3Kya5THdr8yHYeLIb9+\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"language_info\":{\"name\":\"python\"},\"accelerator\":\"GPU\"},\"cells\":[{\"cell_type\":\"markdown\",\"source\":[\"Trying to",
+    "context": [
+     "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyNIi3Kya5THdr8yHYeLIb9+\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"languag"
+    ]
+   },
+   {
+    "file": "tweet_data_scraping/create_appropriate_columns_after_cleaning_tweet_data_1.ipynb",
+    "line": 1,
+    "text": "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyPB1ujZJfLK4vsJbBGjOoML\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"language_info\":{\"name\":\"python\"},\"accelerator\":\"GPU\"},\"cells\":[{\"cell_type\":\"code\",\"execution_count\":null,\"",
+    "context": [
+     "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyPB1ujZJfLK4vsJbBGjOoML\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"languag"
+    ]
+   },
+   {
+    "file": "tweet_data_scraping/with_op_files/create_appropriate_columns_after_cleaning_tweet_data.ipynb",
+    "line": 1,
+    "text": "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyPB1ujZJfLK4vsJbBGjOoML\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"language_info\":{\"name\":\"python\"},\"accelerator\":\"GPU\",\"widgets\":{\"application/vnd.jupyter.widget-state+json\"",
+    "context": [
+     "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyPB1ujZJfLK4vsJbBGjOoML\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"languag"
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "data_sampling_code/model_with_best_f1_new_pca_sampling_technq.ipynb",
+    "line": 1,
+    "text": "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyNHKWgWArmcjFIDOgxiwvcO\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"language_info\":{\"name\":\"python\"},\"accelerator\":\"GPU\"},\"cells\":[{\"cell_type\":\"markdown\",\"source\":[\"Trying to",
+    "context": [
+     "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyNHKWgWArmcjFIDOgxiwvcO\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"languag"
+    ]
+   },
+   {
+    "file": "classical_model/model_with_best_f1_new_pca.ipynb",
+    "line": 1,
+    "text": "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyNIi3Kya5THdr8yHYeLIb9+\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"language_info\":{\"name\":\"python\"},\"accelerator\":\"GPU\"},\"cells\":[{\"cell_type\":\"markdown\",\"source\":[\"Trying to",
+    "context": [
+     "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyNIi3Kya5THdr8yHYeLIb9+\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"languag"
+    ]
+   },
+   {
+    "file": "tweet_data_scraping/create_appropriate_columns_after_cleaning_tweet_data_1.ipynb",
+    "line": 1,
+    "text": "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyPB1ujZJfLK4vsJbBGjOoML\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"language_info\":{\"name\":\"python\"},\"accelerator\":\"GPU\"},\"cells\":[{\"cell_type\":\"code\",\"execution_count\":null,\"",
+    "context": [
+     "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyPB1ujZJfLK4vsJbBGjOoML\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"languag"
+    ]
+   },
+   {
+    "file": "tweet_data_scraping/with_op_files/create_appropriate_columns_after_cleaning_tweet_data.ipynb",
+    "line": 1,
+    "text": "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyPB1ujZJfLK4vsJbBGjOoML\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"language_info\":{\"name\":\"python\"},\"accelerator\":\"GPU\",\"widgets\":{\"application/vnd.jupyter.widget-state+json\"",
+    "context": [
+     "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyPB1ujZJfLK4vsJbBGjOoML\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"languag"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "data_sampling_code/model_with_best_f1_new_pca_sampling_technq.ipynb",
+    "line": 1,
+    "text": "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyNHKWgWArmcjFIDOgxiwvcO\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"language_info\":{\"name\":\"python\"},\"accelerator\":\"GPU\"},\"cells\":[{\"cell_type\":\"markdown\",\"source\":[\"Trying to",
+    "context": [
+     "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyNHKWgWArmcjFIDOgxiwvcO\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"languag"
+    ]
+   },
+   {
+    "file": "classical_model/model_with_best_f1_new_pca.ipynb",
+    "line": 1,
+    "text": "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyNIi3Kya5THdr8yHYeLIb9+\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"language_info\":{\"name\":\"python\"},\"accelerator\":\"GPU\"},\"cells\":[{\"cell_type\":\"markdown\",\"source\":[\"Trying to",
+    "context": [
+     "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyNIi3Kya5THdr8yHYeLIb9+\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"languag"
+    ]
+   },
+   {
+    "file": "tweet_data_scraping/create_appropriate_columns_after_cleaning_tweet_data_1.ipynb",
+    "line": 1,
+    "text": "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyPB1ujZJfLK4vsJbBGjOoML\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"language_info\":{\"name\":\"python\"},\"accelerator\":\"GPU\"},\"cells\":[{\"cell_type\":\"code\",\"execution_count\":null,\"",
+    "context": [
+     "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyPB1ujZJfLK4vsJbBGjOoML\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"languag"
+    ]
+   },
+   {
+    "file": "tweet_data_scraping/with_op_files/create_appropriate_columns_after_cleaning_tweet_data.ipynb",
+    "line": 1,
+    "text": "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyPB1ujZJfLK4vsJbBGjOoML\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"language_info\":{\"name\":\"python\"},\"accelerator\":\"GPU\",\"widgets\":{\"application/vnd.jupyter.widget-state+json\"",
+    "context": [
+     "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyPB1ujZJfLK4vsJbBGjOoML\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"languag"
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "data_sampling_code/model_with_best_f1_new_pca_sampling_technq.ipynb",
+    "line": 1,
+    "text": "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyNHKWgWArmcjFIDOgxiwvcO\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"language_info\":{\"name\":\"python\"},\"accelerator\":\"GPU\"},\"cells\":[{\"cell_type\":\"markdown\",\"source\":[\"Trying to",
+    "context": [
+     "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyNHKWgWArmcjFIDOgxiwvcO\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"languag"
+    ]
+   },
+   {
+    "file": "classical_model/model_with_best_f1_new_pca.ipynb",
+    "line": 1,
+    "text": "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyNIi3Kya5THdr8yHYeLIb9+\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"language_info\":{\"name\":\"python\"},\"accelerator\":\"GPU\"},\"cells\":[{\"cell_type\":\"markdown\",\"source\":[\"Trying to",
+    "context": [
+     "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyNIi3Kya5THdr8yHYeLIb9+\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"languag"
+    ]
+   },
+   {
+    "file": "tweet_data_scraping/create_appropriate_columns_after_cleaning_tweet_data_1.ipynb",
+    "line": 1,
+    "text": "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyPB1ujZJfLK4vsJbBGjOoML\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"language_info\":{\"name\":\"python\"},\"accelerator\":\"GPU\"},\"cells\":[{\"cell_type\":\"code\",\"execution_count\":null,\"",
+    "context": [
+     "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyPB1ujZJfLK4vsJbBGjOoML\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"languag"
+    ]
+   },
+   {
+    "file": "tweet_data_scraping/with_op_files/create_appropriate_columns_after_cleaning_tweet_data.ipynb",
+    "line": 1,
+    "text": "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyPB1ujZJfLK4vsJbBGjOoML\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"language_info\":{\"name\":\"python\"},\"accelerator\":\"GPU\",\"widgets\":{\"application/vnd.jupyter.widget-state+json\"",
+    "context": [
+     "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyPB1ujZJfLK4vsJbBGjOoML\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"languag"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "data_sampling_code/model_with_best_f1_new_pca_sampling_technq.ipynb",
+    "line": 1,
+    "text": "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyNHKWgWArmcjFIDOgxiwvcO\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"language_info\":{\"name\":\"python\"},\"accelerator\":\"GPU\"},\"cells\":[{\"cell_type\":\"markdown\",\"source\":[\"Trying to",
+    "context": [
+     "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyNHKWgWArmcjFIDOgxiwvcO\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"languag"
+    ]
+   },
+   {
+    "file": "classical_model/model_with_best_f1_new_pca.ipynb",
+    "line": 1,
+    "text": "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyNIi3Kya5THdr8yHYeLIb9+\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"language_info\":{\"name\":\"python\"},\"accelerator\":\"GPU\"},\"cells\":[{\"cell_type\":\"markdown\",\"source\":[\"Trying to",
+    "context": [
+     "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyNIi3Kya5THdr8yHYeLIb9+\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"languag"
+    ]
+   },
+   {
+    "file": "tweet_data_scraping/create_appropriate_columns_after_cleaning_tweet_data_1.ipynb",
+    "line": 1,
+    "text": "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyPB1ujZJfLK4vsJbBGjOoML\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"language_info\":{\"name\":\"python\"},\"accelerator\":\"GPU\"},\"cells\":[{\"cell_type\":\"code\",\"execution_count\":null,\"",
+    "context": [
+     "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyPB1ujZJfLK4vsJbBGjOoML\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"languag"
+    ]
+   },
+   {
+    "file": "tweet_data_scraping/with_op_files/create_appropriate_columns_after_cleaning_tweet_data.ipynb",
+    "line": 1,
+    "text": "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyPB1ujZJfLK4vsJbBGjOoML\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"language_info\":{\"name\":\"python\"},\"accelerator\":\"GPU\",\"widgets\":{\"application/vnd.jupyter.widget-state+json\"",
+    "context": [
+     "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyPB1ujZJfLK4vsJbBGjOoML\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"languag"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "data_sampling_code/model_with_best_f1_new_pca_sampling_technq.ipynb",
+    "line": 1,
+    "text": "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyNHKWgWArmcjFIDOgxiwvcO\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"language_info\":{\"name\":\"python\"},\"accelerator\":\"GPU\"},\"cells\":[{\"cell_type\":\"markdown\",\"source\":[\"Trying to",
+    "context": [
+     "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyNHKWgWArmcjFIDOgxiwvcO\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"languag"
+    ]
+   },
+   {
+    "file": "classical_model/model_with_best_f1_new_pca.ipynb",
+    "line": 1,
+    "text": "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyNIi3Kya5THdr8yHYeLIb9+\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"language_info\":{\"name\":\"python\"},\"accelerator\":\"GPU\"},\"cells\":[{\"cell_type\":\"markdown\",\"source\":[\"Trying to",
+    "context": [
+     "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyNIi3Kya5THdr8yHYeLIb9+\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"languag"
+    ]
+   },
+   {
+    "file": "tweet_data_scraping/create_appropriate_columns_after_cleaning_tweet_data_1.ipynb",
+    "line": 1,
+    "text": "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyPB1ujZJfLK4vsJbBGjOoML\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"language_info\":{\"name\":\"python\"},\"accelerator\":\"GPU\"},\"cells\":[{\"cell_type\":\"code\",\"execution_count\":null,\"",
+    "context": [
+     "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyPB1ujZJfLK4vsJbBGjOoML\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"languag"
+    ]
+   },
+   {
+    "file": "tweet_data_scraping/with_op_files/create_appropriate_columns_after_cleaning_tweet_data.ipynb",
+    "line": 1,
+    "text": "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyPB1ujZJfLK4vsJbBGjOoML\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"language_info\":{\"name\":\"python\"},\"accelerator\":\"GPU\",\"widgets\":{\"application/vnd.jupyter.widget-state+json\"",
+    "context": [
+     "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyPB1ujZJfLK4vsJbBGjOoML\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"languag"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "data_sampling_code/model_with_best_f1_new_pca_sampling_technq.ipynb",
+    "line": 1,
+    "text": "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyNHKWgWArmcjFIDOgxiwvcO\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"language_info\":{\"name\":\"python\"},\"accelerator\":\"GPU\"},\"cells\":[{\"cell_type\":\"markdown\",\"source\":[\"Trying to",
+    "context": [
+     "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyNHKWgWArmcjFIDOgxiwvcO\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"languag"
+    ]
+   },
+   {
+    "file": "classical_model/model_with_best_f1_new_pca.ipynb",
+    "line": 1,
+    "text": "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyNIi3Kya5THdr8yHYeLIb9+\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"language_info\":{\"name\":\"python\"},\"accelerator\":\"GPU\"},\"cells\":[{\"cell_type\":\"markdown\",\"source\":[\"Trying to",
+    "context": [
+     "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyNIi3Kya5THdr8yHYeLIb9+\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"languag"
+    ]
+   },
+   {
+    "file": "tweet_data_scraping/create_appropriate_columns_after_cleaning_tweet_data_1.ipynb",
+    "line": 1,
+    "text": "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyPB1ujZJfLK4vsJbBGjOoML\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"language_info\":{\"name\":\"python\"},\"accelerator\":\"GPU\"},\"cells\":[{\"cell_type\":\"code\",\"execution_count\":null,\"",
+    "context": [
+     "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyPB1ujZJfLK4vsJbBGjOoML\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"languag"
+    ]
+   },
+   {
+    "file": "tweet_data_scraping/with_op_files/create_appropriate_columns_after_cleaning_tweet_data.ipynb",
+    "line": 1,
+    "text": "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyPB1ujZJfLK4vsJbBGjOoML\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"language_info\":{\"name\":\"python\"},\"accelerator\":\"GPU\",\"widgets\":{\"application/vnd.jupyter.widget-state+json\"",
+    "context": [
+     "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"gpuType\":\"T4\",\"authorship_tag\":\"ABX9TyPB1ujZJfLK4vsJbBGjOoML\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"languag"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ev",
+  "gc",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

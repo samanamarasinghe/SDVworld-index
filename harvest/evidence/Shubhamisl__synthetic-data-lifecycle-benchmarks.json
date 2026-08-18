@@ -1,0 +1,501 @@
+{
+ "repo": "Shubhamisl/synthetic-data-lifecycle-benchmarks",
+ "disk_kb": 7917,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Synthetic Data Lifecycle\n\nThis repository contains a synthetic data generation research project and a cross-domain benchmarking extension under `benchmarks/`.\n\n## Included\n\n- core project source under `evaluation/`, `main.py`, and `config.py`\n- benchmark pipeline scripts under `benchmarks/`\n- benchmark tests under `tests/benchmarks/`\n- design and implementation notes under `docs/superpowers/`\n- lightweight benchmark outputs such as summary CSVs, interpretation notes, and publication-ready plots\n\n## Excluded From Version Control\n\nThe repository intentionally excludes large or reproducible generated assets, including:\n\n- raw and processed dataset CSVs\n- trained model binaries\n- large synthetic CSV outputs\n- transient logs and cache folders\n\n## Benchmark Entry Points\n\nRun the benchmark stages independently:\n\n```powershell\npython -m benchmarks.download_datasets\npython -m benchmarks.train_benchmark_models\npython -m benchmarks.evaluate_benchmarks\npython -m benchmarks.visualize_benchmarks\n```\n\nThe cache-aware orchestrator is available at:\n\n```powershell\npython -m benchmarks.run_benchmarks\n```\n\n## Direction 3 In Colab\n\nFor the `dp_triangle/` pipeline, prefer the Colab-specific dependency set instead of the full base `requirements.txt`.\nThe base requirements include `tensorflow-privacy`, which is not needed for Direction 3 and can fail on modern Colab images.\n\nRecommended Colab flow:\n\n```python\n!git clone https://github.com/Shubhamisl/synthetic-data-lifecycle-benchmarks.git\n%cd synthetic-data-lifecycle-benchmarks\n!pip install -q -r requirements_colab_direction3.txt\n!python -m data.loader\n!python -m dp_triangle.run_direction3 --dry-run\n```\n\nBefore real training, remove the dry-run artifacts:\n\n```python\nfrom pathlib import Path\n\nresults = Path(\"results\")\nfor path in results.glob(\"dp_synthetic_*.csv\"):\n    path.unlink(missing_ok=True)\n\nfor name in [\n    \"dp_triangle_dashboard.csv\",\n    \"dp_subgroup_fairness.csv\",\n    \"dp_post_hoc_debiasing.csv\",\n    \"figure4_epsilon_tradeoff_curve.png\",\n    \"figure5_pff_radar_chart.png\",\n    \"figure6_intersectional_fairness.png\",\n    \"figure7_post_hoc_recovery.png\",\n    \"dp_direction3_dry_run.marker\",\n]:\n    (results / name).unlink(missing_ok=True)\n```\n\nThen run the full experiment:\n\n```python\n!python -m dp_triangle.run_direction3\n```\n\n## Benchmark Summaries\n\nKey saved outputs:\n\n- `benchmarks/results/cross_domain_summary.csv`\n- `benchmarks/results/mean_rank_table.csv`\n- `benchmarks/results/benchmark_run_notes.md`\n- `benchmarks/results/benchmark_research_summary.md`\n\nPlots are saved under `benchmarks/plots/`.\n",
+ "hits": {
+  "ct": [
+   {
+    "file": "tests/dp_triangle/test_dp_ctgan.py",
+    "line": 15,
+    "text": "from dp_triangle.dp_ctgan import DPCTGANSynthesizer",
+    "context": [
+     "    import json",
+     "    import pandas as pd",
+     "",
+     "    import config",
+     "    from dp_triangle.dp_ctgan import DPCTGANSynthesizer",
+     "",
+     "    model_dir = tmp_path / \"models\" / \"saved\"",
+     "    model_dir.mkdir(parents=True)",
+     "    monkeypatch.setattr(config, \"MODEL_SAVE_DIR\", model_dir)"
+    ]
+   },
+   {
+    "file": "tests/dp_triangle/test_dp_ctgan.py",
+    "line": 30,
+    "text": "synthesizer = DPCTGANSynthesizer(",
+    "context": [
+     "            \"age_group\": [\"young\", \"older\", \"young\"],",
+     "        }",
+     "    )",
+     "",
+     "    synthesizer = DPCTGANSynthesizer(",
+     "        epsilon=None,",
+     "        epochs=1,",
+     "        batch_size=2,",
+     "        noise_dim=8,"
+    ]
+   },
+   {
+    "file": "tests/dp_triangle/test_dp_ctgan.py",
+    "line": 52,
+    "text": "from dp_triangle.dp_ctgan import DPCTGANSynthesizer",
+    "context": [
+     "def test_persist_preprocessors_scopes_metadata_to_dataset_model_dir(tmp_path):",
+     "    import json",
+     "    import pandas as pd",
+     "",
+     "    from dp_triangle.dp_ctgan import DPCTGANSynthesizer",
+     "",
+     "    model_dir = tmp_path / \"bank_models\"",
+     "    train_df = pd.DataFrame(",
+     "        {"
+    ]
+   },
+   {
+    "file": "tests/dp_triangle/test_dp_ctgan.py",
+    "line": 64,
+    "text": "synthesizer = DPCTGANSynthesizer(",
+    "context": [
+     "            \"age_group\": [\"young\", \"older\", \"young\"],",
+     "        }",
+     "    )",
+     "",
+     "    synthesizer = DPCTGANSynthesizer(",
+     "        epsilon=None,",
+     "        epochs=1,",
+     "        batch_size=2,",
+     "        noise_dim=8,"
+    ]
+   },
+   {
+    "file": "tests/dp_triangle/test_dp_ctgan.py",
+    "line": 82,
+    "text": "from dp_triangle.dp_ctgan import DPCTGANSynthesizer",
+    "context": [
+     "    assert (model_dir / \"dp_scaler.pkl\").exists()",
+     "",
+     "",
+     "def test_try_attach_privacy_rebinds_optimizer_when_validator_replaces_module(monkeypatch):",
+     "    from dp_triangle.dp_ctgan import DPCTGANSynthesizer",
+     "",
+     "    synthesizer = DPCTGANSynthesizer(epsilon=1.0, epochs=1, batch_size=2, noise_dim=8)",
+     "    synthesizer.data_dim = 3",
+     "    synthesizer._build_models()"
+    ]
+   },
+   {
+    "file": "tests/dp_triangle/test_dp_ctgan.py",
+    "line": 84,
+    "text": "synthesizer = DPCTGANSynthesizer(epsilon=1.0, epochs=1, batch_size=2, noise_dim=8)",
+    "context": [
+     "",
+     "def test_try_attach_privacy_rebinds_optimizer_when_validator_replaces_module(monkeypatch):",
+     "    from dp_triangle.dp_ctgan import DPCTGANSynthesizer",
+     "",
+     "    synthesizer = DPCTGANSynthesizer(epsilon=1.0, epochs=1, batch_size=2, noise_dim=8)",
+     "    synthesizer.data_dim = 3",
+     "    synthesizer._build_models()",
+     "",
+     "    encoded = np.zeros((4, 3), dtype=np.float32)"
+    ]
+   },
+   {
+    "file": "tests/dp_triangle/test_dp_ctgan.py",
+    "line": 149,
+    "text": "from dp_triangle.dp_ctgan import DPCTGANSynthesizer",
+    "context": [
+     "    assert optimizer_param_ids == module_param_ids",
+     "",
+     "",
+     "def test_generator_step_disables_and_restores_discriminator_hooks():",
+     "    from dp_triangle.dp_ctgan import DPCTGANSynthesizer",
+     "",
+     "    class HookedDiscriminator(torch.nn.Module):",
+     "        def __init__(self):",
+     "            super().__init__()"
+    ]
+   },
+   {
+    "file": "tests/dp_triangle/test_dp_ctgan.py",
+    "line": 167,
+    "text": "synthesizer = DPCTGANSynthesizer(epsilon=1.0, epochs=1, batch_size=2, noise_dim=4)",
+    "context": [
+     "",
+     "        def forward(self, batch):",
+     "            return self.linear(batch)",
+     "",
+     "    synthesizer = DPCTGANSynthesizer(epsilon=1.0, epochs=1, batch_size=2, noise_dim=4)",
+     "    synthesizer.generator = torch.nn.Sequential(torch.nn.Linear(4, 3), torch.nn.Tanh()).to(synthesizer.device)",
+     "    synthesizer.discriminator = HookedDiscriminator().to(synthesizer.device)",
+     "",
+     "    optimizer_g = torch.optim.Adam(synthesizer.generator.parameters(), lr=2e-4)"
+    ]
+   },
+   {
+    "file": "dp_triangle/dp_ctgan.py",
+    "line": 111,
+    "text": "class DPCTGANSynthesizer:",
+    "context": [
+     "        \"\"\"",
+     "        return self.model(batch)",
+     "",
+     "",
+     "class DPCTGANSynthesizer:",
+     "    \"\"\"Differentially private CTGAN-style synthesizer using Opacus on the discriminator.\"\"\"",
+     "",
+     "    def __init__(",
+     "        self,"
+    ]
+   },
+   {
+    "file": "dp_triangle/dp_ctgan.py",
+    "line": 596,
+    "text": "def load(cls, path: Path) -> \"DPCTGANSynthesizer\":",
+    "context": [
+     "        with path.open(\"wb\") as handle:",
+     "            pickle.dump(self, handle)",
+     "",
+     "    @classmethod",
+     "    def load(cls, path: Path) -> \"DPCTGANSynthesizer\":",
+     "        \"\"\"",
+     "        Reload a saved synthesizer.",
+     "",
+     "        Inputs: saved pickle path."
+    ]
+   },
+   {
+    "file": "dp_triangle/train_dp_variants.py",
+    "line": 16,
+    "text": "from dp_triangle.dp_ctgan import DPCTGANSynthesizer, print_device_banner",
+    "context": [
+     "import torch",
+     "",
+     "import config",
+     "from dp_triangle.common import dataset_input_paths, dataset_result_dir, get_dataset_spec",
+     "from dp_triangle.dp_ctgan import DPCTGANSynthesizer, print_device_banner",
+     "from evaluation.metrics import tstr_accuracy",
+     "",
+     "torch.manual_seed(config.RANDOM_SEED)",
+     "np.random.seed(config.RANDOM_SEED)"
+    ]
+   },
+   {
+    "file": "dp_triangle/train_dp_variants.py",
+    "line": 128,
+    "text": "synthesizer = DPCTGANSynthesizer(",
+    "context": [
+     "    start = time.time()",
+     "    model_output = model_path(key, dataset_name=dataset_name)",
+     "    synthetic_output = synthetic_path(key, dataset_name=dataset_name)",
+     "    log_output = log_path(key, dataset_name=dataset_name)",
+     "    synthesizer = DPCTGANSynthesizer(",
+     "        epsilon=epsilon,",
+     "        epochs=config.DP_EPOCHS,",
+     "        batch_size=config.DP_BATCH_SIZE,",
+     "        noise_dim=config.DP_NOISE_DIM,"
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "models/train_models.py",
+    "line": 10,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "",
+     "import pandas as pd",
+     "from ctgan import CTGAN",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "",
+     "import config",
+     "",
+     "# ── Constants ────────────────────────────────────────────────────────"
+    ]
+   },
+   {
+    "file": "benchmarks/train_benchmark_models.py",
+    "line": 118,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "",
+     "",
+     "def _load_tvae_dependencies():",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import TVAESynthesizer",
+     "",
+     "    return SingleTableMetadata, TVAESynthesizer",
+     "",
+     ""
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "models/train_models.py",
+    "line": 9,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pickle",
+     "",
+     "import pandas as pd",
+     "from ctgan import CTGAN",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "",
+     "import config",
+     ""
+    ]
+   },
+   {
+    "file": "benchmarks/train_benchmark_models.py",
+    "line": 117,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    return CTGAN",
+     "",
+     "",
+     "def _load_tvae_dependencies():",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import TVAESynthesizer",
+     "",
+     "    return SingleTableMetadata, TVAESynthesizer",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "models/train_models.py",
+    "line": 9,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pickle",
+     "",
+     "import pandas as pd",
+     "from ctgan import CTGAN",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "",
+     "import config",
+     ""
+    ]
+   },
+   {
+    "file": "models/train_models.py",
+    "line": 10,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "",
+     "import pandas as pd",
+     "from ctgan import CTGAN",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "",
+     "import config",
+     "",
+     "# ── Constants ────────────────────────────────────────────────────────"
+    ]
+   },
+   {
+    "file": "benchmarks/train_benchmark_models.py",
+    "line": 117,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    return CTGAN",
+     "",
+     "",
+     "def _load_tvae_dependencies():",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import TVAESynthesizer",
+     "",
+     "    return SingleTableMetadata, TVAESynthesizer",
+     ""
+    ]
+   },
+   {
+    "file": "benchmarks/train_benchmark_models.py",
+    "line": 118,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "",
+     "",
+     "def _load_tvae_dependencies():",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import TVAESynthesizer",
+     "",
+     "    return SingleTableMetadata, TVAESynthesizer",
+     "",
+     ""
+    ]
+   }
+  ],
+  "ctgan_mod": [
+   {
+    "file": "models/train_models.py",
+    "line": 8,
+    "text": "from ctgan import CTGAN",
+    "context": [
+     "",
+     "import pickle",
+     "",
+     "import pandas as pd",
+     "from ctgan import CTGAN",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "",
+     "import config"
+    ]
+   },
+   {
+    "file": "models/ctgan_model.py",
+    "line": 6,
+    "text": "from ctgan import CTGAN",
+    "context": [
+     "ctgan_model.py — Train and sample from a CTGAN model.",
+     "\"\"\"",
+     "",
+     "import pandas as pd",
+     "from ctgan import CTGAN",
+     "",
+     "import config",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "benchmarks/train_benchmark_models.py",
+    "line": 111,
+    "text": "from ctgan import CTGAN",
+    "context": [
+     "    return promoted",
+     "",
+     "",
+     "def _load_ctgan_class():",
+     "    from ctgan import CTGAN",
+     "",
+     "    return CTGAN",
+     "",
+     ""
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "models/train_models.py",
+    "line": 10,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "",
+     "import pandas as pd",
+     "from ctgan import CTGAN",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "",
+     "import config",
+     "",
+     "# ── Constants ────────────────────────────────────────────────────────"
+    ]
+   },
+   {
+    "file": "models/train_models.py",
+    "line": 65,
+    "text": "model = TVAESynthesizer(metadata, epochs=300)",
+    "context": [
+     "    metadata.detect_from_dataframe(train_df)",
+     "    metadata.update_column(column_name=\"income\", sdtype=\"categorical\")",
+     "    metadata.update_column(column_name=\"sex\", sdtype=\"categorical\")",
+     "",
+     "    model = TVAESynthesizer(metadata, epochs=300)",
+     "    model.fit(train_df)",
+     "",
+     "    synth = model.sample(N_SYNTHETIC)",
+     ""
+    ]
+   },
+   {
+    "file": "docs/superpowers/plans/2026-04-03-cross-domain-benchmarking.md",
+    "line": 477,
+    "text": "tvae = TVAESynthesizer(metadata, epochs=300)",
+    "context": [
+     "        ctgan.fit(train_df, discrete_columns=detect_ctgan_discrete_columns(dataset_name, train_df))",
+     "        synth_ctgan = ctgan.sample(10_000)",
+     "        metadata = SingleTableMetadata()",
+     "        metadata.detect_from_dataframe(train_df)",
+     "        tvae = TVAESynthesizer(metadata, epochs=300)",
+     "        tvae.fit(train_df)",
+     "        synth_tvae = tvae.sample(10_000)",
+     "        save_and_validate_synthetic(dataset_name, \"ctgan\", train_df, synth_ctgan, spec.target_col, spec.valid_target_values)",
+     "        save_and_validate_synthetic(dataset_name, \"tvae\", train_df, synth_tvae, spec.target_col, spec.valid_target_values)"
+    ]
+   },
+   {
+    "file": "docs/superpowers/specs/2026-04-03-cross-domain-benchmarking-design.md",
+    "line": 189,
+    "text": "- train `TVAESynthesizer(..., epochs=300)`",
+    "context": [
+     "- copy Adult synthetic CSVs into the benchmark synthetic folder",
+     "- for `bank`, `covertype`, and `diabetes`:",
+     "  - load the benchmark training split",
+     "  - train `CTGAN(epochs=300, batch_size=500, verbose=True)`",
+     "  - train `TVAESynthesizer(..., epochs=300)`",
+     "  - generate exactly 10,000 synthetic rows per model",
+     "  - save:",
+     "    - `benchmarks/synthetic/{name}_ctgan.csv`",
+     "    - `benchmarks/synthetic/{name}_tvae.csv`"
+    ]
+   },
+   {
+    "file": "benchmarks/train_benchmark_models.py",
+    "line": 118,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "",
+     "",
+     "def _load_tvae_dependencies():",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import TVAESynthesizer",
+     "",
+     "    return SingleTableMetadata, TVAESynthesizer",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "benchmarks/train_benchmark_models.py",
+    "line": 120,
+    "text": "return SingleTableMetadata, TVAESynthesizer",
+    "context": [
+     "def _load_tvae_dependencies():",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import TVAESynthesizer",
+     "",
+     "    return SingleTableMetadata, TVAESynthesizer",
+     "",
+     "",
+     "def _load_tabddpm_plugin():",
+     "    from synthcity.plugins.generic.plugin_ddpm import TabDDPMPlugin"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ctgan_mod",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "ctgan",
+   "sdv",
+   "sdmetrics"
+  ]
+ }
+}

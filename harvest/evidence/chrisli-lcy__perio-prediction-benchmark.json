@@ -1,0 +1,121 @@
+{
+ "repo": "chrisli-lcy/perio-prediction-benchmark",
+ "disk_kb": 49,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Periodontal Treatment Response Prediction Benchmark\n\nAdapted from the public code accompanying:\n\n> Feher B, et al. Machine learning-assisted prediction of clinical responses to periodontal treatment. Journal of Periodontology. 2025. doi: 10.1002/JPER.24-0737\n\nBenchmark extension: Chenyuan (Chris) Li\n\nThis project extends the publicly released synthetic-data workflow to compare model classes and validation strategies, raising questions about generalizability on small structured clinical datasets. The original project used baseline demographic, clinical, microbiological, and treatment-related features to predict whether a patient would achieve a periodontal treatment endpoint 1 year after therapy.\n\n## Project Aim\n\nThe aim of this project is to adapt the original Random Forest workflow to the released synthetic datasets and expand it into a broader model benchmark.\n\nThis extension explores:\n\n- Adaptation of the original Random Forest workflow to the released synthetic datasets.\n- Additional classical machine learning models.\n- A tabular multilayer perceptron (MLP) baseline.\n- Internal in-sample, internal validation, and synthetic external evaluation performance.\n- Whether deep learning is appropriate for a small structured clinical dataset.\n\n## Data\n\nThe included datasets are synthetic versions of the original clinical trial datasets, generated to protect patient privacy.\n\n- `synthdata_internal.csv`: synthetic internal dataset based on South American randomized controlled trial data.\n- `synthdata_external.csv`: synthetic external dataset based on North American and European randomized controlled trial data.\n\nThe original raw patient-level data are not publicly available.\n\n## Predictors and Outcome\n\nThe models use 18 baseline predictors:\n\n- Demographic features: age and gender.\n- Treatment-related features: amoxicillin, metronidazole, and treatment duration.\n- Clinical features: probing depth, clinical attachment loss, bleeding on probing, and plaque index.\n- Microbiological features: microbial complex measurements.\n\nThe prediction target is:\n\n- `Endpoint_1Y`: whether the 1-year clinical endpoint was achieved.\n\n## Models Tested\n\nThe benchmark includes:\n\n- Random Forest\n- Logistic Regression\n- LightGBM\n- XGBoost\n- Support Vector Machine\n- K-Nearest Neighbors\n- Multilayer Perceptron\n\n## Evaluation Strategy\n\nThe project separates different levels of evaluation:\n\n- `internal_insample`: predictions on the same synthetic internal dataset used for fitting. This can show overfitting but should not be treated as generalization performance.\n- `internal_oob`: Random Forest out-of-bag evaluation using bootstrap-held-out samples.\n- `internal_cv5`: 5-fold out-of-fold internal validation for non-Random Forest models.\n- `synthetic_external`: evaluation on the released synthetic dataset representing the external North American/European cohort. This analysis should not be interpreted as a reproduction of the clinical external-validation performance reported in the original study.\n\nThe synthetic external evaluation is useful for testing model behavior on the released external-style dataset, but it is not equivalent to validation on the original raw clinical external cohort.\n\n## Interpretation\n\nThe experiments suggest that high in-sample performance does not necessarily translate into internal validation or synthetic external evaluation performance. The MLP baseline is included to test whether a deep learning model is useful in this setting, but the dataset contains only a few hundred samples and 18 structured predictors.\n\nFor this type of small tabular clinical dataset, deep learning should be interpreted cautiously. Classical machine learning models, careful validation, calibration, and transparent reporting are likely more appropriate than assuming that a neural network will improve performance.\n\n## Running the Code\n\nRun the adapted Random Forest workflow:\n\n```bash\npython3 main.py\n```\n\nRun the classical machine learning benchmark:\n\n```bash\npython3 compare_models.py\n```\n\nRun the MLP benchmark:\n\n```bash\npython3 train_mlp.py\n```\n\nOutputs are written to:\n\n```text\noutput/\noutput/compare/\n```\n\n## Limitations\n\n- The public datasets are synthetic and may not fully preserve the structure of the original clinical data.\n- The synthetic external dataset is small.\n- The synthetic external evaluation should not be interpreted as a reproduction of the clinical external-validation performance reported in the original study.\n- In-sample metrics should not be presented as evidence of model generalization.\n- OOB and cross-validation are both internal validation strategies, but they are not identical and should be labeled separately.\n- Deep learning results are limited by the small sample size and tabular feature structure.\n\n## Citation\n\nThis repository includes a `CITATION.cff` file so GitHub can generate a citation for the benchmark extension. Because this project builds on the original periodontal treatment response study, please also cite the original article:\n\n```text\nFeher B, de Souza Oliveira EH, Duarte PM, Werdich AA, Giannobile WV, Feres M.\nMachine learning-assisted prediction of clinical responses to periodontal treatment.\nJournal of Periodontology. 2025.\ndoi: 10.1002/JPER.24-0737\n```\n\nOriginal repository:\n\n```text\nhttps://github.com/balazsfeher/perio-prediction\n```\n\n## License\n\nSee `LICENSE`.\n",
+ "hits": {
+  "st": [
+   {
+    "file": "datasetsynthesizer.py",
+    "line": 13,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "file_path = \"data_full.csv\"",
+     "df_real = pd.read_csv(file_path)",
+     ""
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "datasetsynthesizer.py",
+    "line": 12,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "# Last updated February 3, 2025",
+     "",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "file_path = \"data_full.csv\"",
+     "df_real = pd.read_csv(file_path)"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "datasetsynthesizer.py",
+    "line": 12,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "# Last updated February 3, 2025",
+     "",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "file_path = \"data_full.csv\"",
+     "df_real = pd.read_csv(file_path)"
+    ]
+   },
+   {
+    "file": "datasetsynthesizer.py",
+    "line": 13,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "file_path = \"data_full.csv\"",
+     "df_real = pd.read_csv(file_path)",
+     ""
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "datasetsynthesizer.py",
+    "line": 13,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "file_path = \"data_full.csv\"",
+     "df_real = pd.read_csv(file_path)",
+     ""
+    ]
+   },
+   {
+    "file": "datasetsynthesizer.py",
+    "line": 43,
+    "text": "synthesizer = CTGANSynthesizer(metadata, epochs=500, verbose=True)",
+    "context": [
+     "        }",
+     "    }",
+     "]",
+     "",
+     "synthesizer = CTGANSynthesizer(metadata, epochs=500, verbose=True)",
+     "synthesizer.add_constraints(constraints) ",
+     "synthesizer.fit(df_real)",
+     "",
+     "num_rows = len(df_real)"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

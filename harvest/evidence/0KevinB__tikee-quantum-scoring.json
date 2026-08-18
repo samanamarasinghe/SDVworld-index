@@ -1,0 +1,455 @@
+{
+ "repo": "0KevinB/tikee-quantum-scoring",
+ "disk_kb": 2821,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Tikee — Selección de variables cuántico-inspirada para scoring crediticio\n\nProyecto de innovación universitaria · UTPL Ecuador · Inspirado en el pitch de la fintech Tikee.\n**Datos 100% sintéticos.** **\"Cuántico-inspirado\" = recocido simulado clásico.** Ver [Advertencias](#advertencias).\n\n**🔗 App en vivo:** **[web-production-e797c.up.railway.app](https://web-production-e797c.up.railway.app)** — 5 pestañas interactivas, sin instalar nada. Empieza por la [guía de usuario](docs/GUIA_USUARIO.md) si es tu primera visita.\n\n![Diagrama de diferencia crítica — Nivel B](reports/figures/critical_difference_nivel_b.png)\n\n## Pregunta de investigación\n\n¿Formular la selección de variables como un problema **QUBO** mejora un modelo de scoring crediticio frente a LASSO o stepwise, cuando las variables candidatas están fuertemente correlacionadas entre sí?\n\nEl mismo QUBO se resuelve con **cinco solucionadores** para separar tres preguntas que la literatura suele confundir:\n\n1. ¿Es buena **la formulación** QUBO relevancia-redundancia? → recocido vs. LASSO\n2. ¿Aporta algo **el heurístico**? → recocido vs. óptimo certificado (enumeración exacta / MILP)\n3. ¿Aporta algo **el paradigma de circuitos**? → QAOA simulado vs. recocido\n\n**Resultado en una frase:** en 18 variables, QUBO empata en precisión con LASSO/stepwise (gana en parsimonia, pierde en estabilidad de selección); en 45 variables, **pierde con significancia estadística**, con causa diagnosticada. El hallazgo que sí se sostiene: la selección QUBO reduce la codificación indirecta de un atributo protegido de AUC=1.00 a 0.61, simplemente por usar menos variables. Detalle completo en [reports/INFORME.md](reports/INFORME.md).\n\n## Advertencias\n\n- Los datos son **sintéticos**, generados con una cópula gaussiana propia + SDV y calibrados con rangos públicos (SEPS, burós de crédito, INEC) como referencia orientativa. Ninguna cifra describe a ninguna cooperativa real.\n- **\"Cuántico-inspirado\" = recocido simulado clásico.** El brazo de QAOA es un circuito cuántico **simulado clásicamente**. **No se usa hardware cuántico en ningún momento.**\n- QAOA aquí **no puede ganar**: en N=18 el óptimo global ya se conoce por enumeración, y simular el circuito es órdenes de magnitud más caro (~25 min por profundidad vs. 0.4 s de la enumeración). Se incluye para medir esa brecha, que es un resultado legítimo. En N=45 ni siquiera puede ejecutarse (requeriría 563 TB de RAM).\n\n## Estado\n\n**Implementación completa, F0–F8.** `pytest` en verde (26/26). App Streamlit de 5 pestañas desplegada y verificada en producción. Ver [reports/INFORME.md](reports/INFORME.md) y [reports/RESULTS.md](reports/RESULTS.md) para el análisis y las cifras finales.\n\nCuatro desviaciones documentadas respecto a `ARCHITECTURE.md` (tres de calibración de datos en F1 + una reducción de presupuesto de cómputo en F6), explicadas en `reports/INFORME.md` §5 y marcadas `[DESVIACIÓN DOCUMENTADA]` en el código. Ninguna afecta los dos checkpoints innegociables (F1: AUC en banda; F4: C1==C2 exacto — verificado en las 10 semillas), ambos en verde.\n\n## Despliegue\n\n| Dónde | Qué es | URL |\n|---|---|---|\n| **Railway** | App Streamlit completa (5 pestañas, interactiva) | [web-production-e797c.up.railway.app](https://web-production-e797c.up.railway.app) |\n| **GitHub** | Código fuente, historial, issues | [github.com/0KevinB/tikee-quantum-scoring](https://github.com/0KevinB/tikee-quantum-scoring) |\n\n`Procfile` / `railway.json` fijan el comando de arranque. Cuatro artefactos de `reports/cache/`\nestán versionados a propósito (excepción documentada en `.gitignore`) porque la app los lee en\nvivo y regenerarlos en el contenedor de despliegue requeriría correr el pipeline completo (~1 h).\n\n## Reproducción local\n\n```bash\nmake setup && make verify && make experiment && make app\n```\n\n`make experiment` corre el pipeline completo de 10 semillas (~1 h). Los resultados de esta\nentrega ya están cacheados en `reports/` y `reports/cache/`; `make app` funciona directamente\nsobre ellos sin necesidad de recorrer `make experiment` de nuevo.\n\n## Estructura del proyecto\n\n```\nsrc/tikee/\n├── config.py              # carga YAML, fija semillas globales\n├── data/                  # generación sintética: semilla programática, SDV, target, validación\n├── features/              # preprocesamiento (ColumnTransformer) y expansión Nivel A → Nivel B\n├── selection/              # relevancia, redundancia, matriz QUBO, 5 solucionadores\n├── models/                # entrenamiento, métricas, interpretabilidad, equidad\n├── experiments/           # orquestación por semilla, bucle multi-semilla, estadística\n└── viz/                   # gráficos reutilizables (Plotly) para la app\n\napp/                        # Streamlit: portada + 5 páginas\nscripts/                     # un script por fase F0–F8, ejecutable independientemente\ntests/                       # 26 pruebas (pytest), ver Definición de listo en PLAN.md §8\nreports/                     # INFORME.md, RESULTS.md, figuras, informe DOCX, presentación PPTX\ndocs/                        # guía de usuario de la app web\n```\n\nCada módulo de `src/tikee/` tiene un docstring de cabecera explicando su rol; las funciones\npúblicas documentan parámetros y retorno. Ver también `ARCHITECTURE.md` para el diseño completo.\n\n## Stack tecnológico\n\nPython 3.11 · scikit-learn · XGBoost · SDV (síntesis de datos) · D-Wave Ocean SDK (recocido\nsimulado, Tabú) · SciPy/HiGHS (MILP) · Qiskit + Qiskit Aer (circuito cuántico simulado) ·\nstatsmodels (VIF, stepwise, Friedman) · Streamlit (app) · Railway (despliegue).\n\n## Documentos\n\n| Archivo | Contiene |\n|---------|----------|\n| [PLAN.md](PLAN.md) | Calibración de plazo, alcance, decisiones D1–D20, cronograma por fases, riesgos, honestidad metodológica |\n| [ARCHITECTURE.md](ARCHITECTURE.md) | Stack, estructura, flujo de datos, esquema de 18 variables + expansión a 45, sesgo inyectado, formulación QUBO, cinco solucionadores, diseño experimental, auditoría de equidad |\n| [reports/INFORME.md](reports/INFORME.md) | Análisis honesto de resultados, interpretabilidad regulatoria SEPS, limitaciones |\n| [reports/RESULTS.md](reports/RESULTS.md) | Tablas de métricas generadas desde `reports/results.json` |\n| [reports/Tikee_Informe_Prototipo.docx](reports/Tikee_Informe_Prototipo.docx) | Informe técnico en formato de documento |\n| [reports/Tikee_Presentacion_Prototipo.pptx](reports/Tikee_Presentacion_Prototipo.pptx) | Presentación de venta del prototipo |\n| [docs/GUIA_USUARIO.md](docs/GUIA_USUARIO.md) | Cómo navegar la app en vivo, pestaña por pestaña |\n| [data/external/referencias_publicas.md](data/external/referencias_publicas.md) | Trazabilidad de cada rango de calibración |\n",
+ "hits": {
+  "ct": [
+   {
+    "file": "ARCHITECTURE.md",
+    "line": 407,
+    "text": "| `CTGANSynthesizer` (300 épocas) | 10–40 min CPU | Marginales multimodales más fieles | Puede no preservar correlaciones finas; inestable entre corridas |",
+    "context": [
+     "",
+     "| Sintetizador | Tiempo esperado | Fortaleza esperada | Debilidad esperada |",
+     "|--------------|----------------|--------------------|--------------------|",
+     "| `GaussianCopulaSynthesizer` | segundos | Preserva correlaciones **por construcción** | Marginales forzadas a familias paramétricas |",
+     "| `CTGANSynthesizer` (300 épocas) | 10–40 min CPU | Marginales multimodales más fieles | Puede no preservar correlaciones finas; inestable entre corridas |",
+     "| `TVAESynthesizer` | 5–20 min CPU | Intermedio | Ídem |",
+     "",
+     "**La tensión que el informe debe explicitar (decisión D14):** es posible que CTGAN gane en puntuación de calidad de SDMetrics y aun así se elija la cópula gaussiana, porque las métricas de fidelidad g",
+     ""
+    ]
+   },
+   {
+    "file": "src/tikee/data/sdv_synthesizer.py",
+    "line": 125,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "                c: \"gaussian_kde\" for c in FORCE_NUMERICAL_COLUMNS if c in fit_df.columns",
+     "            }",
+     "            synth = GaussianCopulaSynthesizer(metadata, numerical_distributions=numerical_distributions)",
+     "        elif method == \"ctgan\":",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "",
+     "            metadata = _build_metadata(fit_df)",
+     "            synth = CTGANSynthesizer(metadata, epochs=ctgan_epochs, verbose=False, cuda=False)",
+     "        elif method == \"tvae\":"
+    ]
+   },
+   {
+    "file": "src/tikee/data/sdv_synthesizer.py",
+    "line": 128,
+    "text": "synth = CTGANSynthesizer(metadata, epochs=ctgan_epochs, verbose=False, cuda=False)",
+    "context": [
+     "        elif method == \"ctgan\":",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "",
+     "            metadata = _build_metadata(fit_df)",
+     "            synth = CTGANSynthesizer(metadata, epochs=ctgan_epochs, verbose=False, cuda=False)",
+     "        elif method == \"tvae\":",
+     "            from sdv.single_table import TVAESynthesizer",
+     "",
+     "            metadata = _build_metadata(fit_df)"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "ARCHITECTURE.md",
+    "line": 142,
+    "text": "│        GaussianCopulaSynthesizer.fit(seed).sample(8000)                           │",
+    "context": [
+     "  │        2.000 filas: cópula gaussiana con la matriz de correlación objetivo       │",
+     "  │        (§4.2) + dependencias de atributos protegidos (§4.3) + marginales (§4.5)  │",
+     "  │                          │                                                       │",
+     "  │  [2] sdv_synthesizer.py ──► data/interim/synth_s.parquet                         │",
+     "  │        GaussianCopulaSynthesizer.fit(seed).sample(8000)                           │",
+     "  │                          │                                                       │",
+     "  │  [3] target_definition.py ──► data/processed/dataset_s.parquet                   │",
+     "  │        ratios derivados -> logit estructural -> p_default                        │",
+     "  │        -> Bernoulli; beta0 calibrado a 8%; sigma calibrado a AUC∈[0,72;0,82]     │"
+    ]
+   },
+   {
+    "file": "ARCHITECTURE.md",
+    "line": 338,
+    "text": "**Etapa 2 — SDV (`sdv_synthesizer.py`).** `GaussianCopulaSynthesizer` con `SingleTableMetadata` derivada de `schema.yaml`; ajuste sobre las 2.000 filas semilla, muestreo de 8.000. Aporta regularización de marginales, tratamiento homogéneo de categóricas, y la trazabilidad de usar una herramienta est",
+    "context": [
+     "| `monto_solicitado` | lognormal redondeada a múltiplos de 50 |",
+     "| `plazo_meses` | categórica sobre {6,12,18,24,36,48,60} |",
+     "| categóricas | multinomial con las proporciones de `referencias_publicas.md` |",
+     "",
+     "**Etapa 2 — SDV (`sdv_synthesizer.py`).** `GaussianCopulaSynthesizer` con `SingleTableMetadata` derivada de `schema.yaml`; ajuste sobre las 2.000 filas semilla, muestreo de 8.000. Aporta regularizació",
+     "",
+     "**Este orden es deliberado y debe explicarse en el informe:** la semilla impone la estructura causal que queremos estudiar; SDV la reproduce y la amplía. Presentar SDV como si hubiera \"descubierto\" la",
+     "",
+     "### 4.6 Nivel B — expansión determinista a 45 candidatas (decisión D9)"
+    ]
+   },
+   {
+    "file": "ARCHITECTURE.md",
+    "line": 406,
+    "text": "| `GaussianCopulaSynthesizer` | segundos | Preserva correlaciones **por construcción** | Marginales forzadas a familias paramétricas |",
+    "context": [
+     "**Comparación de sintetizadores (E12):**",
+     "",
+     "| Sintetizador | Tiempo esperado | Fortaleza esperada | Debilidad esperada |",
+     "|--------------|----------------|--------------------|--------------------|",
+     "| `GaussianCopulaSynthesizer` | segundos | Preserva correlaciones **por construcción** | Marginales forzadas a familias paramétricas |",
+     "| `CTGANSynthesizer` (300 épocas) | 10–40 min CPU | Marginales multimodales más fieles | Puede no preservar correlaciones finas; inestable entre corridas |",
+     "| `TVAESynthesizer` | 5–20 min CPU | Intermedio | Ídem |",
+     "",
+     "**La tensión que el informe debe explicitar (decisión D14):** es posible que CTGAN gane en puntuación de calidad de SDMetrics y aun así se elija la cópula gaussiana, porque las métricas de fidelidad g"
+    ]
+   },
+   {
+    "file": "PLAN.md",
+    "line": 162,
+    "text": "| **D14** | Sintetizador de producción = **GaussianCopulaSynthesizer**; CTGAN y TVAE se corren como **experimento de comparación documentado**, no como fuente del dataset principal | Elegir el de mejor puntuación de SDMetrics | La cópula gaussiana **preserva por construcción** la estructura de corre",
+    "context": [
+     "| **D10** | **Óptimo certificado por linealización de Glover + HiGHS** en ambos niveles | Solo `dimod.ExactSolver` (limitado a N≤20) | Da un punto de comparación honesto en Nivel B. Ver §2.3 |",
+     "| **D11** | **10 semillas** para el experimento principal; cada semilla regenera datos *y* re-hace el split | Semilla única; o solo re-splitear | Captura variabilidad de generación **y** de partición.",
+     "| **D12** | **Friedman + Nemenyi** para comparar métodos a través de semillas | Prueba t pareada por par de métodos | Es el procedimiento estándar para comparar múltiples algoritmos sobre múltiples co",
+     "| **D13** | **CV anidada** (externa 5 × interna 3) solo sobre 3 semillas | CV anidada sobre las 10 semillas | Costo cuadrático. 3 semillas bastan para sostener \"XGBoost estaba afinado\"; las 10 se usan",
+     "| **D14** | Sintetizador de producción = **GaussianCopulaSynthesizer**; CTGAN y TVAE se corren como **experimento de comparación documentado**, no como fuente del dataset principal | Elegir el de mejo",
+     "| **D15** | Atributos protegidos (`sexo`, `provincia`) **generados con dependencia real hacia otras variables** pero con **coeficiente cero en el target** | Generarlos independientes | Si fueran indep",
+     "| **D16** | La equidad se **mide**, no se corrige | Añadir mitigación | Mitigar es un proyecto propio. Medir ya es una contribución |",
+     "| **D17** | QAOA entra con el encuadre \"no puede ganar, medimos la brecha\" | QAOA como candidato a superar al recocido | Ver §2.4. Es físicamente imposible en Nivel B y redundante en Nivel A |",
+     "| **D18** | QAOA con `p ∈ {1, 2, 3}`, optimizador COBYLA, expectativa exacta por vector de estado | Muestreo con shots finitos | El vector de estado da la expectativa sin ruido de muestreo, aísla el e"
+    ]
+   },
+   {
+    "file": "PLAN.md",
+    "line": 186,
+    "text": "- SDV: ajustar `GaussianCopulaSynthesizer` sobre 50 filas de juguete y muestrear.",
+    "context": [
+     "El objetivo de esta fase es **descubrir hoy los problemas de instalación**, no descubrirlos el día 7.",
+     "",
+     "- Entorno virtual Python 3.11, `pip install -r requirements.txt`.",
+     "- Verificación real de los tres stacks críticos, con un script mínimo que **ejecute** algo, no solo importe:",
+     "  - SDV: ajustar `GaussianCopulaSynthesizer` sobre 50 filas de juguete y muestrear.",
+     "  - D-Wave: resolver un QUBO de 4 variables con solución conocida a mano, con `SimulatedAnnealingSampler` y con `ExactSolver`.",
+     "  - Qiskit: correr QAOA `p=1` sobre ese mismo QUBO de 4 variables y comprobar que llega al óptimo.",
+     "  - HiGHS: resolver el mismo QUBO linealizado y verificar que da la misma solución.",
+     "- **Implementar el camino de respaldo de SDV** (cópula gaussiana propia con `scipy.stats`) y comprobar que produce la misma estructura de correlación. No dejarlo como plan B teórico."
+    ]
+   },
+   {
+    "file": "reports/INFORME.md",
+    "line": 12,
+    "text": "crédito ecuatorianos e INEC/ENEMDU) y luego con `GaussianCopulaSynthesizer` de SDV.",
+    "context": [
+     "## Advertencia obligatoria",
+     "",
+     "**Los datos son 100% sintéticos.** Se generan con una semilla programática propia",
+     "(cópula gaussiana + marginales calibradas con rangos públicos de SEPS, burós de",
+     "crédito ecuatorianos e INEC/ENEMDU) y luego con `GaussianCopulaSynthesizer` de SDV.",
+     "**Ninguna cifra de este informe describe a ninguna cooperativa real.** La estructura",
+     "de correlación y el sesgo indirecto hacia los atributos protegidos los impusimos",
+     "nosotros por diseño (D5, D15); SDV los reproduce, **no los descubre**.",
+     ""
+    ]
+   },
+   {
+    "file": "src/tikee/data/sdv_synthesizer.py",
+    "line": 20,
+    "text": "# a 'numerical' para que GaussianCopulaSynthesizer las trate dentro de la cópula.",
+    "context": [
+     "TASA_CUOTA_ANUAL = 0.165",
+     "",
+     "# Columnas ordinales/discretas de baja cardinalidad que SDV auto-detecta como",
+     "# 'categorical' (rompe la correlación de rango con el resto, ver F1). Deben forzarse",
+     "# a 'numerical' para que GaussianCopulaSynthesizer las trate dentro de la cópula.",
+     "FORCE_NUMERICAL_COLUMNS = [",
+     "    \"edad\", \"carga_familiar\", \"antiguedad_laboral_meses\", \"antiguedad_socio_meses\",",
+     "    \"ingreso_mensual\", \"gastos_mensuales\", \"score_buro\", \"num_operaciones_vigentes\",",
+     "    \"deuda_total_sistema\", \"peor_calificacion_12m\", \"dias_mora_max_12m\","
+    ]
+   },
+   {
+    "file": "src/tikee/data/sdv_synthesizer.py",
+    "line": 112,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "    categorical_cols = [c for c in fit_df.columns if fit_df[c].dtype == object]",
+     "",
+     "    try:",
+     "        if method == \"gaussian_copula\":",
+     "            from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "            metadata = _build_metadata(fit_df)",
+     "            # 'gaussian_kde' en vez del ajuste paramétrico automático (beta/gamma/...):",
+     "            # con marginales discretas/zero-infladas (score_buro, dias_mora_max_12m,"
+    ]
+   },
+   {
+    "file": "src/tikee/data/sdv_synthesizer.py",
+    "line": 123,
+    "text": "synth = GaussianCopulaSynthesizer(metadata, numerical_distributions=numerical_distributions)",
+    "context": [
+     "            # porque no fuerza una familia parametrica que no encaja.",
+     "            numerical_distributions = {",
+     "                c: \"gaussian_kde\" for c in FORCE_NUMERICAL_COLUMNS if c in fit_df.columns",
+     "            }",
+     "            synth = GaussianCopulaSynthesizer(metadata, numerical_distributions=numerical_distributions)",
+     "        elif method == \"ctgan\":",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "",
+     "            metadata = _build_metadata(fit_df)"
+    ]
+   },
+   {
+    "file": "src/tikee/data/fallback_copula.py",
+    "line": 6,
+    "text": "construcción, igual que `GaussianCopulaSynthesizer`: ajusta una normal multivariante",
+    "context": [
+     "",
+     "Usado como `sdv_synthesizer.py` de reemplazo si `sdv` no instala (ARCHITECTURE.md §1).",
+     "Implementa la misma interfaz mínima que se espera de un sintetizador: `fit(df)` y",
+     "`sample(n)`. Preserva la matriz de correlación (Spearman/Pearson sobre rangos) por",
+     "construcción, igual que `GaussianCopulaSynthesizer`: ajusta una normal multivariante",
+     "sobre los rangos normalizados de cada columna y, al muestrear, invierte cada columna",
+     "por su función de cuantiles empírica (continuas) o su distribución de categorías",
+     "(categóricas/discretas).",
+     "\"\"\""
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "ARCHITECTURE.md",
+    "line": 408,
+    "text": "| `TVAESynthesizer` | 5–20 min CPU | Intermedio | Ídem |",
+    "context": [
+     "| Sintetizador | Tiempo esperado | Fortaleza esperada | Debilidad esperada |",
+     "|--------------|----------------|--------------------|--------------------|",
+     "| `GaussianCopulaSynthesizer` | segundos | Preserva correlaciones **por construcción** | Marginales forzadas a familias paramétricas |",
+     "| `CTGANSynthesizer` (300 épocas) | 10–40 min CPU | Marginales multimodales más fieles | Puede no preservar correlaciones finas; inestable entre corridas |",
+     "| `TVAESynthesizer` | 5–20 min CPU | Intermedio | Ídem |",
+     "",
+     "**La tensión que el informe debe explicitar (decisión D14):** es posible que CTGAN gane en puntuación de calidad de SDMetrics y aun así se elija la cópula gaussiana, porque las métricas de fidelidad g",
+     "",
+     "---"
+    ]
+   },
+   {
+    "file": "src/tikee/data/sdv_synthesizer.py",
+    "line": 130,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "",
+     "            metadata = _build_metadata(fit_df)",
+     "            synth = CTGANSynthesizer(metadata, epochs=ctgan_epochs, verbose=False, cuda=False)",
+     "        elif method == \"tvae\":",
+     "            from sdv.single_table import TVAESynthesizer",
+     "",
+     "            metadata = _build_metadata(fit_df)",
+     "            synth = TVAESynthesizer(metadata, epochs=ctgan_epochs)",
+     "        else:"
+    ]
+   },
+   {
+    "file": "src/tikee/data/sdv_synthesizer.py",
+    "line": 133,
+    "text": "synth = TVAESynthesizer(metadata, epochs=ctgan_epochs)",
+    "context": [
+     "        elif method == \"tvae\":",
+     "            from sdv.single_table import TVAESynthesizer",
+     "",
+     "            metadata = _build_metadata(fit_df)",
+     "            synth = TVAESynthesizer(metadata, epochs=ctgan_epochs)",
+     "        else:",
+     "            raise ValueError(f\"método de síntesis desconocido: {method}\")",
+     "",
+     "        synth.fit(fit_df)"
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "src/tikee/data/sdv_synthesizer.py",
+    "line": 112,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "    categorical_cols = [c for c in fit_df.columns if fit_df[c].dtype == object]",
+     "",
+     "    try:",
+     "        if method == \"gaussian_copula\":",
+     "            from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "            metadata = _build_metadata(fit_df)",
+     "            # 'gaussian_kde' en vez del ajuste paramétrico automático (beta/gamma/...):",
+     "            # con marginales discretas/zero-infladas (score_buro, dias_mora_max_12m,"
+    ]
+   },
+   {
+    "file": "src/tikee/data/sdv_synthesizer.py",
+    "line": 125,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "                c: \"gaussian_kde\" for c in FORCE_NUMERICAL_COLUMNS if c in fit_df.columns",
+     "            }",
+     "            synth = GaussianCopulaSynthesizer(metadata, numerical_distributions=numerical_distributions)",
+     "        elif method == \"ctgan\":",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "",
+     "            metadata = _build_metadata(fit_df)",
+     "            synth = CTGANSynthesizer(metadata, epochs=ctgan_epochs, verbose=False, cuda=False)",
+     "        elif method == \"tvae\":"
+    ]
+   },
+   {
+    "file": "src/tikee/data/sdv_synthesizer.py",
+    "line": 130,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "",
+     "            metadata = _build_metadata(fit_df)",
+     "            synth = CTGANSynthesizer(metadata, epochs=ctgan_epochs, verbose=False, cuda=False)",
+     "        elif method == \"tvae\":",
+     "            from sdv.single_table import TVAESynthesizer",
+     "",
+     "            metadata = _build_metadata(fit_df)",
+     "            synth = TVAESynthesizer(metadata, epochs=ctgan_epochs)",
+     "        else:"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "src/tikee/data/sdv_synthesizer.py",
+    "line": 30,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "]",
+     "",
+     "",
+     "def _build_metadata(df: pd.DataFrame):",
+     "    from sdv.metadata import SingleTableMetadata",
+     "",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(df)",
+     "    for col in FORCE_NUMERICAL_COLUMNS:"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "src/tikee/data/sdv_synthesizer.py",
+    "line": 30,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "]",
+     "",
+     "",
+     "def _build_metadata(df: pd.DataFrame):",
+     "    from sdv.metadata import SingleTableMetadata",
+     "",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(df)",
+     "    for col in FORCE_NUMERICAL_COLUMNS:"
+    ]
+   },
+   {
+    "file": "src/tikee/data/sdv_synthesizer.py",
+    "line": 112,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "    categorical_cols = [c for c in fit_df.columns if fit_df[c].dtype == object]",
+     "",
+     "    try:",
+     "        if method == \"gaussian_copula\":",
+     "            from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "            metadata = _build_metadata(fit_df)",
+     "            # 'gaussian_kde' en vez del ajuste paramétrico automático (beta/gamma/...):",
+     "            # con marginales discretas/zero-infladas (score_buro, dias_mora_max_12m,"
+    ]
+   },
+   {
+    "file": "src/tikee/data/sdv_synthesizer.py",
+    "line": 125,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "                c: \"gaussian_kde\" for c in FORCE_NUMERICAL_COLUMNS if c in fit_df.columns",
+     "            }",
+     "            synth = GaussianCopulaSynthesizer(metadata, numerical_distributions=numerical_distributions)",
+     "        elif method == \"ctgan\":",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "",
+     "            metadata = _build_metadata(fit_df)",
+     "            synth = CTGANSynthesizer(metadata, epochs=ctgan_epochs, verbose=False, cuda=False)",
+     "        elif method == \"tvae\":"
+    ]
+   },
+   {
+    "file": "src/tikee/data/sdv_synthesizer.py",
+    "line": 130,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "",
+     "            metadata = _build_metadata(fit_df)",
+     "            synth = CTGANSynthesizer(metadata, epochs=ctgan_epochs, verbose=False, cuda=False)",
+     "        elif method == \"tvae\":",
+     "            from sdv.single_table import TVAESynthesizer",
+     "",
+     "            metadata = _build_metadata(fit_df)",
+     "            synth = TVAESynthesizer(metadata, epochs=ctgan_epochs)",
+     "        else:"
+    ]
+   }
+  ],
+  "sm": [
+   {
+    "file": "src/tikee/data/fidelity.py",
+    "line": 27,
+    "text": "from sdmetrics.reports.single_table import DiagnosticReport, QualityReport",
+    "context": [
+     "        dict con `quality_overall`, `quality_column_shapes`,",
+     "        `quality_column_pair_trends`, `diagnostic_overall` y",
+     "        `diagnostic_properties` (lista de propiedades individuales).",
+     "    \"\"\"",
+     "    from sdmetrics.reports.single_table import DiagnosticReport, QualityReport",
+     "",
+     "    fit_real = real_df.drop(columns=[c for c in DERIVED_COLUMNS + [\"id_solicitud\"] if c in real_df.columns])",
+     "    fit_synth = synth_df[fit_real.columns]",
+     "    metadata = _build_metadata(fit_real)"
+    ]
+   },
+   {
+    "file": "src/tikee/data/fidelity.py",
+    "line": 54,
+    "text": "from sdmetrics.single_table import NewRowSynthesis",
+    "context": [
+     "",
+     "def new_row_synthesis(real_df: pd.DataFrame, synth_df: pd.DataFrame) -> float:",
+     "    \"\"\"Fracción de filas sintéticas que NO son copias casi exactas de una fila",
+     "    real (umbral de aceptación > 0.95, ARCHITECTURE.md §5).\"\"\"",
+     "    from sdmetrics.single_table import NewRowSynthesis",
+     "",
+     "    fit_real = real_df.drop(columns=[c for c in DERIVED_COLUMNS + [\"id_solicitud\"] if c in real_df.columns])",
+     "    fit_synth = synth_df[fit_real.columns]",
+     "    metadata = _build_metadata(fit_real)"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "gc",
+  "md",
+  "sdv_any",
+  "sm",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv==1.15.0",
+   "sdmetrics==0.16.0"
+  ]
+ }
+}

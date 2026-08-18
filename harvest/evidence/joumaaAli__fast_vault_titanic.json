@@ -1,0 +1,158 @@
+{
+ "repo": "joumaaAli/fast_vault_titanic",
+ "disk_kb": 4714,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Synthetic Data Generation and Model Training API\n\nThis FastAPI-based project provides an API to generate synthetic data, augment and train machine learning models, and evaluate the synthetic data. It also includes user authentication, task status tracking, and result retrieval features.\n\n## Features\n\n- **Synthetic Data Generation**: Generate synthetic data based on different synthesizer types.\n- **Asynchronous Data Augmentation and Model Training**: Perform data augmentation and model training in the background.\n- **Result Tracking**: Track the accuracy of model training using task IDs.\n- **Task Status Monitoring**: Check the current status of long-running tasks such as model training.\n- **User Authentication**: Register and authenticate users with JWT tokens.\n- **Dependency Injection**: Uses `Dependency Injector` for service and repository management.\n\n## Table of Contents\n\n- [Installation](#installation)\n- [Usage](#usage)\n- [API Endpoints](#api-endpoints)\n- [Authentication](#authentication)\n- [Task and Result Tracking](#task-and-result-tracking)\n- [Contributing](#contributing)\n\n## Installation\n\n### Prerequisites\n\n- Python 3.8+\n- FastAPI\n- PostgreSQL\n- SQLAlchemy\n- Dependency Injector\n\n### Setup\n\n1. Clone the repository:\n\n   ```\n   git clone https://github.com/yourusername/synthetic-data-api.git\n   cd synthetic-data-api\n2. Create a virtual environment and install dependencies:\n    ```\n    python -m venv venv\n    source venv/bin/activate  # On Windows use `venv\\Scripts\\activate`\n    pip install -r requirements.txt\n3. Set up your environment variables in a .env file at the project root:\n    ```bash\n    DATABASE_URL=postgresql://username:password@localhost:5432/mydatabase\n    SECRET_KEY=your_secret_key\n4. Run database migrations:\n    ```\n   alembic upgrade head\n5. Start the FastAPI server:\n    ```\n    uvicorn app.main:app --reload\n\n### Usage\nRunning Background Tasks\nThe /augment-and-train/ endpoint allows you to initiate long-running model training tasks in the background. You can track the status of these tasks using the /task-status/{task_id} endpoint and retrieve results using the /result/{task_id} endpoint.\n\n* Authentication\n  * POST /auth/register/: Register a new user.\n  * POST /auth/login/: Log in to obtain a JWT access token.\n* Synthetic Data\n  * POST /generate/: Generate synthetic data.\n  * POST /augment-and-train/: Start an asynchronous task for data augmentation and model training.\n  * POST /evaluate/: Evaluate synthetic data.\n* Task and Result Tracking\n  * GET /task-status/{task_id}: Retrieve the current status of a task.\n  * GET /result/{task_id}: Retrieve the result of a completed task by task ID.\n\n\n## Running the Application with Docker Compose\nThis project includes a docker-compose.yml file that allows you to run the FastAPI app and PostgreSQL database in containers.\n1. Ensure your .env file is set up with the correct values (e.g., DATABASE_URL, SECRET_KEY).\n```\nDATABASE_URL=postgresql://postgres:postgres@db:5432/postgres\nSECRET_KEY=your_secret_key\n```\n2. Build and start the services using Docker Compose:\n```\ndocker-compose up --build\n```\nThis will start the following services:\n\nFastAPI app: Accessible on http://localhost:8003\nPostgreSQL database: Running in a separate container on port 5432.",
+ "hits": {
+  "sm": [
+   {
+    "file": "app/use_cases/evaluators/evaluators.py",
+    "line": 1,
+    "text": "from sdmetrics.reports.single_table import QualityReport",
+    "context": [
+     "from sdmetrics.reports.single_table import QualityReport",
+     "",
+     "class Evaluator:",
+     "    @staticmethod",
+     "    def evaluate_data_quality(synthetic_data, real_data, metadata):"
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "app/use_cases/factories/factories.py",
+    "line": 1,
+    "text": "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, CopulaGANSynthesizer",
+    "context": [
+     "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, CopulaGANSynthesizer",
+     "from app.entities.synthetic_data import SynthesizerType  # Import the enum",
+     "",
+     "class SynthesizerFactory:",
+     "    @staticmethod"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "app/use_cases/factories/factories.py",
+    "line": 1,
+    "text": "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, CopulaGANSynthesizer",
+    "context": [
+     "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, CopulaGANSynthesizer",
+     "from app.entities.synthetic_data import SynthesizerType  # Import the enum",
+     "",
+     "class SynthesizerFactory:",
+     "    @staticmethod"
+    ]
+   },
+   {
+    "file": "app/use_cases/services/data_service.py",
+    "line": 18,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import joblib",
+     "from app.use_cases.services.hasher import Hasher",
+     "from app.use_cases.factories.factories import SynthesizerFactory",
+     "from app.use_cases.evaluators.evaluators import Evaluator",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.ensemble import RandomForestClassifier",
+     "from sklearn.metrics import accuracy_score",
+     "from app.persistence.repositories.synthetic_data_repository import SyntheticDataRepository"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "app/use_cases/factories/factories.py",
+    "line": 1,
+    "text": "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, CopulaGANSynthesizer",
+    "context": [
+     "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, CopulaGANSynthesizer",
+     "from app.entities.synthetic_data import SynthesizerType  # Import the enum",
+     "",
+     "class SynthesizerFactory:",
+     "    @staticmethod"
+    ]
+   },
+   {
+    "file": "app/use_cases/factories/factories.py",
+    "line": 8,
+    "text": "return CTGANSynthesizer(metadata)",
+    "context": [
+     "class SynthesizerFactory:",
+     "    @staticmethod",
+     "    def get_synthesizer(synthesizer_type: SynthesizerType, metadata):",
+     "        if synthesizer_type == SynthesizerType.ctgan:",
+     "            return CTGANSynthesizer(metadata)",
+     "        elif synthesizer_type == SynthesizerType.copulagan:",
+     "            return CopulaGANSynthesizer(metadata)",
+     "        elif synthesizer_type == SynthesizerType.gaussiancopula:",
+     "            return GaussianCopulaSynthesizer(metadata)"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "app/use_cases/factories/factories.py",
+    "line": 1,
+    "text": "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, CopulaGANSynthesizer",
+    "context": [
+     "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, CopulaGANSynthesizer",
+     "from app.entities.synthetic_data import SynthesizerType  # Import the enum",
+     "",
+     "class SynthesizerFactory:",
+     "    @staticmethod"
+    ]
+   },
+   {
+    "file": "app/use_cases/factories/factories.py",
+    "line": 12,
+    "text": "return GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "            return CTGANSynthesizer(metadata)",
+     "        elif synthesizer_type == SynthesizerType.copulagan:",
+     "            return CopulaGANSynthesizer(metadata)",
+     "        elif synthesizer_type == SynthesizerType.gaussiancopula:",
+     "            return GaussianCopulaSynthesizer(metadata)",
+     "        else:",
+     "            raise ValueError(f\"Unsupported synthesizer type: {synthesizer_type}\")"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "app/use_cases/services/data_service.py",
+    "line": 18,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import joblib",
+     "from app.use_cases.services.hasher import Hasher",
+     "from app.use_cases.factories.factories import SynthesizerFactory",
+     "from app.use_cases.evaluators.evaluators import Evaluator",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.ensemble import RandomForestClassifier",
+     "from sklearn.metrics import accuracy_score",
+     "from app.persistence.repositories.synthetic_data_repository import SyntheticDataRepository"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "gc",
+  "md",
+  "sdv_any",
+  "sm",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdmetrics==0.15.1",
+   "sdv==1.15.0"
+  ]
+ }
+}

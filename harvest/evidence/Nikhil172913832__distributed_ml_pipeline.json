@@ -1,0 +1,177 @@
+{
+ "repo": "Nikhil172913832/distributed_ml_pipeline",
+ "disk_kb": 17510,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Distributed ML Pipeline\n\nMLOps system with automated continuous learning, drift detection, and model rollback for manufacturing quality prediction.\n\n## Quick Start\n\n```bash\n# Download SECOM dataset\ncurl -o /tmp/secom.data https://archive.ics.uci.edu/ml/machine-learning-databases/secom/secom.data\ncurl -o /tmp/secom_labels.data https://archive.ics.uci.edu/ml/machine-learning-databases/secom/secom_labels.data\n\n# Start services\ndocker-compose up -d\n\n# Train initial model\ndocker-compose exec trainer python pipeline/model_trainer.py --auto-deploy\n```\n\nAccess monitoring:\n- **Grafana**: http://localhost:3000 (admin/admin)\n- **Prometheus**: http://localhost:9090\n- **API**: http://localhost:8004\n\n## Architecture\n\n```mermaid\ngraph LR\n    A[Real SECOM Data] --> B[Kafka]\n    B --> C[Consumer]\n    C --> D[(PostgreSQL)]\n    D --> E[Inference]\n    E --> F[Performance Monitor]\n    F --> G{Degraded?}\n    G -->|Yes| H[Retrainer]\n    H --> I[Model Registry]\n    I --> E\n    G -->|Rollback| I\n    E --> J[Prometheus/Grafana]\n```\n\n## Features\n\n- **Continuous Learning**: Retrains when accuracy < 85% or F1 < 0.80\n- **Model Rollback**: Reverts to previous model if new model performs worse\n- **Drift Detection**: KS-test on 590 features every 6 hours\n- **Retry Logic**: Database operations with exponential backoff\n- **Advanced ML**: TabNet, deep learning, ensemble models\n- **CI/CD**: Automated testing, linting, Docker builds\n\n## Training\n\n```bash\n# Traditional models (LogisticRegression, RandomForest, GradientBoosting)\npython pipeline/model_trainer.py --data-days 7 --auto-deploy\n\n# Advanced models (TabNet, deep learning, ensembles)\npython pipeline/model_trainer.py --data-days 7 --model-type tabnet --auto-deploy\n```\n\n## API Usage\n\n```bash\n# Prediction\ncurl -X POST http://localhost:8004/predict \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"features\": {\"feature_0\": 1.2, \"feature_1\": -0.5, ...}}'\n\n# Health check\ncurl http://localhost:8004/health\n\n# Model info\ncurl http://localhost:8004/model/info\n```\n\n## Monitoring\n\n**Prometheus Alerts**:\n- Model accuracy < 85% for > 1 hour\n- Drift detected on > 10% of features\n- Inference latency p95 > 100ms\n- Service down > 5 minutes\n\n**Grafana Dashboards**:\n- Model performance trends (accuracy, F1, precision, recall)\n- Drift detection heatmap\n- Prediction latency distribution\n- Rollback events timeline\n\n## Testing\n\n```bash\n# Unit + integration tests\npytest tests/ -v --cov=pipeline\n\n# CI simulation\nmake ci-test\nmake ci-lint\n```\n\n## Design Decisions\n\n**Real Data**: Uses actual SECOM dataset (1567 samples) with time-based train/test split (80/20). Batch replay enables continuous operation.\n\n**Drift Simulation**: Gradual feature distribution shifts on 20% of features to test continuous learning.\n\n**Model Rollback**: Monitors new models for 1 hour, rolls back if accuracy drops > 5% or F1 drops > 0.05.\n\n**Kafka**: Used for learning distributed systems despite being overkill for this scale. Could be replaced with direct database writes.\n\n## Known Limitations\n\n- Single-instance deployment (no horizontal scaling configured)\n- Model files stored locally (use S3/MinIO for distributed setup)\n- No authentication or rate limiting (add for production)\n- Finite dataset with batch replay (vs infinite synthetic generation)\n\n## License\n\nMIT\n",
+ "hits": {
+  "st": [
+   {
+    "file": "data_generator/secom_raw_trainer.py",
+    "line": 11,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import warnings",
+     "warnings.filterwarnings('ignore')",
+     "",
+     "import torch",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# Import GPU utilities if available",
+     "try:"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "data_generator/secom_raw_trainer.py",
+    "line": 12,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "warnings.filterwarnings('ignore')",
+     "",
+     "import torch",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# Import GPU utilities if available",
+     "try:",
+     "    from gpu_utils import print_gpu_info, get_gpu_memory_usage, clear_gpu_memory"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "data_generator/secom_raw_trainer.py",
+    "line": 11,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import warnings",
+     "warnings.filterwarnings('ignore')",
+     "",
+     "import torch",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# Import GPU utilities if available",
+     "try:"
+    ]
+   },
+   {
+    "file": "data_generator/secom_raw_trainer.py",
+    "line": 12,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "warnings.filterwarnings('ignore')",
+     "",
+     "import torch",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# Import GPU utilities if available",
+     "try:",
+     "    from gpu_utils import print_gpu_info, get_gpu_memory_usage, clear_gpu_memory"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "data_generator/secom_raw_trainer.py",
+    "line": 11,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import warnings",
+     "warnings.filterwarnings('ignore')",
+     "",
+     "import torch",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# Import GPU utilities if available",
+     "try:"
+    ]
+   },
+   {
+    "file": "data_generator/secom_raw_trainer.py",
+    "line": 206,
+    "text": "tvae_params: Dict) -> TVAESynthesizer:",
+    "context": [
+     "    return metadata",
+     "",
+     "",
+     "def train_sdv_model(data: pd.DataFrame, metadata: SingleTableMetadata, ",
+     "                   tvae_params: Dict) -> TVAESynthesizer:",
+     "    \"\"\"",
+     "    Train TVAE model on RAW SECOM data (with missing values).",
+     "    ",
+     "    TVAE (Variational Autoencoder) is better suited for this dataset because:"
+    ]
+   },
+   {
+    "file": "data_generator/secom_raw_trainer.py",
+    "line": 224,
+    "text": "Trained TVAESynthesizer",
+    "context": [
+     "        metadata: SDV metadata object",
+     "        tvae_params: TVAE hyperparameters",
+     "        ",
+     "    Returns:",
+     "        Trained TVAESynthesizer",
+     "    \"\"\"",
+     "    logger.info(\"Training TVAE model on RAW data...\")",
+     "    logger.info(f\"Training parameters: {tvae_params}\")",
+     "    logger.info(f\"Data shape: {data.shape}\")"
+    ]
+   },
+   {
+    "file": "data_generator/secom_raw_trainer.py",
+    "line": 251,
+    "text": "model = TVAESynthesizer(",
+    "context": [
+     "            tvae_params['cuda'] = False",
+     "    else:",
+     "        logger.info(\"Training on CPU\")",
+     "    ",
+     "    model = TVAESynthesizer(",
+     "        metadata=metadata,",
+     "        epochs=tvae_params['epochs'],",
+     "        batch_size=tvae_params['batch_size'],",
+     "        verbose=tvae_params.get('verbose', True),"
+    ]
+   },
+   {
+    "file": "data_generator/secom_raw_trainer.py",
+    "line": 343,
+    "text": "def save_training_artifacts(model: TVAESynthesizer,",
+    "context": [
+     "    logger.info(\"Validation complete\")",
+     "    return results",
+     "",
+     "",
+     "def save_training_artifacts(model: TVAESynthesizer, ",
+     "                          metadata: SingleTableMetadata,",
+     "                          original_stats: Dict[str, Any],",
+     "                          model_dir: Path,",
+     "                          model_name: str) -> None:"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv>=1.8.0,<2.0.0"
+  ],
+  "pyproject.toml": [
+   "    \"sdv>=1.8.0,<2.0.0\",",
+   "    \"sdv.*\","
+  ]
+ }
+}

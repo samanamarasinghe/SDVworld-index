@@ -1,0 +1,281 @@
+{
+ "repo": "KaiChen9909/margnet",
+ "disk_kb": 1809,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# MargNet\nThis is the code repository of MargNet. The necessary code for the paper is all included in this repository. \n\n## Method Introduction\nWe construct a new neural network-based method for DP tabular data synthesis. The detailed code of MargNet is in fold `method/MargDL`. This method applies an adaptive marginal selection framework and fits the selected marginals with neural networks. \n\n\n## Quick Start \n### Hyper-parameter Introduction\nThe code for running experiments is in main.py. The detailed description of the necessary hyper-parameters are give as follows.\n* `method`: which synthesis method you will run. `marggan` corresponds to our method MargNet\n* `dataset`: name of dataset.\n* `device`: the device used for running algorithms. \n* `epsilon`: DP parameter, which must be delivered when running code. \n* `--delta`: DP parameter, which is set to $1e-5$ by default.\n* `--resample`: whether model use a fixed input or resampled input\n* `--graph_sample`: correspond to a hybrid method, which utilizes junction tree structure to generate data from deep learning model.  \n\n\n### Preparation\nThe necessary packages for the environment are listed in file `requirement.txt`. Firstly, make sure the datasets are put in the correct fold (we provide the Adult dataset in our repo for authors to test the code). In addition, please remember to fit the evaluation model before synthesize data. \n```\npython evaluator/tune_eval_model.py adult catboost cv cuda:0\n```\n\n\n### Evaluation\nAfter you activate your enviroment, try the following code to make an evaluation. \n```\npython main.py marggan adult cuda:0 1.0 \n```\n\n\n### Ablation \nThe code for ablation can be executed by `ablation.py`. For example, if you want to fit MargNet and AIM with a same marginals and compare their fitting ability, you can run the following code \n```\npython ablation.py marggan adult cuda:0 10.0 --marg_num 10\npython ablation.py aim adult cuda:0 10.0 --marg_num 10\n```\n\n\n## Results Collection\nThe code for evaluation is in file `evaluator/eval_seeds.py`. By default, we generate data 5 times and conduct evaluation each time we generate the data. The results are the average of all evaluations. All the results are collected in JSON format and saved in the fold `exp/{name of dataset}/{name of method}`, which can be used for further analysis. \n\n\n## Acknowledge \nWe choose many baselines in our paper for evaluation. Part of the this code is from [AIM](https://github.com/ryan112358/private-pgm), [DP-MERF](https://github.com/ParkLabML/DP-MERF), [GEM](https://github.com/terranceliu/iterative-dp?tab=readme-ov-file), [PrivSyn](https://github.com/agl-c/deid2_dpsyn), [RAP++](https://github.com/amazon-science/relaxed-adaptive-projection), [TabDDPM](https://github.com/yandex-research/tab-ddpm), [CTGAN](https://github.com/juliecious/CTGAN/tree/DP). We sincerely thank them for their contribution to the community.",
+ "hits": {
+  "ctgan_mod": [
+   {
+    "file": "util/util.py",
+    "line": 124,
+    "text": "from method.CTGAN.main import ctgan_main",
+    "context": [
+     "    elif args.method == 'gem':",
+     "        from method.GEM.gem import gem_main ",
+     "        algo = gem_main ",
+     "    elif args.method == 'ctgan':",
+     "        from method.CTGAN.main import ctgan_main ",
+     "        algo = ctgan_main ",
+     "    elif args.method == 'marggan_update':",
+     "        from method.MargDL.ablation_main import marggan_ablation_update",
+     "        algo = marggan_ablation_update"
+    ]
+   },
+   {
+    "file": "method/CTGAN/scripts/ctgan.py",
+    "line": 10,
+    "text": "from ctgan.data_sampler import DataSampler",
+    "context": [
+     "from packaging import version",
+     "from torch import optim",
+     "from torch.nn import BatchNorm1d, Dropout, LeakyReLU, Linear, Module, ReLU, Sequential, functional",
+     "",
+     "from ctgan.data_sampler import DataSampler",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.synthesizers.base import BaseSynthesizer",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "method/CTGAN/scripts/ctgan.py",
+    "line": 11,
+    "text": "from ctgan.data_transformer import DataTransformer",
+    "context": [
+     "from torch import optim",
+     "from torch.nn import BatchNorm1d, Dropout, LeakyReLU, Linear, Module, ReLU, Sequential, functional",
+     "",
+     "from ctgan.data_sampler import DataSampler",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.synthesizers.base import BaseSynthesizer",
+     "",
+     "",
+     "class Discriminator(Module):"
+    ]
+   },
+   {
+    "file": "method/CTGAN/scripts/ctgan.py",
+    "line": 12,
+    "text": "from ctgan.synthesizers.base import BaseSynthesizer",
+    "context": [
+     "from torch.nn import BatchNorm1d, Dropout, LeakyReLU, Linear, Module, ReLU, Sequential, functional",
+     "",
+     "from ctgan.data_sampler import DataSampler",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.synthesizers.base import BaseSynthesizer",
+     "",
+     "",
+     "class Discriminator(Module):",
+     ""
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "method/CTGAN/main.py",
+    "line": 1,
+    "text": "from method.CTGAN.scripts.dp_ctgan_rdp import DPCTGANSynthesizerRDP",
+    "context": [
+     "from method.CTGAN.scripts.dp_ctgan_rdp import DPCTGANSynthesizerRDP",
+     "",
+     "",
+     "def construct_ctgan_args(args, domain):",
+     "    embedding_dim = 0"
+    ]
+   },
+   {
+    "file": "method/CTGAN/main.py",
+    "line": 36,
+    "text": "model = DPCTGANSynthesizerRDP(",
+    "context": [
+     "        if key.split('_')[0] in ['cat', 'y']:",
+     "            cat_col.append(key)",
+     "    cat_col = tuple(cat_col)",
+     "",
+     "    model = DPCTGANSynthesizerRDP(",
+     "        embedding_dim=args.embedding_dim,",
+     "        generator_dim=args.model_dim,",
+     "        discriminator_dim=args.model_dim,",
+     "        device=args.device,"
+    ]
+   },
+   {
+    "file": "method/CTGAN/scripts/dp_ctgan_rdp.py",
+    "line": 12,
+    "text": "from method.CTGAN.scripts.ctgan import CTGANSynthesizer, Generator, Discriminator",
+    "context": [
+     "import matplotlib.pyplot as plt",
+     "import numpy as np",
+     "from collections import namedtuple",
+     "",
+     "from method.CTGAN.scripts.ctgan import CTGANSynthesizer, Generator, Discriminator",
+     "from method.CTGAN.scripts.data_sampler import DataSampler",
+     "from method.CTGAN.scripts.transformer import DataTransformer",
+     "from method.CTGAN.scripts.rdp_accountant import compute_rdp, get_privacy_spent",
+     ""
+    ]
+   },
+   {
+    "file": "method/CTGAN/scripts/dp_ctgan_rdp.py",
+    "line": 23,
+    "text": "class DPCTGANSynthesizerRDP(CTGANSynthesizer):",
+    "context": [
+     "",
+     "",
+     "",
+     "# differential private CTGAN Synthesizer with rdp composition",
+     "class DPCTGANSynthesizerRDP(CTGANSynthesizer):",
+     "    \"\"\"",
+     "        Basic differential private CTGAN Synthesizer",
+     "        Algorithm: https://arxiv.org/pdf/1801.01594.pdf",
+     "    Args:"
+    ]
+   },
+   {
+    "file": "method/CTGAN/scripts/dp_ctgan_rdp.py",
+    "line": 50,
+    "text": "super(DPCTGANSynthesizerRDP, self).__init__(embedding_dim, generator_dim, discriminator_dim,",
+    "context": [
+     "                 clip_coeff=0.1, sigma=1, target_epsilon=3, target_delta=1e-5, rho_total = None, rho_used = None, domain = None):",
+     "",
+     "        assert batch_size % 2 == 0 , f\"Batch size: {batch_size}\"",
+     "",
+     "        super(DPCTGANSynthesizerRDP, self).__init__(embedding_dim, generator_dim, discriminator_dim,",
+     "                         generator_lr, generator_decay, discriminator_lr, betas,",
+     "                         discriminator_decay, batch_size, discriminator_steps,",
+     "                         log_frequency, verbose, epochs, pac, device)",
+     ""
+    ]
+   },
+   {
+    "file": "method/CTGAN/scripts/synthesizer.py",
+    "line": 11,
+    "text": "class CTGANSynthesizer(object):",
+    "context": [
+     "from method.CTGAN.scripts.ctgan import Discriminator, Generator",
+     "from method.CTGAN.scripts.data_sampler import Sampler",
+     "",
+     "",
+     "class CTGANSynthesizer(object):",
+     "    \"\"\"Conditional Table GAN Synthesizer.",
+     "",
+     "    This is the core class of the CTGAN project, where the different components",
+     "    are orchestrated together."
+    ]
+   },
+   {
+    "file": "method/CTGAN/scripts/dp_ctgan.py",
+    "line": 11,
+    "text": "from method.CTGAN.scripts.ctgan import CTGANSynthesizer, Generator, Discriminator",
+    "context": [
+     "from torch import optim",
+     "import matplotlib.pyplot as plt",
+     "import numpy as np",
+     "",
+     "from method.CTGAN.scripts.ctgan import CTGANSynthesizer, Generator, Discriminator",
+     "from method.CTGAN.scripts.data_sampler import DataSampler",
+     "from method.CTGAN.scripts.rdp_accountant import compute_rdp, get_privacy_spent",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "method/CTGAN/scripts/dp_ctgan.py",
+    "line": 17,
+    "text": "class DPCTGANSynthesizer(CTGANSynthesizer):",
+    "context": [
+     "from method.CTGAN.scripts.rdp_accountant import compute_rdp, get_privacy_spent",
+     "",
+     "",
+     "# Basic differential private CTGAN Synthesizer",
+     "class DPCTGANSynthesizer(CTGANSynthesizer):",
+     "    \"\"\"",
+     "        Basic differential private CTGAN Synthesizer",
+     "        Algorithm: https://arxiv.org/pdf/1801.01594.pdf",
+     "    Args:"
+    ]
+   },
+   {
+    "file": "method/CTGAN/scripts/dp_ctgan.py",
+    "line": 44,
+    "text": "super(DPCTGANSynthesizer, self).__init__(embedding_dim, generator_dim, discriminator_dim,",
+    "context": [
+     "                 clip_coeff=0.1, sigma=1, target_epsilon=3, target_delta=1e-5, rho = None, rho_used = None):",
+     "",
+     "        assert batch_size % 2 == 0 , f\"Batch size: {batch_size}\"",
+     "",
+     "        super(DPCTGANSynthesizer, self).__init__(embedding_dim, generator_dim, discriminator_dim,",
+     "                         generator_lr, generator_decay, discriminator_lr, betas,",
+     "                         discriminator_decay, batch_size, discriminator_steps,",
+     "                         log_frequency, verbose, epochs, pac, cuda)",
+     ""
+    ]
+   },
+   {
+    "file": "method/CTGAN/scripts/ctgan.py",
+    "line": 88,
+    "text": "class CTGANSynthesizer(BaseSynthesizer):",
+    "context": [
+     "        data = self.seq(input)",
+     "        return data",
+     "",
+     "",
+     "class CTGANSynthesizer(BaseSynthesizer):",
+     "    \"\"\"Conditional Table GAN Synthesizer.",
+     "",
+     "    This is the core class of the CTGAN project, where the different components",
+     "    are orchestrated together."
+    ]
+   },
+   {
+    "file": "method/GEM/Util/gan/ctgan/synthesizer.py",
+    "line": 12,
+    "text": "class CTGANSynthesizer(object):",
+    "context": [
+     "from gan.ctgan.sampler import Sampler",
+     "from gan.ctgan.transformer import DataTransformer",
+     "",
+     "",
+     "class CTGANSynthesizer(object):",
+     "    \"\"\"Conditional Table GAN Synthesizer.",
+     "",
+     "    This is the core class of the CTGAN project, where the different components",
+     "    are orchestrated together."
+    ]
+   }
+  ],
+  "rdt": [
+   {
+    "file": "method/GEM/Util/gan/ctgan/transformer.py",
+    "line": 5,
+    "text": "# from rdt.transformers import OneHotEncodingTransformer",
+    "context": [
+     "import pickle",
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "# from rdt.transformers import OneHotEncodingTransformer",
+     "from sklearn.preprocessing import OneHotEncoder",
+     "from sklearn.mixture import BayesianGaussianMixture",
+     "# from sklearn.exceptions import ConvergenceWarning",
+     "# from sklearn.utils.testing import ignore_warnings"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ctgan_mod",
+  "rdt"
+ ],
+ "vendored_dirs": [
+  "method/CTGAN",
+  "method/GEM/Util/gan/ctgan"
+ ],
+ "dependencies": {
+  "method/GEM/requirements.txt": [
+   "rdt==0.4.0"
+  ]
+ }
+}

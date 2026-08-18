@@ -1,0 +1,253 @@
+{
+ "repo": "edwardbensa/cdc-diabetes",
+ "disk_kb": 826,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Diabetes Health Indicators\n\nThis repository contains a comprehensive **Clinical Decision Support System (CDSS)** for Chronic Kidney Disease (CKD). The system leverages **Bayesian Neural Networks (BNN)** to provide diagnostic predictions with built-in uncertainty quantification and features a computer vision component to extract clinical data from **urinalysis dipstick images**.\n\n## Key Features\n\n- **Bayesian Neural Network Diagnosis:** Predicts CKD status while providing a \"confidence level\" (uncertainty) to help clinicians identify borderline cases.\n    \n- **Computer Vision Integration:** Automated reading of urine dipstick images to populate clinical fields (Glucose, Specific Gravity, RBC, etc.).\n    \n- **Interpretability with SHAP:** Explains model predictions by highlighting the most influential patient features.\n    \n- **RAG-Powered Clinical Chat:** A retrieval-augmented generation agent that provides clinical guidance based on the **NICE NG203** guidelines.\n    \n- **Comprehensive Patient Management:** Full CRUD (Create, Read, Update, Delete) operations powered by MongoDB.\n    \n- **Analytics Dashboard:** System-wide insights into CKD prevalence, testing timelines, and demographic distributions.\n    \n\n---\n\n## System Architecture\n\nThe application is built using a modular Python architecture:\n\n|Component|Description|\n|---|---|\n|**Frontend**|Streamlit multi-page application (`app.py`).|\n|**Database**|MongoDB for secure storage of patient records and diagnostic history (`db.py`).|\n|**Model Logic**|Bayesian inference and preprocessing via `joblib` and `scikit-learn` (`models.py`).|\n|**Vision**|Image processing utilities for dipstick analysis (`misc.py`).|\n|**Guidelines**|RAG agent connected to a FastAPI backend for NICE guideline queries (`chat.py`).|\n\n## Module Overview\n\n### 1. Diagnostic Engine (`models.py`, `predictions.py`)\n\nThe system uses a pre-trained BNN. Unlike standard neural networks, the BNN provides an **uncertainty metric**.\n\n- **Total Uncertainty:** Combines Aleatoric and Epistemic uncertainty.\n    \n- **Decision Logic:** Predictions are mapped to clinical recommendations (e.g., \"Refer to nephrology within 1 week\") based on both probability and confidence thresholds.\n    \n\n### 2. Dipstick Analysis (`data.py`, `patients.py`)\n\nClinicians can upload photos of urinalysis dipsticks. The system:\n\n1. Processes the image to identify color pads.\n    \n2. Maps colors to clinical values (e.g., `neg`, `100(5.5)`, `500(28)`).\n    \n3. Automatically populates the patient form in the **Patient Management** tab.\n    \n\n### 3. Clinical Recommendations (`recommendations.py`)\n\nAutomated logic that generates actionable steps:\n\n- **Critical:** High probability + High confidence.\n    \n- **Warning:** Moderate probability or high uncertainty (requires clinical review).\n    \n- **Success:** High confidence \"No CKD\" result.\n    \n\n### 4. Analytics & Reporting (`analytics.py`)\n\nVisualizes data using `Plotly`:\n\n- Uncertainty vs. Probability scatter plots to identify \"edge cases.\"\n    \n- Distribution of CKD cases across different age groups and comorbidities (HTN, DM).\n    \n- Cumulative testing timelines.\n    \n\n---\n\n## Installation & Setup\n\n### Prerequisites\n\n- Python 3.9+\n    \n- MongoDB Instance (Local or Atlas)\n    \n- RAG API (FastAPI) running at `http://localhost:8000` (for the Chat feature)\n    \n\n### Steps\n\n1. **Clone the repository:**\n```bash\ngit clone <repository-url>\ncd ckd-cdss\n```\n2. **Install dependencies:**\n```bash\npip install -r requirements.txt\n```\n3. **Configure Environment:** Update `src/cdss/config.py` with your `MONGODB_URI` and `MODEL_FOLDER_PATH`.\n4. Run the Application:\n```bash\nstreamlit run app.py\n```\n\n## Clinical Workflow\n\n1. **Data Entry:** Add a patient via \"Patient Management.\" Use the **Dipstick Image Upload** to save time on manual entry.\n    \n2. **Diagnostic Testing:** Go to \"Diagnostic Prediction,\" select the patient, and run the model.\n    \n3. **Review:** Examine the probability score and uncertainty. Check the SHAP values (if enabled) to understand _why_ the model made that choice.\n    \n4. **Action:** Follow the generated clinical recommendation and save the results to the patient's permanent record.\n    \n5. **Consult:** Use the \"Guideline Chat\" to ask specific questions about NICE protocols (NG203) regarding the patient's specific presentation.\n    \n\n---\n\n## Disclaimer\n\n_This system is intended for research and as a clinical decision support tool. It is not a replacement for professional clinical judgment._",
+ "hits": {
+  "st": [
+   {
+    "file": "src/preprocessing/preprocess_pima.py",
+    "line": 15,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "from sklearn.pipeline import Pipeline",
+     "from sklearn.preprocessing import RobustScaler, OrdinalEncoder",
+     "from imblearn.combine import SMOTEENN",
+     "from imblearn.pipeline import Pipeline as ImbPipeline",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from src.config import PROCESSED_DATA_DIR, INTERIM_DATA_DIR, MODELS_DIR",
+     "",
+     "DS_NAME = \"pima_diabetes\" # Dataset name"
+    ]
+   },
+   {
+    "file": "src/preprocessing/preprocess_uci2.py",
+    "line": 13,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "from sklearn.pipeline import Pipeline",
+     "from sklearn.preprocessing import RobustScaler, OrdinalEncoder",
+     "from imblearn.combine import SMOTEENN",
+     "from imblearn.pipeline import Pipeline as ImbPipeline",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from src.config import PROCESSED_DATA_DIR, INTERIM_DATA_DIR, MODELS_DIR",
+     ""
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "src/preprocessing/preprocess_pima.py",
+    "line": 16,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from sklearn.preprocessing import RobustScaler, OrdinalEncoder",
+     "from imblearn.combine import SMOTEENN",
+     "from imblearn.pipeline import Pipeline as ImbPipeline",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from src.config import PROCESSED_DATA_DIR, INTERIM_DATA_DIR, MODELS_DIR",
+     "",
+     "DS_NAME = \"pima_diabetes\" # Dataset name",
+     "MODEL_DIR = MODELS_DIR / DS_NAME"
+    ]
+   },
+   {
+    "file": "src/preprocessing/preprocess_uci2.py",
+    "line": 14,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from sklearn.preprocessing import RobustScaler, OrdinalEncoder",
+     "from imblearn.combine import SMOTEENN",
+     "from imblearn.pipeline import Pipeline as ImbPipeline",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from src.config import PROCESSED_DATA_DIR, INTERIM_DATA_DIR, MODELS_DIR",
+     "",
+     "# Load dataset"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "src/preprocessing/preprocess_pima.py",
+    "line": 15,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "from sklearn.pipeline import Pipeline",
+     "from sklearn.preprocessing import RobustScaler, OrdinalEncoder",
+     "from imblearn.combine import SMOTEENN",
+     "from imblearn.pipeline import Pipeline as ImbPipeline",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from src.config import PROCESSED_DATA_DIR, INTERIM_DATA_DIR, MODELS_DIR",
+     "",
+     "DS_NAME = \"pima_diabetes\" # Dataset name"
+    ]
+   },
+   {
+    "file": "src/preprocessing/preprocess_pima.py",
+    "line": 16,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from sklearn.preprocessing import RobustScaler, OrdinalEncoder",
+     "from imblearn.combine import SMOTEENN",
+     "from imblearn.pipeline import Pipeline as ImbPipeline",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from src.config import PROCESSED_DATA_DIR, INTERIM_DATA_DIR, MODELS_DIR",
+     "",
+     "DS_NAME = \"pima_diabetes\" # Dataset name",
+     "MODEL_DIR = MODELS_DIR / DS_NAME"
+    ]
+   },
+   {
+    "file": "src/preprocessing/preprocess_uci2.py",
+    "line": 13,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "from sklearn.pipeline import Pipeline",
+     "from sklearn.preprocessing import RobustScaler, OrdinalEncoder",
+     "from imblearn.combine import SMOTEENN",
+     "from imblearn.pipeline import Pipeline as ImbPipeline",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from src.config import PROCESSED_DATA_DIR, INTERIM_DATA_DIR, MODELS_DIR",
+     ""
+    ]
+   },
+   {
+    "file": "src/preprocessing/preprocess_uci2.py",
+    "line": 14,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from sklearn.preprocessing import RobustScaler, OrdinalEncoder",
+     "from imblearn.combine import SMOTEENN",
+     "from imblearn.pipeline import Pipeline as ImbPipeline",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from src.config import PROCESSED_DATA_DIR, INTERIM_DATA_DIR, MODELS_DIR",
+     "",
+     "# Load dataset"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "src/preprocessing/preprocess_pima.py",
+    "line": 15,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "from sklearn.pipeline import Pipeline",
+     "from sklearn.preprocessing import RobustScaler, OrdinalEncoder",
+     "from imblearn.combine import SMOTEENN",
+     "from imblearn.pipeline import Pipeline as ImbPipeline",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from src.config import PROCESSED_DATA_DIR, INTERIM_DATA_DIR, MODELS_DIR",
+     "",
+     "DS_NAME = \"pima_diabetes\" # Dataset name"
+    ]
+   },
+   {
+    "file": "src/preprocessing/preprocess_pima.py",
+    "line": 64,
+    "text": "logger.info(\"Training TVAESynthesizer on training data...\")",
+    "context": [
+     ")",
+     "logger.info(f\"Train shape: {X_train_raw.shape}, Test shape: {X_test_raw.shape}\")",
+     "",
+     "# SDV augmentation step",
+     "logger.info(\"Training TVAESynthesizer on training data...\")",
+     "train_df = X_train_raw.copy()",
+     "train_df[\"ckd_status\"] = y_train.values",
+     "",
+     "# Fit synthesizer"
+    ]
+   },
+   {
+    "file": "src/preprocessing/preprocess_pima.py",
+    "line": 72,
+    "text": "synthesizer = TVAESynthesizer(metadata, epochs=300, batch_size=64)",
+    "context": [
+     "# Fit synthesizer",
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(data=train_df)",
+     "",
+     "synthesizer = TVAESynthesizer(metadata, epochs=300, batch_size=64)",
+     "synthesizer.fit(train_df)",
+     "",
+     "# Generate synthetic samples (e.g., 2000 new rows)",
+     "synthetic_df = synthesizer.sample(num_rows=1000)"
+    ]
+   },
+   {
+    "file": "src/preprocessing/preprocess_uci2.py",
+    "line": 13,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "from sklearn.pipeline import Pipeline",
+     "from sklearn.preprocessing import RobustScaler, OrdinalEncoder",
+     "from imblearn.combine import SMOTEENN",
+     "from imblearn.pipeline import Pipeline as ImbPipeline",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from src.config import PROCESSED_DATA_DIR, INTERIM_DATA_DIR, MODELS_DIR",
+     ""
+    ]
+   },
+   {
+    "file": "src/preprocessing/preprocess_uci2.py",
+    "line": 60,
+    "text": "logger.info(\"Training TVAESynthesizer on training data...\")",
+    "context": [
+     ")",
+     "logger.info(f\"Train shape: {X_train_raw.shape}, Test shape: {X_test_raw.shape}\")",
+     "",
+     "# SDV augmentation step",
+     "logger.info(\"Training TVAESynthesizer on training data...\")",
+     "train_df = X_train_raw.copy()",
+     "train_df[\"ckd_status\"] = y_train.values",
+     "",
+     "# Fit synthesizer"
+    ]
+   },
+   {
+    "file": "src/preprocessing/preprocess_uci2.py",
+    "line": 68,
+    "text": "synthesizer = TVAESynthesizer(metadata, epochs=300, batch_size=64)",
+    "context": [
+     "# Fit synthesizer",
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(data=train_df)",
+     "",
+     "synthesizer = TVAESynthesizer(metadata, epochs=300, batch_size=64)",
+     "synthesizer.fit(train_df)",
+     "",
+     "# Generate synthetic samples (e.g., 2000 new rows)",
+     "synthetic_df = synthesizer.sample(num_rows=1000)"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv"
+  ]
+ }
+}

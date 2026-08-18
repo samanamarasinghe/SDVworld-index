@@ -1,0 +1,317 @@
+{
+ "repo": "matheus-rech/MIMIC-Ext-Stroke",
+ "disk_kb": 16528,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# MIMIC-Ext-Stroke\n\n**Synthetic Stroke Digital Twins from MIMIC-IV: Bayesian Networks, DoppelGANger Time-Series, and Scenario Simulation**\n\n[![CI](https://github.com/matheus-rech/MIMIC-Ext-Stroke/actions/workflows/ci.yml/badge.svg)](https://github.com/matheus-rech/MIMIC-Ext-Stroke/actions/workflows/ci.yml)\n[![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue.svg)](https://www.python.org/downloads/)\n[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)\n\n---\n\n## Overview\n\nMIMIC-Ext-Stroke is a research pipeline for generating **privacy-preserving synthetic stroke patient data** and building **digital twins** for associational scenario simulations. The system extracts ~3,487 stroke patients from the [MIMIC-IV](https://physionet.org/content/mimiciv/) critical care database, learns generative models over both static clinical profiles and hourly ICU time-series, and enables \"what-if\" explorations of how modifying patient characteristics relates to different ICU trajectory patterns.\n\n### Key Results\n\n| Metric | Bayesian Network | CTGAN | TVAE |\n|---|---|---|---|\n| Discriminator AUC (ideal = 0.5) | 0.65 | 0.72 | 0.68 |\n| Clinical violation rate | < 2 % | ~5 % | ~4 % |\n| TSTR AUC gap (lower = better) | 0.08 | 0.12 | 0.10 |\n| MIA F1 (lower = more private) | 0.52 | 0.55 | 0.53 |\n\n> Results are pooled across M = 10 independently generated synthetic datasets using Rubin's combining rules (Reiter 2003 variant) with 95 % confidence intervals.\n\n---\n\n## Architecture\n\n```mermaid\nflowchart TD\n    A[MIMIC-IV Database] -->|SQL + DuckDB| B[Cohort Extraction]\n    B --> C[Static Features]\n    B --> D[Time-Series Features]\n    C --> E[Preprocessing & Splitting]\n    D --> E\n\n    E --> F[Bayesian Network<br/>Static Profiles]\n    E --> G[CTGAN / TVAE<br/>Baselines]\n    E --> H[DoppelGANger<br/>ICU Time-Series]\n\n    F --> I[HybridDigitalTwin]\n    H --> I\n\n    I --> J[Synthetic Patients<br/>Static + Temporal]\n    G --> K[Synthetic Patients<br/>Static Only]\n\n    J --> L[12-Metric Evaluation<br/>Fidelity / Plausibility / Utility / Privacy / Temporal]\n    K --> L\n\n    I --> M[ScenarioSimulator<br/>What-If Analysis]\n    M --> N[Modified Trajectories<br/>Uncertainty Quantification]\n\n    L --> O[Results & Figures]\n    N --> O\n    O --> P[Manuscript Assembly]\n```\n\n---\n\n## Project Structure\n\n```\nMIMIC-Ext-Stroke/\n├── config/\n│   └── config.yaml                  # Central configuration (paths, hyperparameters)\n│\n├── sql/                             # Raw SQL queries for MIMIC-IV extraction\n│   ├── 01_stroke_cohort.sql\n│   ├── 02_static_features.sql\n│   └── 03_timeseries_features.sql\n│\n├── src/                             # Core source code\n│   ├── data/\n│   │   ├── extract.py               # Cohort identification from MIMIC-IV via DuckDB\n│   │   ├── features.py              # Static & time-series feature extraction\n│   │   └── preprocess.py            # Encoding, imputation, normalization, splitting\n│   ├── models/\n│   │   ├── bayesian_net.py          # StrokeProfileBN (static profiles via pgmpy)\n│   │   ├── ctgan_baseline.py        # CTGAN/TVAE baselines (via SDV)\n│   │   ├── dgan_model.py            # StrokeTimeSeriesDGAN (PyTorch LSTM-GAN)\n│   │   └── hybrid.py               # HybridDigitalTwin (BN + DGAN integration)\n│   ├── evaluation/\n│   │   ├── fidelity.py              # KS test, correlation, discriminator AUC, MCA\n│   │   ├── clinical_rules.py        # 7 domain constraint validations\n│   │   ├── utility.py               # TSTR / TRTR downstream task evaluation\n│   │   ├── privacy.py               # MIA, DCR, attribute inference\n│   │   ├── temporal.py              # DTW distance, autocorrelation comparison\n│   │   └── rubins_rules.py          # Rubin's combining rules for pooled estimates\n│   └── simulation/\n│       ├── scenario_simulator.py    # ScenarioSimulator for what-if analysis\n│       └── counterfactual.py        # Deprecated shim (backward compat)\n│\n├── scripts/\n│   ├── run_full_evaluation.py       # Full evaluation pipeline (all models, M=10 datasets)\n│   ├── generate_all_outputs.py      # Generate all figures and tables\n│   └── assemble_manuscript.py       # Compile manuscript sections into Word documents\n│\n├── notebooks/\n│   ├── 01_eda.ipynb                 # Exploratory data analysis\n│   ├── 02_cohort_summary.ipynb      # Table 1 generation (demographics)\n│   ├── 03_synthetic_evaluation.ipynb # Model comparison and evaluation\n│   └── 04_digital_twin_demo.ipynb   # Scenario simulation demonstrations\n│\n├── manuscript/                      # Publication materials (Markdown + DOCX)\n│   ├── 00_title_abstract.md\n│   ├── 01_introduction.md\n│   ├── 02_methods.md\n│   ├── 03_results.md\n│   ├── 04_discussion.md\n│   ├── 05_supplementary.md\n│   └── 06_references.md\n│\n├── tests/                           # Unit tests (pytest)\n│   ├── test_bayesian_net.py\n│   ├── test_dgan.py\n│   ├── test_hybrid.py\n│   ├── test_counterfactual.py\n│   ├── test_ctgan.py\n│   ├── test_evaluation.py\n│   ├── test_eval_utility_privacy.py\n│   ├── test_extract.py\n│   ├── test_features.py\n│   ├── test_preprocess.py\n│   ├── test_timeseries.py\n│   └── test_integration.py\n│\n├── outputs/                         # Generated artifacts (partially gitignored)\n│   ├── cohort/                      # Preprocessed datasets (.parquet)\n│   ├── figures/                     # Plots and visualizations\n│   └── tables/                      # Evaluation result tables (.csv)\n│\n├── pyproject.toml                   # Project metadata and dependencies\n└── README.md                        # This file\n```\n\n---\n\n## Installation\n\n### Requirements\n\n- **Python 3.12+**\n- MIMIC-IV v3.1 data files (for cohort extraction only)\n\n### Install\n\n```bash\n# Clone the repository\ngit clone https://github.com/matheus-rech/MIMIC-Ext-Stroke.git\ncd MIMIC-Ext-Stroke\n\n# Create a virtual environment\npython -m venv .venv\nsource .venv/bin/activate\n\n# Install core dependencies\npip install -e .\n\n# Install with development tools (pytest, ruff)\npip install -e \".[dev]\"\n\n# Install with DoppelGANger support (gretel-synthetics)\npip install -e \".[dgan]\"\n\n# Install everything\npip install -e \".[dev,dgan]\"\n```\n\n### Core Dependencies\n\n| Package | Version | Purpose |\n|---|---|---|\n| `duckdb` | >= 1.1.0 | SQL-based MIMIC-IV data extraction |\n| `pandas` | >= 2.2.0 | Data manipulation |\n| `numpy` | >= 1.26.0 | Numerical computing |\n| `pgmpy` | >= 0.1.25 | Bayesian Network structure/parameter learning |\n| `sdv` | >= 1.17.0 | CTGAN and TVAE synthetic data baselines |\n| `torch` | >= 2.4.0 | DoppelGANger LSTM-GAN implementation |\n| `scikit-learn` | >= 1.5.0 | Evaluation classifiers and metrics |\n| `scipy` | >= 1.14.0 | Statistical tests (KS, distance) |\n| `matplotlib` / `seaborn` | >= 3.9.0 / >= 0.13.0 | Visualization |\n| `tslearn` | >= 0.6.3 | Time-series analysis utilities |\n\n---\n\n## Configuration\n\nAll paths and hyperparameters are centralized in [`config/config.yaml`](config/config.yaml):\n\n```yaml\ndata:\n  mimic_path: \"../mimiciv/3.1\"       # Path to MIMIC-IV CSV.GZ files\n  output_path: \"./outputs\"\n  cohort_path: \"./outputs/cohort\"\n  synthetic_path: \"./outputs/synthetic\"\n\ncohort:\n  stroke_icd9: [\"433\", \"434\", \"435\", \"436\"]\n  stroke_icd10: [\"I60\", \"I61\", \"I63\", \"I65\", \"I66\", \"I67\", \"G45\"]\n  min_icu_los_hours: 6\n  max_icu_los_days: 30\n\ntimeseries:\n  resample_freq: \"1h\"\n  max_hours: 72                      # 3-day ICU window\n\nmodels:\n  bayesian_net:\n    structure_algorithm: \"hc\"        # Hill Climbing\n    scoring_method: \"bic\"            # Bayesian Information Criterion\n    max_indegree: 3\n  dgan:\n    epochs: 5000\n    batch_size: 32\n    noise_dim: 100\n  n_synthetic_datasets: 10           # El Emam et al. (2024) recommendation\n  random_seed: 42\n\nevaluation:\n  tstr_test_size: 0.3\n  privacy_k_neighbors: 5\n```\n\nModify `config.yaml` to point `mimic_path` to your local MIMIC-IV data directory before running the extraction pipeline.\n\n---\n\n## Usage\n\n### 1. Cohort Extraction\n\nExtract stroke patients from MIMIC-IV using ICD-9/10 diagnostic codes:\n\n```python\nimport yaml\nfrom src.data.extract import extract_stroke_cohort\n\nwith open(\"config/config.yaml\") as f:\n    config = yaml.safe_load(f)\n\ncohort = extract_stroke_cohort(config)\nprint(f\"Extracted {len(cohort)} stroke patients\")\n```\n\n### 2. Digital Twin Generation\n\nGenerate complete synthetic patients (static profiles + ICU time-series):\n\n```python\nfrom src.models.hybrid import HybridDigitalTwin\n\n# Initialize hybrid model\ntwin = HybridDigitalTwin(\n    bn_max_indegree=3,\n    dgan_epochs=500,\n    seq_len=72,\n)\n\n# Fit on real data\ntwin.fit(static_df=train_static, timeseries_df=train_ts)\n\n# Generate synthetic patients\nsynthetic = twin.generate(n_patients=1000, seed=42)\nprint(synthetic[\"static\"].shape)      # (1000, n_static_features)\nprint(synthetic[\"timeseries\"].shape)   # (1000, 72, n_ts_features)\n\n# Generate M=10 independent datasets (recommended)\ndatasets = twin.generate_multiple_datasets(\n    n_patients=1000,\n    n_datasets=10,\n    base_seed=42,\n)\n```\n\n### 3. Scenario Simulation\n\nExplore how modifying patient attributes relates to different ICU trajectories:\n\n```python\nfrom src.simulation.scenario_simulator import ScenarioSimulator\n\nsim = ScenarioSimulator(hybrid_model=twin)\n\n# Define a baseline patient\npatient = {\n    \"anchor_age\": 65,\n    \"has_hypertension\": 1,\n    \"has_afib\": 0,\n    \"has_diabetes\": 0,\n    \"hospital_expire_flag\": 0,\n    \"los\": 5.0,\n}\n\n# What if this patient also had atrial fibrillation?\nresult = sim.simulate_scenario(\n    patient_profile=patient,\n    modification={\"has_afib\": 1},\n    n_samples=50,\n)\nprint(result[\"trajectories\"].shape)  # (50, 72, n_features)\n\n# Compare multiple scenarios\nscenarios = {\n    \"baseline\": {},\n    \"add_afib\": {\"has_afib\": 1},\n    \"older\": {\"anchor_age\": 80},\n    \"add_afib_and_older\": {\"has_afib\": 1, \"anchor_age\": 80},\n}\ncomparison = sim.compare_scenarios(patient, scenarios, n_samples=50)\n\nfor name, data in comparison.items():\n    print(f\"{name}: mean trajectory shape = {data['mean_trajectory'].shape}\")\n```\n\n> **Note:** These simulations reflect learned associations from observational data, not causal effects. Results should be interpreted as hypothesis-generating explorations. See Section 2.10 of the manuscript for a detailed discussion.\n\n### 4. Evaluation\n\nRun the complete 12-metric evaluation across all models:\n\n```bash\npython scripts/run_full_evaluation.py\n```\n\nOr evaluate individual dimensions programmatically:\n\n```python\nfrom src.evaluation.fidelity import dimension_wise_distribution, discriminator_score\nfrom src.evaluation.clinical_rules import check_clinical_rules\nfrom src.evaluation.utility import tstr_evaluation\nfrom src.evaluation.privacy import membership_inference_attack, nearest_neighbor_distance\nfrom src.evaluation.temporal import dtw_distance_matrix, autocorrelation_comparison\n\n# Statistical fidelity\nfidelity = dimension_wise_distribution(real_df, synthetic_df)\nprint(f\"Avg KS p-value: {fidelity['avg_pvalue']:.4f}\")\n\n# Clinical plausibility\nrules = check_clinical_rules(synthetic_df)\nprint(f\"Violation rate: {rules['total_violation_rate']:.4%}\")\n\n# Downstream utility (TSTR)\nutility = tstr_evaluation(real_train, synthetic, real_test)\nprint(f\"TSTR AUC: {utility['tstr_auc']:.4f}, Gap: {utility['auc_gap']:.4f}\")\n\n# Privacy\nmia = membership_inference_attack(real_df, synthetic_df)\ndcr = nearest_neighbor_distance(real_df, synthetic_df)\nprint(f\"MIA F1: {mia['mia_f1']:.4f}, Mean DCR: {dcr['mean_dcr']:.4f}\")\n```\n\n### 5. Figure Generation\n\nGenerate all publication figures and tables:\n\n```bash\npython scripts/generate_all_outputs.py\n```\n\nOutput artifacts are saved to `outputs/figures/` and `outputs/tables/`.\n\n---\n\n## Evaluation Framework\n\nThe evaluation framework implements 12 metrics across 5 dimensions, based on Yan et al. (Nature Communications, 2022):\n\n| Dimension | Metric | Function | Ideal Value |\n|---|---|---|---|\n| **Fidelity** | Dimension-wise distribution (KS test) | `dimension_wise_distribution()` | p-value -> 1.0 |\n| | Correlation preservation (Frobenius) | `correlation_preservation()` | -> 0.0 |\n| | Discriminator AUC | `discriminator_score()` | -> 0.5 |\n| | Medical concept abundance (Manhattan) | `medical_concept_abundance()` | -> 0.0 |\n| **Plausibility** | Clinical rule violations | `check_clinical_rules()` | -> 0.0 |\n| **Utility** | TSTR AUC (LR + RF) | `tstr_evaluation()` | -> TRTR AUC |\n| | AUC gap | `tstr_evaluation()` | -> 0.0 |\n| **Privacy** | Membership inference F1 | `membership_inference_attack()` | -> 0.5 |\n| | Distance to closest record | `nearest_neighbor_distance()` | higher = better |\n| | Attribute inference accuracy | `attribute_inference_attack()` | -> baseline rate |\n| **Temporal** | DTW distance | `dtw_distance_matrix()` | lower = better |\n| | Autocorrelation difference | `autocorrelation_comparison()` | -> 0.0 |\n\nAll metrics are computed per independently generated dataset (M = 10) and pooled using Rubin's combining rules with 95 % confidence intervals.\n\n---\n\n## Models\n\n| Model | Type | Data | Method |\n|---|---|---|---|\n| **StrokeProfileBN** | Bayesian Network | Static profiles | Hill Climbing + BIC, BDeu prior, discretization |\n| **CTGAN** | Conditional GAN | Static profiles (OHE) | SDV library, 50 epochs, batch_size=500 |\n| **TVAE** | Variational Autoencoder | Static profiles (OHE) | SDV library, 50 epochs |\n| **StrokeTimeSeriesDGAN** | LSTM-GAN | Hourly ICU vitals | DoppelGANger-style, metadata-conditioned |\n| **HybridDigitalTwin** | BN + DGAN | Static + temporal | Two-stage: BN generates profiles, DGAN generates trajectories |\n\n---\n\n## Stroke Subtypes\n\nStroke patients are classified using ICD-9 and ICD-10 diagnostic codes:\n\n| Subtype | ICD-10 Codes | ICD-9 Codes | Description |\n|---|---|---|---|\n| **Ischemic stroke** | I63, I65, I66 | 433, 434 | Cerebral artery occlusion/stenosis |\n| **Intracerebral hemorrhage (ICH)** | I61 | 431 | Bleeding within brain parenchyma |\n| **Subarachnoid hemorrhage (SAH)** | I60 | 430 | Bleeding in subarachnoid space |\n| **Transient ischemic attack (TIA)** | G45 | 435 | Temporary cerebral ischemia |\n| **Other cerebrovascular** | I67 | 436 | Other/unspecified cerebrovascular disease |\n\n---\n\n## Testing\n\n```bash\n# Run all unit tests (no MIMIC-IV data required)\npython -m pytest tests/ -v \\\n    --ignore=tests/test_extract.py \\\n    --ignore=tests/test_features.py \\\n    --ignore=tests/test_timeseries.py \\\n    --ignore=tests/test_integration.py \\\n    -k \"not preprocess_pipeline\"\n\n# Run specific test modules\npython -m pytest tests/test_bayesian_net.py -v\npython -m pytest tests/test_hybrid.py -v\npython -m pytest tests/test_evaluation.py -v\n\n# Lint\nruff check src/ tests/ scripts/\n```\n\nTests that require MIMIC-IV data access (`test_extract.py`, `test_features.py`, `test_timeseries.py`, `test_integration.py`) are excluded from the default CI pipeline.\n\n---\n\n## Data Access\n\nThis project uses the [MIMIC-IV](https://physionet.org/content/mimiciv/3.1/) clinical database. To access the data:\n\n1. Complete the **CITI Data or Specimens Only Research** training course\n2. Sign the **PhysioNet Credentialed Health Data Use Agreement**\n3. Request access to MIMIC-IV on [PhysioNet](https://physionet.org/content/mimiciv/3.1/)\n4. Download and place the data files according to the path in `config/config.yaml`\n\n> **Important:** MIMIC-IV contains de-identified patient health data. All use must comply with the PhysioNet Data Use Agreement. The synthetic data generated by this pipeline is designed to preserve clinical utility while mitigating re-identification risk.\n\n---\n\n## Citation\n\nIf you use this work, please cite:\n\n```bibtex\n@article{mimic_ext_stroke_2025,\n  title   = {Synthetic Stroke Digital Twins from MIMIC-IV:\n             Bayesian Networks, DoppelGANger Time-Series,\n             and Associational Scenario Simulation},\n  year    = {2025},\n  note    = {Software available at https://github.com/matheus-rech/MIMIC-Ext-Stroke}\n}\n```\n\n---\n\n## Keywords\n\nSynthetic data, digital twins, stroke, MIMIC-IV, Bayesian Network, DoppelGANger, generative adversarial network, electronic health records, time-series generation, privacy-preserving data, clinical plausibility, counterfactual simulation\n",
+ "hits": {
+  "st": [
+   {
+    "file": "scripts/run_full_evaluation.py",
+    "line": 29,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "sys.path.insert(0, PROJECT_ROOT)",
+     "",
+     "from src.models.bayesian_net import StrokeProfileBN",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from src.models.dgan_model import StrokeTimeSeriesDGAN",
+     "from src.evaluation.fidelity import (",
+     "    dimension_wise_distribution,",
+     "    correlation_preservation,"
+    ]
+   },
+   {
+    "file": "src/models/ctgan_baseline.py",
+    "line": 8,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "",
+     "",
+     "class StrokeCTGAN:",
+     "    \"\"\"CTGAN wrapper for synthetic static profile generation.\"\"\""
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "scripts/run_full_evaluation.py",
+    "line": 28,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))",
+     "sys.path.insert(0, PROJECT_ROOT)",
+     "",
+     "from src.models.bayesian_net import StrokeProfileBN",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from src.models.dgan_model import StrokeTimeSeriesDGAN",
+     "from src.evaluation.fidelity import (",
+     "    dimension_wise_distribution,"
+    ]
+   },
+   {
+    "file": "src/models/ctgan_baseline.py",
+    "line": 7,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "Uses the SDV library's single-table synthesizers.",
+     "\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "",
+     "",
+     "class StrokeCTGAN:"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "scripts/run_full_evaluation.py",
+    "line": 28,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))",
+     "sys.path.insert(0, PROJECT_ROOT)",
+     "",
+     "from src.models.bayesian_net import StrokeProfileBN",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from src.models.dgan_model import StrokeTimeSeriesDGAN",
+     "from src.evaluation.fidelity import (",
+     "    dimension_wise_distribution,"
+    ]
+   },
+   {
+    "file": "scripts/run_full_evaluation.py",
+    "line": 29,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "sys.path.insert(0, PROJECT_ROOT)",
+     "",
+     "from src.models.bayesian_net import StrokeProfileBN",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from src.models.dgan_model import StrokeTimeSeriesDGAN",
+     "from src.evaluation.fidelity import (",
+     "    dimension_wise_distribution,",
+     "    correlation_preservation,"
+    ]
+   },
+   {
+    "file": "src/models/ctgan_baseline.py",
+    "line": 7,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "Uses the SDV library's single-table synthesizers.",
+     "\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "",
+     "",
+     "class StrokeCTGAN:"
+    ]
+   },
+   {
+    "file": "src/models/ctgan_baseline.py",
+    "line": 8,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "",
+     "",
+     "class StrokeCTGAN:",
+     "    \"\"\"CTGAN wrapper for synthetic static profile generation.\"\"\""
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "scripts/run_full_evaluation.py",
+    "line": 29,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "sys.path.insert(0, PROJECT_ROOT)",
+     "",
+     "from src.models.bayesian_net import StrokeProfileBN",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from src.models.dgan_model import StrokeTimeSeriesDGAN",
+     "from src.evaluation.fidelity import (",
+     "    dimension_wise_distribution,",
+     "    correlation_preservation,"
+    ]
+   },
+   {
+    "file": "scripts/run_full_evaluation.py",
+    "line": 455,
+    "text": "ctgan_model = CTGANSynthesizer(",
+    "context": [
+     "    train_ctgan_cols = [c for c in train_ohe.columns if c not in ID_COLS]",
+     "    train_ctgan_df = train_ohe[train_ctgan_cols].copy()",
+     "    ctgan_meta = SingleTableMetadata()",
+     "    ctgan_meta.detect_from_dataframe(train_ctgan_df)",
+     "    ctgan_model = CTGANSynthesizer(",
+     "        ctgan_meta,",
+     "        epochs=50,",
+     "        batch_size=500,",
+     "        pac=1,"
+    ]
+   },
+   {
+    "file": "src/models/ctgan_baseline.py",
+    "line": 8,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "",
+     "",
+     "class StrokeCTGAN:",
+     "    \"\"\"CTGAN wrapper for synthetic static profile generation.\"\"\""
+    ]
+   },
+   {
+    "file": "src/models/ctgan_baseline.py",
+    "line": 26,
+    "text": "self.model = CTGANSynthesizer(",
+    "context": [
+     "        self._metadata = SingleTableMetadata()",
+     "        self._metadata.detect_from_dataframe(df)",
+     "",
+     "        effective_batch = min(self.batch_size, len(df))",
+     "        self.model = CTGANSynthesizer(",
+     "            self._metadata,",
+     "            epochs=self.epochs,",
+     "            batch_size=effective_batch,",
+     "            verbose=False,"
+    ]
+   },
+   {
+    "file": "src/models/ctgan_baseline.py",
+    "line": 49,
+    "text": "obj.model = CTGANSynthesizer.load(path)",
+    "context": [
+     "    @classmethod",
+     "    def load(cls, path: str) -> \"StrokeCTGAN\":",
+     "        \"\"\"Load a previously saved model.\"\"\"",
+     "        obj = cls()",
+     "        obj.model = CTGANSynthesizer.load(path)",
+     "        return obj",
+     "",
+     "",
+     "class StrokeTVAE:"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "scripts/run_full_evaluation.py",
+    "line": 29,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "sys.path.insert(0, PROJECT_ROOT)",
+     "",
+     "from src.models.bayesian_net import StrokeProfileBN",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from src.models.dgan_model import StrokeTimeSeriesDGAN",
+     "from src.evaluation.fidelity import (",
+     "    dimension_wise_distribution,",
+     "    correlation_preservation,"
+    ]
+   },
+   {
+    "file": "scripts/run_full_evaluation.py",
+    "line": 475,
+    "text": "tvae_model = TVAESynthesizer(tvae_meta, epochs=50, batch_size=500)",
+    "context": [
+     "    print(\"\\n  [TVAE] Fitting TVAE (epochs=50)...\")",
+     "    t1 = time.time()",
+     "    tvae_meta = SingleTableMetadata()",
+     "    tvae_meta.detect_from_dataframe(train_ctgan_df)",
+     "    tvae_model = TVAESynthesizer(tvae_meta, epochs=50, batch_size=500)",
+     "    tvae_model.fit(train_ctgan_df)",
+     "    tvae_time = time.time() - t1",
+     "    print(f\"  [TVAE] Fitted in {tvae_time:.1f}s.\")",
+     ""
+    ]
+   },
+   {
+    "file": "src/models/ctgan_baseline.py",
+    "line": 8,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "",
+     "",
+     "class StrokeCTGAN:",
+     "    \"\"\"CTGAN wrapper for synthetic static profile generation.\"\"\""
+    ]
+   },
+   {
+    "file": "src/models/ctgan_baseline.py",
+    "line": 67,
+    "text": "self.model = TVAESynthesizer(",
+    "context": [
+     "        metadata = SingleTableMetadata()",
+     "        metadata.detect_from_dataframe(df)",
+     "",
+     "        effective_batch = min(self.batch_size, len(df))",
+     "        self.model = TVAESynthesizer(",
+     "            metadata,",
+     "            epochs=self.epochs,",
+     "            batch_size=effective_batch,",
+     "        )"
+    ]
+   },
+   {
+    "file": "src/models/ctgan_baseline.py",
+    "line": 89,
+    "text": "obj.model = TVAESynthesizer.load(path)",
+    "context": [
+     "    @classmethod",
+     "    def load(cls, path: str) -> \"StrokeTVAE\":",
+     "        \"\"\"Load a previously saved model.\"\"\"",
+     "        obj = cls()",
+     "        obj.model = TVAESynthesizer.load(path)",
+     "        return obj"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "pyproject.toml": [
+   "    \"sdv>=1.17.0\","
+  ]
+ }
+}

@@ -1,0 +1,132 @@
+{
+ "repo": "artisokka/genai-toolbox",
+ "disk_kb": 261,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "## GenAI Toolbox: Synthetic Health Data Generator\n\nA Streamlit app that lets you:\n- Generate synthetic 12‑lead ECG waveforms with an SSSD‑ECG diffusion model\n- Visualize generated ECGs in a standard clinical layout\n- Build a FAISS index from your PDFs and query it via a local LLM (Ollama)\n\n### What’s inside\n- **ECG generator**: Structured State Space + WaveNet diffusion model, label‑conditional\n- **RAG**: Convert PDFs → text → FAISS index, query using `llama3.1` via Ollama\n\n## Setup\n\n1) Clone the repository\n```bash\ngit clone https://github.com/artisokka/genai-toolbox\ncd genai-toolbox\n```\n\n2) Create and activate a virtualenv\n```bash\npython -m venv venv\n# Windows\n.\\\\venv\\\\Scripts\\\\activate\n# macOS/Linux\nsource venv/bin/activate\n```\n\n3) Install dependencies\n```bash\npip install -r requirements.txt\n```\n\n4) Download the SSSD‑ECG checkpoint (required for ECG generation)\n```bash\n# Create the checkpoint folder and download the 100000.pkl weights\nmkdir -p sssd/checkpoint\ncurl -L -o sssd/checkpoint/100000.pkl \"https://figshare.com/s/81834b24a4711c2a5c55?file=38890809\"\n\n# Alternatively, download via browser and place the file at:\n# sssd/checkpoint/100000.pkl\n```\n\n5) Install Ollama and the local model for RAG\n```bash\n# Install Ollama from https://ollama.com\nollama serve\nollama pull llama3.1\n```\n\n6) Insert your .env file in rag/\n```bash\nOPENAI_API_KEY=<your-token>\nOPENAI_BASE_URL=<your-base-url>\n```\n\n## Run the app\n```bash\npython -m streamlit run synthgen_app.py\n```\n\n## RAG: tabular data generation\n- Index your documents to use as a knowledge base\n- Specify the columns to be generated or let the app infer the dataset structure from your documents\n- Optionally generate ECG:s for tabular data rows\n\n## ECG generation\n- Config file: `sssd/config/config_SSSD_ECG.json`\n  - `gen_config.output_directory`: where outputs are saved (default `generated_ecg/`)\n  - `gen_config.ckpt_path`: folder containing model checkpoint `.pkl` files (default `sssd/checkpoint/`)\n- In the app under “Synthetic ECG Generation”:\n  - Set checkpoint iteration (`max` uses the latest file in `ckpt_path`)\n  - Choose number of samples and click “Generate”\n- Outputs are saved to:\n  - `generated_ecg/run_YYYYmmDD_HHMMSS/` containing `*_samples.npy` and matching `*_labels.npy`\n- Visualization:\n  - The app lists available `run_*` folders and lets you preview batches and per‑sample plots\n\n## Project structure\n```bash\n.\n├── synthgen_app.py                # Streamlit app (ECG + RAG)\n├── sssd/\n│   ├── models/                    # SSSD‑ECG model\n│   ├── utils/                     # helpers\n│   ├── visualize_ecg.py           # plotting utilities\n│   └── config/config_SSSD_ECG.json\n├── rag/\n│   ├── pdf_to_text.py             # PDFs → text\n│   ├── txt_to_index.py            # text → FAISS index\n│   └── main.py                    # RAG chain helpers\n└── generated_ecg/                 # outputs (created at runtime)\n```\n\n## References\n```text\n@article{ALCARAZ2023107115,\n  title={Diffusion-based conditional ECG generation with structured state space models},\n  journal={Computers in Biology and Medicine},\n  volume={163},\n  pages={107115},\n  year={2023},\n  doi={10.1016/j.compbiomed.2023.107115},\n  author={Juan Miguel Lopez Alcaraz and Nils Strodthoff}\n}\n```\n```text\n@misc{khan2024developingretrievalaugmentedgeneration,\n  title={Developing Retrieval Augmented Generation (RAG) based LLM Systems from PDFs: An Experience Report},\n  author={Khan, A. A. and Hasan, M. T. and Kemell, K. K. and Rasku, J. and Abrahamsson, P.},\n  year={2024},\n  eprint={2410.15944},\n  archivePrefix={arXiv},\n  primaryClass={cs.SE}\n}\n```\n\n### Original SSSD-ECGimplementation\n- Paper: https://www.sciencedirect.com/science/article/pii/S0010482523005802\n- Code: https://github.com/AI4HealthUOL/SSSD-ECG\n\nLicense: MIT",
+ "hits": {
+  "st": [
+   {
+    "file": "synthgen_app.py",
+    "line": 13,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import sys",
+     "import matplotlib.pyplot as plt",
+     "import re",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from io import StringIO",
+     "from app_utils import _build_index_to_name, _humanize_diag",
+     "from langchain_huggingface import HuggingFaceEmbeddings"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "synthgen_app.py",
+    "line": 14,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import matplotlib.pyplot as plt",
+     "import re",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from io import StringIO",
+     "from app_utils import _build_index_to_name, _humanize_diag",
+     "from langchain_huggingface import HuggingFaceEmbeddings",
+     "from langchain_openai import ChatOpenAI"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "synthgen_app.py",
+    "line": 13,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import sys",
+     "import matplotlib.pyplot as plt",
+     "import re",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from io import StringIO",
+     "from app_utils import _build_index_to_name, _humanize_diag",
+     "from langchain_huggingface import HuggingFaceEmbeddings"
+    ]
+   },
+   {
+    "file": "synthgen_app.py",
+    "line": 14,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import matplotlib.pyplot as plt",
+     "import re",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from io import StringIO",
+     "from app_utils import _build_index_to_name, _humanize_diag",
+     "from langchain_huggingface import HuggingFaceEmbeddings",
+     "from langchain_openai import ChatOpenAI"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "synthgen_app.py",
+    "line": 13,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import sys",
+     "import matplotlib.pyplot as plt",
+     "import re",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from io import StringIO",
+     "from app_utils import _build_index_to_name, _humanize_diag",
+     "from langchain_huggingface import HuggingFaceEmbeddings"
+    ]
+   }
+  ],
+  "copulas": [
+   {
+    "file": "synthgen_app.py",
+    "line": 20,
+    "text": "from copulas.multivariate import GaussianMultivariate",
+    "context": [
+     "from app_utils import _build_index_to_name, _humanize_diag",
+     "from langchain_huggingface import HuggingFaceEmbeddings",
+     "from langchain_openai import ChatOpenAI",
+     "try:",
+     "    from copulas.multivariate import GaussianMultivariate",
+     "except Exception:",
+     "    GaussianMultivariate = None",
+     "",
+     "# --- Import RAG components ---"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "copulas",
+  "ct",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "copulas==0.12.2",
+   "ctgan==0.11.0",
+   "rdt==1.15.1",
+   "sdmetrics==0.19.0",
+   "sdv==1.19.0"
+  ]
+ }
+}

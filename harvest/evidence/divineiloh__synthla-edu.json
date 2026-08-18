@@ -1,0 +1,260 @@
+{
+ "repo": "divineiloh/synthla-edu",
+ "disk_kb": 158,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# SYNTHLA-EDU: Synthetic Learning Analytics Data Generation Pipeline v1.0\n\n[![CI Pipeline Test](https://github.com/divineiloh/synthla-edu/actions/workflows/ci.yml/badge.svg)](https://github.com/divineiloh/synthla-edu/actions/workflows/ci.yml)\n\n[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15846414.svg)](https://doi.org/10.5281/zenodo.15846414)\n\n\nA comprehensive pipeline for generating and evaluating synthetic educational data using the Open University Learning Analytics Dataset (OULAD). This version includes advanced evaluation metrics, privacy attack simulations, and comprehensive reporting.\n\n## 📋 Version Information\n\n**Current Version:** v1.0   \n**Release Date:** July 2025   \n**DOI:** [10.5281/zenodo.15846414](https://doi.org/10.5281/zenodo.15846414)   \n**License:** MIT License\n \n\n### Citation\nIf you use this pipeline in your research, please cite:\n```bibtex\n@software{synthla_edu_2025,\n  author       = {Divine Iloh},\n  title        = {{SYNTHLA-EDU: Synthetic Learning Analytics Data Generation Pipeline}},\n  year         = 2025,\n  version      = {1.0},\n  publisher    = {Zenodo},\n  doi          = {10.5281/zenodo.15846414},\n  url          = {https://doi.org/10.5281/zenodo.15846414}\n}\n```\n\n## 🚀 Quick Start\n\n### Option 1: Docker (Recommended for Reproducibility)\n\n#### Prerequisites\n- Docker installed on your system\n- OULAD dataset files in a directory on your system\n\n#### Quick Start\n```bash\n# Build the Docker image\ndocker build -t synthla .\n\n# Run the pipeline\ndocker run --rm \\\n  -v /absolute/path/to/OULAD_data:/app/OULAD_data \\\n  --env OULAD_ROOT=/app/OULAD_data \\\n  --memory=8g synthla\n```\n\n**Notes:**\n- Replace `/absolute/path/to/OULAD_data` with the actual path to your OULAD data directory\n- The bind-mount can point to any location on your host system\n- Typical runtime: ≈ 2–3 hours on a 4-core CPU\n- Results will be saved to the mounted directory\n\n#### What This Does:\n- Mounts your OULAD data directory to `/app/OULAD_data` in the container\n- Processes all OULAD CSV files with enhanced feature engineering\n- Generates synthetic datasets using multiple synthesizers\n- Runs comprehensive utility, quality, and privacy evaluations\n- Generates detailed reports and visualizations\n- Saves all results to the mounted directory\n\n### Option 2: Direct Execution (Windows)\n\n#### Prerequisites\n- Python 3.8+ installed\n- OULAD dataset files in the `OULAD data/` directory\n\n#### Run with Batch Script (Command Prompt)\n```cmd\nrun_pipeline.bat\n```\n\n#### Run with PowerShell Script\n```powershell\n.\\run_pipeline.ps1\n```\n\n### Option 3: Manual Execution\n\n#### 1. Install Dependencies\n```bash\npip install -r requirements.txt\n```\n\n#### 2. Run the Pipeline\n```bash\npython oulad_synthetic_analysis.py\n```\n\n## 📁 Project Structure\n\n```\nLA Research/\n├── OULAD data/           # Original OULAD dataset files\n│   ├── assessments.csv\n│   ├── courses.csv\n│   ├── studentAssessment.csv\n│   ├── studentInfo.csv\n│   ├── studentRegistration.csv\n│   ├── studentVle.csv\n│   └── vle.csv\n├── clean/                # Cleaned and merged dataset\n│   └── oulad_master_engineered.csv\n├── synthetic/            # Generated synthetic datasets\n│   ├── synthetic_GaussianCopula.csv\n│   └── synthetic_CTGAN.csv\n├── results/              # Analysis results and metrics\n│   ├── final_results.json\n│   ├── pipeline.log\n│   ├── summary_classification_utility.png\n│   ├── summary_regression_utility.png\n│   ├── summary_data_quality.png\n│   ├── summary_privacy_mia.png\n│   └── quality_report_*.png\n├── oulad_synthetic_analysis.py  # Main pipeline script\n├── requirements.txt      # Python dependencies\n├── Dockerfile           # Docker configuration\n├── run_pipeline.bat     # Windows batch runner\n├── run_pipeline.ps1     # PowerShell runner\n└── README.md           # This file\n```\n\n## 🔧 Enhanced Pipeline Features\n\n### Data Processing & Engineering\n- **Multi-table merging**: Combines all 7 OULAD CSV files with proper join keys\n- **Advanced feature engineering**: Creates `total_vle_clicks`, `has_vle_interaction`, `avg_assessment_score`\n- **Intelligent data cleaning**: Handles missing values, malformed data, and data type conversion\n- **Missing value audit**: Automatically drops columns with >30% missing values\n- **Advanced ML preprocessing**: Prevents data leakage with proper encoder fitting\n- **Data quality validation**: Comprehensive logging and error handling\n\n### Synthetic Data Generation\n- **GaussianCopula**: Fast statistical approach with high fidelity\n- **CTGAN**: Advanced deep learning approach (400 epochs, batch_size=500)\n- **Configurable parameters**: Easy adjustment of training parameters\n- **Automatic data type handling**: Ensures SDV compatibility\n\n### Comprehensive Evaluation Framework\n\n#### 1. Machine Learning Utility\n- **Dropout Classification**: Binary classification with AUC and accuracy metrics\n- **Grade Regression**: Continuous prediction with MAE evaluation\n- **One-hot encoding**: Proper handling of categorical features\n- **Cross-validation**: Robust evaluation with train/test splits\n- **Note:** As of v1.0, machine learning utility evaluation (AUC, MAE) is handled directly in the main pipeline function for efficiency. Models are trained only once and used for both single-run utility scores and bootstrap analysis, avoiding redundant computation.\n\n#### 2. Statistical Quality Assessment\n- **SDMetrics Quality Reports**: Comprehensive statistical similarity measures using the full SDMetrics QualityReport\n- **Column Shapes Analysis**: Distribution comparison across all features\n- **Quality Score**: Overall data quality metric (0-1 scale)\n- **Note:** The quality evaluation is performed in the evaluation suite, which now focuses solely on quality and privacy. The quality assessment itself remains complete and thorough, running the full SDMetrics QualityReport for each synthetic dataset.\n\n#### 3. Privacy Attack Simulation\n- **Membership Inference Attack (MIA)**: Tests ability to distinguish real vs synthetic data\n- **Logistic Regression Attack**: Standard privacy evaluation method using scikit-learn\n- **Privacy Score**: Lower scores indicate better privacy preservation (0.5 is ideal)\n- **Note:** The evaluation suite is now referred to as a \"partial evaluation suite\" because it covers only quality and privacy (not machine learning utility), but both evaluations are still comprehensive.\n\n### Advanced Reporting & Visualization\n- **Separate visualization files**: Individual PNG files for each metric type\n- **Comprehensive logging**: Detailed pipeline progress and error tracking\n- **JSON results**: Structured output for further analysis\n- **Quality report images**: SDMetrics quality reports\n\n## 🎯 Use Cases\n\n### Educational Research\n- Generate synthetic datasets for research without privacy concerns\n- Test algorithms on realistic educational data\n- Create training datasets for educational ML models\n- Validate educational interventions\n\n### Privacy-Preserving Analytics\n- Share educational insights without exposing real student data\n- Develop and test educational interventions\n- Support open educational research\n- Comply with data protection regulations\n\n### Machine Learning Development\n- Train models on synthetic data before using real data\n- Validate model performance across different data distributions\n- Reduce bias in model development\n- Test model robustness\n\n## 📊 Output Files\n\n### Synthetic Datasets\n- `synthetic/synthetic_GaussianCopula.csv`: Fast statistical synthesis\n- `synthetic/synthetic_CTGAN.csv`: High-quality deep learning synthesis\n\n### Evaluation Results\n- `results/final_results.json`: Complete evaluation metrics\n- `results/pipeline.log`: Detailed execution log\n- `results/summary_*.png`: Individual metric visualizations\n- `results/quality_report_*.png`: SDMetrics quality reports\n\n### Key Metrics\n- **Classification AUC**: Dropout prediction performance\n- **Regression MAE**: Grade prediction accuracy\n- **Quality Score**: Overall data fidelity (0-1)\n- **MIA Score**: Privacy preservation (0.5 is ideal)\n\n## ⚙️ Configuration\n\n### Environment Variables\n- `OULAD_ROOT`: Path to OULAD data directory (default: `./OULAD_data`)\n  - Set this environment variable to specify where your OULAD CSV files are located\n  - Example: `export OULAD_ROOT=/path/to/your/oulad/data`\n\n### Synthesizer Parameters\n```python\n# In oulad_synthetic_analysis.py\nsynthesizers = {\n    'GaussianCopula': GaussianCopulaSynthesizer(metadata),\n    'CTGAN': CTGANSynthesizer(metadata, epochs=400, batch_size=500, verbose=True)\n}\n```\n\n### Evaluation Tasks\n- **Dropout prediction**: Binary classification with AUC/accuracy\n- **Grade prediction**: Regression with MAE\n- **Privacy evaluation**: MIA with distinguishability score\n- **Quality assessment**: Statistical similarity measures\n\n## 🔍 Monitoring and Logging\n\nThe pipeline includes comprehensive logging:\n- **Console output**: Real-time progress updates\n- **File logging**: Detailed execution log saved to `results/pipeline.log`\n- **Error handling**: Graceful failure with detailed error messages\n- **Progress tracking**: Step-by-step execution status\n\n## 🔮 Future Work\n\n### Planned Enhancements\n- **Differential Privacy CTGAN**: Integration with Opacus for formal privacy guarantees\n- **TVAE Benchmark**: Add Tabular Variational Autoencoder for comparison\n- **Optuna Hyperparameter Sweep**: Automated hyperparameter optimization\n\n### Research Extensions\n- **Federated Learning**: Distributed synthetic data generation\n- **Privacy Budget Management**: Dynamic allocation of privacy resources\n- **Domain Adaptation**: Cross-institution synthetic data sharing\n\n## 🛠️ Troubleshooting\n\n### Docker Issues\n\n1. **Docker not running**: Start Docker Desktop or Docker service\n2. **Permission errors**: Run Docker commands with appropriate permissions\n3. **Volume mounting issues**: Ensure correct path format for your OS\n4. **Build failures**: Check internet connection and Docker daemon status\n\n### Common Issues\n\n1. **Memory Issues**: Reduce batch sizes or use smaller datasets\n2. **Long Training Times**: Reduce epochs for CTGAN (try 200-300)\n3. **Import Errors**: Ensure all dependencies are installed\n4. **Data Path Issues**: Verify OULAD data files are in correct location\n5. **Data Quality Issues**: Check for malformed values in CSV files\n\n### Performance Optimization\n- Use GPU acceleration if available (set `cuda=True` in CTGAN)\n- Adjust batch sizes based on available memory\n- Consider using only subset of data for testing\n- Enable parallel processing with `n_jobs=-1` in ML models\n\n## 📈 Expected Results\n\n### Typical Performance Metrics\n- **GaussianCopula**: Fast training (1-5 minutes), moderate quality\n- **CTGAN**: Slower training (30-120 minutes), high quality\n\n### Quality Indicators\n- **Utility scores**: ≥ 0.8 for most ML tasks\n- **Quality scores**: > 0.6 for statistical similarity\n- **Privacy scores**: < 0.7 for MIA (lower is better)\n- **Classification AUC**: > 0.75 for dropout prediction\n\n### Runtime Expectations\n- **Small dataset (<10K rows)**: 15-30 minutes\n- **Medium dataset (10K-50K rows)**: 30-90 minutes\n- **Large dataset (>50K rows)**: 1-3 hours\n\n## 🤝 Contributing\n\nTo contribute to this pipeline:\n1. Fork the repository\n2. Create a feature branch\n3. Add tests for new functionality\n4. Submit a pull request\n\n## 📄 License\n\nLicensed under the MIT License – see LICENSE for details.\n\n## 🔗 References\n\n- [OULAD Dataset](https://analyse.kmi.open.ac.uk/open_dataset)\n- [SDV Documentation](https://docs.sdv.dev/)\n- [SDMetrics Documentation](https://docs.sdv.dev/sdmetrics/)\n- [CTGAN Paper](https://arxiv.org/abs/1907.00503)\n\n---\n\n**Note**: This pipeline is designed for educational research. Always validate synthetic data quality and ensure compliance with institutional data policies. \n",
+ "hits": {
+  "ct": [
+   {
+    "file": "README.md",
+    "line": 220,
+    "text": "'CTGAN': CTGANSynthesizer(metadata, epochs=400, batch_size=500, verbose=True)",
+    "context": [
+     "```python",
+     "# In oulad_synthetic_analysis.py",
+     "synthesizers = {",
+     "    'GaussianCopula': GaussianCopulaSynthesizer(metadata),",
+     "    'CTGAN': CTGANSynthesizer(metadata, epochs=400, batch_size=500, verbose=True)",
+     "}",
+     "```",
+     "",
+     "### Evaluation Tasks"
+    ]
+   },
+   {
+    "file": "oulad_synthetic_analysis.py",
+    "line": 45,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "from sklearn.preprocessing import OneHotEncoder",
+     "from sklearn.linear_model import LogisticRegression",
+     "",
+     "# SDV and SDMetrics for synthetic data generation and evaluation",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "",
+     "# --- Configuration ---"
+    ]
+   },
+   {
+    "file": "oulad_synthetic_analysis.py",
+    "line": 159,
+    "text": "'CTGAN': CTGANSynthesizer(metadata, epochs=400, batch_size=500, verbose=True)",
+    "context": [
+     "    \"\"\"Train synthesizers, sample synthetic data, and save to disk.\"\"\"",
+     "    logging.info(\"Fitting synthesizers and sampling data...\")",
+     "    synthesizers = {",
+     "        'GaussianCopula': GaussianCopulaSynthesizer(metadata),",
+     "        'CTGAN': CTGANSynthesizer(metadata, epochs=400, batch_size=500, verbose=True)",
+     "    }",
+     "    synthetic_sets = {}",
+     "    for name, synth_model in synthesizers.items():",
+     "        logging.info(f\"--- Training {name} ---\")"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "README.md",
+    "line": 219,
+    "text": "'GaussianCopula': GaussianCopulaSynthesizer(metadata),",
+    "context": [
+     "### Synthesizer Parameters",
+     "```python",
+     "# In oulad_synthetic_analysis.py",
+     "synthesizers = {",
+     "    'GaussianCopula': GaussianCopulaSynthesizer(metadata),",
+     "    'CTGAN': CTGANSynthesizer(metadata, epochs=400, batch_size=500, verbose=True)",
+     "}",
+     "```",
+     ""
+    ]
+   },
+   {
+    "file": "oulad_synthetic_analysis.py",
+    "line": 45,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "from sklearn.preprocessing import OneHotEncoder",
+     "from sklearn.linear_model import LogisticRegression",
+     "",
+     "# SDV and SDMetrics for synthetic data generation and evaluation",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "",
+     "# --- Configuration ---"
+    ]
+   },
+   {
+    "file": "oulad_synthetic_analysis.py",
+    "line": 158,
+    "text": "'GaussianCopula': GaussianCopulaSynthesizer(metadata),",
+    "context": [
+     "def fit_and_sample(df: pd.DataFrame, metadata: SingleTableMetadata) -> dict:",
+     "    \"\"\"Train synthesizers, sample synthetic data, and save to disk.\"\"\"",
+     "    logging.info(\"Fitting synthesizers and sampling data...\")",
+     "    synthesizers = {",
+     "        'GaussianCopula': GaussianCopulaSynthesizer(metadata),",
+     "        'CTGAN': CTGANSynthesizer(metadata, epochs=400, batch_size=500, verbose=True)",
+     "    }",
+     "    synthetic_sets = {}",
+     "    for name, synth_model in synthesizers.items():"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "test_evaluation.py",
+    "line": 22,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor",
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.metrics import accuracy_score, mean_absolute_error, roc_auc_score",
+     "from sklearn.preprocessing import OneHotEncoder",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "",
+     "# Setup",
+     "RANDOM_SEED = 42"
+    ]
+   },
+   {
+    "file": "oulad_synthetic_analysis.py",
+    "line": 46,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from sklearn.linear_model import LogisticRegression",
+     "",
+     "# SDV and SDMetrics for synthetic data generation and evaluation",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "",
+     "# --- Configuration ---",
+     "RANDOM_SEED = 42"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "test_evaluation.py",
+    "line": 22,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor",
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.metrics import accuracy_score, mean_absolute_error, roc_auc_score",
+     "from sklearn.preprocessing import OneHotEncoder",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "",
+     "# Setup",
+     "RANDOM_SEED = 42"
+    ]
+   },
+   {
+    "file": "oulad_synthetic_analysis.py",
+    "line": 45,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "from sklearn.preprocessing import OneHotEncoder",
+     "from sklearn.linear_model import LogisticRegression",
+     "",
+     "# SDV and SDMetrics for synthetic data generation and evaluation",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "",
+     "# --- Configuration ---"
+    ]
+   },
+   {
+    "file": "oulad_synthetic_analysis.py",
+    "line": 46,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from sklearn.linear_model import LogisticRegression",
+     "",
+     "# SDV and SDMetrics for synthetic data generation and evaluation",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "",
+     "# --- Configuration ---",
+     "RANDOM_SEED = 42"
+    ]
+   }
+  ],
+  "sm": [
+   {
+    "file": "test_evaluation.py",
+    "line": 23,
+    "text": "from sdmetrics.reports.single_table import QualityReport",
+    "context": [
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.metrics import accuracy_score, mean_absolute_error, roc_auc_score",
+     "from sklearn.preprocessing import OneHotEncoder",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "",
+     "# Setup",
+     "RANDOM_SEED = 42",
+     "np.random.seed(RANDOM_SEED)"
+    ]
+   },
+   {
+    "file": "oulad_synthetic_analysis.py",
+    "line": 47,
+    "text": "from sdmetrics.reports.single_table import QualityReport",
+    "context": [
+     "",
+     "# SDV and SDMetrics for synthetic data generation and evaluation",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "",
+     "# --- Configuration ---",
+     "RANDOM_SEED = 42",
+     "np.random.seed(RANDOM_SEED)"
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "oulad_synthetic_analysis.py",
+    "line": 45,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "from sklearn.preprocessing import OneHotEncoder",
+     "from sklearn.linear_model import LogisticRegression",
+     "",
+     "# SDV and SDMetrics for synthetic data generation and evaluation",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "",
+     "# --- Configuration ---"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "gc",
+  "md",
+  "sdv_any",
+  "sm",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv[all]==1.9.0",
+   "sdmetrics==0.13.0"
+  ]
+ }
+}

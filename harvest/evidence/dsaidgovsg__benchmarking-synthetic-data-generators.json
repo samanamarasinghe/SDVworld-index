@@ -1,0 +1,1436 @@
+{
+ "repo": "dsaidgovsg/benchmarking-synthetic-data-generators",
+ "disk_kb": 28474,
+ "method": "partial_clone",
+ "tree_files": 107,
+ "status": "ok",
+ "readme": "# Benchmarking Synthetic Data Generation Models \n\n| Argument | Type | Default Value | Description | Possible Values |\n|----------|------|---------------|-------------|-----------------|\n| --library, --l | str | sdv | Enter library | {sdv, gretel, synthcity} |\n| --modality, --m | str | tabular | Enter dataset modality | {tabular, sequential} |\n| --synthesizer, --s | str | ctgan | Enter synthesizer name | {ctgan, tvae, gaussian_copula, par, dgan, actgan, goggle, nflow, arf, ddpm, rtvae} |\n| --data | str | adult | Enter dataset name | {adult, census, child, covtype, credit, insurance, intrusion, health_insurance, drugs, loan, nasdaq, taxi, pums} |\n| --imputer, --i | str | hyperimpute | Enter hyperimputer plugin name | {'simple', 'mice', 'missforest', 'hyperimpute'} |\n| --optimizer_trials, --trials | int | 25 | | |\n| --num_epochs, --e | int | 0 | Default epoch is set as 0 as statistical models do not need epochs | |\n| --data_folder, --d | str | data | | |\n| --output_folder, --o | str | outputs | | |\n| --train_test_data, --tt | bool | False | Whether to return train and test data | |\n| --get_quality_report, --qr | bool | False | Whether to generate SDV quality report | |\n| --get_diagnostic_report, --dr | bool | False | Whether to generate SDV diagnostic report | |\n| --run_optimizer, --ro | bool | False | Whether to run hyperparameter optimizer | |\n| --run_hyperimpute, --ri | bool | False | Whether to run hyperimpute | |\n| --run_model_training, --rt | bool | False | Whether to train a model | |\n| --use_gpu, --cuda | bool | False | Whether to use GPU device(s) | |\n\n\n## Supported Models\n\n| Type       | Library            | Models                           |\n|------------|--------------------|----------------------------------|\n| Tabular    | sdv                | gaussian_copula, ctgan, tvae     |\n|            | synthcity          | ddpm, nflow, goggle, arf, rtvae, ctgan, tvae |\n|            | gretel-synthetics  | actgan                           |\n| Sequential | gretel-synthetics  | dgan                             |\n|            | sdv                | par                              |\n\n## Sample comamnds\n\n```bash\n\npython3 run_model.py --m tabular --l sdv --s gaussian_copula --data loan --o outputs --rt\npython3 run_model.py --m tabular --l synthcity --s nflow --data adult --o outputs --rt\n\n# ACTGAN model from gretel-synthetics requires sdv<0.18\npython3 run_model.py --m tabular --l gretel --s actgan --data adult --o outputs --rt\n\n# run sequential model\npython3 run_model.py --m sequential --l gretel --s dgan --data nasdaq --o outputs --rt\npython3 run_model.py --m sequential --l sdv --s par --data nasdaq --o outputs --rt\n\n# hyperparameter optimisation and imputation require train test split by setting --tt flag \n\n# run imputation before model training\npython3 run_model.py --m tabular --l sdv --s ctgan --data drugs --o outputs --rt --tt -ri --i missforest\npython3 run_model.py --m tabular --l sdv --s tvae --data drugs --o outputs --rt --tt -ri --i simple\npython3 run_model.py --m tabular --l sdv --s tvae --data drugs --o outputs --rt --tt -ri --i hyperimpute\n\n# run hyperparameter optimiser\npython3 run_model.py --m tabular --l synthcity --s ddpm --data loan --o outputs --rt --ro --tt\npython3 run_model.py --m tabular --l synthcity --s arf --data loan --o outputs --rt --ro --tt --cuda\npython3 run_model.py --m tabular --l synthcity --s rtvae --data health_insurance --ro --tt --cuda\n```\n\n\n## Key Packages Used\n\n- **ydata-profiling**: Provides comprehensive data profiling for understanding and assessing data quality.\n- **hyperimpute**: Advanced tool for imputing missing data in datasets using various techniques.\n- **optuna**: A hyperparameter optimization framework designed for machine learning models.\n- **synthcity**: Generates realistic synthetic datasets while preserving the statistical properties of original data.\n- **sdv**: A library for modeling and generating synthetic datasets.\n- **rdt**: Transforms data for compatibility with synthetic data generation and modeling.\n- **metrics**: Offers metrics for evaluating the quality of synthetic data models.\n- **ctgan**: Implements CTGAN, a model for generating synthetic tabular data.\n- **gretel-synthetics**: Creates synthetic data that maintains the privacy and utility of original datasets.\n- **ydata-synthetics**: Framework focused on generating statistically consistent synthetic data.\n",
+ "hits": {
+  "st": [
+   {
+    "file": "run_sdv_model.py",
+    "line": 20,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer",
+    "context": [
+     "# SDV synthesizers",
+     "# from synthesizers.sdv.sequential.par_synthesizer import PARSynthesizer",
+     "",
+     "from sdv.sequential import PARSynthesizer",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer",
+     "",
+     "# from synthesizers.sdv.tabular.copulas_synthesizer import \\",
+     "#     GaussianCopulaSynthesizer",
+     "# from synthesizers.sdv.tabular.gen_synthesizer import (CTGANSynthesizer,"
+    ]
+   },
+   {
+    "file": "run_sdv_model.py",
+    "line": 29,
+    "text": "# from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "#                                                       TVAESynthesizer)",
+     "",
+     "# from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "",
+     "# from sdv.single_table import TVAESynthesizer",
+     "# from sdv.single_table import CTGANSynthesizer",
+     "# from sdv.single_table import GaussianCopulaSynthesizer",
+     "# from sdv.sequential import PARSynthesizer",
+     ""
+    ]
+   },
+   {
+    "file": "run_sdv_model.py",
+    "line": 30,
+    "text": "# from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "# from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "",
+     "# from sdv.single_table import TVAESynthesizer",
+     "# from sdv.single_table import CTGANSynthesizer",
+     "# from sdv.single_table import GaussianCopulaSynthesizer",
+     "# from sdv.sequential import PARSynthesizer",
+     "",
+     "# Link to Transform and Anonymize"
+    ]
+   },
+   {
+    "file": "run_sdv_model.py",
+    "line": 31,
+    "text": "# from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "# from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "",
+     "# from sdv.single_table import TVAESynthesizer",
+     "# from sdv.single_table import CTGANSynthesizer",
+     "# from sdv.single_table import GaussianCopulaSynthesizer",
+     "# from sdv.sequential import PARSynthesizer",
+     "",
+     "# Link to Transform and Anonymize",
+     "# https://docs.sdv.dev/sdv/single-table-data/modeling/synthetic-data-workflow/transform-and-anonymize"
+    ]
+   },
+   {
+    "file": "synthesizers_deprecated/sdv/sequential/par_synthesizer.py",
+    "line": 27,
+    "text": "# from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "",
+     "",
+     "",
+     "# from sdv.single_table import GaussianCopulaSynthesizer",
+     "# from sdv.single_table.base import BaseSynthesizer",
+     "",
+     "LOGGER = logging.getLogger(__name__)",
+     ""
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "run_sdv_model.py",
+    "line": 157,
+    "text": "# from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "        #        https://datacebo.com/blog/interpreting-ctgan-progress/",
+     "",
+     "        # metadata = metadata.to_dict()",
+     "        # metadata[\"\"]",
+     "        # from sdv.metadata import SingleTableMetadata",
+     "        # metadata = SingleTableMetadata.load_from_dict(metadata)",
+     "        synthesizer = synthesizer_class(metadata,",
+     "                                        epochs=num_epochs,",
+     "                                        cuda=use_gpu,"
+    ]
+   },
+   {
+    "file": "synthesizers_deprecated/gretel_synthetics/tabular/actgan/actgan_wrapper.py",
+    "line": 28,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "if TYPE_CHECKING:",
+     "    from numpy.random import RandomState",
+     "    from sdv.constraints import Constraint",
+     "    from sdv.metadata import Metadata",
+     "    from torch import Generator",
+     "",
+     "    from synthesizers.gretel_synthetics.tabular.actgan.structures import \\",
+     "        EpochInfo"
+    ]
+   },
+   {
+    "file": "commons/utils.py",
+    "line": 8,
+    "text": "# from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from scipy import stats",
+     "import sdv",
+     "",
+     "# from sdv.datasets.demo import download_demo",
+     "# from sdv.metadata import SingleTableMetadata",
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.neighbors import KernelDensity",
+     "",
+     "# https://docs.sdv.dev/sdmetrics/metrics/metrics-in-beta/outliercoverage"
+    ]
+   },
+   {
+    "file": "notebooks/experimental.ipynb",
+    "line": 17,
+    "text": "\"# from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"from scipy import stats\\n\",",
+     "    \"import sdv\\n\",",
+     "    \"\\n\",",
+     "    \"# from sdv.datasets.demo import download_demo\\n\",",
+     "    \"# from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sklearn.model_selection import train_test_split\\n\",",
+     "    \"from sklearn.neighbors import KernelDensity\"",
+     "   ]",
+     "  },"
+    ]
+   }
+  ],
+  "sq": [
+   {
+    "file": "run_sdv_model.py",
+    "line": 19,
+    "text": "from sdv.sequential import PARSynthesizer",
+    "context": [
+     "#                                  compute_sdv_diagnostic_report)",
+     "# SDV synthesizers",
+     "# from synthesizers.sdv.sequential.par_synthesizer import PARSynthesizer",
+     "",
+     "from sdv.sequential import PARSynthesizer",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer",
+     "",
+     "# from synthesizers.sdv.tabular.copulas_synthesizer import \\",
+     "#     GaussianCopulaSynthesizer"
+    ]
+   },
+   {
+    "file": "run_sdv_model.py",
+    "line": 32,
+    "text": "# from sdv.sequential import PARSynthesizer",
+    "context": [
+     "",
+     "# from sdv.single_table import TVAESynthesizer",
+     "# from sdv.single_table import CTGANSynthesizer",
+     "# from sdv.single_table import GaussianCopulaSynthesizer",
+     "# from sdv.sequential import PARSynthesizer",
+     "",
+     "# Link to Transform and Anonymize",
+     "# https://docs.sdv.dev/sdv/single-table-data/modeling/synthetic-data-workflow/transform-and-anonymize",
+     ""
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "run_sdv_model.py",
+    "line": 27,
+    "text": "# from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+    "context": [
+     "#     GaussianCopulaSynthesizer",
+     "# from synthesizers.sdv.tabular.gen_synthesizer import (CTGANSynthesizer,",
+     "#                                                       TVAESynthesizer)",
+     "",
+     "# from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "",
+     "# from sdv.single_table import TVAESynthesizer",
+     "# from sdv.single_table import CTGANSynthesizer",
+     "# from sdv.single_table import GaussianCopulaSynthesizer"
+    ]
+   },
+   {
+    "file": "metrics/sdv_reports.py",
+    "line": 6,
+    "text": "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+    "context": [
+     "",
+     "import pandas as pd",
+     "# from sdmetrics.reports.single_table import QualityReport",
+     "# from sdmetrics.reports.single_table import DiagnosticReport",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "",
+     "",
+     "def compute_sdv_quality_report(",
+     "        real_data: pd.DataFrame,"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "run_sdv_model.py",
+    "line": 11,
+    "text": "import sdv",
+    "context": [
+     "import tracemalloc",
+     "import warnings",
+     "from io import StringIO",
+     "",
+     "import sdv",
+     "",
+     "from commons.static_vals import N_BYTES_IN_MB, DataModalities",
+     "# from metrics.sdv_reports import (compute_sdv_quality_report,",
+     "#                                  compute_sdv_diagnostic_report)"
+    ]
+   },
+   {
+    "file": "run_sdv_model.py",
+    "line": 19,
+    "text": "from sdv.sequential import PARSynthesizer",
+    "context": [
+     "#                                  compute_sdv_diagnostic_report)",
+     "# SDV synthesizers",
+     "# from synthesizers.sdv.sequential.par_synthesizer import PARSynthesizer",
+     "",
+     "from sdv.sequential import PARSynthesizer",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer",
+     "",
+     "# from synthesizers.sdv.tabular.copulas_synthesizer import \\",
+     "#     GaussianCopulaSynthesizer"
+    ]
+   },
+   {
+    "file": "run_sdv_model.py",
+    "line": 20,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer",
+    "context": [
+     "# SDV synthesizers",
+     "# from synthesizers.sdv.sequential.par_synthesizer import PARSynthesizer",
+     "",
+     "from sdv.sequential import PARSynthesizer",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer",
+     "",
+     "# from synthesizers.sdv.tabular.copulas_synthesizer import \\",
+     "#     GaussianCopulaSynthesizer",
+     "# from synthesizers.sdv.tabular.gen_synthesizer import (CTGANSynthesizer,"
+    ]
+   },
+   {
+    "file": "run_sdv_model.py",
+    "line": 27,
+    "text": "# from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+    "context": [
+     "#     GaussianCopulaSynthesizer",
+     "# from synthesizers.sdv.tabular.gen_synthesizer import (CTGANSynthesizer,",
+     "#                                                       TVAESynthesizer)",
+     "",
+     "# from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "",
+     "# from sdv.single_table import TVAESynthesizer",
+     "# from sdv.single_table import CTGANSynthesizer",
+     "# from sdv.single_table import GaussianCopulaSynthesizer"
+    ]
+   },
+   {
+    "file": "run_sdv_model.py",
+    "line": 29,
+    "text": "# from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "#                                                       TVAESynthesizer)",
+     "",
+     "# from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "",
+     "# from sdv.single_table import TVAESynthesizer",
+     "# from sdv.single_table import CTGANSynthesizer",
+     "# from sdv.single_table import GaussianCopulaSynthesizer",
+     "# from sdv.sequential import PARSynthesizer",
+     ""
+    ]
+   },
+   {
+    "file": "run_sdv_model.py",
+    "line": 30,
+    "text": "# from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "# from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "",
+     "# from sdv.single_table import TVAESynthesizer",
+     "# from sdv.single_table import CTGANSynthesizer",
+     "# from sdv.single_table import GaussianCopulaSynthesizer",
+     "# from sdv.sequential import PARSynthesizer",
+     "",
+     "# Link to Transform and Anonymize"
+    ]
+   },
+   {
+    "file": "run_sdv_model.py",
+    "line": 31,
+    "text": "# from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "# from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "",
+     "# from sdv.single_table import TVAESynthesizer",
+     "# from sdv.single_table import CTGANSynthesizer",
+     "# from sdv.single_table import GaussianCopulaSynthesizer",
+     "# from sdv.sequential import PARSynthesizer",
+     "",
+     "# Link to Transform and Anonymize",
+     "# https://docs.sdv.dev/sdv/single-table-data/modeling/synthetic-data-workflow/transform-and-anonymize"
+    ]
+   },
+   {
+    "file": "run_sdv_model.py",
+    "line": 32,
+    "text": "# from sdv.sequential import PARSynthesizer",
+    "context": [
+     "",
+     "# from sdv.single_table import TVAESynthesizer",
+     "# from sdv.single_table import CTGANSynthesizer",
+     "# from sdv.single_table import GaussianCopulaSynthesizer",
+     "# from sdv.sequential import PARSynthesizer",
+     "",
+     "# Link to Transform and Anonymize",
+     "# https://docs.sdv.dev/sdv/single-table-data/modeling/synthetic-data-workflow/transform-and-anonymize",
+     ""
+    ]
+   },
+   {
+    "file": "run_sdv_model.py",
+    "line": 157,
+    "text": "# from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "        #        https://datacebo.com/blog/interpreting-ctgan-progress/",
+     "",
+     "        # metadata = metadata.to_dict()",
+     "        # metadata[\"\"]",
+     "        # from sdv.metadata import SingleTableMetadata",
+     "        # metadata = SingleTableMetadata.load_from_dict(metadata)",
+     "        synthesizer = synthesizer_class(metadata,",
+     "                                        epochs=num_epochs,",
+     "                                        cuda=use_gpu,"
+    ]
+   },
+   {
+    "file": "metrics/sdv_reports.py",
+    "line": 6,
+    "text": "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+    "context": [
+     "",
+     "import pandas as pd",
+     "# from sdmetrics.reports.single_table import QualityReport",
+     "# from sdmetrics.reports.single_table import DiagnosticReport",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "",
+     "",
+     "def compute_sdv_quality_report(",
+     "        real_data: pd.DataFrame,"
+    ]
+   },
+   {
+    "file": "synthesizers_deprecated/sdv/tabular/copulas_synthesizer.py",
+    "line": 13,
+    "text": "from sdv.errors import NonParametricError",
+    "context": [
+     "import pandas as pd",
+     "import scipy",
+     "from copulas import multivariate",
+     "from rdt.transformers import OneHotEncoder",
+     "from sdv.errors import NonParametricError",
+     "from sdv.single_table.utils import (flatten_dict,",
+     "                                    log_numerical_distributions_error,",
+     "                                    unflatten_dict,",
+     "                                    validate_numerical_distributions)"
+    ]
+   },
+   {
+    "file": "synthesizers_deprecated/sdv/tabular/copulas_synthesizer.py",
+    "line": 14,
+    "text": "from sdv.single_table.utils import (flatten_dict,",
+    "context": [
+     "import scipy",
+     "from copulas import multivariate",
+     "from rdt.transformers import OneHotEncoder",
+     "from sdv.errors import NonParametricError",
+     "from sdv.single_table.utils import (flatten_dict,",
+     "                                    log_numerical_distributions_error,",
+     "                                    unflatten_dict,",
+     "                                    validate_numerical_distributions)",
+     ""
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "run_sdv_model.py",
+    "line": 20,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer",
+    "context": [
+     "# SDV synthesizers",
+     "# from synthesizers.sdv.sequential.par_synthesizer import PARSynthesizer",
+     "",
+     "from sdv.sequential import PARSynthesizer",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer",
+     "",
+     "# from synthesizers.sdv.tabular.copulas_synthesizer import \\",
+     "#     GaussianCopulaSynthesizer",
+     "# from synthesizers.sdv.tabular.gen_synthesizer import (CTGANSynthesizer,"
+    ]
+   },
+   {
+    "file": "run_sdv_model.py",
+    "line": 24,
+    "text": "# from synthesizers.sdv.tabular.gen_synthesizer import (CTGANSynthesizer,",
+    "context": [
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer",
+     "",
+     "# from synthesizers.sdv.tabular.copulas_synthesizer import \\",
+     "#     GaussianCopulaSynthesizer",
+     "# from synthesizers.sdv.tabular.gen_synthesizer import (CTGANSynthesizer,",
+     "#                                                       TVAESynthesizer)",
+     "",
+     "# from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     ""
+    ]
+   },
+   {
+    "file": "run_sdv_model.py",
+    "line": 30,
+    "text": "# from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "# from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "",
+     "# from sdv.single_table import TVAESynthesizer",
+     "# from sdv.single_table import CTGANSynthesizer",
+     "# from sdv.single_table import GaussianCopulaSynthesizer",
+     "# from sdv.sequential import PARSynthesizer",
+     "",
+     "# Link to Transform and Anonymize"
+    ]
+   },
+   {
+    "file": "run_sdv_model.py",
+    "line": 45,
+    "text": "\"ctgan\": CTGANSynthesizer,",
+    "context": [
+     "LOGGER.setLevel(logging.DEBUG)",
+     "",
+     "SYNTHESIZERS_MAPPING = {",
+     "    # The CTGAN Synthesizer uses GAN-based DL methods",
+     "    \"ctgan\": CTGANSynthesizer,",
+     "    # The TVAE Synthesizer uses a variational autoencoder (VAE)-based DL methods",
+     "    \"tvae\": TVAESynthesizer,",
+     "    # The Gaussian Copula Synthesizer uses statistical methods",
+     "    \"gaussian_copula\": GaussianCopulaSynthesizer,"
+    ]
+   },
+   {
+    "file": "synthesizers_deprecated/sdv/tabular/gen_synthesizer.py",
+    "line": 46,
+    "text": "class CTGANSynthesizer(BaseSingleTableSynthesizer):",
+    "context": [
+     "",
+     "    return discrete_columns",
+     "",
+     "",
+     "class CTGANSynthesizer(BaseSingleTableSynthesizer):",
+     "    \"\"\"Model wrapping ``CTGAN`` model.",
+     "",
+     "    Args:",
+     "        metadata (sdv.metadata.SingleTableMetadata):"
+    ]
+   },
+   {
+    "file": "synthesizers_deprecated/sdv/tabular/gen_synthesizer.py",
+    "line": 176,
+    "text": "\"CTGANSynthesizer doesn't support conditional sampling.\")",
+    "context": [
+     "        if conditions is None:",
+     "            return self._model.sample(num_rows)",
+     "",
+     "        raise NotImplementedError(",
+     "            \"CTGANSynthesizer doesn't support conditional sampling.\")",
+     "",
+     "",
+     "class TVAESynthesizer(BaseSingleTableSynthesizer):",
+     "    \"\"\"Model wrapping ``TVAE`` model."
+    ]
+   },
+   {
+    "file": "synthesizers_deprecated/gretel_synthetics/tabular/actgan/actgan.py",
+    "line": 49,
+    "text": "\"\"\"Discriminator for the ACTGANSynthesizer.\"\"\"",
+    "context": [
+     "# representation back to the original format.",
+     "",
+     "",
+     "class Discriminator(Module):",
+     "    \"\"\"Discriminator for the ACTGANSynthesizer.\"\"\"",
+     "",
+     "    def __init__(self, input_dim, discriminator_dim, pac=10):",
+     "        super(Discriminator, self).__init__()",
+     "        dim = input_dim * pac"
+    ]
+   },
+   {
+    "file": "synthesizers_deprecated/gretel_synthetics/tabular/actgan/actgan.py",
+    "line": 96,
+    "text": "\"\"\"Residual layer for the ACTGANSynthesizer.\"\"\"",
+    "context": [
+     "        return self.seq(input_.view(-1, self.pacdim))",
+     "",
+     "",
+     "class Residual(Module):",
+     "    \"\"\"Residual layer for the ACTGANSynthesizer.\"\"\"",
+     "",
+     "    def __init__(self, i, o):",
+     "        super(Residual, self).__init__()",
+     "        self.fc = Linear(i, o)"
+    ]
+   },
+   {
+    "file": "synthesizers_deprecated/gretel_synthetics/tabular/actgan/actgan.py",
+    "line": 113,
+    "text": "\"\"\"Generator for the ACTGANSynthesizer.\"\"\"",
+    "context": [
+     "        return torch.cat([out, input_], dim=1)",
+     "",
+     "",
+     "class Generator(Module):",
+     "    \"\"\"Generator for the ACTGANSynthesizer.\"\"\"",
+     "",
+     "    def __init__(self, embedding_dim: int, generator_dim: Sequence[int], data_dim: int):",
+     "        super(Generator, self).__init__()",
+     "        dim = embedding_dim"
+    ]
+   },
+   {
+    "file": "synthesizers_deprecated/gretel_synthetics/tabular/actgan/actgan.py",
+    "line": 163,
+    "text": "class ACTGANSynthesizer(BaseSynthesizer):",
+    "context": [
+     "            return transformed",
+     "    raise ValueError(\"gumbel_softmax returning NaN.\")",
+     "",
+     "",
+     "class ACTGANSynthesizer(BaseSynthesizer):",
+     "    \"\"\"Anyway Conditional Table GAN Synthesizer.",
+     "",
+     "    This is the core class of the ACTGAN interface.",
+     ""
+    ]
+   },
+   {
+    "file": "synthesizers_deprecated/gretel_synthetics/tabular/actgan/actgan_wrapper.py",
+    "line": 14,
+    "text": "ACTGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from rdt.transformers import BaseTransformer",
+     "",
+     "from synthesizers.gretel_synthetics.tabular.actgan.actgan import \\",
+     "    ACTGANSynthesizer",
+     "from synthesizers.gretel_synthetics.tabular.actgan.columnar_df import \\",
+     "    ColumnarDF",
+     "from synthesizers.gretel_synthetics.tabular.actgan.sdv_detector import \\",
+     "    SDVTableMetadata"
+    ]
+   },
+   {
+    "file": "synthesizers_deprecated/gretel_synthetics/tabular/actgan/actgan_wrapper.py",
+    "line": 119,
+    "text": "self._model: ACTGANSynthesizer = self._build_model()",
+    "context": [
+     "            # as the calling context in fit() retains a reference. Therefore, clear the contents",
+     "            # in-place to reduce memory pressure.",
+     "            columnar_df.drop(columns=columnar_df.columns, inplace=True)",
+     "",
+     "        self._model: ACTGANSynthesizer = self._build_model()",
+     "",
+     "        categoricals = []",
+     "        fields_before_transform = self._metadata.get_fields()",
+     "        for field in table_data.columns:"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "run_sdv_model.py",
+    "line": 20,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer",
+    "context": [
+     "# SDV synthesizers",
+     "# from synthesizers.sdv.sequential.par_synthesizer import PARSynthesizer",
+     "",
+     "from sdv.sequential import PARSynthesizer",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer",
+     "",
+     "# from synthesizers.sdv.tabular.copulas_synthesizer import \\",
+     "#     GaussianCopulaSynthesizer",
+     "# from synthesizers.sdv.tabular.gen_synthesizer import (CTGANSynthesizer,"
+    ]
+   },
+   {
+    "file": "run_sdv_model.py",
+    "line": 23,
+    "text": "#     GaussianCopulaSynthesizer",
+    "context": [
+     "from sdv.sequential import PARSynthesizer",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer",
+     "",
+     "# from synthesizers.sdv.tabular.copulas_synthesizer import \\",
+     "#     GaussianCopulaSynthesizer",
+     "# from synthesizers.sdv.tabular.gen_synthesizer import (CTGANSynthesizer,",
+     "#                                                       TVAESynthesizer)",
+     "",
+     "# from sdv.evaluation.single_table import evaluate_quality, run_diagnostic"
+    ]
+   },
+   {
+    "file": "run_sdv_model.py",
+    "line": 31,
+    "text": "# from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "# from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "",
+     "# from sdv.single_table import TVAESynthesizer",
+     "# from sdv.single_table import CTGANSynthesizer",
+     "# from sdv.single_table import GaussianCopulaSynthesizer",
+     "# from sdv.sequential import PARSynthesizer",
+     "",
+     "# Link to Transform and Anonymize",
+     "# https://docs.sdv.dev/sdv/single-table-data/modeling/synthetic-data-workflow/transform-and-anonymize"
+    ]
+   },
+   {
+    "file": "run_sdv_model.py",
+    "line": 49,
+    "text": "\"gaussian_copula\": GaussianCopulaSynthesizer,",
+    "context": [
+     "    \"ctgan\": CTGANSynthesizer,",
+     "    # The TVAE Synthesizer uses a variational autoencoder (VAE)-based DL methods",
+     "    \"tvae\": TVAESynthesizer,",
+     "    # The Gaussian Copula Synthesizer uses statistical methods",
+     "    \"gaussian_copula\": GaussianCopulaSynthesizer,",
+     "    # The PARSynthesizer uses a DL methods",
+     "    \"par\": PARSynthesizer",
+     "}",
+     ""
+    ]
+   },
+   {
+    "file": "synthesizers_deprecated/sdv/tabular/copulas_synthesizer.py",
+    "line": 28,
+    "text": "class GaussianCopulaSynthesizer(BaseSingleTableSynthesizer):",
+    "context": [
+     "",
+     "LOGGER = logging.getLogger(__name__)",
+     "",
+     "",
+     "class GaussianCopulaSynthesizer(BaseSingleTableSynthesizer):",
+     "    \"\"\"Model wrapping ``copulas.multivariate.GaussianMultivariate`` copula.",
+     "",
+     "    Args:",
+     "        metadata (sdv.metadata.SingleTableMetadata):"
+    ]
+   },
+   {
+    "file": "synthesizers_deprecated/sdv/sequential/par_synthesizer.py",
+    "line": 20,
+    "text": "GaussianCopulaSynthesizer",
+    "context": [
+     "from synthesizers.sdv.sequential.par import PARModel",
+     "from synthesizers.sdv.sequential.sequences import assemble_sequences",
+     "from synthesizers.sdv.tabular.base_synthesizer import BaseSynthesizer",
+     "from synthesizers.sdv.tabular.copulas_synthesizer import \\",
+     "    GaussianCopulaSynthesizer",
+     "",
+     "# from deepecho.sequences import assemble_sequences",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "synthesizers_deprecated/sdv/sequential/par_synthesizer.py",
+    "line": 27,
+    "text": "# from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "",
+     "",
+     "",
+     "# from sdv.single_table import GaussianCopulaSynthesizer",
+     "# from sdv.single_table.base import BaseSynthesizer",
+     "",
+     "LOGGER = logging.getLogger(__name__)",
+     ""
+    ]
+   },
+   {
+    "file": "synthesizers_deprecated/sdv/sequential/par_synthesizer.py",
+    "line": 119,
+    "text": "self._context_synthesizer = GaussianCopulaSynthesizer(",
+    "context": [
+     "            'cuda': cuda,",
+     "            'verbose': verbose,",
+     "        }",
+     "        context_metadata = self._get_context_metadata()",
+     "        self._context_synthesizer = GaussianCopulaSynthesizer(",
+     "            metadata=context_metadata,",
+     "            enforce_min_max_values=enforce_min_max_values,",
+     "            enforce_rounding=enforce_rounding",
+     "        )"
+    ]
+   }
+  ],
+  "par": [
+   {
+    "file": "run_sdv_model.py",
+    "line": 17,
+    "text": "# from synthesizers.sdv.sequential.par_synthesizer import PARSynthesizer",
+    "context": [
+     "from commons.static_vals import N_BYTES_IN_MB, DataModalities",
+     "# from metrics.sdv_reports import (compute_sdv_quality_report,",
+     "#                                  compute_sdv_diagnostic_report)",
+     "# SDV synthesizers",
+     "# from synthesizers.sdv.sequential.par_synthesizer import PARSynthesizer",
+     "",
+     "from sdv.sequential import PARSynthesizer",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer",
+     ""
+    ]
+   },
+   {
+    "file": "run_sdv_model.py",
+    "line": 19,
+    "text": "from sdv.sequential import PARSynthesizer",
+    "context": [
+     "#                                  compute_sdv_diagnostic_report)",
+     "# SDV synthesizers",
+     "# from synthesizers.sdv.sequential.par_synthesizer import PARSynthesizer",
+     "",
+     "from sdv.sequential import PARSynthesizer",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer",
+     "",
+     "# from synthesizers.sdv.tabular.copulas_synthesizer import \\",
+     "#     GaussianCopulaSynthesizer"
+    ]
+   },
+   {
+    "file": "run_sdv_model.py",
+    "line": 32,
+    "text": "# from sdv.sequential import PARSynthesizer",
+    "context": [
+     "",
+     "# from sdv.single_table import TVAESynthesizer",
+     "# from sdv.single_table import CTGANSynthesizer",
+     "# from sdv.single_table import GaussianCopulaSynthesizer",
+     "# from sdv.sequential import PARSynthesizer",
+     "",
+     "# Link to Transform and Anonymize",
+     "# https://docs.sdv.dev/sdv/single-table-data/modeling/synthetic-data-workflow/transform-and-anonymize",
+     ""
+    ]
+   },
+   {
+    "file": "run_sdv_model.py",
+    "line": 50,
+    "text": "# The PARSynthesizer uses a DL methods",
+    "context": [
+     "    # The TVAE Synthesizer uses a variational autoencoder (VAE)-based DL methods",
+     "    \"tvae\": TVAESynthesizer,",
+     "    # The Gaussian Copula Synthesizer uses statistical methods",
+     "    \"gaussian_copula\": GaussianCopulaSynthesizer,",
+     "    # The PARSynthesizer uses a DL methods",
+     "    \"par\": PARSynthesizer",
+     "}",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "run_sdv_model.py",
+    "line": 51,
+    "text": "\"par\": PARSynthesizer",
+    "context": [
+     "    \"tvae\": TVAESynthesizer,",
+     "    # The Gaussian Copula Synthesizer uses statistical methods",
+     "    \"gaussian_copula\": GaussianCopulaSynthesizer,",
+     "    # The PARSynthesizer uses a DL methods",
+     "    \"par\": PARSynthesizer",
+     "}",
+     "",
+     "",
+     "def run_model(**kwargs):"
+    ]
+   },
+   {
+    "file": "synthesizers_deprecated/sdv/sequential/par_synthesizer.py",
+    "line": 33,
+    "text": "class PARSynthesizer(BaseSynthesizer):",
+    "context": [
+     "",
+     "LOGGER = logging.getLogger(__name__)",
+     "",
+     "",
+     "class PARSynthesizer(BaseSynthesizer):",
+     "    \"\"\"Synthesizer for sequential data.",
+     "",
+     "    This synthesizer uses the ``deepecho.models.par.PARModel`` class as the core model.",
+     "    Additionally, it uses a separate synthesizer to model and sample the context columns"
+    ]
+   },
+   {
+    "file": "synthesizers_deprecated/sdv/sequential/par_synthesizer.py",
+    "line": 105,
+    "text": "\"No 'sequence_keys' are specified in the metadata. The PARSynthesizer cannot \"",
+    "context": [
+     "        sequence_key = self.metadata.sequence_key",
+     "        self._sequence_key = list(cast_to_iterable(sequence_key)) if sequence_key else None",
+     "        if context_columns and not self._sequence_key:",
+     "            raise SynthesizerInputError(",
+     "                \"No 'sequence_keys' are specified in the metadata. The PARSynthesizer cannot \"",
+     "                \"model 'context_columns' in this case.\"",
+     "            )",
+     "",
+     "        self._sequence_index = self.metadata.sequence_index"
+    ]
+   },
+   {
+    "file": "synthesizers_deprecated/sdv/sequential/par_synthesizer.py",
+    "line": 139,
+    "text": "\"\"\"Warn the user that constraints can't be added to the ``PARSynthesizer``.\"\"\"",
+    "context": [
+     "",
+     "        return instantiated_parameters",
+     "",
+     "    def add_constraints(self, constraints):",
+     "        \"\"\"Warn the user that constraints can't be added to the ``PARSynthesizer``.\"\"\"",
+     "        warnings.warn(",
+     "            'The PARSynthesizer does not yet support constraints. This model will ignore any '",
+     "            'constraints in the metadata.'",
+     "        )"
+    ]
+   },
+   {
+    "file": "synthesizers_deprecated/sdv/sequential/par_synthesizer.py",
+    "line": 141,
+    "text": "'The PARSynthesizer does not yet support constraints. This model will ignore any '",
+    "context": [
+     "",
+     "    def add_constraints(self, constraints):",
+     "        \"\"\"Warn the user that constraints can't be added to the ``PARSynthesizer``.\"\"\"",
+     "        warnings.warn(",
+     "            'The PARSynthesizer does not yet support constraints. This model will ignore any '",
+     "            'constraints in the metadata.'",
+     "        )",
+     "        self._data_processor._constraints = []",
+     "        self._data_processor._constraints_list = []"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "run_sdv_model.py",
+    "line": 20,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer",
+    "context": [
+     "# SDV synthesizers",
+     "# from synthesizers.sdv.sequential.par_synthesizer import PARSynthesizer",
+     "",
+     "from sdv.sequential import PARSynthesizer",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer",
+     "",
+     "# from synthesizers.sdv.tabular.copulas_synthesizer import \\",
+     "#     GaussianCopulaSynthesizer",
+     "# from synthesizers.sdv.tabular.gen_synthesizer import (CTGANSynthesizer,"
+    ]
+   },
+   {
+    "file": "run_sdv_model.py",
+    "line": 25,
+    "text": "#                                                       TVAESynthesizer)",
+    "context": [
+     "",
+     "# from synthesizers.sdv.tabular.copulas_synthesizer import \\",
+     "#     GaussianCopulaSynthesizer",
+     "# from synthesizers.sdv.tabular.gen_synthesizer import (CTGANSynthesizer,",
+     "#                                                       TVAESynthesizer)",
+     "",
+     "# from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "",
+     "# from sdv.single_table import TVAESynthesizer"
+    ]
+   },
+   {
+    "file": "run_sdv_model.py",
+    "line": 29,
+    "text": "# from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "#                                                       TVAESynthesizer)",
+     "",
+     "# from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "",
+     "# from sdv.single_table import TVAESynthesizer",
+     "# from sdv.single_table import CTGANSynthesizer",
+     "# from sdv.single_table import GaussianCopulaSynthesizer",
+     "# from sdv.sequential import PARSynthesizer",
+     ""
+    ]
+   },
+   {
+    "file": "run_sdv_model.py",
+    "line": 47,
+    "text": "\"tvae\": TVAESynthesizer,",
+    "context": [
+     "SYNTHESIZERS_MAPPING = {",
+     "    # The CTGAN Synthesizer uses GAN-based DL methods",
+     "    \"ctgan\": CTGANSynthesizer,",
+     "    # The TVAE Synthesizer uses a variational autoencoder (VAE)-based DL methods",
+     "    \"tvae\": TVAESynthesizer,",
+     "    # The Gaussian Copula Synthesizer uses statistical methods",
+     "    \"gaussian_copula\": GaussianCopulaSynthesizer,",
+     "    # The PARSynthesizer uses a DL methods",
+     "    \"par\": PARSynthesizer"
+    ]
+   },
+   {
+    "file": "synthesizers_deprecated/sdv/tabular/gen_synthesizer.py",
+    "line": 179,
+    "text": "class TVAESynthesizer(BaseSingleTableSynthesizer):",
+    "context": [
+     "        raise NotImplementedError(",
+     "            \"CTGANSynthesizer doesn't support conditional sampling.\")",
+     "",
+     "",
+     "class TVAESynthesizer(BaseSingleTableSynthesizer):",
+     "    \"\"\"Model wrapping ``TVAE`` model.",
+     "",
+     "    Args:",
+     "        metadata (sdv.metadata.SingleTableMetadata):"
+    ]
+   },
+   {
+    "file": "synthesizers_deprecated/sdv/tabular/gen_synthesizer.py",
+    "line": 273,
+    "text": "\"TVAESynthesizer doesn't support conditional sampling.\")",
+    "context": [
+     "        if conditions is None:",
+     "            return self._model.sample(num_rows)",
+     "",
+     "        raise NotImplementedError(",
+     "            \"TVAESynthesizer doesn't support conditional sampling.\")"
+    ]
+   }
+  ],
+  "sm": [
+   {
+    "file": "metrics/similarity.py",
+    "line": 6,
+    "text": "from sdmetrics.single_column import StatisticSimilarity",
+    "context": [
+     "# import pandas as pd",
+     "from dython.nominal import associations",
+     "from scipy.spatial.distance import jensenshannon",
+     "from scipy.stats import wasserstein_distance",
+     "from sdmetrics.single_column import StatisticSimilarity",
+     "from sklearn.preprocessing import MinMaxScaler",
+     "",
+     "",
+     "def compute_correlation_similarity(real_data, synthetic_data, cols):"
+    ]
+   },
+   {
+    "file": "metrics/coverage.py",
+    "line": 1,
+    "text": "# from sdmetrics.single_column import BoundaryAdherence",
+    "context": [
+     "# from sdmetrics.single_column import BoundaryAdherence",
+     "from sdmetrics.single_column import (CategoryCoverage, MissingValueSimilarity,",
+     "                                     RangeCoverage)",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "metrics/coverage.py",
+    "line": 2,
+    "text": "from sdmetrics.single_column import (CategoryCoverage, MissingValueSimilarity,",
+    "context": [
+     "# from sdmetrics.single_column import BoundaryAdherence",
+     "from sdmetrics.single_column import (CategoryCoverage, MissingValueSimilarity,",
+     "                                     RangeCoverage)",
+     "",
+     "",
+     "def compute_domain_coverage(real_col, synthetic_col, col_data_type):"
+    ]
+   },
+   {
+    "file": "metrics/sdv_reports.py",
+    "line": 4,
+    "text": "# from sdmetrics.reports.single_table import QualityReport",
+    "context": [
+     "\"Quality and dignostic reports from SDV\"",
+     "",
+     "import pandas as pd",
+     "# from sdmetrics.reports.single_table import QualityReport",
+     "# from sdmetrics.reports.single_table import DiagnosticReport",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "metrics/sdv_reports.py",
+    "line": 5,
+    "text": "# from sdmetrics.reports.single_table import DiagnosticReport",
+    "context": [
+     "\"Quality and dignostic reports from SDV\"",
+     "",
+     "import pandas as pd",
+     "# from sdmetrics.reports.single_table import QualityReport",
+     "# from sdmetrics.reports.single_table import DiagnosticReport",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "",
+     "",
+     "def compute_sdv_quality_report("
+    ]
+   },
+   {
+    "file": "metrics/ml_efficacy.py",
+    "line": 2,
+    "text": "from sdmetrics.single_table import (BinaryAdaBoostClassifier,",
+    "context": [
+     "\"\"\"Get Machine learing efficacy\"\"\"",
+     "from sdmetrics.single_table import (BinaryAdaBoostClassifier,",
+     "                                    BinaryDecisionTreeClassifier,",
+     "                                    BinaryLogisticRegression,",
+     "                                    BinaryMLPClassifier, LinearRegression,",
+     "                                    MLPRegressor)"
+    ]
+   },
+   {
+    "file": "metrics/ml_efficacy.py",
+    "line": 75,
+    "text": "# from sdmetrics.single_table import MulticlassDecisionTreeClassifier, MulticlassMLPClassifier",
+    "context": [
+     "",
+     "    return regression_score",
+     "",
+     "",
+     "# from sdmetrics.single_table import MulticlassDecisionTreeClassifier, MulticlassMLPClassifier",
+     "# MulticlassMLPClassifier.compute(",
+     "#     test_data=real_data,",
+     "#     train_data=synthetic_data,",
+     "#     target='categorical_column_name',"
+    ]
+   },
+   {
+    "file": "metrics/privacy.py",
+    "line": 4,
+    "text": "from sdmetrics.single_table import NewRowSynthesis",
+    "context": [
+     "\"\"\"Privacy metrics\"\"\"",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdmetrics.single_table import NewRowSynthesis",
+     "from sklearn import metrics",
+     "from sklearn.preprocessing import StandardScaler",
+     "",
+     "# from sklearn.metrics import pairwise_distances"
+    ]
+   },
+   {
+    "file": "metrics/privacy.py",
+    "line": 259,
+    "text": "# from sdmetrics.single_table import CategoricalCAP",
+    "context": [
+     "# print(\"Normalized distances to closest real records:\", normalized_distances)",
+     "",
+     "",
+     "# https://docs.sdv.dev/sdmetrics/metrics/metrics-glossary/categoricalcap",
+     "# from sdmetrics.single_table import CategoricalCAP",
+     "# score = CategoricalCAP.compute(",
+     "#     real_data=real_table,",
+     "#     synthetic_data=synthetic_table,",
+     "#     key_fields=['age_bracket', 'gender'],"
+    ]
+   }
+  ],
+  "rdt": [
+   {
+    "file": "synthesizers_deprecated/sdv/tabular/copulas_synthesizer.py",
+    "line": 12,
+    "text": "from rdt.transformers import OneHotEncoder",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "import scipy",
+     "from copulas import multivariate",
+     "from rdt.transformers import OneHotEncoder",
+     "from sdv.errors import NonParametricError",
+     "from sdv.single_table.utils import (flatten_dict,",
+     "                                    log_numerical_distributions_error,",
+     "                                    unflatten_dict,"
+    ]
+   },
+   {
+    "file": "synthesizers_deprecated/sdv/tabular/data_transformer.py",
+    "line": 8,
+    "text": "from rdt.transformers import ClusterBasedNormalizer, OneHotEncoder",
+    "context": [
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from joblib import Parallel, delayed",
+     "from rdt.transformers import ClusterBasedNormalizer, OneHotEncoder",
+     "",
+     "SpanInfo = namedtuple('SpanInfo', ['dim', 'activation_fn'])",
+     "ColumnTransformInfo = namedtuple(",
+     "    'ColumnTransformInfo', ["
+    ]
+   },
+   {
+    "file": "synthesizers_deprecated/gretel_synthetics/tabular/actgan/transformers.py",
+    "line": 11,
+    "text": "from rdt.transformers import BaseTransformer",
+    "context": [
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from category_encoders import BaseNEncoder, BinaryEncoder",
+     "from rdt.transformers import BaseTransformer",
+     "from rdt.transformers import \\",
+     "    ClusterBasedNormalizer as RDTClusterBasedNormalizer",
+     "from rdt.transformers import FloatFormatter",
+     ""
+    ]
+   },
+   {
+    "file": "synthesizers_deprecated/gretel_synthetics/tabular/actgan/transformers.py",
+    "line": 12,
+    "text": "from rdt.transformers import \\",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "from category_encoders import BaseNEncoder, BinaryEncoder",
+     "from rdt.transformers import BaseTransformer",
+     "from rdt.transformers import \\",
+     "    ClusterBasedNormalizer as RDTClusterBasedNormalizer",
+     "from rdt.transformers import FloatFormatter",
+     "",
+     "from synthesizers.gretel_synthetics.tabular.actgan.typing import ("
+    ]
+   },
+   {
+    "file": "synthesizers_deprecated/gretel_synthetics/tabular/actgan/transformers.py",
+    "line": 14,
+    "text": "from rdt.transformers import FloatFormatter",
+    "context": [
+     "from category_encoders import BaseNEncoder, BinaryEncoder",
+     "from rdt.transformers import BaseTransformer",
+     "from rdt.transformers import \\",
+     "    ClusterBasedNormalizer as RDTClusterBasedNormalizer",
+     "from rdt.transformers import FloatFormatter",
+     "",
+     "from synthesizers.gretel_synthetics.tabular.actgan.typing import (",
+     "    ListOrSeriesOrDF, SeriesOrDFLike)",
+     ""
+    ]
+   },
+   {
+    "file": "synthesizers_deprecated/gretel_synthetics/tabular/actgan/sdv_detector.py",
+    "line": 10,
+    "text": "from rdt.transformers import BaseTransformer",
+    "context": [
+     "from typing import TYPE_CHECKING, Dict, FrozenSet, Optional, Tuple, Union",
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from rdt.transformers import BaseTransformer",
+     "from rdt.transformers.datetime import UnixTimestampEncoder",
+     "",
+     "from synthesizers.gretel_synthetics.tabular.actgan.dates_detector import \\",
+     "    detect_datetimes"
+    ]
+   },
+   {
+    "file": "synthesizers_deprecated/gretel_synthetics/tabular/actgan/sdv_detector.py",
+    "line": 11,
+    "text": "from rdt.transformers.datetime import UnixTimestampEncoder",
+    "context": [
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from rdt.transformers import BaseTransformer",
+     "from rdt.transformers.datetime import UnixTimestampEncoder",
+     "",
+     "from synthesizers.gretel_synthetics.tabular.actgan.dates_detector import \\",
+     "    detect_datetimes",
+     ""
+    ]
+   },
+   {
+    "file": "synthesizers_deprecated/gretel_synthetics/tabular/actgan/data_transformer.py",
+    "line": 7,
+    "text": "from rdt.transformers import BinaryEncoder, OneHotEncoder",
+    "context": [
+     "from typing import Any, Dict, FrozenSet, List, Optional, Sequence, Union",
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from rdt.transformers import BinaryEncoder, OneHotEncoder",
+     "",
+     "from synthesizers.gretel_synthetics.tabular.actgan.column_encodings import (",
+     "    BinaryColumnEncoding, FloatColumnEncoding, OneHotColumnEncoding)",
+     "from synthesizers.gretel_synthetics.tabular.actgan.structures import ("
+    ]
+   },
+   {
+    "file": "synthesizers_deprecated/gretel_synthetics/tabular/actgan/structures.py",
+    "line": 12,
+    "text": "from rdt.transformers.base import BaseTransformer",
+    "context": [
+     "from typing import TYPE_CHECKING, Any, Dict, List",
+     "",
+     "if TYPE_CHECKING:",
+     "    import numpy as np",
+     "    from rdt.transformers.base import BaseTransformer",
+     "",
+     "    from synthesizers.gretel_synthetics.tabular.actgan.column_encodings import \\",
+     "        ColumnEncoding",
+     ""
+    ]
+   },
+   {
+    "file": "synthesizers_deprecated/gretel_synthetics/tabular/actgan/actgan_wrapper.py",
+    "line": 11,
+    "text": "from rdt.transformers import BaseTransformer",
+    "context": [
+     "                    Tuple, Union)",
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from rdt.transformers import BaseTransformer",
+     "",
+     "from synthesizers.gretel_synthetics.tabular.actgan.actgan import \\",
+     "    ACTGANSynthesizer",
+     "from synthesizers.gretel_synthetics.tabular.actgan.columnar_df import \\"
+    ]
+   },
+   {
+    "file": "synthesizers_deprecated/gretel_synthetics/tabular/actgan/utils/rdt_patches.py",
+    "line": 7,
+    "text": "from rdt.transformers.numerical import (INTEGER_BOUNDS, MAX_DECIMALS,",
+    "context": [
+     "from contextlib import contextmanager",
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from rdt.transformers.numerical import (INTEGER_BOUNDS, MAX_DECIMALS,",
+     "                                        FloatFormatter)",
+     "",
+     "",
+     "@contextmanager"
+    ]
+   }
+  ],
+  "copulas": [
+   {
+    "file": "synthesizers_deprecated/sdv/tabular/copulas_synthesizer.py",
+    "line": 6,
+    "text": "import copulas",
+    "context": [
+     "import logging",
+     "import warnings",
+     "from copy import deepcopy",
+     "",
+     "import copulas",
+     "import copulas.univariate",
+     "import numpy as np",
+     "import pandas as pd",
+     "import scipy"
+    ]
+   },
+   {
+    "file": "synthesizers_deprecated/sdv/tabular/copulas_synthesizer.py",
+    "line": 7,
+    "text": "import copulas.univariate",
+    "context": [
+     "import warnings",
+     "from copy import deepcopy",
+     "",
+     "import copulas",
+     "import copulas.univariate",
+     "import numpy as np",
+     "import pandas as pd",
+     "import scipy",
+     "from copulas import multivariate"
+    ]
+   },
+   {
+    "file": "synthesizers_deprecated/sdv/tabular/copulas_synthesizer.py",
+    "line": 11,
+    "text": "from copulas import multivariate",
+    "context": [
+     "import copulas.univariate",
+     "import numpy as np",
+     "import pandas as pd",
+     "import scipy",
+     "from copulas import multivariate",
+     "from rdt.transformers import OneHotEncoder",
+     "from sdv.errors import NonParametricError",
+     "from sdv.single_table.utils import (flatten_dict,",
+     "                                    log_numerical_distributions_error,"
+    ]
+   },
+   {
+    "file": "synthesizers_deprecated/sdv/tabular/base_synthesizer.py",
+    "line": 14,
+    "text": "import copulas",
+    "context": [
+     "import warnings",
+     "from collections import defaultdict",
+     "",
+     "import cloudpickle",
+     "import copulas",
+     "import numpy as np",
+     "import pandas as pd",
+     "import pkg_resources",
+     "import tqdm"
+    ]
+   },
+   {
+    "file": "synthesizers_deprecated/sdv/tabular/base_synthesizer.py",
+    "line": 28,
+    "text": "# from copulas.multivariate import GaussianMultivariate",
+    "context": [
+     "                                    validate_file_path)",
+     "from sdv.utils import (groupby_list, is_boolean_type, is_datetime_type,",
+     "                       is_numerical_type, validate_datetime_format)",
+     "",
+     "# from copulas.multivariate import GaussianMultivariate",
+     "",
+     "",
+     "LOGGER = logging.getLogger(__name__)",
+     "COND_IDX = str(uuid.uuid4())"
+    ]
+   }
+  ],
+  "ctgan_mod": [
+   {
+    "file": "synthesizers_deprecated/sdv/tabular/tvae.py",
+    "line": 5,
+    "text": "from ctgan.data_transformer import DataTransformer",
+    "context": [
+     "\"\"\"TVAE module.\"\"\"",
+     "",
+     "import numpy as np",
+     "import torch",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.synthesizers.base import BaseSynthesizer, random_state",
+     "from torch.nn import Linear, Module, Parameter, ReLU, Sequential",
+     "from torch.nn.functional import cross_entropy",
+     "from torch.optim import Adam"
+    ]
+   },
+   {
+    "file": "synthesizers_deprecated/sdv/tabular/tvae.py",
+    "line": 6,
+    "text": "from ctgan.synthesizers.base import BaseSynthesizer, random_state",
+    "context": [
+     "",
+     "import numpy as np",
+     "import torch",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.synthesizers.base import BaseSynthesizer, random_state",
+     "from torch.nn import Linear, Module, Parameter, ReLU, Sequential",
+     "from torch.nn.functional import cross_entropy",
+     "from torch.optim import Adam",
+     "from torch.utils.data import DataLoader, TensorDataset"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "copulas",
+  "ct",
+  "ctgan_mod",
+  "ev",
+  "gc",
+  "md",
+  "par",
+  "rdt",
+  "sdv_any",
+  "sm",
+  "sq",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [
+  "synthesizers_deprecated/sdv"
+ ],
+ "dependencies": {
+  "requirements.txt": [
+   "sdmetrics==0.12.1",
+   "sdv==1.7.0"
+  ]
+ }
+}

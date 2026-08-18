@@ -1,0 +1,160 @@
+{
+ "repo": "jayanth9676/aws_aegis_aura",
+ "disk_kb": 10304,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Aegis Agentic AI Platform\n\nReal-time Authorized Push Payment (APP) scam prevention built on AWS Bedrock AgentCore, Strands Agents, and a production-grade multi-agent architecture.\n\n## Highlights\n- 13 collaborating Bedrock agents orchestrated by the Supervisor agent for end-to-end scam investigations (context → analysis → decision).\n- 8 AgentCore Gateway Lambda tools for payments, customer data, graph intelligence, ML inference, regulatory workflows, and knowledge retrieval.\n- FastAPI backend with WebSocket streaming, Next.js analyst/customer portals, and deployment scripts for Bedrock guardrails, knowledge base, and ML endpoints.\n- Responsible AI baked in: guardrails, SHAP explainability, bias monitoring, audit logging, and security controls aligned to financial-services regulations.\n\n### TECHNICAL ARCHITECTURE\n![Technical Architecture](/tech_arch%20diagram.drawio.png)\n\n\nRefer to `docs/ARCHITECTURE.md` and `docs/AGENTS.md` for deep technical detail.\n\n## Repository Layout\n```\nauthorised_push_payments/\n├── backend/               # Agents, FastAPI API, tools, graph + ML integrations\n├── frontend/              # Next.js 14 analyst & customer experience\n├── infrastructure/        # CDK stacks & helper scripts\n├── knowledge_base_docs/   # Fraud typologies, SOPs, regulatory guidance\n├── datasets/              # Sample datasets for local experimentation\n├── ML_DL_Models/          # Model training, inference, monitoring assets\n├── docs/                  # Architecture, guardrails, deployment documentation\n└── tests/                 # Python unit, integration, performance suites\n```\n\n## Prerequisites\n- Python 3.11+\n- Node.js 18+ and npm\n- AWS CLI v2 configured with credentials that can access Bedrock, AgentCore, DynamoDB, Neptune, SageMaker, and Cognito\n- Optional: `uv` for Python dependency management (repository ships with `uv.lock`)\n\n## Setup\n\n### 1. Clone & Python Environment\n```bash\ngit clone <repository-url>\ncd agenticai_for_authorized_push_payments\npython -m venv .venv\nsource .venv/bin/activate   # Windows: .venv\\Scripts\\activate\npip install --upgrade pip\npip install -r requirements.txt\npip install -e .\n```\n\n### 2. Configure Secrets & Environment\nCreate a local `.env` (not committed) or use AWS Secrets Manager/Parameter Store. Minimum variables required for AgentCore and AWS integration are defined in the config modules, for example:\n```55:70:backend/config/agentcore_config.py\nagentcore_config = AgentCoreConfig(\n    region=os.getenv(\"AWS_REGION\", \"us-east-1\"),\n    runtime_arn=os.getenv(\"AGENTCORE_RUNTIME_ARN\"),\n    ...\n    gateway_client_id=os.getenv(\"GATEWAY_CLIENT_ID\"),\n    gateway_client_secret=os.getenv(\"GATEWAY_CLIENT_SECRET\"),\n    gateway_token_endpoint=os.getenv(\"GATEWAY_TOKEN_ENDPOINT\"),\n    gateway_scope=os.getenv(\"GATEWAY_SCOPE\", \"invoke\"),\n    gateway_access_token=os.getenv(\"GATEWAY_ACCESS_TOKEN\"),\n)\n```\nKey secrets to populate:\n- `GATEWAY_CLIENT_ID`, `GATEWAY_CLIENT_SECRET`, `GATEWAY_TOKEN_ENDPOINT`, `GATEWAY_SCOPE`\n- `AGENTCORE_GATEWAY_ENDPOINT`, `AGENTCORE_RUNTIME_ARN`, `AGENTCORE_EXECUTION_ROLE_ARN`\n- `AWS_REGION`, `AWS_ACCOUNT_ID`\n- DynamoDB/Neptune identifiers: `CASES_TABLE`, `TRANSACTIONS_TABLE`, `NEPTUNE_ENDPOINT`, etc.\n- Guardrails, Knowledge Base, and model endpoints (`GUARDRAILS_ID`, `KNOWLEDGE_BASE_ID`, `FRAUD_DETECTOR_ENDPOINT`, ...)\n\n> ⚠️ `gateway_config.json` and `backend/.bedrock_agentcore*.yaml` contain live identifiers and must stay out of source control. Keep them in secure storage and follow `security.md` notes below.\n\n### 3. Frontend Dependencies\n```bash\ncd frontend\nnpm install\ncd ..\n```\n\n## Running the Platform\n\n### Start Backend API & WebSocket\n```bash\nuvicorn backend.api.main:app --reload --port 8000\n```\n- REST endpoints under `http://localhost:8000/api/v1/`\n- Interactive docs at `http://localhost:8000/docs`\n- WebSocket stream at `ws://localhost:8000/ws`\n\n### Run Supervisor Demo (optional)\n```bash\npython main.py\n```\nLaunches a scripted transaction investigation that walks through the multi-agent workflow end-to-end.\n\n### Start Frontend Apps\n```bash\ncd frontend\nnpm run dev\n```\n- Analyst dashboard: `http://localhost:3000/analyst`\n- Customer portal (scam dialogue): `http://localhost:3000/customer`\n\n## Data & Knowledge Base\n- `knowledge_base_docs/` ships with fraud typologies, SOPs, and regulatory references. Load them via `backend/knowledge_base/setup.py` and `populate.py`.\n- Synthetic datasets for experimentation live under `datasets/` and `ML_DL_Models/`. These are optional for local demos but excluded from deployment pipelines.\n\n## Testing & Quality\n```bash\n# Backend\npytest --maxfail=1 --disable-warnings -q\npytest --cov=backend --cov-report=xml\n\n# Frontend\ncd frontend\nnpm run test\n```\nAdditional suites exist in `tests/performance/` for load testing and `tests/integration/` for end-to-end agent flows.\n\n## Security & Responsible AI Checklist\n- **Secrets**: Store Bedrock/AgentCore credentials in AWS Secrets Manager or local `.env`; rotate anything previously committed.\n- **Guardrails**: Configure Bedrock guardrails before enabling customer-facing dialogue agents. JSON templates live in `backend/guardrails/`.\n- **Explainability**: SHAP explainers stored under `backend/ml_models/explainability/` must be deployed alongside fraud models to keep audit reports complete.\n- **Audit Logging**: DynamoDB audit table defaults (`aegis-audit-logs`) can be overridden via env vars in `SystemConfig`.\n- **Bias Monitoring**: `backend/guardrails/responsible_ai.py` runs disparate-impact checks; wire metrics to CloudWatch before go-live.\n\n## Deployment Workflow (Summary)\n1. Deploy AWS infrastructure with the CDK stacks in `infrastructure/cdk/`.\n2. Set up guardrails (`infrastructure/bedrock_guardrails/deploy_guardrails.py`).\n3. Upload ML artifacts to S3 and deploy endpoints via `infrastructure/scripts/deploy_ml_models.py`.\n4. Register tools with AgentCore Gateway and sync config into Secrets Manager.\n5. Publish Strands agents (`infrastructure/scripts/deploy_agents.py`) and frontends (Amplify).\n\nDetailed, step-by-step guidance is in:\n- `docs/DEPLOYMENT.md`\n- `docs/agentcore_runtime.md`\n- `docs/RESPONSIBLE_AI.md`\n\n## Troubleshooting\n- **Gateway auth errors**: confirm `GATEWAY_CLIENT_*` values and scopes. Tokens must be retrieved via OAuth2 client credentials flow.\n- **Neptune connection issues**: set `NEPTUNE_ENDPOINT` and whitelist the runtime VPC security groups.\n- **High latency**: review agent timeout overrides in `AgentConfig` and ensure parallel context agents are enabled.\n- **Missing datasets/models**: run the scripts under `datasets/` and `ML_DL_Models/scripts/` to regenerate local artifacts.\n\n## Contributing\n1. Create a feature branch (`feature/<name>`).\n2. Run linting & tests before opening a PR.\n3. Include security review notes for any tool/agent touching customer data.\n\nMaintainers: see `docs/ARCHITECTURE.md` for design principles and `docs/AGENTS.md` for per-agent responsibilities.\n\n\n\n",
+ "hits": {
+  "md": [
+   {
+    "file": "datasets/ml_sdv_datasets/aegis_sdv_enhanced_generator.py",
+    "line": 18,
+    "text": "from sdv.metadata import MultiTableMetadata",
+    "context": [
+     "import numpy as np",
+     "from faker import Faker",
+     "from datetime import datetime, timedelta",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.metadata import MultiTableMetadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from tqdm import tqdm",
+     "import random",
+     "import uuid"
+    ]
+   }
+  ],
+  "mt": [
+   {
+    "file": "datasets/ml_sdv_datasets/aegis_sdv_enhanced_generator.py",
+    "line": 17,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from faker import Faker",
+     "from datetime import datetime, timedelta",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.metadata import MultiTableMetadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from tqdm import tqdm",
+     "import random"
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "datasets/ml_sdv_datasets/aegis_sdv_enhanced_generator.py",
+    "line": 19,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "from faker import Faker",
+     "from datetime import datetime, timedelta",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.metadata import MultiTableMetadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from tqdm import tqdm",
+     "import random",
+     "import uuid",
+     "import warnings"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "datasets/ml_sdv_datasets/aegis_sdv_enhanced_generator.py",
+    "line": 17,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from faker import Faker",
+     "from datetime import datetime, timedelta",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.metadata import MultiTableMetadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from tqdm import tqdm",
+     "import random"
+    ]
+   },
+   {
+    "file": "datasets/ml_sdv_datasets/aegis_sdv_enhanced_generator.py",
+    "line": 18,
+    "text": "from sdv.metadata import MultiTableMetadata",
+    "context": [
+     "import numpy as np",
+     "from faker import Faker",
+     "from datetime import datetime, timedelta",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.metadata import MultiTableMetadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from tqdm import tqdm",
+     "import random",
+     "import uuid"
+    ]
+   },
+   {
+    "file": "datasets/ml_sdv_datasets/aegis_sdv_enhanced_generator.py",
+    "line": 19,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "from faker import Faker",
+     "from datetime import datetime, timedelta",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.metadata import MultiTableMetadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from tqdm import tqdm",
+     "import random",
+     "import uuid",
+     "import warnings"
+    ]
+   }
+  ],
+  "hma": [
+   {
+    "file": "datasets/ml_sdv_datasets/aegis_sdv_enhanced_generator.py",
+    "line": 17,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from faker import Faker",
+     "from datetime import datetime, timedelta",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.metadata import MultiTableMetadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from tqdm import tqdm",
+     "import random"
+    ]
+   },
+   {
+    "file": "datasets/ml_sdv_datasets/aegis_sdv_enhanced_generator.py",
+    "line": 829,
+    "text": "synthesizer = HMASynthesizer(metadata)",
+    "context": [
+     "else:",
+     "    print(f\"\\n[STEP 4] Training SDV Synthesizer...\")",
+     "    print(\"This may take several minutes for large datasets...\")",
+     "",
+     "    synthesizer = HMASynthesizer(metadata)",
+     "    synthesizer.fit(seed_data)",
+     "",
+     "    print(\"   ✓ SDV model training complete\")",
+     "    synthesizer.save('aegis_enhanced_synthesizer.pkl')"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ev",
+  "hma",
+  "md",
+  "mt",
+  "sdv_any"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "pyproject.toml": [
+   "    \"sdv>=1.27.0\","
+  ]
+ }
+}

@@ -1,0 +1,185 @@
+{
+ "repo": "ChristopherLelin/mockdata-project",
+ "disk_kb": 14789,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# 🚀 SQL Server Hierarchical Mock Data Generator\n\nThis tool generates realistic mock data for SQL Server tables, respecting schema constraints, primary/foreign keys, and hierarchical relationships.\n\n## 🧩 Features\n\n- **Schema-Aware Generation**\n  - Automatically extracts table schema from SQL Server\n  - Preserves primary key, foreign key, and column constraints\n  - Enforces max column lengths, data types, and nullability\n\n- **Data-Driven Modeling**\n  - Uses SDV (Synthetic Data Vault) to learn from existing data\n  - Supports text, numeric, and alphanumeric key patterns\n  - Mimics distributions of real data\n\n- **Hierarchical Integrity**\n  - Follows parent-child relationships in correct order\n  - Ensures valid foreign key generation\n  - Automatically inserts data respecting dependencies\n\n- **Customization & Traceability**\n  - Add `IsMock = 1` to generated rows\n  - Preview data in Excel before database insertion\n  - Control generation via simple configuration files\n\n## 📋 Requirements\n\n- Python 3.8+\n- SQL Server with ODBC Driver\n- Required Python packages:\n  ```\n  pip install pandas openpyxl sqlalchemy pyodbc sdv python-dotenv tqdm\n  ```\n\n## 🔧 Setup\n\n1. Clone this repository\n2. Create a `.env` file in the project root (see `.env.template` for an example)\n3. Create or update the Excel configuration files in the `config` directory\n\n### Configuration Files\n\nThe tool uses four Excel files to control data generation:\n\n1. **`target_tables.xlsx`**: Tables to generate data for and row counts\n2. **`fk_mappings.xlsx`**: Additional foreign key relationships not in the schema\n3. **`unique_constraints.xlsx`**: Additional uniqueness requirements\n4. **`table_hierarchy.xlsx`**: Generation order for hierarchical tables\n\nYou can create sample configurations by running:\n```\npython create_sample_configs.py\n```\n\n## 🚀 Usage\n\n### Step 1: Generate Mock Data\n\n```bash\npython scripts/generate_data.py \\\n  --tables config/target_tables.xlsx \\\n  --fks config/fk_mappings.xlsx \\\n  --uniques config/unique_constraints.xlsx \\\n  --hierarchy config/table_hierarchy.xlsx\n```\n\nThis will:\n1. Connect to your SQL Server using credentials from the `.env` file\n2. Extract schema information for the specified tables\n3. Learn data patterns from existing rows\n4. Generate mock data respecting all constraints\n5. Save the data to `output/generated_data.xlsx`\n\n### Step 2: Insert Data (Optional)\n\nAfter reviewing the generated data in Excel, you can insert it into the database:\n\n```bash\npython scripts/insert_data.py \\\n  --source output/generated_data.xlsx \\\n  --insert\n```\n\nThis will:\n1. Read the generated data from Excel\n2. Generate an SQL script at `output/generated_data.sql`\n3. Insert the data into the database if `--insert` is specified\n\n## 📁 Project Structure\n\n```\n├── config/                  # Configuration files\n│   ├── target_tables.xlsx   # Tables and row counts\n│   ├── fk_mappings.xlsx     # Additional foreign keys\n│   ├── unique_constraints.xlsx # Uniqueness rules\n│   └── table_hierarchy.xlsx # Table generation order\n├── output/                  # Output files\n│   ├── generated_data.xlsx  # Generated data in Excel\n│   └── generated_data.sql   # SQL insert statements\n├── scripts/                 # Python modules\n│   ├── extract_schema.py    # DB schema extraction\n│   ├── load_config.py       # Configuration loading\n│   ├── generate_data.py     # Data generation logic\n│   └── insert_data.py       # Database insertion\n├── .env                     # Database credentials\n└── .env.template            # Template for .env\n```\n\n## ⚙️ Customization\n\n- **Modify Generation Logic**: Edit the `generate_data.py` file to customize how certain columns are generated\n- **Change Output Format**: Adjust the `save_to_excel` method in `generate_data.py` to change output formats\n- **Add Database Support**: Extend `extract_schema.py` to work with other database systems\n",
+ "hits": {
+  "st": [
+   {
+    "file": "scripts/generate_data.py",
+    "line": 14,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import argparse",
+     "import pandas as pd",
+     "import numpy as np",
+     "from typing import Dict, List, Set, Any, Tuple, Optional",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.constraints import FixedCombinations",
+     "from tqdm import tqdm",
+     "import logging",
+     "import random"
+    ]
+   },
+   {
+    "file": "scripts/generate_data.py",
+    "line": 299,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "        # Update metadata with constraints",
+     "        self._create_constraints(table_name, metadata)",
+     "        ",
+     "        # For SDV 1.12.0, we need to use the updated API",
+     "        from sdv.single_table import GaussianCopulaSynthesizer",
+     "        ",
+     "        synthesizer = GaussianCopulaSynthesizer(",
+     "            metadata=metadata",
+     "        )"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "scripts/generate_data.py",
+    "line": 323,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    ",
+     "    def _create_metadata(self, table_name: str, schema_df: pd.DataFrame) -> Dict[str, Any]:",
+     "        \"\"\"Create metadata dictionary for SDV based on table schema.\"\"\"",
+     "        # For SDV 1.12.0, we need to use the SDV SingleTableMetadata class",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        ",
+     "        metadata = SingleTableMetadata()",
+     "        ",
+     "        # Get primary keys for special handling"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "scripts/generate_data.py",
+    "line": 14,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import argparse",
+     "import pandas as pd",
+     "import numpy as np",
+     "from typing import Dict, List, Set, Any, Tuple, Optional",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.constraints import FixedCombinations",
+     "from tqdm import tqdm",
+     "import logging",
+     "import random"
+    ]
+   },
+   {
+    "file": "scripts/generate_data.py",
+    "line": 15,
+    "text": "from sdv.constraints import FixedCombinations",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from typing import Dict, List, Set, Any, Tuple, Optional",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.constraints import FixedCombinations",
+     "from tqdm import tqdm",
+     "import logging",
+     "import random",
+     "import string"
+    ]
+   },
+   {
+    "file": "scripts/generate_data.py",
+    "line": 299,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "        # Update metadata with constraints",
+     "        self._create_constraints(table_name, metadata)",
+     "        ",
+     "        # For SDV 1.12.0, we need to use the updated API",
+     "        from sdv.single_table import GaussianCopulaSynthesizer",
+     "        ",
+     "        synthesizer = GaussianCopulaSynthesizer(",
+     "            metadata=metadata",
+     "        )"
+    ]
+   },
+   {
+    "file": "scripts/generate_data.py",
+    "line": 323,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    ",
+     "    def _create_metadata(self, table_name: str, schema_df: pd.DataFrame) -> Dict[str, Any]:",
+     "        \"\"\"Create metadata dictionary for SDV based on table schema.\"\"\"",
+     "        # For SDV 1.12.0, we need to use the SDV SingleTableMetadata class",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        ",
+     "        metadata = SingleTableMetadata()",
+     "        ",
+     "        # Get primary keys for special handling"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "scripts/generate_data.py",
+    "line": 14,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import argparse",
+     "import pandas as pd",
+     "import numpy as np",
+     "from typing import Dict, List, Set, Any, Tuple, Optional",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.constraints import FixedCombinations",
+     "from tqdm import tqdm",
+     "import logging",
+     "import random"
+    ]
+   },
+   {
+    "file": "scripts/generate_data.py",
+    "line": 299,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "        # Update metadata with constraints",
+     "        self._create_constraints(table_name, metadata)",
+     "        ",
+     "        # For SDV 1.12.0, we need to use the updated API",
+     "        from sdv.single_table import GaussianCopulaSynthesizer",
+     "        ",
+     "        synthesizer = GaussianCopulaSynthesizer(",
+     "            metadata=metadata",
+     "        )"
+    ]
+   },
+   {
+    "file": "scripts/generate_data.py",
+    "line": 301,
+    "text": "synthesizer = GaussianCopulaSynthesizer(",
+    "context": [
+     "        ",
+     "        # For SDV 1.12.0, we need to use the updated API",
+     "        from sdv.single_table import GaussianCopulaSynthesizer",
+     "        ",
+     "        synthesizer = GaussianCopulaSynthesizer(",
+     "            metadata=metadata",
+     "        )",
+     "          # Fit the model on sample data",
+     "        logger.info(f\"Training synthesizer on {len(sample_data)} samples for table: {table_name}\")"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

@@ -1,0 +1,822 @@
+{
+ "repo": "Sharan-G-S/Predictive-Maintenance",
+ "disk_kb": 124344,
+ "method": "partial_clone",
+ "tree_files": 585,
+ "status": "ok",
+ "readme": "# Predictive Maintenance System (Visual Inspection)\n\nA comprehensive, production-grade predictive maintenance platform that leverages synthetic data generation, machine learning models, and real-time monitoring to predict equipment failures and optimize maintenance schedules for industrial machinery.\n\n---\n\n## Table of Contents\n\n- [Overview](#overview)\n- [System Architecture](#system-architecture)\n- [Core Components](#core-components)\n- [Technology Stack](#technology-stack)\n- [Installation and Setup](#installation-and-setup)\n- [Usage](#usage)\n- [Project Status](#project-status)\n- [Documentation](#documentation)\n\n---\n\n## Overview\n\nThe Predictive Maintenance System is designed to monitor industrial equipment health, predict failures, and provide actionable insights through an integrated web-based dashboard. The system combines four core AI workflows:\n\n1. **Generative Adversarial Networks (GAN)** - Synthetic sensor data generation\n2. **Machine Learning (ML)** - Real-time failure prediction and classification\n3. **Large Language Models (LLM)** - Natural language explanations and reporting\n4. **Visual Language Models (VLM)** - Visual diagnostics and anomaly detection\n\nThe system currently supports 26+ industrial machine profiles across multiple categories including motors, pumps, compressors, CNC machines, hydraulic systems, and cooling towers.\n\n---\n\n## System Architecture\n\n### High-Level Architecture\n\nThe system is structured as a multi-tier application with the following layers:\n\n```\n┌─────────────────────────────────────────────────────────────┐\n│                     Frontend Dashboard                       │\n│              (React + Material-UI + Vite)                   │\n└────────────────────┬────────────────────────────────────────┘\n                     │ REST API\n┌────────────────────┴────────────────────────────────────────┐\n│                    Backend Services                          │\n│              (FastAPI + Celery + Redis)                     │\n├──────────────────────────────────────────────────────────────┤\n│  • ML Manager      • GAN Manager      • Task Orchestration  │\n│  • Authentication  • Rate Limiting    • WebSocket Support   │\n└────────────────────┬────────────────────────────────────────┘\n                     │\n┌────────────────────┴────────────────────────────────────────┐\n│                  Data & Model Layers                         │\n├──────────────────────────────────────────────────────────────┤\n│  • PostgreSQL DB   • Redis Cache      • MLflow Tracking     │\n│  • Model Artifacts • Synthetic Data   • Training Logs       │\n└──────────────────────────────────────────────────────────────┘\n```\n\n### Data Flow\n\n1. **Machine Profile Creation**: Users define machine specifications through the New Machine Wizard\n2. **Synthetic Data Generation**: TVAE models generate physics-based synthetic sensor data\n3. **Model Training**: AutoGluon trains classification, regression, anomaly detection, and time-series models\n4. **Real-Time Monitoring**: Dashboard displays live predictions and equipment health status\n5. **Task Management**: Background workers process training, prediction, and generation tasks asynchronously\n\n---\n\n## Core Components\n\n### 1. GAN Module (`GAN/`)\n\nThe GAN module handles synthetic sensor data generation using Table Variational Autoencoder (TVAE) models.\n\n**Key Features:**\n- Machine profile management with comprehensive validation\n- Physics-based seed data generation\n- TVAE model training with quality assessment\n- Synthetic dataset generation (train/validation/test splits)\n- Quality metrics and distribution comparison\n\n**Key Files:**\n- `services/gan_training_service.py` - Core TVAE training orchestration\n- `services/profile_validation_service.py` - Machine profile validation\n- `validate_new_machine.py` - End-to-end machine validation pipeline\n- `metadata/` - Machine profile metadata storage\n- `data/synthetic/` - Generated synthetic datasets\n\n### 2. ML Models Module (`ml_models/`)\n\nThe ML module contains trained prediction models and training infrastructure.\n\n**Model Types:**\n- **Classification**: Equipment failure type prediction\n- **Regression**: Remaining Useful Life (RUL) estimation\n- **Anomaly Detection**: Outlier and anomaly identification\n- **Time-Series**: Sequential pattern analysis and forecasting\n\n**Key Features:**\n- AutoGluon-based automated machine learning\n- Per-machine model customization\n- Model versioning and artifact management\n- Performance metrics and validation reports\n- Model inventory and lifecycle management\n\n**Directory Structure:**\n```\nml_models/\n├── models/\n│   ├── classification/<machine_id>/    # Classification models\n│   ├── regression/<machine_id>/        # Regression models\n│   ├── anomaly/<machine_id>/          # Anomaly detection models\n│   └── timeseries/<machine_id>/       # Time-series models\n├── reports/                           # Training and validation reports\n├── scripts/                           # Training and evaluation scripts\n└── notebooks/                         # Jupyter notebooks for analysis\n```\n\n### 3. Frontend Dashboard (`frontend/`)\n\nA modern web-based dashboard built with React and Material-UI.\n\n**Views:**\n- **Predictions**: Real-time equipment health monitoring and failure prediction\n- **New Machine Wizard**: Guided workflow for adding new machine profiles\n- **Model Training**: Interface for training ML models with progress tracking\n- **Manage Models**: Model inventory, deletion, and retraining controls\n- **Tasks**: Background task monitoring with status tracking\n- **Dataset Downloads**: Access to synthetic and processed datasets\n- **Continue Workflow**: Resume interrupted GAN profile workflows\n\n**Key Features:**\n- Real-time task status updates via polling\n- Machine filtering and selection\n- Workflow state persistence across browser sessions\n- Responsive design with dark theme\n- Interactive charts and visualizations\n\n**Technical Stack:**\n- **Frontend Framework**: React 18 with TypeScript\n- **UI Library**: Material-UI (MUI) v6\n- **Build Tool**: Vite 7\n- **State Management**: React Context API\n- **HTTP Client**: Axios\n\n### 4. Backend API (`frontend/server/`)\n\nFastAPI-based REST API with asynchronous task processing.\n\n**Endpoints:**\n\n**ML Endpoints** (`/api/ml/`):\n- `GET /machines` - List all available machines\n- `GET /machines/{machine_id}/status` - Get machine status\n- `POST /predict/classification` - Run failure classification\n- `POST /predict/rul` - Estimate remaining useful life\n- `GET /models/inventory` - Get model inventory\n- `POST /models/train` - Initiate model training\n- `DELETE /models/{model_id}` - Delete specific model\n- `DELETE /machines/{machine_id}/models` - Delete all models for machine\n\n**GAN Endpoints** (`/api/gan/`):\n- `POST /upload-profile` - Upload machine profile\n- `POST /validate-profile` - Validate machine configuration\n- `POST /train` - Start TVAE model training\n- `POST /generate` - Generate synthetic data\n- `GET /tasks/{task_id}` - Get task status\n- `DELETE /tasks/{task_id}` - Cancel running task\n- `GET /workflow/continue` - Retrieve workflow state\n- `PUT /workflow/continue` - Store workflow state\n- `DELETE /workflow/continue` - Clear workflow state\n\n**Task Management** (`/api/tasks/`):\n- `GET /` - List all tasks\n- `GET /{task_id}` - Get task details\n- `DELETE /{task_id}` - Cancel task\n\n**Key Features:**\n- JWT-based authentication (ready for deployment)\n- Rate limiting and request throttling\n- CORS configuration for development and production\n- Comprehensive error handling and logging\n- Background task orchestration via Celery\n- Redis-based caching and session management\n\n### 5. LLM Module (`LLM/`)\n\nIntegration layer for large language models to provide natural language explanations.\n\n**Features:**\n- RAG (Retrieval-Augmented Generation) knowledge base\n- Context-aware explanation generation\n- Integration with ML prediction pipeline\n- Automated report generation\n\n**Status**: Integration framework complete; model deployment pending\n\n### 6. Data Ingestion Module (`data_ingestion/`)\n\nPipeline for ingesting, validating, and refining real-world sensor data.\n\n**Workflow:**\n1. Upload dataset in supported formats (CSV, Excel, Parquet, JSON)\n2. Validate and clean data\n3. Map columns to machine profile sensors\n4. Merge with seed data (optional)\n5. Refine TVAE models with real data\n6. Generate augmented datasets\n7. Compare quality metrics\n\n**Directory Structure:**\n```\ndata_ingestion/\n├── raw/                  # Original uploaded files\n├── processed/            # Cleaned and transformed data\n├── merged/               # Seed + real data combined\n├── refined_models/       # TVAE models refined on real data\n├── augmented/            # Augmented datasets\n├── reports/              # Quality comparison reports\n└── scripts/              # Ingestion and refinement utilities\n```\n\n---\n\n## Technology Stack\n\n### Backend\n\n| Component | Technology | Purpose |\n|-----------|-----------|---------|\n| **API Framework** | FastAPI 0.115+ | REST API and WebSocket support |\n| **Task Queue** | Celery 5.4+ | Asynchronous background processing |\n| **Message Broker** | Redis 7.4+ | Task queue and caching |\n| **Database** | PostgreSQL 18 | User data and configuration storage |\n| **ML Framework** | AutoGluon 1.4+ | Automated machine learning |\n| **GAN Framework** | CTGAN/TVAE (SDV 1.16+) | Synthetic data generation |\n| **Experiment Tracking** | MLflow 2.18+ | Model versioning and tracking |\n| **Python Runtime** | Python 3.10+ | Core runtime environment |\n\n### Frontend\n\n| Component | Technology | Purpose |\n|-----------|-----------|---------|\n| **Framework** | React 18 | UI framework |\n| **Language** | TypeScript 5+ | Type-safe development |\n| **UI Library** | Material-UI 6 | Component library |\n| **Build Tool** | Vite 7 | Fast development and builds |\n| **HTTP Client** | Axios | API communication |\n| **Charts** | Recharts | Data visualization |\n\n### Infrastructure\n\n| Component | Technology | Purpose |\n|-----------|-----------|---------|\n| **OS** | Windows Server / Linux | Production hosting |\n| **Virtualization** | Docker (optional) | Containerized deployment |\n| **Process Management** | PM2 / Supervisor | Service management |\n| **Reverse Proxy** | Nginx (optional) | Load balancing and SSL |\n\n---\n\n## Installation and Setup\n\n### Prerequisites\n\n- **Python**: Version 3.10 or higher\n- **Node.js**: Version 18 or higher\n- **PostgreSQL**: Version 16 or higher (service running on port 5433)\n- **Redis**: Version 7.4 or higher (service running on port 6379)\n- **Git**: For version control\n\n### Installation Steps\n\n#### 1. Clone Repository\n\n```bash\ngit clone <repository-url>\ncd \"Predictive Maintenance\"\n```\n\n#### 2. Backend Setup\n\n```powershell\n# Create and activate virtual environment\npython -m venv venv\n.\\venv\\Scripts\\Activate.ps1\n\n# Install Python dependencies\npip install -r frontend/server/requirements.txt\npip install -r GAN/requirements.txt\npip install -r ml_models/requirements.txt\n```\n\n#### 3. Database Configuration\n\n```powershell\n# Create database and tables\ncd frontend/server\npython create_database.py\n```\n\n#### 4. Environment Configuration\n\nCreate `frontend/server/.env` file:\n\n```env\nDATABASE_URL=postgresql://postgres:<your_password>@localhost:5433/predictive_maintenance\nREDIS_URL=redis://localhost:6379/0\nSECRET_KEY=<your-secret-key>\nCELERY_BROKER_URL=redis://localhost:6379/0\nCELERY_RESULT_BACKEND=redis://localhost:6379/0\n```\n\n#### 5. Frontend Setup\n\n```powershell\ncd frontend/client\nnpm install\n```\n\n### Running the Application\n\n#### Quick Start (Recommended)\n\nUse the provided batch scripts to start all services:\n\n**Windows:**\n```powershell\n# Start all services\n.\\start_dashboard.ps1\n\n# Stop all services\n.\\stop_dashboard.ps1\n```\n\nThis will launch separate terminal windows for:\n1. **Backend API** (FastAPI on port 8000)\n2. **Celery Worker(s)** (Background task processor)\n3. **Frontend** (React development server on port 5173)\n\n#### Manual Start (Advanced)\n\n**Terminal 1 - Backend API:**\n```powershell\ncd frontend/server\n.\\venv\\Scripts\\Activate.ps1\nuvicorn main:app --reload --host 0.0.0.0 --port 8000\n```\n\n**Terminal 2 - Celery Worker:**\n```powershell\ncd frontend/server\n.\\venv\\Scripts\\Activate.ps1\ncelery -A celery_app worker --loglevel=info --pool=solo\n```\n\n**Terminal 3 - Frontend:**\n```powershell\ncd frontend/client\nnpm run dev\n```\n\n### Accessing the Application\n\n| Service | URL | Description |\n|---------|-----|-------------|\n| **Dashboard** | http://localhost:5173 | Main application interface |\n| **API Documentation** | http://localhost:8000/docs | Interactive API documentation (Swagger) |\n| **API Health** | http://localhost:8000/health | System health check endpoint |\n\n---\n\n## Usage\n\n### Adding a New Machine Profile\n\n1. Navigate to **New Machine Wizard** in the dashboard\n2. Select machine type and configuration template\n3. Upload machine profile JSON or fill in the form\n4. Validate profile (checks sensor configuration and physics parameters)\n5. Generate seed data (physics-based initial dataset)\n6. Train TVAE model (typically 5-10 minutes)\n7. Generate synthetic datasets (train/validation/test splits)\n8. Validate quality metrics (should achieve >0.85 quality score)\n9. Deploy to production (machine appears in predictions view)\n\n### Training ML Models\n\n1. Navigate to **Model Training** view\n2. Select machine from dropdown (shows machines without trained models)\n3. Select model types to train (Classification, Regression, Anomaly, Time-Series)\n4. Click **Start Training**\n5. Monitor progress in real-time\n6. View training logs (collapsible section)\n7. Check training reports in **Manage Models** after completion\n\n### Monitoring Tasks\n\n1. Navigate to **Tasks** view to see all background jobs\n2. Click on any running task to view its page (Training or GAN)\n3. Cancel tasks if needed\n4. Review completed task history\n\n### Managing Models\n\n1. Navigate to **Manage Models** view\n2. View model inventory with details (type, size, performance metrics)\n3. Retrain models individually or all at once per machine\n4. Delete models to free disk space\n5. Filter machines by training status\n\n### Continuing GAN Workflows\n\nIf a GAN workflow is interrupted:\n1. Click **Continue Workflow** in navigation panel\n2. System automatically resumes at the last saved step\n3. Complete remaining workflow steps\n4. Workflow state persists across browser sessions\n\n---\n\n## Project Status\n\n### Current Implementation Status\n\n| Component | Status | Completion |\n|-----------|--------|------------|\n| **GAN Synthetic Data Generation** | ✅ Complete | 100% |\n| **Machine Profile Management** | ✅ Complete | 100% |\n| **Classification Models** | ✅ Complete | 100% |\n| **Regression Models** | ✅ Complete | 100% |\n| **Anomaly Detection Models** | ✅ Complete | 100% |\n| **Time-Series Forecasting Models** | ✅ Complete | 100% |\n| **Dashboard & Frontend** | ✅ Complete | 100% |\n| **Backend API & Services** | ✅ Complete | 100% |\n| **Task Management System** | ✅ Complete | 100% |\n| **Model Training Pipeline** | ✅ Complete | 100% |\n| **LLM Integration Framework** | ✅ Complete | 100% |\n| **Data Ingestion Module** | ⏳ Planned | 0% |\n\n### Known Limitations\n\n1. **Data Ingestion**: Real dataset upload and refinement workflow not yet implemented\n2. **Real Data Fine-Tuning**: Models currently trained on 100% synthetic data\n3. **LLM Model Deployment**: Integration framework complete but model not deployed\n4. **VLM Integration**: Planned for future release\n5. **Authentication**: JWT infrastructure present but not enforced in development mode\n\n### Performance Metrics\n\n**Classification Models (10 machines trained):**\n- Average F1 Score: 0.77\n- Average Accuracy: 94.9%\n- Average Model Size: 237 MB\n\n**Regression Models (10 machines trained):**\n- Average R² Score: 0.75\n- Average MAE: 12.3 cycles\n\n**GAN Quality (21 machines):**\n- Average Quality Score: 0.91+\n- Datasets Generated: 50,000 rows per machine\n\n---\n\n## Documentation\n\n### Core Documentation\n\n- **[STARTUP_GUIDE.md](STARTUP_GUIDE.md)** - Complete startup and shutdown procedures\n- **[PROJECT_STATUS_SUMMARY.md](PROJECT_STATUS_SUMMARY.md)** - Detailed project status and blockers\n- **[FUTURE_SCOPE_ROADMAP.md](FUTURE_SCOPE_ROADMAP.md)** - Planned enhancements and roadmap\n\n### Component Documentation\n\n**GAN Module:**\n- `GAN/WORKFLOW_TEST_NEW_MACHINE.md` - Step-by-step new machine workflow\n- `GAN/GAN_DASHBOARD_IMPLEMENTATION_PLAN.md` - GAN integration architecture\n\n**ML Module:**\n- `ML_PART_OVERVIEW.md` - ML component architecture overview\n- `ML_TRAINING_WORKFLOW.md` - Training pipeline documentation\n- `ml_models/PHASE_2_ML_DETAILED_APPROACH.md` - Detailed ML implementation guide\n\n**Frontend:**\n- `frontend/DASHBOARD_ARCHITECTURE_AND_WORKFLOW.md` - Dashboard architecture\n- `frontend/DASHBOARD_DETAILED_SPECIFICATION.md` - Component specifications\n- `frontend/FRONTEND_REBUILD_GUIDE.md` - Development and build guide\n\n**Data Ingestion:**\n- `data_ingestion/README.md` - Data ingestion pipeline overview\n- `PHASE_3.7.6_EXISTING_DATASET_REFINEMENT.md` - Dataset refinement workflow\n\n### Phase Reports\n\nCompletion reports for each development phase are available in the root directory and component folders:\n- `PHASE_3.7.2.3_COMPLETION_REPORT.md` - Dashboard UI implementation\n- `PHASE_3.7.6.2_COMPLETION_REPORT.md` - Model management features\n- `GAN_DASHBOARD_COMPLETION_STATUS.md` - GAN dashboard integration\n\n### API Documentation\n\nInteractive API documentation is available at http://localhost:8000/docs when the backend is running.\n\n---\n\n## System Requirements\n\n### Minimum Requirements\n\n- **CPU**: 4 cores (8 recommended for training)\n- **RAM**: 8 GB (16 GB recommended)\n- **Disk**: 50 GB free space (100 GB+ for extensive model training)\n- **GPU**: Optional (CPU training supported but slower)\n- **Network**: Stable internet connection for package installation\n\n### Recommended Production Configuration\n\n- **CPU**: 8+ cores\n- **RAM**: 32 GB\n- **Disk**: 500 GB SSD\n- **GPU**: NVIDIA GPU with 8+ GB VRAM (for LLM/VLM deployment)\n- **OS**: Ubuntu 22.04 LTS or Windows Server 2022\n\n---\n\n## Maintenance and Operations\n\n### Backup Procedures\n\n**Critical Data:**\n- PostgreSQL database (user data, configurations)\n- Machine profiles (`GAN/metadata/`)\n- Trained models (`ml_models/models/`)\n- Synthetic datasets (`GAN/data/synthetic/`)\n\n**Backup Commands:**\n```powershell\n# Database backup\npg_dump -U postgres -h localhost -p 5433 predictive_maintenance > backup.sql\n\n# Model and data backup (compress)\nCompress-Archive -Path \"ml_models/models\" -DestinationPath \"backup_models.zip\"\nCompress-Archive -Path \"GAN/data/synthetic\" -DestinationPath \"backup_data.zip\"\n```\n\n### Log Management\n\n**Log Locations:**\n- Backend API: `frontend/server/app.log`\n- Celery Worker: Terminal output or system logs\n- Training Logs: `ml_models/outputs/`\n- GAN Logs: `GAN/outputs/`\n\n### Monitoring\n\n**Health Checks:**\n- Backend: `GET http://localhost:8000/health`\n- Redis: `redis-cli ping`\n- PostgreSQL: `pg_isready -h localhost -p 5433`\n- Celery: Access Flower at http://localhost:5555\n\n---\n\n## Troubleshooting\n\n### Common Issues\n\n**Backend fails to start:**\n- Check PostgreSQL service is running\n- Check Redis service is running\n- Verify `.env` file configuration\n- Check port 8000 is not in use\n\n**Celery worker not processing tasks:**\n- Verify Redis connection\n- Check Celery worker is running\n- Use Flower to inspect worker status\n- Check task logs for errors\n\n**Frontend build fails:**\n- Clear node_modules: `rm -rf node_modules && npm install`\n- Check Node.js version (18+)\n- Clear Vite cache: `rm -rf node_modules/.vite`\n\n**Model training fails:**\n- Verify synthetic data exists for machine\n- Check disk space availability\n- Review training logs in `ml_models/outputs/`\n- Ensure Python dependencies are installed\n\n**GAN training fails:**\n- Validate machine profile format\n- Check seed data generation\n- Review GAN logs in `GAN/outputs/`\n- Verify SDV library version compatibility\n\n---\n\n## Contributing\n\nThis is a production system under active development. For modifications:\n\n1. Follow existin",
+ "hits": {
+  "st": [
+   {
+    "file": "project.md",
+    "line": 137,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "- ✅ This is STANDARD PRACTICE in industrial AI for data augmentation",
+     "",
+     "**Your Workflow (Data Multiplication Pipeline):**",
+     "```python",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import pandas as pd",
+     "",
+     "# OPTION A: CTGAN (Best for mixed data types, most stable)"
+    ]
+   },
+   {
+    "file": "project.md",
+    "line": 223,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "**Key Understanding:** GAN is used for **DATA AUGMENTATION** - this is industry-standard!",
+     "",
+     "```python",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import pandas as pd",
+     "",
+     "# YOUR EXISTING ASSETS"
+    ]
+   },
+   {
+    "file": "GAN/scripts/train_tvae_machine.py",
+    "line": 16,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "from pathlib import Path",
+     "import sys",
+     "",
+     "import pandas as pd",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "# Add parent directory to path for config import"
+    ]
+   },
+   {
+    "file": "GAN/scripts/validate_all_models.py",
+    "line": 14,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import sys",
+     "from pathlib import Path",
+     "import pandas as pd",
+     "import json",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "# All 21 trained machines"
+    ]
+   },
+   {
+    "file": "GAN/scripts/generate_synthetic_data.py",
+    "line": 10,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import argparse",
+     "import sys",
+     "from pathlib import Path",
+     "import pandas as pd",
+     "from sdv.single_table import TVAESynthesizer",
+     "",
+     "def generate_machine_data(machine_id, num_samples=50000):",
+     "    \"\"\"Generate synthetic data for specific machine\"\"\"",
+     "    "
+    ]
+   },
+   {
+    "file": "GAN/scripts/retrain_tvae_temporal.py",
+    "line": 23,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "from pathlib import Path",
+     "import sys",
+     "",
+     "import pandas as pd",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "# Ensure project root is importable so `GAN.*` namespace imports work reliably"
+    ]
+   },
+   {
+    "file": "GAN/scripts/generate_from_temporal_tvae.py",
+    "line": 22,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import sys",
+     "",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import TVAESynthesizer",
+     "import zlib",
+     "",
+     "# Ensure project root is importable so `GAN.*` namespace imports work reliably",
+     "PROJECT_ROOT = Path(__file__).resolve().parents[2]"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "project.md",
+    "line": 138,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "**Your Workflow (Data Multiplication Pipeline):**",
+     "```python",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import pandas as pd",
+     "",
+     "# OPTION A: CTGAN (Best for mixed data types, most stable)",
+     "for machine_id in YOUR_MACHINE_PROFILES:"
+    ]
+   },
+   {
+    "file": "project.md",
+    "line": 224,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "**Key Understanding:** GAN is used for **DATA AUGMENTATION** - this is industry-standard!",
+     "",
+     "```python",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import pandas as pd",
+     "",
+     "# YOUR EXISTING ASSETS",
+     "MACHINE_PROFILES = load_your_machine_profiles()  # ✅ You have these!"
+    ]
+   },
+   {
+    "file": "GAN/scripts/train_tvae_machine.py",
+    "line": 17,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import sys",
+     "",
+     "import pandas as pd",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "# Add parent directory to path for config import",
+     "sys.path.append(str(Path(__file__).parent.parent))"
+    ]
+   },
+   {
+    "file": "GAN/scripts/validate_all_models.py",
+    "line": 15,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from pathlib import Path",
+     "import pandas as pd",
+     "import json",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "# All 21 trained machines",
+     "ALL_MACHINES = ["
+    ]
+   },
+   {
+    "file": "GAN/scripts/retrain_tvae_temporal.py",
+    "line": 24,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import sys",
+     "",
+     "import pandas as pd",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "# Ensure project root is importable so `GAN.*` namespace imports work reliably",
+     "PROJECT_ROOT = Path(__file__).resolve().parents[2]"
+    ]
+   },
+   {
+    "file": "GAN/scripts/create_metadata.py",
+    "line": 6,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "Phase 1.2.2: Metadata Creation",
+     "Create SDV metadata objects for each machine with proper constraints",
+     "\"\"\"",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "import json",
+     "import pandas as pd",
+     "from pathlib import Path",
+     "import numpy as np"
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "project.md",
+    "line": 268,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "    #    This creates training data when real sensor data is scarce",
+     "    synthetic_samples = synthesizer.sample(num_rows=5000)",
+     "    ",
+     "    # 5. Validate quality (check constraints, distributions)",
+     "    from sdv.evaluation.single_table import evaluate_quality",
+     "    quality_report = evaluate_quality(seed_data, synthetic_samples, metadata)",
+     "    print(f\"Quality Score: {quality_report.get_score()}\")",
+     "    ",
+     "    # 6. Use synthetic data for ML training"
+    ]
+   },
+   {
+    "file": "GAN/scripts/train_tvae_machine.py",
+    "line": 18,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "",
+     "import pandas as pd",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "# Add parent directory to path for config import",
+     "sys.path.append(str(Path(__file__).parent.parent))",
+     "from GAN.config.tvae_config import TVAE_CONFIG"
+    ]
+   },
+   {
+    "file": "GAN/scripts/validate_all_models.py",
+    "line": 16,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "import pandas as pd",
+     "import json",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "# All 21 trained machines",
+     "ALL_MACHINES = [",
+     "    # Priority machines (5)"
+    ]
+   },
+   {
+    "file": "GAN/scripts/retrain_tvae_temporal.py",
+    "line": 25,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "",
+     "import pandas as pd",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "# Ensure project root is importable so `GAN.*` namespace imports work reliably",
+     "PROJECT_ROOT = Path(__file__).resolve().parents[2]",
+     "sys.path.insert(0, str(PROJECT_ROOT))"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "project.md",
+    "line": 137,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "- ✅ This is STANDARD PRACTICE in industrial AI for data augmentation",
+     "",
+     "**Your Workflow (Data Multiplication Pipeline):**",
+     "```python",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import pandas as pd",
+     "",
+     "# OPTION A: CTGAN (Best for mixed data types, most stable)"
+    ]
+   },
+   {
+    "file": "project.md",
+    "line": 138,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "**Your Workflow (Data Multiplication Pipeline):**",
+     "```python",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import pandas as pd",
+     "",
+     "# OPTION A: CTGAN (Best for mixed data types, most stable)",
+     "for machine_id in YOUR_MACHINE_PROFILES:"
+    ]
+   },
+   {
+    "file": "project.md",
+    "line": 223,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "**Key Understanding:** GAN is used for **DATA AUGMENTATION** - this is industry-standard!",
+     "",
+     "```python",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import pandas as pd",
+     "",
+     "# YOUR EXISTING ASSETS"
+    ]
+   },
+   {
+    "file": "project.md",
+    "line": 224,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "**Key Understanding:** GAN is used for **DATA AUGMENTATION** - this is industry-standard!",
+     "",
+     "```python",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import pandas as pd",
+     "",
+     "# YOUR EXISTING ASSETS",
+     "MACHINE_PROFILES = load_your_machine_profiles()  # ✅ You have these!"
+    ]
+   },
+   {
+    "file": "project.md",
+    "line": 268,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "    #    This creates training data when real sensor data is scarce",
+     "    synthetic_samples = synthesizer.sample(num_rows=5000)",
+     "    ",
+     "    # 5. Validate quality (check constraints, distributions)",
+     "    from sdv.evaluation.single_table import evaluate_quality",
+     "    quality_report = evaluate_quality(seed_data, synthetic_samples, metadata)",
+     "    print(f\"Quality Score: {quality_report.get_score()}\")",
+     "    ",
+     "    # 6. Use synthetic data for ML training"
+    ]
+   },
+   {
+    "file": "GAN/scripts/train_tvae_machine.py",
+    "line": 16,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "from pathlib import Path",
+     "import sys",
+     "",
+     "import pandas as pd",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "# Add parent directory to path for config import"
+    ]
+   },
+   {
+    "file": "GAN/scripts/train_tvae_machine.py",
+    "line": 17,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import sys",
+     "",
+     "import pandas as pd",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "# Add parent directory to path for config import",
+     "sys.path.append(str(Path(__file__).parent.parent))"
+    ]
+   },
+   {
+    "file": "GAN/scripts/train_tvae_machine.py",
+    "line": 18,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "",
+     "import pandas as pd",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "# Add parent directory to path for config import",
+     "sys.path.append(str(Path(__file__).parent.parent))",
+     "from GAN.config.tvae_config import TVAE_CONFIG"
+    ]
+   },
+   {
+    "file": "GAN/scripts/validate_all_models.py",
+    "line": 14,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import sys",
+     "from pathlib import Path",
+     "import pandas as pd",
+     "import json",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "# All 21 trained machines"
+    ]
+   },
+   {
+    "file": "GAN/scripts/validate_all_models.py",
+    "line": 15,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from pathlib import Path",
+     "import pandas as pd",
+     "import json",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "# All 21 trained machines",
+     "ALL_MACHINES = ["
+    ]
+   },
+   {
+    "file": "GAN/scripts/validate_all_models.py",
+    "line": 16,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "import pandas as pd",
+     "import json",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "# All 21 trained machines",
+     "ALL_MACHINES = [",
+     "    # Priority machines (5)"
+    ]
+   },
+   {
+    "file": "GAN/scripts/generate_synthetic_data.py",
+    "line": 10,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import argparse",
+     "import sys",
+     "from pathlib import Path",
+     "import pandas as pd",
+     "from sdv.single_table import TVAESynthesizer",
+     "",
+     "def generate_machine_data(machine_id, num_samples=50000):",
+     "    \"\"\"Generate synthetic data for specific machine\"\"\"",
+     "    "
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "project.md",
+    "line": 137,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "- ✅ This is STANDARD PRACTICE in industrial AI for data augmentation",
+     "",
+     "**Your Workflow (Data Multiplication Pipeline):**",
+     "```python",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import pandas as pd",
+     "",
+     "# OPTION A: CTGAN (Best for mixed data types, most stable)"
+    ]
+   },
+   {
+    "file": "project.md",
+    "line": 157,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "        column='vibration'",
+     "    )",
+     "    ",
+     "    # Initialize pretrained CTGAN architecture",
+     "    synthesizer = CTGANSynthesizer(",
+     "        metadata,",
+     "        epochs=300,  # Stable convergence!",
+     "        verbose=True",
+     "    )"
+    ]
+   },
+   {
+    "file": "project.md",
+    "line": 223,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "**Key Understanding:** GAN is used for **DATA AUGMENTATION** - this is industry-standard!",
+     "",
+     "```python",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import pandas as pd",
+     "",
+     "# YOUR EXISTING ASSETS"
+    ]
+   },
+   {
+    "file": "project.md",
+    "line": 251,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "    )",
+     "    ",
+     "    # 2. Initialize CTGAN with pretrained architecture",
+     "    #    (No exponentially rising losses - proven stable!)",
+     "    synthesizer = CTGANSynthesizer(",
+     "        metadata=metadata,",
+     "        epochs=300,  # Stable training",
+     "        batch_size=500,",
+     "        verbose=True,"
+    ]
+   },
+   {
+    "file": "project.md",
+    "line": 1018,
+    "text": "synthesizer = CTGANSynthesizer(metadata, epochs=300)",
+    "context": [
+     "        \"learning_rate\": 0.0002",
+     "    })",
+     "    ",
+     "    # Train CTGAN",
+     "    synthesizer = CTGANSynthesizer(metadata, epochs=300)",
+     "    synthesizer.fit(seed_data)",
+     "    ",
+     "    # Log metrics",
+     "    quality_score = evaluate_quality(synthetic_data)"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "project.md",
+    "line": 137,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "- ✅ This is STANDARD PRACTICE in industrial AI for data augmentation",
+     "",
+     "**Your Workflow (Data Multiplication Pipeline):**",
+     "```python",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import pandas as pd",
+     "",
+     "# OPTION A: CTGAN (Best for mixed data types, most stable)"
+    ]
+   },
+   {
+    "file": "project.md",
+    "line": 174,
+    "text": "synthesizer = TVAESynthesizer(metadata, epochs=100)",
+    "context": [
+     "    # This synthetic data is used for ML training (data augmentation)",
+     "    synthetic_data.to_parquet(f\"data/{machine_id}/train.parquet\")",
+     "",
+     "# OPTION B: TVAE (Faster training, good quality, uses VAE instead of GAN)",
+     "synthesizer = TVAESynthesizer(metadata, epochs=100)",
+     "synthesizer.fit(seed_data)",
+     "synthetic_data = synthesizer.sample(5000)",
+     "```",
+     ""
+    ]
+   },
+   {
+    "file": "GAN/scripts/train_tvae_machine.py",
+    "line": 16,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "from pathlib import Path",
+     "import sys",
+     "",
+     "import pandas as pd",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "# Add parent directory to path for config import"
+    ]
+   },
+   {
+    "file": "GAN/scripts/train_tvae_machine.py",
+    "line": 84,
+    "text": "synthesizer = TVAESynthesizer(",
+    "context": [
+     "    print(f\"   GPU Enabled: {config['cuda']}\")",
+     "    print(f\"   Compress/Decompress Dims: {config['compress_dims']}\")",
+     "    print(f\"   Embedding Dimension: {config.get('embedding_dim', 128)}\")",
+     "    ",
+     "    synthesizer = TVAESynthesizer(",
+     "        metadata=metadata,",
+     "        epochs=epochs,",
+     "        batch_size=config['batch_size'],",
+     "        cuda=config['cuda'],"
+    ]
+   },
+   {
+    "file": "GAN/scripts/validate_all_models.py",
+    "line": 14,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import sys",
+     "from pathlib import Path",
+     "import pandas as pd",
+     "import json",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "# All 21 trained machines"
+    ]
+   },
+   {
+    "file": "GAN/scripts/validate_all_models.py",
+    "line": 82,
+    "text": "synthesizer = TVAESynthesizer.load(str(model_path))",
+    "context": [
+     "        print(f\"  ✅ Model file exists ({model_path.stat().st_size / 1024 / 1024:.2f} MB)\")",
+     "        ",
+     "        # Step 2: Load model",
+     "        try:",
+     "            synthesizer = TVAESynthesizer.load(str(model_path))",
+     "            validation_result['model_loadable'] = True",
+     "            print(f\"  ✅ Model loaded successfully\")",
+     "        except Exception as e:",
+     "            validation_result['status'] = 'FAILED'"
+    ]
+   },
+   {
+    "file": "GAN/scripts/generate_synthetic_data.py",
+    "line": 10,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import argparse",
+     "import sys",
+     "from pathlib import Path",
+     "import pandas as pd",
+     "from sdv.single_table import TVAESynthesizer",
+     "",
+     "def generate_machine_data(machine_id, num_samples=50000):",
+     "    \"\"\"Generate synthetic data for specific machine\"\"\"",
+     "    "
+    ]
+   },
+   {
+    "file": "GAN/scripts/generate_synthetic_data.py",
+    "line": 27,
+    "text": "synthesizer = TVAESynthesizer.load(str(model_path))",
+    "context": [
+     "    ",
+     "    try:",
+     "        # Load trained TVAE model",
+     "        print(f\"Loading model: {model_path.name}\")",
+     "        synthesizer = TVAESynthesizer.load(str(model_path))",
+     "        print(f\"[OK] Model loaded successfully\")",
+     "        ",
+     "        # Generate synthetic samples",
+     "        print(f\"Generating {num_samples} synthetic samples...\")"
+    ]
+   },
+   {
+    "file": "GAN/scripts/retrain_tvae_temporal.py",
+    "line": 23,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "from pathlib import Path",
+     "import sys",
+     "",
+     "import pandas as pd",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "# Ensure project root is importable so `GAN.*` namespace imports work reliably"
+    ]
+   },
+   {
+    "file": "GAN/scripts/retrain_tvae_temporal.py",
+    "line": 151,
+    "text": "synthesizer = TVAESynthesizer(",
+    "context": [
+     "    print(f\"   GPU Enabled: {config['cuda']}\")",
+     "    print(f\"   Compress/Decompress Dims: {config['compress_dims']}\")",
+     "    print(f\"   Embedding Dimension: {config.get('embedding_dim', 128)}\")",
+     "    ",
+     "    synthesizer = TVAESynthesizer(",
+     "        metadata=metadata,",
+     "        epochs=epochs,",
+     "        batch_size=config['batch_size'],",
+     "        cuda=config['cuda'],"
+    ]
+   },
+   {
+    "file": "GAN/scripts/generate_from_temporal_tvae.py",
+    "line": 22,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import sys",
+     "",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import TVAESynthesizer",
+     "import zlib",
+     "",
+     "# Ensure project root is importable so `GAN.*` namespace imports work reliably",
+     "PROJECT_ROOT = Path(__file__).resolve().parents[2]"
+    ]
+   },
+   {
+    "file": "GAN/scripts/generate_from_temporal_tvae.py",
+    "line": 125,
+    "text": "tvae = TVAESynthesizer.load(str(model_path))",
+    "context": [
+     "    # Use the most recent model if multiple exist",
+     "    model_path = sorted(model_files, key=lambda p: p.stat().st_mtime)[-1]",
+     "    ",
+     "    print(f\"   Model: {model_path.name}\")",
+     "    tvae = TVAESynthesizer.load(str(model_path))",
+     "    print(f\"   Model loaded successfully\")",
+     "    ",
+     "    # Step 2: Generate synthetic samples",
+     "    print(f\"\\n[2/6] Generating {num_samples:,} synthetic samples\")"
+    ]
+   }
+  ],
+  "ctgan_mod": [
+   {
+    "file": "GAN/config/tvae_config.py",
+    "line": 83,
+    "text": "'models': '../models/tvae/',  # Changed from ctgan to tvae",
+    "context": [
+     "PATHS = {",
+     "    'profiles': '../data/real_machines/profiles/',",
+     "    'seed_data': '../seed_data/',",
+     "    'metadata': '../metadata/',",
+     "    'models': '../models/tvae/',  # Changed from ctgan to tvae",
+     "    'synthetic_data': '../data/synthetic/',",
+     "    'reports': '../reports/',",
+     "    'mlflow_tracking': '../mlruns/',",
+     "}"
+    ]
+   }
+  ],
+  "sm": [
+   {
+    "file": "GAN/scripts/validate_synthetic_data.py",
+    "line": 17,
+    "text": "from sdmetrics.reports.single_table import QualityReport",
+    "context": [
+     "import json",
+     "import pandas as pd",
+     "from pathlib import Path",
+     "from datetime import datetime",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "from sdmetrics.single_table import KSComplement",
+     "import numpy as np",
+     "",
+     "# Paths"
+    ]
+   },
+   {
+    "file": "GAN/scripts/validate_synthetic_data.py",
+    "line": 18,
+    "text": "from sdmetrics.single_table import KSComplement",
+    "context": [
+     "import pandas as pd",
+     "from pathlib import Path",
+     "from datetime import datetime",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "from sdmetrics.single_table import KSComplement",
+     "import numpy as np",
+     "",
+     "# Paths",
+     "BASE_DIR = Path(__file__).parent.parent"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ctgan_mod",
+  "ev",
+  "md",
+  "sdv_any",
+  "sm",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

@@ -1,0 +1,39 @@
+{
+ "repo": "MaartenKesters/DataChameleon",
+ "disk_kb": 295282,
+ "method": "partial_clone",
+ "tree_files": 42,
+ "status": "ok",
+ "readme": "\n# Data Chameleon: A Self-Adaptive Privacy-Enhancement System for Structured Data.\nData Chameleon is a self-adaptive synthetic data generation system designed to facilitate data sharing in collaborative environments. It dynamically adjusts to meet the unique privacy/utility requirements of different use cases, minimizing privacy risks while optimizing data utility.\n\n## Table of Contents\n- [Features](#features)\n- [Dependencies](#dependencies)\n- [Installation](#installation)\n- [Sample usage](#sample-usage)\n- [Authors](#authors)\n\n## Features\n- Self-adaptive: dynamically adjusts its process to meet varying privacy/utility requirements\n- Extensible: Easy to extend with new generative models and metrics.\n- Cost-effective: Minimal added cost with respect to response time, storage needs and CPU usage\n\n## Dependencies\n- Python 3.8.8\n- [Synthcity](https://github.com/vanderschaarlab/synthcity): A library for generating synthetic data using a variety of generative models. Used for the baseline of the generative models in Data Chameleon.\n- [Anonymeter](https://github.com/statice/anonymeter): A unified statistical framework to jointly quantify different types of privacy risks in synthetic tabular datasets. Used to include metrics in Data Chameleon.\n- [Synthetic Data Vault](https://github.com/sdv-dev/SDV/tree/main): A library designed to be your one-stop shop for creating tabular synthetic data. Used to include generative models in Data Chameleon.\n\n## Installation\n1. Clone the repository:\n   ```sh\n   git clone https://github.com/MaartenKesters/DataChameleon.git\n   ```\n2. Navigate to the project directory:\n    ```sh\n    cd datachameleon\n    ```\n3. Install the required dependencies:\n    ```sh\n    pip install -r requirements.txt\n    ```\n\n## Sample usage\nYou can add baseline generators to the system in the following way:\n- Load a private dataset (e.g. data from an online retail store)\n    ```sh\n    online_retail = pd.read_csv(cwd + '/data/Online Retail.csv')\n    X = online_retail.dropna()\n    controller.load_private_data(data, sensitive_features=[\"sensitive features\"])\n    ```\n- Show available privacy/utility metrics in the system\n    ```sh\n    controller.show_metrics()\n    ```\n- Load the existing metrics you want to use to specify your requirements\n    ```sh\n    nn_metric = NearestNeighborDistance()\n    identify_metric = Identifiability()\n    kl_metric = InverseKLDivergenceMetric()\n    ```\n- Create baseline generators\n    ```sh\n    DPGAN_generator = DPGANPlugin(epsilon=8)\n    controller.add_generator(generator=DPGAN_generator, protection_name=\"fraud detection\")\n\n    controller.create_generator(protection_name=\"personalized marketing\", privacy=(identify_metric, 0.15), utility=(kl_metric, 0.6), range=0.05)\n\n    controller.create_by_merging(protection_name=\"trend analysis\", privacy=(identify_metric, 0.05), range=0.05)\n    ```\n\nYou can request synthetic data with specific privacy/utility requirements in the following way:\n- Create a request with the required size, privacy, and utility of the data\n    ```sh\n    syn = controller.request_synthetic_data(size=1000, protection_name=\"personalized marketing\", privacy=(identify_metric, 0.15), utility=(kl_metric, 0.6), range=0.05)\n    ```\n\n## Authors\n- [@MaartenKesters](https://www.github.com/MaartenKesters)\n- Promoters: Prof. dr. ir. W. Joosen and Dr. D. Van Landuyt\n- Assistant: Q. Liao\n",
+ "hits": {
+  "ctgan_mod": [
+   {
+    "file": "generative_model_classes/ctgansdv.py",
+    "line": 23,
+    "text": "from ctgan import CTGAN",
+    "context": [
+     "from synthcity.plugins.core.schema import Schema",
+     "from synthcity.utils.constants import DEVICE",
+     "",
+     "# SDV",
+     "from ctgan import CTGAN",
+     "",
+     "from generative_model_classes.plugin import Plugin",
+     "from protectionLevel import ProtectionLevel",
+     ""
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ctgan_mod"
+ ],
+ "vendored_dirs": [
+  "generators/CTGAN"
+ ],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv"
+  ]
+ }
+}

@@ -1,0 +1,37 @@
+{
+ "repo": "semework/AiMedOrchestra",
+ "disk_kb": 22793,
+ "method": "partial_clone",
+ "tree_files": 129,
+ "status": "ok",
+ "readme": "# AiMedOrchestra — Overview + Setup & Run Guide\n\n> A virtual AI hospital you can run on a laptop — multiple specialist agents coordinated by a conversational orchestrator.\n\n---\n\n## Table of Contents\n1. [Overview](#1-overview)\n2. [Mini Pipeline (3 Steps)](#2-mini-pipeline-3-steps)\n3. [Installation & Quick Start](#3-installation--quick-start)\n   - [3.1 Clone & Create a Virtual Env](#31-clone--create-a-virtual-env)\n   - [3.2 Install Dependencies](#32-install-dependencies)\n   - [3.3 Run the Conversational Notebook](#33-run-the-conversational-notebook)\n   - [3.4 Quick Conversational REPL](#34-quick-conversational-repl)\n   - [3.5 Run Per‑Agent Demo Apps](#35-run-peragent-demo-apps)\n   - [3.6 Docker (Optional)](#36-docker-optional)\n   - [3.7 Kubernetes (Optional)](#37-kubernetes-optional)\n   - [3.8 Data & Samples](#38-data--samples)\n   - [3.9 Troubleshooting](#39-troubleshooting)\n4. [Summary](#4-summary)\n5. [References](#5-references)\n6. [License](#6-license)\n\n---\n\n## 1) Overview\n\nSwap the trivia question for a patient’s **symptoms**, **labs**, **imaging**, or **genomics**.  \n**AiMedOrchestra** routes your natural sentence to the right specialist agent(s) and stitches results into a single response.\n\n- The **orchestrator** reads your request (“create two synthetic patients”, “trials near Boston”) and picks the right agent(s).\n- Each **agent** is a focused specialist (diagnostics, imaging, genomics, trials, diet/treatment, literature, mental‑health support, ethics).\n- Outputs from one agent can feed the next, giving you an end‑to‑end answer in plain language.\n\n---\n\n## 2) Mini Pipeline (3 agents)\n\n| Agent | Agent / Model | Role | Input | Output |\n| --- | --- | --- | --- | --- |\n| 1 | Data Synthesis | Create synthetic patient records | N = 2 | Two JSON rows (synthetic patients) |\n| 2 | Diagnostics | Suggest likely diagnosis from symptoms | 55F, chest pain + cough | Differential (e.g., bronchitis, pneumonia) |\n| 3 | Clinical Trial Matching | Find recruiting trials for a given profile | 65M, lung cancer, Boston | Trial shortlist (e.g., NCT012345, NCT067890) |\n\n\n> **How to use it:** Type natural instructions. The orchestrator handles routing (e.g., “**create 2 synthetic patients**”, “**diagnose a 55 yo female with chest pain**”, “**trials for lung cancer near Boston**”).\n\n---\n\n## 3) Installation & Quick Start\n\n### 3.1 Clone & Create a Virtual Env\n```bash\ngit clone https://github.com/semework/AiMedOrchestra.git\ncd AiMedOrchestra\n\n# Python 3.10+ recommended\npython -m venv .venv\nsource .venv/bin/activate  # on Windows: .venv\\Scripts\\activate\n```\n\n### 3.2 Install Dependencies\nUse either `requirements.txt` or editable install via `pyproject.toml`:\n\n**Option A — requirements.txt**\n```bash\npip install -r requirements.txt\n```\n\n**Option B — editable install (preferred for dev)**\n```bash\npip install -e .\n```\n> Editable install lets you `import aimedorchestra...` without fiddling with `PYTHONPATH`.\n\n### 3.3 Run the Conversational Notebook\n```bash\njupyter lab  # or: jupyter notebook\n# Open: aimedorchestra_demo_notebook_chat.ipynb\n# Run the \"Chat UI for AiMedOrchestra\" cell, then try:\n#   - \"create two synthetic patients\"\n#   - \"diagnose a 55 yo female with chest pain and cough\"\n#   - \"find clinical trials for lung cancer near Boston\"\n#   - 'run full pipeline on {\"age\":60, \"sex\":\"male\"}'\n```\n\n### 3.4 Quick Conversational REPL\n**If installed with `pip install -e .`:**\n```bash\npython - << 'PY'\nfrom aimedorchestra.orchestrator.agent import aimedorchestraAgent\n\norch = aimedorchestraAgent()\nprint(orch.route(\"create two synthetic patients\"))\nprint(orch.route(\"diagnose a 55 yo female with chest pain and cough\"))\nprint(orch.route(\"find clinical trials for lung cancer near Boston\"))\nprint(orch.route('run full pipeline on {\"age\":60,\"sex\":\"male\",\"conditions\":[\"diabetes\"]}'))\nPY\n```\n\n**Alternative (use top‑level file from repo root):**\n```bash\nPYTHONPATH=. python - << 'PY'\nfrom aimedorchestraagent import aimedorchestraAgent\nprint(aimedorchestraAgent().route(\"create 3 synthetic patients\"))\nPY\n```\n\n### 3.5 Run Per‑Agent Demo Apps\n\n**Streamlit**\n> If the app can’t import the package, prefix with `PYTHONPATH=.`\n```bash\nPYTHONPATH=. streamlit run apps/orchestrator_app.py\n# or per-agent:\n# PYTHONPATH=. streamlit run apps/data_synthesis_app.py\n# PYTHONPATH=. streamlit run apps/diagnostics_app.py\n# ...\n```\n\n**Pure Python / Dash**\n```bash\npython apps/orchestrator_app.py\n# or per-agent:\n# python apps/data_synthesis_app.py\n# python apps/diagnostics_app.py\n# ...\n```\n> Streamlit typically uses **8501**; Dash commonly uses **8050**.\n\n### 3.6 Docker (Optional)\n```bash\ndocker build -t aimed:latest .\n# If Streamlit (8501):\ndocker run --rm -p 8501:8501 aimed\n# If Dash/Flask (8050):\n# docker run --rm -p 8050:8050 aimed\n```\n\n### 3.7 Kubernetes (Optional)\n```bash\n# Local K8s\nkind create cluster --name aimed\n\n# Deploy\nkubectl apply -f k8s_deployment.yaml\n\n# Check rollout\nkubectl get pods\nkubectl logs deploy/aimedorchestra -f\n# Optional port-forward:\nkubectl port-forward deploy/aimedorchestra 8501:8501\n```\n\n### 3.8 Data & Samples\n- Sample image: `data/sample_image.jpg`  \n- Trials JSON: `data/trials.json`  \n- Literature snippets: `data/literature/*.txt`\n\n### 3.9 Troubleshooting\n- If the package can’t be found, run with `PYTHONPATH=.` from the repo root, e.g.:\n  ```bash\n  PYTHONPATH=. python apps/orchestrator_app.py\n  ```\n- For Streamlit imports, use:\n  ```bash\n  PYTHONPATH=. streamlit run apps/orchestrator_app.py\n  ```\n- If an agent import fails, the router returns `(agent_unavailable)`. Ensure `aimedorchestra/agents/<agent>/agent.py` exists and its class ends with `Agent`.\n\n---\n\n## 4) Summary\nAiMedOrchestra is a team of specialized AI agents coordinated by an orchestrator so you can **chat** your way through complex clinical tasks and get a single, coherent answer.\n\n---\n\n## 5) References\n(See project README or paper references as applicable.)\n\n---\n\n## 6) License\nReleased for non‑commercial & research use. See the repository’s LICENSE file for details.\n\n\n**Thanks to [Matthew Phillips](https://www.linkedin.com/in/mattphillipsneuroscience/) for reviewing this article and helping improve its clarity and flow.**\n",
+ "hits": {
+  "sdv_any": [
+   {
+    "file": "aimedorchestra/agents/data_synthesis/agent.py",
+    "line": 19,
+    "text": "from sdv.tabular import CTGAN  # SDV ≥ 1.6",
+    "context": [
+     "import pandas as pd",
+     "",
+     "# ─── Try modern SDV (CTGAN) ─────────────────────────────────────────",
+     "try:",
+     "    from sdv.tabular import CTGAN  # SDV ≥ 1.6",
+     "    _SDV_OK = True",
+     "except ModuleNotFoundError:",
+     "    _SDV_OK = False",
+     "    from faker import Faker"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "sdv_any"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv>=1.6"
+  ]
+ }
+}

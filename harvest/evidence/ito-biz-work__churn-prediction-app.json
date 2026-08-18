@@ -1,0 +1,242 @@
+{
+ "repo": "ito-biz-work/churn-prediction-app",
+ "disk_kb": 2990,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Customer Churn Prediction Dashboard\n### 機械学習による顧客の退会確率予測・シミュレーションアプリ\n\n<!-- アプリの操作動画 -->\nhttps://github.com/user-attachments/assets/20f38c42-944c-4d5b-ba37-757e03138597\n\n<br>\n\n---\n\n## 1. プロダクトの概要と解決する課題\n\n### 背景\nサブスクリプション型サービスにおいて、**顧客の退会（Churn）防止** は重要なテーマの一つとされています。  \n退会の兆候を早期に捉えて適切なフォローを行うことの重要性を感じ、本アプリを作成しました。\n\n### アプリの概要\nKaggleコンペを参考に独自生成した疑似顧客データと機械学習モデルを活用し、各顧客の**退会確率** を可視化・シミュレーションできるダッシュボードを作成しました。\n\n※ 本アプリは Kaggle の [Customer Churn Prediction 2020](https://www.kaggle.com/competitions/customer-churn-prediction-2020) を参考に、独自生成した疑似データを使用しています。  \n規約遵守およびデータの詳細は [LICENSES-BACKEND.md](./LICENSES-BACKEND.md) をご覧ください。\n\n* **顧客一覧（左パネル）**:  \n  事前計算（夜間バッチ）した退会確率を含めた顧客情報を一覧で表示します。\n\n* **退会確率シミュレータ（右パネル）**:  \n  モデル分析により**特徴量重要度（Feature Importance）の上位を占めた「通話時間（昼・夕・夜）」** を操作項目として採用しています。  \n  スライダー操作（予測API）により、影響度の高いパラメータの変化に応じた退会リスクの変動をリアルタイムに確認・検証できます。\n\n単に予測結果を見るだけでなく、現場の担当者が「どのようなアプローチが効果的か」を直感的に試行錯誤できるツールを目指しました。\n\n### バッチ / API 両パターンの推論を実装した理由\n実務における機械学習の運用では、推論の目的に応じて主に2つのパターンがあると知り、  \n本アプリでは、1つのシステム内に両方の推論ロジックを組み込む設計に挑戦しています。\n\n| 推論パターン | 仕組みと役割 | 本アプリでの目的・メリット |\n| :--- | :--- | :--- |\n| **バッチ推論**<br>（大量データの一括処理） | 夜間処理等で事前に一括計算し、DBへ保存 | ダッシュボード初期表示時のレスポンス速度向上 |\n| **API推論**<br>（ユーザー操作への即座な応答） | UIのスライダー操作と連携し、オンデマンドで計算 | パラメータ変更に応じたリアルタイムな再計算と画面描画 |\n\n<br>\n\n---\n\n## 2. 機械学習モデルの検証と選定プロセス\n\n以下のステップで検証・選定を行いました。  \n詳細は `notebooks/` フォルダ内のJupyter Notebookにまとめています。\n\n<!-- MLflowの画像 -->\n<img width=\"706\" height=\"171\" alt=\"20260702_CPA_MLflowUI\" src=\"https://github.com/user-attachments/assets/1900a5df-0313-4068-af8d-e4d10daa739b\" />\n\n### ① ベースラインの設定とモデル比較\n不均衡データにおける予測精度を適切に評価するため、段階的なモデル検証を行いました。\n* **DummyClassifier（ベースライン）**:  \n  最小限の基準（ベースライン）として設定しました。\n\n* **DecisionTreeClassifier（決定木）**:  \n  単一木モデルを作成し、特徴量の重要度やデータの傾向を確認しました。\n\n* **RandomForestClassifier（ランダムフォレスト）**:  \n  過学習を抑えつつ予測精度を向上させるため、アンサンブル学習であるランダムフォレストを採用しました。\n\n### ② 評価指標の選定\n本データセットは「退会しない顧客」が大半を占める**不均衡データ** です。  \nこのようなデータでは、すべて「退会しない」と予測するだけでも高い**正解率（Accuracy）** が出てしまい、モデルの真の識別性能を評価できません。  \nそのため、正解率だけでなく、モデルの識別能力を適正に評価できる**AUC（ROC-AUC）** を主要な評価指標として採用しました。\n\n### ③ 実験管理\n各モデルのハイパーパラメータや評価メトリクス（Accuracy, AUC等）はローカルの `MLflow` で管理し、再現性と比較の容易性を担保しています。\n\n### ④ パイプライン化と推論構成\n* **前処理とモデルの一元管理**:  \n  前処理と学習済みモデルを `Pipeline` として一括保存することで、推論時の前処理漏れやデータリークを防止しています。\n\n* **バッチ / API の両立**:  \n  保存したPipelineを活用し、夜間バッチ処理とFastAPI経由のリアルタイム推論の両方に対応させています。\n\n<br>\n\n---\n\n## 3. システム構成・技術スタック\n\n### AWSアーキテクチャ\n\n<!-- アーキテクチャ図 -->\n```mermaid\nflowchart TD\n    subgraph Client\n        User[ユーザー / ブラウザ]\n    end\n\n    subgraph AWS\n        CF[CloudFront]\n\n        subgraph Storage\n            S3_Web[S3: フロントエンド静的ファイル]\n            S3_Model[S3: 学習済みモデル]\n        end\n\n        subgraph Backend / API\n            ALB[Application Load Balancer]\n            ECS_API[ECS: FastAPI]\n        end\n\n        subgraph Batch\n            EB[EventBridge: 定期実行トリガー]\n            ECS_Batch[ECS: バッチ処理]\n        end\n\n        subgraph Database\n            RDS[(RDS: PostgreSQL)]\n        end\n    end\n\n    %% Client Access & Routing\n    User -->|HTTPS| CF\n    CF -->|\"デフォルト (*) : HTTPS\"| S3_Web\n    CF -->|\"/api/* : HTTPS\"| ALB\n    ALB -->|HTTP| ECS_API\n\n    %% Batch Trigger\n    EB -->|定期起動| ECS_Batch\n\n    %% Model Load\n    ECS_API -.->|モデル読み込み| S3_Model\n    ECS_Batch -.->|モデル読み込み| S3_Model\n\n    %% DB Access\n    ECS_API --> RDS\n    ECS_Batch --> RDS\n```\n\n### インフラ構成の変遷（段階的移行）\n本プロジェクトでは、段階的に構成をアップデートしています。\n\n- **フェーズ1：単一EC2構成（プロトタイプ）**\n  - EC2（1台）上に Docker / Docker Compose を用いて、フロントエンド・バックエンド・DBを一括構築。\n  - 基本的なWebサーバー構築とコンテナ運用の流れを踏襲しました。  \n\n  ※ 当時の設定ファイルは `infra/archive/compose.prd.yaml` に保管\n\n- **フェーズ2：マネージドサービス・マイクロサービス構成（現在）**\n  - 実務でのリアルなサービス運用を意識し、ECS (Fargate)、RDS、S3、CloudFront 等を用いた現在の構成へ移行。\n\n### 技術スタック\n\n| カテゴリ | 技術要素 |\n| :--- | :--- |\n| **Frontend** | TypeScript, React(Vite), Chakra UI |\n| **Backend / ML** | Python, FastAPI, Pandas, scikit-learn, MLflow, pytest, Jupyter Notebook |\n| **Database** | PostgreSQL, SQLite |\n| **Infrastructure / DevOps** | Docker, Docker Compose, Linux, Git, GitHub Actions (CI/CD) |\n| **AWS** | CloudFront, S3, ALB, ECS, ECR, RDS, Route 53, ACM, Parameter Store, IAM, EventBridge, (EC2) |\n\n<br>\n\n---\n\n## 4. 開発・設計のポイント\n\n* **サーバーレスな夜間バッチによるコスト最適化**:  \n  バッチサーバーを常時稼働させず、`EventBridge` から `ECSタスク` を定期起動する設計を採用。  \n  処理完了後にコンテナが自動終了するため、無駄なインフラコストを最小限に抑えています。\n\n* **学習済みモデルの分離と無停止更新を見据えた運用設計**:  \n  Dockerイメージ内に重いモデルファイルを埋め込まず、`S3` に保管してコンテナ起動時にロードする構成に分離。  \n  イメージサイズを軽量に保つとともに、アプリの再デプロイなしでモデルのみを更新・運用できる構成にしています。\n\n* **Pipeline化による学習・推論時の前処理の一貫性担保**:  \n  scikit-learnの `Pipeline` を用いて前処理とモデルを一括保存。  \n  学習時と推論時のデータ前処理のズレ（データリークや前処理の重複開発）を防ぎ、バッチ処理とWeb APIの両方で安全に利用しています。\n\n* **CI/CD環境とコード品質・テストの自動化**:  \n  **GitHub Actions** を構築し、`pytest` による自動テストやリンターチェック、S3/ECR/ECSへのデプロイを自動化。開発効率とシステム品質の維持を両立しています。\n\n<br>\n\n---\n\n## 5. ローカル開発環境の起動方法\n\nローカル環境では`Docker Compose` を使用して、バックエンド・フロントエンド・データベースの動作確認が可能です。  \n※ 初回起動時は、依存ライブラリの取得とコンテナイメージの作成が行われます。\n\n```bash\n# 1. リポジトリのクローンと移動\ngit clone https://github.com/ito-biz-work/churn-prediction-app.git\ncd churn-prediction-app\n\n# 2. 環境変数の準備（テンプレートをコピー）\ncp frontend/.env.example frontend/.env\ncp .env.example .env\n\n# 3. コンテナの起動\ndocker compose -f compose.dev.yaml up -d --build\n```\n\n起動後、ブラウザで以下のURLにアクセスしてください。\n\n* **フロントエンド (React)**: http://localhost:5173\n* **バックエンド APIドキュメント (Swagger UI)**: http://localhost:8000/api/docs\n\n<br>\n\n---\n\n## 6. ライセンス\n\n### 独自コードおよびコンテンツ\n本リポジトリのソースコードおよびコンテンツの著作権は ito-biz-work に帰属します。  \nポートフォリオとしての閲覧を目的として公開しているため、コードの複製・再配布・二次利用はご遠慮ください。  \nまた、外部からの Issue や Pull Request の受付・マージは原則行っておりません。あらかじめご了承ください。\n\n© 2026 ito-biz-work. All rights reserved.\n\n### サードパーティ製ライブラリ\n本プロジェクトで使用している外部ライブラリ・依存パッケージのライセンス情報については、以下のファイルをご参照ください。\n\n- [バックエンドのライセンス一覧](./LICENSES-BACKEND.md)\n- [フロントエンドのライセンス一覧](./frontend/LICENSES-FRONTEND.md)\n",
+ "hits": {
+  "st": [
+   {
+    "file": "scripts/data_utils/generator_core.py",
+    "line": 3,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "",
+     "def run_sdv_generation(input_path, metadata_path, epochs=300, is_training=True):",
+     "    \"\"\"共通の学習・生成処理を行うコア関数\"\"\""
+    ]
+   },
+   {
+    "file": "notebooks/generate_data.py",
+    "line": 6,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "# %%",
+     "# 元データの読み込み",
+     "data = pd.read_csv(\"../data/raw/train.csv\")"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "scripts/data_utils/generator_core.py",
+    "line": 2,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "",
+     "def run_sdv_generation(input_path, metadata_path, epochs=300, is_training=True):"
+    ]
+   },
+   {
+    "file": "notebooks/generate_data.py",
+    "line": 5,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "# %%",
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "# %%",
+     "# 元データの読み込み"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "scripts/data_utils/generator_core.py",
+    "line": 2,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "",
+     "def run_sdv_generation(input_path, metadata_path, epochs=300, is_training=True):"
+    ]
+   },
+   {
+    "file": "scripts/data_utils/generator_core.py",
+    "line": 3,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "",
+     "def run_sdv_generation(input_path, metadata_path, epochs=300, is_training=True):",
+     "    \"\"\"共通の学習・生成処理を行うコア関数\"\"\""
+    ]
+   },
+   {
+    "file": "notebooks/generate_data.py",
+    "line": 4,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "# %%",
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "# %%"
+    ]
+   },
+   {
+    "file": "notebooks/generate_data.py",
+    "line": 5,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "# %%",
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "# %%",
+     "# 元データの読み込み"
+    ]
+   },
+   {
+    "file": "notebooks/generate_data.py",
+    "line": 6,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "# %%",
+     "# 元データの読み込み",
+     "data = pd.read_csv(\"../data/raw/train.csv\")"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "scripts/data_utils/generator_core.py",
+    "line": 3,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "",
+     "def run_sdv_generation(input_path, metadata_path, epochs=300, is_training=True):",
+     "    \"\"\"共通の学習・生成処理を行うコア関数\"\"\""
+    ]
+   },
+   {
+    "file": "scripts/data_utils/generator_core.py",
+    "line": 18,
+    "text": "synthesizer = CTGANSynthesizer(metadata, epochs=epochs)",
+    "context": [
+     "        data = data.drop(columns=[\"id\"])  # 学習対象から外す",
+     "        metadata.remove_column(column_name=\"churn\")  # メタデータから目的変数項目を削除",
+     "",
+     "    # 学習",
+     "    synthesizer = CTGANSynthesizer(metadata, epochs=epochs)",
+     "    synthesizer.fit(data)",
+     "",
+     "    # 生成",
+     "    synthetic_data = synthesizer.sample(num_rows=len(data))"
+    ]
+   },
+   {
+    "file": "notebooks/generate_data.py",
+    "line": 6,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "# %%",
+     "# 元データの読み込み",
+     "data = pd.read_csv(\"../data/raw/train.csv\")"
+    ]
+   },
+   {
+    "file": "notebooks/generate_data.py",
+    "line": 26,
+    "text": "synthesizer = CTGANSynthesizer(metadata, epochs=epochs)",
+    "context": [
+     "# # metadata.save_to_json(\"../data/metadata.json\")",
+     "",
+     "# CTGANモデルの初期化と学習",
+     "epochs = 300  # 300 がデフォルト",
+     "synthesizer = CTGANSynthesizer(metadata, epochs=epochs)",
+     "synthesizer.fit(data)",
+     "",
+     "# 疑似データの生成（元データと同じ行数分）",
+     "synthetic_data = synthesizer.sample(num_rows=len(data))"
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "notebooks/generate_data.py",
+    "line": 4,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "# %%",
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "# %%"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ev",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "pyproject.toml": [
+   "    \"sdv>=1.32.1\","
+  ]
+ }
+}

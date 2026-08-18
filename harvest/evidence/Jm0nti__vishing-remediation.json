@@ -1,0 +1,239 @@
+{
+ "repo": "Jm0nti/vishing-remediation",
+ "disk_kb": 120,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Pipeline remediado — Detección de vishing\n\nReejecución del experimento con un protocolo metodológico limpio, para obtener\nlas cifras reales antes de reescribir cualquier afirmación del manuscrito.\n\n**Dataset canónico: `biocatch_sinthetic_data_v3.csv`** (100.000 sesiones × 58\ncolumnas, semilla 42, generado por `data/generar_dataset_sintetico.py`). Las\ngeneraciones anteriores quedan descartadas: `biocatch_sinthetic_data.csv` tenía\ntres variables degeneradas y `dataset_sintetico_biocatch_vishing.csv` era otra\ngeneración con separación de clases mucho mayor. La v1 entrenaba con la primera\ny evaluaba la Fase 1 con la segunda, lo que hacía que las Fases 1 y 3 no fueran\ncomparables.\n\n---\n\n## 1. Qué corrige, y por qué\n\n| # | Problema detectado en la v1 | Evidencia medida | Corrección |\n|---|---|---|---|\n| 1 | Balanceo y CTGAN aplicados al dataset completo; el holdout se extraía después | **500/500 (100 %)** de las sesiones de vishing del test del mejor modelo estaban en el entrenamiento | El split ocurre primero; el remuestreo solo toca train |\n| 2 | La identidad de fila se perdía al guardar con `index=False`, así que `drop(index=...)` eliminaba filas equivocadas | El *drop* del notebook 8 quitaba 200.000 filas, pero ninguna de las duplicadas por el sobremuestreo | `row_id` es una columna real que viaja en todos los archivos |\n| 3 | Split por fila con 2,53 sesiones por cliente | Sesiones del mismo cliente a ambos lados | Split agrupado por `customer_id` |\n| 4 | Umbral y selección de modelo calculados sobre el conjunto de reporte | `train_and_evaluate` usaba `X_test` para las tres cosas | Todo se decide sobre validation; el test se abre una vez |\n| 5 | `session_duration_s` constante = 1,0 | La tabla KS del manuscrito la reporta como \"Identical\" (KS = 0,0000) porque es constante a ambos lados | **Corregido en origen por el dataset v3**, y auditado en R0 |\n| 6 | `call_overlap_duration_s` **es** `phone_call_active`; `time_to_transaction_s` **es** `10 × transaction_attempted` | r = 1,0000, igualdad exacta fila a fila | **Corregido en origen por el dataset v3**, y auditado en R0 |\n| 7 | Detectabilidad original-vs-sintético de CTGAN nunca medida | El rango 0,55–0,70 del manuscrito viene de *benchmarks* externos | Clasificador de dos muestras en R2 |\n| 8 | Sin estudio de ablation | El título afirma \"behavioral biometrics\" sin evidencia incremental | R6 |\n| 9 | `recall@P=0,90` calculado solo para AutoML, métrica con la que se le descartó | No existe en los notebooks 7 ni 8 | Se calcula para todos los modelos |\n| 10 | Sin intervalos de confianza | Estimaciones puntuales | Bootstrap 95 % en R5 y R6 |\n| 11 | AutoML comparado bajo un protocolo distinto | Entrenaba con 95 % sintético y evaluaba solo en originales | R7 usa splits idénticos |\n\n> **El punto 1 explica un hallazgo del paper.** El manuscrito atribuye la\n> superioridad del *random oversampling* sobre SMOTE a que los ensambles de\n> árboles prefieren la replicación exacta a la interpolación. La causa real es\n> que RO es la única técnica que copia literalmente los positivos del test al\n> entrenamiento: medido, RO filtra el 100 % y SMOTE el 0 %. Es muy posible que\n> esa ventaja desaparezca en la reejecución.\n\n---\n\n## 2. Qué cambia al pasar al dataset v3\n\nLos puntos 5 y 6 de la tabla anterior **ya no se corrigen aguas abajo: se\ncorrigen en origen**. El generador v3 produce las tres variables con\ninformación real, así que la auditoría de R0 ya no debe dar ninguna baja. Ese\nresultado vacío no hace inútil la auditoría — es la comprobación de que el CSV\nsubido es el correcto.\n\n| Variable | Generación anterior | v3 |\n|---|---|---|\n| `session_duration_s` | constante 1,0 | lognormal, sd 137,6 s, 36.217 valores distintos |\n| `call_overlap_duration_s` | r = 1,0000 con `phone_call_active` | duración continua, r ≈ 0,60 |\n| `time_to_transaction_s` | `10 × transaction_attempted` | Gamma, 17.998 valores, centinela −1 |\n\n### Cambios de esquema que tocaron el código\n\n| Cambio | Dónde impacta |\n|---|---|\n| Desaparece `device_type` (el dataset es 100 % móvil) | Se elimina la constante `MOBILE_ONLY` y el filtro de R0 |\n| Desaparecen `screens_visited`, `unusual_screen_visits`, `interactions_per_s` | `REDUNDANT_V1` queda como red de seguridad; el post-proceso de R2 ya no las referencia |\n| `transaction_amount_cop` y `time_to_transaction_s` usan **−1 como centinela** de \"no aplica\" | Nuevas `vc.SENTINELAS`, `vc.repair_coherence` y `vc.check_coherence`, usadas por R2 (CTGAN) y R3 (SMOTE) |\n| `claim_category` usa cadena vacía, que `pd.read_csv` convierte en NaN | Nueva `vc.read_raw()`, que la restaura; sin ella el dataset parece tener 95.747 nulos |\n| `row_id` viene en el CSV | `vc.make_split` lo respeta en vez de sobrescribirlo |\n| El contrato pasa a **44 features** | `legacy` y `audited` coinciden sobre el v3 |\n| `call_overlap_duration_s` pasa de la familia `transaction` a `context` | R6: la ablation deja de ser comparable número a número con la corrida anterior |\n\n**Cambio de significado en `strict`.** Antes quitaba `errors_per_minute`,\n`hesitation_composite` y `dead_time_ratio` porque la duración era constante y\nlas tres quedaban distorsionadas. Ahora la duración es informativa y el único\nargumento es la colinealidad con su numerador (r ≈ 0,71 con `input_error_count`,\nr ≈ 0,72 con `total_dead_time_s`). `strict` pasa de ser la política \"correcta\" a\nser una alternativa que conviene contrastar.\n\n---\n\n## 3. Orden de ejecución\n\n**R0 y R1 están intercambiados respecto de la versión anterior.** Antes R0 era\nel EDA y necesitaba el split que creaba R1, de modo que había que ejecutar R1\nantes que R0. Ahora la secuencia es R0 → R1 → R2 → … sin excepciones.\n\n| Notebook | Qué hace | Instancia | Duración aprox. |\n|---|---|---|---|\n| `R0_contrato_y_split.ipynb` | Validación del CSV, auditoría, contrato de features, split canónico | CPU (`ml.t3.large`) | < 5 min |\n| `R1_eda_train.ipynb` | EDA estadístico **sobre train**: separabilidad, ORs, PCA, perfil, outliers | CPU (`ml.m5.xlarge`) | 10–15 min |\n| `R2_ctgan_train_only.ipynb` | CTGAN sobre train, post-proceso, KS y detectabilidad | **GPU** (`ml.g4dn.xlarge`) | 40–80 min |\n| `R3_balanceo_train.ipynb` | 26 datasets, solo desde train (24 balanceados + 2 baselines) | CPU (`ml.m5.2xlarge`) | 20–35 min |\n| `R4_entrenamiento_seleccion.ipynb` | Entrena y selecciona **sobre validation** | **GPU** (`ml.g4dn.xlarge`) | 2–5 h |\n| `R5_evaluacion_final.ipynb` | Única apertura del test, con IC bootstrap | GPU o CPU | < 10 min |\n| `R6_ablation.ipynb` | Ablation por familias de variables | **GPU** | 20–40 min |\n| `R7_automl_comparable.ipynb` | AutoGluon con splits idénticos | **GPU** | ~90 min |\n| `R8_figuras_e_interpretabilidad.ipynb` | Figs. 4/6/7/9, permutación, SHAP, demo de inferencia | GPU o CPU | 10–20 min |\n\nOrden: **R0 → R1 → R2 → R3 → R4 → R5**, secuenciales. Después, R6, R8 y R7 en\ncualquier orden.\n\nLas duraciones subieron respecto de la corrida anterior porque train pasa de\n~25.400 a ~60.100 sesiones.\n\nR1 es descriptivo y no alimenta a los demás: si tienes prisa por las cifras de\nmodelado puedes saltarlo y volver después. El paper lo necesita, porque las\ncifras del EDA actual del manuscrito no comparten base de cálculo con los\nresultados.\n\n### Cobertura respecto de la v1\n\n| v1 | Aquí |\n|---|---|\n| `1_EDA` | R1 |\n| `2_Data_Balancing` | R3 (`original`) |\n| `3_Modeling_Vishing` | R4 + R5 |\n| `4_CTGAN` | R2 |\n| `5_EDA_augmented` | R2 (KS y detectabilidad) + R8 (Fig. 4) |\n| `6_Data_Balancing_AD` | R3 (`augmented`) |\n| `7_Modeling_AD` | R4 |\n| `8_XGBoost_training` | R4 + R8 |\n| `AutoML_AutoGluon` | R7 |\n| — | R6 (ablation, nuevo) |\n\nR4 entrena 10 configuraciones (7 variantes XGBoost, regresión logística, random\nforest y MLP) sobre 26 datasets = **260 modelos**. Las nueve figuras del\nmanuscrito quedan cubiertas.\n\n---\n\n## 4. Estructura del bucket S3\n\n```\ns3://poc-fraude-vishing/\n├── proyecto/                        ← v1, se conserva intacta como referencia\n└── v2/                              ← pipeline remediado\n    ├── 00_raw/\n    │   └── biocatch_sinthetic_data_v3.csv    ← ÚNICO archivo que debes subir\n    │\n    ├── 01_contract/                            (escribe R0)\n    │   ├── data_audit.csv                      auditoría por columna\n    │   ├── feature_contract.json               las 3 políticas de features\n    │   └── run_manifest.json                   versiones, seeds, configuración\n    │\n    ├── 02_splits/                              (escribe R0)\n    │   ├── split_map.parquet                   row_id → partición\n    │   ├── train.parquet\n    │   ├── val.parquet\n    │   └── test.parquet                        no se abre hasta R5\n    │\n    ├── 03_augmented/                           (escribe R2)\n    │   ├── synthesizers/{ctgan_legit.pkl, ctgan_vishing.pkl}\n    │   ├── train_augmented.parquet             solo extiende train\n    │   └── quality/{ks_report.csv, detectability.json}\n    │\n    ├── 04_balanced/                            (escribe R3)\n    │   └── {original|augmented}/{tecnica}/{0,10,20,25}.parquet\n    │\n    ├── 05_models/                              (escribe R4)\n    │   └── {original|augmented}/{variante}/{tecnica}/{ratio}.pkl\n    │\n    ├── 06_results/\n    │   ├── validation_leaderboard.csv          (R4) todos los modelos\n    │   ├── ganador.json                        (R4) el único que pasa a test\n    │   ├── final_test.json                     (R5) resultado final\n    │   ├── ablation.csv                        (R6)\n    │   ├── eda/                                (R1)\n    │   └── automl/{leaderboard.csv, comparacion.json}   (R7)\n    │\n    └── 07_figures/\n```\n\n`tecnica` ∈ `none`, `random_oversampling`, `smote`, `borderline_smote`,\n`smote_undersampling`. `variante` ∈ las 7 de XGBoost más `logistic_regression`,\n`random_forest`, `mlp`.\n\nEl prefijo sigue siendo `v2/`: **la primera corrida sobrescribe los artefactos\nde la corrida anterior**. Si quieres conservarlos, cambia `PREFIX` en\n`vishing_common.py` antes de ejecutar R0.\n\n**S3 no necesita directorios previos**: las claves se crean al escribir. Solo\ntienes que subir el CSV a `s3://poc-fraude-vishing/v2/00_raw/`.\n\n---\n\n## 5. Reproducibilidad en SageMaker\n\nLo que garantiza que dos corridas del mismo notebook den lo mismo:\n\n| Mecanismo | Dónde |\n|---|---|\n| `vc.set_all_seeds()` en la celda de arranque de **todos** los notebooks | fija `random`, `numpy`, `torch`, `PYTHONHASHSEED`, cuDNN determinista y `CUBLAS_WORKSPACE_CONFIG` |\n| `vc.check_versions()` en la misma celda | avisa si el kernel resolvió un paquete fuera del rango de `requirements.txt`, que es la causa más frecuente de divergencia |\n| `vc.xgb_device()` | resuelve `cuda`/`cpu` en tiempo de ejecución; antes `device=\"cuda\"` estaba escrito a mano y reventaba en instancias sin GPU |\n| Orden determinista del leaderboard de R4 | desempata por `recall_p90`, `roc_auc`, `f1` y nombre; sin eso, dos modelos con el mismo PR-AUC dejaban al ganador a merced del orden de iteración, y R5/R6 heredaban esa arbitrariedad |\n| Instalación fijada dentro del notebook | R2 (`sdv`), R7 (`autogluon`), R8 (`shap`): SageMaker reinicia el kernel entre sesiones |\n| Limpieza de `/tmp/autogluon_*` en R7 | AutoGluon reutilizaba el directorio y mezclaba modelos de corridas anteriores en el ensamblado |\n| `run_manifest.json` (R0) | registra las versiones **exactas** resueltas, el device, el hash del split y las cifras de integridad del CSV. **Es el archivo que debe citarse en el paper**, no `requirements.txt` |\n| `id` en todas las celdas de los `.ipynb` | JupyterLab ya no reescribe los archivos al abrirlos, así que el diff del repo no se llena de ruido |\n\n**Límite conocido, declararlo en el paper.** R7 no es exactamente reproducible:\nAutoGluon con `time_limit` decide qué modelos entrena según el tiempo que le\nsobra, y ese tiempo depende de la instancia y de su carga. La semilla fija el\nremuestreo interno, no el presupuesto. Para R7 la reproducibilidad es **de\nprotocolo** (mismos splits, mismas features, mismo presupuesto, mismas\nmétricas), no exacta. El resto del pipeline sí es exacto.\n\n### Preparación\n\n```bash\npip install -r requirements.txt\n```\n\n`vishing_common.py` debe estar en el mismo directorio que los notebooks; la\nprimera celda de cada uno añade el directorio de trabajo al `sys.path`.\n\n### Regenerar los notebooks\n\nLos `.ipynb` se generan desde un único archivo fuente, para que no puedan\ndivergir entre sí:\n\n```bash\npython _build_notebooks.py\n```\n\nReescribe los nueve notebooks y borra los nombres antiguos\n(`R0_eda_train.ipynb`, `R1_contrato_y_split.ipynb`), que ya no corresponden a su\ncontenido.\n\n### Prueba de humo local\n\n```bash\npython _smoke_local.py --rapido --notebooks R0 R1 R3 R4 R5 R6 R8\n```\n\nSustituye la E/S de S3 por un directorio local y ejecuta las celdas de código de\ncada notebook en orden, contra el CSV de `data/`. No forma parte del pipeline:\nsirve para comprobar que todo corre de principio a fin **antes** de gastar una\ninstancia con GPU. R2 y R7 se omiten porque necesitan GPU y paquetes pesados.\n\n---\n\n## 6. Decisiones que conviene revisar antes de correr\n\nEstán todas en la cabecera de `vishing_common.py`.\n\n| Constante | Valor | Comentario |\n|---|---|---|\n| `RAW_FILENAME` | `biocatch_sinthetic_data_v3.csv` | `validate_raw` comprueba forma, balance exacto y las tres variables del bug histórico antes del split |\n| `FEATURE_POLICY` | `\"audited\"` | Sobre el v3 coincide con `legacy` (44 features). `strict` (41) quita las derivadas de la duración: correrlas y comparar es material directo para la sección de amenazas a la validez |\n| `SPLIT_MODE` | `\"grouped\"` | Reparto por cliente. `\"row\"` reproduce el criterio de la v1 |\n| `SPLIT_FRACTIONS` | `(0.60, 0.20, 0.20)` | Sobre 100.000 sesiones: 60.134 / 19.673 / 20.193 (no son exactos porque el reparto es por cliente) |\n| `PREFIX` | `\"v2\"` | Cámbialo si quieres conservar los artefactos de la corrida anterior |\n| `N_OBJETIVO` (R2) | 500.000 | Con el v3 train es 2,4× más grande, así que esto pasa de ~20× a ~8× de aumento. Subirlo a ~1,2 M mantendría el factor anterior, con el coste de GPU correspondiente |\n| `TASA_OBJETIVO` (R2) | 0,015 | Deliberadamente menor que el 5,0 % real: el aumento diluye y el rebalanceo explícito se hace en R3 |\n\n---\n\n## 7. Qué esperar de la reejecución\n\nEstas son hipótesis, no resultados. El propósito de correr el pipeline es\ncomprobarlas.\n\n0. **La conclusión 1 del manuscrito sigue sin sostenerse, y ahora por diseño.**\n   El paper afirma que «la AUC univariada de las variables más discriminantes\n   supera 0,80». El generador v3 se calibró explícitamente para que eso no\n   ocurra: sobre el dataset completo el máximo entre features del contrato es\n   **0,7742** (`segmented_typing_ratio`) y **ninguna supera 0,80**.\n\n   | Base de cálculo | AUC máx. | Variables con AUC > 0,80 |\n   |---|---|---|\n   | Generación anterior, completo (50.000) | 0,6890 | 0 |\n   | v3 completo (100.000) | 0,7742 | 0 |\n   | v3 train (60.134) | 0,7767 | 0 |\n\n   R1 regenera la cifra correcta y la Fig. 2. Si aparece alguna variable por\n   encima de 0,80, el CSV cargado no es el que se cree.\n\n1. **Las métricas bajarán respecto del manuscrito.** El PR-AUC de 0,9484 se\n   midió sobre un test cuyos 500 positivos estaban íntegramente en el\n   entrenamiento.\n2. **El *random oversampling* probablemente pierda su ventaja** frente a SMOTE,\n   por lo explicado en la tabla de la sección 1.\n3. **La brecha validation → test de R5 es el número honesto** sobre cuánto se\n   sobreajustó la selección entre modelos.\n4. **La ablation de R6 es la incógnita más interesante.** Si `behavioral` se\n   acerca a `all`, la tesis del trabajo se sostiene. Si `context_transaction` ya\n   alcanza casi todo, hay que reformular el título. Ojo: los números no son\n   comparables con la corrida anterior, porque `call_overlap_duration_s` cambió\n   de familia.\n5. **La detectabilidad de R2 puede obligar a matizar** la afirmación sobre la\n   calidad del aumento con CTGAN. Con el v3 hay una novedad: el KS de\n   `session_duration_s`, `call_overlap_duration_s` y `time_to_transaction_s`\n   por fin **se puede leer**. En la corrida anterior daban 0,0000 por ser\n   constantes o duplicadas, y el manuscrito lo interpretó como fidelidad\n   perfecta.\n\nNinguno de estos resultados invalida el trabajo. Reencuadrado como *proof of\nconcept* con datos sintéticos y un protocolo limpio, un PR-AUC más bajo pero\ndefendible es mucho más publicable que uno alto que no sobrevive a la revisión.\n\n---\n\n## 8. Verificación\n\nSe ejecutó el pipeline completo contra el CSV v3 con `_smoke_local.py`\n(R0 → R1 → R3 → R4 → R5 → R6 → R8, con el barrido de R4 recortado para que\ncorriera en CPU). Lo comprobado:\n\n* R0 valida el CSV, reparte 60.134 / 19.673 / 20.193 sin que ningún cliente\n  cruce particiones, y la auditoría no descarta ninguna variable: 44 features\n  bajo `legacy` y `audited`, 41 bajo `strict`.\n* La correlación máxima entre features es **0,8507**\n  (`dead_time_periods` ~ `total_dead_time_s`), muy por debajo del umbral 0,9999.\n* R1 mide **AUC univariada máxima 0,7767** sobre train, 0 variables por encima\n  de 0,80.\n* R3 genera los 13 datasets balanceados desde `original` y\n  `vc.check_coherence` da **0 violaciones de esquema** en todos: SMOTE ya no\n  produce montos interpolados en sesiones sin transacción.\n* Las aserciones anti-fuga pasan en los 13 datasets contra val y test.\n* R4 → R5 → R6 → R8 encadenan sin error, incluidos el envoltorio de inferencia,\n  la importancia por permutación y las figuras.\n\nLo que **no** se pudo verificar aquí y hay que vigilar en la primera corrida\nreal: la E/S contra S3, el entrenamiento de CTGAN en GPU (R2) y la ejecución de\nAutoGluon (R7).\n",
+ "hits": {
+  "ct": [
+   {
+    "file": "requirements.txt",
+    "line": 33,
+    "text": "sdv>=1.5,<2.0              # CTGANSynthesizer + SingleTableMetadata",
+    "context": [
+     "xgboost>=2.0,<2.2          # tree_method='hist' + device='cuda'",
+     "torch>=2.1                 # solo para fijar semillas y MLP en GPU",
+     "",
+     "# --- datos sintéticos ---",
+     "sdv>=1.5,<2.0              # CTGANSynthesizer + SingleTableMetadata",
+     "ctgan>=0.10",
+     "",
+     "# --- AutoML (solo R7) ---",
+     "# Pesado y con su propio árbol de dependencias. NO se instala aquí: el propio"
+    ]
+   },
+   {
+    "file": "_build_notebooks.py",
+    "line": 362,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "# con versión fijada, para que la corrida sea reproducible sin pasos manuales.",
+     "%pip install -q \"sdv>=1.5,<2.0\" \"ctgan>=0.10\"",
+     "'''),",
+     "(\"code\", '''",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import time",
+     "'''),",
+     "(\"code\", '''"
+    ]
+   },
+   {
+    "file": "_build_notebooks.py",
+    "line": 441,
+    "text": "syn = CTGANSynthesizer(meta, cuda=True, verbose=True, **HP[etiqueta])",
+    "context": [
+     "    meta.detect_from_dataframe(sub)",
+     "    for c in binarias:",
+     "        meta.update_column(column_name=c, sdtype=\"categorical\")",
+     "",
+     "    syn = CTGANSynthesizer(meta, cuda=True, verbose=True, **HP[etiqueta])",
+     "    t0 = time.time()",
+     "    syn.fit(sub)",
+     "    print(\"entrenado en %.1f min\" % ((time.time() - t0) / 60))",
+     "    return syn"
+    ]
+   },
+   {
+    "file": "R2_ctgan_train_only.ipynb",
+    "line": 199,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "   \"id\": \"c003\",",
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"import time\"",
+     "   ]",
+     "  },"
+    ]
+   },
+   {
+    "file": "R2_ctgan_train_only.ipynb",
+    "line": 412,
+    "text": "\"    syn = CTGANSynthesizer(meta, cuda=True, verbose=True, **HP[etiqueta])\\n\",",
+    "context": [
+     "    \"    meta.detect_from_dataframe(sub)\\n\",",
+     "    \"    for c in binarias:\\n\",",
+     "    \"        meta.update_column(column_name=c, sdtype=\\\"categorical\\\")\\n\",",
+     "    \"\\n\",",
+     "    \"    syn = CTGANSynthesizer(meta, cuda=True, verbose=True, **HP[etiqueta])\\n\",",
+     "    \"    t0 = time.time()\\n\",",
+     "    \"    syn.fit(sub)\\n\",",
+     "    \"    print(\\\"entrenado en %.1f min\\\" % ((time.time() - t0) / 60))\\n\",",
+     "    \"    return syn\\n\","
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "_build_notebooks.py",
+    "line": 362,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "# con versión fijada, para que la corrida sea reproducible sin pasos manuales.",
+     "%pip install -q \"sdv>=1.5,<2.0\" \"ctgan>=0.10\"",
+     "'''),",
+     "(\"code\", '''",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import time",
+     "'''),",
+     "(\"code\", '''"
+    ]
+   },
+   {
+    "file": "R2_ctgan_train_only.ipynb",
+    "line": 199,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "   \"id\": \"c003\",",
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"import time\"",
+     "   ]",
+     "  },"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "_build_notebooks.py",
+    "line": 363,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "%pip install -q \"sdv>=1.5,<2.0\" \"ctgan>=0.10\"",
+     "'''),",
+     "(\"code\", '''",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import time",
+     "'''),",
+     "(\"code\", '''",
+     "train = vc.read_parquet(vc.P.train)"
+    ]
+   },
+   {
+    "file": "R2_ctgan_train_only.ipynb",
+    "line": 200,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"import time\"",
+     "   ]",
+     "  },",
+     "  {"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "_build_notebooks.py",
+    "line": 362,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "# con versión fijada, para que la corrida sea reproducible sin pasos manuales.",
+     "%pip install -q \"sdv>=1.5,<2.0\" \"ctgan>=0.10\"",
+     "'''),",
+     "(\"code\", '''",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import time",
+     "'''),",
+     "(\"code\", '''"
+    ]
+   },
+   {
+    "file": "_build_notebooks.py",
+    "line": 363,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "%pip install -q \"sdv>=1.5,<2.0\" \"ctgan>=0.10\"",
+     "'''),",
+     "(\"code\", '''",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import time",
+     "'''),",
+     "(\"code\", '''",
+     "train = vc.read_parquet(vc.P.train)"
+    ]
+   },
+   {
+    "file": "R2_ctgan_train_only.ipynb",
+    "line": 199,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "   \"id\": \"c003\",",
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"import time\"",
+     "   ]",
+     "  },"
+    ]
+   },
+   {
+    "file": "R2_ctgan_train_only.ipynb",
+    "line": 200,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"import time\"",
+     "   ]",
+     "  },",
+     "  {"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv>=1.5,<2.0              # CTGANSynthesizer + SingleTableMetadata",
+   "ctgan>=0.10",
+   "ipywidgets>=8.1            # barras de progreso de CTGAN y AutoGluon"
+  ]
+ }
+}

@@ -1,0 +1,125 @@
+{
+ "repo": "nithin2k5/kanini-hackathon-ML",
+ "disk_kb": 3579,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# 🏥 AI-Powered Smart Patient Triage System\n\nAn ML-based system that analyzes patient symptoms and medical history to classify risk levels, recommend departments, provide explainable insights, and support efficient prioritization.\n\n---\n\n## How It Works\n\n```\nPatient Data Input (Age, Vitals, Symptoms, Conditions)\n       │\n       ▼\n┌──────────────────────────────────────────────┐\n│  CTGAN Synthetic Data (SDV)                   │\n│  Learns realistic feature correlations        │\n│  HR↔SpO₂ (r=-0.86), HR↔RR (r=+0.84)        │\n└──────────────────┬───────────────────────────┘\n                   │\n       ┌───────────┴───────────┐\n       ▼                       ▼\n┌────────────────┐   ┌────────────────┐\n│  RISK MODEL     │   │  DEPT MODEL    │\n│  Stacking Ens.  │   │  XGBoost       │\n│  F1 = 0.99      │   │  F1 = 0.99     │\n│  Low/Med/High   │   │  10 Departments│\n└───────┬────────┘   └───────┬────────┘\n        │                     │\n        └──────────┬──────────┘\n                   ▼\n┌──────────────────────────────────────────────┐\n│  EXPLAINABILITY (SHAP)                        │\n│  Shows risk factors + protective factors      │\n│  Confidence score + escalation alerts         │\n└──────────────────┬───────────────────────────┘\n                   ▼\n┌──────────────────────────────────────────────┐\n│  PRIORITY QUEUE                               │\n│  NEWS2 score + weighted priority (0-100)      │\n│  Patients sorted by severity per department   │\n└──────────────────────────────────────────────┘\n                   │\n       ┌───────────┴───────────┐\n       ▼                       ▼\n┌──────────────────────────────────────────────┐\n│  CLINICAL GUARDRAILS                          │\n│  Overrides ML for critical rules              │\n│  (e.g. Stroke -> Neuro, DKA -> Emergency)     │\n└──────────────────────────────────────────────┘\n```\n\n---\n\n## Pipeline (3 Scripts)\n\n### Step 1: `generate_dataset.py` — Synthetic Data with SDV CTGAN\n\nCreates **5,000 synthetic patients** using a hybrid CTGAN approach:\n\n1. **1,500-row seed** with 30+ clinical archetypes (e.g., cardiac emergencies, mild fevers, borderline cases)\n2. **CTGAN** (300 epochs) learns all feature correlations and risk patterns\n3. Generates 5,000 patients — **CTGAN decides vitals, symptoms, conditions, and risk level**\n4. **Realistic noise injection**:\n   - 15% borderline/ambiguous patients (overlapping class boundaries)\n   - 5% label noise (250 patients with swapped risk labels)\n   - 3% random vital perturbation (150 patients)\n   - 3% missing vitals (simulates incomplete records)\n5. **Department** assigned via clinical symptom routing (mirrors real hospital triage)\n\n```bash\npython generate_dataset.py\n# → data/patient_triage_dataset.csv (5000 rows × 14 columns)\n```\n\n**SDV-learned correlations:**\n| Feature Pair | Correlation | Clinical Meaning |\n|---|---|---|\n| HR ↔ SpO₂ | r = -0.86 | Heart races → oxygen drops |\n| HR ↔ RR | r = +0.84 | Fast heart → fast breathing |\n| SpO₂ ↔ RR | r = -0.84 | Low oxygen → compensatory breathing |\n| Temp ↔ HR | r = +0.74 | Fever → elevated heart rate |\n\n**Class overlap (realistic):**\n```\nHR ranges:  High [83-152] | Medium [70-122] | Low [61-99]\n                           ↑ overlap zones ↑\n```\n\n---\n\n### Step 2: `train_model.py` — Dual-Model Training\n\nTrains **two models** on the CTGAN-generated data:\n\n| Model | Task | Algorithm | F1 Score | Accuracy |\n|-------|------|-----------|----------|----------|\n| **Risk Classifier** | Low / Medium / High | Stacking Ensemble | **0.9910** | 99% |\n| **Dept Classifier** | 10 departments | XGBoost | **0.9940** | 99% |\n\n**Risk model details:**\n- Trains 5 models: Logistic Regression, Decision Tree, Random Forest, XGBoost, Stacking Ensemble\n- Selects best by F1 score\n- Cross-validation: F1 = 0.7366 ± 0.01\n\n**Feature engineering (47 features):**\n- NEWS2 clinical severity score\n- Shock Index (HR / Systolic BP)\n- Oxy Stress (RR × (100 − SpO₂))\n- Fever-Hypoxia interaction\n- Comorbidity burden count\n- Multi-label encoded symptoms and conditions\n\n```bash\npython train_model.py\n# → output/*.pkl (14 model artifacts)\n# → output/model_metadata.json\n# → output/*.png (confusion matrices, feature importance, SHAP, model comparison)\n```\n\n---\n\n### Step 3: `predict.py` — Triage + Explainability + Queue\n\nUses trained models to triage new patients:\n\n```bash\npython predict.py\n```\n\n**Sample output:**\n```\nPT-10001 → Risk: High (90.5%) | Dept: Cardiology      | Priority: 87.1/100\nPT-10002 → Risk: Low  (70.5%) | Dept: General Medicine | Priority:  7.0/100\nPT-10003 → Risk: Medium (62%) | Dept: Pulmonology      | Priority: 29.9/100\nPT-10005 → Risk: High (51.5%) | Dept: Neurology        | Priority: 57.6/100 🚨 ESCALATE\n```\n\n**SHAP explainability:**\n```\nPrediction: High\nRisk factors:   NEWS2_Score(+0.755), Temperature(+0.393), Pain_Level(+0.349)\nProtective:     Sym_Cough(-0.283), Respiratory_Rate(-0.155), BP_Systolic(-0.117)\n```\n\n**FastAPI Server with Swagger UI** (`main.py`):\n\n```bash\nuvicorn main:app --reload\n# 📖 Swagger UI: http://localhost:8000/docs\n# 🚀 API Base:   http://localhost:8000\n```\n\n| Method | Endpoint | Description |\n|--------|----------|-------------|\n| `POST` | `/api/triage` | Triage a single patient |\n| `POST` | `/api/triage/batch` | Triage multiple patients |\n| `POST` | `/api/queue/admit` | Triage + add to department queue |\n| `GET` | `/api/queue/<dept>` | View a department's queue |\n| `POST` | `/api/queue/<dept>/next` | Pop highest-priority patient |\n| `GET` | `/api/queue/summary` | All department queues |\n| `POST` | `/api/explain` | SHAP explanation for a patient |\n| `POST` | `/api/similar` | Find similar past patients (KNN) |\n| `GET` | `/api/health` | Health check |\n| `GET` | `/api/metadata` | Model info + departments list |\n\n**Example request:**\n\n```bash\n```bash\ncurl -X POST http://localhost:8000/triage \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"Patient_ID\": \"PT-001\", \"Age\": 72, \"Gender\": \"Male\",\n    \"Symptoms\": \"Chest Pain, Shortness of Breath\",\n    \"Blood_Pressure\": \"185/110\", \"Heart_Rate\": 130,\n    \"Temperature\": 103.8, \"SpO2\": 88,\n    \"Respiratory_Rate\": 32, \"Consciousness_Level\": \"Verbal\",\n    \"Pain_Level\": 9, \"Pre_Existing_Conditions\": \"Heart Disease\"\n  }'\n```\n\n**Response:**\n```json\n{\n  \"risk_level\": \"High\",\n  \"department\": \"Cardiology\",\n  \"priority_score\": 87.1,\n  \"confidence\": 0.91,\n  \"news2_score\": 13.0,\n  \"needs_escalation\": false,\n  \"risk_probabilities\": {\"High\": 0.91, \"Medium\": 0.09, \"Low\": 0.0},\n  \"dept_probabilities\": {\"Cardiology\": 0.97, \"Emergency\": 0.03, ...}\n}\n```\n\n---\n\n## Project Structure\n\n```\n├── generate_dataset.py    # CTGAN synthetic data + noise injection\n├── train_model.py         # Dual-model training (Risk + Dept)\n├── predict.py             # Prediction engine + SHAP + priority queue\n├── main.py                # FastAPI REST API (web integration)\n├── data/\n│   └── patient_triage_dataset.csv\n└── output/\n    ├── best_risk_model.pkl\n    ├── dept_model.pkl\n    ├── scaler.pkl\n    ├── label_encoders.pkl\n    ├── model_metadata.json\n    └── *.png              # Charts\n```\n\n---\n\n## Quick Start\n\n```bash\n# 1. Setup\npython -m venv venv\nsource venv/bin/activate\npip install pandas numpy scikit-learn xgboost shap matplotlib seaborn sdv\n\n# 2. Run full pipeline\npython generate_dataset.py   # Generate 5000 patients via CTGAN\npython train_model.py        # Train Risk + Dept models\npython predict.py            # Run triage demo\n\n# 3. Start API server (for website integration)\nuvicorn main:app --reload    # http://localhost:8000/docs\n```\n\n---\n\n## Input Schema\n\n| Field | Type | Example |\n|-------|------|---------|\n| Patient_ID | string | PT-001 |\n| Age | int | 72 |\n| Gender | Male / Female | Male |\n| Symptoms | comma-separated | Fever, Chest Pain |\n| Blood_Pressure | string | 185/110 |\n| Heart_Rate | float | 130 |\n| Temperature | float (°F) | 103.8 |\n| SpO2 | float (%) | 88 |\n| Respiratory_Rate | float | 32 |\n| Consciousness_Level | Alert/Verbal/Pain/Unresponsive | Verbal |\n| Pain_Level | 0-10 | 9 |\n| Pre_Existing_Conditions | comma-separated | Diabetes, Heart Disease |\n\n## Output\n\n| Field | Example |\n|-------|---------|\n| `risk_level` | High |\n| `department` | Cardiology |\n| `priority_score` | 87.1 / 100 |\n| `confidence` | 90.5% |\n| `news2_score` | 13 |\n| `needs_escalation` | true (when confidence < 60%) |\n| `shap_factors` | top risk/protective features |\n\n## Departments\n\nCardiology · Emergency · General Medicine · Neurology · Pulmonology · Gastroenterology · Pediatrics · Nephrology · Oncology · Orthopedics",
+ "hits": {
+  "st": [
+   {
+    "file": "generate_dataset.py",
+    "line": 429,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "print(\"  STEP 2: CTGAN learning noisy patterns\")",
+     "print(\"=\" * 65)",
+     "",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "metadata = Metadata.detect_from_dataframe(data=seed_df, table_name=\"patients\")",
+     "metadata.update_column(table_name=\"patients\", column_name=\"Patient_ID\", sdtype=\"id\")",
+     "metadata.update_column(table_name=\"patients\", column_name=\"Age\", sdtype=\"numerical\")"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "generate_dataset.py",
+    "line": 428,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "print(\"\\n\" + \"=\" * 65)",
+     "print(\"  STEP 2: CTGAN learning noisy patterns\")",
+     "print(\"=\" * 65)",
+     "",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "metadata = Metadata.detect_from_dataframe(data=seed_df, table_name=\"patients\")",
+     "metadata.update_column(table_name=\"patients\", column_name=\"Patient_ID\", sdtype=\"id\")"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "generate_dataset.py",
+    "line": 428,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "print(\"\\n\" + \"=\" * 65)",
+     "print(\"  STEP 2: CTGAN learning noisy patterns\")",
+     "print(\"=\" * 65)",
+     "",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "metadata = Metadata.detect_from_dataframe(data=seed_df, table_name=\"patients\")",
+     "metadata.update_column(table_name=\"patients\", column_name=\"Patient_ID\", sdtype=\"id\")"
+    ]
+   },
+   {
+    "file": "generate_dataset.py",
+    "line": 429,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "print(\"  STEP 2: CTGAN learning noisy patterns\")",
+     "print(\"=\" * 65)",
+     "",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "metadata = Metadata.detect_from_dataframe(data=seed_df, table_name=\"patients\")",
+     "metadata.update_column(table_name=\"patients\", column_name=\"Patient_ID\", sdtype=\"id\")",
+     "metadata.update_column(table_name=\"patients\", column_name=\"Age\", sdtype=\"numerical\")"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "generate_dataset.py",
+    "line": 429,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "print(\"  STEP 2: CTGAN learning noisy patterns\")",
+     "print(\"=\" * 65)",
+     "",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "metadata = Metadata.detect_from_dataframe(data=seed_df, table_name=\"patients\")",
+     "metadata.update_column(table_name=\"patients\", column_name=\"Patient_ID\", sdtype=\"id\")",
+     "metadata.update_column(table_name=\"patients\", column_name=\"Age\", sdtype=\"numerical\")"
+    ]
+   },
+   {
+    "file": "generate_dataset.py",
+    "line": 447,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "metadata.update_column(table_name=\"patients\", column_name=\"Pain_Level\", sdtype=\"numerical\")",
+     "metadata.update_column(table_name=\"patients\", column_name=\"Risk_Level\", sdtype=\"categorical\")",
+     "metadata.set_primary_key(table_name=\"patients\", column_name=\"Patient_ID\")",
+     "",
+     "synthesizer = CTGANSynthesizer(",
+     "    metadata,",
+     "    epochs=300,",
+     "    batch_size=200,",
+     "    verbose=True,"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv>=1.0.0"
+  ]
+ }
+}

@@ -1,0 +1,305 @@
+{
+ "repo": "manojkaushik/SpectraGeni",
+ "disk_kb": 2470,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# SpectraGeni\n\n**Advanced Synthetic Hyperspectral Data Generation for Crop Classification**\n\n![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)\n![License](https://img.shields.io/badge/License-MIT-green.svg)\n![Status](https://img.shields.io/badge/Status-Active-brightgreen.svg)\n\n## Overview\n\nSpectraGeni is a comprehensive framework for generating high-quality synthetic hyperspectral data for agricultural crop classification. The project implements and compares four advanced data augmentation techniques: SMOTE, Borderline-SMOTE (BSMOTE), Conditional Tabular GAN (CTGAN), and a proprietary Convolutional Conditional Variational Autoencoder (CNN-CVAE) to address class imbalance and expand training datasets for hyperspectral crop classification tasks.\n\nThe project evaluates machine learning classifiers and employs ensemble learning strategies to achieve robust crop classification with synthetic data.\n\n## Key Features\n\n- **Multiple Data Augmentation Techniques**: SMOTE, BSMOTE, CTGAN, and proprietary CNN-CVAE\n- **943-Dimensional Hyperspectral Data**: Real-world agricultural spectral data with 6 crop classes\n- **Advanced Quality Metrics**: Hellinger distance, Pairwise Correlation Difference, Propensity Score, Spectral Angle Mapper (SAM)\n- **Comprehensive ML Pipeline**: ML classifiers with custom ensemble methods (Voting, Stacking)\n- **Data Visualization**: 3D projection comparisons (PCA, UMAP, t-SNE) of real vs. synthetic data\n- **Production-Ready**: Modular code with common utilities for data handling and augmentation\n\n## Dataset\n\n- **Crop Classes**: 6 agricultural crop varieties (Capsicum, Chilli, Mulberry, Potato, Tomato_Healthy, Tomato_Unhealthy)\n- **Features**: 943-dimensional hyperspectral bands (reflectance spectra)\n- **Techniques**: Augmentation from imbalanced ~75-2672 real samples to 2000-5000 synthetic samples per class\n- **Storage Format**: Parquet/CSV/DataFrame-compatible structure\n\n## Project Structure\n\n```\nSpectraGeni/\n├── README.md                                   # Project documentation\n├── LICENSE                                     # MIT License\n├── requirements.txt                            # Python dependencies\n├── Dataset_Distributions_Visualization.ipynb   # Visual data exploration\n│\n├── Data_augmentation/                          # Data augmentation techniques\n│   ├── 01.SMOTE.ipynb                         # SMOTE implementation\n│   ├── 02.BSMOTE.ipynb                        # Borderline-SMOTE\n│   ├── 03.CTGAN.ipynb                         # Conditional Tabular GAN\n│   ├── 5.3D_plotting (Real Vs. Synthetic) CTGAN.ipynb\n│   ├── 6.3D_plotting (Real Vs. Synthetic) CVAE.ipynb\n│   ├── common_fun.py                          # Shared utilities\n│   ├── KLdivergence.py                        # Quality metrics\n│   └── 04.SpectraGeni/                        # CNN-CVAE (Proprietary)\n│       ├── constants.py                       # Configuration constants\n│       ├── data_handling.py                   # Data loading/preprocessing\n│       ├── VAE_utils.py                       # CVAE architecture & training\n│       └── train_CNN_CVAE.ipynb               # Main CVAE training pipeline\n│\n├── Data_quality_check/                        # Data quality evaluation\n│   ├── 01.SMOTE.py                           # SMOTE quality assessment\n│   ├── 02.Borderline_SMOTE.py                # BSMOTE quality assessment\n│   ├── 03.CTGAN.py                           # CTGAN quality assessment\n│   ├── 04.CVAE.py                            # CVAE quality assessment\n│   └── common_fun.py                          # Quality metric utilities\n│\n└── Training-Testing_both/                    # Classification & Ensembles\n    ├── 1.Custom_ensemble_SMOTE.ipynb          # SMOTE + ensemble classifier\n    ├── 2.Custom_ensemble_BSMOTE.ipynb         # BSMOTE + ensemble classifier\n    ├── 3.Custom_ensemble_CTGAN.ipynb          # CTGAN + ensemble classifier\n    └── 4.Custom_ensemble_CNN-CVAE_real80.ipynb # CNN-CVAE + ensemble (80% real data)\n```\n\n## Data Augmentation Techniques\n\n### 1. **SMOTE (Synthetic Minority Over-sampling Technique)**\n\n- Classical k-NN based oversampling algorithm\n- Generates synthetic samples along line segments between k-nearest neighbors\n- Output: ~2,000 samples per crop class\n- Best for: Balanced, linear data distributions\n\n### 2. **BSMOTE (Borderline-SMOTE)**\n\n- Variant focusing on borderline samples (danger zone)\n- Only generates synthetic samples near decision boundaries\n- Output: ~2,000 samples per crop class\n- Best for: Improving classifier generalization with targeted synthesis\n\n### 3. **CTGAN (Conditional Tabular GAN)**\n\n- Generative Adversarial Network for high-dimensional tabular data\n- Conditional generation based on crop class\n- Output: ~2,000 samples per crop class\n- Best for: Learning complex, non-linear distributions\n\n### 4. **CNN-CVAE (Convolutional Conditional Variational Autoencoder)**\n\n- Proprietary deep learning architecture\n- Custom 1D CNN encoder/decoder (943 → 64 latent → 943)\n- Conditional generation on crop class labels\n- Training: 5,000 epochs with early stopping\n- Output: ~5,000 samples per crop class\n- Best for: High-fidelity spectral data synthesis with regularization\n\n## Installation & Setup\n\n### Prerequisites\n\n- Python 3.8 or higher\n- pip or conda package manager\n- 8GB+ RAM (16GB+ recommended for CTGAN/CVAE training)\n- GPU support (optional but recommended for deep learning models)\n\n## Usage Guide\n\n### Workflow Overview\n\n```\n1. Data Loading & Exploration\n   └─→ Dataset_Distributions_Visualization.ipynb\n\n2. Data Augmentation (Choose one or multiple techniques)\n   ├─→ Data_augmentation/01.SMOTE.ipynb\n   ├─→ Data_augmentation/02.BSMOTE.ipynb\n   ├─→ Data_augmentation/03.CTGAN.ipynb\n   └─→ Data_augmentation/04.SpectraGeni/train_CNN_CVAE.ipynb\n\n3. Data Quality Assessment\n   ├─→ Data_quality_check/01.SMOTE.py\n   ├─→ Data_quality_check/02.Borderline_SMOTE.py\n   ├─→ Data_quality_check/03.CTGAN.py\n   └─→ Data_quality_check/04.CVAE.py\n\n4. 3D Visualization (Real vs. Synthetic)\n   ├─→ Data_augmentation/5.3D_plotting (Real Vs. Synthetic) CTGAN.ipynb\n   └─→ Data_augmentation/6.3D_plotting (Real Vs. Synthetic) CVAE.ipynb\n\n5. Classification & Ensemble Learning\n   ├─→ Training-Testing_both/1.Custom_ensemble_SMOTE.ipynb\n   ├─→ Training-Testing_both/2.Custom_ensemble_BSMOTE.ipynb\n   ├─→ Training-Testing_both/3.Custom_ensemble_CTGAN.ipynb\n   └─→ Training-Testing_both/4.Custom_ensemble_CNN-CVAE_real80.ipynb\n```\n\n## Dependencies\n\nKey packages (see `requirements.txt` for complete list):\n\n- **Data Science**: pandas, numpy, scikit-learn, scipy\n- **Deep Learning**: tensorflow, keras, pytorch (for CVAE)\n- **Augmentation**: imbalanced-learn, ctgan\n- **Visualization**: matplotlib, plotly, seaborn, umap, scikit-learn\n- **Utilities**: Faker, graphviz, jupyter\n\n## License\n\nThis project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.\n\n## Future Enhancements\n\n- [ ] Multi-class imbalance handling for severely skewed datasets\n- [ ] Transfer learning from pre-trained models\n- [ ] Real-time synthetic data generation API\n- [ ] Interactive web dashboard for data exploration\n- [ ] Extended evaluation on multiple hyperspectral datasets\n- [ ] Federated learning support for distributed training\n\n## Author\n\n**Manoj Kaushik**\n\n- GitHub: [@manojkaushik](https://github.com/manojkaushik)\n- Email: manojkaushik93@gmail.com\n\n---\n\n**Status**: Active Development | **Last Updated**: April 2026 | **Version**: 1.0.0\n",
+ "hits": {
+  "st": [
+   {
+    "file": "Data_augmentation/03.CTGAN.ipynb",
+    "line": 28,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "   ],",
+     "   \"source\": [",
+     "    \"import sdv\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"print(sdv.version.public)\"",
+     "   ]",
+     "  },"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "Data_augmentation/03.CTGAN.ipynb",
+    "line": 29,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "   \"source\": [",
+     "    \"import sdv\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"print(sdv.version.public)\"",
+     "   ]",
+     "  },",
+     "  {"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "Data_augmentation/03.CTGAN.ipynb",
+    "line": 26,
+    "text": "\"import sdv\\n\",",
+    "context": [
+     "     ]",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"import sdv\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"print(sdv.version.public)\""
+    ]
+   },
+   {
+    "file": "Data_augmentation/03.CTGAN.ipynb",
+    "line": 28,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "   ],",
+     "   \"source\": [",
+     "    \"import sdv\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"print(sdv.version.public)\"",
+     "   ]",
+     "  },"
+    ]
+   },
+   {
+    "file": "Data_augmentation/03.CTGAN.ipynb",
+    "line": 29,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "   \"source\": [",
+     "    \"import sdv\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"print(sdv.version.public)\"",
+     "   ]",
+     "  },",
+     "  {"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "Data_augmentation/03.CTGAN.ipynb",
+    "line": 28,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "   ],",
+     "   \"source\": [",
+     "    \"import sdv\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"print(sdv.version.public)\"",
+     "   ]",
+     "  },"
+    ]
+   },
+   {
+    "file": "Data_augmentation/03.CTGAN.ipynb",
+    "line": 172,
+    "text": "\"PerformanceAlert: Using the CTGANSynthesizer on this data is not recommended. To model this data, CTGAN will generate a large number of columns.\\n\",",
+    "context": [
+     "    {",
+     "     \"name\": \"stdout\",",
+     "     \"output_type\": \"stream\",",
+     "     \"text\": [",
+     "      \"PerformanceAlert: Using the CTGANSynthesizer on this data is not recommended. To model this data, CTGAN will generate a large number of columns.\\n\",",
+     "      \"\\n\",",
+     "      \"Original Column Name   Est # of Columns (CTGAN)\\n\",",
+     "      \"400                    11\\n\",",
+     "      \"401                    11\\n\","
+    ]
+   },
+   {
+    "file": "Data_augmentation/03.CTGAN.ipynb",
+    "line": 1125,
+    "text": "\"synthesizer1 = CTGANSynthesizer(metadata1)\\n\",",
+    "context": [
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"# Unhealthy_Tomato\\n\",",
+     "    \"synthesizer1 = CTGANSynthesizer(metadata1)\\n\",",
+     "    \"synthesizer1.fit(X_Unhealthy_Tomato)\"",
+     "   ]",
+     "  },",
+     "  {"
+    ]
+   },
+   {
+    "file": "Data_augmentation/03.CTGAN.ipynb",
+    "line": 1147,
+    "text": "\"PerformanceAlert: Using the CTGANSynthesizer on this data is not recommended. To model this data, CTGAN will generate a large number of columns.\\n\",",
+    "context": [
+     "    {",
+     "     \"name\": \"stdout\",",
+     "     \"output_type\": \"stream\",",
+     "     \"text\": [",
+     "      \"PerformanceAlert: Using the CTGANSynthesizer on this data is not recommended. To model this data, CTGAN will generate a large number of columns.\\n\",",
+     "      \"\\n\",",
+     "      \"Original Column Name   Est # of Columns (CTGAN)\\n\",",
+     "      \"400                    11\\n\",",
+     "      \"401                    11\\n\","
+    ]
+   },
+   {
+    "file": "Data_augmentation/03.CTGAN.ipynb",
+    "line": 2100,
+    "text": "\"synthesizer2 = CTGANSynthesizer(metadata2)\\n\",",
+    "context": [
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"# Capsicum\\n\",",
+     "    \"synthesizer2 = CTGANSynthesizer(metadata2)\\n\",",
+     "    \"synthesizer2.fit(X_Capsicum)\"",
+     "   ]",
+     "  },",
+     "  {"
+    ]
+   },
+   {
+    "file": "Data_augmentation/03.CTGAN.ipynb",
+    "line": 2122,
+    "text": "\"PerformanceAlert: Using the CTGANSynthesizer on this data is not recommended. To model this data, CTGAN will generate a large number of columns.\\n\",",
+    "context": [
+     "    {",
+     "     \"name\": \"stdout\",",
+     "     \"output_type\": \"stream\",",
+     "     \"text\": [",
+     "      \"PerformanceAlert: Using the CTGANSynthesizer on this data is not recommended. To model this data, CTGAN will generate a large number of columns.\\n\",",
+     "      \"\\n\",",
+     "      \"Original Column Name   Est # of Columns (CTGAN)\\n\",",
+     "      \"400                    11\\n\",",
+     "      \"401                    11\\n\","
+    ]
+   },
+   {
+    "file": "Data_augmentation/03.CTGAN.ipynb",
+    "line": 3075,
+    "text": "\"synthesizer3 = CTGANSynthesizer(metadata3)\\n\",",
+    "context": [
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"# Potato\\n\",",
+     "    \"synthesizer3 = CTGANSynthesizer(metadata3)\\n\",",
+     "    \"synthesizer3.fit(X_Potato)\"",
+     "   ]",
+     "  },",
+     "  {"
+    ]
+   },
+   {
+    "file": "Data_augmentation/03.CTGAN.ipynb",
+    "line": 3097,
+    "text": "\"PerformanceAlert: Using the CTGANSynthesizer on this data is not recommended. To model this data, CTGAN will generate a large number of columns.\\n\",",
+    "context": [
+     "    {",
+     "     \"name\": \"stdout\",",
+     "     \"output_type\": \"stream\",",
+     "     \"text\": [",
+     "      \"PerformanceAlert: Using the CTGANSynthesizer on this data is not recommended. To model this data, CTGAN will generate a large number of columns.\\n\",",
+     "      \"\\n\",",
+     "      \"Original Column Name   Est # of Columns (CTGAN)\\n\",",
+     "      \"400                    11\\n\",",
+     "      \"401                    11\\n\","
+    ]
+   },
+   {
+    "file": "Data_augmentation/03.CTGAN.ipynb",
+    "line": 4050,
+    "text": "\"synthesizer4 = CTGANSynthesizer(metadata4)\\n\",",
+    "context": [
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"# Chilli\\n\",",
+     "    \"synthesizer4 = CTGANSynthesizer(metadata4)\\n\",",
+     "    \"synthesizer4.fit(X_chilli)\"",
+     "   ]",
+     "  },",
+     "  {"
+    ]
+   },
+   {
+    "file": "Data_augmentation/03.CTGAN.ipynb",
+    "line": 4072,
+    "text": "\"PerformanceAlert: Using the CTGANSynthesizer on this data is not recommended. To model this data, CTGAN will generate a large number of columns.\\n\",",
+    "context": [
+     "    {",
+     "     \"name\": \"stdout\",",
+     "     \"output_type\": \"stream\",",
+     "     \"text\": [",
+     "      \"PerformanceAlert: Using the CTGANSynthesizer on this data is not recommended. To model this data, CTGAN will generate a large number of columns.\\n\",",
+     "      \"\\n\",",
+     "      \"Original Column Name   Est # of Columns (CTGAN)\\n\",",
+     "      \"400                    11\\n\",",
+     "      \"401                    11\\n\","
+    ]
+   },
+   {
+    "file": "Data_augmentation/03.CTGAN.ipynb",
+    "line": 5025,
+    "text": "\"synthesizer5 = CTGANSynthesizer(metadata5)\\n\",",
+    "context": [
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"# Mulberry\\n\",",
+     "    \"synthesizer5 = CTGANSynthesizer(metadata5)\\n\",",
+     "    \"synthesizer5.fit(X_Mulberry)\"",
+     "   ]",
+     "  },",
+     "  {"
+    ]
+   },
+   {
+    "file": "Data_augmentation/03.CTGAN.ipynb",
+    "line": 5049,
+    "text": "\"PerformanceAlert: Using the CTGANSynthesizer on this data is not recommended. To model this data, CTGAN will generate a large number of columns.\\n\",",
+    "context": [
+     "    {",
+     "     \"name\": \"stdout\",",
+     "     \"output_type\": \"stream\",",
+     "     \"text\": [",
+     "      \"PerformanceAlert: Using the CTGANSynthesizer on this data is not recommended. To model this data, CTGAN will generate a large number of columns.\\n\",",
+     "      \"\\n\",",
+     "      \"Original Column Name   Est # of Columns (CTGAN)\\n\",",
+     "      \"400                    11\\n\",",
+     "      \"401                    11\\n\","
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "copulas @ file:///home/conda/feedstock_root/build_artifacts/copulas_1749881029108/work",
+   "ctgan @ file:///home/conda/feedstock_root/build_artifacts/ctgan_1740683950302/work",
+   "rdt @ file:///home/conda/feedstock_root/build_artifacts/rdt_1744381396469/work",
+   "sdmetrics @ file:///home/conda/feedstock_root/build_artifacts/sdmetrics_1748568647916/work",
+   "sdv @ file:///home/conda/feedstock_root/build_artifacts/sdv_1713563676860/work"
+  ]
+ }
+}

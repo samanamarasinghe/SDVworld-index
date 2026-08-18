@@ -1,0 +1,348 @@
+{
+ "repo": "tyan001/BEAM",
+ "disk_kb": 12126,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# 🧠 BEAM-ML - Blood & Exam Assessment Model using Machine Learning\n> Predicting cognitive decline through AI-powered analysis of blood biomarkers and cognitive assessments\n\n## 📋 Overview\n\nBEAM-ML (Blood & Exam Assessment Model using Machine Learning) is a machine learning project designed to predict cognitive decline in patients by analyzing:\n\n- 🩸 Blood biomarker data\n- 📊 Cognitive examination results\n- 🔬 Clinical measurements\n\nOur goal is to enable early detection and intervention for cognitive health issues through Machine Learning.\n\n## 🔐 Privacy-First Approach\n\nThis repository uses a **synthetic dataset** generated from the original 1FL ADRC dataset using a Generative Adversarial Network (GAN). \n\n✅ **What this means:**\n\nWe specifically employed **CTGAN** (Conditional Tabular GAN) to generate synthetic data, ensuring quality synthetic samples.\n\n## 🎯 Project Goal & Baseline Performance\n\n**Important Context:** This feature search project aims to identify the best feature combinations based on what was achieved with the original dataset:\n\n- 📊 **Original Dataset Size**: ~2,125 samples\n- 🎯 **Six-Class Classification**: ~70% F1 score on test data\n- ⚡ **Combined five-class classification**: ~80% F1 score on test data\n\nThe feature search explores various biomarker and cognitive score combinations to **replicate and optimize these results** using the synthetic dataset. The goal is to find the optimal set of features that can achieve comparable performance while maintaining model interpretability.\n\n## 📁 Repository Structure\n```\nBEAM-ML/\n├── data/               # 📊 Synthetic data\n├── scripts/            # 🤖 Jupyter notebooks for prototyping the ML script\n    ├── CTGAN/          # 🏭 Synthetic data generation scripts\nfeature_search.py       # 🔍 Comprehensive feature search script (main)\n```\n\n## 🔬 Methodology\n\n1. **Data Generation**: CTGAN-based synthetic data creation\n2. **Feature Engineering**: Biomarker and cognitive score processing\n3. **Model Training**: Machine learning model development\n4. **Validation**: Performance evaluation and testing\n\n## 🚀 How to Use\n\n### Prerequisites\n- Python 3.12 or higher\n- [uv](https://github.com/astral-sh/uv) package manager (recommended)\n\n### Installation\n\n1. **Clone the repository**\n   ```bash\n   git clone <repository-url>\n   cd BEAM-ML\n   ```\n\n2. **Install dependencies using uv**\n   ```bash\n   # Install core dependencies\n   uv sync\n\n   # Or install with development tools (Jupyter, Ruff)\n   uv sync --group dev\n   ```\n\n### Running the Feature Search\n\nThe main script performs comprehensive feature search to identify the best biomarker combinations for predicting cognitive decline:\n\n```bash\npython feature_search.py\n```\n\n**What it does:**\n- Loads synthetic data from `data/` directory\n- Tests various combinations of blood biomarkers and cognitive scores\n- Evaluates multiple machine learning models (Random Forest, Logistic Regression)\n- Outputs performance metrics (accuracy, balanced accuracy, F1 score)\n- Saves results to `results/` directory\n\n### Generating Synthetic Data (Optional)\n\nIf you need to generate new synthetic data using CTGAN:\n\n```bash\n# Generate synthetic data (preserves original distribution)\n\npython scripts/CTGAN/generate_data.py --model scripts/CTGAN/CTGAN_models/ctgan_model_small_model.pkl --n_samples 10000\n\n# Generate synthetic data (balanced classes)\npython generate_data.py --balance -n_samples 10000\n\n```\n\n### Project Output\n\nResults from feature search and model training are saved in the `results/` directory with detailed performance metrics and model comparisons.\n\n## 🌐 Web Application\n\nBEAM-ML includes a Flask web application that provides an interactive interface for predicting cognitive decline based on patient data.\n\n### Training the Model\n\n**Important:** Before running the web application, you must first train a model with desire features (edit in the train_specific_model.py) to generate the required pickle file:\n\n```bash\n# Train a Random Forest model (default)\npython train_specific_model.py --model rf --output-dir models\n\n# Or train a Logistic Regression model\npython train_specific_model.py --model lr --output-dir models\n```\n\n**What this does:**\n- Trains a classification model using selected features. by default is set to [MMSE, CDRSUM, CDRGLOB, HVLT_DR, LASSI_B_CR2, APOE, AMYLPET]\n- Evaluates model performance on train/test splits\n- Saves the trained model to `models/rf.pkl` (or `models/lr.pkl` for logistic regression)\n- The output folder contains:\n  - Trained model information as a pickle file\n  - The testing dataset CSV to use as example\n  - Feature importance/coefficients\n\n### Running the Web Application\n\nOnce you have trained the model and generated the pickle file, you can start the web application:\n\n```bash\npython app.py\n```\n\nThe application will:\n- Load the trained model from `models/rf.pkl` using variable MODEL_PATH in app.py\n- Start a Flask server on `http://localhost:5000`\n- Provide a web interface for entering patient data and getting predictions\n\n**Features:**\n- Interactive form for entering biomarker and cognitive test values\n- Real-time predictions showing probability distribution across all diagnosis classes\n- Support for multiple cognitive decline categories:\n  - Normal cognition\n  - Subjective Cognitive Decline\n  - Impaired Not SCD/MCI\n  - Early MCI\n  - Late MCI\n  - Dementia\n\n**Note:** The web application expects the model pickle file at `models/rf.pkl`. Make sure this file exists before running the app.\n\n## 🙏 Acknowledgements\n\n- 1FL ADRC for the original dataset structure\n- CTGAN developers for synthetic data generation tools\n\n\n\n",
+ "hits": {
+  "st": [
+   {
+    "file": "scripts/CTGAN/train_ctgan.py",
+    "line": 3,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from typing import List, Dict, Optional, Tuple",
+     "import joblib"
+    ]
+   },
+   {
+    "file": "scripts/CTGAN/model_trainer.ipynb",
+    "line": 12,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import pandas as pd\\n\",",
+     "    \"import numpy as np\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"from typing import List, Dict, Optional, Tuple\"",
+     "   ]"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "scripts/CTGAN/train_ctgan.py",
+    "line": 4,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from typing import List, Dict, Optional, Tuple",
+     "import joblib",
+     "from rdt.transformers import FloatFormatter"
+    ]
+   },
+   {
+    "file": "scripts/CTGAN/model_trainer.ipynb",
+    "line": 13,
+    "text": "\"from sdv.metadata import Metadata\\n\",",
+    "context": [
+     "   \"source\": [",
+     "    \"import pandas as pd\\n\",",
+     "    \"import numpy as np\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"from typing import List, Dict, Optional, Tuple\"",
+     "   ]",
+     "  },"
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "scripts/CTGAN/train_ctgan.py",
+    "line": 5,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from typing import List, Dict, Optional, Tuple",
+     "import joblib",
+     "from rdt.transformers import FloatFormatter",
+     ""
+    ]
+   },
+   {
+    "file": "scripts/CTGAN/model_trainer.ipynb",
+    "line": 14,
+    "text": "\"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+    "context": [
+     "    \"import pandas as pd\\n\",",
+     "    \"import numpy as np\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"from typing import List, Dict, Optional, Tuple\"",
+     "   ]",
+     "  },",
+     "  {"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "scripts/CTGAN/train_ctgan.py",
+    "line": 3,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from typing import List, Dict, Optional, Tuple",
+     "import joblib"
+    ]
+   },
+   {
+    "file": "scripts/CTGAN/train_ctgan.py",
+    "line": 4,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from typing import List, Dict, Optional, Tuple",
+     "import joblib",
+     "from rdt.transformers import FloatFormatter"
+    ]
+   },
+   {
+    "file": "scripts/CTGAN/train_ctgan.py",
+    "line": 5,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from typing import List, Dict, Optional, Tuple",
+     "import joblib",
+     "from rdt.transformers import FloatFormatter",
+     ""
+    ]
+   },
+   {
+    "file": "scripts/CTGAN/generate_data.py",
+    "line": 4,
+    "text": "from sdv.sampling import Condition",
+    "context": [
+     "import pickle",
+     "import argparse",
+     "import pandas as pd",
+     "from sdv.sampling import Condition",
+     "import numpy as np",
+     "import joblib",
+     "",
+     "def round_to_half(value):"
+    ]
+   },
+   {
+    "file": "scripts/CTGAN/model_trainer.ipynb",
+    "line": 12,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import pandas as pd\\n\",",
+     "    \"import numpy as np\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"from typing import List, Dict, Optional, Tuple\"",
+     "   ]"
+    ]
+   },
+   {
+    "file": "scripts/CTGAN/model_trainer.ipynb",
+    "line": 13,
+    "text": "\"from sdv.metadata import Metadata\\n\",",
+    "context": [
+     "   \"source\": [",
+     "    \"import pandas as pd\\n\",",
+     "    \"import numpy as np\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"from typing import List, Dict, Optional, Tuple\"",
+     "   ]",
+     "  },"
+    ]
+   },
+   {
+    "file": "scripts/CTGAN/model_trainer.ipynb",
+    "line": 14,
+    "text": "\"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+    "context": [
+     "    \"import pandas as pd\\n\",",
+     "    \"import numpy as np\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"from typing import List, Dict, Optional, Tuple\"",
+     "   ]",
+     "  },",
+     "  {"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "scripts/CTGAN/train_ctgan.py",
+    "line": 3,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from typing import List, Dict, Optional, Tuple",
+     "import joblib"
+    ]
+   },
+   {
+    "file": "scripts/CTGAN/train_ctgan.py",
+    "line": 17,
+    "text": "def train_synthesizer(df: pd.DataFrame, metadata: Metadata, config: Dict, enable_gpu: bool = False) -> CTGANSynthesizer:",
+    "context": [
+     "    \"\"\"Round a value to the nearest 0.5 increment.\"\"\"",
+     "    return np.round(value * 2) / 2",
+     "",
+     "",
+     "def train_synthesizer(df: pd.DataFrame, metadata: Metadata, config: Dict, enable_gpu: bool = False) -> CTGANSynthesizer:",
+     "    \"\"\"",
+     "        Function to train a CTGAN synthesizer on the given dataframe and metadata using the specified configuration.",
+     "",
+     "        Args:"
+    ]
+   },
+   {
+    "file": "scripts/CTGAN/train_ctgan.py",
+    "line": 27,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "            metadata: The metadata object describing the structure of the data.",
+     "            config: A dictionary containing the configuration parameters for the synthesizer.",
+     "    \"\"\"",
+     "",
+     "    synthesizer = CTGANSynthesizer(",
+     "        metadata=metadata,",
+     "        epochs=config['epochs'],",
+     "        batch_size=config['batch_size'],",
+     "        embedding_dim=config['embedding_dim'],"
+    ]
+   },
+   {
+    "file": "scripts/CTGAN/model_trainer.ipynb",
+    "line": 12,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import pandas as pd\\n\",",
+     "    \"import numpy as np\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"from typing import List, Dict, Optional, Tuple\"",
+     "   ]"
+    ]
+   },
+   {
+    "file": "scripts/CTGAN/model_trainer.ipynb",
+    "line": 136,
+    "text": "\"def train_synthesizer(df: pd.DataFrame, metadata: Metadata, config: Dict) -> CTGANSynthesizer:\\n\",",
+    "context": [
+     "   \"id\": \"a11887b5\",",
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"def train_synthesizer(df: pd.DataFrame, metadata: Metadata, config: Dict) -> CTGANSynthesizer:\\n\",",
+     "    \"    \\\"\\\"\\\"\\n\",",
+     "    \"        Function to train a CTGAN synthesizer on the given dataframe and metadata using the specified configuration.\\n\",",
+     "    \"        \\n\",",
+     "    \"        Args:\\n\","
+    ]
+   },
+   {
+    "file": "scripts/CTGAN/model_trainer.ipynb",
+    "line": 146,
+    "text": "\"    synthesizer = CTGANSynthesizer(\\n\",",
+    "context": [
+     "    \"            metadata: The metadata object describing the structure of the data.\\n\",",
+     "    \"            config: A dictionary containing the configuration parameters for the synthesizer.\\n\",",
+     "    \"    \\\"\\\"\\\"\\n\",",
+     "    \"\\n\",",
+     "    \"    synthesizer = CTGANSynthesizer(\\n\",",
+     "    \"        embedding_dim=config['embedding_dim'],\\n\",",
+     "    \"        generator_dim=config['generator_dim'],\\n\",",
+     "    \"        discriminator_dim=config['discriminator_dim'],\\n\",",
+     "    \"        generator_lr=config['generator_lr'],\\n\","
+    ]
+   }
+  ],
+  "rdt": [
+   {
+    "file": "scripts/CTGAN/train_ctgan.py",
+    "line": 8,
+    "text": "from rdt.transformers import FloatFormatter",
+    "context": [
+     "from sdv.metadata import Metadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from typing import List, Dict, Optional, Tuple",
+     "import joblib",
+     "from rdt.transformers import FloatFormatter",
+     "",
+     "",
+     "",
+     "def round_to_half(value):"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ev",
+  "md",
+  "rdt",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [
+  "scripts/CTGAN"
+ ],
+ "dependencies": {
+  "pyproject.toml": [
+   "    \"sdv>=1.29.0\","
+  ]
+ }
+}

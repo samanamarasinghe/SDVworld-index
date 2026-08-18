@@ -1,0 +1,601 @@
+{
+ "repo": "Amisha-Kelkar/BA882_Project",
+ "disk_kb": 123399,
+ "method": "partial_clone",
+ "tree_files": 57,
+ "status": "ok",
+ "readme": "# BA882_Project\n## Predictive Inventory Intelligence Platform\n**-Aaryan Bammi, Achinthya Sreedhar, Amisha Kelkar, Chenhui Shen, Yucheng He**<br>\n\n### Introduction\nThe Predictive Inventory Intelligence Platform automates the ingestion, transformation, and analysis of Target retail data to enable proactive, data-driven stock management. Built for Target’s retail ecosystem, the platform identifies potential stockout risks and converts raw data into actionable analytical insights. It leverages a modern, scalable stack including MotherDuck, Google Cloud Functions, and Astronomer (Airflow) to coordinate ingestion pipelines, transformation workflows, machine-learning tasks, and LLM-based alerting.\n\nThe platform initially ingests Target’s public APIs, including product search, store metadata, and fulfillment availability, focusing on the Boston metropolitan region. Data is processed through a structured Bronze → Silver → Gold architecture within MotherDuck. To overcome API rate limits and enrich the dataset, synthetic data generation (SDV and custom Python logic) is incorporated to produce realistic store-level pricing and discount patterns. Additional demand context is introduced through Google Trends, using PyTrends to collect seasonal and category-specific search interest signals (e.g., holiday decor, winter apparel).\n\nThe unified dataset serves as the foundation for machine-learning models that estimate next-day stockout risk based on pricing, availability behaviors, fulfillment patterns, and demand signals. The final stage integrates LLMOps to translate predictions into natural-language operational insights. A Google Cloud Function formats model outputs and passes them to Gemini, which generates summary alerts posted directly to Slack for real-time decision support. A Superset dashboard is built on top of the Gold data layer to enable interactive visualization of pricing trends, availability metrics, category-level performance, and stockout risk patterns across stores.\n\nTogether, these layers form a comprehensive inventory intelligence platform capable of transforming scattered retail data sources into automated predictions and insights.\n\n\n### Data Tables\nThe project uses the following core tables within MotherDuck:\n\n-  **STORE_DATA** - Defines store identifiers and attributes. <br>\n-  **TARGET_PRODUCTS_SEARCH** - Captures product metadata and availability from Target’s API. <br>\n-  **TARGET_PRODUCTS_FULFILLMENT** - Tracks delivery status and inventory availability.<br>\n-  **TARGET_PRODUCT_PRICE_DETAILS** - Stores synthetic store-level pricing and promotions. <br>\n-  **GOOGLE_TRENDS_DATA** – Search interest values for demand-related seasonal or category terms.  \n\n\n### Pipeline Architecture\n\n#### Ingestion\nIngestion is automated using a combination of Cloud Functions and scheduled Airflow DAGs. These components retrieve data from:\n- Target Product Search API  \n- Store Metadata API  \n- Fulfillment Availability API  \n- PyTrends (Google Trends)\n\nRaw JSON payloads are written to Bronze tables with time-stamped partitions for reproducibility.\n\n#### Transformation (Bronze → Silver → Gold)\nData undergoes normalization, schema alignment, de-duplication, enrichment, and aggregation.\nKey operations include:\n- joining fulfillment and product attributes,\n- integrating synthetic pricing data,\n- merging Google Trends demand signals,\n- creating ML-ready features (lag variables, price deltas, availability shifts).\n\nGold tables serve as the final analytical layer used for supervised modeling and alert generation.\n\n#### Synthetic Data Generation\nSynthetic pricing and promotion data is built using:\n- SDV SingleTableSynthesizer\n- CTGAN or GaussianCopula models\n- Custom logic to reflect realistic price movements and store-specific variations\n\nThis step addresses API limitations and enhances model robustness by providing sufficient variability.\n\n#### Machine Learning\nMachine-learning models predict next-day stockout probability using:\n- historical fulfillment trends  \n- product and store features  \n- pricing volatility  \n- demand trends (Google search interest)\n\nOutputs are written to MotherDuck Gold prediction tables.\n\n#### LLMOps Integration\nA dedicated Google Cloud Function retrieves predictions and metadata, generates structured prompts, and calls the Gemini API. Gemini produces concise, human-readable summaries highlighting:\n- which stores/products are at risk,\n- predicted probability of stockout,\n- contributing factors such as demand spikes or fulfillment delays.\n- these summaries are posted automatically to Slack through a bot integration.\n\nAn additional LLM Agent layer enables conversational querying of the data pipeline and model outputs, allowing users to ask natural-language questions about stockout risks, trends, product performance, or store-level patterns. The agent retrieves relevant tables from MotherDuck, interprets query intent, and returns synthesized insights.\n\n\n### Technology Stack\n- MotherDuck / DuckDB  \n- Google Cloud Functions  \n- Astronomer / Apache Airflow  \n- Python  \n- SDV (Synthetic Data Vault)  \n- scikit-learn, Logistic Regression  \n- Apache Superset  \n- Google Gemini API for LLM-based alerting and LLM agent functionality  \n- Slack Bot API  \n\n\n### Future Improvements\n- Incorporation of real-time ingestion streams  \n- Store-level optimization and replenishment recommendations  \n- Fine-tuned domain-specific LLMs for retail operations  \n- Multi-region scaling and cross-store aggregation modeling  \n- Agent-enabled automated remediation workflows (e.g., creating replenishment tickets)\n\n",
+ "hits": {
+  "st": [
+   {
+    "file": "Target Tables/synthetic_data_model_training/product_fulfillment_model_training.py",
+    "line": 8,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "# ================================================================",
+     "import pandas as pd",
+     "import numpy as np",
+     "from datetime import datetime, date, timedelta",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# ------------------------------------------------",
+     "# Load dataset"
+    ]
+   },
+   {
+    "file": "Target Tables/synthetic_data_model_training/Data_Gen.ipynb",
+    "line": 737,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "        \"\\n\",",
+     "        \"import pandas as pd\\n\",",
+     "        \"import numpy as np\\n\",",
+     "        \"import random\\n\",",
+     "        \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"\\n\",",
+     "        \"# -------------------------------------------------------\\n\",",
+     "        \"# 1️⃣ Create base training dataset (Target-style structure)\\n\","
+    ]
+   },
+   {
+    "file": "Target Tables/cloud_functions/product_search/main.py",
+    "line": 9,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import duckdb",
+     "import numpy as np",
+     "from datetime import datetime, date",
+     "from google.cloud import secretmanager",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "",
+     "# ---------------------------------------------------------------------"
+    ]
+   },
+   {
+    "file": "Target Tables/cloud_functions/product_fulfillment/main.py",
+    "line": 14,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from pandas import json_normalize",
+     "from random import choice",
+     "",
+     "# --- SDV imports ---",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "",
+     "# ---------------------------------------------------------------------"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "Target Tables/synthetic_data_model_training/product_fulfillment_model_training.py",
+    "line": 9,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from datetime import datetime, date, timedelta",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# ------------------------------------------------",
+     "# Load dataset",
+     "# ------------------------------------------------"
+    ]
+   },
+   {
+    "file": "Target Tables/synthetic_data_model_training/Data_Gen.ipynb",
+    "line": 738,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "        \"import pandas as pd\\n\",",
+     "        \"import numpy as np\\n\",",
+     "        \"import random\\n\",",
+     "        \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"\\n\",",
+     "        \"# -------------------------------------------------------\\n\",",
+     "        \"# 1️⃣ Create base training dataset (Target-style structure)\\n\",",
+     "        \"# -------------------------------------------------------\\n\","
+    ]
+   },
+   {
+    "file": "Target Tables/cloud_functions/product_search/main.py",
+    "line": 10,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import numpy as np",
+     "from datetime import datetime, date",
+     "from google.cloud import secretmanager",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "",
+     "# ---------------------------------------------------------------------",
+     "# Helper: Retrieve secret from Google Secret Manager"
+    ]
+   },
+   {
+    "file": "Target Tables/cloud_functions/product_fulfillment/main.py",
+    "line": 15,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from random import choice",
+     "",
+     "# --- SDV imports ---",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "",
+     "# ---------------------------------------------------------------------",
+     "# Helper: Retrieve secret from Google Secret Manager"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "Target Tables/synthetic_data_model_training/product_fulfillment_model_training.py",
+    "line": 8,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "# ================================================================",
+     "import pandas as pd",
+     "import numpy as np",
+     "from datetime import datetime, date, timedelta",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# ------------------------------------------------",
+     "# Load dataset"
+    ]
+   },
+   {
+    "file": "Target Tables/synthetic_data_model_training/product_fulfillment_model_training.py",
+    "line": 9,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from datetime import datetime, date, timedelta",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# ------------------------------------------------",
+     "# Load dataset",
+     "# ------------------------------------------------"
+    ]
+   },
+   {
+    "file": "Target Tables/synthetic_data_model_training/Data_Gen.ipynb",
+    "line": 545,
+    "text": "\"Requirement already satisfied: boto3<2.0.0,>=1.28 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (1.40.66)\\n\",",
+    "context": [
+     "          \"output_type\": \"stream\",",
+     "          \"name\": \"stdout\",",
+     "          \"text\": [",
+     "            \"Requirement already satisfied: sdv==1.28.0 in /usr/local/lib/python3.12/dist-packages (1.28.0)\\n\",",
+     "            \"Requirement already satisfied: boto3<2.0.0,>=1.28 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (1.40.66)\\n\",",
+     "            \"Requirement already satisfied: botocore<2.0.0,>=1.31 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (1.40.66)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (3.1.1)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (0.21)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (2.0.2)\\n\","
+    ]
+   },
+   {
+    "file": "Target Tables/synthetic_data_model_training/Data_Gen.ipynb",
+    "line": 546,
+    "text": "\"Requirement already satisfied: botocore<2.0.0,>=1.31 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (1.40.66)\\n\",",
+    "context": [
+     "          \"name\": \"stdout\",",
+     "          \"text\": [",
+     "            \"Requirement already satisfied: sdv==1.28.0 in /usr/local/lib/python3.12/dist-packages (1.28.0)\\n\",",
+     "            \"Requirement already satisfied: boto3<2.0.0,>=1.28 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (1.40.66)\\n\",",
+     "            \"Requirement already satisfied: botocore<2.0.0,>=1.31 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (1.40.66)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (3.1.1)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (0.21)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (2.0.2)\\n\",",
+     "            \"Requirement already satisfied: pandas>=2.1.1 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (2.2.2)\\n\","
+    ]
+   },
+   {
+    "file": "Target Tables/synthetic_data_model_training/Data_Gen.ipynb",
+    "line": 547,
+    "text": "\"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (3.1.1)\\n\",",
+    "context": [
+     "          \"text\": [",
+     "            \"Requirement already satisfied: sdv==1.28.0 in /usr/local/lib/python3.12/dist-packages (1.28.0)\\n\",",
+     "            \"Requirement already satisfied: boto3<2.0.0,>=1.28 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (1.40.66)\\n\",",
+     "            \"Requirement already satisfied: botocore<2.0.0,>=1.31 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (1.40.66)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (3.1.1)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (0.21)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (2.0.2)\\n\",",
+     "            \"Requirement already satisfied: pandas>=2.1.1 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (2.2.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (4.67.1)\\n\","
+    ]
+   },
+   {
+    "file": "Target Tables/synthetic_data_model_training/Data_Gen.ipynb",
+    "line": 548,
+    "text": "\"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (0.21)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: sdv==1.28.0 in /usr/local/lib/python3.12/dist-packages (1.28.0)\\n\",",
+     "            \"Requirement already satisfied: boto3<2.0.0,>=1.28 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (1.40.66)\\n\",",
+     "            \"Requirement already satisfied: botocore<2.0.0,>=1.31 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (1.40.66)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (3.1.1)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (0.21)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (2.0.2)\\n\",",
+     "            \"Requirement already satisfied: pandas>=2.1.1 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (2.2.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (4.67.1)\\n\",",
+     "            \"Requirement already satisfied: copulas>=0.12.1 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (0.12.3)\\n\","
+    ]
+   },
+   {
+    "file": "Target Tables/synthetic_data_model_training/Data_Gen.ipynb",
+    "line": 549,
+    "text": "\"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (2.0.2)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: boto3<2.0.0,>=1.28 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (1.40.66)\\n\",",
+     "            \"Requirement already satisfied: botocore<2.0.0,>=1.31 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (1.40.66)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (3.1.1)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (0.21)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (2.0.2)\\n\",",
+     "            \"Requirement already satisfied: pandas>=2.1.1 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (2.2.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (4.67.1)\\n\",",
+     "            \"Requirement already satisfied: copulas>=0.12.1 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (0.12.3)\\n\",",
+     "            \"Requirement already satisfied: ctgan>=0.11.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (0.11.1)\\n\","
+    ]
+   },
+   {
+    "file": "Target Tables/synthetic_data_model_training/Data_Gen.ipynb",
+    "line": 550,
+    "text": "\"Requirement already satisfied: pandas>=2.1.1 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (2.2.2)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: botocore<2.0.0,>=1.31 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (1.40.66)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (3.1.1)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (0.21)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (2.0.2)\\n\",",
+     "            \"Requirement already satisfied: pandas>=2.1.1 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (2.2.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (4.67.1)\\n\",",
+     "            \"Requirement already satisfied: copulas>=0.12.1 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (0.12.3)\\n\",",
+     "            \"Requirement already satisfied: ctgan>=0.11.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (0.11.1)\\n\",",
+     "            \"Requirement already satisfied: deepecho>=0.7.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (0.7.0)\\n\","
+    ]
+   },
+   {
+    "file": "Target Tables/synthetic_data_model_training/Data_Gen.ipynb",
+    "line": 551,
+    "text": "\"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (4.67.1)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (3.1.1)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (0.21)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (2.0.2)\\n\",",
+     "            \"Requirement already satisfied: pandas>=2.1.1 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (2.2.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (4.67.1)\\n\",",
+     "            \"Requirement already satisfied: copulas>=0.12.1 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (0.12.3)\\n\",",
+     "            \"Requirement already satisfied: ctgan>=0.11.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (0.11.1)\\n\",",
+     "            \"Requirement already satisfied: deepecho>=0.7.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (0.7.0)\\n\",",
+     "            \"Requirement already satisfied: rdt>=1.18.2 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (1.18.2)\\n\","
+    ]
+   },
+   {
+    "file": "Target Tables/synthetic_data_model_training/Data_Gen.ipynb",
+    "line": 552,
+    "text": "\"Requirement already satisfied: copulas>=0.12.1 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (0.12.3)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (0.21)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (2.0.2)\\n\",",
+     "            \"Requirement already satisfied: pandas>=2.1.1 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (2.2.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (4.67.1)\\n\",",
+     "            \"Requirement already satisfied: copulas>=0.12.1 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (0.12.3)\\n\",",
+     "            \"Requirement already satisfied: ctgan>=0.11.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (0.11.1)\\n\",",
+     "            \"Requirement already satisfied: deepecho>=0.7.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (0.7.0)\\n\",",
+     "            \"Requirement already satisfied: rdt>=1.18.2 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (1.18.2)\\n\",",
+     "            \"Requirement already satisfied: sdmetrics>=0.21.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (0.24.0)\\n\","
+    ]
+   },
+   {
+    "file": "Target Tables/synthetic_data_model_training/Data_Gen.ipynb",
+    "line": 553,
+    "text": "\"Requirement already satisfied: ctgan>=0.11.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (0.11.1)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (2.0.2)\\n\",",
+     "            \"Requirement already satisfied: pandas>=2.1.1 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (2.2.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (4.67.1)\\n\",",
+     "            \"Requirement already satisfied: copulas>=0.12.1 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (0.12.3)\\n\",",
+     "            \"Requirement already satisfied: ctgan>=0.11.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (0.11.1)\\n\",",
+     "            \"Requirement already satisfied: deepecho>=0.7.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (0.7.0)\\n\",",
+     "            \"Requirement already satisfied: rdt>=1.18.2 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (1.18.2)\\n\",",
+     "            \"Requirement already satisfied: sdmetrics>=0.21.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (0.24.0)\\n\",",
+     "            \"Requirement already satisfied: platformdirs>=4.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (4.5.0)\\n\","
+    ]
+   },
+   {
+    "file": "Target Tables/synthetic_data_model_training/Data_Gen.ipynb",
+    "line": 554,
+    "text": "\"Requirement already satisfied: deepecho>=0.7.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (0.7.0)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: pandas>=2.1.1 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (2.2.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (4.67.1)\\n\",",
+     "            \"Requirement already satisfied: copulas>=0.12.1 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (0.12.3)\\n\",",
+     "            \"Requirement already satisfied: ctgan>=0.11.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (0.11.1)\\n\",",
+     "            \"Requirement already satisfied: deepecho>=0.7.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (0.7.0)\\n\",",
+     "            \"Requirement already satisfied: rdt>=1.18.2 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (1.18.2)\\n\",",
+     "            \"Requirement already satisfied: sdmetrics>=0.21.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (0.24.0)\\n\",",
+     "            \"Requirement already satisfied: platformdirs>=4.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (4.5.0)\\n\",",
+     "            \"Requirement already satisfied: pyyaml>=6.0.1 in /usr/local/lib/python3.12/dist-packages (from sdv==1.28.0) (6.0.3)\\n\","
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "Target Tables/synthetic_data_model_training/product_fulfillment_model_training.py",
+    "line": 8,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "# ================================================================",
+     "import pandas as pd",
+     "import numpy as np",
+     "from datetime import datetime, date, timedelta",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# ------------------------------------------------",
+     "# Load dataset"
+    ]
+   },
+   {
+    "file": "Target Tables/synthetic_data_model_training/product_fulfillment_model_training.py",
+    "line": 85,
+    "text": "synth = CTGANSynthesizer(",
+    "context": [
+     "",
+     "# ------------------------------------------------",
+     "# Train CTGAN model",
+     "# ------------------------------------------------",
+     "synth = CTGANSynthesizer(",
+     "    metadata,",
+     "    epochs=300,",
+     "    batch_size=500,",
+     "    verbose=True"
+    ]
+   },
+   {
+    "file": "Target Tables/cloud_functions/product_fulfillment/main.py",
+    "line": 14,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from pandas import json_normalize",
+     "from random import choice",
+     "",
+     "# --- SDV imports ---",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "",
+     "# ---------------------------------------------------------------------"
+    ]
+   },
+   {
+    "file": "Target Tables/cloud_functions/product_fulfillment/main.py",
+    "line": 81,
+    "text": "synth = CTGANSynthesizer.load(\"target_full_synth.pkl\")",
+    "context": [
+     "        if use_synthetic:",
+     "            print(\"⚙️ Using SDV synthetic data generator instead of live API.\")",
+     "",
+     "            metadata = SingleTableMetadata.load_from_json(\"target_full_metadata.json\")",
+     "            synth = CTGANSynthesizer.load(\"target_full_synth.pkl\")",
+     "",
+     "            base_n = max(len(pairs) * len(days_to_load), 1000)",
+     "            synthetic_df = synth.sample(base_n)",
+     ""
+    ]
+   }
+  ],
+  "ctgan_mod": [
+   {
+    "file": "Target Tables/synthetic_data_model_training/Data_Gen.ipynb",
+    "line": 565,
+    "text": "\"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.0->sdv==1.28.0) (2.8.0+cu126)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv==1.28.0) (2.9.0.post0)\\n\",",
+     "            \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv==1.28.0) (2.5.0)\\n\",",
+     "            \"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv==1.28.0) (5.24.1)\\n\",",
+     "            \"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv==1.28.0) (1.16.3)\\n\",",
+     "            \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.0->sdv==1.28.0) (2.8.0+cu126)\\n\",",
+     "            \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas>=2.1.1->sdv==1.28.0) (2025.2)\\n\",",
+     "            \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas>=2.1.1->sdv==1.28.0) (2025.2)\\n\",",
+     "            \"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv==1.28.0) (1.6.1)\\n\",",
+     "            \"Requirement already satisfied: Faker!=37.11.0,>=17 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv==1.28.0) (37.12.0)\\n\","
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "Target Tables/synthetic_data_model_training/Data_Gen.ipynb",
+    "line": 730,
+    "text": "\"Trains a GaussianCopulaSynthesizer on Target-style product search data\\n\",",
+    "context": [
+     "      ],",
+     "      \"source\": [",
+     "        \"\\\"\\\"\\\"\\n\",",
+     "        \"train_sdv_model.py\\n\",",
+     "        \"Trains a GaussianCopulaSynthesizer on Target-style product search data\\n\",",
+     "        \"and saves the model + metadata for use in Cloud Functions.\\n\",",
+     "        \"\\\"\\\"\\\"\\n\",",
+     "        \"\\n\",",
+     "        \"import pandas as pd\\n\","
+    ]
+   },
+   {
+    "file": "Target Tables/synthetic_data_model_training/Data_Gen.ipynb",
+    "line": 737,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "        \"\\n\",",
+     "        \"import pandas as pd\\n\",",
+     "        \"import numpy as np\\n\",",
+     "        \"import random\\n\",",
+     "        \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"\\n\",",
+     "        \"# -------------------------------------------------------\\n\",",
+     "        \"# 1️⃣ Create base training dataset (Target-style structure)\\n\","
+    ]
+   },
+   {
+    "file": "Target Tables/synthetic_data_model_training/Data_Gen.ipynb",
+    "line": 757,
+    "text": "\"synth = GaussianCopulaSynthesizer(metadata)\\n\",",
+    "context": [
+     "        \"\\n\",",
+     "        \"\\n\",",
+     "        \"metadata = SingleTableMetadata()\\n\",",
+     "        \"metadata.detect_from_dataframe(base_df)\\n\",",
+     "        \"synth = GaussianCopulaSynthesizer(metadata)\\n\",",
+     "        \"synth.fit(base_df)\\n\",",
+     "        \"\\n\",",
+     "        \"# -------------------------------------------------------\\n\",",
+     "        \"# 3️⃣ Save model + metadata for deployment\\n\","
+    ]
+   },
+   {
+    "file": "Target Tables/cloud_functions/product_search/main.py",
+    "line": 9,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import duckdb",
+     "import numpy as np",
+     "from datetime import datetime, date",
+     "from google.cloud import secretmanager",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "",
+     "# ---------------------------------------------------------------------"
+    ]
+   },
+   {
+    "file": "Target Tables/cloud_functions/product_search/main.py",
+    "line": 110,
+    "text": "synth = GaussianCopulaSynthesizer.load(\"target_product_synth.pkl\")",
+    "context": [
+     "",
+     "        # You can still load SDV for style / distributions",
+     "        try:",
+     "            metadata = SingleTableMetadata.load_from_json(\"target_product_metadata.json\")",
+     "            synth = GaussianCopulaSynthesizer.load(\"target_product_synth.pkl\")",
+     "            synth_df = synth.sample(len(ref_df))",
+     "            print(\"✅ SDV model loaded for auxiliary distribution reference.\")",
+     "        except Exception:",
+     "            synth_df = pd.DataFrame()"
+    ]
+   }
+  ],
+  "rdt": [
+   {
+    "file": "Target Tables/synthetic_data_model_training/Data_Gen.ipynb",
+    "line": 568,
+    "text": "\"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv==1.28.0) (1.6.1)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv==1.28.0) (1.16.3)\\n\",",
+     "            \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.0->sdv==1.28.0) (2.8.0+cu126)\\n\",",
+     "            \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas>=2.1.1->sdv==1.28.0) (2025.2)\\n\",",
+     "            \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas>=2.1.1->sdv==1.28.0) (2025.2)\\n\",",
+     "            \"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv==1.28.0) (1.6.1)\\n\",",
+     "            \"Requirement already satisfied: Faker!=37.11.0,>=17 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv==1.28.0) (37.12.0)\\n\",",
+     "            \"Requirement already satisfied: tenacity>=6.2.0 in /usr/local/lib/python3.12/dist-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv==1.28.0) (8.5.0)\\n\",",
+     "            \"Requirement already satisfied: packaging in /usr/local/lib/python3.12/dist-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv==1.28.0) (25.0)\\n\",",
+     "            \"Requirement already satisfied: six>=1.5 in /usr/local/lib/python3.12/dist-packages (from python-dateutil<3.0.0,>=2.1->botocore<2.0.0,>=1.31->sdv==1.28.0) (1.17.0)\\n\","
+    ]
+   },
+   {
+    "file": "Target Tables/synthetic_data_model_training/Data_Gen.ipynb",
+    "line": 569,
+    "text": "\"Requirement already satisfied: Faker!=37.11.0,>=17 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv==1.28.0) (37.12.0)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.0->sdv==1.28.0) (2.8.0+cu126)\\n\",",
+     "            \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas>=2.1.1->sdv==1.28.0) (2025.2)\\n\",",
+     "            \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas>=2.1.1->sdv==1.28.0) (2025.2)\\n\",",
+     "            \"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv==1.28.0) (1.6.1)\\n\",",
+     "            \"Requirement already satisfied: Faker!=37.11.0,>=17 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv==1.28.0) (37.12.0)\\n\",",
+     "            \"Requirement already satisfied: tenacity>=6.2.0 in /usr/local/lib/python3.12/dist-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv==1.28.0) (8.5.0)\\n\",",
+     "            \"Requirement already satisfied: packaging in /usr/local/lib/python3.12/dist-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv==1.28.0) (25.0)\\n\",",
+     "            \"Requirement already satisfied: six>=1.5 in /usr/local/lib/python3.12/dist-packages (from python-dateutil<3.0.0,>=2.1->botocore<2.0.0,>=1.31->sdv==1.28.0) (1.17.0)\\n\",",
+     "            \"Requirement already satisfied: joblib>=1.2.0 in /usr/local/lib/python3.12/dist-packages (from scikit-learn>=1.3.1->rdt>=1.18.2->sdv==1.28.0) (1.5.2)\\n\","
+    ]
+   }
+  ],
+  "copulas": [
+   {
+    "file": "Target Tables/synthetic_data_model_training/Data_Gen.ipynb",
+    "line": 563,
+    "text": "\"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv==1.28.0) (5.24.1)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: jmespath<2.0.0,>=0.7.1 in /usr/local/lib/python3.12/dist-packages (from boto3<2.0.0,>=1.28->sdv==1.28.0) (1.0.1)\\n\",",
+     "            \"Requirement already satisfied: s3transfer<0.15.0,>=0.14.0 in /usr/local/lib/python3.12/dist-packages (from boto3<2.0.0,>=1.28->sdv==1.28.0) (0.14.0)\\n\",",
+     "            \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv==1.28.0) (2.9.0.post0)\\n\",",
+     "            \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv==1.28.0) (2.5.0)\\n\",",
+     "            \"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv==1.28.0) (5.24.1)\\n\",",
+     "            \"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv==1.28.0) (1.16.3)\\n\",",
+     "            \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.0->sdv==1.28.0) (2.8.0+cu126)\\n\",",
+     "            \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas>=2.1.1->sdv==1.28.0) (2025.2)\\n\",",
+     "            \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas>=2.1.1->sdv==1.28.0) (2025.2)\\n\","
+    ]
+   },
+   {
+    "file": "Target Tables/synthetic_data_model_training/Data_Gen.ipynb",
+    "line": 564,
+    "text": "\"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv==1.28.0) (1.16.3)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: s3transfer<0.15.0,>=0.14.0 in /usr/local/lib/python3.12/dist-packages (from boto3<2.0.0,>=1.28->sdv==1.28.0) (0.14.0)\\n\",",
+     "            \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv==1.28.0) (2.9.0.post0)\\n\",",
+     "            \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv==1.28.0) (2.5.0)\\n\",",
+     "            \"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv==1.28.0) (5.24.1)\\n\",",
+     "            \"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv==1.28.0) (1.16.3)\\n\",",
+     "            \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.0->sdv==1.28.0) (2.8.0+cu126)\\n\",",
+     "            \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas>=2.1.1->sdv==1.28.0) (2025.2)\\n\",",
+     "            \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas>=2.1.1->sdv==1.28.0) (2025.2)\\n\",",
+     "            \"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv==1.28.0) (1.6.1)\\n\","
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "copulas",
+  "ct",
+  "ctgan_mod",
+  "gc",
+  "md",
+  "rdt",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "Target Tables/cloud_functions/requirements.txt": [
+   "sdv"
+  ],
+  "Target Tables/cloud_functions/product_price_details/requirements.txt": [
+   "sdv"
+  ],
+  "Target Tables/cloud_functions/silver_layer/requirements.txt": [
+   "sdv"
+  ],
+  "Target Tables/cloud_functions/product_search/requirements.txt": [
+   "sdv"
+  ],
+  "Target Tables/cloud_functions/product_fulfillment/requirements.txt": [
+   "sdv"
+  ],
+  "Target Tables/cloud_functions/gold_layer/requirements.txt": [
+   "sdv"
+  ]
+ }
+}

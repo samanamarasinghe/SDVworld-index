@@ -1,0 +1,256 @@
+{
+ "repo": "KavishkaJaysinghe/AAI-Group-project",
+ "disk_kb": 1772,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# 📡 TeleGuard\n\n**Synthetic telecom anomaly data generation & detection using GANs.**\n\nTeleGuard tests a single, focused hypothesis:\n\n> Training an anomaly detector on a **GAN-augmented, class-balanced** telecom\n> dataset significantly improves detection of **rare anomalies** compared to\n> training on the original **imbalanced** data.\n\nReal telecom anomaly datasets are heavily imbalanced — anomalies are rare, so\nclassifiers learn to ignore them. TeleGuard uses a **CTGAN** (via the SDV\nlibrary) to synthesize realistic minority-class (anomaly) records, rebalances\nthe training set, and shows the measurable lift in rare-anomaly recall.\n\n---\n\n## Pipeline stages\n\n| Stage | Module | What it does |\n|-------|--------|--------------|\n| 1. Preprocess | `src/preprocessing.py` | Load raw data → clean → encode → train/test split → save to `data/processed/`. |\n| 2. GAN augment | `src/gan_train.py` | Train CTGAN on minority class → generate synthetic anomalies → build class-balanced training set. |\n| 3. Detect & evaluate | `src/classifier.py` | Train detectors on **original** vs **augmented** data → compare on the **same** test set (precision/recall/F1/PR-AUC, focus on rare-class recall). |\n| 4. Explain | `src/llm_explain.py` | Use an LLM (Anthropic / OpenAI) to generate plain-language explanations for flagged anomalies. |\n| 5. Dashboard | `app/streamlit_app.py` | Streamlit UI for metrics, flagged anomalies, and explanations. |\n\nThe **core experiment** is the Stage 3 A/B comparison: same model, same test\nset, two different training sets (imbalanced vs GAN-balanced).\n\n---\n\n## Project structure\n\n```\nteleguard/\n├── data/\n│   ├── raw/             # original datasets (git-ignored)\n│   └── processed/       # cleaned / split / augmented data (git-ignored)\n├── notebooks/           # experiments & EDA (.ipynb)\n├── src/\n│   ├── preprocessing.py # Stage 1\n│   ├── gan_train.py     # Stage 2\n│   ├── classifier.py    # Stage 3\n│   └── llm_explain.py   # Stage 4\n├── models/              # saved GAN / classifier artifacts (git-ignored)\n├── app/\n│   └── streamlit_app.py # Stage 5 dashboard\n├── reports/figures/     # generated plots (git-ignored)\n├── requirements.txt     # pinned dependencies\n├── .env.example         # template for API keys → copy to .env\n└── .gitignore\n```\n\n> `data/`, `models/`, and `reports/figures/` are git-ignored (large /\n> regenerable). Empty `.gitkeep` files preserve the folder layout.\n\n---\n\n## Setup\n\nRequires **Python 3.10+**.\n\n### Windows (PowerShell)\n\n```powershell\ncd teleguard\npython -m venv venv\nvenv\\Scripts\\Activate.ps1\npython -m pip install --upgrade pip\npip install -r requirements.txt\n```\n\n> If activation is blocked by execution policy, run once:\n> `Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned`\n\n### macOS / Linux (bash)\n\n```bash\ncd teleguard\npython3 -m venv venv\nsource venv/bin/activate\npython -m pip install --upgrade pip\npip install -r requirements.txt\n```\n\n### API keys\n\n```bash\ncp .env.example .env      # Windows: copy .env.example .env\n```\n\nThen edit `.env` and add your free `GEMINI_API_KEY` from\n[Google AI Studio](https://aistudio.google.com) (no billing required).\n`ANTHROPIC_API_KEY` / `OPENAI_API_KEY` are optional fallbacks.\n\n---\n\n## How to run (once implemented)\n\n```bash\n# 1. Put a raw telecom dataset in data/raw/\n# 2. Preprocess\npython -m src.preprocessing\n# 3. Train GAN & build balanced set\npython -m src.gan_train\n# 4. Train + compare detectors\npython -m src.classifier\n# 5. Launch dashboard\nstreamlit run app/streamlit_app.py\n```\n\n> ⚠️ The `src/` modules are currently **scaffolding stubs** — ML logic is added\n> phase by phase.\n\n---\n\n## Tech stack\n\nPython 3.10+ · pandas · numpy · scikit-learn · xgboost · imbalanced-learn ·\nSDV (CTGAN) · matplotlib · seaborn · plotly · Google Gemini (free) / Anthropic / OpenAI · Streamlit\n",
+ "hits": {
+  "st": [
+   {
+    "file": "src/gan_train.py",
+    "line": 104,
+    "text": "from sdv.single_table import CTGANSynthesizer  # noqa: F401",
+    "context": [
+     "# --------------------------------------------------------------------------- #",
+     "def _import_sdv():",
+     "    \"\"\"Import SDV pieces, failing with an actionable message if missing.\"\"\"",
+     "    try:",
+     "        from sdv.single_table import CTGANSynthesizer  # noqa: F401",
+     "    except Exception as exc:  # pragma: no cover - import-time guard",
+     "        raise ImportError(",
+     "            \"SDV is not installed. Activate your venv and run:\\n\"",
+     "            \"    pip install -r requirements.txt\\n\""
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "src/gan_train.py",
+    "line": 125,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "    \"\"\"",
+     "    metadata = None",
+     "    # Newer unified API",
+     "    try:",
+     "        from sdv.metadata import Metadata",
+     "",
+     "        metadata = Metadata.detect_from_dataframe(data=df, table_name=TABLE_NAME)",
+     "    except Exception:",
+     "        metadata = None"
+    ]
+   },
+   {
+    "file": "src/gan_train.py",
+    "line": 132,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    except Exception:",
+     "        metadata = None",
+     "    # Older single-table API",
+     "    if metadata is None:",
+     "        from sdv.metadata import SingleTableMetadata",
+     "",
+     "        metadata = SingleTableMetadata()",
+     "        metadata.detect_from_dataframe(df)",
+     ""
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "src/gan_train.py",
+    "line": 257,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "",
+     "def sdv_quality_score(real, synth, metadata):",
+     "    \"\"\"Optional: SDV's overall quality score in [0,1] (1 = identical stats).\"\"\"",
+     "    try:",
+     "        from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "        report = evaluate_quality(real, synth, metadata)",
+     "        score = report.get_score()",
+     "        print(f\"\\nSDV quality score: {score:.4f}  (1.0 = perfect statistical match)\")"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "src/gan_train.py",
+    "line": 104,
+    "text": "from sdv.single_table import CTGANSynthesizer  # noqa: F401",
+    "context": [
+     "# --------------------------------------------------------------------------- #",
+     "def _import_sdv():",
+     "    \"\"\"Import SDV pieces, failing with an actionable message if missing.\"\"\"",
+     "    try:",
+     "        from sdv.single_table import CTGANSynthesizer  # noqa: F401",
+     "    except Exception as exc:  # pragma: no cover - import-time guard",
+     "        raise ImportError(",
+     "            \"SDV is not installed. Activate your venv and run:\\n\"",
+     "            \"    pip install -r requirements.txt\\n\""
+    ]
+   },
+   {
+    "file": "src/gan_train.py",
+    "line": 125,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "    \"\"\"",
+     "    metadata = None",
+     "    # Newer unified API",
+     "    try:",
+     "        from sdv.metadata import Metadata",
+     "",
+     "        metadata = Metadata.detect_from_dataframe(data=df, table_name=TABLE_NAME)",
+     "    except Exception:",
+     "        metadata = None"
+    ]
+   },
+   {
+    "file": "src/gan_train.py",
+    "line": 132,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    except Exception:",
+     "        metadata = None",
+     "    # Older single-table API",
+     "    if metadata is None:",
+     "        from sdv.metadata import SingleTableMetadata",
+     "",
+     "        metadata = SingleTableMetadata()",
+     "        metadata.detect_from_dataframe(df)",
+     ""
+    ]
+   },
+   {
+    "file": "src/gan_train.py",
+    "line": 257,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "",
+     "def sdv_quality_score(real, synth, metadata):",
+     "    \"\"\"Optional: SDV's overall quality score in [0,1] (1 = identical stats).\"\"\"",
+     "    try:",
+     "        from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "        report = evaluate_quality(real, synth, metadata)",
+     "        score = report.get_score()",
+     "        print(f\"\\nSDV quality score: {score:.4f}  (1.0 = perfect statistical match)\")"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "src/gan_train.py",
+    "line": 104,
+    "text": "from sdv.single_table import CTGANSynthesizer  # noqa: F401",
+    "context": [
+     "# --------------------------------------------------------------------------- #",
+     "def _import_sdv():",
+     "    \"\"\"Import SDV pieces, failing with an actionable message if missing.\"\"\"",
+     "    try:",
+     "        from sdv.single_table import CTGANSynthesizer  # noqa: F401",
+     "    except Exception as exc:  # pragma: no cover - import-time guard",
+     "        raise ImportError(",
+     "            \"SDV is not installed. Activate your venv and run:\\n\"",
+     "            \"    pip install -r requirements.txt\\n\""
+    ]
+   },
+   {
+    "file": "src/gan_train.py",
+    "line": 111,
+    "text": "return CTGANSynthesizer",
+    "context": [
+     "            \"SDV is not installed. Activate your venv and run:\\n\"",
+     "            \"    pip install -r requirements.txt\\n\"",
+     "            f\"(original error: {exc})\"",
+     "        )",
+     "    return CTGANSynthesizer",
+     "",
+     "",
+     "def build_metadata(df: pd.DataFrame):",
+     "    \"\"\"Detect metadata, then mark our known categorical columns as categorical."
+    ]
+   },
+   {
+    "file": "src/gan_train.py",
+    "line": 154,
+    "text": "\"\"\"Construct CTGANSynthesizer, tolerating the GPU-kwarg rename.\"\"\"",
+    "context": [
+     "    return metadata",
+     "",
+     "",
+     "def make_synthesizer(metadata, epochs, batch_size, verbose, use_gpu):",
+     "    \"\"\"Construct CTGANSynthesizer, tolerating the GPU-kwarg rename.\"\"\"",
+     "    CTGANSynthesizer = _import_sdv()",
+     "    base = dict(epochs=epochs, batch_size=batch_size, verbose=verbose)",
+     "    # GPU flag was `cuda=` in older SDV, `enable_gpu=` in newer. Try both.",
+     "    for gpu_kw in (\"enable_gpu\", \"cuda\"):"
+    ]
+   },
+   {
+    "file": "src/gan_train.py",
+    "line": 155,
+    "text": "CTGANSynthesizer = _import_sdv()",
+    "context": [
+     "",
+     "",
+     "def make_synthesizer(metadata, epochs, batch_size, verbose, use_gpu):",
+     "    \"\"\"Construct CTGANSynthesizer, tolerating the GPU-kwarg rename.\"\"\"",
+     "    CTGANSynthesizer = _import_sdv()",
+     "    base = dict(epochs=epochs, batch_size=batch_size, verbose=verbose)",
+     "    # GPU flag was `cuda=` in older SDV, `enable_gpu=` in newer. Try both.",
+     "    for gpu_kw in (\"enable_gpu\", \"cuda\"):",
+     "        try:"
+    ]
+   },
+   {
+    "file": "src/gan_train.py",
+    "line": 160,
+    "text": "return CTGANSynthesizer(metadata, **base, **{gpu_kw: use_gpu})",
+    "context": [
+     "    base = dict(epochs=epochs, batch_size=batch_size, verbose=verbose)",
+     "    # GPU flag was `cuda=` in older SDV, `enable_gpu=` in newer. Try both.",
+     "    for gpu_kw in (\"enable_gpu\", \"cuda\"):",
+     "        try:",
+     "            return CTGANSynthesizer(metadata, **base, **{gpu_kw: use_gpu})",
+     "        except TypeError:",
+     "            continue",
+     "    return CTGANSynthesizer(metadata, **base)  # no GPU kwarg accepted",
+     ""
+    ]
+   },
+   {
+    "file": "src/gan_train.py",
+    "line": 163,
+    "text": "return CTGANSynthesizer(metadata, **base)  # no GPU kwarg accepted",
+    "context": [
+     "        try:",
+     "            return CTGANSynthesizer(metadata, **base, **{gpu_kw: use_gpu})",
+     "        except TypeError:",
+     "            continue",
+     "    return CTGANSynthesizer(metadata, **base)  # no GPU kwarg accepted",
+     "",
+     "",
+     "def save_synthesizer(synth, path: Path):",
+     "    synth.save(filepath=str(path))"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ev",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv==1.37.1            # provides CTGAN, evaluation, metadata"
+  ]
+ }
+}

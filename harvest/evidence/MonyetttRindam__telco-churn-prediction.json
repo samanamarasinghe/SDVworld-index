@@ -1,0 +1,165 @@
+{
+ "repo": "MonyetttRindam/telco-churn-prediction",
+ "disk_kb": 2996,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# 📊 Telco Customer Churn Prediction\n\n> End-to-end Machine Learning project — from EDA to a deployed, containerized prediction service — that identifies telecom customers at risk of *churn* (leaving the service) so retention teams can intervene before they go.\n\n[![Tests](https://github.com/MonyetttRindam/telco-churn-prediction/actions/workflows/test.yml/badge.svg)](https://github.com/MonyetttRindam/telco-churn-prediction/actions/workflows/test.yml)\n[![Live Streamlit](https://img.shields.io/badge/Live%20Demo-Streamlit-FF4B4B?logo=streamlit&logoColor=white)](https://churn-telco.up.railway.app)\n[![Live FastAPI](https://img.shields.io/badge/Live%20API-Swagger%20Docs-009688?logo=fastapi&logoColor=white)](https://telco-churn-prediction-production.up.railway.app/docs)\n[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](#-docker-setup)\n[![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)\n[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)\n\n---\n\n## 🌐 Live Demo\n\nThe full system is deployed on **Railway** as two independent services that talk to each other over HTTP:\n\n| Service | URL | What it is |\n|---|---|---|\n| 🎨 **Streamlit UI** | **https://churn-telco.up.railway.app** | Interactive form — fill in a customer profile, get a churn prediction + business interpretation |\n| ⚡ **FastAPI (Swagger)** | **https://telco-churn-prediction-production.up.railway.app/docs** | Interactive API docs — try `POST /predict` straight from the browser |\n\n> **Heads up:** the live demo runs on Railway's free trial (~30 days), so the URLs may go offline after that window. The project is **fully reproducible locally** in one command — `docker compose up` — so you can always spin up an identical environment yourself (see [Docker Setup](#-docker-setup)).\n\n> First request after an idle period may take a few seconds while the service wakes up — that's expected on the free tier.\n\n---\n\n## 🎯 Problem Statement\n\nA telecom company is losing **26.5%** of its customers (1,869 out of 7,043). Assuming an ARPU of Rp 500k/month, that churn represents a potential loss of **~Rp 934 million/month**.\n\nThe goal of this project is to **predict which customers will churn** *before* they leave, so the retention team can act with targeted interventions (promos, follow-ups) instead of guessing.\n\nThe core challenge is that the dataset is **imbalanced** (only 26.5% positive), which makes *accuracy* misleading. The metrics that matter here are **Recall** and **F1** — catching as many would-be churners as possible.\n\n---\n\n## 📈 Key Results\n\nThree models were compared on the test set (default threshold 0.5):\n\n| Model | Recall | F1 | ROC-AUC | Accuracy |\n|---|---|---|---|---|\n| **Logistic Regression** ✅ | 0.791 | 0.612 | **0.842** | 0.733 |\n| Random Forest | 0.757 | **0.634** | 0.842 | 0.768 |\n| XGBoost | 0.668 | 0.597 | 0.818 | 0.761 |\n\n**Final model: Logistic Regression** — chosen for the **highest recall & ROC-AUC**, plus it's *interpretable* and cheap to deploy (even though Random Forest's F1 is marginally higher).\n\nAfter **threshold tuning to 0.60** (maximizing F1):\n\n| Metric | Score |\n|---|---|\n| Precision | 0.561 |\n| Recall | 0.717 |\n| F1 | **0.629** |\n| ROC-AUC | 0.842 |\n\n> 💰 **Estimated business impact:** ~**Rp 203 million/year** net profit from targeted retention (assuming ARPU Rp 500k, promo cost Rp 50k, retention rate 60%). See [docs/MODEL_CARD.md](docs/MODEL_CARD.md) for the full breakdown and assumptions.\n\n---\n\n## 🏗️ Architecture\n\n```\n┌─────────────┐     ┌────────────────────────┐     ┌──────────────────┐\n│  Raw Data   │────▶│  Preprocessing          │────▶│  Model Training  │\n│ (IBM Telco) │     │  src/preprocessing.py   │     │  notebooks/  +   │\n└─────────────┘     └────────────────────────┘     │  MLflow tracking │\n                                                     └────────┬─────────┘\n                                                              │ artifacts\n                                                              ▼\n                            ┌──────────────────────────────────────────┐\n                            │ models/  (preprocessor · model · config)  │\n                            └────────────────┬─────────────────────────┘\n                                             │\n                        ┌────────────────────┴────────────────────┐\n                        ▼                                          ▼\n                ┌────────────────┐                       ┌──────────────────┐\n                │   FastAPI      │◀──────HTTP / JSON──────│   Streamlit UI   │\n                │   app/main.py  │                        │ streamlit_app.py │\n                │   POST /predict│                        └──────────────────┘\n                └────────────────┘\n```\n\nThe preprocessing logic (`src/preprocessing.py`) is used **identically** during training and inside the API — no duplicated transform that could silently drift between train and serve.\n\n---\n\n## 🛠️ Tech Stack\n\n| Category | Tools |\n|---|---|\n| **ML & Data** | scikit-learn, pandas, XGBoost |\n| **Experiment Tracking** | MLflow (SQLite backend) |\n| **Hyperparameter Tuning** | Optuna (TPE) |\n| **API Serving** | FastAPI + Uvicorn + Pydantic |\n| **Frontend** | Streamlit |\n| **EDA / Viz** | matplotlib, seaborn |\n| **Containerization** | Docker + Docker Compose |\n| **Deployment** | Railway (2 services / 1 project) |\n\n---\n\n## 🚀 Quick Start\n\nPick whichever path fits you:\n\n### Option 1 — 🌐 Try the Live Demo (zero setup)\n\nJust open the hosted apps — nothing to install:\n\n- **Streamlit UI:** https://streamlit-production-0be4.up.railway.app\n- **API Swagger:** https://telco-churn-prediction-production.up.railway.app/docs\n\n### Option 2 — 🐳 Run with Docker (recommended for local)\n\nThe fastest way to run the **exact same setup** as production — both services, one command:\n\n```bash\ngit clone https://github.com/MonyetttRindam/telco-churn-prediction.git\ncd telco-churn-prediction\ndocker compose up --build\n```\n\nThen open:\n\n- Streamlit → http://localhost:8501\n- FastAPI docs → http://localhost:8000/docs\n\nFull details, troubleshooting, and env vars are in [Docker Setup](#-docker-setup).\n\n### Option 3 — 🐍 Run with local Python\n\n```bash\n# 1. Clone & set up environment\ngit clone https://github.com/MonyetttRindam/telco-churn-prediction.git\ncd telco-churn-prediction\npython -m venv .venv\n.venv\\Scripts\\activate          # Windows  (macOS/Linux: source .venv/bin/activate)\n\n# 2. Install dependencies\npip install -r requirements.txt         # production (API + Streamlit)\n# pip install -r requirements-dev.txt   # + training / EDA / notebooks\n\n# 3. Run the API\nuvicorn app.main:app --reload           # -> http://127.0.0.1:8000/docs\n\n# 4. Run Streamlit (separate terminal)\nstreamlit run streamlit_app.py          # -> http://localhost:8501\n\n# 5. (optional) Inspect experiments in MLflow\nmlflow ui --backend-store-uri sqlite:///mlflow.db   # -> http://localhost:5000\n```\n\n> The dataset (`data/raw/Telco-Customer-Churn.csv`) is **not** bundled in the repo. Download it from [Kaggle — IBM Telco Customer Churn](https://www.kaggle.com/datasets/blastchar/telco-customer-churn) and place it in `data/raw/` if you want to re-run the notebooks. The trained model artifacts **are** committed, so the API and Streamlit run without the raw data.\n\n---\n\n## 🐳 Docker Setup\n\nThe project ships **two Dockerfiles** — `Dockerfile.api` and `Dockerfile.streamlit` — orchestrated by `docker-compose.yml`. Both build on `python:3.12-slim`, install only `requirements.txt` (production deps), and expose healthchecks.\n\n### Prerequisites\n\n- [Docker Engine](https://docs.docker.com/get-docker/) 20.10+\n- [Docker Compose](https://docs.docker.com/compose/) v2 (bundled with modern Docker Desktop — use `docker compose`, not `docker-compose`)\n\n### Build & run\n\n```bash\n# Build both images and start the stack (foreground, logs streamed)\ndocker compose up --build\n\n# Or run detached (in the background)\ndocker compose up --build -d\n```\n\nWhat happens:\n\n1. **`api`** service builds from `Dockerfile.api`, serves FastAPI on port **8000**.\n2. **`streamlit`** service builds from `Dockerfile.streamlit`, serves the UI on port **8501**.\n3. Compose waits for the API healthcheck to pass (`depends_on: condition: service_healthy`) before Streamlit starts, so the UI never boots against a dead API.\n\nOpen:\n\n| App | Local URL |\n|---|---|\n| Streamlit UI | http://localhost:8501 |\n| FastAPI docs | http://localhost:8000/docs |\n| API health | http://localhost:8000/ |\n\n### Stop & clean up\n\n```bash\ndocker compose down              # stop and remove containers + network\ndocker compose down --rmi local  # also remove the built images\ndocker compose logs -f api       # tail logs for a single service\ndocker compose ps                # see status + healthcheck state\n```\n\n### Environment variables\n\n| Variable | Service | Default | Purpose |\n|---|---|---|---|\n| `API_URL` | streamlit | `http://localhost:8000` | Where the Streamlit app sends `POST /predict`. In Compose it's set to `http://api:8000` (Docker's internal DNS resolves `api` to the backend container). |\n| `PORT` | api / streamlit | `8000` / `8501` | The port each service binds to. Falls back to the defaults via `${PORT:-8000}` / `${PORT:-8501}` — this is what makes the same image work locally **and** on Railway (which injects its own `PORT`). |\n\n> **Why `API_URL` matters:** inside Compose the two containers share a bridge network (`telco-net`), so Streamlit reaches the API at `http://api:8000` — no public URL needed. In production on Railway (where the services don't share a private network by default) it points to the API's public URL instead. Same code, just a different `API_URL`.\n\n### Troubleshooting\n\n| Symptom | Likely cause & fix |\n|---|---|\n| `Streamlit: API tidak terhubung` | API container isn't healthy yet. Check `docker compose ps` — wait for `api` to report `healthy`, or inspect `docker compose logs api`. |\n| `port is already allocated` | Something else is using 8000/8501. Stop it, or remap in `docker-compose.yml` (e.g. `\"8080:8000\"`). |\n| Build fails on `pip install` | Stale layer cache. Rebuild clean: `docker compose build --no-cache`. |\n| Changes not reflected | Images are built, not mounted. Rerun with `--build` after editing code. |\n| Healthcheck stuck `starting` | The API loads model artifacts at startup; give it the `start_period` (10s) before it flips to `healthy`. |\n\n---\n\n## ☁️ Deployment (Railway)\n\nThe live demo is deployed to **[Railway](https://railway.app/)** as **two services within a single project**, mirroring the Compose setup:\n\n```\nRailway Project: telco-churn-prediction\n├── Service 1: api         (Dockerfile.api)        → public URL\n└── Service 2: streamlit   (Dockerfile.streamlit)  → public URL\n```\n\n### How it works\n\n- **Two services, one project.** Each service points at its own Dockerfile (`Dockerfile.api` / `Dockerfile.streamlit`) from the same repo. Railway builds and deploys them independently.\n- **Dynamic `PORT`.** Railway assigns a random port at runtime and injects it as the `PORT` env var. The containers honor it via `${PORT:-8000}` / `${PORT:-8501}` in their `CMD`, so the **same image runs unchanged** locally (default port) and on Railway (injected port). No hardcoded ports.\n- **Inter-service communication.** Unlike Compose's private `telco-net` bridge, the two Railway services reach each other over their **public URLs**. The Streamlit service sets `API_URL` to the API's public URL:\n\n  ```\n  API_URL = https://telco-churn-prediction-production.up.railway.app\n  ```\n\n  Because the Streamlit code reads the endpoint from `os.getenv(\"API_URL\", ...)`, switching from local → Compose → Railway is purely a config change — no code edits.\n\n### Deploy it yourself (sketch)\n\n```bash\n# 1. Push the repo to GitHub\n# 2. In Railway: New Project → Deploy from GitHub repo\n# 3. Add Service #1 (api):\n#      - Root: this repo, Dockerfile path: Dockerfile.api\n#      - Generate a public domain\n# 4. Add Service #2 (streamlit):\n#      - Same repo, Dockerfile path: Dockerfile.streamlit\n#      - Set env var:  API_URL = <public URL of the api service>\n#      - Generate a public domain\n# 5. Both services auto-redeploy on every push to the default branch.\n```\n\n---\n\n## 📁 Project Structure\n\n```\ntelco-churn-prediction/\n├── app/                      # FastAPI service\n│   ├── main.py               #   endpoints: GET / , POST /predict\n│   └── schemas.py            #   Pydantic request/response models\n├── src/\n│   └── preprocessing.py      # reusable cleaning + feature engineering\n├── notebooks/\n│   ├── 01_EDA.ipynb          # exploratory data analysis\n│   ├── 02_preprocessing.ipynb# pipeline + MLflow intro\n│   └── 03_Modelling.ipynb    # modeling, tuning, threshold, business impact\n├── models/                   # trained artifacts (committed)\n│   ├── model_final.joblib\n│   ├── preprocessor.joblib\n│   └── model_config.json\n├── scripts/\n│   └── smoke_test.py         # demo preprocessing + MLflow experiment\n├── figures/                  # EDA & evaluation plots\n├── docs/\n│   ├── MODEL_CARD.md         # model card (HF style)\n│   ├── API_USAGE.md          # request/response examples\n│   └── screenshots/          # demo images\n├── data/raw/                 # dataset (not committed)\n├── streamlit_app.py          # Streamlit frontend\n├── Dockerfile.api            # FastAPI image\n├── Dockerfile.streamlit      # Streamlit image\n├── docker-compose.yml        # 2-service local orchestration\n├── requirements.txt          # production deps\n├── requirements-dev.txt      # + training / EDA deps\n└── README.md\n```\n\n---\n\n## 🔬 ML Pipeline\n\n1. **EDA** ([01_EDA.ipynb](notebooks/01_EDA.ipynb)) — distributions, churn rate per feature, correlations.\n2. **Preprocessing** ([02_preprocessing.ipynb](notebooks/02_preprocessing.ipynb)) — cleaning `TotalCharges`, 4 engineered features (`num_addons`, `is_new_customer`, `has_internet`, `tenure_group`), a `ColumnTransformer` (scale + one-hot) → 52 features.\n3. **Modeling** ([03_Modelling.ipynb](notebooks/03_Modelling.ipynb)) — 3 baseline models, Optuna tuning, **threshold tuning (0.60)**, business impact, all tracked in MLflow.\n\nFull model details → [docs/MODEL_CARD.md](docs/MODEL_CARD.md). API usage → [docs/API_USAGE.md](docs/API_USAGE.md).\n\n---\n\n## 🔌 API Usage (MLOps)\n\nPhase 2 adds a versioned model registry (HuggingFace Hub) with retraining,\nrollback, and batch management on top of the Phase 1 `/predict` endpoint.\n\n### Local Development\n\n```bash\nuvicorn app.main:app --reload\n```\n\nInteractive OpenAPI docs at `http://localhost:8000/docs`.\n\n### Public Endpoints\n\n```bash\n# Healthcheck + active model version\ncurl http://localhost:8000/\n\n# Active model status + metrics + batch counts\ncurl http://localhost:8000/api/status\n\n# Version history\ncurl http://localhost:8000/api/history\n\n# Available synthetic batches\ncurl http://localhost:8000/api/batches\n\n# Predict churn (uses the active model version)\ncurl -X POST http://localhost:8000/predict \\\n  -H \"Content-Type: application/json\" \\\n  -d @scripts/sample_customer.json\n```\n\n### Admin Endpoints (require `X-API-Key`)\n\n```bash\n# Trigger async retraining with a batch\ncurl -X POST http://localhost:8000/api/retrain \\\n  -H \"X-API-Key: YOUR_KEY\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"batch_id\": \"batch_2\"}'\n\n# Poll job status (job_id from the /api/retrain response)\ncurl http://localhost:8000/api/jobs/JOB_ID\n\n# Upload a new synthetic batch (validated against 7 rules before upload)\ncurl -X POST http://localhost:8000/api/upload-batch \\\n  -H \"X-API-Key: YOUR_KEY\" \\\n  -F \"file=@my_batch.csv\"\n\n# Rollback to the previous active version\ncurl -X POST http://localhost:8000/api/rollback \\\n  -H \"X-API-Key: YOUR_KEY\"\n```\n\nThe API key is set via `MLOPS_API_KEY` (see [.env.example](.env.example)).\n\n---\n\n## 🔮 Future Improvements\n\n- [ ] **CI/CD** via GitHub Actions — run tests + auto-deploy to Railway on every push.\n- [ ] **Model monitoring & drift detection** with [Evidently AI](https://www.evidentlyai.com/) — track data/prediction drift in production.\n- [ ] **A/B testing** — serve two model/threshold variants and compare retention lift on real traffic.\n- [ ] **Migrate to GCP Cloud Run** — container-native autoscaling beyond the Railway free tier.\n- [ ] **Comprehensive `pytest` suite** — unit tests for preprocessing, schema validation, and API contract tests.\n\n---\n\n## 👤 Author\n\n**Muhammad Abil Khoiri** — Computer Engineering, Telkom University\n\nData Science / ML Engineering portfolio project.\n\n- GitHub: [@MonyetttRindam](https://github.com/MonyetttRindam)\n- LinkedIn: [Muhammad Abil Khoiri](https://www.linkedin.com/in/muhammadabilkhoirii/)\n\n---\n\n## 📄 License\n\nMIT License — see [LICENSE](LICENSE).\n\n---\n\n## Future Enhancements\n\n- Generic error messages (currently forwards internal exception detail)\n- Rate limiting on WRITE endpoints (slowapi integration)\n- Optional /docs privacy for production (currently public for portfolio showcase)\n- Model registry caching optimization (reduce HF Hub calls per validation)\n",
+ "hits": {
+  "gc": [
+   {
+    "file": "MLOPS_PLAN.md",
+    "line": 20,
+    "text": "- **Synthetic data:** SDV (`GaussianCopulaSynthesizer`), pre-generated, 5 batch × 100 rows.",
+    "context": [
+     "   - `train_model()` HANYA melatih, tidak menyentuh holdout.",
+     "   - `evaluate_model()` HANYA evaluasi di holdout.",
+     "",
+     "### Infra decisions",
+     "- **Synthetic data:** SDV (`GaussianCopulaSynthesizer`), pre-generated, 5 batch × 100 rows.",
+     "  Fit HANYA di `ml/data/train.csv` (tidak pernah di holdout).",
+     "- **Model storage:** HuggingFace Hub — repo `MonyetttRindam/telco-churn-models`.",
+     "- **Trigger retraining:** FastAPI endpoint + Streamlit button.",
+     "- **Validation gate:** model baru di-*promote* hanya jika"
+    ]
+   },
+   {
+    "file": "MLOPS_PLAN.md",
+    "line": 158,
+    "text": "| 2026-06-26 | SDV `GaussianCopulaSynthesizer`, fit di `train.csv` minus customerID; metadata auto-detect + override `SeniorCitizen`/`Churn`/`is_new_customer`/`has_internet`/`num_addons` jadi categorical | Kolom 0/1 & small-int discrete secara semantic categorical, bukan numeric | - |",
+    "context": [
+     "| 2026-06-26 | Threshold dikunci di 0.60 | Validation gate jadi apple-to-apple | - |",
+     "| 2026-06-26 | Preprocessor fixed (tidak refit) | Stabilitas dimensi fitur + simplicity | - |",
+     "| 2026-06-26 | `train_model()` returns metadata only (no performance metrics). Quality assessment is `evaluate_model()`'s responsibility | Separation of Concerns | - |",
+     "| 2026-06-26 | `customerID` TIDAK di-drop manual di train/evaluate; preprocessor membuangnya via remainder='drop' | preprocessor.feature_names_in_ memuat customerID (fit di notebook 02); drop manual b",
+     "| 2026-06-26 | SDV `GaussianCopulaSynthesizer`, fit di `train.csv` minus customerID; metadata auto-detect + override `SeniorCitizen`/`Churn`/`is_new_customer`/`has_internet`/`num_addons` jadi categori",
+     "| 2026-06-26 | Reproducibility synthetic: `np.random.seed(42)` SEKALI sebelum fit, 5 batch di-sample sekuensial TANPA `reset_sampling()` | RNG maju tiap sample → batch unik (no dup) tapi deterministik",
+     "| 2026-06-26 | customerID synthetic = `SYNTH_B{batch}_{idx:03d}` | ID asli tak meaningful untuk synthesizer; re-add setelah sampling untuk schema-match | - |",
+     "| 2026-06-26 | SDV fit HANYA di base columns (drop 4 engineered); engineered di-derive deterministically via `src.preprocessing.add_features()` setelah sampling | Copula tak bisa menjaga invariant det",
+     "| 2026-06-26 | HF Hub repo `MonyetttRindam/telco-churn-models` (public) sebagai model storage. Token di `.env` (gitignored). Schema: `current/` (active artifacts), `synthetic/` (5 batches), `registry."
+    ]
+   },
+   {
+    "file": "ml/generate_synthetic.py",
+    "line": 1,
+    "text": "\"\"\"Generate synthetic data via SDV GaussianCopulaSynthesizer (Phase 1, Step 1.6).",
+    "context": [
+     "\"\"\"Generate synthetic data via SDV GaussianCopulaSynthesizer (Phase 1, Step 1.6).",
+     "",
+     "Fit HANYA di ml/data/train.csv (holdout TIDAK pernah disentuh — lihat MLOPS_PLAN.md",
+     "> Critical Constraints: Synthetic fit scope). Menghasilkan 5 batch × 100 rows ke",
+     "ml/data/synthetic/ + menyimpan synthesizer & metadata untuk audit trail."
+    ]
+   },
+   {
+    "file": "ml/generate_synthetic.py",
+    "line": 26,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "warnings.filterwarnings(\"ignore\", category=UserWarning)",
+     "",
+     "ROOT = Path(__file__).resolve().parent.parent"
+    ]
+   },
+   {
+    "file": "ml/generate_synthetic.py",
+    "line": 192,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "        print(f\"  {col:<18}: {spec.get('sdtype')}\")",
+     "",
+     "    # 4. Fit (seed sekali sebelum fit -> reproducible)",
+     "    np.random.seed(SEED)",
+     "    synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "    synthesizer.fit(fit_df)",
+     "    print(f\"\\nSynthesizer fitted (seed={SEED}).\")",
+     "",
+     "    # 5. Generate 5 batch sekuensial (tanpa reset_sampling)."
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "ml/generate_synthetic.py",
+    "line": 26,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "warnings.filterwarnings(\"ignore\", category=UserWarning)",
+     "",
+     "ROOT = Path(__file__).resolve().parent.parent"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "ml/generate_synthetic.py",
+    "line": 25,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "from pathlib import Path",
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "warnings.filterwarnings(\"ignore\", category=UserWarning)",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "ml/generate_synthetic.py",
+    "line": 25,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "from pathlib import Path",
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "warnings.filterwarnings(\"ignore\", category=UserWarning)",
+     ""
+    ]
+   },
+   {
+    "file": "ml/generate_synthetic.py",
+    "line": 26,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "warnings.filterwarnings(\"ignore\", category=UserWarning)",
+     "",
+     "ROOT = Path(__file__).resolve().parent.parent"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

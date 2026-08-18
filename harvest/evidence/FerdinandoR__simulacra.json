@@ -1,0 +1,1468 @@
+{
+ "repo": "FerdinandoR/simulacra",
+ "disk_kb": 86136,
+ "method": "partial_clone",
+ "tree_files": 73,
+ "status": "ok",
+ "readme": "## Simulacra\n\nSynthetic patient data generation and benchmarking for health and longevity applications.\n\n`simulacra` provides a lightweight framework to synthesize tabular patient data that follows the distribution of a given real dataset, and to benchmark simple classifiers trained on (i) real data and (ii) real data augmented with synthetic samples. Current focus is on omics-like embeddings (e.g., DNA methylation, proteomics), but the tooling is generic and can be applied to other tabular contexts.\n\n### Why synthetic data?\n- **Abundance**: Real datasets are often too small. Synthetic augmentation lets you scale up training data.\n- **Privacy**: Synthetic samples are not tied to specific individuals and are easier to share and store.\n- **Time to access**: Synthetic samples can be freely shared with the public, so that researchers don't need to spend time and money to write and fund applications to access them. This accelerates scientific research.\n- **Space-saving**: Synthetic data can be generated reproducibly, cached, and discarded when not needed, without taking space on the hard drive.\n\n### Key features\n- Benchmark baseline vs. augmented training using SDV synthesizers: GaussianCopula, CTGAN, TVAE.\n- Reproducible runs across multiple seeds and augmentation multipliers.\n- Optional CUDA acceleration for GAN/VAE models when PyTorch with CUDA is available.\n- Results caching and CSV export for downstream analysis.\n\n## Installation\n\nRequirements: Python >= 3.8\n\n```bash\n# To be run from the project's home directory\npip install -e .\n# Required for synthesis\npip install sdv\n# Optional (PyTorch for CTGAN/TVAE; choose ONE)\n# If the code below does not work, check the pytorch.org website for updated install information\n# CPU-only\npip install torch --index-url https://download.pytorch.org/whl/cpu\n# or CUDA (pick a wheel matching your CUDA)\npip install torch --index-url https://download.pytorch.org/whl/cu121\n```\n\nNotes:\n- The PyPI extras are not pinned here; use versions compatible with your environment.\n- If you do not have a CUDA-capable setup, install CPU-only PyTorch or skip it; the code will run on CPU.\n\n## Quickstart\n\nThe benchmark utilities live in `simulacra/benchmark.py`. You can run them via the Python API or the CLI.\n\n```python\nfrom simulacra.benchmark import run_benchmark_experiment, save_results_to_csv\n\n# Accession refers to the dataset prefix used on disk, e.g. \"GSE42861\"\naccession = \"GSE42861\"\n\n# Run benchmarks for multiple seeds and augmentation multipliers (1x, 2x shown here)\nall_results, summary = run_benchmark_experiment(\n    accession=accession,\n    seeds=[42, 931782, 8481962],\n    multipliers=(1, 2),\n    use_cuda=None,  # set to True to force CUDA (if available), False for CPU\n)\n\n# Persist a tidy CSV with per-seed metrics and a SUMMARY row per method\ncsv_path = save_results_to_csv(all_results, summary, accession)\nprint(\"Saved:\", csv_path)\n```\n\nCLI usage:\n\n```bash\n# From the project root (ensure PYTHONPATH includes the package or install in editable mode)\npython -m simulacra.benchmark GSE42861 \\\n  --seeds 42,931782,8481962 \\\n  --multipliers 1,2 \\\n  --no-cuda\n\n# Or generate random seeds\npython -m simulacra.benchmark GSE42861 --random-seeds 3 --multipliers 1,2,5\n```\n\n### Expected data layout\n\nBy default, the code expects to find data under a working directory containing a folder named `2_poc_simulacra` with:\n- `dnam.csv` and `metadata.csv` (for reference in the exported CSV), and\n- `<ACCESSION>_embeddings_with_target.csv` (features + target), where the target column is named `disease`.\n\nIn this repository, those files are located under `notebooks/2_poc_simulacra/`. The current implementation uses a relative path `2_poc_simulacra`, so you have two options:\n- Run your scripts/notebooks with the working directory set to `notebooks/`, or\n- Copy/symlink `notebooks/2_poc_simulacra` to a sibling path accessible as `./2_poc_simulacra` from your working directory.\n\n### Outputs and caching\n\nRunning a benchmark will:\n- Train a baseline classifier (Ridge) on the original train split.\n- Train/Load synthesizers and generate augmented samples at the requested multipliers.\n- Train classifiers on augmented data and evaluate on the same test split.\n- Cache trained synthesizers and per‑seed benchmark results in `2_poc_simulacra/` using informative filenames (seed and multiplier signature included).\n- Produce a consolidated CSV via `save_results_to_csv(...)` with both per‑seed rows and SUMMARY rows.\n\n### GPU/CUDA\n\n- CTGAN and TVAE can optionally use CUDA. Set `use_cuda=True` when calling the APIs to force GPU use (will error if CUDA is unavailable). By default, the code auto‑detects CUDA if PyTorch is installed with CUDA support.\n- GaussianCopula runs on CPU, as it's unlikely to benefit from CUDA.\n\n## Development\n\nInstall dev dependencies and run tests:\n\n```bash\npip install -e .[dev]\npytest -q\n```\n\nCode lives under `simulacra/`. Notebooks and example data are under `notebooks/`.\n\n## Notes and limitations\n\n- Synthetic data is for augmentation and experimentation. Do not use synthetic‑only performance to estimate real‑world performance.\n- Current scripts under `scripts/` are placeholders; the primary usage is via the Python API in `simulacra/benchmark.py` and notebooks under `notebooks/`.\n\n## License\n\nThis project is dual-licensed:\n\n- Open Source: AGPL-3.0 — see `LICENSE` (link to the official text included there).\n- Commercial: A paid proprietary license is available — see `LICENSES/COMMERCIAL-LICENSE.txt` and contact `ferdinando.randisi@gmail.com`.\n",
+ "hits": {
+  "st": [
+   {
+    "file": "SDV_Synthesize_a_table_(Gaussian_Copula).ipynb",
+    "line": 386,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "        \"id\": \"4MSVT6SdGBqY\"",
+     "      },",
+     "      \"outputs\": [],",
+     "      \"source\": [",
+     "        \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "        \"\\n\",",
+     "        \"synthesizer = GaussianCopulaSynthesizer(metadata)\\n\",",
+     "        \"synthesizer.fit(real_data)\"",
+     "      ]"
+    ]
+   },
+   {
+    "file": "data_synthesis_hannum.ipynb",
+    "line": 434,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "     ]",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"synthesizer = GaussianCopulaSynthesizer(hannum_metadata)\\n\",",
+     "    \"synthesizer.fit(hannum_data)\"",
+     "   ]"
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-10_09-05Z-build-poc-for-simulacra-data-processing.md",
+    "line": 1008,
+    "text": "+ from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "```diff",
+     "@@ -1,1 +1,43 @@",
+     "- ",
+     "+ from sdv.single_table import GaussianCopulaSynthesizer",
+     "+ from sdv.metadata import Metadata",
+     "+ ",
+     "+ # Validate prerequisites",
+     "+ if 'X_train' not in globals() or 'y_train' not in globals():"
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-10_09-05Z-build-poc-for-simulacra-data-processing.md",
+    "line": 1081,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "```diff",
+     "@@ -1,2 +1,3 @@",
+     "+ import pandas as pd",
+     "  from sdv.single_table import GaussianCopulaSynthesizer",
+     "  from sdv.metadata import Metadata",
+     "```",
+     "",
+     "</details>"
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-10_09-05Z-build-poc-for-simulacra-data-processing.md",
+    "line": 1451,
+    "text": "+ from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "- ",
+     "+ # Optimize synthetic data quality by selecting best GaussianCopula default_distribution",
+     "+ import pandas as pd",
+     "+ import numpy as np",
+     "+ from sdv.single_table import GaussianCopulaSynthesizer",
+     "+ from sdv.metadata import Metadata",
+     "+ from sdv.evaluation.single_table import evaluate_quality",
+     "+ ",
+     "+ # Preconditions"
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-10_09-05Z-build-poc-for-simulacra-data-processing.md",
+    "line": 1747,
+    "text": "- from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "- # Optimize synthetic data quality by selecting best GaussianCopula default_distribution",
+     "+ # Optimize synthetic data quality by selecting best synthesizer",
+     "  import pandas as pd",
+     "  import numpy as np",
+     "- from sdv.single_table import GaussianCopulaSynthesizer",
+     "+ from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "  from sdv.metadata import Metadata",
+     "  from sdv.evaluation.single_table import evaluate_quality",
+     "- "
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-10_09-05Z-build-poc-for-simulacra-data-processing.md",
+    "line": 1748,
+    "text": "+ from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "+ # Optimize synthetic data quality by selecting best synthesizer",
+     "  import pandas as pd",
+     "  import numpy as np",
+     "- from sdv.single_table import GaussianCopulaSynthesizer",
+     "+ from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "  from sdv.metadata import Metadata",
+     "  from sdv.evaluation.single_table import evaluate_quality",
+     "- ",
+     "- # Build a fresh train split locally from merged_df"
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-11_23-22Z-check-test-set-sizes-in-classifiers.md",
+    "line": 3799,
+    "text": "+ from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "+ from sklearn.preprocessing import StandardScaler",
+     "+ from sklearn.pipeline import Pipeline",
+     "+ from sklearn.linear_model import RidgeClassifier",
+     "+ from sklearn.metrics import accuracy_score, f1_score, classification_report",
+     "+ from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "+ from sdv.metadata import SingleTableMetadata",
+     "+ ",
+     "+ def _log(message: str) -> None:",
+     "+     \"\"\"Log a message with timestamp.\"\"\""
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-11_23-22Z-check-test-set-sizes-in-classifiers.md",
+    "line": 7077,
+    "text": "+from sdv.single_table import (",
+    "context": [
+     "+from sklearn.model_selection import train_test_split",
+     "+from sklearn.pipeline import Pipeline",
+     "+from sklearn.preprocessing import StandardScaler",
+     "+from sdv.metadata import SingleTableMetadata",
+     "+from sdv.single_table import (",
+     "+    CTGANSynthesizer,",
+     "+    TVAESynthesizer,",
+     "+    GaussianCopulaSynthesizer,",
+     "+)"
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-11_23-22Z-check-test-set-sizes-in-classifiers.md",
+    "line": 7424,
+    "text": "- from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "- from sklearn.preprocessing import StandardScaler",
+     "- from sklearn.pipeline import Pipeline",
+     "- from sklearn.linear_model import RidgeClassifier",
+     "- from sklearn.metrics import accuracy_score, f1_score, classification_report",
+     "- from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "- from sdv.metadata import SingleTableMetadata",
+     "- ",
+     "- def _log(message: str) -> None:",
+     "-     \"\"\"Log a message with timestamp.\"\"\""
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-11_23-22Z-check-test-set-sizes-in-classifiers.md",
+    "line": 8040,
+    "text": "from sdv.single_table import (",
+    "context": [
+     "  from sklearn.pipeline import Pipeline",
+     "  from sklearn.preprocessing import StandardScaler",
+     "- from sdv.metadata import SingleTableMetadata",
+     "+ from sdv.metadata import Metadata",
+     "  from sdv.single_table import (",
+     "      CTGANSynthesizer,",
+     "```",
+     "",
+     "</details>"
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-11_23-22Z-check-test-set-sizes-in-classifiers.md",
+    "line": 9713,
+    "text": "from sdv.single_table import (",
+    "context": [
+     "  from sklearn.pipeline import Pipeline",
+     "  from sklearn.preprocessing import StandardScaler",
+     "- from sdv.metadata import Metadata",
+     "+ from sdv.metadata import SingleTableMetadata",
+     "  from sdv.single_table import (",
+     "      CTGANSynthesizer,",
+     "```",
+     "",
+     "</details>"
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "SDV_Synthesize_a_table_(Gaussian_Copula).ipynb",
+    "line": 610,
+    "text": "\"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+    "context": [
+     "          ]",
+     "        }",
+     "      ],",
+     "      \"source\": [",
+     "        \"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+     "        \"\\n\",",
+     "        \"diagnostic = run_diagnostic(\\n\",",
+     "        \"    real_data=real_data,\\n\",",
+     "        \"    synthetic_data=synthetic_data,\\n\","
+    ]
+   },
+   {
+    "file": "SDV_Synthesize_a_table_(Gaussian_Copula).ipynb",
+    "line": 666,
+    "text": "\"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+    "context": [
+     "          ]",
+     "        }",
+     "      ],",
+     "      \"source\": [",
+     "        \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "        \"\\n\",",
+     "        \"quality_report = evaluate_quality(\\n\",",
+     "        \"    real_data,\\n\",",
+     "        \"    synthetic_data,\\n\","
+    ]
+   },
+   {
+    "file": "SDV_Synthesize_a_table_(Gaussian_Copula).ipynb",
+    "line": 826,
+    "text": "\"from sdv.evaluation.single_table import get_column_plot\\n\",",
+    "context": [
+     "          \"output_type\": \"display_data\"",
+     "        }",
+     "      ],",
+     "      \"source\": [",
+     "        \"from sdv.evaluation.single_table import get_column_plot\\n\",",
+     "        \"\\n\",",
+     "        \"fig = get_column_plot(\\n\",",
+     "        \"    real_data=real_data,\\n\",",
+     "        \"    synthetic_data=synthetic_data,\\n\","
+    ]
+   },
+   {
+    "file": "SDV_Synthesize_a_table_(Gaussian_Copula).ipynb",
+    "line": 877,
+    "text": "\"from sdv.evaluation.single_table import get_column_pair_plot\\n\",",
+    "context": [
+     "          \"output_type\": \"display_data\"",
+     "        }",
+     "      ],",
+     "      \"source\": [",
+     "        \"from sdv.evaluation.single_table import get_column_pair_plot\\n\",",
+     "        \"\\n\",",
+     "        \"fig = get_column_pair_plot(\\n\",",
+     "        \"    real_data=real_data,\\n\",",
+     "        \"    synthetic_data=synthetic_data,\\n\","
+    ]
+   },
+   {
+    "file": "data_synthesis_hannum.ipynb",
+    "line": 725,
+    "text": "\"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+    "context": [
+     "     ]",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+     "    \"\\n\",",
+     "    \"diagnostic = run_diagnostic(\\n\",",
+     "    \"    real_data=hannum_data,\\n\",",
+     "    \"    synthetic_data=synthetic_data,\\n\","
+    ]
+   },
+   {
+    "file": "data_synthesis_hannum.ipynb",
+    "line": 774,
+    "text": "\"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+    "context": [
+     "     ]",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"\\n\",",
+     "    \"quality_report = evaluate_quality(\\n\",",
+     "    \"    hannum_data,\\n\",",
+     "    \"    synthetic_data,\\n\","
+    ]
+   },
+   {
+    "file": "data_synthesis_hannum.ipynb",
+    "line": 941,
+    "text": "\"from sdv.evaluation.single_table import get_column_plot\\n\",",
+    "context": [
+     "   \"id\": \"d391934a\",",
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"from sdv.evaluation.single_table import get_column_plot\\n\",",
+     "    \"from IPython.display import Image\\n\",",
+     "    \"from IPython.display import display\\n\",",
+     "    \"\\n\",",
+     "    \"#TODO: this won't work as of now - something is wrong with pyplot.\\n\","
+    ]
+   },
+   {
+    "file": "data_synthesis_hannum.ipynb",
+    "line": 995,
+    "text": "\"from sdv.evaluation.single_table import get_column_pair_plot\\n\",",
+    "context": [
+     "     \"output_type\": \"display_data\"",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdv.evaluation.single_table import get_column_pair_plot\\n\",",
+     "    \"\\n\",",
+     "    \"fig = get_column_pair_plot(\\n\",",
+     "    \"    real_data=hannum_data,\\n\",",
+     "    \"    synthetic_data=synthetic_data,\\n\","
+    ]
+   },
+   {
+    "file": "data_synthesis_hannum.ipynb",
+    "line": 1285,
+    "text": "\"from sdv.evaluation.single_table import QualityReport\\n\",",
+    "context": [
+     "   \"id\": \"579574ac\",",
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"from sdv.evaluation.single_table import QualityReport\\n\",",
+     "    \"\\n\",",
+     "    \"def group_quality_reports(quality_reports: dict[str, QualityReport]) -> dict[str, dict[str, pd.DataFrame]]:\\n\",",
+     "    \"    \\\"\\\"\\\"\\n\",",
+     "    \"    Groups the quality report by the kind of synthesizer.\\n\","
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-10_09-05Z-build-poc-for-simulacra-data-processing.md",
+    "line": 1453,
+    "text": "+ from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "+ import pandas as pd",
+     "+ import numpy as np",
+     "+ from sdv.single_table import GaussianCopulaSynthesizer",
+     "+ from sdv.metadata import Metadata",
+     "+ from sdv.evaluation.single_table import evaluate_quality",
+     "+ ",
+     "+ # Preconditions",
+     "+ if 'X_train' not in globals() or 'y_train' not in globals():",
+     "+     raise RuntimeError(\"Training split not found. Run the training cell first.\")"
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-10_09-05Z-build-poc-for-simulacra-data-processing.md",
+    "line": 1523,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "Lines added: 16, lines removed: 5",
+     "",
+     "```diff",
+     "@@ -6,11 +6,22 @@",
+     "  from sdv.evaluation.single_table import evaluate_quality",
+     "  ",
+     "- # Preconditions",
+     "- if 'X_train' not in globals() or 'y_train' not in globals():",
+     "-     raise RuntimeError(\"Training split not found. Run the training cell first.\")"
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-10_09-05Z-build-poc-for-simulacra-data-processing.md",
+    "line": 1750,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "  import numpy as np",
+     "- from sdv.single_table import GaussianCopulaSynthesizer",
+     "+ from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "  from sdv.metadata import Metadata",
+     "  from sdv.evaluation.single_table import evaluate_quality",
+     "- ",
+     "- # Build a fresh train split locally from merged_df",
+     "  from sklearn.model_selection import train_test_split",
+     "+ from typing import Dict, Any, Tuple, Union"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "SDV_Synthesize_a_table_(Gaussian_Copula).ipynb",
+    "line": 46,
+    "text": "\"Requirement already satisfied: boto3<2.0.0,>=1.28 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-packages (from sdv) (1.37.31)\\n\",",
+    "context": [
+     "          \"output_type\": \"stream\",",
+     "          \"text\": [",
+     "            \"Defaulting to user installation because normal site-packages is not writeable\\n\",",
+     "            \"Requirement already satisfied: sdv in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-packages ",
+     "            \"Requirement already satisfied: boto3<2.0.0,>=1.28 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\",
+     "            \"Requirement already satisfied: botocore<2.0.0,>=1.31 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python3",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\s",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site"
+    ]
+   },
+   {
+    "file": "SDV_Synthesize_a_table_(Gaussian_Copula).ipynb",
+    "line": 47,
+    "text": "\"Requirement already satisfied: botocore<2.0.0,>=1.31 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-packages (from sdv) (1.37.31)\\n\",",
+    "context": [
+     "          \"text\": [",
+     "            \"Defaulting to user installation because normal site-packages is not writeable\\n\",",
+     "            \"Requirement already satisfied: sdv in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-packages ",
+     "            \"Requirement already satisfied: boto3<2.0.0,>=1.28 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\",
+     "            \"Requirement already satisfied: botocore<2.0.0,>=1.31 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python3",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\s",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site",
+     "            \"Requirement already satisfied: pandas>=2.1.1 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site"
+    ]
+   },
+   {
+    "file": "SDV_Synthesize_a_table_(Gaussian_Copula).ipynb",
+    "line": 48,
+    "text": "\"Requirement already satisfied: cloudpickle>=2.1.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-packages (from sdv) (3.1.1)\\n\",",
+    "context": [
+     "            \"Defaulting to user installation because normal site-packages is not writeable\\n\",",
+     "            \"Requirement already satisfied: sdv in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-packages ",
+     "            \"Requirement already satisfied: boto3<2.0.0,>=1.28 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\",
+     "            \"Requirement already satisfied: botocore<2.0.0,>=1.31 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python3",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\s",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site",
+     "            \"Requirement already satisfied: pandas>=2.1.1 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site",
+     "            \"Requirement already satisfied: tqdm>=4.29 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-pa"
+    ]
+   },
+   {
+    "file": "SDV_Synthesize_a_table_(Gaussian_Copula).ipynb",
+    "line": 49,
+    "text": "\"Requirement already satisfied: graphviz>=0.13.2 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-packages (from sdv) (0.20.3)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: sdv in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-packages ",
+     "            \"Requirement already satisfied: boto3<2.0.0,>=1.28 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\",
+     "            \"Requirement already satisfied: botocore<2.0.0,>=1.31 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python3",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\s",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site",
+     "            \"Requirement already satisfied: pandas>=2.1.1 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site",
+     "            \"Requirement already satisfied: tqdm>=4.29 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-pa",
+     "            \"Requirement already satisfied: copulas>=0.12.1 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\si"
+    ]
+   },
+   {
+    "file": "SDV_Synthesize_a_table_(Gaussian_Copula).ipynb",
+    "line": 50,
+    "text": "\"Requirement already satisfied: numpy>=1.26.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-packages (from sdv) (2.0.2)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: boto3<2.0.0,>=1.28 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\",
+     "            \"Requirement already satisfied: botocore<2.0.0,>=1.31 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python3",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\s",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site",
+     "            \"Requirement already satisfied: pandas>=2.1.1 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site",
+     "            \"Requirement already satisfied: tqdm>=4.29 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-pa",
+     "            \"Requirement already satisfied: copulas>=0.12.1 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\si",
+     "            \"Requirement already satisfied: ctgan>=0.11.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site"
+    ]
+   },
+   {
+    "file": "SDV_Synthesize_a_table_(Gaussian_Copula).ipynb",
+    "line": 51,
+    "text": "\"Requirement already satisfied: pandas>=2.1.1 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-packages (from sdv) (2.2.3)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: botocore<2.0.0,>=1.31 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python3",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\s",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site",
+     "            \"Requirement already satisfied: pandas>=2.1.1 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site",
+     "            \"Requirement already satisfied: tqdm>=4.29 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-pa",
+     "            \"Requirement already satisfied: copulas>=0.12.1 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\si",
+     "            \"Requirement already satisfied: ctgan>=0.11.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site",
+     "            \"Requirement already satisfied: deepecho>=0.7.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\si"
+    ]
+   },
+   {
+    "file": "SDV_Synthesize_a_table_(Gaussian_Copula).ipynb",
+    "line": 52,
+    "text": "\"Requirement already satisfied: tqdm>=4.29 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-packages (from sdv) (4.67.1)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\s",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site",
+     "            \"Requirement already satisfied: pandas>=2.1.1 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site",
+     "            \"Requirement already satisfied: tqdm>=4.29 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-pa",
+     "            \"Requirement already satisfied: copulas>=0.12.1 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\si",
+     "            \"Requirement already satisfied: ctgan>=0.11.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site",
+     "            \"Requirement already satisfied: deepecho>=0.7.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\si",
+     "            \"Requirement already satisfied: rdt>=1.17.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-p"
+    ]
+   },
+   {
+    "file": "SDV_Synthesize_a_table_(Gaussian_Copula).ipynb",
+    "line": 53,
+    "text": "\"Requirement already satisfied: copulas>=0.12.1 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-packages (from sdv) (0.12.2)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\s",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site",
+     "            \"Requirement already satisfied: pandas>=2.1.1 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site",
+     "            \"Requirement already satisfied: tqdm>=4.29 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-pa",
+     "            \"Requirement already satisfied: copulas>=0.12.1 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\si",
+     "            \"Requirement already satisfied: ctgan>=0.11.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site",
+     "            \"Requirement already satisfied: deepecho>=0.7.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\si",
+     "            \"Requirement already satisfied: rdt>=1.17.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-p",
+     "            \"Requirement already satisfied: sdmetrics>=0.20.1 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\"
+    ]
+   },
+   {
+    "file": "SDV_Synthesize_a_table_(Gaussian_Copula).ipynb",
+    "line": 54,
+    "text": "\"Requirement already satisfied: ctgan>=0.11.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-packages (from sdv) (0.11.0)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: numpy>=1.26.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site",
+     "            \"Requirement already satisfied: pandas>=2.1.1 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site",
+     "            \"Requirement already satisfied: tqdm>=4.29 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-pa",
+     "            \"Requirement already satisfied: copulas>=0.12.1 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\si",
+     "            \"Requirement already satisfied: ctgan>=0.11.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site",
+     "            \"Requirement already satisfied: deepecho>=0.7.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\si",
+     "            \"Requirement already satisfied: rdt>=1.17.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-p",
+     "            \"Requirement already satisfied: sdmetrics>=0.20.1 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\",
+     "            \"Requirement already satisfied: platformdirs>=4.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\"
+    ]
+   },
+   {
+    "file": "SDV_Synthesize_a_table_(Gaussian_Copula).ipynb",
+    "line": 55,
+    "text": "\"Requirement already satisfied: deepecho>=0.7.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-packages (from sdv) (0.7.0)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: pandas>=2.1.1 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site",
+     "            \"Requirement already satisfied: tqdm>=4.29 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-pa",
+     "            \"Requirement already satisfied: copulas>=0.12.1 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\si",
+     "            \"Requirement already satisfied: ctgan>=0.11.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site",
+     "            \"Requirement already satisfied: deepecho>=0.7.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\si",
+     "            \"Requirement already satisfied: rdt>=1.17.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-p",
+     "            \"Requirement already satisfied: sdmetrics>=0.20.1 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\",
+     "            \"Requirement already satisfied: platformdirs>=4.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\",
+     "            \"Requirement already satisfied: pyyaml>=6.0.1 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site"
+    ]
+   },
+   {
+    "file": "SDV_Synthesize_a_table_(Gaussian_Copula).ipynb",
+    "line": 56,
+    "text": "\"Requirement already satisfied: rdt>=1.17.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-packages (from sdv) (1.17.0)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: tqdm>=4.29 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-pa",
+     "            \"Requirement already satisfied: copulas>=0.12.1 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\si",
+     "            \"Requirement already satisfied: ctgan>=0.11.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site",
+     "            \"Requirement already satisfied: deepecho>=0.7.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\si",
+     "            \"Requirement already satisfied: rdt>=1.17.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-p",
+     "            \"Requirement already satisfied: sdmetrics>=0.20.1 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\",
+     "            \"Requirement already satisfied: platformdirs>=4.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\",
+     "            \"Requirement already satisfied: pyyaml>=6.0.1 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site",
+     "            \"Requirement already satisfied: jmespath<2.0.0,>=0.7.1 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python"
+    ]
+   },
+   {
+    "file": "SDV_Synthesize_a_table_(Gaussian_Copula).ipynb",
+    "line": 57,
+    "text": "\"Requirement already satisfied: sdmetrics>=0.20.1 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-packages (from sdv) (0.21.0)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: copulas>=0.12.1 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\si",
+     "            \"Requirement already satisfied: ctgan>=0.11.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site",
+     "            \"Requirement already satisfied: deepecho>=0.7.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\si",
+     "            \"Requirement already satisfied: rdt>=1.17.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-p",
+     "            \"Requirement already satisfied: sdmetrics>=0.20.1 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\",
+     "            \"Requirement already satisfied: platformdirs>=4.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\",
+     "            \"Requirement already satisfied: pyyaml>=6.0.1 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site",
+     "            \"Requirement already satisfied: jmespath<2.0.0,>=0.7.1 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python",
+     "            \"Requirement already satisfied: s3transfer<0.12.0,>=0.11.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\py"
+    ]
+   }
+  ],
+  "ctgan_mod": [
+   {
+    "file": "SDV_Synthesize_a_table_(Gaussian_Copula).ipynb",
+    "line": 67,
+    "text": "\"Requirement already satisfied: torch>=2.2.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-packages (from ctgan>=0.11.0->sdv) (2.6.0+cu126)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\py",
+     "            \"Requirement already satisfied: six>=1.5 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-pack",
+     "            \"Requirement already satisfied: plotly>=5.10.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\sit",
+     "            \"Requirement already satisfied: scipy>=1.12.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site",
+     "            \"Requirement already satisfied: torch>=2.2.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-",
+     "            \"Requirement already satisfied: colorama in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-pack",
+     "            \"Requirement already satisfied: pytz>=2020.1 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-",
+     "            \"Requirement already satisfied: tzdata>=2022.7 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\sit",
+     "            \"Requirement already satisfied: narwhals>=1.15.1 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\s"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "SDV_Synthesize_a_table_(Gaussian_Copula).ipynb",
+    "line": 386,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "        \"id\": \"4MSVT6SdGBqY\"",
+     "      },",
+     "      \"outputs\": [],",
+     "      \"source\": [",
+     "        \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "        \"\\n\",",
+     "        \"synthesizer = GaussianCopulaSynthesizer(metadata)\\n\",",
+     "        \"synthesizer.fit(real_data)\"",
+     "      ]"
+    ]
+   },
+   {
+    "file": "SDV_Synthesize_a_table_(Gaussian_Copula).ipynb",
+    "line": 388,
+    "text": "\"synthesizer = GaussianCopulaSynthesizer(metadata)\\n\",",
+    "context": [
+     "      \"outputs\": [],",
+     "      \"source\": [",
+     "        \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "        \"\\n\",",
+     "        \"synthesizer = GaussianCopulaSynthesizer(metadata)\\n\",",
+     "        \"synthesizer.fit(real_data)\"",
+     "      ]",
+     "    },",
+     "    {"
+    ]
+   },
+   {
+    "file": "SDV_Synthesize_a_table_(Gaussian_Copula).ipynb",
+    "line": 1088,
+    "text": "\"synthesizer = GaussianCopulaSynthesizer.load('my_synthesizer.pkl')\"",
+    "context": [
+     "      \"outputs\": [],",
+     "      \"source\": [",
+     "        \"synthesizer.save('my_synthesizer.pkl')\\n\",",
+     "        \"\\n\",",
+     "        \"synthesizer = GaussianCopulaSynthesizer.load('my_synthesizer.pkl')\"",
+     "      ]",
+     "    },",
+     "    {",
+     "      \"cell_type\": \"markdown\","
+    ]
+   },
+   {
+    "file": "SDV_Synthesize_a_table_(Gaussian_Copula).ipynb",
+    "line": 1110,
+    "text": "\"custom_synthesizer = GaussianCopulaSynthesizer(\\n\",",
+    "context": [
+     "        \"id\": \"hzy3e0peGf8j\"",
+     "      },",
+     "      \"outputs\": [],",
+     "      \"source\": [",
+     "        \"custom_synthesizer = GaussianCopulaSynthesizer(\\n\",",
+     "        \"    metadata,\\n\",",
+     "        \"    default_distribution='truncnorm',\\n\",",
+     "        \"    numerical_distributions={\\n\",",
+     "        \"        'checkin_date': 'uniform',\\n\","
+    ]
+   },
+   {
+    "file": "data_synthesis_hannum.ipynb",
+    "line": 434,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "     ]",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"synthesizer = GaussianCopulaSynthesizer(hannum_metadata)\\n\",",
+     "    \"synthesizer.fit(hannum_data)\"",
+     "   ]"
+    ]
+   },
+   {
+    "file": "data_synthesis_hannum.ipynb",
+    "line": 436,
+    "text": "\"synthesizer = GaussianCopulaSynthesizer(hannum_metadata)\\n\",",
+    "context": [
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"synthesizer = GaussianCopulaSynthesizer(hannum_metadata)\\n\",",
+     "    \"synthesizer.fit(hannum_data)\"",
+     "   ]",
+     "  },",
+     "  {"
+    ]
+   },
+   {
+    "file": "data_synthesis_hannum.ipynb",
+    "line": 1025,
+    "text": "\"synthesizer = GaussianCopulaSynthesizer.load('my_synthesizer.pkl')\"",
+    "context": [
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"synthesizer.save('my_synthesizer.pkl')\\n\",",
+     "    \"\\n\",",
+     "    \"synthesizer = GaussianCopulaSynthesizer.load('my_synthesizer.pkl')\"",
+     "   ]",
+     "  },",
+     "  {",
+     "   \"cell_type\": \"markdown\","
+    ]
+   },
+   {
+    "file": "data_synthesis_hannum.ipynb",
+    "line": 1158,
+    "text": "\"        custom_synthesizer[kind] = GaussianCopulaSynthesizer(\\n\",",
+    "context": [
+     "    \"    synth_path = os.path.join(synth_folder, kind + '.pkl')\\n\",",
+     "    \"    if not os.path.exists(synth_path):\\n\",",
+     "    \"        print(datetime.datetime.now(), \\n\",",
+     "    \"            f': Creating custom synthesizer for {kind}...', )\\n\",",
+     "    \"        custom_synthesizer[kind] = GaussianCopulaSynthesizer(\\n\",",
+     "    \"            hannum_metadata,\\n\",",
+     "    \"            default_distribution=kind,\\n\",",
+     "    \"            numerical_distributions={\\n\",",
+     "    \"                'age': 'gaussian_kde'\\n\","
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-10_09-05Z-build-poc-for-simulacra-data-processing.md",
+    "line": 976,
+    "text": "I need to confirm my understanding before adding a cell. The user has requested that we proceed only when I'm confident. From the notebook, I see they used the GaussianCopulaSynthesizer from `sdv.single_table`, which involves passing metadata and fitting it to a dataframe with the target 'age'. It l",
+    "context": [
+     "---",
+     "",
+     "<think><details><summary>Thought Process</summary>**Confirming understanding**",
+     "",
+     "I need to confirm my understanding before adding a cell. The user has requested that we proceed only when I'm confident. From the notebook, I see they used the GaussianCopulaSynthesizer from `sdv.sing",
+     "**Clarifying data sampling**",
+     "",
+     "I need to clarify how many rows to sample for augmentation. The goal is to have a total of three times the data, meaning I should sample two additional times the rows from the original. First, I’ll cr",
+     ""
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-10_09-05Z-build-poc-for-simulacra-data-processing.md",
+    "line": 979,
+    "text": "I need to clarify how many rows to sample for augmentation. The goal is to have a total of three times the data, meaning I should sample two additional times the rows from the original. First, I’ll create metadata using `Metadata.detect_from_dataframe` on the training subset. Then, I’ll initialize t",
+    "context": [
+     "",
+     "I need to confirm my understanding before adding a cell. The user has requested that we proceed only when I'm confident. From the notebook, I see they used the GaussianCopulaSynthesizer from `sdv.sing",
+     "**Clarifying data sampling**",
+     "",
+     "I need to clarify how many rows to sample for augmentation. The goal is to have a total of three times the data, meaning I should sample two additional times the rows from the original. First, I’ll cr",
+     "",
+     "---",
+     "",
+     "I'll first add todos for the augmentation step, then create a new notebook cell that fits a GaussianCopulaSynthesizer with default_distribution='gaussian_kde' on the training set to generate 2x additi"
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-10_09-05Z-build-poc-for-simulacra-data-processing.md",
+    "line": 983,
+    "text": "I'll first add todos for the augmentation step, then create a new notebook cell that fits a GaussianCopulaSynthesizer with default_distribution='gaussian_kde' on the training set to generate 2x additional rows (so total becomes 3x), concatenates with the original training data, and displays the augm",
+    "context": [
+     "I need to clarify how many rows to sample for augmentation. The goal is to have a total of three times the data, meaning I should sample two additional times the rows from the original. First, I’ll cr",
+     "",
+     "---",
+     "",
+     "I'll first add todos for the augmentation step, then create a new notebook cell that fits a GaussianCopulaSynthesizer with default_distribution='gaussian_kde' on the training set to generate 2x additi",
+     "",
+     "---",
+     "",
+     "Tool use: **todo_write**"
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-10_09-05Z-build-poc-for-simulacra-data-processing.md",
+    "line": 1008,
+    "text": "+ from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "```diff",
+     "@@ -1,1 +1,43 @@",
+     "- ",
+     "+ from sdv.single_table import GaussianCopulaSynthesizer",
+     "+ from sdv.metadata import Metadata",
+     "+ ",
+     "+ # Validate prerequisites",
+     "+ if 'X_train' not in globals() or 'y_train' not in globals():"
+    ]
+   }
+  ],
+  "rdt": [
+   {
+    "file": "SDV_Synthesize_a_table_(Gaussian_Copula).ipynb",
+    "line": 73,
+    "text": "\"Requirement already satisfied: scikit-learn>=1.3.1 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-packages (from rdt>=1.17.0->sdv) (1.6.1)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: pytz>=2020.1 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-",
+     "            \"Requirement already satisfied: tzdata>=2022.7 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\sit",
+     "            \"Requirement already satisfied: narwhals>=1.15.1 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\s",
+     "            \"Requirement already satisfied: packaging in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-pac",
+     "            \"Requirement already satisfied: scikit-learn>=1.3.1 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312",
+     "            \"Requirement already satisfied: Faker>=17 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-pac",
+     "            \"Requirement already satisfied: joblib>=1.2.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site",
+     "            \"Requirement already satisfied: threadpoolctl>=3.1.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python31",
+     "            \"Requirement already satisfied: filelock in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-pack"
+    ]
+   },
+   {
+    "file": "SDV_Synthesize_a_table_(Gaussian_Copula).ipynb",
+    "line": 74,
+    "text": "\"Requirement already satisfied: Faker>=17 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-packages (from rdt>=1.17.0->sdv) (37.3.0)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: tzdata>=2022.7 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\sit",
+     "            \"Requirement already satisfied: narwhals>=1.15.1 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\s",
+     "            \"Requirement already satisfied: packaging in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-pac",
+     "            \"Requirement already satisfied: scikit-learn>=1.3.1 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312",
+     "            \"Requirement already satisfied: Faker>=17 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-pac",
+     "            \"Requirement already satisfied: joblib>=1.2.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site",
+     "            \"Requirement already satisfied: threadpoolctl>=3.1.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python31",
+     "            \"Requirement already satisfied: filelock in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-pack",
+     "            \"Requirement already satisfied: typing-extensions>=4.10.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\pyt"
+    ]
+   }
+  ],
+  "copulas": [
+   {
+    "file": "SDV_Synthesize_a_table_(Gaussian_Copula).ipynb",
+    "line": 65,
+    "text": "\"Requirement already satisfied: plotly>=5.10.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-packages (from copulas>=0.12.1->sdv) (6.0.1)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: s3transfer<0.12.0,>=0.11.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\py",
+     "            \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\p",
+     "            \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\py",
+     "            \"Requirement already satisfied: six>=1.5 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-pack",
+     "            \"Requirement already satisfied: plotly>=5.10.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\sit",
+     "            \"Requirement already satisfied: scipy>=1.12.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site",
+     "            \"Requirement already satisfied: torch>=2.2.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-",
+     "            \"Requirement already satisfied: colorama in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-pack",
+     "            \"Requirement already satisfied: pytz>=2020.1 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-"
+    ]
+   },
+   {
+    "file": "SDV_Synthesize_a_table_(Gaussian_Copula).ipynb",
+    "line": 66,
+    "text": "\"Requirement already satisfied: scipy>=1.12.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-packages (from copulas>=0.12.1->sdv) (1.15.2)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\p",
+     "            \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\py",
+     "            \"Requirement already satisfied: six>=1.5 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-pack",
+     "            \"Requirement already satisfied: plotly>=5.10.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\sit",
+     "            \"Requirement already satisfied: scipy>=1.12.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site",
+     "            \"Requirement already satisfied: torch>=2.2.0 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-",
+     "            \"Requirement already satisfied: colorama in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-pack",
+     "            \"Requirement already satisfied: pytz>=2020.1 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\site-",
+     "            \"Requirement already satisfied: tzdata>=2022.7 in c:\\\\users\\\\ferdi\\\\appdata\\\\local\\\\packages\\\\pythonsoftwarefoundation.python.3.12_qbz5n2kfra8p0\\\\localcache\\\\local-packages\\\\python312\\\\sit"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "data_synthesis_hannum.ipynb",
+    "line": 41,
+    "text": "\"from sdv.metadata import Metadata\\n\"",
+    "context": [
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"from biolearn.data_library import DataLibrary\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\"",
+     "   ]",
+     "  },",
+     "  {",
+     "   \"cell_type\": \"markdown\","
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-10_09-05Z-build-poc-for-simulacra-data-processing.md",
+    "line": 1009,
+    "text": "+ from sdv.metadata import Metadata",
+    "context": [
+     "```diff",
+     "@@ -1,1 +1,43 @@",
+     "- ",
+     "+ from sdv.single_table import GaussianCopulaSynthesizer",
+     "+ from sdv.metadata import Metadata",
+     "+ ",
+     "+ # Validate prerequisites",
+     "+ if 'X_train' not in globals() or 'y_train' not in globals():",
+     "+     raise RuntimeError(\"Training split not found. Run the previous cell first.\")"
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-10_09-05Z-build-poc-for-simulacra-data-processing.md",
+    "line": 1082,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "```diff",
+     "@@ -1,2 +1,3 @@",
+     "+ import pandas as pd",
+     "  from sdv.single_table import GaussianCopulaSynthesizer",
+     "  from sdv.metadata import Metadata",
+     "```",
+     "",
+     "</details>",
+     ""
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-10_09-05Z-build-poc-for-simulacra-data-processing.md",
+    "line": 1452,
+    "text": "+ from sdv.metadata import Metadata",
+    "context": [
+     "+ # Optimize synthetic data quality by selecting best GaussianCopula default_distribution",
+     "+ import pandas as pd",
+     "+ import numpy as np",
+     "+ from sdv.single_table import GaussianCopulaSynthesizer",
+     "+ from sdv.metadata import Metadata",
+     "+ from sdv.evaluation.single_table import evaluate_quality",
+     "+ ",
+     "+ # Preconditions",
+     "+ if 'X_train' not in globals() or 'y_train' not in globals():"
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-10_09-05Z-build-poc-for-simulacra-data-processing.md",
+    "line": 1749,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "  import pandas as pd",
+     "  import numpy as np",
+     "- from sdv.single_table import GaussianCopulaSynthesizer",
+     "+ from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "  from sdv.metadata import Metadata",
+     "  from sdv.evaluation.single_table import evaluate_quality",
+     "- ",
+     "- # Build a fresh train split locally from merged_df",
+     "  from sklearn.model_selection import train_test_split"
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-11_23-22Z-check-test-set-sizes-in-classifiers.md",
+    "line": 3800,
+    "text": "+ from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "+ from sklearn.pipeline import Pipeline",
+     "+ from sklearn.linear_model import RidgeClassifier",
+     "+ from sklearn.metrics import accuracy_score, f1_score, classification_report",
+     "+ from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "+ from sdv.metadata import SingleTableMetadata",
+     "+ ",
+     "+ def _log(message: str) -> None:",
+     "+     \"\"\"Log a message with timestamp.\"\"\"",
+     "+     print(f\"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {message}\")"
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-11_23-22Z-check-test-set-sizes-in-classifiers.md",
+    "line": 7076,
+    "text": "+from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "+from sklearn.metrics import accuracy_score, f1_score, classification_report",
+     "+from sklearn.model_selection import train_test_split",
+     "+from sklearn.pipeline import Pipeline",
+     "+from sklearn.preprocessing import StandardScaler",
+     "+from sdv.metadata import SingleTableMetadata",
+     "+from sdv.single_table import (",
+     "+    CTGANSynthesizer,",
+     "+    TVAESynthesizer,",
+     "+    GaussianCopulaSynthesizer,"
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-11_23-22Z-check-test-set-sizes-in-classifiers.md",
+    "line": 7425,
+    "text": "- from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "- from sklearn.pipeline import Pipeline",
+     "- from sklearn.linear_model import RidgeClassifier",
+     "- from sklearn.metrics import accuracy_score, f1_score, classification_report",
+     "- from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "- from sdv.metadata import SingleTableMetadata",
+     "- ",
+     "- def _log(message: str) -> None:",
+     "-     \"\"\"Log a message with timestamp.\"\"\"",
+     "-     print(f\"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {message}\")"
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-11_23-22Z-check-test-set-sizes-in-classifiers.md",
+    "line": 8038,
+    "text": "- from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "```diff",
+     "@@ -11,5 +11,5 @@",
+     "  from sklearn.pipeline import Pipeline",
+     "  from sklearn.preprocessing import StandardScaler",
+     "- from sdv.metadata import SingleTableMetadata",
+     "+ from sdv.metadata import Metadata",
+     "  from sdv.single_table import (",
+     "      CTGANSynthesizer,",
+     "```"
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-11_23-22Z-check-test-set-sizes-in-classifiers.md",
+    "line": 8039,
+    "text": "+ from sdv.metadata import Metadata",
+    "context": [
+     "@@ -11,5 +11,5 @@",
+     "  from sklearn.pipeline import Pipeline",
+     "  from sklearn.preprocessing import StandardScaler",
+     "- from sdv.metadata import SingleTableMetadata",
+     "+ from sdv.metadata import Metadata",
+     "  from sdv.single_table import (",
+     "      CTGANSynthesizer,",
+     "```",
+     ""
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-11_23-22Z-check-test-set-sizes-in-classifiers.md",
+    "line": 9711,
+    "text": "- from sdv.metadata import Metadata",
+    "context": [
+     "```diff",
+     "@@ -11,5 +11,5 @@",
+     "  from sklearn.pipeline import Pipeline",
+     "  from sklearn.preprocessing import StandardScaler",
+     "- from sdv.metadata import Metadata",
+     "+ from sdv.metadata import SingleTableMetadata",
+     "  from sdv.single_table import (",
+     "      CTGANSynthesizer,",
+     "```"
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-11_23-22Z-check-test-set-sizes-in-classifiers.md",
+    "line": 9712,
+    "text": "+ from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "@@ -11,5 +11,5 @@",
+     "  from sklearn.pipeline import Pipeline",
+     "  from sklearn.preprocessing import StandardScaler",
+     "- from sdv.metadata import Metadata",
+     "+ from sdv.metadata import SingleTableMetadata",
+     "  from sdv.single_table import (",
+     "      CTGANSynthesizer,",
+     "```",
+     ""
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": ".specstory/history/2025-10-10_09-05Z-build-poc-for-simulacra-data-processing.md",
+    "line": 1706,
+    "text": "The SDV library makes it easy to swap synthesizers - you'd just replace `GaussianCopulaSynthesizer` with `CTGANSynthesizer` or `TVAESynthesizer` and run the same evaluation pipeline to see which gives the best synthetic data quality for your embeddings.",
+    "context": [
+     "1. **Try CTGAN** - Likely to perform better on high-dimensional embedding data",
+     "2. **Try TVAE** - Good balance of performance and interpretability",
+     "3. **Compare multiple synthesizers** - Use SDV's evaluation framework to systematically compare quality scores across different models",
+     "",
+     "The SDV library makes it easy to swap synthesizers - you'd just replace `GaussianCopulaSynthesizer` with `CTGANSynthesizer` or `TVAESynthesizer` and run the same evaluation pipeline to see which gives",
+     "",
+     "---",
+     "",
+     "_**User (2025-10-10 09:05Z)**_"
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-10_09-05Z-build-poc-for-simulacra-data-processing.md",
+    "line": 1748,
+    "text": "+ from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "+ # Optimize synthetic data quality by selecting best synthesizer",
+     "  import pandas as pd",
+     "  import numpy as np",
+     "- from sdv.single_table import GaussianCopulaSynthesizer",
+     "+ from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "  from sdv.metadata import Metadata",
+     "  from sdv.evaluation.single_table import evaluate_quality",
+     "- ",
+     "- # Build a fresh train split locally from merged_df"
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-10_09-05Z-build-poc-for-simulacra-data-processing.md",
+    "line": 1797,
+    "text": "+                 synth = CTGANSynthesizer(metadata)",
+    "context": [
+     "+         synthesizers = {}",
+     "+         ",
+     "+         for config in candidates:",
+     "+             if config == 'default':",
+     "+                 synth = CTGANSynthesizer(metadata)",
+     "+             elif config == 'epochs_100':",
+     "+                 synth = CTGANSynthesizer(metadata, epochs=100)",
+     "+             elif config == 'epochs_200':",
+     "+                 synth = CTGANSynthesizer(metadata, epochs=200)"
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-10_09-05Z-build-poc-for-simulacra-data-processing.md",
+    "line": 1799,
+    "text": "+                 synth = CTGANSynthesizer(metadata, epochs=100)",
+    "context": [
+     "+         for config in candidates:",
+     "+             if config == 'default':",
+     "+                 synth = CTGANSynthesizer(metadata)",
+     "+             elif config == 'epochs_100':",
+     "+                 synth = CTGANSynthesizer(metadata, epochs=100)",
+     "+             elif config == 'epochs_200':",
+     "+                 synth = CTGANSynthesizer(metadata, epochs=200)",
+     "+             elif config == 'batch_500':",
+     "+                 synth = CTGANSynthesizer(metadata, batch_size=500)"
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-10_09-05Z-build-poc-for-simulacra-data-processing.md",
+    "line": 1801,
+    "text": "+                 synth = CTGANSynthesizer(metadata, epochs=200)",
+    "context": [
+     "+                 synth = CTGANSynthesizer(metadata)",
+     "+             elif config == 'epochs_100':",
+     "+                 synth = CTGANSynthesizer(metadata, epochs=100)",
+     "+             elif config == 'epochs_200':",
+     "+                 synth = CTGANSynthesizer(metadata, epochs=200)",
+     "+             elif config == 'batch_500':",
+     "+                 synth = CTGANSynthesizer(metadata, batch_size=500)",
+     "+             elif config == 'batch_1000':",
+     "+                 synth = CTGANSynthesizer(metadata, batch_size=1000)"
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-10_09-05Z-build-poc-for-simulacra-data-processing.md",
+    "line": 1803,
+    "text": "+                 synth = CTGANSynthesizer(metadata, batch_size=500)",
+    "context": [
+     "+                 synth = CTGANSynthesizer(metadata, epochs=100)",
+     "+             elif config == 'epochs_200':",
+     "+                 synth = CTGANSynthesizer(metadata, epochs=200)",
+     "+             elif config == 'batch_500':",
+     "+                 synth = CTGANSynthesizer(metadata, batch_size=500)",
+     "+             elif config == 'batch_1000':",
+     "+                 synth = CTGANSynthesizer(metadata, batch_size=1000)",
+     "+             ",
+     "+             synth.fit(train_data)"
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-10_09-05Z-build-poc-for-simulacra-data-processing.md",
+    "line": 1805,
+    "text": "+                 synth = CTGANSynthesizer(metadata, batch_size=1000)",
+    "context": [
+     "+                 synth = CTGANSynthesizer(metadata, epochs=200)",
+     "+             elif config == 'batch_500':",
+     "+                 synth = CTGANSynthesizer(metadata, batch_size=500)",
+     "+             elif config == 'batch_1000':",
+     "+                 synth = CTGANSynthesizer(metadata, batch_size=1000)",
+     "+             ",
+     "+             synth.fit(train_data)",
+     "+             synthesizers[config] = synth",
+     "+             "
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-10_09-05Z-build-poc-for-simulacra-data-processing.md",
+    "line": 1941,
+    "text": "-                 synth = CTGANSynthesizer(metadata)",
+    "context": [
+     "@@ -48,7 +48,6 @@",
+     "          ",
+     "          for config in candidates:",
+     "-             if config == 'default':",
+     "-                 synth = CTGANSynthesizer(metadata)",
+     "-             elif config == 'epochs_100':",
+     "+             synth = CTGANSynthesizer(metadata)  # Initialize with default",
+     "+             if config == 'epochs_100':",
+     "                  synth = CTGANSynthesizer(metadata, epochs=100)"
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-10_09-05Z-build-poc-for-simulacra-data-processing.md",
+    "line": 1943,
+    "text": "+             synth = CTGANSynthesizer(metadata)  # Initialize with default",
+    "context": [
+     "          for config in candidates:",
+     "-             if config == 'default':",
+     "-                 synth = CTGANSynthesizer(metadata)",
+     "-             elif config == 'epochs_100':",
+     "+             synth = CTGANSynthesizer(metadata)  # Initialize with default",
+     "+             if config == 'epochs_100':",
+     "                  synth = CTGANSynthesizer(metadata, epochs=100)",
+     "              elif config == 'epochs_200':",
+     "```"
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-10_09-05Z-build-poc-for-simulacra-data-processing.md",
+    "line": 1945,
+    "text": "synth = CTGANSynthesizer(metadata, epochs=100)",
+    "context": [
+     "-                 synth = CTGANSynthesizer(metadata)",
+     "-             elif config == 'epochs_100':",
+     "+             synth = CTGANSynthesizer(metadata)  # Initialize with default",
+     "+             if config == 'epochs_100':",
+     "                  synth = CTGANSynthesizer(metadata, epochs=100)",
+     "              elif config == 'epochs_200':",
+     "```",
+     "",
+     "**Chunk 2**"
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-11_23-22Z-check-test-set-sizes-in-classifiers.md",
+    "line": 3799,
+    "text": "+ from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "+ from sklearn.preprocessing import StandardScaler",
+     "+ from sklearn.pipeline import Pipeline",
+     "+ from sklearn.linear_model import RidgeClassifier",
+     "+ from sklearn.metrics import accuracy_score, f1_score, classification_report",
+     "+ from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "+ from sdv.metadata import SingleTableMetadata",
+     "+ ",
+     "+ def _log(message: str) -> None:",
+     "+     \"\"\"Log a message with timestamp.\"\"\""
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-11_23-22Z-check-test-set-sizes-in-classifiers.md",
+    "line": 3908,
+    "text": "+         'CTGAN': CTGANSynthesizer,",
+    "context": [
+     "+     ",
+     "+     # 2. Train synthesizers and create augmented datasets",
+     "+     synthesizers = {",
+     "+         'GaussianCopula': GaussianCopulaSynthesizer,",
+     "+         'CTGAN': CTGANSynthesizer,",
+     "+         'TVAE': TVAESynthesizer",
+     "+     }",
+     "+     ",
+     "+     for synth_name, synth_class in synthesizers.items():"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": ".specstory/history/2025-10-10_09-05Z-build-poc-for-simulacra-data-processing.md",
+    "line": 1706,
+    "text": "The SDV library makes it easy to swap synthesizers - you'd just replace `GaussianCopulaSynthesizer` with `CTGANSynthesizer` or `TVAESynthesizer` and run the same evaluation pipeline to see which gives the best synthetic data quality for your embeddings.",
+    "context": [
+     "1. **Try CTGAN** - Likely to perform better on high-dimensional embedding data",
+     "2. **Try TVAE** - Good balance of performance and interpretability",
+     "3. **Compare multiple synthesizers** - Use SDV's evaluation framework to systematically compare quality scores across different models",
+     "",
+     "The SDV library makes it easy to swap synthesizers - you'd just replace `GaussianCopulaSynthesizer` with `CTGANSynthesizer` or `TVAESynthesizer` and run the same evaluation pipeline to see which gives",
+     "",
+     "---",
+     "",
+     "_**User (2025-10-10 09:05Z)**_"
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-10_09-05Z-build-poc-for-simulacra-data-processing.md",
+    "line": 1748,
+    "text": "+ from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "+ # Optimize synthetic data quality by selecting best synthesizer",
+     "  import pandas as pd",
+     "  import numpy as np",
+     "- from sdv.single_table import GaussianCopulaSynthesizer",
+     "+ from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "  from sdv.metadata import Metadata",
+     "  from sdv.evaluation.single_table import evaluate_quality",
+     "- ",
+     "- # Build a fresh train split locally from merged_df"
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-10_09-05Z-build-poc-for-simulacra-data-processing.md",
+    "line": 1817,
+    "text": "+                 synth = TVAESynthesizer(metadata)",
+    "context": [
+     "+         synthesizers = {}",
+     "+         ",
+     "+         for config in candidates:",
+     "+             if config == 'default':",
+     "+                 synth = TVAESynthesizer(metadata)",
+     "+             elif config == 'epochs_100':",
+     "+                 synth = TVAESynthesizer(metadata, epochs=100)",
+     "+             elif config == 'epochs_200':",
+     "+                 synth = TVAESynthesizer(metadata, epochs=200)"
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-10_09-05Z-build-poc-for-simulacra-data-processing.md",
+    "line": 1819,
+    "text": "+                 synth = TVAESynthesizer(metadata, epochs=100)",
+    "context": [
+     "+         for config in candidates:",
+     "+             if config == 'default':",
+     "+                 synth = TVAESynthesizer(metadata)",
+     "+             elif config == 'epochs_100':",
+     "+                 synth = TVAESynthesizer(metadata, epochs=100)",
+     "+             elif config == 'epochs_200':",
+     "+                 synth = TVAESynthesizer(metadata, epochs=200)",
+     "+             elif config == 'batch_500':",
+     "+                 synth = TVAESynthesizer(metadata, batch_size=500)"
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-10_09-05Z-build-poc-for-simulacra-data-processing.md",
+    "line": 1821,
+    "text": "+                 synth = TVAESynthesizer(metadata, epochs=200)",
+    "context": [
+     "+                 synth = TVAESynthesizer(metadata)",
+     "+             elif config == 'epochs_100':",
+     "+                 synth = TVAESynthesizer(metadata, epochs=100)",
+     "+             elif config == 'epochs_200':",
+     "+                 synth = TVAESynthesizer(metadata, epochs=200)",
+     "+             elif config == 'batch_500':",
+     "+                 synth = TVAESynthesizer(metadata, batch_size=500)",
+     "+             elif config == 'batch_1000':",
+     "+                 synth = TVAESynthesizer(metadata, batch_size=1000)"
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-10_09-05Z-build-poc-for-simulacra-data-processing.md",
+    "line": 1823,
+    "text": "+                 synth = TVAESynthesizer(metadata, batch_size=500)",
+    "context": [
+     "+                 synth = TVAESynthesizer(metadata, epochs=100)",
+     "+             elif config == 'epochs_200':",
+     "+                 synth = TVAESynthesizer(metadata, epochs=200)",
+     "+             elif config == 'batch_500':",
+     "+                 synth = TVAESynthesizer(metadata, batch_size=500)",
+     "+             elif config == 'batch_1000':",
+     "+                 synth = TVAESynthesizer(metadata, batch_size=1000)",
+     "+             ",
+     "+             synth.fit(train_data)"
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-10_09-05Z-build-poc-for-simulacra-data-processing.md",
+    "line": 1825,
+    "text": "+                 synth = TVAESynthesizer(metadata, batch_size=1000)",
+    "context": [
+     "+                 synth = TVAESynthesizer(metadata, epochs=200)",
+     "+             elif config == 'batch_500':",
+     "+                 synth = TVAESynthesizer(metadata, batch_size=500)",
+     "+             elif config == 'batch_1000':",
+     "+                 synth = TVAESynthesizer(metadata, batch_size=1000)",
+     "+             ",
+     "+             synth.fit(train_data)",
+     "+             synthesizers[config] = synth",
+     "+     else:"
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-10_09-05Z-build-poc-for-simulacra-data-processing.md",
+    "line": 1957,
+    "text": "-                 synth = TVAESynthesizer(metadata)",
+    "context": [
+     "@@ -68,7 +67,6 @@",
+     "          ",
+     "          for config in candidates:",
+     "-             if config == 'default':",
+     "-                 synth = TVAESynthesizer(metadata)",
+     "-             elif config == 'epochs_100':",
+     "+             synth = TVAESynthesizer(metadata)  # Initialize with default",
+     "+             if config == 'epochs_100':",
+     "                  synth = TVAESynthesizer(metadata, epochs=100)"
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-10_09-05Z-build-poc-for-simulacra-data-processing.md",
+    "line": 1959,
+    "text": "+             synth = TVAESynthesizer(metadata)  # Initialize with default",
+    "context": [
+     "          for config in candidates:",
+     "-             if config == 'default':",
+     "-                 synth = TVAESynthesizer(metadata)",
+     "-             elif config == 'epochs_100':",
+     "+             synth = TVAESynthesizer(metadata)  # Initialize with default",
+     "+             if config == 'epochs_100':",
+     "                  synth = TVAESynthesizer(metadata, epochs=100)",
+     "              elif config == 'epochs_200':",
+     "```"
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-10_09-05Z-build-poc-for-simulacra-data-processing.md",
+    "line": 1961,
+    "text": "synth = TVAESynthesizer(metadata, epochs=100)",
+    "context": [
+     "-                 synth = TVAESynthesizer(metadata)",
+     "-             elif config == 'epochs_100':",
+     "+             synth = TVAESynthesizer(metadata)  # Initialize with default",
+     "+             if config == 'epochs_100':",
+     "                  synth = TVAESynthesizer(metadata, epochs=100)",
+     "              elif config == 'epochs_200':",
+     "```",
+     "",
+     "</details>"
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-11_23-22Z-check-test-set-sizes-in-classifiers.md",
+    "line": 3799,
+    "text": "+ from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "+ from sklearn.preprocessing import StandardScaler",
+     "+ from sklearn.pipeline import Pipeline",
+     "+ from sklearn.linear_model import RidgeClassifier",
+     "+ from sklearn.metrics import accuracy_score, f1_score, classification_report",
+     "+ from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "+ from sdv.metadata import SingleTableMetadata",
+     "+ ",
+     "+ def _log(message: str) -> None:",
+     "+     \"\"\"Log a message with timestamp.\"\"\""
+    ]
+   },
+   {
+    "file": ".specstory/history/2025-10-11_23-22Z-check-test-set-sizes-in-classifiers.md",
+    "line": 3909,
+    "text": "+         'TVAE': TVAESynthesizer",
+    "context": [
+     "+     # 2. Train synthesizers and create augmented datasets",
+     "+     synthesizers = {",
+     "+         'GaussianCopula': GaussianCopulaSynthesizer,",
+     "+         'CTGAN': CTGANSynthesizer,",
+     "+         'TVAE': TVAESynthesizer",
+     "+     }",
+     "+     ",
+     "+     for synth_name, synth_class in synthesizers.items():",
+     "+         _log(f\"=== Training {synth_name} Augmented Classifier ===\")"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "copulas",
+  "ct",
+  "ctgan_mod",
+  "ev",
+  "gc",
+  "md",
+  "rdt",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

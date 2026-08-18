@@ -1,0 +1,189 @@
+{
+ "repo": "JakubParzydlo/ASI_Group",
+ "disk_kb": 439727,
+ "method": "partial_clone",
+ "tree_files": 882,
+ "status": "ok",
+ "readme": "\n<h3 align=\"center\">Projekt z przedmiotu “Architektury\nrozwiązań i wdrożeń SI”</h3>\n<p align=\"center\">\n    <br />\n    <a href=\"./docs/Dokumentacja_Techniczna.pdf\"><strong>Dokumentacja techniczna »</strong></a>\n    <br />\n</p>\n\nProjekt służy do tworzenia modeli do predykcji zdatności wody na podstawie danych dostępnych na Kaggle. \n\nProjekt korzysta z:\n* Kedro do zarządzania danymi i pipeline'ami, \n* sqlite do przechowywana danych,\n* AutoGluon do automatycznego dostosowywania modeli,\n* WandDB do śledzenia i wizualizacji trenowania modeli\n* FastAPI do stworzenia API do interakcji z modelem,\n* Streamlit do stworzenia prostego interfejsu użytkownika.\n\n## Instalacja\n\n- Utwórz wirtualne środowisko dla Python 3.9.18 (np. kedro_env), z którego będą uruchamiana back-end i streamlit\n  - Przejdż do folderu system_level\n  - Zainstaluj wymagane moduły za pomocą komendy:\n    ```\n    pip install -r requirements_kedro.txt\n    ```\n- Utwórz wirtualne środowisko dla Python 3.9.18 (np. fastAPI_env), z któego będą wystawiane endpointy z FastAPI\n  - Przejdż do folderu system_level\n  - Zainstaluj wymagane moduły za pomocą komendy:\n    ```\n    pip install -r requirements_fastapi.txt\n    ```\n\n## Tworzenie i retrenowanie modeli\n\nW środowisku kendro_env, z folderu ASI_GROUP/asi-kedro można utworzyć modele za pomocą komendy:\n```\nkedro run\n```\nRetrenowanie modeli odbywa się za pomocą komendy:\n```\nkedro run --pipeline=retrain\n```\n\n## Uruchomienie FastAPI i Streamlita\n\nW środowisku fastAPI_env, z folderu ASI_GROUP należy uruchomić FastAPI za pomocą komendy:\n```\nuvicorn api.main:app --reload\n```\n\nW środowisku kedro_env, z folderu ASI_GROUP należy uruchomić Streamlit za pomocą komendy:\n```\nstreamlit run streamlit/stream_app.py\n```\n\n## Struktura plików\n\n```\nASI_GROUP\n├───.idea\n│   └───inspectionProfiles\n├───api\n│   ├───asi-kedro\n│   ├───config\n│   ├───endpoint\n│   │   └───__pycache__\n│   ├───model\n│   │   └───__pycache__\n│   ├───services\n│   │   └───__pycache__\n│   ├───temp\n│   ├───templates\n│   └───__pycache__\n├───asi-kedro\n│   ├───AutogluonModels\n│   ├───conf\n│   │   ├───base\n│   │   └───local\n│   ├───dags\n│   ├───data\n│   │   ├───01_raw\n│   │   ├───03_primary\n│   │   ├───05_model_input\n│   │   ├───06_models\n│   │   └───07_model_outputs\n│   ├───docs\n│   │   └───source\n│   ├───sqlite\n│   ├───src\n│   │   ├───asi_kedro\n│   │   │   ├───pipelines\n│   │   │   │   ├───data_engineering\n│   │   │   │   │   └───__pycache__\n│   │   │   │   ├───data_science\n│   │   │   │   │   └───__pycache__\n│   │   │   │   ├───model_evaluation\n│   │   │   │   │   └───__pycache__\n│   │   │   │   ├───model_retraining\n│   │   │   │   │   └───__pycache__\n│   │   │   │   ├───synthetic_data_creation\n│   │   │   │   │   └───__pycache__\n│   │   │   │   └───__pycache__\n│   │   │   └───__pycache__\n│   │   └───tests\n│   │       └───pipelines\n│   │           ├───data_engineering\n│   │           ├───data_science\n│   │           ├───model_evaluation\n│   │           ├───model_retraining\n│   │           └───synthetic_data_creation\n│   └───wandb\n├───streamlit\n│   ├───tools\n│   │   └───__pycache__\n│   └───__pycache__\n├───visulation\n│   └───tools\n├───system_level\n└───__pycache__\n```",
+ "hits": {
+  "md": [
+   {
+    "file": "streamlit/synth_data_page.py",
+    "line": 6,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import requests",
+     "import pandas as pd",
+     "",
+     "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality, get_column_plot",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "def execute():",
+     "    response_synth = requests.get(\"http://localhost:8000/synth_data\")",
+     "    response_raw = requests.get(\"http://localhost:8000/raw_data\")"
+    ]
+   },
+   {
+    "file": "asi-kedro/src/asi_kedro/pipelines/synthetic_data_creation/nodes.py",
+    "line": 7,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "generated using Kedro 0.18.14",
+     "\"\"\"",
+     "import pandas as pd",
+     "from typing import Tuple",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "def create_synth_data(og_data: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:",
+     "    metadata = SingleTableMetadata()"
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "streamlit/synth_data_page.py",
+    "line": 5,
+    "text": "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality, get_column_plot",
+    "context": [
+     "import streamlit as st",
+     "import requests",
+     "import pandas as pd",
+     "",
+     "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality, get_column_plot",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "def execute():",
+     "    response_synth = requests.get(\"http://localhost:8000/synth_data\")"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "streamlit/synth_data_page.py",
+    "line": 5,
+    "text": "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality, get_column_plot",
+    "context": [
+     "import streamlit as st",
+     "import requests",
+     "import pandas as pd",
+     "",
+     "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality, get_column_plot",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "def execute():",
+     "    response_synth = requests.get(\"http://localhost:8000/synth_data\")"
+    ]
+   },
+   {
+    "file": "streamlit/synth_data_page.py",
+    "line": 6,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import requests",
+     "import pandas as pd",
+     "",
+     "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality, get_column_plot",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "def execute():",
+     "    response_synth = requests.get(\"http://localhost:8000/synth_data\")",
+     "    response_raw = requests.get(\"http://localhost:8000/raw_data\")"
+    ]
+   },
+   {
+    "file": "asi-kedro/src/asi_kedro/pipelines/synthetic_data_creation/nodes.py",
+    "line": 7,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "generated using Kedro 0.18.14",
+     "\"\"\"",
+     "import pandas as pd",
+     "from typing import Tuple",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "def create_synth_data(og_data: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:",
+     "    metadata = SingleTableMetadata()"
+    ]
+   },
+   {
+    "file": "asi-kedro/src/asi_kedro/pipelines/synthetic_data_creation/nodes.py",
+    "line": 8,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "\"\"\"",
+     "import pandas as pd",
+     "from typing import Tuple",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "def create_synth_data(og_data: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(og_data)"
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "asi-kedro/src/asi_kedro/pipelines/synthetic_data_creation/nodes.py",
+    "line": 8,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "\"\"\"",
+     "import pandas as pd",
+     "from typing import Tuple",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "def create_synth_data(og_data: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(og_data)"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "asi-kedro/src/asi_kedro/pipelines/synthetic_data_creation/nodes.py",
+    "line": 8,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "\"\"\"",
+     "import pandas as pd",
+     "from typing import Tuple",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "def create_synth_data(og_data: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(og_data)"
+    ]
+   },
+   {
+    "file": "asi-kedro/src/asi_kedro/pipelines/synthetic_data_creation/nodes.py",
+    "line": 14,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "def create_synth_data(og_data: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(og_data)",
+     "    ",
+     "    synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "    synthesizer.fit(og_data)",
+     "",
+     "    synth_data = synthesizer.sample(num_rows=3000)",
+     "    concat_data = pd.concat([og_data, synth_data])"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ev",
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

@@ -1,0 +1,243 @@
+{
+ "repo": "jvachier/Personality-classification",
+ "disk_kb": 6929,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Six-Stack Personality Classification Pipeline\n\nProduction-ready machine learning pipeline for personality classification using ensemble learning, data augmentation, and automated hyperparameter optimization. **Achieved top 5% (200/4329) in [Kaggle Personality Classification Competition](https://www.kaggle.com/competitions/playground-series-s5e7).** Modular, maintainable, and includes an interactive dashboard.\n\n## Technology Stack\n\n**ML**: scikit-learn, XGBoost, LightGBM, CatBoost, Optuna  \n**Data**: pandas, numpy, scipy, SDV  \n**Dashboard**: Dash, Plotly  \n**DevOps**: Docker, GitHub Actions, pre-commit, uv, Ruff, mypy, Bandit\n\n[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://python.org)\n[![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)](LICENSE)\n[![Kaggle](https://img.shields.io/badge/Kaggle-Top%205%25%20(200%2F4329)-orange.svg)](https://www.kaggle.com/competitions/playground-series-s5e7)\n[![Code Quality](https://img.shields.io/badge/Code%20Quality-Ruff-orange.svg)](https://ruff.rs)\n[![Dashboard](https://img.shields.io/badge/Dashboard-Dash-red.svg)](https://plotly.com/dash/)\n[![Architecture](https://img.shields.io/badge/Architecture-Modular-purple.svg)](#-architecture)\n\n## Dashboard Preview\n\n![Dashboard Demo](https://github.com/user-attachments/assets/3541a036-0363-44cf-ae78-7be6b66b553e)\n\n*Watch a live demo of the Personality Classification Dashboard in action*\n\n## Quick Start\n\n```bash\ngit clone <repository-url>\ncd Personality-classification\nuv sync\nmake train-models   # Train models\nmake dash           # Launch dashboard\nuv run python src/main_modular.py   # Run pipeline\n```\n\n## Table of Contents\n\n- [Dashboard Preview](#dashboard-preview)\n- [Quick Start](#quick-start)\n- [Features](#features)\n- [Architecture](#architecture)\n- [Installation](#installation)\n- [Usage](#usage)\n- [Dashboard](#dashboard)\n- [Configuration](#configuration)\n- [Model Stacks](#model-stacks)\n- [Performance Metrics](#performance-metrics)\n- [Testing & Validation](#testing--validation)\n- [Troubleshooting](#troubleshooting)\n- [Documentation](#documentation)\n\n## Features\n\n- Modular architecture: 8 specialized modules\n- 6 ensemble stacks (A-F) with complementary ML algorithms\n- Automated hyperparameter optimization (Optuna)\n- Advanced data augmentation (SDV Copula)\n- Interactive Dash dashboard\n- Dockerized deployment\n- Full test coverage (pytest)\n\n## Architecture\n\n```\nsrc/\n├── main_modular.py                 # Main production pipeline (MLOps-enhanced)\n├── modules/                        # Core modules\n│   ├── config.py                   # Configuration & logging\n│   ├── data_loader.py              # Data loading & external merge\n│   ├── preprocessing.py            # Feature engineering\n│   ├── data_augmentation.py        # Advanced synthetic data\n│   ├── model_builders.py           # Model stack construction\n│   ├── ensemble.py                 # Ensemble & OOF predictions\n│   ├── optimization.py             # Optuna utilities\n│   └── utils.py                    # Utility functions\n\ndash_app/                           # Interactive Dashboard\n├── dashboard/                            # Application source\n│   ├── app.py                      # Main Dash application\n│   ├── layout.py                   # UI layout components\n│   ├── callbacks.py                # Interactive callbacks\n│   └── model_loader.py             # Model loading utilities\n├── main.py                         # Application entry point\n├── Dockerfile                      # Container configuration\n└── docker-compose.yml             # Multi-service orchestration\n\nmodels/                             # Trained Models\n├── ensemble_model.pkl              # Production ensemble model\n├── ensemble_metadata.json         # Model metadata and labels\n├── stack_*_model.pkl              # Individual stack models\n└── stack_*_metadata.json          # Stack-specific metadata\n\nscripts/                            # Utility Scripts\n└── train_and_save_models.py        # Model training and persistence\n\ndata/                               # Datasets\n\ndocs/                               # Documentation\n└── [Generated documentation]       # Technical guides\n\nbest_params/                        # Optimized parameters\n└── stack_*_best_params.json        # Per-stack best parameters\n```\n\n## Installation\n\n### Prerequisites\n\n- **Python 3.11+**\n- **uv** (modern Python package manager) - [Install uv](https://docs.astral.sh/uv/getting-started/installation/)\n\n### Setup\n\n```bash\n# Clone repository\ngit clone <repository-url>\ncd Personality-classification\n\n# Install dependencies\nuv sync\n\n# Verify installation\nuv run python examples/minimal_test.py\n```\n\n### Alternative Installation (pip)\n\n```bash\n# If you prefer pip over uv\npip install -r requirements.txt  # Generated from pyproject.toml\n```\n\n## Usage\n\n```bash\n# Run production pipeline\nuv run python src/main_modular.py\n\n# Launch dashboard (after training models)\nmake train-models\nmake dash\n\n# Stop dashboard\nmake stop-dash\n```\n\n## Dashboard\n\nSee the video demo above for the latest dashboard interface and features. To launch the dashboard:\n\n```bash\nmake train-models\nmake dash\n# Dashboard available at http://localhost:8050\n```\n\n## Configuration\n\nThe pipeline is highly configurable through `src/modules/config.py`:\n\n### Core Parameters\n\n```python\n# Reproducibility\nRND = 42                           # Global random seed\n\n# Cross-validation\nN_SPLITS = 5                       # Stratified K-fold splits\n\n# Hyperparameter optimization\nN_TRIALS_STACK = 15               # Optuna trials per stack (15 for testing, 100+ for production)\nN_TRIALS_BLEND = 200              # Ensemble blending optimization trials\n\n# Threading configuration\nclass ThreadConfig(Enum):\n    N_JOBS = 4                    # Parallel jobs for sklearn\n    THREAD_COUNT = 4              # Thread count for XGBoost/LightGBM\n```\n\n### Data Augmentation\n\n```python\n# Augmentation settings\nENABLE_DATA_AUGMENTATION = True\nAUGMENTATION_METHOD = \"sdv_copula\"    # or \"basic\", \"smote\", \"adasyn\"\nAUGMENTATION_RATIO = 0.05             # 5% synthetic data\n\n# Quality control\nDIVERSITY_THRESHOLD = 0.95            # Minimum diversity score\nQUALITY_THRESHOLD = 0.7               # Minimum quality score\n```\n\n### Advanced Settings\n\n```python\n# Label noise for robustness\nLABEL_NOISE_RATE = 0.02              # 2% label noise for Stack F\n\n# Testing mode\nTESTING_MODE = True                   # Reduced dataset for development\nTESTING_SAMPLE_SIZE = 1000           # Samples in testing mode\n\n# Logging\nLOG_LEVEL = \"INFO\"                   # DEBUG, INFO, WARNING, ERROR\n```\n\n## Model Stacks\n\nThe pipeline employs six specialized ensemble stacks, each optimized for different aspects of the problem:\n\n| Stack | Focus                   | Algorithms                                                      | Hyperparameter Space         | Special Features            |\n| ----- | ----------------------- | --------------------------------------------------------------- | ---------------------------- | --------------------------- |\n| **A** | Traditional ML (Narrow) | Random Forest, Logistic Regression, XGBoost, LightGBM, CatBoost | Conservative search space    | Stable baseline performance |\n| **B** | Traditional ML (Wide)   | Same as Stack A                                                 | Extended search space        | Broader exploration         |\n| **C** | Gradient Boosting       | XGBoost, CatBoost                                               | Gradient boosting focused    | Tree-based specialists      |\n| **D** | Sklearn Ensemble        | Extra Trees, Hist Gradient Boosting, SVM, Gaussian NB           | Sklearn-native models        | Diverse algorithm mix       |\n| **E** | Neural Networks         | MLPClassifier, Deep architectures                               | Neural network tuning        | Non-linear pattern capture  |\n| **F** | Noise-Robust Training   | Same as Stack A                                                 | Standard space + label noise | Improved generalization     |\n\n### Ensemble Strategy\n\n- **Out-of-fold predictions** for unbiased ensemble training\n- **Optuna-optimized blending weights** for each stack\n- **Meta-learning approach** with Logistic Regression as final combiner\n- **Stratified cross-validation** ensures robust evaluation\n\n## Performance Metrics\n\n### Target Performance\n\nThe pipeline is designed to achieve high accuracy through ensemble learning and advanced optimization techniques. Performance will vary based on:\n\n```\nDataset Statistics\n├── Training Samples: ~18,000+ (with augmentation)\n├── Test Samples: ~6,000+\n├── Original Features: 8 personality dimensions\n├── Engineered Features: 14+ (with preprocessing)\n├── Augmented Samples: Variable (adaptive, typically 5-10%)\n└── Class Balance: Extrovert/Introvert classification\n\nTechnical Specifications\n├── Memory Usage: <4GB peak (configurable)\n├── CPU Utilization: 4 cores (configurable)\n├── Model Persistence: Yes - Best parameters saved\n└── Reproducibility: Yes - Fixed random seeds\n```\n\n## Testing & Validation\n\n### Development Testing\n\n```bash\n# Enable testing mode (faster execution)\n# Edit src/modules/config.py:\nTESTING_MODE = True\nTESTING_SAMPLE_SIZE = 1000\n\n# Run with reduced dataset\nuv run python src/main_modular.py\n```\n\n## Troubleshooting\n\n### Common Issues\n\n#### Dashboard Issues\n\n```bash\n# Dashboard won't start\nmake train-models              # Ensure models are trained first\nmake stop-dash && make dash    # Stop and restart dashboard\n\n# Port already in use\nlsof -ti:8050 | xargs kill     # Kill process on port 8050\nmake dash                      # Restart dashboard\n\n# Missing model files\nmake train-models              # Retrain models\nls models/                     # Verify model files exist\n```\n\n#### Memory Issues\n\n```bash\n# Reduce computational load\n# In src/modules/config.py:\nN_TRIALS_STACK = 5          # Reduce from 15\nENABLE_DATA_AUGMENTATION = False\nTESTING_MODE = True\n```\n\n#### Import Errors\n\n```bash\n# Verify environment\nuv run python --version     # Should be 3.11+\nuv sync                     # Reinstall dependencies\nuv run python -c \"import sklearn, pandas, numpy, dash; print('OK')\"\n```\n\n#### Performance Issues\n\n```bash\n# Optimize for your system\n# In src/modules/config.py:\nclass ThreadConfig(Enum):\n    N_JOBS = 2              # Reduce from 4\n    THREAD_COUNT = 2        # Reduce from 4\n```\n\n### Debug Mode\n\n```bash\n# Enable detailed logging\n# In src/modules/config.py:\nLOG_LEVEL = \"DEBUG\"\n\n# Run with verbose output\nuv run python src/main_modular.py 2>&1 | tee debug.log\n```\n\n## Documentation\n\nSee the `docs/` directory for:\n- Technical Guide\n- API Reference\n- Data Augmentation\n- Configuration Guide\n- Performance Tuning\n- Deployment Guide\n\n## Lead Developer & Maintainer\n\n**Lead Developer:** [Jeremy Vachier](https://github.com/jvachier)\nFor issues, feature requests, or questions, use GitHub Issues or Discussions.\n\n## Contributing\n\nContributions welcome! Fork the repo, create a feature branch, implement and test your changes, then submit a pull request.\n\n## License\n\nLicensed under the Apache License 2.0. See [LICENSE](LICENSE).\n\n## Project Status\n\n**Status:** Production Ready | Interactive Dashboard | Modular | Well Documented\n",
+ "hits": {
+  "st": [
+   {
+    "file": "src/modules/data_augmentation.py",
+    "line": 28,
+    "text": "from sdv.single_table import (",
+    "context": [
+     "",
+     "# Conditional imports",
+     "if SDV_AVAILABLE:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import (",
+     "        CTGANSynthesizer,",
+     "        GaussianCopulaSynthesizer,",
+     "        TVAESynthesizer,",
+     "    )"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "src/modules/data_augmentation.py",
+    "line": 27,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from .utils import get_logger",
+     "",
+     "# Conditional imports",
+     "if SDV_AVAILABLE:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import (",
+     "        CTGANSynthesizer,",
+     "        GaussianCopulaSynthesizer,",
+     "        TVAESynthesizer,"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "src/modules/data_augmentation.py",
+    "line": 27,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from .utils import get_logger",
+     "",
+     "# Conditional imports",
+     "if SDV_AVAILABLE:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import (",
+     "        CTGANSynthesizer,",
+     "        GaussianCopulaSynthesizer,",
+     "        TVAESynthesizer,"
+    ]
+   },
+   {
+    "file": "src/modules/data_augmentation.py",
+    "line": 28,
+    "text": "from sdv.single_table import (",
+    "context": [
+     "",
+     "# Conditional imports",
+     "if SDV_AVAILABLE:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import (",
+     "        CTGANSynthesizer,",
+     "        GaussianCopulaSynthesizer,",
+     "        TVAESynthesizer,",
+     "    )"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "src/modules/data_augmentation.py",
+    "line": 29,
+    "text": "CTGANSynthesizer,",
+    "context": [
+     "# Conditional imports",
+     "if SDV_AVAILABLE:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import (",
+     "        CTGANSynthesizer,",
+     "        GaussianCopulaSynthesizer,",
+     "        TVAESynthesizer,",
+     "    )",
+     ""
+    ]
+   },
+   {
+    "file": "src/modules/data_augmentation.py",
+    "line": 492,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "                    epochs = 20",
+     "                    batch_size = min(100, data_size // 8)",
+     "",
+     "                try:",
+     "                    synthesizer = CTGANSynthesizer(",
+     "                        metadata,",
+     "                        epochs=epochs,",
+     "                        batch_size=batch_size,",
+     "                        verbose=False,"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "src/modules/data_augmentation.py",
+    "line": 30,
+    "text": "GaussianCopulaSynthesizer,",
+    "context": [
+     "if SDV_AVAILABLE:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import (",
+     "        CTGANSynthesizer,",
+     "        GaussianCopulaSynthesizer,",
+     "        TVAESynthesizer,",
+     "    )",
+     "",
+     "if IMBLEARN_AVAILABLE:"
+    ]
+   },
+   {
+    "file": "src/modules/data_augmentation.py",
+    "line": 463,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "",
+     "        # Choose synthesizer based on method",
+     "        if method == \"copula\":",
+     "            logger.info(\"   ⚡ Training GaussianCopula (fast)...\")",
+     "            synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "        elif method == \"ctgan\":",
+     "            # Check for Apple Silicon - CTGAN has issues on M1/M2/M3",
+     "            is_apple_silicon = (",
+     "                platform.machine() == \"arm64\" and platform.system() == \"Darwin\""
+    ]
+   },
+   {
+    "file": "src/modules/data_augmentation.py",
+    "line": 475,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "                logger.warning(",
+     "                    \"   ⚠️ Apple Silicon detected - CTGAN has compatibility issues\"",
+     "                )",
+     "                logger.info(\"   Falling back to GaussianCopula for stability...\")",
+     "                synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "            else:",
+     "                logger.info(\"   🧠 Training CTGAN (slow but high quality)...\")",
+     "",
+     "                # Conservative CTGAN parameters"
+    ]
+   },
+   {
+    "file": "src/modules/data_augmentation.py",
+    "line": 505,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "                        pac=1,",
+     "                    )",
+     "                except Exception as e:",
+     "                    logger.warning(f\"   ⚠️ CTGAN initialization failed: {e}\")",
+     "                    synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "        else:",
+     "            synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "",
+     "        # Fit with timeout protection"
+    ]
+   },
+   {
+    "file": "src/modules/data_augmentation.py",
+    "line": 507,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "                except Exception as e:",
+     "                    logger.warning(f\"   ⚠️ CTGAN initialization failed: {e}\")",
+     "                    synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "        else:",
+     "            synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "",
+     "        # Fit with timeout protection",
+     "        logger.info(\"   🏋️ Training synthesizer...\")",
+     ""
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "src/modules/data_augmentation.py",
+    "line": 31,
+    "text": "TVAESynthesizer,",
+    "context": [
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import (",
+     "        CTGANSynthesizer,",
+     "        GaussianCopulaSynthesizer,",
+     "        TVAESynthesizer,",
+     "    )",
+     "",
+     "if IMBLEARN_AVAILABLE:",
+     "    from imblearn.over_sampling import SMOTENC"
+    ]
+   },
+   {
+    "file": "src/modules/data_augmentation.py",
+    "line": 157,
+    "text": "synthesizer = TVAESynthesizer(",
+    "context": [
+     "                metadata.update_column(col, sdtype=\"categorical\")",
+     "        metadata.update_column(\"Personality\", sdtype=\"categorical\")",
+     "",
+     "        # Configure TVAE with conservative settings for stability",
+     "        synthesizer = TVAESynthesizer(",
+     "            metadata,",
+     "            enforce_min_max_values=True,",
+     "            enforce_rounding=True,",
+     "            epochs=100,"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "gc",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "pyproject.toml": [
+   "    \"sdv>=1.24.0,<2.0.0\", # For advanced synthetic data"
+  ]
+ }
+}

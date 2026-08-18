@@ -1,0 +1,166 @@
+{
+ "repo": "paularodriguezsanchez/kan-synthetic-tabular-data",
+ "disk_kb": 9623,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Interpretable Synthetic Tabular Data Generation with Kolmogorov-Arnold Networks\n\nReplacing the MLP blocks of TVAE and CTGAN with Kolmogorov-Arnold Networks\n(KAN) to generate synthetic clinical tabular data that is not only useful, but\nalso **explainable**: prunable architectures, per-variable sensitivity maps and\nclosed-form symbolic formulas extracted from the trained generators.\n\nBachelor's thesis (Biomedical Engineering, ETSIT - Universidad Politecnica de\nMadrid, 2025).\n\n## Why\n\nGenerative models for tabular data (CTGAN, TVAE) are effective but opaque. In\nregulated domains such as healthcare, the EU AI Act and GDPR push towards\ngeneration processes that can be audited and explained. KANs replace scalar\nweights with learnable univariate spline functions, which makes it possible to\nprune the network, trace variable contributions, and extract explicit symbolic\nformulas describing what the generator learned.\n\n## What was built\n\n- **TVAE-KAN** (`tvae_MultKAN/`): the encoder/decoder MLPs of SDV's TVAE\n  replaced by `MultKAN` networks.\n\n  ![TVAE-KAN architecture](docs/img/tvae_architecture.png)\n\n- **CTGAN-KAN** (`ctgan_MultKAN/`): generator and discriminator replaced by\n  `MultKAN` networks.\n\n  ![CTGAN-KAN architecture](docs/img/ctgan_architecture.png)\n\n- **Custom training integration**: pykan's `MultKAN` only exposes its own\n  `fit()` loop. Its forward pass (activation caching included) was replicated\n  inside the TVAE/CTGAN training loops so that pruning, structural\n  regularization and symbolic extraction remain available.\n- **Simplified `DataTransformer`**: standardization + tanh for continuous\n  variables and one-hot for categoricals, keeping a one-to-one mapping between\n  transformed dimensions and original attributes (essential for\n  interpretability).\n- **Evaluation suite** (`eval/`, `eval_ctgan/`): MAE per variable, Student's\n  t-test, Mann-Whitney U, Chi-squared, cosine distance, and TSTR/TRTS with\n  Random Forest, Gradient Boosting and Logistic Regression.\n- **Interpretability tooling**: node pruning, functional graph visualization,\n  symbolic formula extraction, and sensitivity analysis via partial\n  derivatives (encoder, decoder and composed model).\n- **KAN vs MLP classification baseline** (`clasificacion/`).\n\nPruned KAN decoder for TVAE-KAN (architecture [32, 16], threshold 0.06) - each\nedge is a trained, later prunable, univariate spline function instead of a\nscalar weight:\n\n![Pruned KAN decoder structure](docs/img/kan_decoder_structure.png)\n\n## Key results\n\nDataset: Heart Prediction Dataset (Quantum) - 500 records, 7 variables\n(Kaggle). All result artifacts are under `results/`.\n\n**KAN vs MLP as classifiers** (binary heart-disease classification):\n\n| Metric | MLP | KAN |\n|---|---|---|\n| Accuracy | 0.770 | 0.830 |\n| F1 | 0.819 | 0.866 |\n| ROC AUC | 0.841 | 0.884 |\n\n![ROC curve, KAN vs MLP classifier](docs/img/roc_kan_vs_mlp.png)\n\n**Utility of synthetic data (TSTR: train on synthetic, test on real).** The\nKAN variants shine in compact architectures. TVAE vs TVAE-KAN, architecture\n[10, 5]:\n\n| Classifier | TVAE (MLP) | TVAE-KAN |\n|---|---|---|\n| Random Forest, accuracy | 0.694 | 0.922 |\n| Random Forest, F1 | 0.745 | 0.935 |\n| Gradient Boosting, accuracy | 0.674 | 0.912 |\n\nTVAE-KAN training loss (total / reconstruction / KL) across the four tested\narchitectures - higher raw loss than the MLP baseline, but this does not\ntranslate into worse generated data (see table above):\n\n![TVAE-KAN training loss by architecture](docs/img/tvae_loss_comparison.png)\n\n**Statistical similarity**: TVAE-KAN reduces the cosine distance between real\nand synthetic distributions for every variable in every architecture tested,\nand preserves means/distributions (t-test, Mann-Whitney) markedly better in\nmid/large architectures.\n\n**Symbolic generation**: after extracting the symbolic formulas from the\ntrained decoder/generator, sampling takes microseconds (2e-6 to 5e-4 s per\nsample), several orders of magnitude faster than running the network -\nattractive for lightweight or embedded deployment.\n\n**Honest trade-offs** (also part of the results):\n\n- MultKAN variants are 7-10x slower to train and sample than their MLP\n  counterparts.\n- Statistical realism per-variable is still limited: many marginal\n  distributions remain significantly different from the real ones for both\n  model families.\n- Reconstructing individual samples through the extracted symbolic\n  encoder-decoder pipeline has high error: the formulas explain the model,\n  they do not replace it.\n- CTGAN results (both baseline and KAN) are notably weaker than TVAE on this\n  dataset.\n\n## Repository structure\n\n```\nclasificacion/        KAN vs MLP binary classification experiment\ntvae/                 TVAE baseline (adapted from SDV)\ntvae_MultKAN/         TVAE with MultKAN encoder/decoder + pruning/symbolic tools\nctgan/                CTGAN baseline (adapted from SDV)\nctgan_MultKAN/        CTGAN with MultKAN generator/discriminator + tools\neval/, eval_ctgan/    Evaluation scripts (statistics, TSTR/TRTS)\ndata/                 Where to place the dataset (not redistributed; see data/README.md)\nresults/              Training metrics, evaluation outputs, symbolic formulas,\n                      timing benchmarks\n*.py (root)           Symbolic-formula timing and encoder/decoder symmetry analysis\n```\n\nEach `*_MultKAN/kan/` folder vendors a modified copy of\n[pykan](https://github.com/KindXiaoming/pykan) (see THIRD_PARTY_NOTICES.md).\n\n## Getting started\n\n```bash\npip install -r requirements.txt\n\n# 0. Get the dataset (not redistributed here). Download it from Kaggle and\n#    place it at: data/Heart Prediction Quantum Dataset.csv  (see data/README.md)\n\n# Run everything from the repository root.\n# 1. Train (choose architecture inside the script):\npython tvae_MultKAN/run.py\npython ctgan_MultKAN/run.py\n\n# 2. Generate + evaluate:\npython eval/eval.py           # TVAE family\npython eval_ctgan/eval.py     # CTGAN family\n\n# 3. Interpretability:\npython tvae_MultKAN/prune.py\npython tvae_MultKAN/symbolic.py\npython simetria.py\n```\n\nTraining hyperparameters used in the reported experiments: 100 epochs (TVAE) /\n300 epochs (CTGAN), batch size 32, Adam with weight decay 1e-5, MultKAN with\nB-spline grid=8, k=3, base function SiLU, mult_arity=2. GPU (CUDA) supported.\n\n## Limitations and future work\n\n- Single, small, synthetic-origin dataset; conclusions should be validated on\n  real clinical cohorts and larger tabular benchmarks.\n- Better KAN calibration to avoid variance collapse in some configurations.\n- Reporting of the additional metrics already computed by the evaluation suite\n  (Kolmogorov-Smirnov, Jensen-Shannon, GMM likelihood, t-SNE projections).\n\n## References\n\n- Liu, Z. et al. *KAN: Kolmogorov-Arnold Networks* (2024).\n  [arXiv:2404.19756](https://arxiv.org/abs/2404.19756)\n- Liu, Z. et al. *KAN 2.0: Kolmogorov-Arnold Networks Meet Science* (2024).\n  [arXiv:2408.10205](https://arxiv.org/abs/2408.10205)\n- Xu, L. et al. *Modeling Tabular Data using Conditional GAN* (NeurIPS 2019) -\n  introduces CTGAN and TVAE. [arXiv:1907.00503](https://arxiv.org/abs/1907.00503)\n- [pykan](https://github.com/KindXiaoming/pykan) -\n  [SDV / CTGAN](https://github.com/sdv-dev/CTGAN)\n\n## License\n\nMIT for the original code of this project. Vendored components (pykan,\nSDV/CTGAN) and the dataset keep their own licenses - see\n[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).\n",
+ "hits": {
+  "ctgan_mod": [
+   {
+    "file": "ctgan/run_ctgan.py",
+    "line": 1,
+    "text": "#from ctgan import CTGAN",
+    "context": [
+     "#from ctgan import CTGAN",
+     "import sys",
+     "import os",
+     "import pandas as pd",
+     ""
+    ]
+   },
+   {
+    "file": "ctgan/synthesizers/ctgan.py",
+    "line": 13,
+    "text": "from ctgan.data_sampler import DataSampler",
+    "context": [
+     "from torch.nn import BatchNorm1d, Dropout, LeakyReLU, Linear, Module, ReLU, Sequential, functional",
+     "from tqdm import tqdm",
+     "from matplotlib import pyplot as plt",
+     "",
+     "from ctgan.data_sampler import DataSampler",
+     "from data_transformer import DataTransformer",
+     "from errors import InvalidDataError",
+     "from synthesizers.base import BaseSynthesizer, random_state",
+     ""
+    ]
+   },
+   {
+    "file": "ctgan_MultKAN/run_ctgan.py",
+    "line": 1,
+    "text": "#from ctgan import CTGAN",
+    "context": [
+     "#from ctgan import CTGAN",
+     "import sys",
+     "import os",
+     "import pandas as pd",
+     ""
+    ]
+   },
+   {
+    "file": "ctgan_MultKAN/synthesizers/ctgan.py",
+    "line": 14,
+    "text": "from ctgan.data_sampler import DataSampler",
+    "context": [
+     "from tqdm import tqdm",
+     "import yaml",
+     "import os",
+     "",
+     "from ctgan.data_sampler import DataSampler",
+     "from data_transformer import DataTransformer",
+     "from errors import InvalidDataError",
+     "from synthesizers.base import BaseSynthesizer, random_state",
+     "from matplotlib import pyplot as plt"
+    ]
+   },
+   {
+    "file": "tvae_MultKAN/run.py",
+    "line": 1,
+    "text": "#from ctgan import CTGAN",
+    "context": [
+     "#from ctgan import CTGAN",
+     "import sys",
+     "import os",
+     "import pandas as pd",
+     "import torch"
+    ]
+   },
+   {
+    "file": "tvae/run.py",
+    "line": 1,
+    "text": "#from ctgan import CTGAN",
+    "context": [
+     "#from ctgan import CTGAN",
+     "import sys",
+     "import os",
+     "import pandas as pd",
+     ""
+    ]
+   }
+  ],
+  "rdt": [
+   {
+    "file": "ctgan/data_transformer.py",
+    "line": 8,
+    "text": "from rdt.transformers import ClusterBasedNormalizer, OneHotEncoder",
+    "context": [
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from joblib import Parallel, delayed",
+     "from rdt.transformers import ClusterBasedNormalizer, OneHotEncoder",
+     "",
+     "SpanInfo = namedtuple('SpanInfo', ['dim', 'activation_fn'])",
+     "ColumnTransformInfo = namedtuple(",
+     "    'ColumnTransformInfo',"
+    ]
+   },
+   {
+    "file": "ctgan_MultKAN/data_transformer.py",
+    "line": 8,
+    "text": "from rdt.transformers import ClusterBasedNormalizer, OneHotEncoder",
+    "context": [
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from joblib import Parallel, delayed",
+     "from rdt.transformers import ClusterBasedNormalizer, OneHotEncoder",
+     "",
+     "SpanInfo = namedtuple('SpanInfo', ['dim', 'activation_fn'])",
+     "ColumnTransformInfo = namedtuple(",
+     "    'ColumnTransformInfo',"
+    ]
+   },
+   {
+    "file": "tvae_MultKAN/data_transformer.py",
+    "line": 8,
+    "text": "from rdt.transformers import ClusterBasedNormalizer, OneHotEncoder",
+    "context": [
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from joblib import Parallel, delayed",
+     "from rdt.transformers import ClusterBasedNormalizer, OneHotEncoder",
+     "",
+     "SpanInfo = namedtuple('SpanInfo', ['dim', 'activation_fn'])",
+     "ColumnTransformInfo = namedtuple(",
+     "    'ColumnTransformInfo',"
+    ]
+   },
+   {
+    "file": "tvae/data_transformer.py",
+    "line": 8,
+    "text": "from rdt.transformers import ClusterBasedNormalizer, OneHotEncoder",
+    "context": [
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from joblib import Parallel, delayed",
+     "from rdt.transformers import ClusterBasedNormalizer, OneHotEncoder",
+     "",
+     "SpanInfo = namedtuple('SpanInfo', ['dim', 'activation_fn'])",
+     "ColumnTransformInfo = namedtuple(",
+     "    'ColumnTransformInfo',"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ctgan_mod",
+  "rdt"
+ ],
+ "vendored_dirs": [
+  "ctgan",
+  "results/misc/ctgan"
+ ],
+ "dependencies": {}
+}

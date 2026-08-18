@@ -1,0 +1,126 @@
+{
+ "repo": "naksshhh/PhishGuard",
+ "disk_kb": 24526,
+ "method": "partial_clone",
+ "tree_files": 70,
+ "status": "ok",
+ "readme": "# PhishGuard\n\n**PhishGuard** is an ultra-reliable, multi-modal phishing detection system featuring a **4-tier cascade architecture**. It provides real-time protection by orchestrating Edge, Cloud, and LLM (Gemini) intelligence to achieve >99.5% F1-score with minimal latency.\n\n<img width=\"439\" height=\"644\" alt=\"image\" src=\"https://github.com/user-attachments/assets/1df43d67-896c-4520-98dc-c5779d46f4ce\" />\n\n\n[![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/release/python-3110/)\n[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)\n[![Google Solutions Challenge](https://img.shields.io/badge/Solutions%20Challenge-2026-green)](https://developers.google.com/community/solutions-challenge)\n\n---\n\n## Architecture: The 4-Tier Cascade\n\nPhishGuard++ uses a hierarchical approach to balance speed and accuracy. Only the most ambiguous cases reach the heavy LLM layer.\n\n```mermaid\ngraph TD\n    A[URL Input] --> B{Community Cache<br/>Firebase RT DB}\n    B -- Hit --> Z[Instant Verdict]\n    B -- Miss --> C{Tier 1: Edge<br/>ONNX LightGBM}\n    \n    C -- Confident --> Z\n    C -- Ambiguous --> D{Tier 2: Cloud<br/>Safe Browsing + Tabular}\n    \n    D -- Confident --> Z\n    D -- Ambiguous --> E{Tier 3: Fusion<br/>Semantic + Visual}\n    \n    E -- Confident --> Z\n    E -- Ambiguous --> F{Tier 4: Gemini<br/>Multi-modal LLM}\n    \n    F --> Z\n    Z --> G[Risk Score + SHAP Explanation]\n```\n<img width=\"1118\" height=\"570\" alt=\"image\" src=\"https://github.com/user-attachments/assets/b65ab62d-ce62-4880-8be8-d2071401f6a0\" />\n\n### The Tiers\n1.  **Tier 1 (Edge):** Sub-15ms URL lexical analysis using **LightGBM** quantized to **ONNX (INT8)**. Runs locally in the browser.\n2.  **Tier 2 (Cloud):** Google Safe Browsing API check + high-precision Tabular analysis (XGBoost/LightGBM) on the backend.\n3.  **Tier 3 (Multimodal Fusion):** Deep semantic analysis ( **PhishBERT** for URLs, **CodeBERT** for HTML) and visual branding analysis ( **EfficientNet-B7**). Outputs are fused via an **Attention-Fusion** layer.\n4.  **Tier 4 (LLM/Gemini):** **Gemini 1.5 Flash** acts as the final arbiter for highly sophisticated phish, analyzing raw HTML and page screenshots.\n\n---\n\n## 🛠️ Tech Stack\n\n### Frontend & Edge\n- **Chrome Extension:** Manifest V3, Service Workers.\n- **Inference Engine:** ONNX Runtime Web (WASM-accelerated).\n- **Communication:** Async Fetch API with timeout fallbacks.\n\n### Backend & AI\n- **Framework:** FastAPI (Python 3.11) + Uvicorn.\n- **Deep Learning:** PyTorch, Transformers (HuggingFace), EfficientNet.\n- **Classic ML:** Scikit-learn, XGBoost, LightGBM, Optuna.\n- **Explainability:** SHAP (TreeExplainer), Grad-CAM (Visual Heatmaps).\n- **Data Augmentation:** CTGAN (Synthetic Data Generation), VAE (HTML Latent Features).\n\n### Infrastructure\n- **Database:** Firebase Realtime DB (Community Threat Intel).\n- **LLM:** Google Gemini 1.5 Flash API.\n- **Deployment:** Docker + Google Cloud Run.\n- **Monitoring:** Weights & Biases (W&B).\n\n---\n\n## Project Structure\n\n```text\nsolutions_challenge/\n├── backend/             # FastAPI Cloud server and orchestration\n├── extension/           # Chrome Extension (MV3, ONNX, WASM)\n├── src/\n│   ├── data/           # Dataset synthesis and GAN augmentation\n│   ├── features/       # Dual-stream feature extraction (URL + HTML)\n│   ├── models/         # Implementation of PhishBERT, CodeBERT, EfficientNet, Fusion\n│   ├── explainability/ # SHAP pipelines and human-readable reasoning\n│   └── evaluation/     # Adversarial benchmarks and ablation studies\n├── models/              # [Artifacts] Trained .onnx, .pth, and .pkl models\n├── datasets/            # [Data] Unified phishing corpus (394k+ samples)\n├── papers/              # Research foundation and literature\n└── requirements.txt     # Python dependency manifest\n```\n\n---\n\n## Getting Started\n\n### 1. Backend Setup\n1.  Clone the repository and Create a virtual environment:\n    ```bash\n    python -m venv venv\n    source venv/bin/activate  # Or `venv\\Scripts\\activate` on Windows\n    pip install -r requirements.txt\n    ```\n2.  Configure `.env` with keys for `GEMINI_API_KEY`, `SAFE_BROWSING_API_KEY`, and Firebase credentials.\n3.  Run the server:\n    ```bash\n    uvicorn backend.main:app --reload\n    ```\n\n### 2. Extension Installation\n1.  Open Chrome and navigate to `chrome://extensions`.\n2.  Enable **Developer mode**.\n3.  Click **Load unpacked** and select the `extension/` folder.\n\n---\n\n## License\nMIT License — Part of **Google Solutions Challenge 2026**.\nDeveloped for global digital safety.\n",
+ "hits": {
+  "st": [
+   {
+    "file": "src/data/gan_augmentation.py",
+    "line": 14,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from pathlib import Path",
+     "",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "",
+     "logging.basicConfig(level=logging.INFO, format=\"%(asctime)s [%(levelname)s] %(message)s\")",
+     "logger = logging.getLogger(__name__)"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "src/data/gan_augmentation.py",
+    "line": 15,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "",
+     "logging.basicConfig(level=logging.INFO, format=\"%(asctime)s [%(levelname)s] %(message)s\")",
+     "logger = logging.getLogger(__name__)",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "src/data/gan_augmentation.py",
+    "line": 14,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from pathlib import Path",
+     "",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "",
+     "logging.basicConfig(level=logging.INFO, format=\"%(asctime)s [%(levelname)s] %(message)s\")",
+     "logger = logging.getLogger(__name__)"
+    ]
+   },
+   {
+    "file": "src/data/gan_augmentation.py",
+    "line": 15,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "",
+     "logging.basicConfig(level=logging.INFO, format=\"%(asctime)s [%(levelname)s] %(message)s\")",
+     "logger = logging.getLogger(__name__)",
+     ""
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "src/data/gan_augmentation.py",
+    "line": 14,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from pathlib import Path",
+     "",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "",
+     "logging.basicConfig(level=logging.INFO, format=\"%(asctime)s [%(levelname)s] %(message)s\")",
+     "logger = logging.getLogger(__name__)"
+    ]
+   },
+   {
+    "file": "src/data/gan_augmentation.py",
+    "line": 54,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "    )",
+     "",
+     "    # Initialize and train CTGAN",
+     "    # Note: For demo/speed, we use fewer epochs. In production, 100+ is better.",
+     "    synthesizer = CTGANSynthesizer(",
+     "        metadata,",
+     "        enforce_rounding=False,",
+     "        epochs=50,",
+     "        verbose=True,"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv>=1.7.0          # CTGAN for tabular augmentation"
+  ]
+ }
+}

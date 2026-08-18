@@ -1,0 +1,268 @@
+{
+ "repo": "SyedT1/aims-assignment",
+ "disk_kb": 4222,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Diabetes Prediction Research — AIMS Lab\n\nA progressive, four-version machine learning research project on predicting undiagnosed diabetes from a community health screening dataset of ~30,000 patients. The core challenge: only **5.3% of patients have a blood sugar reading**, creating extreme label sparsity and a canonical Positive-Unlabeled (PU) learning problem.\n\n---\n\n## Dataset\n\n**File:** `test-dataset.xlsx` — 29,999 patients, 33 variables  \n**Source:** UIU community health screening (Bangladesh)  \n**Target:** `diabetic` — 601 confirmed positives (2.0%), 29,398 unlabeled negatives  \n**Key challenge:** 94.7% of patients were never blood-tested; label `0` means *untested*, not *healthy*\n\n### Variable Overview\n\n| Category | Variables |\n|---|---|\n| Demographics | `age`, `gender`, `birthday`, `union_name`, `total_income`, `is_poor`, `is_freedom_fighter` |\n| Vitals | `SYSTOLIC`, `DIASTOLIC`, `PULSE_RATE`, `SPO2`, `HEIGHT`, `WEIGHT`, `BMI`, `MUAC` |\n| Blood glucose | `SUGAR`, `TAG_NAME` (Fasting/Random/OGTT), `RESULT_STAT_SUGAR` |\n| Comorbidities | `profile_hypertensive`, `had_stroke`, `has_cardiovascular_disease`, `disabilities_name` |\n| Status flags | `RESULT_STAT_BP`, `RESULT_STAT_BMI`, `RESULT_STAT_SPO2`, `RESULT_STAT_PR`, `RESULT_STAT_MUAC` |\n\nSee `dataset_variable_description.xlsx` for full variable definitions.\n\n---\n\n## Project Structure\n\n```\n.\n├── README.md\n├── dataset_variable_description.xlsx   # Variable metadata\n├── test-dataset.xlsx                   # Main dataset\n├── uiu-assessment__1_.ipynb            # v2: Imbalance treatment pipeline\n├── Diabetes_v3_Advanced.ipynb          # v3: Advanced features + modern models\n├── diabetes-v4-pu-gcn-ipynb.ipynb      # v4: PU Learning + Graph Convolutional Networks\n└── final-analysis.ipynb                # Statistical analysis (Task 2)\n```\n\n---\n\n## Experiment Versions\n\n### v2 — Class Imbalance Deep Treatment (`uiu-assessment__1_.ipynb`)\n\n**Theme:** Systematic comparison of oversampling strategies on a highly imbalanced clinical dataset.\n\n**Key improvements over v1:**\n- Missingness flags (`sugar_available`, `bp_available`) — who gets tested is a clinical signal\n- Sugar × TAG interaction — fasting glucose of 120 carries different risk from random glucose of 120\n- BP ratio (diastolic/systolic) for vessel stiffness beyond raw pulse pressure\n- Hypertensive × age interaction — comorbidity risk compounds non-linearly\n\n**Sampling strategies compared:**\n\n| Strategy | Key idea |\n|---|---|\n| SMOTE (v1 baseline) | Interpolates between minority neighbours |\n| SMOTETomek | SMOTE + removes ambiguous boundary majority samples |\n| SMOTEENN | SMOTE + aggressive ENN boundary cleaning |\n| ADASYN | Focuses synthetic samples on harder minority regions |\n| class_weight only | Native loss weighting, no resampling |\n\n**Models:** Logistic Regression, Random Forest, XGBoost, LightGBM (Optuna-tuned, 80 trials)  \n**Additions:** Isotonic calibration on LightGBM, Optuna-weighted soft-vote ensemble, clinical + balanced threshold selection  \n**Key finding:** SMOTE on 95%-sparse data (imputed medians) generates noisy samples; `class_weight-only` and `SMOTETomek` outperform vanilla SMOTE\n\n---\n\n### v3 — Advanced Feature Engineering + Modern Models (`Diabetes_v3_Advanced.ipynb`)\n\n**Theme:** Replacing median imputation with principled IterativeImputer and introducing clinical threshold features, CTGAN synthesis, and transformer-based models.\n\n**Root causes diagnosed from v2:**\n\n| v2 finding | Root cause | v3 fix |\n|---|---|---|\n| LR beats LightGBM on PR-AUC (0.308 vs 0.285) | Tree models can't exploit linear separability on mostly binary features | Add non-linear clinical composite features |\n| SMOTEENN plateau ~0.310 | Synthetic samples from median-imputed SUGAR are noisy | Replace median with **IterativeImputer** |\n| All models plateau ~0.31 | 95% missing SUGAR + weak feature signal | WHO clinical threshold flags + CTGAN synthesis |\n| ROC-AUC 0.87 but PR-AUC 0.31 | ROC lies on imbalanced data | Explicit calibration + threshold optimisation |\n\n**New features in v3:**\n\n| Feature | Clinical rationale |\n|---|---|\n| `fasting_diabetic_range` | Fasting glucose ≥126 mg/dL — WHO diagnostic criterion |\n| `random_diabetic_range` | Random glucose ≥200 mg/dL — WHO diagnostic criterion |\n| `prediabetic_flag` | Fasting 100–125 mg/dL — pre-diabetes risk zone |\n| `hypertension_stage1/2` | SBP/DBP thresholds directly raise diabetes risk |\n| `risk_score` | Additive count: age>45, hypertension, CVD, stroke, poverty |\n| `age_sq` | Diabetes risk accelerates non-linearly after 45 |\n| `poor_no_sugar` | Poor patients lacking sugar readings — specific missed-care pattern |\n| `cvd_hyper_combo` | Co-morbidity multiplicative risk |\n| `bp_severity` | Ordinal encoding: Normal→Prehypertension→Stage 1→Stage 2 |\n\n**New models:** TabPFN v2 (2025 Nature paper transformer), CatBoost, 1-class SVM, Isolation Forest, CTGAN-augmented minority synthesis, final stacking ensemble\n\n**IterativeImputer advantage:** Instead of assigning every untested patient the same median sugar value, BayesianRidge regression predicts each patient's likely glucose from their age, BP, and comorbidities — personalised imputation vs. population-level guessing.\n\n---\n\n### v4 — PU Learning + Graph Convolutional Networks (`diabetes-v4-pu-gcn-ipynb.ipynb`)\n\n**Theme:** Directly addressing the label contamination problem that v1–v3 all ignored.\n\n**The fundamental problem re-framed:**\n```\nlabel = 1  →  601 patients  (confirmed diabetic)\nlabel = 0  →  29,398 patients  (NOT confirmed non-diabetic — just untested)\n```\nv1–v3 assumed label `0` = truly non-diabetic. v4 treats this as the **Positive-Unlabeled (PU)** problem.\n\n**Method 1 — PU Learning (Elkan-Noto + PU Bagging):**\n\nThe Elkan-Noto theorem (2008) shows:\n```\nP(Y=1 | X)  =  f(X) / c\n```\nwhere `f(X)` is the standard classifier output and `c` = P(s=1 | Y=1) is the *labeling frequency* — the fraction of true diabetics who were actually diagnosed.\n\n- **Elkan-Noto Estimator:** Train standard classifier on (P, U); estimate `c` from held-out positives; divide all probabilities by `c` to recover the true posterior\n- **PU Bagging (Mordelet & Vert 2014):** Repeatedly subsample unlabeled patients as pseudo-negatives; train and average across bags — marginalising over unknown contamination\n\n**Method 2 — Graph Convolutional Network:**\n\nTreats 600 confirmed positives as labeled seeds in a patient-similarity graph. Diabetic signal propagates to phenotypically similar neighbors via semi-supervised graph smoothing — something no row-independent tabular model can do.\n\n**Preprocessing:** IterativeImputer (BayesianRidge) + RobustScaler (same as v3)  \n**Models:** LightGBM base + Elkan-Noto correction; PyTorch GCN with `torch-geometric`  \n**Device:** GPU (CUDA) when available, CPU fallback\n\n---\n\n## Statistical Analysis (`final-analysis.ipynb`)\n\nAn independent rigorous statistical assessment identifying features significantly associated with diabetic status, with correct test selection matched to variable type and distribution.\n\n**Test selection rationale:**\n\n| Variable type | Test chosen | Reason |\n|---|---|---|\n| Continuous (age, BP, SUGAR) | Mann-Whitney U | Shapiro-Wilk confirmed non-normal; rank-based test |\n| Binary (hypertensive, stroke) | Chi-square / Fisher's Exact | Fisher's when any expected cell < 5 |\n| Ordinal (income) | Kruskal-Wallis | Respects ordering without linearity assumption |\n| Continuous vs continuous | Spearman ρ | Non-parametric rank correlation |\n\n**Analyses performed:**\n1. **Normality check** — Shapiro-Wilk on all continuous features (all found non-normal → validated Mann-Whitney choice)\n2. **Mann-Whitney U** — with rank-biserial correlation effect sizes (small >0.1, medium >0.3, large >0.5)\n3. **Chi-square & Fisher's Exact** — with Cramér's V effect sizes; Fisher's used for rare events (stroke, CVD)\n4. **Kruskal-Wallis** — income gradient vs diabetic rate\n5. **Spearman correlation** — pairwise continuous feature associations\n6. **Missingness as signal** — tested whether having SUGAR recorded is itself predictive\n7. **Multiple testing correction** — Benjamini-Hochberg FDR (21 simultaneous tests; ~66% Type I error rate without correction)\n8. **Multivariate logistic regression** — isolates independent effects after controlling for confounders\n9. **Bootstrap CIs** — 1,000-iteration bootstrap on effect size estimates\n10. **Power analysis** — minimum detectable effect size for sparse features (BMI: ~8 diabetic observations; Upper income: ~27)\n\n**Key caveat:** `RESULT_STAT_SUGAR` excluded from analysis — derived directly from blood glucose thresholds that define diabetic status, making it circular (label leakage).\n\n---\n\n## Technical Stack\n\n```\nPython 3.x\npandas · numpy · matplotlib · seaborn · scipy · statsmodels\nscikit-learn (IterativeImputer, Pipeline, ColumnTransformer, CalibratedClassifierCV)\nimbalanced-learn (SMOTE, SMOTEENN, SMOTETomek, ADASYN)\nlightgbm · xgboost · catboost\noptuna (hyperparameter search)\nshap (feature importance)\nsdv / ctgan (synthetic data generation)\ntabpfn (transformer model)\ntorch · torch-geometric (GCN)\n```\n\n---\n\n## Evaluation Metrics\n\n**Primary:** PR-AUC (Average Precision) — chosen because ROC-AUC is misleading on heavily imbalanced data (a model that predicts all negatives still gets ROC-AUC > 0.5).\n\n**Secondary:** F1-score, Recall, Precision, Brier Score, ROC-AUC\n\n**Threshold strategy:** Two thresholds evaluated per model:\n- *Clinical threshold* — maximises recall (minimises missed diabetics)\n- *Balanced threshold* — maximises F1 (precision-recall trade-off)\n\n---\n\n## Key Insights Across Versions\n\n- **The label problem is fundamental.** ~94.7% of patients were never tested; the apparent 2% prevalence likely underestimates true population prevalence — addressing this is the core scientific contribution of v4.\n- **Imputation quality matters more than model choice.** Replacing median imputation with IterativeImputer had larger impact than switching between tree models.\n- **Missingness is a feature.** Whether a patient was blood-tested (and why) carries predictive signal independent of the measurement value.\n- **ROC-AUC is misleading here.** Models consistently achieved ROC-AUC ~0.87 while PR-AUC plateaued ~0.31 — the PR curve is the honest metric at 49:1 imbalance.\n- **Graph structure encodes information rows cannot.** Geographic proximity (union_name) creates patient clusters; GCN propagates confirmed positive labels through these clusters.\n\n---\n\n## Authors\n\nAIMS Lab — Research Engineer Assessment\n",
+ "hits": {
+  "st": [
+   {
+    "file": "Diabetes_v3_Advanced.ipynb",
+    "line": 821,
+    "text": "\"    from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"try:\\n\",",
+     "    \"    from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"    from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"    CTGAN_AVAILABLE = True\\n\",",
+     "    \"    print('CTGAN available via SDV.')\\n\",",
+     "    \"except ImportError:\\n\","
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "Diabetes_v3_Advanced.ipynb",
+    "line": 822,
+    "text": "\"    from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"try:\\n\",",
+     "    \"    from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"    from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"    CTGAN_AVAILABLE = True\\n\",",
+     "    \"    print('CTGAN available via SDV.')\\n\",",
+     "    \"except ImportError:\\n\",",
+     "    \"    CTGAN_AVAILABLE = False\\n\","
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "Diabetes_v3_Advanced.ipynb",
+    "line": 114,
+    "text": "\"Collecting boto3<2.0.0,>=1.28 (from sdv)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: alembic>=1.5.0 in ./venv/lib/python3.12/site-packages (from optuna) (1.18.4)\\n\",",
+     "      \"Requirement already satisfied: colorlog in ./venv/lib/python3.12/site-packages (from optuna) (6.10.1)\\n\",",
+     "      \"Requirement already satisfied: sqlalchemy>=1.4.2 in ./venv/lib/python3.12/site-packages (from optuna) (2.0.49)\\n\",",
+     "      \"Requirement already satisfied: PyYAML in ./venv/lib/python3.12/site-packages (from optuna) (6.0.3)\\n\",",
+     "      \"Collecting boto3<2.0.0,>=1.28 (from sdv)\\n\",",
+     "      \"  Using cached boto3-1.43.14-py3-none-any.whl.metadata (6.6 kB)\\n\",",
+     "      \"Collecting botocore<2.0.0,>=1.31 (from sdv)\\n\",",
+     "      \"  Using cached botocore-1.43.14-py3-none-any.whl.metadata (5.6 kB)\\n\",",
+     "      \"Collecting pandas\\n\","
+    ]
+   },
+   {
+    "file": "Diabetes_v3_Advanced.ipynb",
+    "line": 116,
+    "text": "\"Collecting botocore<2.0.0,>=1.31 (from sdv)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: sqlalchemy>=1.4.2 in ./venv/lib/python3.12/site-packages (from optuna) (2.0.49)\\n\",",
+     "      \"Requirement already satisfied: PyYAML in ./venv/lib/python3.12/site-packages (from optuna) (6.0.3)\\n\",",
+     "      \"Collecting boto3<2.0.0,>=1.28 (from sdv)\\n\",",
+     "      \"  Using cached boto3-1.43.14-py3-none-any.whl.metadata (6.6 kB)\\n\",",
+     "      \"Collecting botocore<2.0.0,>=1.31 (from sdv)\\n\",",
+     "      \"  Using cached botocore-1.43.14-py3-none-any.whl.metadata (5.6 kB)\\n\",",
+     "      \"Collecting pandas\\n\",",
+     "      \"  Using cached pandas-2.3.3-cp312-cp312-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl.metadata (91 kB)\\n\",",
+     "      \"Collecting copulas>=0.12.1 (from sdv)\\n\","
+    ]
+   },
+   {
+    "file": "Diabetes_v3_Advanced.ipynb",
+    "line": 120,
+    "text": "\"Collecting copulas>=0.12.1 (from sdv)\\n\",",
+    "context": [
+     "      \"Collecting botocore<2.0.0,>=1.31 (from sdv)\\n\",",
+     "      \"  Using cached botocore-1.43.14-py3-none-any.whl.metadata (5.6 kB)\\n\",",
+     "      \"Collecting pandas\\n\",",
+     "      \"  Using cached pandas-2.3.3-cp312-cp312-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl.metadata (91 kB)\\n\",",
+     "      \"Collecting copulas>=0.12.1 (from sdv)\\n\",",
+     "      \"  Using cached copulas-0.14.1-py3-none-any.whl.metadata (9.7 kB)\\n\",",
+     "      \"Collecting ctgan>=0.11.1 (from sdv)\\n\",",
+     "      \"  Using cached ctgan-0.12.1-py3-none-any.whl.metadata (10 kB)\\n\",",
+     "      \"Collecting deepecho>=0.7.0 (from sdv)\\n\","
+    ]
+   },
+   {
+    "file": "Diabetes_v3_Advanced.ipynb",
+    "line": 122,
+    "text": "\"Collecting ctgan>=0.11.1 (from sdv)\\n\",",
+    "context": [
+     "      \"Collecting pandas\\n\",",
+     "      \"  Using cached pandas-2.3.3-cp312-cp312-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl.metadata (91 kB)\\n\",",
+     "      \"Collecting copulas>=0.12.1 (from sdv)\\n\",",
+     "      \"  Using cached copulas-0.14.1-py3-none-any.whl.metadata (9.7 kB)\\n\",",
+     "      \"Collecting ctgan>=0.11.1 (from sdv)\\n\",",
+     "      \"  Using cached ctgan-0.12.1-py3-none-any.whl.metadata (10 kB)\\n\",",
+     "      \"Collecting deepecho>=0.7.0 (from sdv)\\n\",",
+     "      \"  Using cached deepecho-0.8.1-py3-none-any.whl.metadata (11 kB)\\n\",",
+     "      \"Collecting rdt>=1.18.2 (from sdv)\\n\","
+    ]
+   },
+   {
+    "file": "Diabetes_v3_Advanced.ipynb",
+    "line": 124,
+    "text": "\"Collecting deepecho>=0.7.0 (from sdv)\\n\",",
+    "context": [
+     "      \"Collecting copulas>=0.12.1 (from sdv)\\n\",",
+     "      \"  Using cached copulas-0.14.1-py3-none-any.whl.metadata (9.7 kB)\\n\",",
+     "      \"Collecting ctgan>=0.11.1 (from sdv)\\n\",",
+     "      \"  Using cached ctgan-0.12.1-py3-none-any.whl.metadata (10 kB)\\n\",",
+     "      \"Collecting deepecho>=0.7.0 (from sdv)\\n\",",
+     "      \"  Using cached deepecho-0.8.1-py3-none-any.whl.metadata (11 kB)\\n\",",
+     "      \"Collecting rdt>=1.18.2 (from sdv)\\n\",",
+     "      \"  Using cached rdt-1.21.0-py3-none-any.whl.metadata (11 kB)\\n\",",
+     "      \"Collecting sdmetrics>=0.28.0 (from sdv)\\n\","
+    ]
+   },
+   {
+    "file": "Diabetes_v3_Advanced.ipynb",
+    "line": 126,
+    "text": "\"Collecting rdt>=1.18.2 (from sdv)\\n\",",
+    "context": [
+     "      \"Collecting ctgan>=0.11.1 (from sdv)\\n\",",
+     "      \"  Using cached ctgan-0.12.1-py3-none-any.whl.metadata (10 kB)\\n\",",
+     "      \"Collecting deepecho>=0.7.0 (from sdv)\\n\",",
+     "      \"  Using cached deepecho-0.8.1-py3-none-any.whl.metadata (11 kB)\\n\",",
+     "      \"Collecting rdt>=1.18.2 (from sdv)\\n\",",
+     "      \"  Using cached rdt-1.21.0-py3-none-any.whl.metadata (11 kB)\\n\",",
+     "      \"Collecting sdmetrics>=0.28.0 (from sdv)\\n\",",
+     "      \"  Using cached sdmetrics-0.28.0-py3-none-any.whl.metadata (9.9 kB)\\n\",",
+     "      \"Requirement already satisfied: platformdirs>=4.0 in ./venv/lib/python3.12/site-packages (from sdv) (4.9.6)\\n\","
+    ]
+   },
+   {
+    "file": "Diabetes_v3_Advanced.ipynb",
+    "line": 128,
+    "text": "\"Collecting sdmetrics>=0.28.0 (from sdv)\\n\",",
+    "context": [
+     "      \"Collecting deepecho>=0.7.0 (from sdv)\\n\",",
+     "      \"  Using cached deepecho-0.8.1-py3-none-any.whl.metadata (11 kB)\\n\",",
+     "      \"Collecting rdt>=1.18.2 (from sdv)\\n\",",
+     "      \"  Using cached rdt-1.21.0-py3-none-any.whl.metadata (11 kB)\\n\",",
+     "      \"Collecting sdmetrics>=0.28.0 (from sdv)\\n\",",
+     "      \"  Using cached sdmetrics-0.28.0-py3-none-any.whl.metadata (9.9 kB)\\n\",",
+     "      \"Requirement already satisfied: platformdirs>=4.0 in ./venv/lib/python3.12/site-packages (from sdv) (4.9.6)\\n\",",
+     "      \"Collecting pytz>=2020.1 (from pandas)\\n\",",
+     "      \"  Using cached pytz-2026.2-py2.py3-none-any.whl.metadata (22 kB)\\n\","
+    ]
+   },
+   {
+    "file": "Diabetes_v3_Advanced.ipynb",
+    "line": 130,
+    "text": "\"Requirement already satisfied: platformdirs>=4.0 in ./venv/lib/python3.12/site-packages (from sdv) (4.9.6)\\n\",",
+    "context": [
+     "      \"Collecting rdt>=1.18.2 (from sdv)\\n\",",
+     "      \"  Using cached rdt-1.21.0-py3-none-any.whl.metadata (11 kB)\\n\",",
+     "      \"Collecting sdmetrics>=0.28.0 (from sdv)\\n\",",
+     "      \"  Using cached sdmetrics-0.28.0-py3-none-any.whl.metadata (9.9 kB)\\n\",",
+     "      \"Requirement already satisfied: platformdirs>=4.0 in ./venv/lib/python3.12/site-packages (from sdv) (4.9.6)\\n\",",
+     "      \"Collecting pytz>=2020.1 (from pandas)\\n\",",
+     "      \"  Using cached pytz-2026.2-py2.py3-none-any.whl.metadata (22 kB)\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in ./venv/lib/python3.12/site-packages (from pandas) (2026.2)\\n\",",
+     "      \"Collecting torch>=2.5 (from tabpfn)\\n\","
+    ]
+   },
+   {
+    "file": "Diabetes_v3_Advanced.ipynb",
+    "line": 821,
+    "text": "\"    from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"try:\\n\",",
+     "    \"    from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"    from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"    CTGAN_AVAILABLE = True\\n\",",
+     "    \"    print('CTGAN available via SDV.')\\n\",",
+     "    \"except ImportError:\\n\","
+    ]
+   },
+   {
+    "file": "Diabetes_v3_Advanced.ipynb",
+    "line": 822,
+    "text": "\"    from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"try:\\n\",",
+     "    \"    from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"    from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"    CTGAN_AVAILABLE = True\\n\",",
+     "    \"    print('CTGAN available via SDV.')\\n\",",
+     "    \"except ImportError:\\n\",",
+     "    \"    CTGAN_AVAILABLE = False\\n\","
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "Diabetes_v3_Advanced.ipynb",
+    "line": 821,
+    "text": "\"    from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"try:\\n\",",
+     "    \"    from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"    from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"    CTGAN_AVAILABLE = True\\n\",",
+     "    \"    print('CTGAN available via SDV.')\\n\",",
+     "    \"except ImportError:\\n\","
+    ]
+   },
+   {
+    "file": "Diabetes_v3_Advanced.ipynb",
+    "line": 846,
+    "text": "\"    ctgan = CTGANSynthesizer(\\n\",",
+    "context": [
+     "    \"\\n\",",
+     "    \"    metadata = SingleTableMetadata()\\n\",",
+     "    \"    metadata.detect_from_dataframe(minority_df)\\n\",",
+     "    \"\\n\",",
+     "    \"    ctgan = CTGANSynthesizer(\\n\",",
+     "    \"        metadata,\\n\",",
+     "    \"        epochs=100,\\n\",",
+     "    \"        verbose=False\\n\",",
+     "    \"    )\\n\","
+    ]
+   }
+  ],
+  "rdt": [
+   {
+    "file": "Diabetes_v3_Advanced.ipynb",
+    "line": 173,
+    "text": "\"Collecting Faker!=37.11.0,>=17 (from rdt>=1.18.2->sdv)\\n\",",
+    "context": [
+     "      \"Collecting typing-inspection>=0.4.2 (from pydantic>=2.8.0->tabpfn)\\n\",",
+     "      \"  Using cached typing_inspection-0.4.2-py3-none-any.whl.metadata (2.6 kB)\\n\",",
+     "      \"Collecting python-dotenv>=0.21.0 (from pydantic-settings>=2.10.1->tabpfn)\\n\",",
+     "      \"  Using cached python_dotenv-1.2.2-py3-none-any.whl.metadata (27 kB)\\n\",",
+     "      \"Collecting Faker!=37.11.0,>=17 (from rdt>=1.18.2->sdv)\\n\",",
+     "      \"  Using cached faker-40.19.1-py3-none-any.whl.metadata (16 kB)\\n\",",
+     "      \"Requirement already satisfied: greenlet>=1 in ./venv/lib/python3.12/site-packages (from sqlalchemy>=1.4.2->optuna) (3.5.1)\\n\",",
+     "      \"Collecting nvidia-ml-py>=13.590.48 (from tabpfn-common-utils>=0.2.13->tabpfn-common-utils[telemetry-interactive]>=0.2.13->tabpfn)\\n\",",
+     "      \"  Using cached nvidia_ml_py-13.595.45-py3-none-any.whl.metadata (9.7 kB)\\n\","
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "rdt",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

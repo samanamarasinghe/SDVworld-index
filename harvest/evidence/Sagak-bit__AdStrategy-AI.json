@@ -1,0 +1,126 @@
+{
+ "repo": "Sagak-bit/AdStrategy-AI",
+ "disk_kb": 29656,
+ "method": "partial_clone",
+ "tree_files": 85,
+ "status": "ok",
+ "readme": "# AdStrategy AI — AI가 자기 모델의 거짓말을 잡아낸 이야기\n\n> **\"R² 0.79는 모델의 성공이 아니라 데이터 파이프라인의 실패 증거였다.\"**\n\n## 이 프로젝트가 특별한 이유\n\n대부분의 ML 프로젝트는 R²를 높이는 것이 목표입니다. **이 프로젝트는 R²를 스스로 낮추었습니다.**\n\nROAS 예측 모델이 R² = 0.79를 기록했을 때, 우리는 축하 대신 **의심**했습니다. 마케팅 행동 데이터에서 이 수치는 비현실적이었습니다. 5단계 자체 감사(Ablation V1→V5)를 통해 데이터 생성 파이프라인 안에 숨어 있던 **target leakage**를 찾아냈고, `bounce_rate = 65 − ROAS × 2`라는 정답지 유출 공식을 실증했습니다.\n\nLeakage를 제거하자 R²는 0.79 → **0.35**로 절반 이하로 떨어졌습니다. 이것이 운영 환경에서 무너지지 않는 **'정직한 성능'**이며, 이 0.35로도 예산 재할당 시뮬레이션에서 **ROAS +170% 개선**이라는 실질적 전략 가치를 끌어냈습니다.\n\n**이 프로젝트의 산출물은 예측 모델이 아니라, 누수를 잡아내는 데이터 감사 프레임워크 그 자체입니다.**\n\n---\n\n## 핵심 지표\n\n| 지표 | Before | After | 의미 |\n|------|--------|-------|------|\n| 데이터 규모 | 1,800건 | **10,030건** | 4단계 파이프라인으로 +457% 보강 |\n| 피처 수 | 13개 | **42개** | 거시경제 + 시즌 + 크리에이티브 + 경쟁 |\n| R² (leakage 포함) | 0.137 | ~~0.79~~ | **거짓 성능 — 정답지 유출** |\n| R² (honest, 교정 후) | — | **0.35** | 정직한 성능, 전략 레버로 활용 가능 |\n| Leakage 감사 | 없음 | **Ablation V1→V5** | 합성 데이터 프로젝트 재사용 가능 방법론 |\n| 예산 재할당 효과 | — | **ROAS +170%** | honest 모델 기반 의사결정 가치 |\n| 인터페이스 | CLI | **3탭 웹앱** | AI Agent + Leakage 감사 + 예산 시뮬레이터 |\n\n---\n\n## 데이터 흐름 (Data Flow)\n\n```\n[원본 데이터]                         [최종 출력]\nglobal_ads_performance_dataset.csv    data/enriched_ads_final.csv\n        (1,800건 × 13컬럼)                  (10,030건 × 42컬럼)\n\n                    ┌──────────────────────────────┐\n                    │    data_pipeline.py           │\n                    │    run_pipeline() 함수        │\n                    └──────────┬───────────────────┘\n                               │\n    ┌──────────────────────────┼──────────────────────────┐\n    ▼                          ▼                          ▼\nPhase 1                    Phase 2                    Phase 3~4\nkaggle_data_merger.py      macro_economic_collector    creative_data_enricher\n  ↓ 시계열 확장             holiday_calendar            competition_and_synthetic\n  ↓ 1,800 → 5,400건        google_trends_collector      ↓ ⚠ leakage 변수 생성\n  ↓                          ↓ 외부 맥락 조인             ↓ 합성 데이터 증강\n  └──────────────────────────┴──────────────────────────┘\n                               │\n                    data/phase1_expanded.csv (중간 산출물)\n                               │\n                    data/enriched_ads_final.csv (최종)\n                               │\n            ┌──────────────────┼──────────────────┐\n            ▼                  ▼                  ▼\n    ads_predictor_v2.py   ads_analysis.py    ablation_study*.py\n    (ML 모델 학습)         (시각화 분석)      (모델 감사)\n            │\n    models/predictor_v2.pkl\n            │\n    ┌───────┴───────┐\n    ▼               ▼\nad_agent.py    mcp_ad_server.py\n(GPT-4o 에이전트)  (MCP 서버)\n    │\nstreamlit_app.py\n(웹 UI)\n```\n\n### 데이터 파일 관계\n\n| 파일 | 생성 단계 | 행 수 | 컬럼 수 | 설명 |\n|------|-----------|-------|---------|------|\n| `global_ads_performance_dataset.csv` | 원본 | ~1,800 | 13 | Kaggle 원본 광고 캠페인 데이터 |\n| `data/phase1_expanded.csv` | Phase 1 후 | ~5,400 | 13 | 시계열 확장 완료 |\n| `data/enriched_ads_final.csv` | Phase 4 후 | ~10,030 | 42 | 모든 보강 데이터 통합 (최종) |\n| `data/macro/macro_economic_data.csv` | Phase 2-1 | - | - | 거시경제 지표 (CPI, 실업률, GDP, 환율) |\n| `data/calendar/holiday_calendar.csv` | Phase 2-2 | - | - | 국가별 공휴일/시즌 캘린더 |\n| `data/trends/industry_trends.csv` | Phase 2-3 | - | - | 산업별 Google Trends 관심도 |\n| `models/predictor_v2.pkl` | 모델 학습 | - | - | 학습된 AdsPredictor V2 모델 |\n\n---\n\n## 프로젝트 구조\n\n```\nAdStrategy-AI/\n├── streamlit_app.py          # Streamlit 웹 UI (채팅 + 차트)\n├── ad_agent.py               # AI 에이전트 (GPT-4o + Function Calling)\n├── ads_predictor_v2.py       # ML 예측 모델 (AdsPredictor V2)\n├── tool_schemas.py           # 공통 Tool 스키마 (DRY: Agent + MCP 공유)\n├── ads_analysis.py           # 글로벌 광고 성과 분석 (시각화 → figures/)\n├── tiktok_deep_analysis.py   # TikTok 심층 분석 (시각화 → figures/)\n├── advanced_statistical_analysis.py  # 고급 통계 분석 (시각화 → figures/)\n├── data_pipeline.py          # 4단계 데이터 수집/보강 파이프라인 (롤백 지원)\n├── mcp_ad_server.py          # MCP 서버 (외부 LLM 연동)\n├── data_collectors/          # Phase 1~4 데이터 수집 모듈\n│   ├── kaggle_data_merger.py       # Phase 1: Kaggle 데이터 병합\n│   ├── macro_economic_collector.py  # Phase 2-1: 거시경제 (FRED, World Bank)\n│   ├── holiday_calendar.py          # Phase 2-2: 시즌/공휴일 캘린더\n│   ├── google_trends_collector.py  # Phase 2-3: Google Trends\n│   ├── creative_data_enricher.py   # Phase 3: 크리에이티브 메타데이터 (⚠ leakage 주의)\n│   └── competition_and_synthetic.py # Phase 4: 경쟁 환경 + 합성 데이터\n├── data/\n│   ├── enriched_ads_final.csv      # 최종 보강 데이터셋 (10,030건 × 42컬럼)\n│   ├── macro/                      # 거시경제 데이터\n│   ├── calendar/                   # 공휴일/시즌 캘린더\n│   └── trends/                     # Google Trends 데이터\n├── figures/                   # 분석 시각화 산출물 (01~13번 PNG)\n├── models/\n│   └── predictor_v2.pkl            # 학습된 ML 모델\n├── archive/                   # 보관용 (ablation 스크립트, 구 보고서, deprecated 코드)\n│   ├── ablation_studies/      # Ablation V1~V5 스크립트 및 결과 PNG\n│   ├── deprecated_code/       # ads_predictor.py, ads_predictor_advanced.py\n│   ├── reports_old/            # LaTeX v1/v2 및 빌드 산출물\n│   └── pdfs/                   # 과거 PDF 산출물\n├── requirements.txt\n├── ads_report_v3.tex / .pdf   # 최신 보고서\n└── .env.example\n```\n\n---\n\n## 빠른 시작\n\n### 1. 의존성 설치\n\n```bash\npip install -r requirements.txt\n```\n\n### 2. API 키 설정\n\n```bash\ncp .env.example .env\n# .env 파일에 OPENAI_API_KEY=sk-proj-... 입력\n```\n\n| API 키 | 필수 여부 | 용도 | 발급 URL |\n|--------|----------|------|----------|\n| `OPENAI_API_KEY` | **필수** (Streamlit 앱) | GPT-4o 에이전트 | [platform.openai.com](https://platform.openai.com) |\n| `FRED_API_KEY` | 선택 | 거시경제 데이터 수집 | [fred.stlouisfed.org](https://fred.stlouisfed.org/docs/api/api_key.html) |\n\n> API 키 없이도 분석 스크립트(`ads_analysis.py` 등)는 실행 가능합니다.\n> OpenAI API 키는 Streamlit 앱의 대화형 에이전트 기능에만 필요합니다.\n\n### 3. Streamlit 앱 실행\n\n```bash\nstreamlit run streamlit_app.py\n# 브라우저에서 http://localhost:8501 접속\n```\n\n### 4. 분석 스크립트 실행\n\n```bash\n# 기본 분석 (시각화 5장 → figures/)\npython ads_analysis.py\n\n# TikTok 심층 분석 (시각화 3장 → figures/)\npython tiktok_deep_analysis.py\n\n# 고급 통계 분석 (시각화 5장 → figures/ + analysis_results.json)\npython advanced_statistical_analysis.py\n\n# 데이터 파이프라인 실행 (Phase별 롤백 지원)\npython data_pipeline.py\n```\n\n### 5. MCP 서버 실행\n\n```bash\n# MCP 프로토콜로 실행 (외부 LLM 에이전트 연동)\npip install mcp\npython mcp_ad_server.py\n\n# 테스트 모드 (MCP 없이 단독 실행)\npython mcp_ad_server.py --test\n```\n\n---\n\n## 기술 스택\n\n| 영역 | 기술 |\n|------|------|\n| 데이터 수집 | FRED API, World Bank API, Google Trends, Holidays |\n| 머신러닝 | scikit-learn, XGBoost, LightGBM, SHAP, Optuna |\n| AI 에이전트 | OpenAI GPT-4o Function Calling |\n| MCP 서버 | Model Context Protocol (mcp) |\n| 웹 UI | Streamlit, Plotly |\n| 통계 검증 | SciPy (ANOVA, t-test, Chi², Mann-Whitney U, VIF) |\n| 배포 | Streamlit Community Cloud |\n\n---\n\n## 분석 파이프라인\n\n### 데이터 보강 (4단계)\n\n1. **Phase 1**: Kaggle 유사 데이터 병합 + 시계열 확장 (1,800 → 5,400건)\n2. **Phase 2**: 외부 맥락 데이터 (거시경제 + 시즌/공휴일 + Google Trends)\n3. **Phase 3**: 크리에이티브/타겟팅 메타데이터 시뮬레이션\n4. **Phase 4**: 경쟁 환경 지표 + 합성 데이터 (5,400 → 10,030건)\n\n### 분석 체계\n\n| 분석 | 파일 | 시각화 |\n|------|------|--------|\n| 글로벌 성과 분석 | `ads_analysis.py` | `figures/` 01~05_*.png |\n| 고급 통계 검증 | `advanced_statistical_analysis.py` | `figures/` 06~10_*.png |\n| TikTok 심층 분석 | `tiktok_deep_analysis.py` | `figures/` 11~13_*.png |\n| Ablation V1~V5 | `archive/ablation_studies/` | 동일 폴더 내 PNG |\n\n### 통계 검증 (advanced_statistical_analysis.py)\n\n- **데이터 품질 감사**: 결측치, 이상치(IQR), 정규성 검정(Shapiro-Wilk)\n- **ANOVA**: 플랫폼/산업/국가 간 ROAS 차이 유의성 검증\n- **사후 검정**: Bonferroni 보정 Pairwise t-test + Cohen's d 효과 크기\n- **카이제곱 검정**: 플랫폼과 고성과 캠페인 연관성\n- **VIF (다중공선성)**: 회귀 분석 피처 간 Variance Inflation Factor 검사\n- **크로스 분석**: 거시경제 지표(CPI, 실업률, GDP) × 광고 성과 상관관계\n- **합성 데이터 영향**: 실제 vs 합성 데이터 분리 분석, 순위 변동 검증\n- **요인 분해**: 표준화 다중 회귀로 ROAS 기여 요인 분해 (leakage 포함/제외 비교)\n\n> 분석 실행 시 `analysis_results.json`이 자동 생성됩니다.\n> 보고서 작성 시 이 파일의 수치를 참조하세요.\n\n---\n\n## AI 에이전트\n\n### 대화 흐름 (5단계)\n\n1. **비즈니스 이해**: 산업, 제품, 광고 목표\n2. **타겟 파악**: 국가, 연령, 성별\n3. **예산/일정**: 월 예산, 시작 시기\n4. **전략 설계**: ML 예측 기반 플랫폼/캠페인 비교\n5. **최적화**: What-if 시나리오 비교\n\n### Function Calling Tools (4개)\n\n| Tool | 설명 |\n|------|------|\n| `predict_ad_performance` | 조건별 ROAS/CPC/CPA/전환수 예측 |\n| `compare_scenarios` | 2~5개 시나리오 동시 비교 |\n| `get_historical_benchmarks` | 과거 벤치마크 통계 조회 |\n| `get_industry_trends` | 산업별 트렌드 지수 조회 |\n\n> Tool 스키마는 `tool_schemas.py`에서 공통 관리됩니다 (Agent와 MCP 서버 공유).\n\n### MCP 서버\n\n`mcp_ad_server.py`는 Model Context Protocol을 통해 위 4개 Tool + `get_data_summary`를\n외부 LLM 에이전트(Cursor, Claude Desktop 등)에 제공합니다.\n\n---\n\n## 데이터 투명성 및 한계\n\n### 합성 데이터 정책\n\n- `is_synthetic` 컬럼으로 실제/합성 데이터 구분 (합성 비율 약 46%)\n- `advanced_statistical_analysis.py`에서 합성 데이터 영향도 정량 분석\n- Phase 3(크리에이티브), Phase 4(경쟁 환경) 데이터는 통계 시뮬레이션 기반\n- 주요 인사이트는 실제 데이터만으로도 검증 (플랫폼/산업 순위 변동 없음)\n\n### Data Generation Audit (Target Leakage)\n\nAblation study 과정에서 Phase 3 데이터 생성 코드(`creative_data_enricher.py`)에\n**target leakage**가 내장되어 있음을 발견:\n\n- `bounce_rate = max(20, 65 - ROAS * 2) + noise` -- ROAS를 입력으로 사용\n- `landing_page_load_time = max(0.5, 4.0 - ROAS * 0.1) + noise` -- ROAS를 입력으로 사용\n- `creative_impact_factor`는 위 두 변수로부터 파생\n\n이 3개 변수는 ROAS의 역함수이므로, 이를 ROAS 예측 피처로 사용하면 모델이 역함수를 복원하여\n표면적 R²가 0.79~0.91로 부풀려짐. **Leakage 변수 제거 시 honest R²는 0.40~0.53.**\n\n이 발견은 Shapley 분해 → sensitivity analysis → data generation audit → leakage-free 재검증의\n체계적 분석 파이프라인을 통해 도출되었으며, 합성 데이터 기반 프로젝트에서 모델 성능을 자체 감사하는\n방법론의 유효성을 보여줌.\n\n### 데이터 소스 신뢰도\n\n| Phase | 데이터 소스 | 신뢰도 | 비고 |\n|-------|------------|--------|------|\n| Phase 1 | Kaggle 원본 + 시계열 확장 | 높음 | 실제 광고 캠페인 기반 |\n| Phase 2 (API) | FRED, World Bank, Google Trends | 높음 | 공공 데이터 |\n| Phase 2 (Fallback) | 통계적 시뮬레이션 | 중간 | API 실패 시 사용, 실제와 차이 가능 |\n| Phase 3 | 크리에이티브 메타데이터 | 낮음 | 통계 분포 기반 생성, **leakage 포함** |\n| Phase 4 | 경쟁 환경 + 합성 데이터 | 중간 | 원본 분포 보존, 인과 구조 미보장 |\n\n### 외부 API Fallback\n\n| API | 용도 | Fallback |\n|-----|------|----------|\n| FRED | CPI, 실업률 | 통계적 시뮬레이션 |\n| Google Trends | 산업 관심도 | 계절성 기반 추정 |\n| World Bank | GDP 성장률 | 최근 공개 데이터 |\n| Kaggle | 유사 데이터셋 | 시계열 확장만 수행 |\n\n### 분석 인사이트 해석 가이드\n\n| 인사이트 유형 | 신뢰 수준 | 해석 방법 |\n|-------------|----------|----------|\n| 플랫폼/산업/국가 순위 | 중~높음 | 실제 데이터만으로도 동일 순위 유지, ANOVA 유의 |\n| 개별 캠페인 ROAS 예측값 | 낮~중 | Honest R²=0.40~0.53, 방향성 참고만 권장 |\n| \"리타겟팅이 효과적\" 등 피처 수준 인사이트 | 낮음 | 합성 데이터 기반, 가설 생성 수준으로 해석 |\n| 거시경제 교차 효과 | 낮음 | Shapley φ 음수, 현재 데이터 범위에서 신호 약함 |\n\n---\n\n## 트러블슈팅\n\n### 자주 발생하는 문제\n\n**Q: `ModuleNotFoundError: No module named 'xgboost'`**\n```bash\npip install xgboost lightgbm\n```\n\n**Q: Streamlit 앱에서 \"에이전트 초기화 실패\"**\n- `.env` 파일에 `OPENAI_API_KEY`가 올바르게 설정되어 있는지 확인\n- API 키가 `sk-proj-`로 시작하는지 확인\n- OpenAI 계정에 크레딧이 남아있는지 확인\n\n**Q: `data/enriched_ads_final.csv`가 없음**\n```bash\npython data_pipeline.py  # 데이터 파이프라인 실행\n```\n\n**Q: 한글 폰트 깨짐 (시각화)**\n- Windows: `Malgun Gothic` 폰트 자동 사용\n- macOS: `plt.rcParams['font.family'] = 'AppleGothic'`으로 변경\n- Linux: `sudo apt-get install fonts-nanum && fc-cache -fv`\n\n**Q: MCP 서버 실행 오류**\n```bash\npip install mcp  # MCP 패키지 설치\npython mcp_ad_server.py --test  # 테스트 모드로 먼저 확인\n```\n\n**Q: 모델 학습을 다시 하고 싶음**\n```bash\npython ads_predictor_v2.py  # 새 모델 학습 → models/predictor_v2.pkl 저장\n```\n\n---\n\n## 배포\n\n- **서비스 URL**: https://adstrategy-ai.streamlit.app/\n- **GitHub**: https://github.com/Sagak-bit/AdStrategy-AI\n- **배포 플랫폼**: Streamlit Community Cloud\n- **자동 배포**: GitHub push 시 자동 재배포 (CI/CD)\n",
+ "hits": {
+  "st": [
+   {
+    "file": "data_collectors/competition_and_synthetic.py",
+    "line": 23,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "logger = logging.getLogger(__name__)",
+     "",
+     "# 합성 데이터 관련 (선택적)",
+     "try:",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    SDV_AVAILABLE = True",
+     "except ImportError:",
+     "    SDV_AVAILABLE = False"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "data_collectors/competition_and_synthetic.py",
+    "line": 24,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "# 합성 데이터 관련 (선택적)",
+     "try:",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    SDV_AVAILABLE = True",
+     "except ImportError:",
+     "    SDV_AVAILABLE = False",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "data_collectors/competition_and_synthetic.py",
+    "line": 23,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "logger = logging.getLogger(__name__)",
+     "",
+     "# 합성 데이터 관련 (선택적)",
+     "try:",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    SDV_AVAILABLE = True",
+     "except ImportError:",
+     "    SDV_AVAILABLE = False"
+    ]
+   },
+   {
+    "file": "data_collectors/competition_and_synthetic.py",
+    "line": 24,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "# 합성 데이터 관련 (선택적)",
+     "try:",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    SDV_AVAILABLE = True",
+     "except ImportError:",
+     "    SDV_AVAILABLE = False",
+     ""
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "data_collectors/competition_and_synthetic.py",
+    "line": 23,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "logger = logging.getLogger(__name__)",
+     "",
+     "# 합성 데이터 관련 (선택적)",
+     "try:",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    SDV_AVAILABLE = True",
+     "except ImportError:",
+     "    SDV_AVAILABLE = False"
+    ]
+   },
+   {
+    "file": "data_collectors/competition_and_synthetic.py",
+    "line": 159,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "        metadata = SingleTableMetadata()",
+     "        metadata.detect_from_dataframe(df)",
+     "",
+     "        # CTGAN 학습",
+     "        synthesizer = CTGANSynthesizer(",
+     "            metadata,",
+     "            epochs=epochs,",
+     "            verbose=True,",
+     "        )"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "# sdv>=1.8.0              # CTGAN 합성 데이터 (GPU 권장)"
+  ]
+ }
+}

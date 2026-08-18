@@ -1,0 +1,126 @@
+{
+ "repo": "praveshjainnn/Hybrid-ML-Markov-Dynamic-Pricing",
+ "disk_kb": 6045,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Hybrid ML-Markov Dynamic Pricing for Perishable Products\n\nThis project is a complete, runnable implementation of the paper \"Dynamic Pricing and Inventory Optimization for Perishable Products Using a Hybrid ML-Markov Model.\"\n\nIt reproduces the paper's core components:\n\n- a 1,000-row synthetic perishable product-day dataset for Apple, Banana, Mango, Potato, and Onion\n- elasticity-aware rule and Gradient Boosting demand models\n- cold-start blending from rule logic to ML forecasts\n- MDP pricing with inventory, remaining shelf life, seasonality, weekday, wastage, and price-smoothness penalties\n- static and rule-based markdown baselines\n- 30-seed simulation study with paired t-tests\n- Fig. 2-Fig. 5, Table II, and one extra diagnostic price trajectory plot\n\nThe dataset is synthetic: it is CTGAN-augmented around plausible real-world average price and shelf-life statistics. If `sdv` is unavailable at runtime, the generator uses a deterministic CTGAN-style bootstrap fallback that preserves the same product/category joint structure and validates numeric distributions with KS tests. No live retail transaction data is used.\n\n## Install\n\n```bash\npip install -r requirements.txt\n```\n\n## Run\n\nOne-command end to end:\n\n```bash\npython -m simulation.run_simulation && python -m analysis.make_figures\n```\n\nUseful individual commands:\n\n```bash\npython -m data.generate_dataset\npython -m simulation.run_simulation\npython -m analysis.make_figures\njupyter notebook notebook.ipynb\n```\n\nOutputs are written to `outputs/`:\n\n- `outputs/results_table.csv`\n- `outputs/table_ii.md`\n- `outputs/run_log.txt`\n- `outputs/simulation_detail.csv`\n- `outputs/figures/*.png`\n\n## Reported Targets\n\nThe paper reports approximate values: static net profit 1279.98, rule-based net profit 1335.42, dynamic net profit 1420.55; static wastage cost 351.87 and dynamic wastage cost 211.12; demand MAE improves from about 5.3 to 3.0; inventory turnover improves from 0.71 to 0.88.\n\nThe simulator is calibrated to reproduce the same direction and rough magnitude through stochastic simulation rather than by hard-coding the final table.\n",
+ "hits": {
+  "st": [
+   {
+    "file": "data/generate_dataset.py",
+    "line": 103,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "        return synthetic",
+     "",
+     "    try:",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "",
+     "        metadata = SingleTableMetadata()",
+     "        metadata.detect_from_dataframe(seed_df)",
+     "        synthesizer = CTGANSynthesizer(metadata, epochs=80, verbose=False)"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "data/generate_dataset.py",
+    "line": 102,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "        synthetic[\"generation_method\"] = \"bootstrap_ctgan_fallback\"",
+     "        return synthetic",
+     "",
+     "    try:",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "",
+     "        metadata = SingleTableMetadata()",
+     "        metadata.detect_from_dataframe(seed_df)"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "data/generate_dataset.py",
+    "line": 102,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "        synthetic[\"generation_method\"] = \"bootstrap_ctgan_fallback\"",
+     "        return synthetic",
+     "",
+     "    try:",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "",
+     "        metadata = SingleTableMetadata()",
+     "        metadata.detect_from_dataframe(seed_df)"
+    ]
+   },
+   {
+    "file": "data/generate_dataset.py",
+    "line": 103,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "        return synthetic",
+     "",
+     "    try:",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "",
+     "        metadata = SingleTableMetadata()",
+     "        metadata.detect_from_dataframe(seed_df)",
+     "        synthesizer = CTGANSynthesizer(metadata, epochs=80, verbose=False)"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "data/generate_dataset.py",
+    "line": 103,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "        return synthetic",
+     "",
+     "    try:",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "",
+     "        metadata = SingleTableMetadata()",
+     "        metadata.detect_from_dataframe(seed_df)",
+     "        synthesizer = CTGANSynthesizer(metadata, epochs=80, verbose=False)"
+    ]
+   },
+   {
+    "file": "data/generate_dataset.py",
+    "line": 107,
+    "text": "synthesizer = CTGANSynthesizer(metadata, epochs=80, verbose=False)",
+    "context": [
+     "        from sdv.single_table import CTGANSynthesizer",
+     "",
+     "        metadata = SingleTableMetadata()",
+     "        metadata.detect_from_dataframe(seed_df)",
+     "        synthesizer = CTGANSynthesizer(metadata, epochs=80, verbose=False)",
+     "        synthesizer.fit(seed_df)",
+     "        synthetic = synthesizer.sample(n_rows)",
+     "        synthetic[\"generation_method\"] = \"CTGAN\"",
+     "        return synthetic"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "# Optional full CTGAN path. Set USE_CTGAN=True in config.py after installing:",
+   "# sdv>=1.10"
+  ]
+ }
+}

@@ -1,0 +1,563 @@
+{
+ "repo": "VaibhavGupta-19341/fairness-ctgan",
+ "disk_kb": 27849,
+ "method": "partial_clone",
+ "tree_files": 103,
+ "status": "ok",
+ "readme": "# Fairness-Regularized Synthetic Tabular Data Generation\n\n**Evaluating the Fidelity-Fairness Tradeoff in CTGAN**\n\n**Author:** Vaibhav Gupta ([vg4614@rit.edu](mailto:vg4614@rit.edu))  \n**Advisor:** Dr. Zhiqiang Tao  \n**Institution:** Rochester Institute of Technology  \n**Course:** IDAI-780 Capstone Project, Spring 2026\n\n---\n\n## Overview\n\nThis project investigates whether fairness constraints can be injected into CTGAN (Conditional Tabular GAN) to produce synthetic data that transfers fairness properties to downstream machine learning classifiers. We systematically evaluate three approaches:\n\n1. **Female-only augmentation** — Generate additional synthetic female rows and add them to real training data.\n2. **Generator-level fairness regularization** — Modify CTGAN's generator loss function as L_G = L_WGAN + L_cond + λ · L_fair, with three variant formulations (V1: soft proxy, V2: hard groups, V3: decode-and-scale).\n3. **Fairness-aware rejection sampling** — Generate a large candidate pool from standard CTGAN, then selectively resample rows to achieve a target Disparate Impact.\n\n**Key finding:** Generator-level regularization produces inconsistent fairness transfer despite the fairness loss converging during training. The root cause is CTGAN's DataTransformer, which uses Bayesian GMM normalization that creates a non-linear mapping between the generator's latent space and the decoded data. Rejection sampling bypasses this representation gap by operating directly on decoded data, improving DI from 0.393 to 0.675 (at target DI=0.8) with ~5% accuracy cost.\n\n![Project Framework](results/figures/fairness_ctgan_framework.svg)\n\n## Key Results\n\n| Method | Accuracy | DI | SPD | Avg KS |\n|--------|----------|------|-------|--------|\n| Real Data | 0.865 | 0.271 | 0.209 | — |\n| CTGAN Baseline | 0.812 | 0.393 | 0.129 | 0.180 |\n| Fair-CTGAN V1 (λ=1.0) | 0.805 | 0.523 | 0.153 | 0.152 |\n| Fair-CTGAN V2 (λ=1.0) | 0.806 | 0.157 | 0.109 | 0.157 |\n| Fair-CTGAN V3 (λ=1.0) | 0.780 | 0.279 | 0.355 | 0.172 |\n| **Rej. Sample (DI=0.8)** | **0.817** | **0.675** | **0.055** | **0.198** |\n| **Rej. Sample (DI=0.9)** | **0.794** | **1.216** | **0.021** | **0.199** |\n\n**Metrics explained:**\n- **DI (Disparate Impact):** Ratio of positive prediction rates between groups. Target ≥ 0.8. Higher = fairer.\n- **SPD (Statistical Parity Difference):** Absolute gap in positive rates between groups. Target = 0.\n- **KS (Kolmogorov-Smirnov):** Distribution difference for numerical columns. Lower = better fidelity.\n- **Accuracy:** Downstream XGBoost classifier accuracy on real test data.\n\n### Fairness-Utility Tradeoff\n\n| ![Rejection Sampling Tradeoff](results/figures/rejection_sampling_tradeoff.png) |\n|:--:|\n| *Rejection sampling provides a smooth, controllable fairness-accuracy tradeoff. DI increases monotonically with target DI, while accuracy degrades gradually.* |\n\n### Training Loss Convergence\n\n| ![Training Losses](results/figures/training_losses_all_models.png) |\n|:--:|\n| *Generator and discriminator losses for all four models over 300 epochs.* |\n\n| ![Fairness Loss](results/figures/fairness_loss_convergence.png) |\n|:--:|\n| *All three FairCTGAN variants show fairness loss converging to near zero, confirming the generator equalizes rates in latent space — but this does not transfer to downstream DI improvement.* |\n\n## Project Structure\n\n```\nfairness-ctgan/\n├── data/\n│   ├── raw/                    # Original UCI Adult + CTDC datasets\n│   ├── processed/              # Cleaned train/val/test splits\n│   └── synthetic/              # Generated synthetic datasets\n├── src/\n│   ├── __init__.py\n│   └── fair_ctgan.py           # Core: FairCTGAN class (V1/V2/V3 variants)\n├── scripts/\n│   ├── train_all_models.py     # Train baseline + all FairCTGAN variants\n│   ├── run_rejection_sampling.py  # Rejection sampling sweep\n│   └── evaluate_all.py         # Evaluate all methods, produce comparison\n├── notebooks/\n│   ├── 01_eda_uci_adult.ipynb          # Exploratory data analysis\n│   ├── UCI_CTGAN.ipynb                 # Baseline CTGAN training\n│   ├── 03_fidelity_analysis.ipynb      # KS, JSD, PCA, detection analysis\n│   ├── 04_augmentation_experiment.ipynb # Female-only augmentation\n│   ├── 05_drop_columns_experiment.ipynb # Zero-inflated column investigation\n│   ├── 06_fairness_regularization.ipynb # FairCTGAN λ sweep experiments\n│   └── 07_rejection_sampling.ipynb     # Rejection sampling experiments\n├── results/\n│   ├── figures/                # All generated plots\n│   ├── losses/                 # Per-epoch training loss CSVs\n│   ├── metrics/                # Evaluation result CSVs\n│   └── models/                 # Saved .pkl model files\n├── configs/\n├── requirements.txt\n├── LICENSE\n└── README.md\n```\n\n## Installation\n\n### Prerequisites\n- Python 3.10+ (tested on 3.13)\n- No GPU required (runs on CPU in ~15 min per model)\n\n### Setup\n\n```bash\n# Clone the repository\ngit clone https://github.com/VaibhavGupta-19341/fairness-ctgan.git\ncd fairness-ctgan\n\n# Create virtual environment\npython -m venv venv\nsource venv/bin/activate        # Linux/Mac\n# venv\\Scripts\\activate          # Windows\n\n# Install dependencies\npip install -r requirements.txt\n```\n\n### Dependencies\n\nCore libraries: `ctgan`, `sdv`, `xgboost`, `scikit-learn`, `pandas`, `numpy`, `matplotlib`, `scipy`, `torch`, `tqdm`\n\nFor GPU acceleration (optional): Install PyTorch with CUDA support and set `enable_gpu=True` in the training scripts.\n\n## Data Preparation\n\n### UCI Adult Income Dataset (primary)\n\nThe dataset is included in `data/raw/`. To reproduce from scratch:\n\n1. Download from the [UCI ML Repository](https://archive.ics.uci.edu/ml/datasets/adult)\n2. Place `adult.data` and `adult.test` in `data/raw/`\n3. Run the EDA notebook to clean and split:\n\n```bash\njupyter notebook notebooks/01_eda_uci_adult.ipynb\n```\n\nThis produces:\n- `data/processed/adult_clean.csv` — 27,515 rows after removing missing values\n- `data/processed/adult_train.csv` — 21,113 rows (70%)\n- `data/processed/adult_val.csv` — 4,524 rows (15%)\n- `data/processed/adult_test.csv` — 4,525 rows (15%)\n\nSplits are stratified by the protected attribute (sex).\n\n### CTDC Human Trafficking Dataset (secondary)\n\nAvailable in `data/raw/` for cross-domain evaluation. Not used in the primary experiments.\n\n## Usage\n\n### Quick Start: Reproduce All Results\n\n```bash\n# Step 1: Train baseline CTGAN + 3 FairCTGAN variants (~60 min)\npython scripts/train_all_models.py\n\n# Step 2: Run rejection sampling experiments (~5 min)\npython scripts/run_rejection_sampling.py\n\n# Step 3: Evaluate all methods and produce comparison tables (~2 min)\npython scripts/evaluate_all.py\n```\n\n### Training Individual Models\n\n```python\nfrom ctgan import CTGAN\nimport pandas as pd\n\n# Standard CTGAN baseline\ntrain_df = pd.read_csv(\"data/processed/adult_train.csv\")\ndiscrete_cols = train_df.select_dtypes(include=['object']).columns.tolist()\n\nmodel = CTGAN(epochs=300, verbose=True)\nmodel.fit(train_df, discrete_columns=discrete_cols)\nsynthetic = model.sample(len(train_df))\n```\n\n### FairCTGAN with Custom Parameters\n\n```python\nfrom src.fair_ctgan import FairCTGAN\n\n# Train with fairness regularization (variant V1, λ=1.0)\nfair_model = FairCTGAN(\n    lambda_fair=1.0,\n    variant='v1',              # 'v1', 'v2', or 'v3'\n    protected_col='sex',\n    target_col='income',\n    epochs=300,\n    verbose=True,\n    enable_gpu=False,\n)\nfair_model.fit(train_df, discrete_columns=discrete_cols)\n\n# Save model and training losses\nfair_model.save(\"results/models/my_model.pkl\")\nfair_model.save_loss_csv(\"results/losses/my_model_losses.csv\")\n\n# Generate synthetic data\nsynthetic = fair_model.sample(len(train_df))\n```\n\n### Rejection Sampling\n\n```python\nfrom scripts.run_rejection_sampling import fairness_rejection_sample\n\n# Generate candidate pool from trained CTGAN\npool = model.sample(len(train_df) * 5)\n\n# Resample for target DI = 0.9\nfair_data, metadata = fairness_rejection_sample(\n    pool, target_di=0.9, desired_n=len(train_df),\n    protected_col='sex', target_col='income'\n)\nprint(f\"Achieved DI: {metadata['actual_di']:.3f}\")\n```\n\n### Notebooks (Interactive Exploration)\n\n```bash\njupyter notebook notebooks/\n```\n\nNotebooks are numbered in execution order and contain saved outputs for reference.\n\n## Evaluation Metrics\n\n| Metric | Type | Description | Target |\n|--------|------|-------------|--------|\n| Disparate Impact (DI) | Fairness | P(ŷ=1\\|female) / P(ŷ=1\\|male) | ≥ 0.8 |\n| Statistical Parity Diff. (SPD) | Fairness | \\|P(ŷ=1\\|female) - P(ŷ=1\\|male)\\| | 0 |\n| Accuracy | Utility | XGBoost accuracy on real test data | High |\n| KS Statistic | Fidelity | Distribution gap for numerical columns | 0 |\n| Jensen-Shannon Divergence | Fidelity | Distribution gap for categorical columns | 0 |\n\nAll fairness metrics are measured on **downstream classifier predictions** (XGBoost trained on synthetic, tested on real), not on the synthetic data itself. This captures whether fairness *transfers* to models trained on the data.\n\n## References\n\n- Xu, L., Skoularidou, M., Cuesta-Infante, A., & Veeramachaneni, K. (2019). *Modeling Tabular data using Conditional GAN*. NeurIPS.\n- Rajabi, A. & Garibay, O. O. (2022). *TabFairGAN: Fair tabular data generation with generative adversarial networks*. MLKE, 4(2), 488–501.\n- Ganev, G., Oprisanu, B., & De Cristofaro, E. (2022). *Robin Hood and Matthew Effects: Differential privacy has disparate impact on synthetic data*. ICML.\n- Choi, K., Grover, A., Singh, T., Shu, R., & Ermon, S. (2020). *Fair Generative Modeling via Weak Supervision*. ICML.\n- Dua, D. & Graff, C. (2017). *UCI Machine Learning Repository*. University of California, Irvine.\n\n## Acknowledgments\n\nThis project builds upon the [CTGAN](https://github.com/sdv-dev/CTGAN) library by the Synthetic Data Vault (SDV) team at DataCebo/MIT. The UCI Adult Income dataset is provided by the UCI Machine Learning Repository.\n\n## License\n\nMIT License. See [LICENSE](LICENSE) for details.\n",
+ "hits": {
+  "ctgan_mod": [
+   {
+    "file": "README.md",
+    "line": 164,
+    "text": "from ctgan import CTGAN",
+    "context": [
+     "",
+     "### Training Individual Models",
+     "",
+     "```python",
+     "from ctgan import CTGAN",
+     "import pandas as pd",
+     "",
+     "# Standard CTGAN baseline",
+     "train_df = pd.read_csv(\"data/processed/adult_train.csv\")"
+    ]
+   },
+   {
+    "file": "scripts/run_rejection_sampling.py",
+    "line": 31,
+    "text": "from ctgan import CTGAN",
+    "context": [
+     "import pandas as pd",
+     "from sklearn.metrics import accuracy_score",
+     "from xgboost import XGBClassifier",
+     "from scipy.stats import ks_2samp",
+     "from ctgan import CTGAN",
+     "",
+     "PROJECT = Path(__file__).resolve().parent.parent",
+     "sys.path.insert(0, str(PROJECT))",
+     ""
+    ]
+   },
+   {
+    "file": "scripts/train_all_models.py",
+    "line": 35,
+    "text": "from ctgan import CTGAN",
+    "context": [
+     "import time",
+     "from pathlib import Path",
+     "",
+     "import pandas as pd",
+     "from ctgan import CTGAN",
+     "",
+     "# Add project root to path",
+     "PROJECT = Path(__file__).resolve().parent.parent",
+     "sys.path.insert(0, str(PROJECT))"
+    ]
+   },
+   {
+    "file": "notebooks/07_rejection_sampling.ipynb",
+    "line": 134,
+    "text": "\"# from ctgan import CTGAN\\n\",",
+    "context": [
+     "   \"id\": \"ce66c645\",",
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"# from ctgan import CTGAN\\n\",",
+     "    \"\\n\",",
+     "    \"# model_path = PROJECT / \\\"results\\\" / \\\"models\\\" / \\\"ctgan_baseline.pkl\\\"\\n\",",
+     "    \"\\n\",",
+     "    \"# discrete_columns = train_df.select_dtypes(include=['object']).columns.tolist()\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/07_rejection_sampling.ipynb",
+    "line": 168,
+    "text": "\"from ctgan import CTGAN\\n\",",
+    "context": [
+     "     ]",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from ctgan import CTGAN\\n\",",
+     "    \"\\n\",",
+     "    \"model_path = PROJECT / \\\"results\\\" / \\\"models\\\" / \\\"ctgan_baseline_raw.pkl\\\"\\n\",",
+     "    \"\\n\",",
+     "    \"discrete_columns = train_df.select_dtypes(include=['object']).columns.tolist()\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/06_fairness_regularization.ipynb",
+    "line": 725,
+    "text": "\"    from ctgan import CTGAN as CTGAN_loader\\n\",",
+    "context": [
+     "    \"best_lambda = 1.0  # Adjust based on results above\\n\",",
+     "    \"best_model_path = PROJECT / \\\"results\\\" / \\\"models\\\" / f\\\"fair_ctgan_lambda_{best_lambda}.pkl\\\"\\n\",",
+     "    \"\\n\",",
+     "    \"if best_model_path.exists():\\n\",",
+     "    \"    from ctgan import CTGAN as CTGAN_loader\\n\",",
+     "    \"    # Note: FairCTGAN saves as CTGAN-compatible pickle\\n\",",
+     "    \"    # We need to load loss_values from the saved results instead\\n\",",
+     "    \"\\n\",",
+     "    \"    # Load from the results we already have in memory\\n\","
+    ]
+   },
+   {
+    "file": "src/fair_ctgan.py",
+    "line": 42,
+    "text": "from ctgan.data_sampler import DataSampler",
+    "context": [
+     "from torch import optim",
+     "from torch.nn import functional",
+     "from tqdm import tqdm",
+     "",
+     "from ctgan.data_sampler import DataSampler",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.synthesizers._utils import _format_score, validate_and_set_device",
+     "from ctgan.synthesizers.ctgan import CTGAN, Generator, Discriminator",
+     "from ctgan.synthesizers.base import random_state"
+    ]
+   },
+   {
+    "file": "src/fair_ctgan.py",
+    "line": 43,
+    "text": "from ctgan.data_transformer import DataTransformer",
+    "context": [
+     "from torch.nn import functional",
+     "from tqdm import tqdm",
+     "",
+     "from ctgan.data_sampler import DataSampler",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.synthesizers._utils import _format_score, validate_and_set_device",
+     "from ctgan.synthesizers.ctgan import CTGAN, Generator, Discriminator",
+     "from ctgan.synthesizers.base import random_state",
+     ""
+    ]
+   },
+   {
+    "file": "src/fair_ctgan.py",
+    "line": 44,
+    "text": "from ctgan.synthesizers._utils import _format_score, validate_and_set_device",
+    "context": [
+     "from tqdm import tqdm",
+     "",
+     "from ctgan.data_sampler import DataSampler",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.synthesizers._utils import _format_score, validate_and_set_device",
+     "from ctgan.synthesizers.ctgan import CTGAN, Generator, Discriminator",
+     "from ctgan.synthesizers.base import random_state",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "src/fair_ctgan.py",
+    "line": 45,
+    "text": "from ctgan.synthesizers.ctgan import CTGAN, Generator, Discriminator",
+    "context": [
+     "",
+     "from ctgan.data_sampler import DataSampler",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.synthesizers._utils import _format_score, validate_and_set_device",
+     "from ctgan.synthesizers.ctgan import CTGAN, Generator, Discriminator",
+     "from ctgan.synthesizers.base import random_state",
+     "",
+     "",
+     "class FairCTGAN(CTGAN):"
+    ]
+   },
+   {
+    "file": "src/fair_ctgan.py",
+    "line": 46,
+    "text": "from ctgan.synthesizers.base import random_state",
+    "context": [
+     "from ctgan.data_sampler import DataSampler",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.synthesizers._utils import _format_score, validate_and_set_device",
+     "from ctgan.synthesizers.ctgan import CTGAN, Generator, Discriminator",
+     "from ctgan.synthesizers.base import random_state",
+     "",
+     "",
+     "class FairCTGAN(CTGAN):",
+     "    \"\"\"Fairness-regularized CTGAN with selectable fairness penalty variant."
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "notebooks/05_drop_columns_experiment.ipynb",
+    "line": 93,
+    "text": "\"    from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"from sklearn.metrics import accuracy_score\\n\",",
+     "    \"from xgboost import XGBClassifier\\n\",",
+     "    \"\\n\",",
+     "    \"try:\\n\",",
+     "    \"    from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"    from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"    SDV_NEW = True\\n\",",
+     "    \"except:\\n\",",
+     "    \"    from sdv.tabular import CTGAN\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/04_augmentation_experiment.ipynb",
+    "line": 99,
+    "text": "\"    from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"from sklearn.metrics import accuracy_score\\n\",",
+     "    \"from xgboost import XGBClassifier\\n\",",
+     "    \"\\n\",",
+     "    \"try:\\n\",",
+     "    \"    from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"    from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"    SDV_NEW = True\\n\",",
+     "    \"except:\\n\",",
+     "    \"    from sdv.tabular import CTGAN\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/UCI_CTGAN.ipynb",
+    "line": 31,
+    "text": "\"    from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"from xgboost import XGBClassifier\\n\",",
+     "    \"\\n\",",
+     "    \"# ⚠️ Use correct import depending on your SDV version\\n\",",
+     "    \"try:\\n\",",
+     "    \"    from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"    SDV_NEW = True\\n\",",
+     "    \"except:\\n\",",
+     "    \"    from sdv.tabular import CTGAN\\n\",",
+     "    \"    SDV_NEW = False\\n\","
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "notebooks/05_drop_columns_experiment.ipynb",
+    "line": 94,
+    "text": "\"    from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"from xgboost import XGBClassifier\\n\",",
+     "    \"\\n\",",
+     "    \"try:\\n\",",
+     "    \"    from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"    from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"    SDV_NEW = True\\n\",",
+     "    \"except:\\n\",",
+     "    \"    from sdv.tabular import CTGAN\\n\",",
+     "    \"    SDV_NEW = False\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/04_augmentation_experiment.ipynb",
+    "line": 100,
+    "text": "\"    from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"from xgboost import XGBClassifier\\n\",",
+     "    \"\\n\",",
+     "    \"try:\\n\",",
+     "    \"    from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"    from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"    SDV_NEW = True\\n\",",
+     "    \"except:\\n\",",
+     "    \"    from sdv.tabular import CTGAN\\n\",",
+     "    \"    SDV_NEW = False\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/UCI_CTGAN.ipynb",
+    "line": 380,
+    "text": "\"    from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "   \"source\": [",
+     "    \"print(\\\"Training Standard CTGAN (λ = 0 baseline)...\\\")\\n\",",
+     "    \"\\n\",",
+     "    \"if SDV_NEW:\\n\",",
+     "    \"    from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"    \\n\",",
+     "    \"    metadata = SingleTableMetadata()\\n\",",
+     "    \"    metadata.detect_from_dataframe(train_df)\\n\",",
+     "    \"\\n\","
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "notebooks/05_drop_columns_experiment.ipynb",
+    "line": 93,
+    "text": "\"    from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"from sklearn.metrics import accuracy_score\\n\",",
+     "    \"from xgboost import XGBClassifier\\n\",",
+     "    \"\\n\",",
+     "    \"try:\\n\",",
+     "    \"    from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"    from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"    SDV_NEW = True\\n\",",
+     "    \"except:\\n\",",
+     "    \"    from sdv.tabular import CTGAN\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/05_drop_columns_experiment.ipynb",
+    "line": 94,
+    "text": "\"    from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"from xgboost import XGBClassifier\\n\",",
+     "    \"\\n\",",
+     "    \"try:\\n\",",
+     "    \"    from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"    from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"    SDV_NEW = True\\n\",",
+     "    \"except:\\n\",",
+     "    \"    from sdv.tabular import CTGAN\\n\",",
+     "    \"    SDV_NEW = False\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/05_drop_columns_experiment.ipynb",
+    "line": 97,
+    "text": "\"    from sdv.tabular import CTGAN\\n\",",
+    "context": [
+     "    \"    from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"    from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"    SDV_NEW = True\\n\",",
+     "    \"except:\\n\",",
+     "    \"    from sdv.tabular import CTGAN\\n\",",
+     "    \"    SDV_NEW = False\\n\",",
+     "    \"\\n\",",
+     "    \"PROJECT = Path(\\\"..\\\")\\n\",",
+     "    \"FIG_DIR = PROJECT / \\\"results\\\" / \\\"figures\\\"\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/04_augmentation_experiment.ipynb",
+    "line": 99,
+    "text": "\"    from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"from sklearn.metrics import accuracy_score\\n\",",
+     "    \"from xgboost import XGBClassifier\\n\",",
+     "    \"\\n\",",
+     "    \"try:\\n\",",
+     "    \"    from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"    from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"    SDV_NEW = True\\n\",",
+     "    \"except:\\n\",",
+     "    \"    from sdv.tabular import CTGAN\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/04_augmentation_experiment.ipynb",
+    "line": 100,
+    "text": "\"    from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"from xgboost import XGBClassifier\\n\",",
+     "    \"\\n\",",
+     "    \"try:\\n\",",
+     "    \"    from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"    from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"    SDV_NEW = True\\n\",",
+     "    \"except:\\n\",",
+     "    \"    from sdv.tabular import CTGAN\\n\",",
+     "    \"    SDV_NEW = False\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/04_augmentation_experiment.ipynb",
+    "line": 103,
+    "text": "\"    from sdv.tabular import CTGAN\\n\",",
+    "context": [
+     "    \"    from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"    from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"    SDV_NEW = True\\n\",",
+     "    \"except:\\n\",",
+     "    \"    from sdv.tabular import CTGAN\\n\",",
+     "    \"    SDV_NEW = False\\n\",",
+     "    \"\\n\",",
+     "    \"PROJECT = Path(\\\"..\\\")\\n\",",
+     "    \"FIG_DIR = PROJECT / \\\"results\\\" / \\\"figures\\\"\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/UCI_CTGAN.ipynb",
+    "line": 31,
+    "text": "\"    from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"from xgboost import XGBClassifier\\n\",",
+     "    \"\\n\",",
+     "    \"# ⚠️ Use correct import depending on your SDV version\\n\",",
+     "    \"try:\\n\",",
+     "    \"    from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"    SDV_NEW = True\\n\",",
+     "    \"except:\\n\",",
+     "    \"    from sdv.tabular import CTGAN\\n\",",
+     "    \"    SDV_NEW = False\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/UCI_CTGAN.ipynb",
+    "line": 34,
+    "text": "\"    from sdv.tabular import CTGAN\\n\",",
+    "context": [
+     "    \"try:\\n\",",
+     "    \"    from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"    SDV_NEW = True\\n\",",
+     "    \"except:\\n\",",
+     "    \"    from sdv.tabular import CTGAN\\n\",",
+     "    \"    SDV_NEW = False\\n\",",
+     "    \"\\n\",",
+     "    \"\\n\",",
+     "    \"# Create directories\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/UCI_CTGAN.ipynb",
+    "line": 380,
+    "text": "\"    from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "   \"source\": [",
+     "    \"print(\\\"Training Standard CTGAN (λ = 0 baseline)...\\\")\\n\",",
+     "    \"\\n\",",
+     "    \"if SDV_NEW:\\n\",",
+     "    \"    from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"    \\n\",",
+     "    \"    metadata = SingleTableMetadata()\\n\",",
+     "    \"    metadata.detect_from_dataframe(train_df)\\n\",",
+     "    \"\\n\","
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "notebooks/05_drop_columns_experiment.ipynb",
+    "line": 93,
+    "text": "\"    from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"from sklearn.metrics import accuracy_score\\n\",",
+     "    \"from xgboost import XGBClassifier\\n\",",
+     "    \"\\n\",",
+     "    \"try:\\n\",",
+     "    \"    from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"    from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"    SDV_NEW = True\\n\",",
+     "    \"except:\\n\",",
+     "    \"    from sdv.tabular import CTGAN\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/05_drop_columns_experiment.ipynb",
+    "line": 228,
+    "text": "\"    model_dropped = CTGANSynthesizer(\\n\",",
+    "context": [
+     "    \"if SDV_NEW:\\n\",",
+     "    \"    metadata = SingleTableMetadata()\\n\",",
+     "    \"    metadata.detect_from_dataframe(train_dropped)\\n\",",
+     "    \"    \\n\",",
+     "    \"    model_dropped = CTGANSynthesizer(\\n\",",
+     "    \"        metadata=metadata,\\n\",",
+     "    \"        epochs=300,\\n\",",
+     "    \"        verbose=True\\n\",",
+     "    \"    )\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/04_augmentation_experiment.ipynb",
+    "line": 99,
+    "text": "\"    from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"from sklearn.metrics import accuracy_score\\n\",",
+     "    \"from xgboost import XGBClassifier\\n\",",
+     "    \"\\n\",",
+     "    \"try:\\n\",",
+     "    \"    from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"    from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"    SDV_NEW = True\\n\",",
+     "    \"except:\\n\",",
+     "    \"    from sdv.tabular import CTGAN\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/04_augmentation_experiment.ipynb",
+    "line": 254,
+    "text": "\"    female_model = CTGANSynthesizer(\\n\",",
+    "context": [
+     "    \"if SDV_NEW:\\n\",",
+     "    \"    metadata = SingleTableMetadata()\\n\",",
+     "    \"    metadata.detect_from_dataframe(female_train)\\n\",",
+     "    \"    \\n\",",
+     "    \"    female_model = CTGANSynthesizer(\\n\",",
+     "    \"        metadata=metadata,\\n\",",
+     "    \"        epochs=300,\\n\",",
+     "    \"        verbose=True\\n\",",
+     "    \"    )\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/UCI_CTGAN.ipynb",
+    "line": 31,
+    "text": "\"    from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"from xgboost import XGBClassifier\\n\",",
+     "    \"\\n\",",
+     "    \"# ⚠️ Use correct import depending on your SDV version\\n\",",
+     "    \"try:\\n\",",
+     "    \"    from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"    SDV_NEW = True\\n\",",
+     "    \"except:\\n\",",
+     "    \"    from sdv.tabular import CTGAN\\n\",",
+     "    \"    SDV_NEW = False\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/UCI_CTGAN.ipynb",
+    "line": 302,
+    "text": "\"#     model = CTGANSynthesizer(epochs=config.ctgan_epochs)\\n\",",
+    "context": [
+     "   \"source\": [",
+     "    \"# print(\\\"Training Standard CTGAN (λ = 0 baseline)...\\\")\\n\",",
+     "    \"\\n\",",
+     "    \"# if SDV_NEW:\\n\",",
+     "    \"#     model = CTGANSynthesizer(epochs=config.ctgan_epochs)\\n\",",
+     "    \"#     model.fit(train_df)\\n\",",
+     "    \"# else:\\n\",",
+     "    \"#     discrete_columns = train_df.select_dtypes(include=[\\\"object\\\"]).columns.tolist()\\n\",",
+     "    \"#     model = CTGAN(epochs=config.ctgan_epochs)\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/UCI_CTGAN.ipynb",
+    "line": 385,
+    "text": "\"    model = CTGANSynthesizer(\\n\",",
+    "context": [
+     "    \"    \\n\",",
+     "    \"    metadata = SingleTableMetadata()\\n\",",
+     "    \"    metadata.detect_from_dataframe(train_df)\\n\",",
+     "    \"\\n\",",
+     "    \"    model = CTGANSynthesizer(\\n\",",
+     "    \"        metadata=metadata,\\n\",",
+     "    \"        epochs=config.ctgan_epochs,\\n\",",
+     "    \"        verbose=True\\n\",",
+     "    \"    )\\n\","
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ctgan_mod",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv>=1.10.0          # Includes CTGAN",
+   "ctgan>=0.9.0         # Direct CTGAN access if needed",
+   "torch>=2.0.0         # CTGAN backend (CPU for now, GPU later)"
+  ]
+ }
+}

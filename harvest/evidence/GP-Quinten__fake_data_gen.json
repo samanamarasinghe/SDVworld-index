@@ -1,0 +1,481 @@
+{
+ "repo": "GP-Quinten/fake_data_gen",
+ "disk_kb": 195,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Synthetic data generation\n\n## Overview of the repository\n\nThis repository contains:\n-  scripts that allow to generate synthetic tabular data with different models\n- scripts to evaluate synthetic data\n\nGlobal organization:\n![Alt text](figures/sdg_repo_orga.png)\n\nIt is built as follows: \n\n```\n├── config\n│   ├── config.py\n│   └── one config file per database \n├── requirements\n│   └── one requirement file per model \n│   └── one requirement file per database \n├── scripts\n│   ├── evaluate\n│   │   └── one main per evaluation task (fidelity, utility, privacy...)\n│   └── one folder per model \n│       └── one main per step (preparing, training...)\n└── src\n    ├── evaluating\n    │   └── one script per evaluation task (fidelity, utility, privacy...)\n    ├── loading.py\n    ├── logger.py\n    ├── modelling\n    │   └── one folder per model \n    ├── parsers\n    │   └── parsers are specific to tasks and/or database\n    ├── preparing\n    │   └── one folder per database\n    │       └── one script per task\n    ├── preprocessing\n    │   └── one folder per model\n    │       └── one scrip per step\n    ├── utils\n    └── visualizing\n        └── one folder per model\n```\n\nThe following models are for now included in the repository:\n\n- Bayesian Networks (BNT) (https://pypi.org/project/bamt/)\n- Copulas (https://sdv.dev/Copulas/)\n- Conditional Tabular GAN (CTGAN) (https://arxiv.org/abs/1907.00503)\n- Conditional Table GAN (CTABGAN) (https://arxiv.org/abs/2102.08369)\n\nBNT and copulas were tested on the PPMI database. The two GANs were tested on the MIMIC-III database. \n\n## How to use the repository\n\nIf you wish to use one of the models from the repository to synthesize data or to evaluate synthesize data, the only file to change is `config/config.py`. You must change the following variables according to the model and database you want to work on:\n- DATABASE: can be \"ppmi\" or \"mimic-iii\".\n- MODEL: can be \"bnt\", \"copulas\", \"ctgan\" or \"ctabgan\".\n\nOnce done, you may run any of the main files located in the `scripts/` folder.\n\n## Example: synthesize and evaluate data with CTGAN\n\n#### Step 1: Switch the variables in `config/config.py`\n\nIn `config/config.py`, set `DATABASE = \"mimic-iii\"` and `MODEL = \"ctgan\"`.\n\n#### Step 2: Prepare dataset\n\nIn your terminal, run the following command:\n\n`python scripts/ctgan/main_preparing_mimic.py --remove-nan True`.\n\nThe --remove-nan argument allows to handle variables with missing values as CTGAN can't work with it.\n\nThe data will be saved in the synthetic data generation bucket under the following path: \n\n`output_data/ctgan/prepared_data/<DATE_OF_TODAY>_ctgan_mimic_iii_prepared_data.csv`\n\n#### Step 3: Synthesize data\n\nIn your terminal, run: \n\n```\npython scripts/ctgan/main_training_ctgan.py \\\n--mlflow-uri \"<YOUR_URI>\" \\\n--exp-name \"<EXP_NAME FOR MLFLOW>\" \\\n--dataset-path output_data/ctgan/prepared_data/ \\\n--dataset-filename <DATE_OF_TODAY>_ctgan_mimic_iii_prepared_data.csv \\\n--n-to-sample <NUMBER OF ROWS TO SYNTHESIZE> \n```\n\nThis will train the ctgan model on your prepared data and save the model in: \n\n`output_data/ctgan/models/<DATE_OF_TODAY>_ctgan_mimic_iii.pkl`.\n\nIf you put an int in --no-to-sample, it will create a synthetic dataset of n-to-sample rows that will be saved in: \n\n`output_data/ctgan/synthesized_data/<DATE_OF_TODAY>_ctgan_mimic_iii_synthesized_data.csv`\n\n#### Step 4: Evaluate data fidelity\n\nThis step may be ran on its own with your own data if you already have synthetic data and the real data it was created from. \n\nIn this example, you have to run in your terminal: \n\n```\npython scripts/evaluating/main_evaluate_fidelity.py \\\n--real-dataset prepared_data/<DATE_OF_TODAY>_ctgan_mimic_iii_prepared_data.csv \\\n--synth-dataset <DATE_OF_TODAY>_ctgan_mimic_iii_synthesized_data.csv \n```\n",
+ "hits": {
+  "ctgan_mod": [
+   {
+    "file": "scripts/ctgan/main_training_ctgan.py",
+    "line": 14,
+    "text": "from ctgan import load_demo",
+    "context": [
+     "sys.path.append(script_dir)",
+     "",
+     "warnings.filterwarnings(\"ignore\")",
+     "",
+     "from ctgan import load_demo",
+     "",
+     "from config import config",
+     "from src.utils import training_utils, utils",
+     "from src import loading"
+    ]
+   },
+   {
+    "file": "src/modelling/ctgan/custom_ctgan.py",
+    "line": 11,
+    "text": "from ctgan import CTGAN",
+    "context": [
+     "from sdmetrics.single_column import KSComplement, TVComplement",
+     "from sdmetrics.column_pairs import ContingencySimilarity, CorrelationSimilarity",
+     "from itertools import combinations",
+     "",
+     "from ctgan import CTGAN",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.data_sampler import DataSampler",
+     "from ctgan.synthesizers.ctgan import Generator, Discriminator",
+     ""
+    ]
+   },
+   {
+    "file": "src/modelling/ctgan/custom_ctgan.py",
+    "line": 12,
+    "text": "from ctgan.data_transformer import DataTransformer",
+    "context": [
+     "from sdmetrics.column_pairs import ContingencySimilarity, CorrelationSimilarity",
+     "from itertools import combinations",
+     "",
+     "from ctgan import CTGAN",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.data_sampler import DataSampler",
+     "from ctgan.synthesizers.ctgan import Generator, Discriminator",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "src/modelling/ctgan/custom_ctgan.py",
+    "line": 13,
+    "text": "from ctgan.data_sampler import DataSampler",
+    "context": [
+     "from itertools import combinations",
+     "",
+     "from ctgan import CTGAN",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.data_sampler import DataSampler",
+     "from ctgan.synthesizers.ctgan import Generator, Discriminator",
+     "",
+     "",
+     "class custom_CTGAN(CTGAN):"
+    ]
+   },
+   {
+    "file": "src/modelling/ctgan/custom_ctgan.py",
+    "line": 14,
+    "text": "from ctgan.synthesizers.ctgan import Generator, Discriminator",
+    "context": [
+     "",
+     "from ctgan import CTGAN",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.data_sampler import DataSampler",
+     "from ctgan.synthesizers.ctgan import Generator, Discriminator",
+     "",
+     "",
+     "class custom_CTGAN(CTGAN):",
+     "    def __init__("
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "scripts/ctgan/main_preparing_mimic.py",
+    "line": 16,
+    "text": "from src.utils import sdv_utils, utils",
+    "context": [
+     "import config.config_mimic_iii as conf_mimic",
+     "from src.logger import init_logger",
+     "from src.parsers import parser_preparing",
+     "from src import loading",
+     "from src.utils import sdv_utils, utils",
+     "from src.preparing.MIMIC_III.preparing import preparing",
+     "",
+     "",
+     "def main():"
+    ]
+   },
+   {
+    "file": "scripts/ctabgan/main_preparing_mimic.py",
+    "line": 15,
+    "text": "from src.utils import sdv_utils, utils",
+    "context": [
+     "import config.config_mimic_iii as conf_mimic",
+     "from src.logger import init_logger",
+     "from src.parsers import prepare_parser",
+     "from src import loading",
+     "from src.utils import sdv_utils, utils",
+     "from src.preparing.MIMIC_III.preparing import preparing",
+     "",
+     "",
+     "def main():"
+    ]
+   },
+   {
+    "file": "src/evaluating/evaluate_train.py",
+    "line": 3,
+    "text": "from sdv.evaluation.single_table import get_column_plot",
+    "context": [
+     "import cachetools",
+     "import pandas as pd",
+     "from sdv.evaluation.single_table import get_column_plot",
+     "from src.utils import sdv_utils, utils",
+     "from src.evaluating import evaluate_fidelity",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "from sdmetrics.reports.single_table import DiagnosticReport"
+    ]
+   },
+   {
+    "file": "src/evaluating/evaluate_train.py",
+    "line": 4,
+    "text": "from src.utils import sdv_utils, utils",
+    "context": [
+     "import cachetools",
+     "import pandas as pd",
+     "from sdv.evaluation.single_table import get_column_plot",
+     "from src.utils import sdv_utils, utils",
+     "from src.evaluating import evaluate_fidelity",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "from sdmetrics.reports.single_table import DiagnosticReport",
+     ""
+    ]
+   },
+   {
+    "file": "src/utils/sdv_utils.py",
+    "line": 2,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "import pandas as pd",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sdv.metadata.single_table import SingleTableMetadata",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "src/utils/sdv_utils.py",
+    "line": 3,
+    "text": "from sdv.metadata.single_table import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sdv.metadata.single_table import SingleTableMetadata",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "",
+     "",
+     "def build_dict_metadata_from_df("
+    ]
+   },
+   {
+    "file": "src/utils/utils.py",
+    "line": 2,
+    "text": "from sdv.metadata.single_table import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata.single_table import SingleTableMetadata",
+     "",
+     "",
+     "def search_na(df):",
+     "    \"\"\""
+    ]
+   },
+   {
+    "file": "src/preprocessing/copulas/preprocessing_copulas.py",
+    "line": 2,
+    "text": "from sdv.data_processing.data_processor import DataProcessor",
+    "context": [
+     "from src import utils",
+     "from sdv.data_processing.data_processor import DataProcessor",
+     "",
+     "def main_copulas_preprocessing(df_ppmi, dict_metadata, enforce_rounding=True, enforce_min_max_values=True):",
+     "    \"\"\"",
+     "    Input:"
+    ]
+   }
+  ],
+  "sm": [
+   {
+    "file": "src/modelling/ctgan/custom_ctgan.py",
+    "line": 7,
+    "text": "from sdmetrics.single_column import KSComplement, TVComplement",
+    "context": [
+     "import pandas as pd",
+     "import matplotlib.pyplot as plt",
+     "import torch",
+     "from torch import optim",
+     "from sdmetrics.single_column import KSComplement, TVComplement",
+     "from sdmetrics.column_pairs import ContingencySimilarity, CorrelationSimilarity",
+     "from itertools import combinations",
+     "",
+     "from ctgan import CTGAN"
+    ]
+   },
+   {
+    "file": "src/modelling/ctgan/custom_ctgan.py",
+    "line": 8,
+    "text": "from sdmetrics.column_pairs import ContingencySimilarity, CorrelationSimilarity",
+    "context": [
+     "import matplotlib.pyplot as plt",
+     "import torch",
+     "from torch import optim",
+     "from sdmetrics.single_column import KSComplement, TVComplement",
+     "from sdmetrics.column_pairs import ContingencySimilarity, CorrelationSimilarity",
+     "from itertools import combinations",
+     "",
+     "from ctgan import CTGAN",
+     "from ctgan.data_transformer import DataTransformer"
+    ]
+   },
+   {
+    "file": "src/evaluating/evaluate_train.py",
+    "line": 6,
+    "text": "from sdmetrics.reports.single_table import QualityReport",
+    "context": [
+     "import pandas as pd",
+     "from sdv.evaluation.single_table import get_column_plot",
+     "from src.utils import sdv_utils, utils",
+     "from src.evaluating import evaluate_fidelity",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "from sdmetrics.reports.single_table import DiagnosticReport",
+     "",
+     "",
+     "def evaluate_after_training("
+    ]
+   },
+   {
+    "file": "src/evaluating/evaluate_train.py",
+    "line": 7,
+    "text": "from sdmetrics.reports.single_table import DiagnosticReport",
+    "context": [
+     "from sdv.evaluation.single_table import get_column_plot",
+     "from src.utils import sdv_utils, utils",
+     "from src.evaluating import evaluate_fidelity",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "from sdmetrics.reports.single_table import DiagnosticReport",
+     "",
+     "",
+     "def evaluate_after_training(",
+     "    df_real: pd.DataFrame,"
+    ]
+   },
+   {
+    "file": "src/evaluating/evaluate_fidelity.py",
+    "line": 5,
+    "text": "from sdmetrics.reports.single_table import QualityReport",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from itertools import combinations",
+     "from src.utils import utils",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "from sdmetrics.single_column import KSComplement, TVComplement",
+     "from sdmetrics.column_pairs import CorrelationSimilarity, ContingencySimilarity",
+     "from scipy.spatial.distance import jensenshannon",
+     "from scipy.stats import wasserstein_distance"
+    ]
+   },
+   {
+    "file": "src/evaluating/evaluate_fidelity.py",
+    "line": 6,
+    "text": "from sdmetrics.single_column import KSComplement, TVComplement",
+    "context": [
+     "import numpy as np",
+     "from itertools import combinations",
+     "from src.utils import utils",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "from sdmetrics.single_column import KSComplement, TVComplement",
+     "from sdmetrics.column_pairs import CorrelationSimilarity, ContingencySimilarity",
+     "from scipy.spatial.distance import jensenshannon",
+     "from scipy.stats import wasserstein_distance",
+     ""
+    ]
+   },
+   {
+    "file": "src/evaluating/evaluate_fidelity.py",
+    "line": 7,
+    "text": "from sdmetrics.column_pairs import CorrelationSimilarity, ContingencySimilarity",
+    "context": [
+     "from itertools import combinations",
+     "from src.utils import utils",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "from sdmetrics.single_column import KSComplement, TVComplement",
+     "from sdmetrics.column_pairs import CorrelationSimilarity, ContingencySimilarity",
+     "from scipy.spatial.distance import jensenshannon",
+     "from scipy.stats import wasserstein_distance",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "src/evaluating/evaluate_privacy.py",
+    "line": 2,
+    "text": "from sdmetrics.single_table import CategoricalCAP",
+    "context": [
+     "import pandas as pd",
+     "from sdmetrics.single_table import CategoricalCAP",
+     "",
+     "",
+     "def privacy_check(",
+     "    df_real: pd.DataFrame,"
+    ]
+   },
+   {
+    "file": "src/utils/sdv_utils.py",
+    "line": 4,
+    "text": "from sdmetrics.reports.single_table import QualityReport",
+    "context": [
+     "import pandas as pd",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sdv.metadata.single_table import SingleTableMetadata",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "",
+     "",
+     "def build_dict_metadata_from_df(",
+     "    df: pd.DataFrame, primary_key: str, discrete_columns: list"
+    ]
+   },
+   {
+    "file": "src/visualizing/visualizing.py",
+    "line": 5,
+    "text": "from sdmetrics.reports import utils as sdmetrics_utils",
+    "context": [
+     "import matplotlib.pyplot as plt",
+     "import seaborn as sns",
+     "import pandas as pd",
+     "import cachetools",
+     "from sdmetrics.reports import utils as sdmetrics_utils",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "from sdmetrics.reports.single_table import DiagnosticReport",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "src/visualizing/visualizing.py",
+    "line": 6,
+    "text": "from sdmetrics.reports.single_table import QualityReport",
+    "context": [
+     "import seaborn as sns",
+     "import pandas as pd",
+     "import cachetools",
+     "from sdmetrics.reports import utils as sdmetrics_utils",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "from sdmetrics.reports.single_table import DiagnosticReport",
+     "",
+     "",
+     "def concat_1d_cc("
+    ]
+   },
+   {
+    "file": "src/visualizing/visualizing.py",
+    "line": 7,
+    "text": "from sdmetrics.reports.single_table import DiagnosticReport",
+    "context": [
+     "import pandas as pd",
+     "import cachetools",
+     "from sdmetrics.reports import utils as sdmetrics_utils",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "from sdmetrics.reports.single_table import DiagnosticReport",
+     "",
+     "",
+     "def concat_1d_cc(",
+     "    data_real, data_synth, fig=None, title=None, position=None, bins=20, label=None"
+    ]
+   }
+  ],
+  "copulas": [
+   {
+    "file": "src/modelling/copulas/modelling_copulas.py",
+    "line": 1,
+    "text": "from copulas.multivariate import GaussianMultivariate",
+    "context": [
+     "from copulas.multivariate import GaussianMultivariate",
+     "from copulas.multivariate import VineCopula",
+     "",
+     "",
+     "def main_copulas_fitting(copulas_type, prepared_data, vine_type='regular', random_state=123, **kwargs):"
+    ]
+   },
+   {
+    "file": "src/modelling/copulas/modelling_copulas.py",
+    "line": 2,
+    "text": "from copulas.multivariate import VineCopula",
+    "context": [
+     "from copulas.multivariate import GaussianMultivariate",
+     "from copulas.multivariate import VineCopula",
+     "",
+     "",
+     "def main_copulas_fitting(copulas_type, prepared_data, vine_type='regular', random_state=123, **kwargs):",
+     "    \"\"\"_summary_"
+    ]
+   },
+   {
+    "file": "src/visualizing/copulas/visualizing_copulas.py",
+    "line": 1,
+    "text": "from copulas.visualization import hist_1d, side_by_side",
+    "context": [
+     "from copulas.visualization import hist_1d, side_by_side",
+     "import matplotlib.pyplot as plt",
+     "import pandas as pd",
+     "",
+     "def univ_distrib(univariates, data):"
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "src/evaluating/evaluate_train.py",
+    "line": 3,
+    "text": "from sdv.evaluation.single_table import get_column_plot",
+    "context": [
+     "import cachetools",
+     "import pandas as pd",
+     "from sdv.evaluation.single_table import get_column_plot",
+     "from src.utils import sdv_utils, utils",
+     "from src.evaluating import evaluate_fidelity",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "from sdmetrics.reports.single_table import DiagnosticReport"
+    ]
+   },
+   {
+    "file": "src/utils/sdv_utils.py",
+    "line": 2,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "import pandas as pd",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sdv.metadata.single_table import SingleTableMetadata",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "",
+     ""
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "copulas",
+  "ctgan_mod",
+  "ev",
+  "sdv_any",
+  "sm"
+ ],
+ "vendored_dirs": [
+  "scripts/copulas",
+  "scripts/ctgan",
+  "src/modelling/copulas",
+  "src/modelling/ctgan",
+  "src/preprocessing/copulas",
+  "src/visualizing/copulas"
+ ],
+ "dependencies": {}
+}

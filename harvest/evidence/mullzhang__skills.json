@@ -1,0 +1,443 @@
+{
+ "repo": "mullzhang/skills",
+ "disk_kb": 438,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# skills\n\nPersonal AI agent skills by mullzhang.\n\n## Install\n\nInstall all skills with APM:\n\n```bash\napm install mullzhang/skills\n```\n\nInstall a single skill:\n\n```bash\napm install mullzhang/skills --skill github-issue-dupe-check\n```\n\nUpdate installed skills to the latest version:\n\n```bash\napm update\n```\n\nForce a fresh fetch if the cached copy looks stale:\n\n```bash\napm install mullzhang/skills --refresh\n```\n\n## Path Convention\n\nAPM installs each skill into the runtime's skills directory (for Claude Code: `~/.claude/skills/<skill-name>/`).\n\n`<path-to-this-skill>` in SKILL.md examples means the installed skill directory, i.e. the directory containing that SKILL.md. Resolve it from the actual install location before running bundled scripts:\n\n```bash\npython ~/.claude/skills/github-issue-dupe-check/scripts/collect_issue_candidates.py ...\n```\n\n## Add a Skill\n\nPlace each skill directory directly under `skills/`:\n\n```text\nskills/<skill-name>/SKILL.md\n```\n\nReference bundled scripts and references from SKILL.md as `<path-to-this-skill>/scripts/...` or `references/...`, never with an install-specific absolute path.\n",
+ "hits": {
+  "ct": [
+   {
+    "file": "skills/sdv-synthetic-data/SKILL.md",
+    "line": 83,
+    "text": "| `CTGANSynthesizer` | Uses GAN, high fidelity | More complex patterns |",
+    "context": [
+     "",
+     "| Synthesizer | Characteristics | Recommended Use |",
+     "|---|---|---|",
+     "| `GaussianCopulaSynthesizer` | Fast, transparent, customizable | **Default choice** |",
+     "| `CTGANSynthesizer` | Uses GAN, high fidelity | More complex patterns |",
+     "| `TVAESynthesizer` | Uses VAE, high fidelity | Complex patterns |",
+     "| `CopulaGANSynthesizer` | GaussianCopula + CTGAN | Hybrid |",
+     "",
+     "For exact selection behavior, refer to the `--synthesizer` option in `generate_single_table.py`."
+    ]
+   },
+   {
+    "file": "skills/sdv-synthetic-data/scripts/generate_single_table.py",
+    "line": 39,
+    "text": "CTGANSynthesizer,",
+    "context": [
+     "    # SDV import (lazy import for clearer error messages)",
+     "    try:",
+     "        from sdv.single_table import (",
+     "            GaussianCopulaSynthesizer,",
+     "            CTGANSynthesizer,",
+     "            TVAESynthesizer,",
+     "            CopulaGANSynthesizer",
+     "        )",
+     "        from sdv.metadata import Metadata"
+    ]
+   },
+   {
+    "file": "skills/sdv-synthetic-data/scripts/generate_single_table.py",
+    "line": 59,
+    "text": "synthesizer = CTGANSynthesizer(metadata, epochs=args.epochs)",
+    "context": [
+     "    # Select synthesizer",
+     "    if args.synthesizer == 'gaussian':",
+     "        synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "    elif args.synthesizer == 'ctgan':",
+     "        synthesizer = CTGANSynthesizer(metadata, epochs=args.epochs)",
+     "    elif args.synthesizer == 'tvae':",
+     "        synthesizer = TVAESynthesizer(metadata, epochs=args.epochs)",
+     "    elif args.synthesizer == 'copulagan':",
+     "        synthesizer = CopulaGANSynthesizer(metadata, epochs=args.epochs)"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "skills/sdv-synthetic-data/SKILL.md",
+    "line": 82,
+    "text": "| `GaussianCopulaSynthesizer` | Fast, transparent, customizable | **Default choice** |",
+    "context": [
+     "## Synthesizer Selection",
+     "",
+     "| Synthesizer | Characteristics | Recommended Use |",
+     "|---|---|---|",
+     "| `GaussianCopulaSynthesizer` | Fast, transparent, customizable | **Default choice** |",
+     "| `CTGANSynthesizer` | Uses GAN, high fidelity | More complex patterns |",
+     "| `TVAESynthesizer` | Uses VAE, high fidelity | Complex patterns |",
+     "| `CopulaGANSynthesizer` | GaussianCopula + CTGAN | Hybrid |",
+     ""
+    ]
+   },
+   {
+    "file": "skills/sdv-synthetic-data/scripts/generate_single_table.py",
+    "line": 38,
+    "text": "GaussianCopulaSynthesizer,",
+    "context": [
+     "",
+     "    # SDV import (lazy import for clearer error messages)",
+     "    try:",
+     "        from sdv.single_table import (",
+     "            GaussianCopulaSynthesizer,",
+     "            CTGANSynthesizer,",
+     "            TVAESynthesizer,",
+     "            CopulaGANSynthesizer",
+     "        )"
+    ]
+   },
+   {
+    "file": "skills/sdv-synthetic-data/scripts/generate_single_table.py",
+    "line": 57,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "    metadata = Metadata.detect_from_dataframe(data)",
+     "",
+     "    # Select synthesizer",
+     "    if args.synthesizer == 'gaussian':",
+     "        synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "    elif args.synthesizer == 'ctgan':",
+     "        synthesizer = CTGANSynthesizer(metadata, epochs=args.epochs)",
+     "    elif args.synthesizer == 'tvae':",
+     "        synthesizer = TVAESynthesizer(metadata, epochs=args.epochs)"
+    ]
+   }
+  ],
+  "par": [
+   {
+    "file": "skills/sdv-synthetic-data/SKILL.md",
+    "line": 119,
+    "text": "No bundled script covers time-series generation. If the user needs it, write a per-run script using SDV's `PARSynthesizer`, keeping the same privacy restrictions (no data preview, no value logging).",
+    "context": [
+     "`generate_multi_table.py` auto-detects each table with `metadata.detect_from_dataframe(..., table_name=...)` and applies `primary_key` and `relationships` from the config file. If needed, save metadat",
+     "",
+     "## Time-Series Data",
+     "",
+     "No bundled script covers time-series generation. If the user needs it, write a per-run script using SDV's `PARSynthesizer`, keeping the same privacy restrictions (no data preview, no value logging).",
+     "",
+     "## Quality Evaluation",
+     "",
+     "Use `evaluate_quality.py` for quality evaluation. Diagnostic reports are reviewed at execution time and can be explicitly output with `--diagnostic` or `--diagnostic-output`."
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "skills/sdv-synthetic-data/SKILL.md",
+    "line": 84,
+    "text": "| `TVAESynthesizer` | Uses VAE, high fidelity | Complex patterns |",
+    "context": [
+     "| Synthesizer | Characteristics | Recommended Use |",
+     "|---|---|---|",
+     "| `GaussianCopulaSynthesizer` | Fast, transparent, customizable | **Default choice** |",
+     "| `CTGANSynthesizer` | Uses GAN, high fidelity | More complex patterns |",
+     "| `TVAESynthesizer` | Uses VAE, high fidelity | Complex patterns |",
+     "| `CopulaGANSynthesizer` | GaussianCopula + CTGAN | Hybrid |",
+     "",
+     "For exact selection behavior, refer to the `--synthesizer` option in `generate_single_table.py`.",
+     ""
+    ]
+   },
+   {
+    "file": "skills/sdv-synthetic-data/scripts/generate_single_table.py",
+    "line": 40,
+    "text": "TVAESynthesizer,",
+    "context": [
+     "    try:",
+     "        from sdv.single_table import (",
+     "            GaussianCopulaSynthesizer,",
+     "            CTGANSynthesizer,",
+     "            TVAESynthesizer,",
+     "            CopulaGANSynthesizer",
+     "        )",
+     "        from sdv.metadata import Metadata",
+     "    except ImportError:"
+    ]
+   },
+   {
+    "file": "skills/sdv-synthetic-data/scripts/generate_single_table.py",
+    "line": 61,
+    "text": "synthesizer = TVAESynthesizer(metadata, epochs=args.epochs)",
+    "context": [
+     "        synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "    elif args.synthesizer == 'ctgan':",
+     "        synthesizer = CTGANSynthesizer(metadata, epochs=args.epochs)",
+     "    elif args.synthesizer == 'tvae':",
+     "        synthesizer = TVAESynthesizer(metadata, epochs=args.epochs)",
+     "    elif args.synthesizer == 'copulagan':",
+     "        synthesizer = CopulaGANSynthesizer(metadata, epochs=args.epochs)",
+     "",
+     "    # Train (set seed before fitting for reproducibility)"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "skills/sdv-synthetic-data/scripts/generate_multi_table.py",
+    "line": 58,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "    # Import SDV",
+     "    try:",
+     "        from sdv.multi_table import HMASynthesizer",
+     "        from sdv.metadata import Metadata",
+     "        from sdv.utils import drop_unknown_references",
+     "    except ImportError:",
+     "        print(\"Error: SDV is not installed\")",
+     "        print(\"Install: pip install sdv\")"
+    ]
+   },
+   {
+    "file": "skills/sdv-synthetic-data/scripts/generate_single_table.py",
+    "line": 43,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "            CTGANSynthesizer,",
+     "            TVAESynthesizer,",
+     "            CopulaGANSynthesizer",
+     "        )",
+     "        from sdv.metadata import Metadata",
+     "    except ImportError:",
+     "        print(\"Error: SDV is not installed\")",
+     "        print(\"Install: pip install sdv\")",
+     "        return"
+    ]
+   },
+   {
+    "file": "skills/sdv-synthetic-data/scripts/evaluate_quality.py",
+    "line": 42,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "    # Import SDV",
+     "    try:",
+     "        from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "        from sdv.metadata import Metadata",
+     "    except ImportError:",
+     "        print(\"Error: SDV is not installed\")",
+     "        print(\"Install: pip install sdv\")",
+     "        return"
+    ]
+   }
+  ],
+  "mt": [
+   {
+    "file": "skills/sdv-synthetic-data/scripts/generate_multi_table.py",
+    "line": 57,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "    args = parser.parse_args()",
+     "",
+     "    # Import SDV",
+     "    try:",
+     "        from sdv.multi_table import HMASynthesizer",
+     "        from sdv.metadata import Metadata",
+     "        from sdv.utils import drop_unknown_references",
+     "    except ImportError:",
+     "        print(\"Error: SDV is not installed\")"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "skills/sdv-synthetic-data/scripts/generate_multi_table.py",
+    "line": 57,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "    args = parser.parse_args()",
+     "",
+     "    # Import SDV",
+     "    try:",
+     "        from sdv.multi_table import HMASynthesizer",
+     "        from sdv.metadata import Metadata",
+     "        from sdv.utils import drop_unknown_references",
+     "    except ImportError:",
+     "        print(\"Error: SDV is not installed\")"
+    ]
+   },
+   {
+    "file": "skills/sdv-synthetic-data/scripts/generate_multi_table.py",
+    "line": 58,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "    # Import SDV",
+     "    try:",
+     "        from sdv.multi_table import HMASynthesizer",
+     "        from sdv.metadata import Metadata",
+     "        from sdv.utils import drop_unknown_references",
+     "    except ImportError:",
+     "        print(\"Error: SDV is not installed\")",
+     "        print(\"Install: pip install sdv\")"
+    ]
+   },
+   {
+    "file": "skills/sdv-synthetic-data/scripts/generate_multi_table.py",
+    "line": 59,
+    "text": "from sdv.utils import drop_unknown_references",
+    "context": [
+     "    # Import SDV",
+     "    try:",
+     "        from sdv.multi_table import HMASynthesizer",
+     "        from sdv.metadata import Metadata",
+     "        from sdv.utils import drop_unknown_references",
+     "    except ImportError:",
+     "        print(\"Error: SDV is not installed\")",
+     "        print(\"Install: pip install sdv\")",
+     "        return"
+    ]
+   },
+   {
+    "file": "skills/sdv-synthetic-data/scripts/generate_single_table.py",
+    "line": 37,
+    "text": "from sdv.single_table import (",
+    "context": [
+     "    args = parser.parse_args()",
+     "",
+     "    # SDV import (lazy import for clearer error messages)",
+     "    try:",
+     "        from sdv.single_table import (",
+     "            GaussianCopulaSynthesizer,",
+     "            CTGANSynthesizer,",
+     "            TVAESynthesizer,",
+     "            CopulaGANSynthesizer"
+    ]
+   },
+   {
+    "file": "skills/sdv-synthetic-data/scripts/generate_single_table.py",
+    "line": 43,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "            CTGANSynthesizer,",
+     "            TVAESynthesizer,",
+     "            CopulaGANSynthesizer",
+     "        )",
+     "        from sdv.metadata import Metadata",
+     "    except ImportError:",
+     "        print(\"Error: SDV is not installed\")",
+     "        print(\"Install: pip install sdv\")",
+     "        return"
+    ]
+   },
+   {
+    "file": "skills/sdv-synthetic-data/scripts/evaluate_quality.py",
+    "line": 41,
+    "text": "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+    "context": [
+     "    args = parser.parse_args()",
+     "",
+     "    # Import SDV",
+     "    try:",
+     "        from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "        from sdv.metadata import Metadata",
+     "    except ImportError:",
+     "        print(\"Error: SDV is not installed\")",
+     "        print(\"Install: pip install sdv\")"
+    ]
+   },
+   {
+    "file": "skills/sdv-synthetic-data/scripts/evaluate_quality.py",
+    "line": 42,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "    # Import SDV",
+     "    try:",
+     "        from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "        from sdv.metadata import Metadata",
+     "    except ImportError:",
+     "        print(\"Error: SDV is not installed\")",
+     "        print(\"Install: pip install sdv\")",
+     "        return"
+    ]
+   }
+  ],
+  "hma": [
+   {
+    "file": "skills/sdv-synthetic-data/scripts/generate_multi_table.py",
+    "line": 57,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "    args = parser.parse_args()",
+     "",
+     "    # Import SDV",
+     "    try:",
+     "        from sdv.multi_table import HMASynthesizer",
+     "        from sdv.metadata import Metadata",
+     "        from sdv.utils import drop_unknown_references",
+     "    except ImportError:",
+     "        print(\"Error: SDV is not installed\")"
+    ]
+   },
+   {
+    "file": "skills/sdv-synthetic-data/scripts/generate_multi_table.py",
+    "line": 98,
+    "text": "synthesizer = HMASynthesizer(metadata)",
+    "context": [
+     "    # Clean referential integrity issues",
+     "    cleaned_data = drop_unknown_references(data, metadata)",
+     "",
+     "    # Train (set seed before fitting for reproducibility)",
+     "    synthesizer = HMASynthesizer(metadata)",
+     "    if args.seed is not None:",
+     "        apply_seed(args.seed, synthesizer)",
+     "    synthesizer.fit(cleaned_data)",
+     ""
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "skills/sdv-synthetic-data/scripts/generate_single_table.py",
+    "line": 37,
+    "text": "from sdv.single_table import (",
+    "context": [
+     "    args = parser.parse_args()",
+     "",
+     "    # SDV import (lazy import for clearer error messages)",
+     "    try:",
+     "        from sdv.single_table import (",
+     "            GaussianCopulaSynthesizer,",
+     "            CTGANSynthesizer,",
+     "            TVAESynthesizer,",
+     "            CopulaGANSynthesizer"
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "skills/sdv-synthetic-data/scripts/evaluate_quality.py",
+    "line": 41,
+    "text": "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+    "context": [
+     "    args = parser.parse_args()",
+     "",
+     "    # Import SDV",
+     "    try:",
+     "        from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "        from sdv.metadata import Metadata",
+     "    except ImportError:",
+     "        print(\"Error: SDV is not installed\")",
+     "        print(\"Install: pip install sdv\")"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ev",
+  "gc",
+  "hma",
+  "md",
+  "mt",
+  "par",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

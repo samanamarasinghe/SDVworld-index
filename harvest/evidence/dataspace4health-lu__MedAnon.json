@@ -1,0 +1,183 @@
+{
+ "repo": "dataspace4health-lu/MedAnon",
+ "disk_kb": 4828,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# MedAnon\n\nA rule-driven FHIR R4 de-identification engine that transforms patient data for research, compliance, and data sharing.\n\n---\n\n## Overview\n\nMedAnon accepts FHIR resources (JSON, NDJSON, XML), applies the `match → action` rules you author in a YAML config, and returns de-identified output. You write the rules; the bundled GDPR, HIPAA Safe Harbor, and research profiles are starting examples, not the product.\n\n**Why it exists:** Clinical data must be de-identified before secondary use. MedAnon automates this with auditable, reversible, compliance-mapped transformations instead of one-off scripts.\n\n**Key capabilities:**\n- Author your own FHIRPath `match → action` rules, with AI assistance to draft and explain them\n- Multi-format intake: FHIR JSON / NDJSON / XML (plus CDA, DICOM, HL7 v2 via the formats package)\n- Reversible pseudonymization via gPAS TTP\n- NLP free-text scrubbing (Presidio + spaCy), fail-closed\n- Async bulk export for large cohorts\n- Privacy × utility × quality scoring\n\n---\n\n## Quick Start\n\n**Prerequisites:** Docker Engine 24+, Docker Compose v2, 12 GB RAM\n\n```bash\n# 1. Configure\ncp .env.example .env          # fill in secrets (see comments inside)\n\n# 2. Build and start\nmake build                    # build anonymizer + UI images (~10 min first run)\nmake up                       # start all services (~90 s for gPAS to initialize)\nmake init-domains             # create gPAS pseudonym domain (first run only)\n\n# 3. Verify\ncurl http://localhost:8000/health    # → {\"status\":\"ok\"}\ncurl http://localhost:8000/ready     # → {\"ready\":true, ...}\nopen http://localhost:8501           # browser UI\n```\n\n**De-identify a resource:**\n\n```bash\ncurl -s -X POST \"http://localhost:8000/v1/process?config_profile=gdpr\" \\\n  -H \"Content-Type: application/json\" \\\n  -H \"X-API-Key: $MEDANON_API_KEY\" \\\n  -d '{\"resourceType\":\"Patient\",\"id\":\"p1\",\"name\":[{\"family\":\"Müller\"}],\"birthDate\":\"1951-08-14\"}' \\\n  | python3 -m json.tool\n```\n\n---\n\n## Architecture\n\nMedAnon is a microservice stack. The anonymizer is the central service; all others support it.\n\n```\nBrowser\n  └── UI (nginx :8501)\n        └── Anonymizer API (:8000) ──── Worker (:9091 metrics)\n              ├── NLP microservice (:8200)   Presidio + spaCy\n              ├── gPAS TTP (:8080)           reversible pseudonyms\n              ├── Analytics (:8100)          risk + synthetic data\n              ├── PostgreSQL (app-db)        jobs, configs, staging\n              └── Redis                      job queue + cache\n\nSource FHIR server (no host port; isolated network, reached only via anonymizer)\nTarget FHIR server (:8082): de-identified output\n```\n\n**Four-stage pipeline per batch** (`pipeline/processor.py`). Stages 2a and 2b run on disjoint paths concurrently:\n\n| Stage | What happens |\n|---|---|\n| 1. match | FHIRPath rule matching + action dispatch (redact, hash, generalize, ...) |\n| 2a. phi_detection | Batch NLP entity detection then token replacement (concurrent with 2b) |\n| 2b. pseudonymize | Batch gPAS pseudonym lookup (concurrent with 2a) |\n| 3. finalize | gPAS write-back + cross-resource reference rewrite + optional manifest tag |\n\n---\n\n## API Overview\n\n| Method | Endpoint | Description |\n|---|---|---|\n| `POST` | `/v1/process` | De-identify a single resource or Bundle |\n| `POST` | `/v1/process/ndjson` | Stream de-identify NDJSON |\n| `POST` | `/v1/jobs/bulk-export` | Start async bulk export job |\n| `GET` | `/v1/jobs/{id}` | Poll job status |\n| `GET` | `/v1/jobs/{id}/result` | Download NDJSON result |\n| `POST` | `/v1/score` | Score de-identified output |\n| `GET` | `/v1/configs` | List config profiles |\n| `POST` | `/v1/ai/generate-config` | Generate config from description (AI) |\n| `GET` | `/health` | Liveness check |\n| `GET` | `/ready` | Readiness check (probes all upstreams) |\n\nSelect a built-in profile per request with `?config_profile=<name>`: `gdpr`, `hipaa`, `gpas`, `research`, `structural`, `value-masking`, `minimal` (or `auto`). User-defined profiles created via `POST /v1/configs` are selected by their own name.\n\nFull reference: [docs/api-reference.md](docs/api-reference.md)\n\n---\n\n## Configuration\n\nCopy `.env.example` to `.env`. Secrets stay in `.env` and are never committed.\n\n| Variable | Required | Description |\n|---|---|---|\n| `MEDANON_API_KEY` | Production | API auth key; blank = open mode (dev only) |\n| `MEDANON_HASH_KEY` | Production | HMAC key for pseudonymization: `openssl rand -hex 32` |\n| `GPAS_URL` | gPAS profile | gPAS gateway URL |\n| `GPAS_DOMAIN` | gPAS profile | Pseudonymization domain name |\n| `GPAS_BASIC_PASS` | gPAS profile | gPAS password |\n| `MEDANON_REDIS_PASSWORD` | Production | Redis auth password |\n| `MEDANON_APP_DB_PASSWORD` | Production | PostgreSQL app database password |\n| `MEDANON_AI_ENABLED` | AI features | `true` to enable AI agents |\n| `MEDANON_AI_MODEL` | AI features | LLM model ID (e.g. `ollama/llama3.2`) |\n| `MEDANON_SCORING_ENABLED` | Scoring | `true` to auto-score and persist run history |\n\n---\n\n## Dependencies\n\n| Service | Technology | Purpose |\n|---|---|---|\n| Anonymizer | Python 3.12, FastAPI | De-identification engine + REST API |\n| Worker | Same image as anonymizer | Async job executor |\n| NLP | Presidio + spaCy `en_core_web_lg` | Free-text PHI detection |\n| gPAS | WildFly 38, PostgreSQL 16 | Reversible TTP pseudonymization |\n| UI | React 19, TypeScript, Vite, Shadcn/ui | Browser interface |\n| Database | PostgreSQL 16 | Jobs, configs, subscriptions, staging |\n| Cache / Queue | Redis 7 | gPAS L2 cache + async job queue |\n| Analytics | Python, scikit-learn | k-anonymity, synthetic data |\n\n---\n\n## Development\n\n```bash\n# Local setup (no Docker)\nmake setup         # create .venv and install anonymizer deps\nmake lint          # ruff check\nmake format        # ruff format\n\n# Run tests\nmake test          # full pytest suite\nmake test-cov      # with coverage report\n```\n\n**Test notes:**\n- Run the suite from `services/anonymizer/`; it works locally without Docker.\n- FHIRPath-dependent tests (`test_golden.py`, `test_postgres_stores.py`, `test_processing_runs.py`, `test_staging_store.py`, `test_executor_tabular.py`, `test_scoring_sparse_fp.py`) lazy-import `fhirpathpy`, which pulls in `typing.io` (removed in Python 3.13). Each self-bootstraps a shim, so they run on both 3.12 (the Docker image) and a 3.13 local venv.\n- AI tests (`test_agents.py`, `test_ai_local_guard.py`) skip when no AI provider is configured.\n\n---\n\n## Deployment\n\n**Docker Compose (staging / single-server):**\n\n```bash\nmake up                              # start all services\ndocker compose --profile ha up       # + gPAS PostgreSQL read replica\n```\n\n**Kubernetes (Helm):**\n\n```bash\nmake helm-lint        # validate chart (no cluster needed)\nmake helm-template    # dry-run rendered YAML\nmake helm-install     # install/upgrade on active cluster\n```\n\nUse `helm/k3s-values.yaml` for single-node K3s deployments.\n\nFull guide: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)\n\n---\n\n## Troubleshooting\n\n| Symptom | Cause | Fix |\n|---|---|---|\n| `/ready` returns false | gPAS still initializing | Wait 90 s; `docker compose ps` until all `healthy` |\n| `Unknown Domain` on pseudonymization | gPAS domain not created | `make init-domains` (never insert domain via SQL) |\n| Text fields contain `[NLP_UNAVAILABLE]` | NLP microservice down | `docker compose ps nlp gateway`; check `docker compose logs nlp` |\n| `503` on `/v1/jobs/*` | Job store not initialized | Check `MEDANON_APP_DB_URL` / `MEDANON_REDIS_URL` in `.env` |\n| `gPAS circuit breaker OPEN` | gPAS failed 5+ times | `docker compose restart gpas`; circuit self-recovers after 30 s |\n| `413 Request Too Large` | Body exceeds limit | Increase `MEDANON_MAX_BODY_BYTES` in `.env` |\n\nMore: [docs/RUNBOOK.md](docs/RUNBOOK.md)\n\n---\n\n## Documentation\n\n| Document | Description |\n|---|---|\n| [docs/INDEX.md](docs/INDEX.md) | Full documentation index; start here |\n| [docs/architecture.md](docs/architecture.md) | System design, pipeline, config profiles |\n| [docs/data-flow.md](docs/data-flow.md) | Request traces, network layout, NLP/gPAS/AI flows |\n| [docs/api-reference.md](docs/api-reference.md) | All REST endpoints with request/response examples |\n| [docs/security.md](docs/security.md) | Auth, encryption, GDPR/HIPAA compliance mapping |\n| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Dev / staging / production deployment guide |\n| [docs/user-manual.md](docs/user-manual.md) | UI walkthrough, CLI, config file format |\n| [docs/RUNBOOK.md](docs/RUNBOOK.md) | Monitoring, backup, secret rotation, troubleshooting |\n| [docs/scoring-system.md](docs/scoring-system.md) | Privacy × utility × quality scoring model |\n| [docs/policies.md](docs/policies.md) | Profile selection and compliance mapping |\n\n---\n\n## License\n\nSee [LICENSE](./LICENSE) for the full license text.\n",
+ "hits": {
+  "gc": [
+   {
+    "file": "services/anonymizer/src/api/routers/synthetic.py",
+    "line": 60,
+    "text": "- **sdv**: GaussianCopulaSynthesizer — learns multivariate correlations.",
+    "context": [
+     "    resources (plus optional Conditions) in the requested output format.",
+     "",
+     "    Engine choices:",
+     "    - **auto** (default): Use SDV if installed, otherwise fall back to stdlib.",
+     "    - **sdv**: GaussianCopulaSynthesizer — learns multivariate correlations.",
+     "    - **stdlib**: Weighted per-attribute sampling — zero dependencies, always available.",
+     "",
+     "    Synthetic resources are tagged with the ``SYN`` code in ``meta.tag`` so",
+     "    downstream systems can distinguish them from real de-identified data."
+    ]
+   },
+   {
+    "file": "services/anonymizer/src/analytics/synthetic_sdv.py",
+    "line": 3,
+    "text": "Uses the Synthetic Data Vault (SDV) library with GaussianCopulaSynthesizer to",
+    "context": [
+     "\"\"\"SDV-powered synthetic FHIR resource generator.",
+     "",
+     "Uses the Synthetic Data Vault (SDV) library with GaussianCopulaSynthesizer to",
+     "generate synthetic FHIR Patient and Condition resources that preserve the",
+     "multivariate correlations of the input dataset.",
+     "",
+     "This module is optional — it requires the ``sdv`` package (and its transitive"
+    ]
+   },
+   {
+    "file": "services/anonymizer/src/analytics/synthetic_sdv.py",
+    "line": 30,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "from typing import Any",
+     "",
+     "try:",
+     "    import pandas as pd",
+     "    from sdv.single_table import GaussianCopulaSynthesizer",
+     "    from sdv.metadata import Metadata",
+     "",
+     "    SDV_AVAILABLE = True",
+     "except ImportError:"
+    ]
+   },
+   {
+    "file": "services/anonymizer/src/analytics/synthetic_sdv.py",
+    "line": 227,
+    "text": "The GaussianCopulaSynthesizer learns multivariate correlations between",
+    "context": [
+     "    seed: int | None = None,",
+     ") -> list[dict]:",
+     "    \"\"\"Generate *count* synthetic FHIR Patient resources using SDV GaussianCopula.",
+     "",
+     "    The GaussianCopulaSynthesizer learns multivariate correlations between",
+     "    attributes (gender, birth year, zip prefix, marital status, language) and",
+     "    generates new rows that preserve those correlations — a significant",
+     "    improvement over independent per-attribute sampling.",
+     ""
+    ]
+   },
+   {
+    "file": "services/anonymizer/src/analytics/synthetic_sdv.py",
+    "line": 268,
+    "text": "synthesizer = GaussianCopulaSynthesizer(",
+    "context": [
+     "    metadata.add_table(\"patients\")",
+     "    for col in df.columns:",
+     "        metadata.update_column(\"patients\", col, sdtype=\"categorical\")",
+     "",
+     "    synthesizer = GaussianCopulaSynthesizer(",
+     "        metadata,",
+     "        enforce_min_max_values=False,",
+     "        enforce_rounding=False,",
+     "    )"
+    ]
+   },
+   {
+    "file": "services/anonymizer/src/analytics/synthetic_sdv.py",
+    "line": 324,
+    "text": "synthesizer = GaussianCopulaSynthesizer(",
+    "context": [
+     "    metadata.add_table(\"conditions\")",
+     "    for col in df.columns:",
+     "        metadata.update_column(\"conditions\", col, sdtype=\"categorical\")",
+     "",
+     "    synthesizer = GaussianCopulaSynthesizer(",
+     "        metadata,",
+     "        enforce_min_max_values=False,",
+     "        enforce_rounding=False,",
+     "    )"
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "services/anonymizer/src/analytics/synthetic_sdv.py",
+    "line": 30,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "from typing import Any",
+     "",
+     "try:",
+     "    import pandas as pd",
+     "    from sdv.single_table import GaussianCopulaSynthesizer",
+     "    from sdv.metadata import Metadata",
+     "",
+     "    SDV_AVAILABLE = True",
+     "except ImportError:"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "services/anonymizer/src/analytics/synthetic_sdv.py",
+    "line": 31,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "try:",
+     "    import pandas as pd",
+     "    from sdv.single_table import GaussianCopulaSynthesizer",
+     "    from sdv.metadata import Metadata",
+     "",
+     "    SDV_AVAILABLE = True",
+     "except ImportError:",
+     "    SDV_AVAILABLE = False"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "services/anonymizer/src/analytics/synthetic_sdv.py",
+    "line": 30,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "from typing import Any",
+     "",
+     "try:",
+     "    import pandas as pd",
+     "    from sdv.single_table import GaussianCopulaSynthesizer",
+     "    from sdv.metadata import Metadata",
+     "",
+     "    SDV_AVAILABLE = True",
+     "except ImportError:"
+    ]
+   },
+   {
+    "file": "services/anonymizer/src/analytics/synthetic_sdv.py",
+    "line": 31,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "try:",
+     "    import pandas as pd",
+     "    from sdv.single_table import GaussianCopulaSynthesizer",
+     "    from sdv.metadata import Metadata",
+     "",
+     "    SDV_AVAILABLE = True",
+     "except ImportError:",
+     "    SDV_AVAILABLE = False"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

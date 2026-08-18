@@ -1,0 +1,206 @@
+{
+ "repo": "MujtabaJunaid/FYP-5G-Pipeline",
+ "disk_kb": 34938,
+ "method": "partial_clone",
+ "tree_files": 62,
+ "status": "ok",
+ "readme": "# Cognitive Radio Network (CRN) Simulation with Jamming & Spectrum Sensing\n\n## Project Overview\nThis project is a high-fidelity Python simulation of a **Cognitive Radio Network (CRN)**. It models the physical (PHY) and network layers to demonstrate core CRN concepts: **Spectrum Sensing (Listen Before Talk)**, **Primary User Priority**, and **Resilience against Jamming Attacks**.\n\nThe system simulates a real-world wireless environment where \"Secondary Users\" (unlicensed) must opportunistically access the spectrum without interfering with \"Primary Users\" (licensed). It also includes a malicious \"Jammer\" node to test the network's robustness and security protocols.\n\n## Key Features\n* **Dynamic Spectrum Access:** Secondary users employ **Markov Chain-based Spectrum Sensing** to detect channel occupancy before transmitting. If the noise floor exceeds the threshold, the node backs off.\n* **Primary User Protection:** The Base Station enforces strict priority. If a Primary User (e.g., JAZZ, UFONE) transmits, active Secondary users are preempted (queued or disconnected) to ensure licensed quality of service.\n* **Physical Layer Simulation:**\n    * **Modulation:** Adaptive modulation schemes including QAM-16, QAM-64, and QAM-256 combined with OFDM (Orthogonal Frequency-Division Multiplexing) for realistic signal modeling.\n    * **Error Correction:** Reed-Solomon (RS) coding (RSCodec-40) to detect and correct transmission errors.\n    * **Channel Modeling:** Simulates AWGN (Additive White Gaussian Noise) and variable interference levels.\n* **Cybersecurity:**\n    * **Encryption:** AES-GCM (Galois/Counter Mode) provides authenticated encryption, ensuring both confidentiality and data integrity.\n    * **Key Derivation:** PBKDF2 (Password-Based Key Derivation Function 2) with salting is used to derive strong cryptographic keys from passphrases.\n* **Jamming Simulation:** A specialized \"Jammer\" node that floods the Base Station with high-power noise. This triggers a **Bit-Flipping Attack** on legitimate packets, simulating physical layer corruption and Denial of Service (DoS).\n* **Rich Visualization:** Generates detailed PDF reports containing Constellation Diagrams (visualizing signal quality), OFDM I/Q Signals, and Power Sensing plots.\n\n## System Architecture\n\n### 1. The Sender (Primary/Secondary)\nThe sender initiates communication by performing **Spectrum Sensing**. \n* **Sensing:** It checks the environmental noise floor. If below the threshold, it proceeds.\n* **Processing:** The message is encoded (Reed-Solomon), modulated (QAM/OFDM), and encrypted (AES-GCM).\n* **Transmission:** The secure frame is sent to the Base Station.\n\n### 2. The Base Station (Controller)\nActs as the central relay and policy enforcer.\n* **Jamming Check:** Continually monitors for high-power interference from registered Jammers. If detected, it applies a **Bit-Flipping** corruption algorithm to passing frames.\n* **Priority Check:** Validates if the source is a Primary User. If yes, it updates the \"Protection Window\". If a Secondary User attempts to transmit during this window, the packet is queued or dropped.\n* **Routing:** Forwards valid, allowed frames to the destination Receiver.\n\n### 3. The Receiver (Target)\nThe final destination for data.\n* **Preemption:** Checks incoming connection requests. If a Primary User connects while a Secondary User is active, the Receiver automatically terminates the Secondary session.\n* **Decryption & Visualization:** Attempts to decrypt the payload. If successful, it logs the message. If decryption fails (due to jamming), it logs the corruption. Finally, it generates visual plots of the signal constellation.\n\n## File Structure\n\n| File | Role | Description |\n| :--- | :--- | :--- |\n| `base_station.py` | **The Core / Air Interface** | Acts as the central hub. Enforces priority logic, manages routing, and simulates physical layer corruption when jamming is active. |\n| `Dynamic_Sender.py` | **Transmitter Node** | Can act as a **Primary** or **Secondary** user. Implements \"Listen Before Talk\" sensing logic, adaptive modulation, and encryption. |\n| `Dynamic_Receiver.py` | **Target Node** | Receives frames, handles decryption, and generates the PDF visualizations. Includes logic to auto-disconnect Secondary users if a Primary user connects. |\n| `Dynamic_Jammer.py` | **Attacker Node** | Broadcasts high-power noise to the Base Station to disrupt communication and trigger packet corruption. |\n\n## Installation & Requirements\nEnsure you have Python 3.8+ installed. Install the required dependencies:\n\n```bash\npip install numpy matplotlib pycryptodome reedsolo\n## Usage Guide\nTo run the full simulation, open four separate terminal windows and execute the scripts in the following order:\n\n1. Start the Base Station\nThis initializes the network coverage area and starts listening on the default port (50050).\n\nBash\npython base_station.py\n\n2. Start the Receiver\nRegister a receiver to listen for incoming messages.\n\nBash\npython Dynamic_Receiver.py\n# When prompted, Enter Receiver ID: R1\n\n3. Start the Sender (Normal Operation)\nYou can login as a Secondary User (S1-S60) or a Primary User (JAZZ, UFONE, etc.).\n\nBash\npython Dynamic_Sender.py\n# Enter Sender ID: S1 (for Secondary) OR JAZZ (for Primary)\n# Enter Recipient ID: R1\n# Type a message to verify connection.\n\n4. Start the Jammer (Attack Simulation)\nTo test network resilience, launch the jammer in a new terminal. This node will broadcast noise bursts.\n\nBash\npython Dynamic_Jammer.py\n# The script will automatically start flooding the Base Station.\n\n---\n\n## Test Scenarios\n\nScenario A: Spectrum Sensing (Listen Before Talk)\nStart Dynamic_Sender.py as Secondary User (S1).\nThe system simulates background noise using a Markov Chain model.\nObservation: If the simulated channel energy is high (BUSY), S1 will print [SENSING] Busy. Backing off... and refuse to transmit. This proves the node is respecting the spectrum availability.\n\nScenario B: Primary User Preemption\nEstablish a connection between Secondary User (S1) and R1. Send a few messages.\nStart a second sender instance as Primary User (JAZZ) and connect to R1.\nObservation:\nThe Receiver (R1) will detect the high-priority request.\nIt will print [PRIORITY] Primary User 'JAZZ' is preempting Secondary User 'S1'!.\nS1 will be disconnected immediately, and JAZZ will take over the channel.\n\nScenario C: Jamming Attack & Physical Layer Corruption\nEstablish a stable connection between any sender and receiver.\nRun Dynamic_Jammer.py.\nAttempt to send a message from the Sender.\nObservation:\nBase Station: Detects interference and prints ! JAMMING ACTIVE ! Corrupting packet....\nReceiver: Fails to verify the AES-GCM tag and prints [!] PACKET CORRUPTED/JAMMED.\nVisualization: The generated PDF report will show the corrupted packet as a Red, Scattered Constellation Diagram, visually proving the destruction of the signal integrity.\n\n---\n\n## Results & Visualization\nThe system automatically generates PDF reports in the node_logs directory (e.g., R1_plots_TIMESTAMP.pdf). These reports are crucial for analyzing the PHY layer performance.\n\n1. Clean Signal (Normal Operation)\nWhen the channel is clear, the Constellation Diagram shows distinct, well-separated blue dots (symbols).\n\nVisual: A clean grid (4x4 for QAM-16, 8x8 for QAM-64).\nMeaning: High Signal-to-Noise Ratio (SNR) and successful demodulation.\n\n2. Spectrum Sensing Plot\nThis plot visualizes the instantaneous power of the received signal against the noise threshold.\n\nVisual: A blue waveform representing signal energy vs. a red dashed line representing the threshold.\nMeaning: Peaks above the red line indicate active transmission or high noise.\n\n3. Jammed Signal (Under Attack)\nDuring a jamming attack, the Base Station injects random bit errors. The Receiver plots these corrupted packets in Red.\n\nVisual: The constellation diagram becomes a chaotic \"cloud\" of red dots with no grid structure.\nLabel: The plot text box explicitly states Msg: \"[JAMMED] CORRUPTED DATA...\".\nMeaning: The physical integrity of the signal was destroyed by the Jammer, preventing successful decoding.\n",
+ "hits": {
+  "st": [
+   {
+    "file": "ctgan_rf_synthesis.py",
+    "line": 18,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.ensemble import RandomForestClassifier",
+     "from sklearn.metrics import classification_report, roc_auc_score",
+     "",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "warnings.filterwarnings('ignore')",
+     ""
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "ctgan_rf_synthesis.py",
+    "line": 19,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from sklearn.ensemble import RandomForestClassifier",
+     "from sklearn.metrics import classification_report, roc_auc_score",
+     "",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "warnings.filterwarnings('ignore')",
+     "",
+     "FEATURE_COLS = ["
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "ctgan_rf_synthesis.py",
+    "line": 18,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.ensemble import RandomForestClassifier",
+     "from sklearn.metrics import classification_report, roc_auc_score",
+     "",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "warnings.filterwarnings('ignore')",
+     ""
+    ]
+   },
+   {
+    "file": "ctgan_rf_synthesis.py",
+    "line": 19,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from sklearn.ensemble import RandomForestClassifier",
+     "from sklearn.metrics import classification_report, roc_auc_score",
+     "",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "warnings.filterwarnings('ignore')",
+     "",
+     "FEATURE_COLS = ["
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "ctgan_rf_synthesis.py",
+    "line": 18,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.ensemble import RandomForestClassifier",
+     "from sklearn.metrics import classification_report, roc_auc_score",
+     "",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "warnings.filterwarnings('ignore')",
+     ""
+    ]
+   },
+   {
+    "file": "ctgan_rf_synthesis.py",
+    "line": 140,
+    "text": "epochs: int = 200) -> CTGANSynthesizer:",
+    "context": [
+     "",
+     "# STEP 3 — TRAIN CTGAN",
+     "",
+     "def train_ctgan(df: pd.DataFrame, metadata: SingleTableMetadata,",
+     "                epochs: int = 200) -> CTGANSynthesizer:",
+     "    \"\"\"",
+     "    Instantiate and train a CTGANSynthesizer.",
+     "",
+     "    Key hyperparameters:"
+    ]
+   },
+   {
+    "file": "ctgan_rf_synthesis.py",
+    "line": 142,
+    "text": "Instantiate and train a CTGANSynthesizer.",
+    "context": [
+     "",
+     "def train_ctgan(df: pd.DataFrame, metadata: SingleTableMetadata,",
+     "                epochs: int = 200) -> CTGANSynthesizer:",
+     "    \"\"\"",
+     "    Instantiate and train a CTGANSynthesizer.",
+     "",
+     "    Key hyperparameters:",
+     "      - epochs        : training iterations (more = better quality, slower)",
+     "      - batch_size    : 500 is SDV default; larger = more stable gradients"
+    ]
+   },
+   {
+    "file": "ctgan_rf_synthesis.py",
+    "line": 156,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "    print(f\"{'='*60}\")",
+     "    print(f\"  Training rows   : {len(df):,}\")",
+     "    print(f\"  Started at      : {datetime.now().strftime('%H:%M:%S')}\")",
+     "",
+     "    synthesizer = CTGANSynthesizer(",
+     "        metadata,",
+     "        epochs          = epochs,",
+     "        batch_size      = 500,",
+     "        generator_dim   = (256, 256),"
+    ]
+   },
+   {
+    "file": "ctgan_rf_synthesis.py",
+    "line": 173,
+    "text": "def generate_synthetic(synthesizer: CTGANSynthesizer, n_samples: int,",
+    "context": [
+     "",
+     "",
+     "# STEP 4 — GENERATE SYNTHETIC DATA",
+     "",
+     "def generate_synthetic(synthesizer: CTGANSynthesizer, n_samples: int,",
+     "                        balance: bool, real_df: pd.DataFrame) -> pd.DataFrame:",
+     "    \"\"\"",
+     "    Generate synthetic rows.",
+     ""
+    ]
+   },
+   {
+    "file": "ctgan_rf_synthesis.py",
+    "line": 329,
+    "text": "def save_outputs(synthesizer: CTGANSynthesizer,",
+    "context": [
+     "",
+     "",
+     "# STEP 7 — SAVE OUTPUTS",
+     "",
+     "def save_outputs(synthesizer: CTGANSynthesizer,",
+     "                 synthetic_df: pd.DataFrame,",
+     "                 output_path: str) -> None:",
+     "    \"\"\"",
+     "    Save:"
+    ]
+   },
+   {
+    "file": "ctgan_rf_synthesis.py",
+    "line": 350,
+    "text": "print(f\"  ctgan_model.pkl    : saved (reload with CTGANSynthesizer.load())\")",
+    "context": [
+     "    synthetic_df.to_csv(csv_path, index=False)",
+     "    synthesizer.save(model_path)",
+     "",
+     "    print(f\"  synthetic_data.csv : {len(synthetic_df):,} rows\")",
+     "    print(f\"  ctgan_model.pkl    : saved (reload with CTGANSynthesizer.load())\")",
+     "    print(f\"\\n  Done.\\n\")",
+     "",
+     "",
+     "# MAIN"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv==1.0.0"
+  ]
+ }
+}

@@ -1,0 +1,554 @@
+{
+ "repo": "UnicornDataCience/R35_sopra_steria",
+ "disk_kb": 33919,
+ "method": "partial_clone",
+ "tree_files": 200,
+ "status": "ok",
+ "readme": "# PatientIA: Sistema de Generación de Datos Médicos Sintéticos con Agentes IA\n\nPatientIA es un sistema avanzado que utiliza un flujo de trabajo basado en agentes de IA para analizar, generar, validar y simular datos de pacientes, con el objetivo de aumentar datasets médicos para investigación y entrenamiento de modelos.\n\n## 📋 Arquitectura y Flujo de Trabajo\n\nEl núcleo del sistema es un grafo de agentes orquestado por LangGraph. Cada agente es un especialista en una tarea concreta, permitiendo un flujo de trabajo modular y robusto.\n\n### Diagrama del Flujo de Agentes\n\n```\n                    ┌─────────────┐\n                    │ Coordinator │\n                    │  (Central)  │\n                    └──────┬──────┘\n                           │\n        ┌──────────────────┼──────────────────┐\n        │                  │                  │\n        ▼                  ▼                  ▼\n    ┌─────────┐      ┌─────────────┐    ┌─────────────┐\n    │Analyzer │◄────►│  Generator  │◄──►│  Validator  │\n    │(Análisis│      │(Generación) │    │(Validación) │\n    │   EDA)  │      └─────────────┘    └─────────────┘\n    └─────────┘             │                   │\n         │                  ▼                   ▼\n         │            ┌─────────────┐    ┌─────────────┐\n         └───────────►│  Evaluator  │◄───│  Simulator  │\n                      │(Evaluación) │    │(Simulación) │\n                      └─────────────┘    └─────────────┘\n\n    Flujo Principal: Analyzer → Generator → Validator → Evaluator\n    \n    Características:\n    • Coordinator: Punto de entrada y coordinación central\n    • Analyzer: Análisis exploratorio de datos (EDA)\n    • Generator: Generación de datos sintéticos (CTGAN/TVAE/SDV)\n    • Validator: Validación de reglas clínicas\n    • Evaluator: Evaluación de calidad\n    • Simulator: Simulación temporal de condiciones\n```\n\n### Descripción de los Agentes\n- **Coordinator:** Punto de entrada. Dirige la tarea inicial al agente apropiado.\n- **Analyzer:** Realiza un análisis exploratorio de los datos médicos.\n- **Generator:** Genera datos sintéticos utilizando modelos como CTGAN, TVAE o SDV.\n- **Validator:** Aplica reglas clínicas y esquemas para asegurar la coherencia de los datos.\n- **Evaluator:** Mide la calidad y realismo de los datos generados.\n- **Simulator:** Simula la evolución temporal de las condiciones del paciente.\n\n---\n\n## 🚀 Guía de Uso y Comandos\n\nEste proyecto utiliza `uv` para la gestión de entornos virtuales y dependencias.\n\n### Comandos de `uv`\n\n- **Crear el entorno virtual (si no existe):**\n  ```shell\n  uv venv\n  ```\n\n- **Activar el entorno:**\n  - En Windows (CMD): `\\.venv\\Scripts\\activate`\n  - En Windows (PowerShell): `\\.venv\\Scripts\\Activate.ps1`\n  - En Linux/macOS: `source .venv/bin/activate`\n\n- **Instalar dependencias:**\n  ```shell\n  uv pip install -r requirements-api.txt\n  uv pip install -r requirements-client.txt\n  ```\n\n- **Sincronizar dependencias (instala/desinstala para que coincida con el `requirements.txt`):**\n  ```shell\n  uv pip sync requirements-api.txt\n  ```\n\n- **Añadir una nueva dependencia:**\n  ```shell\n  uv pip install <nombre_paquete>\n  ```\n\n- **Generar `requirements.txt`:**\n  ```shell\n  uv pip freeze > requirements.txt\n  ```\n\n### Lanzar la Aplicación\n\nLa aplicación consta de dos componentes principales: la API (backend) y el cliente de Streamlit (frontend).\n\n- **Paso 1: Ejecutar la API (backend)**\n  En una terminal, ejecuta el siguiente comando para iniciar el servidor de la API:\n  ```shell\n  python run_api.py\n  ```\n  La API estará disponible en `http://127.0.0.1:8000`. Puedes explorar la documentación interactiva de la API en `http://127.0.0.1:8000/docs`.\n\n- **Paso 2: Ejecutar el Cliente de Streamlit (frontend)**\n  En otra terminal, ejecuta el siguiente comando para iniciar la interfaz de usuario:\n  ```shell\n  python launch_client.py\n  ```\n  Esto abrirá una nueva pestaña en tu navegador con la aplicación de Streamlit.\n\n---\n\n## 📚 API Endpoints\n\nLa API de PatientIA proporciona los siguientes endpoints para interactuar con el sistema:\n\n### Health\n\n- **`GET /api/v1/health`**: Verifica el estado de la API.\n- **`GET /api/v1/health/llm`**: Verifica el estado del LLM.\n\n### Chat\n\n- **`POST /api/v1/chat`**: Maneja las interacciones de chat con el sistema.\n\n### Datasets\n\n- **`POST /api/v1/datasets/upload`**: Sube un nuevo dataset.\n- **`GET /api/v1/datasets`**: Lista los datasets disponibles.\n- **`GET /api/v1/datasets/{dataset_id}`**: Obtiene un dataset específico.\n- **`DELETE /api/v1/datasets/{dataset_id}`**: Elimina un dataset específico.\n\n### Analysis\n\n- **`POST /api/v1/analysis`**: Realiza un análisis sobre un dataset.\n\n### Generation\n\n- **`POST /api/v1/generation`**: Genera datos sintéticos.\n\n### Validation\n\n- **`POST /api/v1/validation`**: Valida un dataset.\n\n### Evaluation\n\n- **`POST /api/v1/evaluation`**: Evalúa la calidad de un dataset.\n\n### Simulation\n\n- **`POST /api/v1/simulation`**: Simula datos.\n\n---\n\n## ️ Estado del Sistema y Bitácora\n\n### Estado Actual del Sistema\n\n- **API:** Operativa. Expone los endpoints para interactuar con el flujo de agentes.\n- **Flujo de Agentes:** Implementado con LangGraph. El grafo principal es funcional.\n- **Modelos de Generación:** Integrados (CTGAN, SDV, TVAE).\n- **Validación:** Módulos de validación por reglas clínicas y esquema JSON implementados.\n- **Cliente:** Cliente de prueba basado en Streamlit disponible para demostraciones.\n\n### Bitácora de Desarrollo\n\n- **Fase 1: Diseño y prototipado.**\n  - Se diseñó la arquitectura de agentes.\n  - Se crearon los agentes base y se definió el `WorkflowState`.\n  - Se implementó un orquestador simple.\n- **Fase 2: Implementación del grafo.**\n  - Migración a LangGraph para una orquestación más robusta.\n  - Se implementaron las transiciones condicionales entre agentes.\n  - Se crearon los routers de la API para cada funcionalidad principal.\n- **Fase 3: Pruebas y Refinamiento.**\n  - Se realizaron pruebas de integración entre los agentes.\n  - Se depuraron los modelos de generación de datos.\n  - Se creó el cliente de Streamlit para facilitar la visualización y prueba del flujo completo.\n- **Fase 4: Limpieza y Consolidación (Actual).**\n  - Unificación de la documentación.\n  - Planificación de la limpieza de código obsoleto.\n  - Definición de la arquitectura final y preparación para la entrega al equipo de frontend.\n\n\n",
+ "hits": {
+  "gc": [
+   {
+    "file": "docs/phases/FASE3_GENERADOR_ESTADO_ACTUAL.md",
+    "line": 118,
+    "text": "synth = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "**Estado actual**:",
+     "```python",
+     "# src/generation/sdv_generator.py (y similares)",
+     "def generate(self, df, num_samples, ...):",
+     "    synth = GaussianCopulaSynthesizer(metadata)",
+     "    synth.fit(df)  # Entrenar",
+     "    result = synth.sample(num_samples)  # Generar",
+     "    return result  # ❌ Solo retorna datos, no el modelo",
+     "```"
+    ]
+   },
+   {
+    "file": "docs/phases/FASE3_GENERADOR_ESTADO_ACTUAL.md",
+    "line": 127,
+    "text": "synth = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "",
+     "**Solución necesaria**:",
+     "```python",
+     "def generate(self, df, num_samples, ...):",
+     "    synth = GaussianCopulaSynthesizer(metadata)",
+     "    synth.fit(df)",
+     "    result = synth.sample(num_samples)",
+     "    return result, synth  # ✅ Retornar datos Y modelo",
+     "```"
+    ]
+   },
+   {
+    "file": "src/generation/tvae_generator.py",
+    "line": 15,
+    "text": "para generar una muestra de cohortes sintéticas utilizando el sintetizador GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "def generate_synthetic_data_tvae(real_df, sample_size=10):",
+     "    ''' ",
+     "    La función generate_synthetic_data toma un DataFrame de pandas de datos reales",
+     "    para generar una muestra de cohortes sintéticas utilizando el sintetizador GaussianCopulaSynthesizer",
+     "    de la librería SDV.",
+     "    parámetros:",
+     "    - real_df: DataFrame de pandas que contiene los datos reales.",
+     "    - sample_size: número de muestras a generar (por defecto 1000)."
+    ]
+   },
+   {
+    "file": "src/generation/sdv_generator.py",
+    "line": 2,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "import os",
+     "import sys"
+    ]
+   },
+   {
+    "file": "src/generation/sdv_generator.py",
+    "line": 14,
+    "text": "Clase para generar datos sintéticos usando SDV y GaussianCopulaSynthesizer.",
+    "context": [
+     "script_dir = os.path.dirname(__file__)",
+     "",
+     "class SDVGenerator:",
+     "    \"\"\"",
+     "    Clase para generar datos sintéticos usando SDV y GaussianCopulaSynthesizer.",
+     "    \"\"\"",
+     "    def __init__(self, sample_size=1000):",
+     "        self.sample_size = sample_size",
+     ""
+    ]
+   },
+   {
+    "file": "src/generation/sdv_generator.py",
+    "line": 100,
+    "text": "synth = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "        # Usar nombre único para metadata temporal y eliminar tras uso",
+     "        tmp_json = f\"metadata_sdv_{uuid.uuid4().hex}.json\"",
+     "        try:",
+     "            metadata.save_to_json(tmp_json)",
+     "            synth = GaussianCopulaSynthesizer(metadata)",
+     "            synth.fit(real_df)",
+     "            synthetic = synth.sample(n_samples)",
+     "        finally:",
+     "            if os.path.exists(tmp_json):"
+    ]
+   },
+   {
+    "file": "src/generation/unified_generator.py",
+    "line": 3,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer",
+     "from typing import Dict, Optional, Literal",
+     "from .ctgan_generator import CTGANGenerator",
+     "from .tvae_generator import TVAEGenerator",
+     "from .sdv_generator import SDVGenerator"
+    ]
+   },
+   {
+    "file": "src/generation/unified_generator.py",
+    "line": 56,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "                synthesizer = CTGANSynthesizer(metadata)",
+     "            elif model_type == 'tvae':",
+     "                synthesizer = TVAESynthesizer(metadata)",
+     "            elif model_type == 'gaussian_copula':",
+     "                synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "            else:",
+     "                raise ValueError(f\"Modelo '{model_type}' no soportado. Use 'ctgan', 'tvae', or 'gaussian_copula'.\")",
+     "",
+     "            synthesizer.fit(cleaned_data)"
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "src/generation/tvae_generator.py",
+    "line": 2,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import TVAESynthesizer",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "import os",
+     "import sys"
+    ]
+   },
+   {
+    "file": "src/generation/sdv_generator.py",
+    "line": 2,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "import os",
+     "import sys"
+    ]
+   },
+   {
+    "file": "src/generation/ctgan_generator.py",
+    "line": 2,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import tempfile",
+     "import os",
+     "import sys"
+    ]
+   },
+   {
+    "file": "src/generation/unified_generator.py",
+    "line": 3,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer",
+     "from typing import Dict, Optional, Literal",
+     "from .ctgan_generator import CTGANGenerator",
+     "from .tvae_generator import TVAEGenerator",
+     "from .sdv_generator import SDVGenerator"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "src/generation/tvae_generator.py",
+    "line": 4,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import TVAESynthesizer",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "import os",
+     "import sys",
+     "import tempfile",
+     "import uuid"
+    ]
+   },
+   {
+    "file": "src/generation/sdv_generator.py",
+    "line": 4,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "import os",
+     "import sys",
+     "import tempfile",
+     "import uuid"
+    ]
+   },
+   {
+    "file": "src/generation/ctgan_generator.py",
+    "line": 3,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import tempfile",
+     "import os",
+     "import sys",
+     "import uuid"
+    ]
+   },
+   {
+    "file": "src/generation/unified_generator.py",
+    "line": 2,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer",
+     "from typing import Dict, Optional, Literal",
+     "from .ctgan_generator import CTGANGenerator",
+     "from .tvae_generator import TVAEGenerator"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "src/generation/tvae_generator.py",
+    "line": 2,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import TVAESynthesizer",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "import os",
+     "import sys"
+    ]
+   },
+   {
+    "file": "src/generation/tvae_generator.py",
+    "line": 4,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import TVAESynthesizer",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "import os",
+     "import sys",
+     "import tempfile",
+     "import uuid"
+    ]
+   },
+   {
+    "file": "src/generation/sdv_generator.py",
+    "line": 2,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "import os",
+     "import sys"
+    ]
+   },
+   {
+    "file": "src/generation/sdv_generator.py",
+    "line": 4,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "import os",
+     "import sys",
+     "import tempfile",
+     "import uuid"
+    ]
+   },
+   {
+    "file": "src/generation/ctgan_generator.py",
+    "line": 2,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import tempfile",
+     "import os",
+     "import sys"
+    ]
+   },
+   {
+    "file": "src/generation/ctgan_generator.py",
+    "line": 3,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import tempfile",
+     "import os",
+     "import sys",
+     "import uuid"
+    ]
+   },
+   {
+    "file": "src/generation/unified_generator.py",
+    "line": 2,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer",
+     "from typing import Dict, Optional, Literal",
+     "from .ctgan_generator import CTGANGenerator",
+     "from .tvae_generator import TVAEGenerator"
+    ]
+   },
+   {
+    "file": "src/generation/unified_generator.py",
+    "line": 3,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer",
+     "from typing import Dict, Optional, Literal",
+     "from .ctgan_generator import CTGANGenerator",
+     "from .tvae_generator import TVAEGenerator",
+     "from .sdv_generator import SDVGenerator"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "src/generation/tvae_generator.py",
+    "line": 2,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import TVAESynthesizer",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "import os",
+     "import sys"
+    ]
+   },
+   {
+    "file": "src/generation/tvae_generator.py",
+    "line": 88,
+    "text": "synth = TVAESynthesizer(metadata) # Crea un sintetizador de copula gaussiana",
+    "context": [
+     "    # Usar nombre único para metadata temporal y eliminar tras uso",
+     "    tmp_json = f\"metadata_tvae_{uuid.uuid4().hex}.json\"",
+     "    try:",
+     "        metadata.save_to_json(tmp_json)",
+     "        synth = TVAESynthesizer(metadata) # Crea un sintetizador de copula gaussiana",
+     "        synth.fit(real_df) # Ajusta el sintetizador a los datos reales",
+     "        result = synth.sample(sample_size)",
+     "    finally:",
+     "        if os.path.exists(tmp_json):"
+    ]
+   },
+   {
+    "file": "src/generation/tvae_generator.py",
+    "line": 99,
+    "text": "Clase para generar datos sintéticos usando SDV y TVAESynthesizer.",
+    "context": [
+     "",
+     "",
+     "class TVAEGenerator:",
+     "    \"\"\"",
+     "    Clase para generar datos sintéticos usando SDV y TVAESynthesizer.",
+     "    \"\"\"",
+     "    def __init__(self, sample_size=10):",
+     "        self.sample_size = sample_size",
+     ""
+    ]
+   },
+   {
+    "file": "src/generation/tvae_generator.py",
+    "line": 197,
+    "text": "synth = TVAESynthesizer(",
+    "context": [
+     "            metadata.save_to_json(tmp_json)",
+     "            print(f\"🔧 TVAE - Inicializando sintetizador con {len(real_df_for_fitting)} filas...\")",
+     "            ",
+     "            # Configurar TVAE con parámetros más ligeros para evitar timeout",
+     "            synth = TVAESynthesizer(",
+     "                metadata,",
+     "                epochs=100,  # Reducido de default (300) para mayor velocidad",
+     "                batch_size=500,  # Aumentado para mayor eficiencia",
+     "                verbose=True"
+    ]
+   },
+   {
+    "file": "src/generation/unified_generator.py",
+    "line": 3,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer",
+     "from typing import Dict, Optional, Literal",
+     "from .ctgan_generator import CTGANGenerator",
+     "from .tvae_generator import TVAEGenerator",
+     "from .sdv_generator import SDVGenerator"
+    ]
+   },
+   {
+    "file": "src/generation/unified_generator.py",
+    "line": 54,
+    "text": "synthesizer = TVAESynthesizer(metadata)",
+    "context": [
+     "            print(f\"Entrenando el sintetizador {model_type.upper()}...\")",
+     "            if model_type == 'ctgan':",
+     "                synthesizer = CTGANSynthesizer(metadata)",
+     "            elif model_type == 'tvae':",
+     "                synthesizer = TVAESynthesizer(metadata)",
+     "            elif model_type == 'gaussian_copula':",
+     "                synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "            else:",
+     "                raise ValueError(f\"Modelo '{model_type}' no soportado. Use 'ctgan', 'tvae', or 'gaussian_copula'.\")"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "src/generation/ctgan_generator.py",
+    "line": 2,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import tempfile",
+     "import os",
+     "import sys"
+    ]
+   },
+   {
+    "file": "src/generation/ctgan_generator.py",
+    "line": 14,
+    "text": "Clase para generar datos sintéticos usando SDV y CTGANSynthesizer.",
+    "context": [
+     "script_dir = os.path.dirname(__file__)",
+     "",
+     "class CTGANGenerator:",
+     "    \"\"\"",
+     "    Clase para generar datos sintéticos usando SDV y CTGANSynthesizer.",
+     "    \"\"\"",
+     "    def __init__(self, sample_size=10):",
+     "        self.sample_size = sample_size",
+     ""
+    ]
+   },
+   {
+    "file": "src/generation/ctgan_generator.py",
+    "line": 113,
+    "text": "synth = CTGANSynthesizer(metadata)",
+    "context": [
+     "        # Usar nombre único para metadata temporal y eliminar tras uso",
+     "        tmp_json = f\"metadata_ctgan_{uuid.uuid4().hex}.json\"",
+     "        try:",
+     "            metadata.save_to_json(tmp_json)",
+     "            synth = CTGANSynthesizer(metadata)",
+     "            synth.fit(real_df)",
+     "            result = synth.sample(n_samples)",
+     "        finally:",
+     "            if os.path.exists(tmp_json):"
+    ]
+   },
+   {
+    "file": "src/generation/unified_generator.py",
+    "line": 3,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer",
+     "from typing import Dict, Optional, Literal",
+     "from .ctgan_generator import CTGANGenerator",
+     "from .tvae_generator import TVAEGenerator",
+     "from .sdv_generator import SDVGenerator"
+    ]
+   },
+   {
+    "file": "src/generation/unified_generator.py",
+    "line": 52,
+    "text": "synthesizer = CTGANSynthesizer(metadata)",
+    "context": [
+     "",
+     "            # 3. Selección y entrenamiento del Modelo",
+     "            print(f\"Entrenando el sintetizador {model_type.upper()}...\")",
+     "            if model_type == 'ctgan':",
+     "                synthesizer = CTGANSynthesizer(metadata)",
+     "            elif model_type == 'tvae':",
+     "                synthesizer = TVAESynthesizer(metadata)",
+     "            elif model_type == 'gaussian_copula':",
+     "                synthesizer = GaussianCopulaSynthesizer(metadata)"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "gc",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "copulas==0.12.3",
+   "ctgan==0.11.0",
+   "rdt==1.17.0",
+   "sdmetrics==0.21.0",
+   "sdv==1.23.0"
+  ],
+  "pyproject.toml": [
+   "    \"sdv>=1.0.0\",",
+   "    \"ctgan>=0.7.0\",",
+   "    \"copulas>=0.9.0\","
+  ]
+ }
+}

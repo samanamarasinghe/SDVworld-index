@@ -1,0 +1,151 @@
+{
+ "repo": "Soham2511/inverse-alloy-design",
+ "disk_kb": 11313,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# 🔬 Inverse Alloy Design of Advanced Steels Using Machine Learning\n---\n\n## 📖 Overview\n\nDesigning high-strength microalloyed steels has traditionally relied on an expensive **trial-and-error (\"make-and-test\")** process, where alloy compositions are experimentally manufactured and tested repeatedly until the desired mechanical properties are achieved.\n\nThis Bachelor Thesis Project proposes an **AI-driven inverse alloy design framework** that reverses this workflow.\n\nInstead of predicting mechanical properties from a known alloy composition, the pipeline accepts a **target Yield Strength (YS)** and **Ultimate Tensile Strength (UTS)** and automatically recommends multiple feasible alloy compositions and processing conditions capable of achieving those targets.\n\nThe framework combines **generative AI**, **machine learning**, and **physical metallurgy constraints** into a single end-to-end inverse design pipeline.\n\n---\n\n# 🎯 Key Features\n\n- Synthetic Generation: The pipeline generates thousands of realistic candidate alloy compositions using a Tabular Variational Autoencoder (TVAE).\n\n- High-Fidelity Data: TVAE was specifically chosen over CTGAN due to its superior statistical similarity, achieving a highly accurate Synthetic Data Vault (SDV) Quality Score of 90.10%.\n\n- Microstructure Imputation: A dedicated CatBoost surrogate model predicts the missing Pearlite Fraction (%) for these generated candidates with high accuracy (R² = 0.83, MAE ≈ 6%).\n\n- Physics-Informed Modeling: By integrating this Pearlite prediction, the downstream strength models are forced to rely on physical microstructural constraints rather than mapping targets purely from raw chemistry.\n\n- Feasibility Filtering: The system automatically filters the generated candidates through strict metallurgical constraints (such as Carbon Equivalent limits for weldability) before forecasting their Yield Strength (YS) and Ultimate Tensile Strength (UTS).\n\n- Inverse Optimization: Finally, the surviving candidates are ranked using a composite optimization objective, allowing the pipeline to isolate and return the Top-5 recommended alloys for your specific target properties.\n\n---\n\n# 🏗 Pipeline Architecture\n\n![](Images/flowchart.png)\n---\n\n# 📂 Repository Structure\n\n```\nInverse-Alloy-Design/\n│\n├── Data/\n│   ├── demo_dataset.csv\n│   ├── README.md\n│\n├── Models/\n│   ├── 1. Gan_Optimized.pkl\n│   ├── 2. Pearlite_Model.pkl\n│   ├── 3.a UTS_no_Pearlite.pkl\n│   ├── 3.b YS_no_Pearlite.pkl\n│   ├── 4.a UTS_pearlite.pkl\n│   └── 4.b ys_pearlite.pkl\n│\n├── notebooks/\n│   ├── 0. btpMain.ipynb\n│   ├── 1. GAN.ipynb\n│   ├── 3.a UTS_prediction.ipynb\n│   ├── 3.b YS_prediction.ipynb\n│   ├── 4.a UTS_Prediction+Pearlite.ipynb\n│   └── 4.b YS_Prediction+Pearlite.ipynb\n│\n├── Results/\n│   ├── BTP_ppt.pdf\n│   ├── Soham_BTP_Report.pdf\n│\n├── Images/\n│   ├── flowchart.png\n│   ├── scatter_5000.png\n│\n├── requirements.txt\n│\n└── README.md\n```\n\n---\n\n# 📈 Model Interpretability\n\n![alt text](Images/scatter_5000.png)\n\n### Hall–Petch Relationship\n\n- Grain size strongly influences Yield Strength\n- Smaller grains produce higher strength\n\n### Solid Solution Strengthening\n\nMajor contributors:\n\n- Carbon\n- Carbon Equivalent\n- Molybdenum\n- Manganese\n\n### Microstructure\n\nPredicted Pearlite fraction significantly improves UTS estimation and inverse search convergence.\n\nSHAP analysis confirms that the models recover established physical metallurgy principles.\n\n![](Images/ys_feature_importance.png)\n\n---\n\n# 🚀 Installation\n\nClone the repository\n\n```bash\ngit clone https://github.com/your-username/inverse-alloy-design.git\n\ncd inverse-alloy-design\n```\n\nCreate a virtual environment\n\n```bash\npython -m venv venv\n```\n\nLinux / macOS\n\n```bash\nsource venv/bin/activate\n```\n\nWindows\n\n```powershell\nvenv\\Scripts\\activate\n```\n\nInstall dependencies\n\n```bash\npip install -r requirements.txt\n```\n\n---\n\n# 🛠 Technologies Used\n\n- Python\n- Pandas\n- NumPy\n- Scikit-Learn\n- CatBoost\n- LightGBM\n- Extra Trees\n- SDV\n- TVAE\n- SHAP\n- Matplotlib\n- Joblib\n\n---\n\n# 🔮 Future Improvements\n\n- Bayesian Optimization for candidate refinement\n- Multi-objective optimization (Strength + Ductility + Cost)\n- Diffusion Models for alloy generation\n- Active Learning with experimental feedback\n- Explainable inverse design dashboard\n- Streamlit web application\n\n---\n\n# 👨‍🔬 Author\n\n**Soham Jagtap**\n\nB.Tech (Hons.)  \nDepartment of Metallurgical & Materials Engineering  \nIndian Institute of Technology Kharagpur\n\n---\n\n# 🙏 Acknowledgements\n\n**Supervisor**\n\n- Prof. Debalay Chakrabarti\n- Prof. Amlan Dutta\n\nDepartment of Metallurgical & Materials Engineering  \nIndian Institute of Technology Kharagpur\n\nSpecial thanks to the department for providing the experimental database, computational resources, and academic guidance throughout this research.\n\n---\n\n# 📄 Citation\n\nIf you use this work in your research, please cite:\n\n```text\nSoham Jagtap.\nInverse Alloy Design of Advanced Steels Using Machine Learning.\nBachelor Thesis Project,\nDepartment of Metallurgical & Materials Engineering,\nIndian Institute of Technology Kharagpur.\n2026.\n```\n\n---\n\n# ⭐ If you found this project useful\n\nPlease consider giving the repository a ⭐ on GitHub.",
+ "hits": {
+  "st": [
+   {
+    "file": "Notebooks/0. btpMain.ipynb",
+    "line": 1,
+    "text": "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[]},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"language_info\":{\"name\":\"python\"}},\"cells\":[{\"cell_type\":\"markdown\",\"source\":[\"# Steps\\n\",\"- Input\\n\",\"- GAN\\n\",\"- Optimization\\n\",\"- Verifier\\n\",\"- Result\\n\"],\"metadata\":",
+    "context": [
+     "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[]},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"language_info\":{\"name\":\"python\"}},\"cells\":[{\"cell_type\":\"markdown\",\"so"
+    ]
+   },
+   {
+    "file": "Notebooks/1. GAN.ipynb",
+    "line": 1,
+    "text": "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"mount_file_id\":\"1KejoXhXZS6HqXCX0Sl90LWgxtKD-uBQe\",\"authorship_tag\":\"ABX9TyOS5Fo/Heu7T/zW2MqB7xOj\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"language_info\":{\"name\":\"python\"}},\"cells\":[{\"cell_type\":\"code\",\"execut",
+    "context": [
+     "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"mount_file_id\":\"1KejoXhXZS6HqXCX0Sl90LWgxtKD-uBQe\",\"authorship_tag\":\"ABX9TyOS5Fo/Heu7T/zW2MqB7xOj\"},\"kernelspec\":{\"name\":\"python3"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "Notebooks/0. btpMain.ipynb",
+    "line": 1,
+    "text": "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[]},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"language_info\":{\"name\":\"python\"}},\"cells\":[{\"cell_type\":\"markdown\",\"source\":[\"# Steps\\n\",\"- Input\\n\",\"- GAN\\n\",\"- Optimization\\n\",\"- Verifier\\n\",\"- Result\\n\"],\"metadata\":",
+    "context": [
+     "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[]},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"language_info\":{\"name\":\"python\"}},\"cells\":[{\"cell_type\":\"markdown\",\"so"
+    ]
+   },
+   {
+    "file": "Notebooks/1. GAN.ipynb",
+    "line": 1,
+    "text": "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"mount_file_id\":\"1KejoXhXZS6HqXCX0Sl90LWgxtKD-uBQe\",\"authorship_tag\":\"ABX9TyOS5Fo/Heu7T/zW2MqB7xOj\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"language_info\":{\"name\":\"python\"}},\"cells\":[{\"cell_type\":\"code\",\"execut",
+    "context": [
+     "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"mount_file_id\":\"1KejoXhXZS6HqXCX0Sl90LWgxtKD-uBQe\",\"authorship_tag\":\"ABX9TyOS5Fo/Heu7T/zW2MqB7xOj\"},\"kernelspec\":{\"name\":\"python3"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "Notebooks/0. btpMain.ipynb",
+    "line": 1,
+    "text": "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[]},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"language_info\":{\"name\":\"python\"}},\"cells\":[{\"cell_type\":\"markdown\",\"source\":[\"# Steps\\n\",\"- Input\\n\",\"- GAN\\n\",\"- Optimization\\n\",\"- Verifier\\n\",\"- Result\\n\"],\"metadata\":",
+    "context": [
+     "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[]},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"language_info\":{\"name\":\"python\"}},\"cells\":[{\"cell_type\":\"markdown\",\"so"
+    ]
+   },
+   {
+    "file": "Notebooks/1. GAN.ipynb",
+    "line": 1,
+    "text": "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"mount_file_id\":\"1KejoXhXZS6HqXCX0Sl90LWgxtKD-uBQe\",\"authorship_tag\":\"ABX9TyOS5Fo/Heu7T/zW2MqB7xOj\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"language_info\":{\"name\":\"python\"}},\"cells\":[{\"cell_type\":\"code\",\"execut",
+    "context": [
+     "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"mount_file_id\":\"1KejoXhXZS6HqXCX0Sl90LWgxtKD-uBQe\",\"authorship_tag\":\"ABX9TyOS5Fo/Heu7T/zW2MqB7xOj\"},\"kernelspec\":{\"name\":\"python3"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "Notebooks/1. GAN.ipynb",
+    "line": 1,
+    "text": "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"mount_file_id\":\"1KejoXhXZS6HqXCX0Sl90LWgxtKD-uBQe\",\"authorship_tag\":\"ABX9TyOS5Fo/Heu7T/zW2MqB7xOj\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"language_info\":{\"name\":\"python\"}},\"cells\":[{\"cell_type\":\"code\",\"execut",
+    "context": [
+     "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"mount_file_id\":\"1KejoXhXZS6HqXCX0Sl90LWgxtKD-uBQe\",\"authorship_tag\":\"ABX9TyOS5Fo/Heu7T/zW2MqB7xOj\"},\"kernelspec\":{\"name\":\"python3"
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "Notebooks/1. GAN.ipynb",
+    "line": 1,
+    "text": "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"mount_file_id\":\"1KejoXhXZS6HqXCX0Sl90LWgxtKD-uBQe\",\"authorship_tag\":\"ABX9TyOS5Fo/Heu7T/zW2MqB7xOj\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"language_info\":{\"name\":\"python\"}},\"cells\":[{\"cell_type\":\"code\",\"execut",
+    "context": [
+     "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"mount_file_id\":\"1KejoXhXZS6HqXCX0Sl90LWgxtKD-uBQe\",\"authorship_tag\":\"ABX9TyOS5Fo/Heu7T/zW2MqB7xOj\"},\"kernelspec\":{\"name\":\"python3"
+    ]
+   }
+  ],
+  "ctgan_mod": [
+   {
+    "file": "Notebooks/1. GAN.ipynb",
+    "line": 1,
+    "text": "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"mount_file_id\":\"1KejoXhXZS6HqXCX0Sl90LWgxtKD-uBQe\",\"authorship_tag\":\"ABX9TyOS5Fo/Heu7T/zW2MqB7xOj\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"language_info\":{\"name\":\"python\"}},\"cells\":[{\"cell_type\":\"code\",\"execut",
+    "context": [
+     "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"mount_file_id\":\"1KejoXhXZS6HqXCX0Sl90LWgxtKD-uBQe\",\"authorship_tag\":\"ABX9TyOS5Fo/Heu7T/zW2MqB7xOj\"},\"kernelspec\":{\"name\":\"python3"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "Notebooks/1. GAN.ipynb",
+    "line": 1,
+    "text": "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"mount_file_id\":\"1KejoXhXZS6HqXCX0Sl90LWgxtKD-uBQe\",\"authorship_tag\":\"ABX9TyOS5Fo/Heu7T/zW2MqB7xOj\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"language_info\":{\"name\":\"python\"}},\"cells\":[{\"cell_type\":\"code\",\"execut",
+    "context": [
+     "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"mount_file_id\":\"1KejoXhXZS6HqXCX0Sl90LWgxtKD-uBQe\",\"authorship_tag\":\"ABX9TyOS5Fo/Heu7T/zW2MqB7xOj\"},\"kernelspec\":{\"name\":\"python3"
+    ]
+   }
+  ],
+  "sm": [
+   {
+    "file": "Notebooks/1. GAN.ipynb",
+    "line": 1,
+    "text": "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"mount_file_id\":\"1KejoXhXZS6HqXCX0Sl90LWgxtKD-uBQe\",\"authorship_tag\":\"ABX9TyOS5Fo/Heu7T/zW2MqB7xOj\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"language_info\":{\"name\":\"python\"}},\"cells\":[{\"cell_type\":\"code\",\"execut",
+    "context": [
+     "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"mount_file_id\":\"1KejoXhXZS6HqXCX0Sl90LWgxtKD-uBQe\",\"authorship_tag\":\"ABX9TyOS5Fo/Heu7T/zW2MqB7xOj\"},\"kernelspec\":{\"name\":\"python3"
+    ]
+   }
+  ],
+  "rdt": [
+   {
+    "file": "Notebooks/1. GAN.ipynb",
+    "line": 1,
+    "text": "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"mount_file_id\":\"1KejoXhXZS6HqXCX0Sl90LWgxtKD-uBQe\",\"authorship_tag\":\"ABX9TyOS5Fo/Heu7T/zW2MqB7xOj\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"language_info\":{\"name\":\"python\"}},\"cells\":[{\"cell_type\":\"code\",\"execut",
+    "context": [
+     "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"mount_file_id\":\"1KejoXhXZS6HqXCX0Sl90LWgxtKD-uBQe\",\"authorship_tag\":\"ABX9TyOS5Fo/Heu7T/zW2MqB7xOj\"},\"kernelspec\":{\"name\":\"python3"
+    ]
+   }
+  ],
+  "copulas": [
+   {
+    "file": "Notebooks/1. GAN.ipynb",
+    "line": 1,
+    "text": "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"mount_file_id\":\"1KejoXhXZS6HqXCX0Sl90LWgxtKD-uBQe\",\"authorship_tag\":\"ABX9TyOS5Fo/Heu7T/zW2MqB7xOj\"},\"kernelspec\":{\"name\":\"python3\",\"display_name\":\"Python 3\"},\"language_info\":{\"name\":\"python\"}},\"cells\":[{\"cell_type\":\"code\",\"execut",
+    "context": [
+     "{\"nbformat\":4,\"nbformat_minor\":0,\"metadata\":{\"colab\":{\"provenance\":[],\"mount_file_id\":\"1KejoXhXZS6HqXCX0Sl90LWgxtKD-uBQe\",\"authorship_tag\":\"ABX9TyOS5Fo/Heu7T/zW2MqB7xOj\"},\"kernelspec\":{\"name\":\"python3"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "copulas",
+  "ct",
+  "ctgan_mod",
+  "ev",
+  "md",
+  "rdt",
+  "sdv_any",
+  "sm",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv>=1.5.0"
+  ]
+ }
+}

@@ -1,0 +1,136 @@
+{
+ "repo": "aledminc/SaamaProblem",
+ "disk_kb": 159,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Saama Tech Exemplary Project\n\n---\n\n### **Problem Statement**\n\nGiven a small real Electronic Health Record (EHR) table (demographics, vitals, labs) and you can choose any dataset from the UC Irvine Machine Learning Data Repository.\n\nSelect any **tabular-data synthesis framework or library**, fit a generative model to the real data, and sample **1,000 synthetic patient records**.\n\nFor evaluation, compute:\n- Column-wise statistical tests\n- A privacy metric such as **PCA-based distance** between real and synthetic data or **record-matching risk**\n\n---\n\n### **Deliverable**\n\nA script that shows:\n- Your framework choice\n- Model training code\n- Sampling code\n- Evaluation results\n\nWith short writing on:\n- Synthesized data quality\n- Privacy trade-offs\n\n---\n\n### **Execution**\n\nChose **Thyroid Disease dataset** from the Garavan Institute:  \nhttps://archive.ics.uci.edu/dataset/102/thyroid+disease\n\nOpted for `new-thyroid.[data, names]` set for synthesis:\n- No missing values  \n- Data is pre-cleaned  \n- Contains diagnosis label (for later classification if needed)  \n- Moderate size (215 records)\n\nUsed **SDV Library and GaussianCopula** to train the generative model, then generated 1,000 synthetic samples.\n\n**Result:**\n\n- class: chi2 p-value = 0.7565\n- T3_uptake: ks p-value = 0.3200\n- thyroxin: ks p-value = 0.1502\n- triiodothyronine: ks p-value = 0.0102  \n- basal_TSH: ks p-value = 0.0000\n- TSH_response: ks p-value = 0.0000\n\nAvg real-to-real NN distance: 0.2803  \nAvg synth-to-real NN distance: 0.4166 \n",
+ "hits": {
+  "st": [
+   {
+    "file": "code/synthesize.py",
+    "line": 3,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "ds = pd.read_csv(\"data/new-thyroid.data\", header=None)",
+     "",
+     "ds.columns = ["
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "code/synthesize.py",
+    "line": 2,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "ds = pd.read_csv(\"data/new-thyroid.data\", header=None)",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "code/synthesize.py",
+    "line": 2,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "ds = pd.read_csv(\"data/new-thyroid.data\", header=None)",
+     ""
+    ]
+   },
+   {
+    "file": "code/synthesize.py",
+    "line": 3,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "ds = pd.read_csv(\"data/new-thyroid.data\", header=None)",
+     "",
+     "ds.columns = ["
+    ]
+   },
+   {
+    "file": "code/evaluate.py",
+    "line": 2,
+    "text": "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality",
+    "context": [
+     "from scipy.stats import ks_2samp, chi2_contingency",
+     "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality",
+     "from sklearn.decomposition import PCA",
+     "from sklearn.metrics import pairwise_distances",
+     "from sklearn.preprocessing import StandardScaler",
+     "from sklearn.neighbors import NearestNeighbors"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "code/synthesize.py",
+    "line": 3,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "ds = pd.read_csv(\"data/new-thyroid.data\", header=None)",
+     "",
+     "ds.columns = ["
+    ]
+   },
+   {
+    "file": "code/synthesize.py",
+    "line": 21,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "metadata.detect_from_dataframe(data=ds)",
+     "metadata.update_column(column_name='class', sdtype='categorical')",
+     "",
+     "# Decided against CTGAN after testing/training set too small",
+     "synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "synthesizer.fit(ds)",
+     "synthetic_data = synthesizer.sample(num_rows=1000)"
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "code/evaluate.py",
+    "line": 2,
+    "text": "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality",
+    "context": [
+     "from scipy.stats import ks_2samp, chi2_contingency",
+     "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality",
+     "from sklearn.decomposition import PCA",
+     "from sklearn.metrics import pairwise_distances",
+     "from sklearn.preprocessing import StandardScaler",
+     "from sklearn.neighbors import NearestNeighbors"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ev",
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

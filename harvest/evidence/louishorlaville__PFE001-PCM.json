@@ -1,0 +1,337 @@
+{
+ "repo": "louishorlaville/PFE001-PCM",
+ "disk_kb": 3631,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Cybersecurity Packet CTGAN Project\n\nCe projet implémente un **Conditional Tabular GAN (CTGAN)** utilisant la bibliothèque SDV pour générer des données synthétiques de 4. **Gestion des Métadonnées SDV** : Détection automatique des types de colonnes 5. **Génération Conditionnelle** : Utilise l'API SDV avec objets `Condition`quets réseau cybersécurisés. Le système génère des données réalistes basées sur les types d'attaques et fournit une évaluation complète de la qualité des données synthétiques.\n\n## Vue d'ensemble du Projet\n\n### Architecture (SDV CTGAN)\n\n- **SDV CTGANSynthesizer**: Implémentation du CTGAN avec support complet des métadonnées\n- **Génération Conditionnelle**: Génération ciblée basée sur des types d'attaques spécifiques\n- **Évaluation SDV Complète**: 3 types d'évaluation (Quality, Diagnostic, Column Plots)\n- **Analyse de Similarité par Attaque**: Comparaison statistique détaillée par type de cyberattaque\n- **Support Multi-colonnes**: Gestion automatique des types de données mixtes via les métadonnées SDV\n\n### Fonctionnalités Clés\n\n- ✅ **SDV CTGAN**: Utilisation de la bibliothèque SDV pour une implémentation robuste\n- ✅ **Métadonnées Automatiques**: Détection et validation automatique des types de colonnes\n- ✅ **Génération Conditionnelle**: API SDV avec objets `Condition` pour la génération ciblée\n- ✅ **Évaluation SDV Complète**: Quality Score (77.9%), Diagnostic (100%), Column Plots (133 graphiques)\n- ✅ **Analyse par Type d'Attaque**: Similarité statistique par type de cyberattaque avec tests KS et Mann-Whitney\n- ✅ **Structure Organisée**: Résultats organisés en sous-dossiers avec formats multiples (JSON, PKL, TXT)\n- 🆕 **API REST**: Interface HTTP pour génération de données synthétiques en temps réel\n\n## Structure du Projet\n\n```\nGAN2/\n├── data/\n│   └── raw/                     # Fichiers CSV organisés par catégorie d'appareil\n│       ├── Audio_Devices/       # Amazon Echo, Google Nest, etc.\n│       ├── Camera_Devices/      # Caméras IP, webcams, etc.\n│       ├── Home_Automation/     # Thermostats, éclairage intelligent, etc.\n│       ├── Hub_Devices/         # Hubs IoT, ponts réseau, etc.\n│       ├── Lighting/            # Ampoules connectées, strips LED, etc.\n│       ├── MAC_Address_Devices/ # Dispositifs identifiés par MAC\n│       └── Power_Outlets/       # Prises intelligentes, multiprises, etc.\n├── scripts/\n│   ├── train_ctgan.py            # 🎯 Script principal d'entraînement CTGAN\n│   └── sdv_evaluation.py         # 📊 Fonctions d'évaluation SDV complètes\n├── api/                          # 🌐 API REST pour génération de données synthétiques\n│   ├── app.py                    # Application FastAPI principale\n│   ├── routes/                   # Endpoints API (génération, santé)\n│   ├── services/                 # Services (chargement de modèles)\n│   └── utils/                    # Utilitaires et configuration\n├── results/                     # Résultats d'entraînement avec horodatage\n│   └── ctgan_YYYYMMDD_HHMMSS/\n│       ├── ctgan_model.pkl      # Modèle CTGAN entraîné\n│       ├── synthetic_samples_unconditional.csv\n│       ├── generated_[AttackType].csv  # Échantillons par type d'attaque\n│       ├── conditional_[AttackType].csv # Tests de génération conditionnelle\n│       ├── sdv_evaluation/      # 📈 Évaluation SDV complète\n│       │   ├── column_plots/    # 133 graphiques de comparaison\n│       │   ├── reports/         # Rapports détaillés (PKL + JSON)\n│       │   ├── attack_type_analysis/ # 🆕 Analyse de similarité par attaque\n│       │   ├── evaluation_summary.json\n│       │   └── comprehensive_evaluation_report.json\n│       ├── legacy_evaluation_results.json\n│       └── training_metadata.pkl\n├── docker/                      # 🐳 Configuration Docker pour déploiement\n│   ├── Dockerfile\n│   └── docker-compose.yml\n├── requirements-api.txt         # 📦 Dépendances spécifiques à l'API\n├── requirements.txt\n├── README-API.md                # 📖 Documentation complète de l'API\n└── README.md\n```\n\n## Démarrage Rapide\n\n### 1. Installation\n\n```bash\n# Installer les dépendances\npip install -r requirements.txt\n\n# Installer les dépendances spécifiques pour l'évaluation\npip install scipy  # Pour l'analyse statistique\n\n# Installer les dépendances API (optionnel, pour l'API REST)\npip install -r requirements-api.txt\n```\n\n### 2. Préparation des Données\n\nAssurez-vous que vos données sont organisées dans le répertoire `data/raw/` avec la structure suivante :\n\n- Chaque catégorie d'appareil a son propre dossier\n- Les fichiers CSV contiennent les caractéristiques des paquets réseau\n- Inclure les étiquettes de types d'attaques dans les données (colonne `attack_type`)\n\nVous pouvez retrouver la donnée que nous avons utilisée pour nos entraînements sur le Onedrive d'un membre de notre équipe:\nhttps://etsmtl365-my.sharepoint.com/:u:/g/personal/louis-p_horlaville_1_ens_etsmtl_ca/ERCbyYlA5MZKvlsqoojvbOsB8W6TSJ1TBye1NCVhhehw5Q?e=B817Ld\n\nVeuillez noter qu'un compte Microsoft faisant partie de l'organisation de l'ÉTS est nécessaire pour pouvoir accéder au dossier.\n\n### 3. Configuration\n\nLe script `train_ctgan.py` utilise une configuration directe dans le code via le dictionnaire `TRAINING_CONFIG`.\n\n**Configuration par défaut** : Le script fonctionne immédiatement avec des paramètres pré-configurés.\n\n**Personnalisation** : Pour modifier les paramètres, éditez directement le dictionnaire `TRAINING_CONFIG` dans le script.\n\n> 📋 **Voir la section [Configuration TRAINING_CONFIG](#configuration-training_config) pour la liste complète des paramètres disponibles.**\n\n### 4. Entraînement\n\n```bash\n# Entraînement basique\npython scripts/train_ctgan.py\n```\n\nLe script va automatiquement :\n\n- Charger tous les fichiers CSV du dossier `data/raw/`\n- Appliquer la stratégie d'échantillonnage configurée\n- Entraîner le modèle CTGAN avec les hyperparamètres définis\n- Générer les évaluations SDV complètes\n- Sauvegarder tous les résultats avec horodatage\n\n### 5. Résultats\n\nAprès l'entraînement, vous trouverez dans `results/ctgan_YYYYMMDD_HHMMSS/` :\n\n- **Modèle entraîné** : `ctgan_model.pkl`\n- **Échantillons générés** : `synthetic_samples_unconditional.csv`\n- **Échantillons par type d'attaque** : `generated_[AttackType].csv`\n- **Évaluations SDV** : Dossier `sdv_evaluation/` avec tous les graphiques et métriques\n- **Logs Wandb** : Suivi complet sur https://wandb.ai/pfe001-etsmtl/PCM-CTGAN\n\n## Composants Clés\n\n### 1. Script Principal (`scripts/train_ctgan.py`)\n\nLe script principal utilise la bibliothèque SDV pour entraîner un modèle CTGAN :\n\n#### Configuration TRAINING_CONFIG\n\n```python\nTRAINING_CONFIG = {\n    # Hyperparamètres du modèle\n    \"epochs\": 100,                     # Nombre d'époques d'entraînement\n    \"batch_size\": 130,                # Taille du batch (DOIT être divisible par PAC)\n    \"generator_lr\": 2e-4,             # Taux d'apprentissage du générateur\n    \"discriminator_lr\": 2e-4,         # Taux d'apprentissage du discriminateur\n    \"generator_decay\": 1e-6,          # Décroissance L2 du générateur\n    \"discriminator_decay\": 1e-6,      # Décroissance L2 du discriminateur\n    \"pac\": 10,                        # Paramètre PAC du CTGAN (batch_size doit être divisible par pac)\n    \"discriminator_steps\": 1,         # Étapes du discriminateur par étape du générateur\n    \"cuda\": True,                     # Utiliser GPU si disponible\n    \"verbose\": True,                  # Affichage détaillé\n\n    # Préparation des données\n    \"data_subset\": 100000,           # Nombre total de lignes pour l'entraînement\n    \"sampling_strategy\": \"stratified\", # Options: \"balanced\", \"stratified\", \"random\"\n    \"min_samples_per_attack\": 500,   # Utilisé seulement pour la stratégie \"balanced\"\n    \"random_state\": 42,              # Graine aléatoire pour la reproductibilité\n\n    # Génération et évaluation\n    \"unconditional_samples\": 100,     # Échantillons non conditionnels à générer\n    \"quality_test_samples\": 2000,     # Échantillons pour les tests de qualité\n    \"conditional_test_samples\": 100,  # Échantillons conditionnels par type d'attaque\n    \"multi_conditional_samples\": 50,  # Échantillons multi-conditionnels\n    \"num_test_attack_types\": 3,       # Nombre de types d'attaques à tester\n\n    # Paramètres d'évaluation SDV\n    \"sdv_evaluation_samples\": 1000,  # Nombre d'échantillons pour l'évaluation SDV\n    \"enable_column_plots\": True,     # Générer les graphiques de comparaison des colonnes\n\n}\n```\n\n> ⚠️ **Important** : Le paramètre `batch_size` DOIT être divisible par `pac`. Avec PAC=10, utilisez des valeurs comme 10, 20, 50, 100, 500, 1000, etc.\n\n#### Fonctionnalités Principales\n\n1. **Chargement Automatique des Données** : Découverte récursive de tous les fichiers CSV dans `data/raw/`\n2. **Stratégies d'Échantillonnage** :\n   - `\"random\"` : Échantillonnage aléatoire\n   - `\"stratified\"` : Maintient les proportions originales des types d'attaques\n   - `\"balanced\"` : Échantillons égaux par type d'attaque\n3. **Gestion des Métadonnées SDV** : Détection automatique des types de colonnes\n4. **Génération Conditionnelle** : Utilise l'API officielle SDV avec objets `Condition`\n5. **Évaluation Complète** : SDV + analyse spécialisée cybersécurité\n\n### 2. Module d'Évaluation (`scripts/sdv_evaluation.py`)\n\nFournit des fonctions d'évaluation complètes pour les données synthétiques :\n\n#### Fonctions Principales\n\n```python\ndef run_sdv_evaluation(train_df, ctgan, metadata, results_dir, config):\n    \"\"\"\n    Exécute l'évaluation SDV complète avec les 3 types d'évaluation officiels.\n\n    Retourne:\n        dict: Résultats d'évaluation avec scores de qualité, diagnostic et plots\n    \"\"\"\n\ndef analyze_attack_type_similarity(train_df, synthetic_df, results_dir, config):\n    \"\"\"\n    Analyse la ressemblance entre paquets réels et générés par type d'attaque.\n\n    Retourne:\n        tuple: (attack_similarity_results, overall_stats)\n    \"\"\"\n\ndef run_legacy_evaluation(train_df, ctgan, results_dir, config):\n    \"\"\"\n    Évaluation legacy pour comparaison avec les méthodes précédentes.\n    \"\"\"\n```\n\n#### Types d'Évaluation SDV\n\n1. **Évaluation de Qualité** (`evaluate_quality`)\n\n   - Score de forme des colonnes\n   - Tendances entre paires de colonnes\n   - Score global de qualité\n\n2. **Évaluation Diagnostique** (`run_diagnostic`)\n\n   - Validation de la structure des données\n   - Vérification de la validité des données\n   - Tests de cohérence\n\n3. **Génération de Graphiques de Colonnes** (`get_column_plot`)\n   - Comparaisons visuelles réel vs synthétique\n   - Graphiques pour toutes les colonnes\n   - Sauvegarde automatique en PNG\n\n#### Analyse de Similarité par Type d'Attaque\n\n- **Tests Statistiques** : Kolmogorov-Smirnov, Mann-Whitney U\n- **Métriques de Similarité** : Scores par type d'attaque spécifique\n- **Rapports Détaillés** : JSON, PKL et TXT pour analyse approfondie\n\n## Résultats de l'Évaluation\n\n### Métriques SDV (Dernière Exécution)\n\n- **Score de Qualité** : 77.9% (Excellent)\n- **Score Diagnostic** : 100% (Parfait)\n- **Score Combiné** : 88.9% (Excellent)\n- **Graphiques Générés** : 133/136 colonnes (97.8% de succès)\n\n### Distribution des Types d'Attaques\n\nLe modèle préserve bien les distributions d'attaques originales avec une similarité globale de **77.8%**.\n\n### Génération Conditionnelle\n\n- **Précision BenignTraffic** : 100%\n- **Précision BruteForce** : 100%\n- **Précision DDoS-ACK_Fragmentation** : 100%\n\n## Structure des Résultats\n\nChaque exécution génère un dossier horodaté dans `results/ctgan_YYYYMMDD_HHMMSS/` avec la structure suivante :\n\n```\nresults/ctgan_YYYYMMDD_HHMMSS/\n├── ctgan_model.pkl                    # Modèle CTGAN entraîné\n├── synthetic_samples_unconditional.csv # Échantillons non conditionnels\n├── generated_[AttackType].csv         # Échantillons par type d'attaque\n├── conditional_[AttackType].csv       # Tests conditionnels\n├── training_metadata.pkl              # Métadonnées d'entraînement\n├── legacy_evaluation_results.json     # Évaluation legacy\n└── sdv_evaluation/                    # 📊 Évaluation SDV complète\n    ├── reports/                       # Rapports PKL et JSON\n    ├── column_plots/                  # Graphiques de comparaison\n    ├── attack_type_analysis/           # Analyse par type d'attaque\n    │   ├── similarity_analysis_[AttackType].json\n    │   ├── global_similarity_report.json\n    │   └── similarity_summary.txt\n    ├── evaluation_summary.json        # Résumé des scores\n    ├── comprehensive_evaluation_report.json\n    └── synthetic_data_for_evaluation.csv\n```\n\nTous les outputs et résultats sont regroupés dans ce dossier pour chaque run. Les sous-dossiers contiennent les modèles, échantillons, évaluations, graphiques et rapports nécessaires à l'analyse et à la reproductibilité.\n\n## Utilisation Avancée\n\n### Modification des Paramètres\n\nPour personnaliser l'entraînement, modifiez directement le dictionnaire `TRAINING_CONFIG` dans `train_ctgan.py` :\n\n```python\n# Exemple : Entraînement plus long avec plus de données\nTRAINING_CONFIG.update({\n    \"epochs\": 300,\n    \"data_subset\": 200000,\n    \"batch_size\": 1000,\n    \"sdv_evaluation_samples\": 5000,\n})\n```\n\n### Génération Conditionnelle\n\nLe script teste automatiquement la génération conditionnelle en utilisant l'API SDV :\n\n```python\n# Exemple de génération conditionnelle dans le code\ncondition = Condition(\n    num_rows=100,\n    column_values={\"attack_type\": \"BenignTraffic\"}\n)\nconditional_samples = ctgan.sample_from_conditions(conditions=[condition])\n```\n\n### Intégration Wandb\n\nLe suivi des expériences est automatiquement activé avec Weights & Biases :\n\n- **Métriques d'entraînement** : Temps, nombre d'échantillons, types d'attaques\n- **Scores d'évaluation** : Qualité SDV, diagnostic, similarité par attaque\n- **Artefacts** : Modèles, échantillons synthétiques, métadonnées\n\nAccédez à vos expériences sur : https://wandb.ai/pfe001-etsmtl/PCM-CTGAN\n\n## 🌐 API REST pour Déploiement\n\nLe projet inclut une API REST complète pour servir vos modèles CTGAN entraînés en production.\n\n### Démarrage Rapide de l'API\n\n```bash\n# Installer les dépendances API\npip install -r requirements-api.txt\n\n# Démarrer l'API\ncd api\npython app.py\n\n# Ou avec uvicorn\nuvicorn api.app:app --host 0.0.0.0 --port 8000 --reload\n```\n\n### Endpoints Principaux\n\n- **Documentation Interactive** : http://localhost:8000/docs\n- **Santé de l'API** : `GET /api/v1/health`\n- **Génération Simple** : `POST /api/v1/generate`\n- **Génération Conditionnelle** : `POST /api/v1/generate/conditional`\n- **Par Type d'Attaque** : `GET /api/v1/generate/attack-type/{attack_type}`\n\n### Exemple d'Utilisation\n\n```python\nimport requests\n\n# Générer 100 échantillons BenignTraffic\nresponse = requests.get(\n    \"http://localhost:8000/api/v1/generate/attack-type/BenignTraffic?num_samples=100\"\n)\ndata = response.json()\nprint(f\"Généré {data['num_samples']} échantillons\")\n```\n\n### Déploiement Docker\n\n```bash\n# Construction et démarrage\ncd docker\ndocker-compose up -d\n\n# L'API sera disponible sur http://localhost:8000\n```\n\n> 📚 **Documentation complète** : Voir [README-API.md](README-API.md) pour tous les détails\n\n#### Analyse de Similarité par Type d'Attaque\n\n```python\ndef analyze_attack_type_similarity(train_df, synthetic_df, results_dir, config):\n    \"\"\"\n    Analyse la similarité entre données réelles et synthétiques par type d'attaque.\n\n    Utilise :\n    - Test de Kolmogorov-Smirnov pour chaque caractéristique numérique\n    - Test de Mann-Whitney U pour comparaisons de distribution\n    - Calcul de métriques de similarité globales\n\n    Retourne:\n        Rapports détaillés par type d'attaque et statistiques globales\n    \"\"\"\n```\n\n**Fonctionnalités** :\n\n- Comparaison statistique par type d'attaque\n- Tests de distribution robustes\n- Métriques de similarité spécialisées cybersécurité\n- Sauvegarde en formats multiples (JSON, PKL, TXT)\n\n## Utilisation et Maintenance\n\n### Exécution Simple\n\n```bash\n# Exécution standard avec configuration par défaut\npython scripts/train_ctgan.py\n```\n\nLe script utilise la configuration intégrée `TRAINING_CONFIG` et exécute automatiquement :\n\n1. Chargement et préparation des données\n2. Entraînement du modèle CTGAN\n3. Génération d'échantillons synthétiques\n4. Évaluation SDV complète\n5. Analyse de similarité par attaque\n6. Sauvegarde organisée des résultats\n\n### Personnalisation des Paramètres\n\nPour modifier la configuration, éditez directement le dictionnaire `TRAINING_CONFIG` dans le script :\n\n```python\n# Exemple de modification pour un entraînement plus intensif\nTRAINING_CONFIG.update({\n    \"epochs\": 300,                    # Plus d'époques\n    \"data_subset\": 200000,           # Plus de données\n    \"batch_size\": 1000,              # Batch plus large\n    \"sdv_evaluation_samples\": 5000,  # Plus d'échantillons pour l'évaluation\n    \"enable_column_plots\": True,     # Garder les graphiques\n})\n```\n\n### Suivi et Monitoring\n\n**Logs Locaux** : Tous les résultats sauvegardés avec horodatage\n**Métriques Temps Réel** : Scores SDV, similarité par attaque, métadonnées d'entraînement\n\n## Prochaines Étapes\n\n### Améliorations Possibles\n\n1. **Optimisation des Hyperparamètres** : Utilisation d'Optuna\n2. **Support Multi-GPU** : Entraînement distribué pour datasets plus larges\n3. **Évaluation Avancée** : Métriques spécialisées cybersécurité (détection d'anomalies)\n4. **Interface Graphique** : Dashboard pour configuration et monitoring\n\n### Intégration avec d'autres Outils\n\n- **MLflow** : Gestion des modèles et versioning\n- **DVC** : Versioning des données et pipelines\n- **Docker** : Containerisation pour déploiement\n- **Kubernetes** : Orchestration pour production\n\n## Support et Contribution\n\n### Dépendances Principales\n\n- **SDV** : Bibliothèque pour CTGAN\n- **Pandas** : Manipulation de données\n- **Scipy** : Tests statistiques\n- **Matplotlib/Seaborn** : Visualisations\n\n#### Erreur AssertionError avec PAC\n\n```\nAssertionError: input_.size()[0] % self.pac == 0\n```\n\n**Cause** : Le `batch_size` n'est pas divisible par le paramètre `pac`.\n\n**Solution** : Ajustez `batch_size` pour qu'il soit divisible par `pac` (par défaut 10).\n\n```python\n# ✅ Valeurs valides pour PAC=10\n\"batch_size\": 500,  # 500 ÷ 10 = 50\n\"batch_size\": 1000, # 1000 ÷ 10 = 100\n\n# ❌ Valeurs invalides pour PAC=10\n\"batch_size\": 128,  # 128 ÷ 10 = 12.8 (pas entier)\n\"batch_size\": 256,  # 256 ÷ 10 = 25.6 (pas entier)\n```\n\n#### Erreurs de Mémoire\n\n- Réduisez `batch_size` (ex: 100, 200, 500)\n- Réduisez `data_subset` pour utiliser moins de données\n- Définissez `cuda: False` pour utiliser CPU au lieu de GPU\n\n#### Données Manquantes\n\n- Vérifiez que les fichiers CSV sont dans `data/raw/`\n- Assurez-vous que la colonne `attack_type` existe\n- Vérifiez les permissions de lecture des fichiers\n\n### Ressources Utiles\n\n- [Documentation SDV](https://docs.sdv.dev/)\n- [CTGAN Paper](https://arxiv.org/abs/1907.00503)\n\n---\n\n**Version** : 2.0 (SDV CTGAN)  \n**Dernière Mise à Jour** : Août 2025  \n**Contact** : PFE001 - ETS Montréal\n\n## Remerciements\n\n- Article original GAN par Goodfellow et al.\n- Insights d'implémentation WGAN-GP\n- Communauté cybersécurité pour l'expertise du domaine\n- Équipe SDV pour la bibliothèque CTGAN\n",
+ "hits": {
+  "ct": [
+   {
+    "file": "README.md",
+    "line": 9,
+    "text": "- **SDV CTGANSynthesizer**: Implémentation du CTGAN avec support complet des métadonnées",
+    "context": [
+     "## Vue d'ensemble du Projet",
+     "",
+     "### Architecture (SDV CTGAN)",
+     "",
+     "- **SDV CTGANSynthesizer**: Implémentation du CTGAN avec support complet des métadonnées",
+     "- **Génération Conditionnelle**: Génération ciblée basée sur des types d'attaques spécifiques",
+     "- **Évaluation SDV Complète**: 3 types d'évaluation (Quality, Diagnostic, Column Plots)",
+     "- **Analyse de Similarité par Attaque**: Comparaison statistique détaillée par type de cyberattaque",
+     "- **Support Multi-colonnes**: Gestion automatique des types de données mixtes via les métadonnées SDV"
+    ]
+   },
+   {
+    "file": "scripts/train_ctgan.py",
+    "line": 19,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling import Condition",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv_evaluation import run_legacy_evaluation, run_sdv_evaluation",
+     "",
+     "# Setup logging",
+     "logging.basicConfig("
+    ]
+   },
+   {
+    "file": "scripts/train_ctgan.py",
+    "line": 393,
+    "text": "ctgan = CTGANSynthesizer(",
+    "context": [
+     "    logger.info(\"Initializing CTGAN synthesizer...\")",
+     "",
+     "    os.environ[\"JOBLIB_START_METHOD\"] = \"spawn\"",
+     "",
+     "    ctgan = CTGANSynthesizer(",
+     "        metadata=metadata,",
+     "        epochs=TRAINING_CONFIG[\"epochs\"],",
+     "        batch_size=TRAINING_CONFIG[\"batch_size\"],",
+     "        discriminator_steps=TRAINING_CONFIG[\"discriminator_steps\"],"
+    ]
+   },
+   {
+    "file": "scripts/train_ctgan.py",
+    "line": 431,
+    "text": "# The SDV CTGANSynthesizer uses the metadata to handle discrete columns automatically",
+    "context": [
+     "",
+     "        joblib.parallel.DEFAULT_N_JOBS = 1",
+     "        logger.info(\"✅ Set joblib to use single process\")",
+     "",
+     "        # The SDV CTGANSynthesizer uses the metadata to handle discrete columns automatically",
+     "        logger.info(\"🚀 Starting model fitting...\")",
+     "        logger.info(",
+     "            \"⚠️  Note: This may take a while due to large dataset and many categorical columns\"",
+     "        )"
+    ]
+   },
+   {
+    "file": "api/services/model_loader.py",
+    "line": 18,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import torch",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling import Condition",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "logger = logging.getLogger(__name__)",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "api/services/model_loader.py",
+    "line": 27,
+    "text": "self.model: Optional[CTGANSynthesizer] = None",
+    "context": [
+     "class ModelManager:",
+     "    \"\"\"Manages CTGAN model loading and caching.\"\"\"",
+     "",
+     "    def __init__(self):",
+     "        self.model: Optional[CTGANSynthesizer] = None",
+     "        self.metadata: Optional[SingleTableMetadata] = None",
+     "        self.model_info: Dict[str, Any] = {}",
+     "        self.project_root = Path(__file__).parent.parent.parent",
+     ""
+    ]
+   },
+   {
+    "file": "api/services/model_loader.py",
+    "line": 111,
+    "text": "def _load_model_sync(self, model_path: Path) -> CTGANSynthesizer:",
+    "context": [
+     "        except Exception as e:",
+     "            logger.error(f\"❌ Failed to load model: {e}\")",
+     "            raise",
+     "",
+     "    def _load_model_sync(self, model_path: Path) -> CTGANSynthesizer:",
+     "        \"\"\"Synchronously load the model (runs in thread pool).\"\"\"",
+     "        import torch",
+     "",
+     "        try:"
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "scripts/train_ctgan.py",
+    "line": 19,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling import Condition",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv_evaluation import run_legacy_evaluation, run_sdv_evaluation",
+     "",
+     "# Setup logging",
+     "logging.basicConfig("
+    ]
+   },
+   {
+    "file": "api/services/model_loader.py",
+    "line": 18,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import torch",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling import Condition",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "logger = logging.getLogger(__name__)",
+     "",
+     ""
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "scripts/train_ctgan.py",
+    "line": 17,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import joblib",
+     "import matplotlib.pyplot as plt",
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling import Condition",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv_evaluation import run_legacy_evaluation, run_sdv_evaluation",
+     ""
+    ]
+   },
+   {
+    "file": "api/services/model_loader.py",
+    "line": 16,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from typing import Any, Dict, Optional",
+     "",
+     "import pandas as pd",
+     "import torch",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling import Condition",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "logger = logging.getLogger(__name__)"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "scripts/train_ctgan.py",
+    "line": 17,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import joblib",
+     "import matplotlib.pyplot as plt",
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling import Condition",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv_evaluation import run_legacy_evaluation, run_sdv_evaluation",
+     ""
+    ]
+   },
+   {
+    "file": "scripts/train_ctgan.py",
+    "line": 18,
+    "text": "from sdv.sampling import Condition",
+    "context": [
+     "import matplotlib.pyplot as plt",
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling import Condition",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv_evaluation import run_legacy_evaluation, run_sdv_evaluation",
+     "",
+     "# Setup logging"
+    ]
+   },
+   {
+    "file": "scripts/train_ctgan.py",
+    "line": 19,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling import Condition",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv_evaluation import run_legacy_evaluation, run_sdv_evaluation",
+     "",
+     "# Setup logging",
+     "logging.basicConfig("
+    ]
+   },
+   {
+    "file": "scripts/sdv_evaluation.py",
+    "line": 19,
+    "text": "from sdv.evaluation.single_table import (",
+    "context": [
+     "import plotly.graph_objects as go",
+     "import seaborn as sns",
+     "from plotly.subplots import make_subplots",
+     "from scipy import stats",
+     "from sdv.evaluation.single_table import (",
+     "    evaluate_quality,",
+     "    get_column_plot,",
+     "    run_diagnostic,",
+     ")"
+    ]
+   },
+   {
+    "file": "api/services/model_loader.py",
+    "line": 16,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from typing import Any, Dict, Optional",
+     "",
+     "import pandas as pd",
+     "import torch",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling import Condition",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "logger = logging.getLogger(__name__)"
+    ]
+   },
+   {
+    "file": "api/services/model_loader.py",
+    "line": 17,
+    "text": "from sdv.sampling import Condition",
+    "context": [
+     "",
+     "import pandas as pd",
+     "import torch",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling import Condition",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "logger = logging.getLogger(__name__)",
+     ""
+    ]
+   },
+   {
+    "file": "api/services/model_loader.py",
+    "line": 18,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import torch",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling import Condition",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "logger = logging.getLogger(__name__)",
+     "",
+     ""
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "scripts/sdv_evaluation.py",
+    "line": 19,
+    "text": "from sdv.evaluation.single_table import (",
+    "context": [
+     "import plotly.graph_objects as go",
+     "import seaborn as sns",
+     "from plotly.subplots import make_subplots",
+     "from scipy import stats",
+     "from sdv.evaluation.single_table import (",
+     "    evaluate_quality,",
+     "    get_column_plot,",
+     "    run_diagnostic,",
+     ")"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ev",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "# SDV for CTGAN (Essential)",
+   "sdv>=1.5.0"
+  ]
+ }
+}

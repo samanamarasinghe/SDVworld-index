@@ -1,0 +1,277 @@
+{
+ "repo": "divineiloh/synthla-edu-v2",
+ "disk_kb": 32247,
+ "method": "partial_clone",
+ "tree_files": 63,
+ "status": "ok",
+ "readme": "# SYNTHLA-EDU V2 — Synthetic Educational Data Benchmark\n\n<div align=\"center\">\n\n**Privacy-aware benchmark for synthetic educational data generation with multi-seed reproducibility and publication-quality visualizations.**\n\n![CI Tests](https://github.com/divineiloh/synthla-edu-v2/workflows/CI%20Tests/badge.svg)\n[![Python](https://img.shields.io/badge/python-3.11%2B-blue)]()\n[![License](https://img.shields.io/badge/license-MIT-green)]()\n\n[Quick Start](#quick-start) • [Visualizations](#publication-visualizations) • [Metrics](#key-metrics) • [Multi-Seed Runs](#multi-seed-runs)\n\n</div>\n\n---\n\n## Overview\n\nSingle-file Python benchmark for evaluating synthetic data generators on educational datasets:\n\n- **Datasets**: OULAD (student-level) and ASSISTments 2012–2013 (student-level aggregated)\n- **Synthesizers**: Gaussian Copula (SDV), CTGAN (SDV), TabDDPM (Synthcity)\n- **Evaluation**: Quality (SDMetrics), Utility (TSTR/TRTR), Realism (C2ST), Privacy (Multi-attacker MIA), Statistical rigor (Paired permutation tests with Bonferroni correction)\n- **Visualizations**: 16 publication-quality figures at 1 200 DPI (fig2–fig17), including SHAP beeswarm plots\n\n## Quick Start\n\n### 1. Install\n\n```bash\ngit clone https://github.com/divineiloh/synthla-edu-v2.git\ncd synthla-edu-v2\n\n# Recommended: locked versions for exact reproducibility\npip install -r requirements-locked.txt\n\n# Alternative: minimum versions (may differ from paper)\n# pip install -r requirements.txt\n```\n\n### 2. Download Data\n\nDownload datasets and place in `data/raw/`:\n\n- **OULAD**: [analyse.kmi.open.ac.uk/open-dataset](https://analyse.kmi.open.ac.uk/open-dataset) → `data/raw/oulad/`\n- **ASSISTments 2012–2013**: [sites.google.com/site/assistmentsdata/datasets/2012-13-school-data-with-affect](https://sites.google.com/site/assistmentsdata/datasets/2012-13-school-data-with-affect) → `data/raw/assistments/`\n\n### 3. Run\n\n> **⚠️ Quick Mode vs Full Mode**\n>\n> `--quick` is for smoke testing only. Metrics are NOT representative (under-trained models).\n> - CTGAN: 100 epochs (vs 300 full) · TabDDPM: 300 iterations (vs 1 200 full) · Bootstrap: 100 resamples (vs 1 000 full)\n>\n> **Always run WITHOUT `--quick` for evaluation or publication.**\n\n```bash\n# Full matrix (2 datasets × 3 synthesizers)\npython synthla_edu_v2.py --run-all --raw-dir data/raw --out-dir runs --seed 42\n\n# Quick smoke test\npython synthla_edu_v2.py --run-all --raw-dir data/raw --out-dir runs --quick\n```\n\n**Docker** (optional):\n\n```bash\ndocker build -t synthla-edu-v2 .\ndocker run -v $(pwd)/data/raw:/app/data/raw -v $(pwd)/runs:/app/runs \\\n  synthla-edu-v2 python synthla_edu_v2.py --run-all --raw-dir data/raw --out-dir runs\n```\n\nSee [DOCKER.md](DOCKER.md) for GPU support and docker-compose.\n\n### 4. View Results\n\n```bash\ncat runs/oulad/results.json\ncat runs/assistments/results.json\nls runs/figures/              # Cross-dataset comparison figures\n```\n\n## Multi-Seed Runs\n\nFor publication-quality results with error bars across seeds:\n\n```bash\npython synthla_edu_v2.py \\\n  --run-all --raw-dir data/raw --out-dir runs_publication \\\n  --seeds 0,1,2,3,4\n```\n\nThis creates `runs_publication/seed_0/` through `seed_4/`, each containing per-dataset `results.json`. The aggregated figure script then produces mean ± std plots across all seeds.\n\n### Regenerate Figures\n\nAfter multi-seed runs complete, regenerate all 16 publication figures:\n\n```bash\npython scripts/generate_all_figures.py                  # all 16 figures\npython scripts/generate_all_figures.py --skip-beeswarm  # skip fig14/fig15 (faster)\n```\n\nOutput: `runs_publication/figures_aggregated/fig2.png` – `fig17.png`\n\n## Publication Visualizations\n\nThe figure pipeline produces **16 publication-quality figures** (1 200 DPI, color-blind friendly) numbered fig2–fig17:\n\n| Figure | Description |\n|--------|-------------|\n| fig2 | OULAD classification utility (TSTR bar chart) |\n| fig3 | ASSISTments classification utility |\n| fig4 | OULAD regression utility (TSTR bar chart) |\n| fig5 | ASSISTments regression utility |\n| fig6 | SDMetrics quality scores (grouped bar) |\n| fig7 | MIA worst-case effective AUC (grouped bar) |\n| fig8 | OULAD MIA per-attacker breakdown |\n| fig9 | ASSISTments MIA per-attacker breakdown |\n| fig10 | OULAD SHAP feature importance – Classification (top 7) |\n| fig11 | OULAD SHAP feature importance – Regression (top 7) |\n| fig12 | ASSISTments SHAP feature importance – Classification |\n| fig13 | ASSISTments SHAP feature importance – Regression |\n| fig14 | SHAP beeswarm – OULAD Classification TRTR (top 10 features) |\n| fig15 | SHAP beeswarm – OULAD Classification TSTR TabDDPM (top 10 features) |\n| fig16 | OULAD multi-objective performance heatmap |\n| fig17 | ASSISTments multi-objective performance heatmap |\n\n### Quality Standards\n- ✅ 1 200 DPI resolution (IEEE print-ready)\n- ✅ Color-blind friendly palette\n- ✅ All text legible at single-column width\n- ✅ SHAP beeswarm feature names at 24 pt\n- ✅ Professional styling with value annotations\n\n## Outputs\n\nEach dataset in `runs/<dataset>/` contains:\n- **`results.json`** — Comprehensive metrics for all 3 synthesizers:\n  - `synthesizers.<name>`: `{sdmetrics, c2st, mia, utility, timing}` with bootstrap CIs\n  - `pairwise_tests`: Statistical significance tests\n\nCross-dataset visualizations in `runs/figures/` (single-seed) or `runs_publication/figures_aggregated/` (multi-seed).\n\n## Key Metrics\n\n> **C2ST**: 0.5 = ideal (indistinguishable), 1.0 = worst (lower is better)\n> **MIA**: 0.5 = ideal (no leakage), 1.0 = worst (lower is better)\n\n| Metric | Range | Interpretation |\n|--------|-------|----------------|\n| **Quality** (SDMetrics) | 0–1 | Statistical similarity to real data (higher = better) |\n| **Utility** (TSTR/TRTR AUC) | 0–1 | Downstream predictive performance (higher = better) |\n| **Realism** (C2ST effective AUC) | 0.5–1.0 | Detectability (lower = better) |\n| **Privacy** (MIA worst-case) | 0.5–1.0 | Membership inference risk (lower = better) |\n| **Bootstrap CI** | 95% | 1 000 resamples per metric |\n| **Permutation p-value** | [0, 1] | Pairwise significance (Bonferroni-adjusted α = 0.0083) |\n\n## Statistical Methods\n\n### Multiple Testing Correction\n\nBonferroni correction across all pairwise comparisons:\n- 6 tests (3 pairs × 2 metrics) · α = 0.05/6 = **0.0083**\n- Paired permutation tests (10 000 permutations)\n\n### Effect Sizes\n\nCohen's d: |d| < 0.2 negligible · 0.2–0.5 small · 0.5–0.8 medium · ≥ 0.8 large\n\n### Evaluation Design\n\n- **C2ST** excludes ID + target columns (measures distribution fidelity on features only)\n- **MIA** excludes ID columns only, targets included (worst-case adversary)\n\n### Hyperparameters\n\n| Component | Standard | Quick |\n|-----------|----------|-------|\n| CTGAN | 300 epochs | 100 epochs |\n| TabDDPM | 1 200 iterations | 300 iterations |\n| Bootstrap | 1 000 resamples | 100 resamples |\n| Random Forest | 300 trees | 300 trees |\n\n## Repository Structure\n\n```\nsynthla-edu-v2/\n├── synthla_edu_v2.py            # Main pipeline (~2 150 lines)\n├── scripts/\n│   └── generate_all_figures.py  # Publication figure generator (fig2–fig17)\n├── tests/                       # pytest test suite\n│   ├── conftest.py\n│   ├── test_pipeline.py\n│   ├── test_data_loading.py\n│   └── test_synthesizers.py\n├── utils/                       # Optional utility modules\n│   ├── timing.py\n│   ├── effect_size.py\n│   └── logging_config.py\n├── data/\n│   └── raw/                     # Place datasets here (gitignored)\n│       ├── oulad/               # OULAD CSV files (7 tables)\n│       └── assistments/         # ASSISTments CSV\n├── runs_publication/            # Multi-seed experiment results\n│   ├── seed_0/ – seed_4/       # Per-seed results\n│   ├── figures_aggregated/      # 16 publication figures (1 200 DPI)\n│   ├── seed_summary.json\n│   └── seed_summary.csv\n├── Dockerfile                   # Reproducible container\n├── requirements.txt             # Minimum dependencies\n├── requirements-locked.txt      # Pinned versions (exact reproducibility)\n├── DATA_SCHEMA.md               # OULAD & ASSISTments data schemas\n├── DOCKER.md                    # Docker usage guide\n├── QUICKSTART.md                # Quick-start guide\n├── pytest.ini                   # Test configuration\n├── VERSION                      # Semantic version\n└── LICENSE                      # MIT License\n```\n\n## Dependencies\n\n**Core:** Python 3.11+ · PyTorch 2.x · pandas · numpy · scikit-learn · SDV · SDMetrics · Synthcity · matplotlib · SHAP\n\n**Optional:** xgboost (multi-attacker MIA)\n\nSee [requirements-locked.txt](requirements-locked.txt) for exact pinned versions.\n\n## Advanced Usage\n\n```\npython synthla_edu_v2.py --help\n\n  --dataset {oulad,assistments}  Single dataset\n  --raw-dir PATH                 Raw CSV folder\n  --out-dir PATH                 Output directory\n  --seed INT                     Random seed (default: 0)\n  --seeds STR                    Comma-separated seeds for multi-seed runs\n  --synthesizer {gaussian_copula,ctgan,tabddpm}\n  --run-all                      Full 2×3 matrix\n  --quick                        Reduced compute (smoke test only)\n  --test-size FLOAT              Test split (default: 0.3)\n```\n\n### Extending the Code\n\n**Add a synthesizer:** implement `fit(df)` + `sample(n)` → register in `run_single()`/`run_all()`\n\n**Add a dataset:** implement `build_<name>_table()` returning `(df, schema)` → register in `build_dataset()`\n\n## Known Limitations\n\n- **Compute**: Full `--run-all` takes 3–6 hours on CPU. Use `--quick` for validation.\n- **TabDDPM preprocessing**: Clips numeric outliers (0.5th–99.5th percentile) before training.\n- **XGBoost**: Optional dependency; install separately for multi-attacker MIA.\n\n## Citation\n\n```bibtex\n@software{synthla_edu_v2,\n  title  = {SYNTHLA-EDU V2: Synthetic Educational Data Benchmark},\n  author = {Divine Iloh},\n  year   = {2025},\n  url    = {https://github.com/divineiloh/synthla-edu-v2}\n}\n```\n\n## License\n\n[MIT License](LICENSE) — Copyright © 2025 Divine Iloh\n\n## References\n\n- OULAD: [Open University Learning Analytics Dataset](https://analyse.kmi.open.ac.uk/open-dataset)\n- ASSISTments: [ASSISTments 2012–2013 Dataset](https://sites.google.com/site/assistmentsdata/datasets/2012-13-school-data-with-affect)\n- SDV: [Synthetic Data Vault](https://github.com/sdv-dev/SDV)\n- SHAP: [SHapley Additive exPlanations](https://github.com/shap/shap)\n",
+ "hits": {
+  "st": [
+   {
+    "file": "synthla_edu_v2.py",
+    "line": 804,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer  # type: ignore",
+    "context": [
+     "        self._categorical_categories: Dict[str, List[str]] = {}",
+     "",
+     "    def fit(self, df_train: pd.DataFrame) -> \"GaussianCopulaSynth\":",
+     "        from sdv.metadata import SingleTableMetadata  # type: ignore",
+     "        from sdv.single_table import GaussianCopulaSynthesizer  # type: ignore",
+     "",
+     "        # Remember which columns were categorical so we can restore dtype consistency",
+     "        self._categorical_categories = {}",
+     "        for col in df_train.columns:"
+    ]
+   },
+   {
+    "file": "synthla_edu_v2.py",
+    "line": 872,
+    "text": "from sdv.single_table import CTGANSynthesizer  # type: ignore",
+    "context": [
+     "        self._categorical_categories: Dict[str, List[str]] = {}",
+     "",
+     "    def fit(self, df_train: pd.DataFrame) -> \"CTGANSynth\":",
+     "        from sdv.metadata import SingleTableMetadata  # type: ignore",
+     "        from sdv.single_table import CTGANSynthesizer  # type: ignore",
+     "",
+     "        # Remember which columns were categorical so we can restore dtype consistency",
+     "        self._categorical_categories = {}",
+     "        for col in df_train.columns:"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "synthla_edu_v2.py",
+    "line": 803,
+    "text": "from sdv.metadata import SingleTableMetadata  # type: ignore",
+    "context": [
+     "        self._model = None",
+     "        self._categorical_categories: Dict[str, List[str]] = {}",
+     "",
+     "    def fit(self, df_train: pd.DataFrame) -> \"GaussianCopulaSynth\":",
+     "        from sdv.metadata import SingleTableMetadata  # type: ignore",
+     "        from sdv.single_table import GaussianCopulaSynthesizer  # type: ignore",
+     "",
+     "        # Remember which columns were categorical so we can restore dtype consistency",
+     "        self._categorical_categories = {}"
+    ]
+   },
+   {
+    "file": "synthla_edu_v2.py",
+    "line": 871,
+    "text": "from sdv.metadata import SingleTableMetadata  # type: ignore",
+    "context": [
+     "        self._model = None",
+     "        self._categorical_categories: Dict[str, List[str]] = {}",
+     "",
+     "    def fit(self, df_train: pd.DataFrame) -> \"CTGANSynth\":",
+     "        from sdv.metadata import SingleTableMetadata  # type: ignore",
+     "        from sdv.single_table import CTGANSynthesizer  # type: ignore",
+     "",
+     "        # Remember which columns were categorical so we can restore dtype consistency",
+     "        self._categorical_categories = {}"
+    ]
+   },
+   {
+    "file": "synthla_edu_v2.py",
+    "line": 1042,
+    "text": "from sdv.metadata import SingleTableMetadata  # type: ignore",
+    "context": [
+     "",
+     "    # Detect metadata using SDV for compatibility with newer sdmetrics requiring metadata",
+     "    metadata_dict: Optional[Dict[str, Any]] = None",
+     "    try:",
+     "        from sdv.metadata import SingleTableMetadata  # type: ignore",
+     "",
+     "        md = SingleTableMetadata()",
+     "        md.detect_from_dataframe(real)",
+     "        metadata_dict = md.to_dict()"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "synthla_edu_v2.py",
+    "line": 803,
+    "text": "from sdv.metadata import SingleTableMetadata  # type: ignore",
+    "context": [
+     "        self._model = None",
+     "        self._categorical_categories: Dict[str, List[str]] = {}",
+     "",
+     "    def fit(self, df_train: pd.DataFrame) -> \"GaussianCopulaSynth\":",
+     "        from sdv.metadata import SingleTableMetadata  # type: ignore",
+     "        from sdv.single_table import GaussianCopulaSynthesizer  # type: ignore",
+     "",
+     "        # Remember which columns were categorical so we can restore dtype consistency",
+     "        self._categorical_categories = {}"
+    ]
+   },
+   {
+    "file": "synthla_edu_v2.py",
+    "line": 804,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer  # type: ignore",
+    "context": [
+     "        self._categorical_categories: Dict[str, List[str]] = {}",
+     "",
+     "    def fit(self, df_train: pd.DataFrame) -> \"GaussianCopulaSynth\":",
+     "        from sdv.metadata import SingleTableMetadata  # type: ignore",
+     "        from sdv.single_table import GaussianCopulaSynthesizer  # type: ignore",
+     "",
+     "        # Remember which columns were categorical so we can restore dtype consistency",
+     "        self._categorical_categories = {}",
+     "        for col in df_train.columns:"
+    ]
+   },
+   {
+    "file": "synthla_edu_v2.py",
+    "line": 871,
+    "text": "from sdv.metadata import SingleTableMetadata  # type: ignore",
+    "context": [
+     "        self._model = None",
+     "        self._categorical_categories: Dict[str, List[str]] = {}",
+     "",
+     "    def fit(self, df_train: pd.DataFrame) -> \"CTGANSynth\":",
+     "        from sdv.metadata import SingleTableMetadata  # type: ignore",
+     "        from sdv.single_table import CTGANSynthesizer  # type: ignore",
+     "",
+     "        # Remember which columns were categorical so we can restore dtype consistency",
+     "        self._categorical_categories = {}"
+    ]
+   },
+   {
+    "file": "synthla_edu_v2.py",
+    "line": 872,
+    "text": "from sdv.single_table import CTGANSynthesizer  # type: ignore",
+    "context": [
+     "        self._categorical_categories: Dict[str, List[str]] = {}",
+     "",
+     "    def fit(self, df_train: pd.DataFrame) -> \"CTGANSynth\":",
+     "        from sdv.metadata import SingleTableMetadata  # type: ignore",
+     "        from sdv.single_table import CTGANSynthesizer  # type: ignore",
+     "",
+     "        # Remember which columns were categorical so we can restore dtype consistency",
+     "        self._categorical_categories = {}",
+     "        for col in df_train.columns:"
+    ]
+   },
+   {
+    "file": "synthla_edu_v2.py",
+    "line": 1042,
+    "text": "from sdv.metadata import SingleTableMetadata  # type: ignore",
+    "context": [
+     "",
+     "    # Detect metadata using SDV for compatibility with newer sdmetrics requiring metadata",
+     "    metadata_dict: Optional[Dict[str, Any]] = None",
+     "    try:",
+     "        from sdv.metadata import SingleTableMetadata  # type: ignore",
+     "",
+     "        md = SingleTableMetadata()",
+     "        md.detect_from_dataframe(real)",
+     "        metadata_dict = md.to_dict()"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "synthla_edu_v2.py",
+    "line": 872,
+    "text": "from sdv.single_table import CTGANSynthesizer  # type: ignore",
+    "context": [
+     "        self._categorical_categories: Dict[str, List[str]] = {}",
+     "",
+     "    def fit(self, df_train: pd.DataFrame) -> \"CTGANSynth\":",
+     "        from sdv.metadata import SingleTableMetadata  # type: ignore",
+     "        from sdv.single_table import CTGANSynthesizer  # type: ignore",
+     "",
+     "        # Remember which columns were categorical so we can restore dtype consistency",
+     "        self._categorical_categories = {}",
+     "        for col in df_train.columns:"
+    ]
+   },
+   {
+    "file": "synthla_edu_v2.py",
+    "line": 892,
+    "text": "self._model = CTGANSynthesizer(md, epochs=self.params.get(\"epochs\", 300), batch_size=self.params.get(\"batch_size\", 500))",
+    "context": [
+     "                df_fixed[col] = df_fixed[col].astype(str).replace({'55<=': '55_plus', '0-35': '0_35', '35-55': '35_55'})",
+     "        ",
+     "        md = SingleTableMetadata()",
+     "        md.detect_from_dataframe(df_fixed)",
+     "        self._model = CTGANSynthesizer(md, epochs=self.params.get(\"epochs\", 300), batch_size=self.params.get(\"batch_size\", 500))",
+     "        self._model.fit(df_fixed)",
+     "        return self",
+     "",
+     "    def sample(self, n: int, *, random_state: Optional[int] = None) -> pd.DataFrame:"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "synthla_edu_v2.py",
+    "line": 804,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer  # type: ignore",
+    "context": [
+     "        self._categorical_categories: Dict[str, List[str]] = {}",
+     "",
+     "    def fit(self, df_train: pd.DataFrame) -> \"GaussianCopulaSynth\":",
+     "        from sdv.metadata import SingleTableMetadata  # type: ignore",
+     "        from sdv.single_table import GaussianCopulaSynthesizer  # type: ignore",
+     "",
+     "        # Remember which columns were categorical so we can restore dtype consistency",
+     "        self._categorical_categories = {}",
+     "        for col in df_train.columns:"
+    ]
+   },
+   {
+    "file": "synthla_edu_v2.py",
+    "line": 828,
+    "text": "self._model = GaussianCopulaSynthesizer(md, **self.params)",
+    "context": [
+     "                df_fixed[col] = df_fixed[col].astype(str).replace({'55<=': '55_plus', '0-35': '0_35', '35-55': '35_55'})",
+     "        ",
+     "        md = SingleTableMetadata()",
+     "        md.detect_from_dataframe(df_fixed)",
+     "        self._model = GaussianCopulaSynthesizer(md, **self.params)",
+     "        self._model.fit(df_fixed)",
+     "        return self",
+     "",
+     "    def sample(self, n: int, *, random_state: Optional[int] = None) -> pd.DataFrame:"
+    ]
+   }
+  ],
+  "sm": [
+   {
+    "file": "synthla_edu_v2.py",
+    "line": 1035,
+    "text": "from sdmetrics.reports.single_table import QualityReport  # type: ignore",
+    "context": [
+     "# -------------------------------",
+     "",
+     "def sdmetrics_quality(real: pd.DataFrame, syn: pd.DataFrame) -> Dict[str, Any]:",
+     "    try:",
+     "        from sdmetrics.reports.single_table import QualityReport  # type: ignore",
+     "    except Exception as e:",
+     "        raise ImportError(\"sdmetrics is required. Install with: pip install sdmetrics\") from e",
+     "",
+     "    # Detect metadata using SDV for compatibility with newer sdmetrics requiring metadata"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "gc",
+  "md",
+  "sdv_any",
+  "sm",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv>=1.0",
+   "sdmetrics>=0.14"
+  ]
+ }
+}

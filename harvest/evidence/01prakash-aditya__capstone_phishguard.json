@@ -1,0 +1,126 @@
+{
+ "repo": "01prakash-aditya/capstone_phishguard",
+ "disk_kb": 220153,
+ "method": "partial_clone",
+ "tree_files": 75,
+ "status": "ok",
+ "readme": "# PhishGuard++\n\n**PhishGuard++** is an ultra-reliable, multi-modal phishing detection system featuring a **5-tier cascade architecture** (including community cache). It provides real-time protection by orchestrating Edge, Cloud, and LLM (Gemini) intelligence to achieve >99.5% F1-score with minimal latency.\n\n[![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/release/python-3110/)\n[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)\n[![Google Solutions Challenge](https://img.shields.io/badge/Solutions%20Challenge-2026-green)](https://developers.google.com/community/solutions-challenge)\n[![FastAPI](https://img.shields.io/badge/Backend-FastAPI-green.svg)](https://fastapi.tiangolo.com/)\n[![PyTorch](https://img.shields.io/badge/DL-PyTorch-red.svg)](https://pytorch.org/)\n[![Chrome Extension](https://img.shields.io/badge/Extension-Chrome%20MV3-yellow.svg)](https://developer.chrome.com/docs/extensions/)\n\n---\n\n## Architecture: The 5-Tier Cascade\n\nPhishGuard++ uses a hierarchical approach to balance speed and accuracy. Only the most ambiguous cases reach the heavy LLM layer. Community-driven caching ensures previously analyzed URLs are resolved instantly.\n\n```mermaid\ngraph TD\n    A[URL Input] --> B{Tier 0: Community Cache<br/>Firebase Realtime DB}\n    B -- Cache Hit --> Z[Instant Verdict]\n    B -- Cache Miss --> C{Tier 1: Edge<br/>ONNX Runtime WASM<br/>Sub-15ms}\n    \n    C -- Confident<br/>score < 0.35 or > 0.75 --> Z\n    C -- Ambiguous<br/>0.35-0.75 --> D{Tier 2: Cloud<br/>Safe Browsing API<br/>+ Tabular Models}\n    \n    D -- Confident --> Z\n    D -- Ambiguous<br/>confidence < 0.6 --> E{Tier 3: Multimodal Fusion<br/>Color CNN + BERT Text<br/>+ Attention Layer}\n    \n    E -- Confident --> Z\n    E -- Ambiguous<br/>confidence < 0.6 --> F{Tier 4: Gemini LLM<br/>Multi-modal Analysis<br/>HTML + Screenshot + Context}\n    \n    F --> Z\n    Z --> G[Risk Score + SHAP Explanation + Verdict]\n    Z --> H[Cache Result<br/>Firebase RT DB]\n```\n\n### The Tiers Explained\n\n| Tier | Name | Technology | Speed | Accuracy | Input |\n|------|------|-----------|-------|----------|-------|\n| **0** | Community Cache | Firebase Realtime DB | Instant | 100% | URL hash lookup |\n| **1** | Edge | ONNX Runtime (WASM) | <15ms | 88% | URL features, HTML excerpt |\n| **2** | Cloud | Safe Browsing API + LightGBM/XGBoost | <500ms | 94% | URL, Safe Browsing reputation |\n| **3** | Multimodal Fusion | Color CNN (PyTorch) + DistilBERT + Attention | <2s | 96% | Screenshot, OCR text, HTML |\n| **4** | Gemini LLM | Google Gemini 2.5 Flash | <10s | 99%+ | Raw HTML, Screenshots, Context |\n\n### Cascade Decision Logic\n- **Tier 1 Score < 0.35** → SAFE (high confidence edge verdict)\n- **Tier 1 Score > 0.75** → PHISH (high confidence edge verdict)  \n- **0.35 ≤ Score ≤ 0.75** → Escalate to Tier 2 (ambiguous)\n- **Tier 2-3 Confidence < 0.6** → Escalate to Gemini (ultra-ambiguous)\n\n---\n\n## Tech Stack\n\n### Frontend & Edge (Tier 1)\n- **Chrome Extension:** Manifest V3, Service Workers, Content Scripts.\n- **Inference Engine:** ONNX Runtime Web (WASM, multi-threaded).\n- **Feature Extraction:** DOM parsing, URL analysis, HTML excerpt extraction.\n- **Communication:** Async Fetch API with timeout fallbacks, Service Worker Message API.\n\n### Backend & Cloud (Tier 2, 3, 4)\n- **Framework:** FastAPI (Python 3.11) + Uvicorn (ASGI).\n- **API Security:** CORS middleware, request validation (Pydantic).\n- **LLM Integration:** Google Genai SDK (Gemini 2.5 Flash).\n- **Safe Browsing:** Google Safe Browsing API (asynchronous via httpx).\n\n### Deep Learning Models (Tier 3: Multimodal Fusion)\n- **Vision:** PyTorch CNN for color grading & visual feature extraction.\n- **NLP:** Hugging Face Transformers (DistilBERT-base-uncased, fine-tuned).\n- **Fusion:** Attention-based fusion layer + Logistic Regression.\n- **Framework:** PyTorch 2.1+, Transformers 4.35+, TorchVision 0.16+.\n\n### Classic ML Models\n- **Tabular:** LightGBM, XGBoost (Tier 1 & 2 lightweight classifiers).\n- **Hyperparameter Tuning:** Optuna.\n- **Feature Scaling:** Scikit-learn StandardScaler, ColumnTransformer.\n\n### Data & Model Artifacts\n- **Training Data Format:** CSV (features), JSON (metadata).\n- **Model Export:** PyTorch .pt, ONNX (quantized INT8), Joblib (sklearn pipelines).\n- **Storage Locations:**\n  - Edge models: `extension/models/site_multimodal/`\n  - Training artifacts: `extension/models/site_multimodal/` (checkpoint-*/\n  - Evaluation results: `results/`\n\n### Explainability & Interpretability\n- **Feature Attribution:** SHAP (TreeExplainer for tabular models).\n- **Visual Attribution:** Grad-CAM (EfficientNet heatmaps).\n- **Reasoning Pipeline:** Generates human-readable explanations for each verdict.\n\n### Data Augmentation & Synthesis\n- **Tabular:** SDV CTGAN for synthetic tabular data generation.\n- **HTML:** VAE-based latent feature learning.\n- **Image:** PyTorch transforms (rotation, color jitter, Gaussian blur).\n\n### Infrastructure & Deployment\n- **Containerization:** Docker (multi-stage build for Cloud Run).\n- **Cloud Platform:** Google Cloud Run (serverless, auto-scaling).\n- **Database:** Firebase Realtime Database (community threat intelligence).\n- **Monitoring & Logging:** Weights & Biases (W&B), Python logging.\n- **Model Storage:** Google Cloud Storage (GCS) for artifact versioning.\n\n### Development Tools\n- **Testing:** Python unittest, test_backend.py, test_production.py.\n- **Linting & Formatting:** Black, Flake8 (optional).\n- **Version Control:** Git, GitHub.\n- **Environment:** Python 3.11, pip, virtual environment (venv).\n\n---\n\n## Project Structure\n\n```text\ncapstone_pm/                          # Root directory\n│\n├── backend/                           # Tier 2, 3, 4 Cloud Backend (FastAPI)\n│   ├── __init__.py\n│   ├── main.py                        # FastAPI app, endpoints (/analyze/cloud, /analyze/multimodal, /explain)\n│   ├── firebase_db.py                 # Firebase Realtime DB integration (Tier 0 caching)\n│   └── [handlers for Tier 2-4 inference]\n│\n├── extension/                         # Chrome Extension (Manifest V3)\n│   ├── manifest.json                  # Extension manifest\n│   ├── background.js                  # Service Worker, Tier 1 orchestration\n│   ├── content.js                     # Content script, DOM interaction\n│   ├── popup.html / popup_v2.js       # UI for user verdicts\n│   ├── popup.css / overlay.css        # Styling\n│   ├── offscreen.html / offscreen.js  # Offscreen document for ONNX inference\n│   ├── icons/                         # Extension icons\n│   └── lib/                           # ONNX Runtime libraries\n│       ├── ort.wasm.min.js            # ONNX Runtime JS core\n│       ├── ort-wasm-threaded.js       # Multi-threaded WASM\n│       └── ort-wasm-threaded.worker.js\n│\n├── models/                            # [Artifacts] Trained models\n│   └── site_multimodal/               # Tier 1 & 3 models for browser/backend\n│       ├── color_grading_cnn.pt       # PyTorch CNN (visual feature extraction)\n│       ├── fusion_model.joblib        # Scikit-learn fusion model (Color + BERT outputs)\n│       ├── image_grade_model.joblib   # Image feature extraction pipeline\n│       ├── metadata.json              # Training metadata (AUC, F1, dataset info)\n│       ├── text_model/                # Fine-tuned DistilBERT\n│       │   ├── config.json\n│       │   ├── model.safetensors      # HF format model weights\n│       │   ├── tokenizer.json\n│       │   └── checkpoint-*/          # Training checkpoints (88, 500, 745, 9)\n│       ├── train.csv / val.csv / test.csv  # Dataset splits with labels\n│       └── site_manifest_with_features.csv # Feature extraction results\n│\n├── src/                               # Source code for training & evaluation\n│   ├── __init__.py\n│   ├── api/\n│   │   └── main.py                    # Alternate API entry point\n│   ├── data/\n│   │   ├── __init__.py\n│   │   ├── dataset_builder.py         # Build training datasets from screenshots\n│   │   ├── gan_augmentation.py        # CTGAN synthetic data generation\n│   │   └── screenshot_renderer.py     # Render websites to screenshots\n│   ├── features/\n│   │   ├── __init__.py\n│   │   ├── extract_all.py             # Master feature extraction orchestrator\n│   │   ├── url_features.py            # URL lexical analysis\n│   │   └── html_features.py           # DOM/HTML feature extraction\n│   ├── models/\n│   │   ├── __init__.py\n│   │   ├── site_multimodal.py         # Main Tier 3 model (Color CNN + BERT + Fusion)\n│   │   ├── attention_fusion.py        # Attention-based fusion layer\n│   │   ├── baseline_race.py           # Baseline comparison models\n│   │   ├── bert_finetune.py           # DistilBERT fine-tuning pipeline\n│   │   ├── efficientnet_visual.py     # EfficientNet visual model (archived)\n│   │   ├── fusion_data_generator.py   # Generate training data for fusion layer\n│   │   ├── inference_pipeline.py      # Unified inference interface\n│   │   ├── onnx_export.py             # Export models to ONNX format\n│   │   ├── vae_html.py                # VAE for HTML latent features\n│   │   └── __pycache__/\n│   ├── evaluation/\n│   │   ├── __init__.py\n│   │   ├── benchmark.py               # Benchmark evaluation scripts\n│   │   └── adversarial_testset.py     # Adversarial attack generation\n│   └── explainability/\n│       ├── __init__.py\n│       └── shap_pipeline.py           # SHAP-based explanation generation\n│\n├── dataset/                           # Training data\n│   ├── genuine_site_0/                # Legitimate website screenshots\n│   └── phishing_site_1/               # Phishing website screenshots\n│\n├── results/                           # Evaluation outputs\n│   └── baseline_race_results.csv      # Benchmark results\n│\n├── Dockerfile                         # Cloud Run containerization (Python 3.11-slim)\n├── entrypoint.sh                      # Docker entrypoint (model loading from GCS)\n├── train_multimodal.py                # Main training entry point\n├── test_backend.py                    # Backend unit tests\n├── test_production.py                 # Production integration tests\n├── requirements.txt                   # Python dependencies (see below)\n├── MULTIMODAL_ENHANCEMENT.md          # Architecture documentation (archived)\n├── README.md                          # This file\n└── .env                               # Environment variables (GEMINI_API_KEY, etc.)\n\n---\n\n## Getting Started\n\n### Prerequisites\n- **Python 3.11+** (Recommended: Python 3.11)\n- **Chrome Browser** (with Developer Mode enabled for extension loading)\n- **CUDA 12.1+** (Optional, for GPU-accelerated training; CPU works for inference)\n- **Git** for cloning the repository\n\n### 1. Backend Setup (Tier 2, 3, 4 Cloud Services)\n\n#### Step 1.1: Clone Repository & Create Virtual Environment\n```bash\n# Clone the repository\ngit clone https://github.com/naksshhh/PhishGuard.git\ncd PhishGuard\n\n# Create Python virtual environment\npython -m venv venv\n\n# Activate virtual environment\n# On Windows:\nvenv\\Scripts\\activate\n# On macOS/Linux:\nsource venv/bin/activate\n```\n\n#### Step 1.2: Install Dependencies\n```bash\n# Install all required packages\npip install -r requirements.txt\n\n# (Optional) If using GPU, install PyTorch with CUDA support:\npip install torch torchvision --index-url https://download.pytorch.org/whl/cu121\n```\n\n#### Step 1.3: Configure Environment Variables\nCreate a `.env` file in the root directory:\n```bash\n# .env\nGEMINI_API_KEY=your_google_gemini_api_key_here\nSAFE_BROWSING_API_KEY=your_safe_browsing_api_key_here\nFIREBASE_CREDENTIALS_PATH=path/to/firebase_credentials.json\nGCS_BUCKET=your-gcs-bucket-name\nPORT=8000\n```\n\n#### Step 1.4: Run Backend Server\n```bash\n# Development (with auto-reload)\npython -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload\n\n# Production (without auto-reload)\npython -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 --workers 4\n\n# The API will be available at: http://localhost:8000\n# API Documentation: http://localhost:8000/docs (Swagger UI)\n```\n\n### 2. Training Models (Tier 1 & 3)\n\n#### Train Multimodal Phishing Detector\n```bash\n# Full training pipeline (Color CNN + BERT + Fusion Model)\npython train_multimodal.py --train\n\n# Training with custom parameters\npython train_multimodal.py --train --epochs 10 --max-samples 50000\n\n# Quick test run (small dataset, 2 epochs)\npython train_multimodal.py --train --epochs 2 --max-samples 1000\n\n# Display current model metadata\npython train_multimodal.py\n```\n\n**Expected Output:**\n- Trained models saved to: `extension/models/site_multimodal/`\n- Checkpoints saved to: `extension/models/site_multimodal/text_model/checkpoint-*/`\n- Metrics logged to: `extension/models/site_multimodal/metadata.json`\n\n### 3. Extension Installation (Tier 1 Edge Inference)\n\n#### Step 3.1: Load Extension in Chrome\n1. Open Chrome and navigate to `chrome://extensions/`\n2. Enable **Developer mode** (toggle in top-right corner)\n3. Click **Load unpacked**\n4. Select the `extension/` folder from the repository\n\n#### Step 3.2: Configure Extension\n- The extension will automatically load ONNX models from `extension/models/site_multimodal/`\n- Set backend URL in `extension/background.js` (default: local or Cloud Run URL)\n\n#### Step 3.3: Test Extension\n- Navigate to any website\n- Click the PhishGuard++ extension icon\n- View real-time phishing score and explanation\n\n### 4. Testing & Evaluation\n\n#### Backend Unit Tests\n```bash\n# Run backend tests\npython test_backend.py\n\n# Test specific functionality\npython -m pytest test_backend.py -v\n```\n\n#### Production Integration Tests\n```bash\n# Full end-to-end production test\npython test_production.py\n\n# Test with specific URLs\npython test_production.py --url https://example.com\n```\n\n#### Benchmark Evaluation\n```bash\n# Run adversarial benchmark\npython -c \"from src.evaluation.benchmark import run_benchmark; run_benchmark()\"\n\n# Results saved to: results/baseline_race_results.csv\n```\n\n### 5. Docker Deployment (Google Cloud Run)\n\n#### Build & Run Locally\n```bash\n# Build Docker image\ndocker build -t phishguard-backend .\n\n# Run locally\ndocker run -p 8000:8080 \\\n  -e GEMINI_API_KEY=your_key \\\n  -e FIREBASE_CREDENTIALS_PATH=/app/credentials.json \\\n  phishguard-backend\n```\n\n#### Deploy to Google Cloud Run\n```bash\n# Build and push to Cloud Run\ngcloud run deploy phishguard-backend \\\n  --source . \\\n  --platform managed \\\n  --region us-central1 \\\n  --allow-unauthenticated \\\n  --set-env-vars GEMINI_API_KEY=your_key\n```\n\n---\n\n## API Endpoints (Backend)\n\n### Core Analysis Endpoints\n\n#### `POST /analyze/cloud`\nTier 2 Cloud Analysis (Safe Browsing + Tabular ML)\n```json\nRequest:\n{\n  \"url\": \"https://example.com\",\n  \"htmlExcerpt\": \"<html>...</html>\",\n  \"screenshotBase64\": \"data:image/png;base64,...\"\n}\n\nResponse:\n{\n  \"verdict\": \"SAFE\" | \"PHISH\" | \"SUSPICIOUS\",\n  \"score\": 0.45,\n  \"tier\": 2,\n  \"confidence\": 0.92,\n  \"reason\": \"URL reputation clean, no Safe Browsing flags\"\n}\n```\n\n#### `POST /analyze/multimodal`\nTier 3 Multimodal Fusion Analysis (Color CNN + BERT + Fusion)\n```json\nRequest:\n{\n  \"url\": \"https://example.com\",\n  \"screenshot\": \"data:image/png;base64,...\",\n  \"ocrText\": \"Login to confirm your account...\",\n  \"htmlExcerpt\": \"<html>...</html>\"\n}\n\nResponse:\n{\n  \"verdict\": \"SAFE\" | \"PHISH\",\n  \"score\": 0.78,\n  \"tier\": 3,\n  \"colorScore\": 0.82,\n  \"textScore\": 0.75,\n  \"fusionScore\": 0.78,\n  \"confidence\": 0.95,\n  \"explanation\": \"Detected urgency language and suspicious color scheme\"\n}\n```\n\n#### `POST /explain`\nGet SHAP-based Explainability\n```json\nRequest:\n{\n  \"url\": \"https://example.com\",\n  \"features\": { /* feature dict */ }\n}\n\nResponse:\n{\n  \"topFeatures\": [\n    { \"feature\": \"domain_age\", \"impact\": -0.23, \"direction\": \"safe\" },\n    { \"feature\": \"urgency_keywords\", \"impact\": 0.45, \"direction\": \"phish\" }\n  ],\n  \"explanation\": \"Primary indicators: urgency language, recent domain registration\"\n}\n```\n\n### Health & Metadata\n\n#### `GET /health`\nServer health check\n```json\nResponse:\n{\n  \"status\": \"healthy\",\n  \"timestamp\": \"2025-04-23T10:30:00Z\",\n  \"gemini_available\": true,\n  \"firebase_available\": true\n}\n```\n\n#### `GET /models/metadata`\nCurrent model versions and metrics\n```json\nResponse:\n{\n  \"tier1\": {\n    \"type\": \"ONNX LightGBM\",\n    \"accuracy\": 0.88,\n    \"latency_ms\": 12\n  },\n  \"tier3\": {\n    \"colorModel\": \"CNN (color_grading_cnn.pt)\",\n    \"textModel\": \"DistilBERT\",\n    \"fusionModel\": \"LogisticRegression\",\n    \"testAuc\": 0.96,\n    \"testF1\": 0.95\n  },\n  \"tier4\": {\n    \"llmModel\": \"Gemini 2.5 Flash\",\n    \"status\": \"available\"\n  }\n}\n```\n\n---\n\n## Model Specifications\n\n### Tier 1: Edge Model (ONNX)\n- **Type:** LightGBM classifier (quantized to INT8)\n- **Input:** URL features (domain age, IP info, certificate status, etc.)\n- **Output:** Phishing probability [0, 1]\n- **Latency:** <15ms (browser-side)\n- **File:** Part of extension ONNX bundle\n\n### Tier 3: Color Grading CNN\n- **Architecture:** 3 convolutional blocks + adaptive pooling\n- **Input:** Screenshot (224x224 RGB)\n- **Output:** Visual phishing score [0, 1]\n- **File:** `extension/models/site_multimodal/color_grading_cnn.pt`\n\n### Tier 3: BERT Text Classifier\n- **Base Model:** DistilBERT-base-uncased (fine-tuned)\n- **Input:** Concatenated text (URL + OCR + HTML excerpt)\n- **Output:** Text phishing score [0, 1]\n- **Training Data:** 394k+ manually labeled samples\n- **Files:**\n  - Model: `extension/models/site_multimodal/text_model/model.safetensors`\n  - Tokenizer: `extension/models/site_multimodal/text_model/tokenizer.json`\n\n### Tier 3: Fusion Model\n- **Type:** Logistic Regression with Attention weighting\n- **Input:** [Color score, Text score, additional features]\n- **Output:** Fused phishing score [0, 1]\n- **File:** `extension/models/site_multimodal/fusion_model.joblib`\n\n### Tier 4: Gemini LLM\n- **Model:** Google Gemini 2.5 Flash\n- **Input:** Raw HTML, screenshot, context, prior scores\n- **Output:** PHISH/SAFE verdict with reasoning\n- **API:** Google Genai SDK\n\n---\n\n## Performance Metrics\n\n| Metric | Value | Source |\n|--------|-------|--------|\n| **Overall F1-Score** | 99.2% | Test set evaluation |\n| **Precision** | 99.8% | False positive rate: 0.2% |\n| **Recall** | 98.7% | False negative rate: 1.3% |\n| **Tier 1 Accuracy** | 88% | Edge inference accuracy |\n| **Tier 3 AUC-ROC** | 0.96 | Multimodal fusion |\n| **Avg. Response Time** | 42ms | Tier 1+2 combined |\n| **Cache Hit Rate** | 68% | Community database |\n\n---\n\n## Important Files & Directories\n\n### Configuration Files\n- [.env](.env) - Environment variables (API keys, credentials)\n- [requirements.txt](requirements.txt) - Python package dependencies\n- [Dockerfile](Dockerfile) - Cloud Run deployment config\n- [entrypoint.sh](entrypoint.sh) - Docker startup script\n\n### Model Artifacts\n- [extension/models/site_multimodal/](extension/models/site_multimodal/) - Trained models directory\n  - `color_grading_cnn.pt` - Visual CNN model\n  - `fusion_model.joblib` - Fusion layer weights\n  - `text_model/` - Fine-tuned DistilBERT\n\n### Training & Testing\n- [train_multimodal.py](train_multimodal.py) - Main training entry point\n- [test_backend.py](test_backend.py) - Backend unit tests\n- [test_production.py](test_production.py) - Production integration tests\n\n### Source Code\n- [backend/main.py](backend/main.py) - FastAPI server\n- [src/models/site_multimodal.py](src/models/site_multimodal.py) - Core model implementation\n- [src/models/attention_fusion.py](src/models/attention_fusion.py) - Attention fusion layer\n- [extension/background.js](extension/background.js) - Extension service worker\n\n---\n\n## Troubleshooting\n\n### Backend Issues\n\n**Issue: `ModuleNotFoundError: No module named 'backend'`**\n```bash\n# Solution: Add current directory to Python path\nexport PYTHONPATH=\"${PYTHONPATH}:$(pwd)\"\npython -m uvicorn backend.main:app --reload\n```\n\n**Issue: CUDA out of memory during training**\n```bash\n# Solution: Use CPU or reduce batch size\nexport CUDA_VISIBLE_DEVICES=\"\"  # Force CPU\npython train_multimodal.py --train --max-samples 5000\n```\n\n**Issue: Gemini API key not found**\n```bash\n# Solution",
+ "hits": {
+  "st": [
+   {
+    "file": "src/data/gan_augmentation.py",
+    "line": 14,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from pathlib import Path",
+     "",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "",
+     "logging.basicConfig(level=logging.INFO, format=\"%(asctime)s [%(levelname)s] %(message)s\")",
+     "logger = logging.getLogger(__name__)"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "src/data/gan_augmentation.py",
+    "line": 15,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "",
+     "logging.basicConfig(level=logging.INFO, format=\"%(asctime)s [%(levelname)s] %(message)s\")",
+     "logger = logging.getLogger(__name__)",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "src/data/gan_augmentation.py",
+    "line": 14,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from pathlib import Path",
+     "",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "",
+     "logging.basicConfig(level=logging.INFO, format=\"%(asctime)s [%(levelname)s] %(message)s\")",
+     "logger = logging.getLogger(__name__)"
+    ]
+   },
+   {
+    "file": "src/data/gan_augmentation.py",
+    "line": 15,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "",
+     "logging.basicConfig(level=logging.INFO, format=\"%(asctime)s [%(levelname)s] %(message)s\")",
+     "logger = logging.getLogger(__name__)",
+     ""
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "src/data/gan_augmentation.py",
+    "line": 14,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from pathlib import Path",
+     "",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "",
+     "logging.basicConfig(level=logging.INFO, format=\"%(asctime)s [%(levelname)s] %(message)s\")",
+     "logger = logging.getLogger(__name__)"
+    ]
+   },
+   {
+    "file": "src/data/gan_augmentation.py",
+    "line": 54,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "    )",
+     "",
+     "    # Initialize and train CTGAN",
+     "    # Note: For demo/speed, we use fewer epochs. In production, 100+ is better.",
+     "    synthesizer = CTGANSynthesizer(",
+     "        metadata,",
+     "        enforce_rounding=False,",
+     "        epochs=50,",
+     "        verbose=True,"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv>=1.7.0          # CTGAN for tabular augmentation"
+  ]
+ }
+}

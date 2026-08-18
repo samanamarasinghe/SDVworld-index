@@ -1,0 +1,259 @@
+{
+ "repo": "shauneccles/sanitizer",
+ "disk_kb": 312,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Sanitizer\n\nGenerate fully synthetic versions of Excel data while preserving relational metadata, statistical distributions, and structural patterns. Point it at a folder of `.xlsx` files and get back fake data that looks and behaves like the real thing — without any of the real values.\n\nBuilt with [Streamlit](https://streamlit.io/), [SDV (Synthetic Data Vault)](https://sdv.dev/), [Polars](https://pola.rs/), and [Faker](https://faker.readthedocs.io/).\n\n## Why\n\nYou need realistic test data, a demo dataset, or a safe copy of production data for development — but the original contains PII, financial records, or other sensitive information. Sanitizer automates this by:\n\n1. Detecting the structure of your data (primary keys, foreign keys, dimensions, date orderings)\n2. Fitting statistical models to learn distributions and correlations\n3. Generating new rows that follow the same patterns with entirely synthetic values\n4. Replacing text columns (names, emails, addresses) with plausible Faker-generated values\n\nThe output contains zero original records. Foreign key references between tables remain valid.\n\n## Quick Start\n\n```bash\n# Install dependencies (requires Python 3.11+, uses uv)\nuv sync\n\n# Run the app\nstreamlit run app.py\n\n# Run with a pre-filled folder path\nstreamlit run app.py test_data\n```\n\nOpen the URL printed by Streamlit (typically `http://localhost:8501`).\n\n## Usage Walkthrough\n\nSanitizer operates in four phases, driven by the UI:\n\n### Phase 1 — Load\n\nEnter the path to a folder containing `.xlsx` or `.xls` files and click **Load & Analyze**. Every Excel file in the folder (including subdirectories) is read — multi-sheet workbooks produce one table per non-empty sheet (named `filename_sheetname`). Single-sheet workbooks use the filename as the table name.\n\nYou can optionally upload a previously saved config JSON to restore analysis settings from a prior session.\n\n### Phase 2 — Review\n\nAfter loading, the analyzer has auto-detected metadata for every table. This phase lets you inspect and override everything before synthesis.\n\n**Tables Overview** shows row counts, detected primary keys, foreign key counts, and dimension counts for each table at a glance.\n\n**Per-table detail** (expand any table) shows an editable grid of column metadata:\n\n| Field | Meaning |\n|-------|---------|\n| SDType | The SDV semantic type: `id`, `numerical`, `datetime`, `categorical`, `boolean`, or `unknown` |\n| Role | How the column is treated: `primary_key`, `foreign_key`, `dimension`, `measure`, `text`, `date`, `other` |\n| Primary Key | Check to mark as PK (only one per table) |\n| FK Target | If a foreign key, the `parent_table.column` it references (dropdown of available PKs) |\n| Faker | Override the Faker provider for text columns (e.g., `email`, `name`, `company`) |\n\nYou can change any value in the grid. Edits are validated — invalid SDType or Role values are rejected with a warning.\n\n**Synthetic Preview** (inside each table expander) shows a fast heuristic preview of what synthetic data would look like — structurally plausible rows generated in milliseconds without SDV fitting.\n\n**Relationships** shows an interactive column-level graph for drag-and-drop relationship building. Columns from different tables can be connected by dragging between them. Existing relationships appear as animated edges. You can also right-click edges to delete them, or use the manual linker as a fallback.\n\nThe graph shows key and dimension columns by default — toggle **Show all columns** to see every column. Nodes are color-coded: gold for primary keys, blue for foreign keys, green for dimensions. Table headers can be dragged to rearrange the layout.\n\n**Date Constraints** shows detected column orderings (e.g., `order_date <= ship_date`). These are enforced during synthesis so the synthetic data maintains temporal logic.\n\n**Dimension Groups** shows sets of low-cardinality columns with functional dependencies (e.g., `region` and `country` always appear in the same combinations). These are preserved as fixed combinations during synthesis.\n\n**Config** — Download or upload the current analysis as a JSON config file to reuse settings across sessions.\n\n**Synthesis Controls** at the bottom of the review page:\n\n- **Scale factor** — Multiplier for row counts. `1.0` produces the same number of rows as the original. `2.0` doubles them.\n- **Random seed** — Set a non-zero value for reproducible output. Leave at `0` for non-deterministic generation.\n\nClick **Generate Synthetic Data** to proceed.\n\n### Phase 3 — Synthesize\n\nA progress bar tracks the synthesis pipeline. Any issues (failed constraints, metadata warnings, HMA fallback) are displayed as warnings in real time rather than silently logged.\n\nIf multi-table synthesis via HMA fails, the system automatically falls back to per-table Gaussian Copula synthesis.\n\n### Phase 4 — Output\n\nOnce synthesis completes, you can:\n\n- **Preview** the first 20 rows of each synthetic table\n- **Download individual tables** as `.xlsx` files\n- **Download all tables** as a single `.zip` archive\n- **Save to a folder** on disk (the path is validated before writing; subdirectory structure from the original folder is preserved)\n\nClick **Back to Review** to adjust settings and re-generate.\n\n## How It Works\n\n### Pipeline Architecture\n\n```\nExcel files on disk\n        |\n   [1. LOAD]        loader.py — Polars reads via fastexcel, converts to pandas for SDV\n        |\n   [2. ANALYZE]     analyzer.py — Auto-detects PKs, FKs, dimensions, date constraints, text columns\n        |\n   [3. SYNTHESIZE]  synthesizer.py — Builds SDV metadata, fits models, generates rows, Faker post-processes text\n        |\n   [4. WRITE]       writer.py — Exports to .xlsx files, in-memory buffers, or .zip\n```\n\n### Loading (`sanitizer/loader.py`)\n\n- Discovers all `.xlsx` / `.xls` files in the given folder and subdirectories\n- Reads each sheet using `fastexcel` + `polars` for speed\n- Converts to pandas DataFrames (required by SDV, which expects `datetime64[ns]`)\n- Sanitizes table names to remove filesystem-unsafe characters\n- Disambiguates duplicate table names by appending `_2`, `_3`, etc.\n- Tracks relative subdirectory paths so output preserves folder structure\n\n### Analysis (`sanitizer/analyzer.py`)\n\nThe analyzer runs three phases over the Polars DataFrames:\n\n**Primary Key Detection** — Looks for non-null columns with high uniqueness ratio (>= 95%) whose names end in common PK patterns (`_id`, `_key`, `_code`, etc.). Falls back to any 100%-unique column if no suffix match is found.\n\n**Foreign Key Detection** — For each detected PK, scans all other tables for columns with matching names and >= 80% value overlap with the parent PK values. Column name matching checks:\n- Exact name match (`customer_id` = `customer_id`)\n- Table-prefixed match (`customers_customer_id`)\n- Table-suffixed ID (`customers_id`)\n\n**Per-Table Analysis:**\n\n| Detection | Method |\n|-----------|--------|\n| Dimensions | String/categorical columns with cardinality ratio below an adaptive threshold (50% for <50 rows, 15% for <200, 5% otherwise) |\n| Dimension groups | Pairs of dimensions with functional dependencies (the distinct-pair count equals one column's distinct count) |\n| Date constraints | Pairs of date/datetime columns where `col_a <= col_b` holds for >= 98% of rows |\n| Text columns | High-cardinality string columns with average length > 3 characters |\n\n**Column Classification** maps each column to an SDV `sdtype` (`id`, `numerical`, `datetime`, `categorical`, `boolean`, `unknown`) and a `ColumnRole` (`primary_key`, `foreign_key`, `dimension`, `measure`, `text`, `date`, `other`).\n\n### Synthesis (`sanitizer/synthesizer.py`)\n\n1. **Text column removal** — Text columns are dropped from the data before fitting (they'd add noise to statistical models). They're restored with Faker values after synthesis.\n\n2. **SDV metadata construction** — Builds an `sdv.metadata.Metadata` object from the analysis results: sets primary keys, column sdtypes, datetime formats, and parent-child relationships.\n\n3. **Constraint construction** — Creates SDV `Inequality` constraints for date orderings and `FixedCombinations` constraints for dimension groups.\n\n4. **Model fitting and sampling:**\n   - If tables have relationships and there are <= 10 tables: uses `HMASynthesizer` (Hierarchical Modeling Approach) for multi-table synthesis that respects relational structure\n   - Otherwise, or if HMA fails: falls back to per-table `GaussianCopulaSynthesizer`\n   - Scale factor controls how many rows to generate relative to the original\n\n5. **FK stitching** — After sampling, foreign key columns in child tables are replaced with values randomly drawn from the parent table's synthetic PK column. This ensures referential integrity even when using per-table synthesis.\n\n6. **Text post-processing** — Faker generates replacement values for text columns. Column names are matched against known patterns to select appropriate generators:\n\n   | Column name pattern | Faker generator |\n   |---------------------|-----------------|\n   | `name`, `full_name` | `fake.name()` |\n   | `first_name`, `fname` | `fake.first_name()` |\n   | `email`, `email_address` | `fake.email()` |\n   | `phone`, `telephone` | `fake.phone_number()` |\n   | `address`, `street` | `fake.address()` |\n   | `city` | `fake.city()` |\n   | `company`, `organization` | `fake.company()` |\n   | `url`, `website` | `fake.url()` |\n   | `description`, `comment`, `notes`, etc. | `fake.sentence()` |\n   | *(unrecognized)* | `fake.sentence(nb_words=6)` |\n\n   Matching uses word segments (split on `_`), not substring matching — so `username` won't incorrectly match the `name` pattern. Per-column overrides can be set in the UI's Faker dropdown.\n\n7. **Heuristic preview** — `preview_sample()` generates structurally plausible rows in milliseconds without SDV fitting, used for real-time feedback in the column editor. It samples from source data ranges for numerical/datetime columns, uses Faker for text, and draws from existing values for categoricals.\n\n### Config (`sanitizer/config.py`)\n\nSerializes and deserializes `AnalysisResult` objects to/from JSON, enabling save/reload of analysis configurations across sessions. Includes all column metadata, relationships, date constraints, dimension groups, and synthesis settings (scale, seed).\n\n### Writing (`sanitizer/writer.py`)\n\n- `write_excel_files()` — Writes one `.xlsx` per table to a folder on disk, preserving subdirectory structure\n- `dataframe_to_excel_buffer()` — Writes a single DataFrame to an in-memory `BytesIO` buffer\n- `create_zip_buffer()` — Bundles all tables into a `.zip` archive in memory\n\nAll output filenames are sanitized to remove unsafe characters.\n\n### UI (`sanitizer/ui.py`)\n\nThe Streamlit UI manages a four-phase state machine via `st.session_state`. Key features:\n\n- Editable column metadata grids with dropdown selectors for SDType, Role, FK Target, and Faker provider\n- Interactive column-level relationship graph via `streamlit-flow-component` — drag between columns to create relationships, right-click edges to delete\n- Draggable table headers to rearrange the relationship graph layout\n- Color-coded nodes: gold (PK), blue (FK), green (dimension)\n- Fast heuristic synthetic data preview per table\n- Inline date constraint and dimension group editors with add/remove controls\n- Real-time progress bar and warning display during synthesis\n- Config save/load for reusing analysis settings across sessions\n- Download buttons for individual and bulk export\n- Path validation for both input and output directories\n\n## Project Structure\n\n```\nsanitizer/\n    __init__.py         Package definition\n    models.py           Dataclasses: ColumnMeta, TableMeta, Relationship, etc.\n    loader.py           Excel file discovery and reading\n    analyzer.py         Auto-detection of keys, relationships, dimensions\n    synthesizer.py      SDV metadata, model fitting, sampling, Faker text, heuristic preview\n    config.py           JSON serialization/deserialization for analysis configs\n    writer.py           Excel/ZIP export\n    ui.py               Streamlit UI components and state management\napp.py                  Entry point — page config, phase routing\npyproject.toml          Dependencies and build config\ntest_data/              Sample Excel files (customers, orders, products)\n```\n\n## Configuration\n\n### Analyzer Thresholds\n\nThese constants in `sanitizer/analyzer.py` control auto-detection sensitivity:\n\n| Constant | Default | Effect |\n|----------|---------|--------|\n| `PK_UNIQUENESS_THRESHOLD` | 0.95 | Minimum uniqueness ratio for a column to be a PK candidate |\n| `FK_OVERLAP_THRESHOLD` | 0.80 | Minimum value overlap for a column to be detected as a FK |\n| `DIMENSION_CARDINALITY_THRESHOLD` | 0.05 | Maximum cardinality ratio for a column to be classified as a dimension (for tables with 200+ rows) |\n| `PK_SUFFIX_PATTERNS` | `_id`, `_key`, `_nr`, `_no`, `_pk`, `_code`, `id` | Column name suffixes that indicate PK candidates |\n\n### Synthesis Options\n\n| Option | UI Control | Default |\n|--------|-----------|---------|\n| Scale factor | Slider (0.1x – 10x) | 1.0 |\n| Random seed | Number input | 0 (non-deterministic) |\n\nSetting a non-zero seed makes Faker, NumPy, and SDV produce identical output across runs.\n\n### Faker Overrides\n\nPer-column Faker provider overrides can be set in the column editor dropdown. Available providers:\n\n`address`, `city`, `company`, `country`, `date`, `email`, `first_name`, `job`, `last_name`, `name`, `paragraph`, `phone`, `sentence`, `url`, `uuid`, `zipcode`\n\nSet to `auto` (default) to use name-pattern matching.\n\n## Dependencies\n\n| Library | Purpose |\n|---------|---------|\n| streamlit | Web UI framework |\n| polars | Fast Excel reading and data analysis |\n| fastexcel | High-performance Excel sheet discovery |\n| pandas | DataFrame format required by SDV |\n| sdv | Synthetic data generation (Gaussian Copula, HMA) |\n| faker | Realistic fake text values (names, emails, etc.) |\n| openpyxl | Excel `.xlsx` writing |\n| streamlit-flow-component | Interactive node graph for relationship building |\n\nRequires Python 3.11 or newer. Install with:\n\n```bash\nuv sync\n```\n\n## Limitations\n\n- **Input format** — Only `.xlsx` and `.xls` files. CSV, Parquet, and database connections are not supported.\n- **Memory** — Data is held in both Polars and pandas representations simultaneously. Very large datasets (millions of rows across many tables) may require significant RAM.\n- **HMA scaling** — Multi-table synthesis with HMA can be slow for datasets with many tables or complex relationship graphs. The app limits HMA to <= 10 tables and falls back to per-table synthesis otherwise.\n- **Text column matching** — Faker provider selection is heuristic. Columns with unusual names may get generic sentence output instead of domain-specific values. Use the Faker dropdown override for these cases.\n",
+ "hits": {
+  "gc": [
+   {
+    "file": "README.md",
+    "line": 154,
+    "text": "- Otherwise, or if HMA fails: falls back to per-table `GaussianCopulaSynthesizer`",
+    "context": [
+     "3. **Constraint construction** — Creates SDV `Inequality` constraints for date orderings and `FixedCombinations` constraints for dimension groups.",
+     "",
+     "4. **Model fitting and sampling:**",
+     "   - If tables have relationships and there are <= 10 tables: uses `HMASynthesizer` (Hierarchical Modeling Approach) for multi-table synthesis that respects relational structure",
+     "   - Otherwise, or if HMA fails: falls back to per-table `GaussianCopulaSynthesizer`",
+     "   - Scale factor controls how many rows to generate relative to the original",
+     "",
+     "5. **FK stitching** — After sampling, foreign key columns in child tables are replaced with values randomly drawn from the parent table's synthetic PK column. This ensures referential integrity even w",
+     ""
+    ]
+   },
+   {
+    "file": "CLAUDE.md",
+    "line": 46,
+    "text": "- **synthesizer.py** — Builds SDV metadata and constraints, chooses HMA (multi-table, ≤10 tables with relationships) or GaussianCopulaSynthesizer (per-table fallback), then post-processes text columns with Faker. Also provides `preview_sample()` for fast heuristic previews and `FAKER_TYPES`/`FAKER_T",
+    "context": [
+     "",
+     "- **models.py** — Dataclasses defining the pipeline's data structures: `ColumnRole` enum, `ColumnMeta` (with `faker_override` field), `TableMeta`, `AnalysisResult`, `Relationship`, `DateConstraintPair",
+     "- **loader.py** — Discovers .xlsx/.xls files in a folder (including subdirectories), reads sheets with fastexcel/polars, converts to pandas (required by SDV's datetime64[ns] expectation)",
+     "- **analyzer.py** — Auto-detects primary keys (95% uniqueness threshold), foreign keys (80% overlap threshold), dimensions (adaptive cardinality thresholds), date ordering constraints, and text column",
+     "- **synthesizer.py** — Builds SDV metadata and constraints, chooses HMA (multi-table, ≤10 tables with relationships) or GaussianCopulaSynthesizer (per-table fallback), then post-processes text columns",
+     "- **config.py** — JSON serialization/deserialization for `AnalysisResult` and settings, enabling save/reload of analysis configs across sessions",
+     "- **writer.py** — Exports synthetic data as individual .xlsx files, a single multi-sheet Excel buffer, or a .zip archive",
+     "- **ui.py** — Streamlit UI managing four phases (LOAD, REVIEW, SYNTHESIZE, DONE) via `st.session_state`. Includes interactive column-level relationship graph using `streamlit-flow-component`",
+     ""
+    ]
+   },
+   {
+    "file": "sanitizer/synthesizer.py",
+    "line": 15,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "from faker import Faker",
+     "from sdv.cag import FixedCombinations, Inequality",
+     "from sdv.metadata import Metadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "from sanitizer.models import AnalysisResult, ColumnRole",
+     "",
+     "logger = logging.getLogger(__name__)"
+    ]
+   },
+   {
+    "file": "sanitizer/synthesizer.py",
+    "line": 845,
+    "text": "synth = GaussianCopulaSynthesizer(metadata=table_meta)",
+    "context": [
+     "        table_meta = metadata.get_table_metadata(table_name)",
+     "        df = clean_data[table_name]",
+     "        n_rows = max(1, int(len(df) * scale))",
+     "",
+     "        synth = GaussianCopulaSynthesizer(metadata=table_meta)",
+     "        table_constraints = constraints_by_table.get(table_name, [])",
+     "        if table_constraints:",
+     "            try:",
+     "                synth.add_constraints(table_constraints)"
+    ]
+   }
+  ],
+  "hma": [
+   {
+    "file": "README.md",
+    "line": 153,
+    "text": "- If tables have relationships and there are <= 10 tables: uses `HMASynthesizer` (Hierarchical Modeling Approach) for multi-table synthesis that respects relational structure",
+    "context": [
+     "",
+     "3. **Constraint construction** — Creates SDV `Inequality` constraints for date orderings and `FixedCombinations` constraints for dimension groups.",
+     "",
+     "4. **Model fitting and sampling:**",
+     "   - If tables have relationships and there are <= 10 tables: uses `HMASynthesizer` (Hierarchical Modeling Approach) for multi-table synthesis that respects relational structure",
+     "   - Otherwise, or if HMA fails: falls back to per-table `GaussianCopulaSynthesizer`",
+     "   - Scale factor controls how many rows to generate relative to the original",
+     "",
+     "5. **FK stitching** — After sampling, foreign key columns in child tables are replaced with values randomly drawn from the parent table's synthetic PK column. This ensures referential integrity even w"
+    ]
+   },
+   {
+    "file": "sanitizer/synthesizer.py",
+    "line": 14,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from faker import Faker",
+     "from sdv.cag import FixedCombinations, Inequality",
+     "from sdv.metadata import Metadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "from sanitizer.models import AnalysisResult, ColumnRole",
+     ""
+    ]
+   },
+   {
+    "file": "sanitizer/synthesizer.py",
+    "line": 814,
+    "text": "synth = HMASynthesizer(metadata=metadata, verbose=True)",
+    "context": [
+     "    scale: float,",
+     "    _progress: Callable[[float, str], None],",
+     "    _warn: Callable[[str], None],",
+     ") -> dict[str, pd.DataFrame]:",
+     "    synth = HMASynthesizer(metadata=metadata, verbose=True)",
+     "    if constraints:",
+     "        try:",
+     "            synth.add_constraints(constraints)",
+     "        except Exception as e:"
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "sanitizer/synthesizer.py",
+    "line": 15,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "from faker import Faker",
+     "from sdv.cag import FixedCombinations, Inequality",
+     "from sdv.metadata import Metadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "from sanitizer.models import AnalysisResult, ColumnRole",
+     "",
+     "logger = logging.getLogger(__name__)"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "sanitizer/synthesizer.py",
+    "line": 13,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "from faker import Faker",
+     "from sdv.cag import FixedCombinations, Inequality",
+     "from sdv.metadata import Metadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "from sanitizer.models import AnalysisResult, ColumnRole"
+    ]
+   }
+  ],
+  "mt": [
+   {
+    "file": "sanitizer/synthesizer.py",
+    "line": 14,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from faker import Faker",
+     "from sdv.cag import FixedCombinations, Inequality",
+     "from sdv.metadata import Metadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "from sanitizer.models import AnalysisResult, ColumnRole",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "sanitizer/synthesizer.py",
+    "line": 12,
+    "text": "from sdv.cag import FixedCombinations, Inequality",
+    "context": [
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from faker import Faker",
+     "from sdv.cag import FixedCombinations, Inequality",
+     "from sdv.metadata import Metadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     ""
+    ]
+   },
+   {
+    "file": "sanitizer/synthesizer.py",
+    "line": 13,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "from faker import Faker",
+     "from sdv.cag import FixedCombinations, Inequality",
+     "from sdv.metadata import Metadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "from sanitizer.models import AnalysisResult, ColumnRole"
+    ]
+   },
+   {
+    "file": "sanitizer/synthesizer.py",
+    "line": 14,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from faker import Faker",
+     "from sdv.cag import FixedCombinations, Inequality",
+     "from sdv.metadata import Metadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "from sanitizer.models import AnalysisResult, ColumnRole",
+     ""
+    ]
+   },
+   {
+    "file": "sanitizer/synthesizer.py",
+    "line": 15,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "from faker import Faker",
+     "from sdv.cag import FixedCombinations, Inequality",
+     "from sdv.metadata import Metadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "from sanitizer.models import AnalysisResult, ColumnRole",
+     "",
+     "logger = logging.getLogger(__name__)"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "gc",
+  "hma",
+  "md",
+  "mt",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "pyproject.toml": [
+   "    \"sdv>=1.17.0,<2\","
+  ]
+ }
+}

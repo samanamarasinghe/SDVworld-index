@@ -1,0 +1,112 @@
+{
+ "repo": "krishnamohan-seelam/houseprice-pyspark",
+ "disk_kb": 2960,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Hackathon\n\n# Group 14\n\n### Housing price prediction  \nAsk a home buyer to describe their dream house, and they probably won't begin with the height of the basement ceiling or the proximity to a north-south railroad. House price negotiations often have a lot of influencing factors and not just the number of bedrooms or the position of the kitchen.\n\nTake the given dataset with 79 explanatory variables describing (almost) every aspect of residential homes in Ames, Iowa. In this hackathon, predict the final price of each home. \n\nThe application should be modeled using Machine Learning, you may explore libraries such as PySpark. Apply containerization principles as a better software engineering practice. You may explore Kafka server for streaming the data.\n\nThe model can be deployed using Docker containers for scalability.\n\nDataset: https://www.kaggle.com/c/house-prices-advanced-regression-techniques/  \n\n## Method and results\n\n - Develop machine learning model   \n    1. To create a model that would predict house sale price based on the list of 79 features(excluding Id and SalePrice).\n    2. To process the datasets we have used pyspark.On examination of data we decided to define schema to ensure data integrity of train and test datasets.\n    3. EDA was done by  converting pyspark dataframe into pandas dataframe and seaborn was used for plotting charts.\n    4. Spark MLLIB's Linear Regression model was used for creating model.\n    5. **Engineering practices**:  \n        1. For development, to ensure all group members use same softwares,dependencies and versions.We used docker image *jupyter/all-spark-notebook* from [docker](https://hub.docker.com/)  \n        2. To create deployment image, we used docker image *jupyter/pyspark-notebook:latest* from [docker](https://hub.docker.com/) \n        3. The training data has 1460 entries, we used synthetic data generation using sdv to have additional training data.\n\n\n## Docker    \n### Installing pyspark from  docker container image \n1. Open docker hub and search for jupyter/all-spark-notebook.\n2. Copy the Docker Pull Command-> docker pull jupyter/all-spark-notebook.\n3. Execute the above command in the terminal to pull the image to your local machine.\n\n### Steps to map container image for docker development container \n1. Below is the docker command that creates container and runs it \n    > docker run -d -p 8888:8888 -p 4040:4040 -p 4041:4041 -v /home/krishna/hackathon/work:/home/jovyan/work -e GRANT_SUDO=yes -e CHOWN_HOME=yes -e CHOWN_HOME_OPTS='-R' --user root --cpus=\"1.0\" --memory=\"5g\" --name gl_hackathon_grp_14 jupyter/all-spark-notebook\n2. Option -V maps local directory to docker directory\n3. Few other options are added as required due to local host machine limitations\n4. To start docker, use **docker run -a gl_hackathon_grp_14**\n\n## Repository(work) overview\n\nProvides an overview of the directory structure(work) and files\n\n├── README.md  \n├── house-prices   \n├── img   \n├── lr_model.h5  \n├── pipeline_model.h5  \n├── Dockerfile  \n├── generate_sdv.py  \n├── model.py  \n├── requirements.txt  \n├── HOUSEPRICE.ipynb  \n├── SDV_GENERATION.ipynb  \n├── TRAINING.ipynb   \n├── predictions.csv  \n\n**house-prices** - directory containing training,synthentic training,testing datasets.  \n**lr_model.h5** - persisted pyspark model (not uploaded to github).  \n**pipeline_model.h5** - persisted pyspark pipeline model (not uploaded to github).  \n**Dockerfile**  - docker file.  \n**generate_sdv.py** - python module containing source code for generating synthentic datasets.   \n**model.py** - python module containing source code for both training and test the model.  \n-  *train_model()*: function loads training data, performs all data preprocessing steps,creates pipelines, trains the model and save pipeline and model.This function also has an option to include or exclude synthentic data.  \n-  *test_model()*: function loads testing data, performs all data preprocessing steps,loads pipelines model,applies the model and performs prediction and saves the output as csv. \n\n**requirements.txt** - file contains python software pre-requistes used in the project.  \n\n**HOUSEPRICE.ipynb** - Python notebook used for EDA, prototyping, training and demo of the model.  \n\n**SDV_GENERATION.ipynb** - Python notebook used for prototyping of sythentic data generation. \n\n**predictions.csv** - Predictions generated using testing data.  \n\n**img** - directory with images for documentation.\n\n\n## Running instructions for ml model\n\n1. Unzip the work file and open the terminal go to the work folder/directory.\n2. docker build -t gl_hackathon_grp_14_submission and wait for build to complete.\n3. Execute the below command\n> docker run -v <local folder>:<docker folder> gl_hackathon_grp_14_submission:latest -e GRANT_SUDO=yes -e CHOWN_HOME=yes --user root  \n Example : docker run -v /home/krishna/hackathon/app_output:/localuser gl_hackathon_grp_14_submission:latest -e GRANT_SUDO=yes -e CHOWN_HOME=yes -e CHOWN_HOME_OPTS='-R' --user root\n 4.On completion of the spark submit job, you should see the predictions.csv file in the local folder\n\nBelow are the snapshots of running the above container image.  \n![alt text](./img/spark-submit.png \"spark-submit\")  \n\n![alt text](./img/spark-results.png \"spark-results\")\n\n## About\n\nThis assignment is done by hackathon group 14  \n\n## References\n1. Material & Notebooks provided by Great Learning\n2. Examples from Applied Data Science Using PySpark: Learn the End-to-End Predictive Model-Building Cycle\n3. [spark by examples](https://sparkbyexamples.com/pyspark-tutorial/)\n",
+ "hits": {
+  "ev": [
+   {
+    "file": "SDV_GENERATION.ipynb",
+    "line": 532,
+    "text": "\"from sdv.evaluation import evaluate\\n\",",
+    "context": [
+     "     \"output_type\": \"execute_result\"",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdv.evaluation import evaluate\\n\",",
+     "    \"evaluate(new_data.drop('Id',axis=1), df.drop('Id',axis=1))\"",
+     "   ]",
+     "  },",
+     "  {"
+    ]
+   },
+   {
+    "file": "generate_sdv.py",
+    "line": 3,
+    "text": "from sdv.evaluation import evaluate",
+    "context": [
+     "import pandas as pd",
+     "from sdv.tabular import GaussianCopula",
+     "from sdv.evaluation import evaluate",
+     "",
+     "",
+     "TRAIN_FILE = \"house-prices/train.csv\"",
+     "SDV_TRAIN_FILE = \"house-prices/train_sdv.csv\""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "SDV_GENERATION.ipynb",
+    "line": 260,
+    "text": "\"from sdv.tabular import GaussianCopula\"",
+    "context": [
+     "   \"id\": \"e22c2db8-b7c7-46af-adfc-cb1dd4d65cbc\",",
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"from sdv.tabular import GaussianCopula\"",
+     "   ]",
+     "  },",
+     "  {",
+     "   \"cell_type\": \"code\","
+    ]
+   },
+   {
+    "file": "SDV_GENERATION.ipynb",
+    "line": 532,
+    "text": "\"from sdv.evaluation import evaluate\\n\",",
+    "context": [
+     "     \"output_type\": \"execute_result\"",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdv.evaluation import evaluate\\n\",",
+     "    \"evaluate(new_data.drop('Id',axis=1), df.drop('Id',axis=1))\"",
+     "   ]",
+     "  },",
+     "  {"
+    ]
+   },
+   {
+    "file": "generate_sdv.py",
+    "line": 2,
+    "text": "from sdv.tabular import GaussianCopula",
+    "context": [
+     "import pandas as pd",
+     "from sdv.tabular import GaussianCopula",
+     "from sdv.evaluation import evaluate",
+     "",
+     "",
+     "TRAIN_FILE = \"house-prices/train.csv\""
+    ]
+   },
+   {
+    "file": "generate_sdv.py",
+    "line": 3,
+    "text": "from sdv.evaluation import evaluate",
+    "context": [
+     "import pandas as pd",
+     "from sdv.tabular import GaussianCopula",
+     "from sdv.evaluation import evaluate",
+     "",
+     "",
+     "TRAIN_FILE = \"house-prices/train.csv\"",
+     "SDV_TRAIN_FILE = \"house-prices/train_sdv.csv\""
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ev",
+  "sdv_any"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv==0.18.0"
+  ]
+ }
+}

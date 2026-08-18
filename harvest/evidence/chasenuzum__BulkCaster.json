@@ -1,0 +1,129 @@
+{
+ "repo": "chasenuzum/BulkCaster",
+ "disk_kb": 34,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# BulkCaster\n\nBulkCaster is a comprehensive time series forecasting tool designed to handle multiple time series data efficiently. It provides a streamlined workflow for preprocessing data, performing forecasts using various models, and visualizing the results. BulkCaster includes a user-friendly Streamlit app for interactive forecasting and supports multiprocessing for handling large datasets.\n\n## Table of Contents\n\n- [Features](#features)\n- [Folder Structure](#folder-structure)\n- [Installation](#installation)\n- [Running the Streamlit App](#running-the-streamlit-app)\n- [Running Forecasts via Script](#running-forecasts-via-script)\n- [Forecasting Methods](#forecasting-methods)\n- [Examples](#examples)\n- [Dependencies](#dependencies)\n- [Contributing](#contributing)\n- [License](#license)\n\n## Features\n\n- **Multiple Forecasting Models**: Supports a variety of forecasting methods including ARIMA, Facebook Prophet, Holt-Winters, Theta, VAR, XGBoost, and deep learning models from Darts.\n- **Streamlit App**: Interactive web application for uploading data, selecting forecasting methods, and visualizing forecasts.\n- **Batch Processing**: Ability to run forecasts on multiple time series simultaneously.\n- **Multiprocessing Support**: Efficient processing of large datasets using multiprocessing.\n- **Customizable**: Easy to extend with additional forecasting models or preprocessing steps.\n- **Evaluation Metrics**: Computes performance metrics such as RMSE, MAE, and MAPE during backtesting.\n\n## Folder Structure\n\n```\n    bulkcaster/\n    ├── data/\n    │   └── sample_data.csv\n    ├── app.py\n    ├── forecaster.py\n    ├── pricing_tools.py\n    ├── readme.md\n    ├── requirements.txt\n    └── run_forecast.py\n```\n\n- `data/`: Directory containing sample datasets or user data.\n- `app.py`: Streamlit application for interactive forecasting.\n- `forecaster.py`: Core module containing the BulkCaster class and forecasting methods.\n- `pricing_tools.py`: (Optional) Module for pricing-related utilities (if applicable).\n- `readme.md`: Documentation and usage instructions.\n- `requirements.txt`: List of required Python packages.\n- `run_forecast.py`: Script for running forecasts outside of the Streamlit app.\n\n## Installation\n\n1. **Clone the repository:**\n\n```bash\ngit clone https://github.com/chasenuzum/bulkcaster.git\ncd bulkcaster\n```\n2.\t**Create a virtual environment (optional but recommended):**\n```bash\npython -m venv venvsource venv/bin/activate  \n# On Windows, use venv\\Scripts\\activate\n```\n\t\n3.\tInstall required packages:\n``` bash\npip install -r requirements.txt\n```\nEnsure that you have the latest versions of pip and setuptools:\n``` bash\npip install --upgrade pip setuptools\n```\n\n## Running the Streamlit App\n\nThe Streamlit app provides an interactive interface for uploading your time series data, selecting forecasting methods, and visualizing the forecasts.\n1.\tStart the Streamlit app:\n```bash\nstreamlit run app.py\n```\n2.\tUpload Data:\n-\tPrepare your time series data in a CSV file.\n-\tEnsure the CSV file contains a timestamp column and one or more numerical columns representing different time series.\n-\tThe timestamp column should be in a datetime format or convertible to datetime.\n3.\tInteract with the App:\n-\tSelect the timestamp column after uploading your data.\n-\tChoose the forecasting methods you wish to use.\n-\tSet the forecast horizon and training data range.\n-\tRun the forecast and view the results.\n\n## Running Forecasts via Script\n\nYou can run forecasts directly using the run_forecast.py script, which utilizes the BulkCaster class.\n1.\tPrepare your data:\n-\tPlace your CSV file in the data/ directory or specify the path in the script.\n-\tEnsure your data is properly formatted with a timestamp index.\n2.\tConfigure the script:\n-\tOpen run_forecast.py and set the desired parameters, such as:\n-\tPath to the data file.\n-\tList of time series columns to forecast.\n-\tForecasting methods to use.\n-\tForecast horizon.\n3.\tRun the script:\n``` bash\npython run_forecast.py\n```\n4.\tView Results:\n-\tThe script will output the forecasts and evaluation metrics.\n-\tResults can be saved to files or printed to the console.\n\n## Forecasting Methods:\n-\tARIMA: Autoregressive Integrated Moving Average model.\n-\tFacebook Prophet: Time series forecasting model by Facebook.\n-\tHolt-Winters: Exponential smoothing with trend and seasonality.\n-\tTheta Method: Decomposition-based forecasting method.\n-\tVAR: Vector Autoregression for multivariate time series.\n-\tXGBoost: Extreme Gradient Boosting with support for VAR inputs.\n-\tRNN: Recurrent Neural Network models from the Darts library.\n-\tN-BEATS: Neural Basis Expansion Analysis for Interpretable Time Series Forecasting.\n\nExamples\n\n## Example: Forecasting Using the Streamlit App\n\n1.\tLaunch the app:\n``` bash\nstreamlit run app.py\n```\n2.\tUpload your data file (e.g., sample_data.csv).\n3.\tSelect the timestamp column and ensure your data looks correct.\n4.\tChoose the forecasting methods and set the forecast horizon.\n5.\tClick “Run Forecast” to generate forecasts.\n6.\tVisualize the forecasts and download results if needed.\n\nExample: Running Forecasts via Script\n1.\tEdit run_forecast.py to specify your data file and parameters.\n\n## run_forecast.py\n``` python\nimport pandas as pd\nfrom forecaster import BulkCaster\n\n# Load your data\ndata = pd.read_csv('data/sample_data.csv', parse_dates=['Date'], index_col='Date')\n\n# Initialize the BulkCaster\nbulkcaster = BulkCaster(\n    y=data[['Series1', 'Series2']],\n    X=data.drop(columns=['Series1', 'Series2']),\n    methods=['ARIMA', 'XGBoostVARND'],\n    horizons=[12],\n    runtype='Backtest'\n)\n\n# Run forecasts\nbulkcaster.run_all(series_list=['Series1', 'Series2'])\n\n# Retrieve and display results\nforecasts = bulkcaster.get_results()\nmetrics = bulkcaster.get_metrics()\nprint(forecasts)\nprint(metrics)\n```\n\n2.\tRun the script:\n\n``` bash\npython run_forecast.py\n```\n\n\n\n## Dependencies\n\nEnsure that the following Python packages are installed (as specified in requirements.txt):\n-\tpandas\n-\tnumpy\n-\tstatsmodels\n-\tscikit-learn\n-\txgboost\n-\tpmdarima\n-\tprophet\n-\tdarts\n-\tstreamlit\n-\tmatplotlib\n-\tplotly\n\nInstall all dependencies using:\n```bash\npip install -r requirements.txt\n```\nNote: Some packages may have additional dependencies or require system libraries (e.g., Prophet may require pystan or cmdstanpy). Refer to the package documentation for installation details.\n\n## Contributing\n\nContributions are welcome! Please follow these steps:\n1.\tFork the repository.\n2.\tCreate a new branch for your feature or bugfix:\n```bash\ngit checkout -b feature/your-feature-name\n```\n3.\tCommit your changes with descriptive messages.\n4.\tPush your branch to your forked repository.\n5.\tSubmit a pull request to the main repository.\n\nPlease ensure your code adheres to best practices and includes appropriate documentation.\n\n## License\n\nThis project is licensed under the MIT License. See the LICENSE file for details.\n\nDisclaimer: This README provides an overview of the BulkCaster tool based on the files and functionalities specified. For detailed information and the latest updates, please refer to the actual code and documentation within the repository.\n\n",
+ "hits": {
+  "st": [
+   {
+    "file": "pricing_tools.py",
+    "line": 17,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer as CGAN",
+    "context": [
+     "from darts.dataprocessing.transformers import Scaler",
+     "from darts.models import RNNModel",
+     "from darts.utils.timeseries_generation import datetime_attribute_timeseries",
+     "from darts.utils.likelihood_models import QuantileRegression",
+     "from sdv.single_table import GaussianCopulaSynthesizer as CGAN",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling import Condition",
+     "from torch import set_float32_matmul_precision as set_pre",
+     "from xgboost import DMatrix"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "pricing_tools.py",
+    "line": 18,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from darts.models import RNNModel",
+     "from darts.utils.timeseries_generation import datetime_attribute_timeseries",
+     "from darts.utils.likelihood_models import QuantileRegression",
+     "from sdv.single_table import GaussianCopulaSynthesizer as CGAN",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling import Condition",
+     "from torch import set_float32_matmul_precision as set_pre",
+     "from xgboost import DMatrix",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "pricing_tools.py",
+    "line": 17,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer as CGAN",
+    "context": [
+     "from darts.dataprocessing.transformers import Scaler",
+     "from darts.models import RNNModel",
+     "from darts.utils.timeseries_generation import datetime_attribute_timeseries",
+     "from darts.utils.likelihood_models import QuantileRegression",
+     "from sdv.single_table import GaussianCopulaSynthesizer as CGAN",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling import Condition",
+     "from torch import set_float32_matmul_precision as set_pre",
+     "from xgboost import DMatrix"
+    ]
+   },
+   {
+    "file": "pricing_tools.py",
+    "line": 18,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from darts.models import RNNModel",
+     "from darts.utils.timeseries_generation import datetime_attribute_timeseries",
+     "from darts.utils.likelihood_models import QuantileRegression",
+     "from sdv.single_table import GaussianCopulaSynthesizer as CGAN",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling import Condition",
+     "from torch import set_float32_matmul_precision as set_pre",
+     "from xgboost import DMatrix",
+     ""
+    ]
+   },
+   {
+    "file": "pricing_tools.py",
+    "line": 19,
+    "text": "from sdv.sampling import Condition",
+    "context": [
+     "from darts.utils.timeseries_generation import datetime_attribute_timeseries",
+     "from darts.utils.likelihood_models import QuantileRegression",
+     "from sdv.single_table import GaussianCopulaSynthesizer as CGAN",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling import Condition",
+     "from torch import set_float32_matmul_precision as set_pre",
+     "from xgboost import DMatrix",
+     "",
+     "set_pre('medium')"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "pricing_tools.py",
+    "line": 17,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer as CGAN",
+    "context": [
+     "from darts.dataprocessing.transformers import Scaler",
+     "from darts.models import RNNModel",
+     "from darts.utils.timeseries_generation import datetime_attribute_timeseries",
+     "from darts.utils.likelihood_models import QuantileRegression",
+     "from sdv.single_table import GaussianCopulaSynthesizer as CGAN",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling import Condition",
+     "from torch import set_float32_matmul_precision as set_pre",
+     "from xgboost import DMatrix"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "copulas==0.12.0",
+   "ctgan==0.10.2",
+   "rdt==1.13.1",
+   "sdmetrics==0.17.0",
+   "sdv==1.17.2"
+  ]
+ }
+}

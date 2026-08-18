@@ -1,0 +1,103 @@
+{
+ "repo": "Samuel-Maddock/flaim",
+ "disk_kb": 617,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# FLAIM: AIM-based synthetic data generation in the federated setting\nCode for the paper ['FLAIM: AIM-based synthetic data generation in the federated setting'](https://arxiv.org/abs/2310.03447)\n\n## Citing this work\n```bibtex\n@inproceedings{flaim,\nauthor = {Maddock, Samuel and Cormode, Graham and Maple, Carsten},\ntitle = {FLAIM: AIM-based Synthetic Data Generation in the Federated Setting},\nyear = {2024},\nisbn = {9798400704901},\nurl = {https://doi.org/10.1145/3637528.3671990},\ndoi = {10.1145/3637528.3671990},\nbooktitle = {Proceedings of the 30th ACM SIGKDD Conference on Knowledge Discovery and Data Mining},\npages = {2165–2176},\nnumpages = {12},\nlocation = {Barcelona, Spain},\nseries = {KDD '24}\n}\n```\n\n# Installation Instructions\n\nInstall the required Python environment via conda and pip\n\n```\nconda create -n \"flaim\" python=3.9 \nconda activate flaim\npip install -r ./requirements.txt\n```\n**AutoDP Dependency:** Download the repo [here](https://github.com/yuxiangw/autodp) and run in the root of autodp.\n\n```\npip install .\n```\n\n## Datasets\n\nAll datasets are downloaded automatically via [PMLB](https://epistasislab.github.io/pmlb/) or the [Synthetic Data Vault](https://sdv.dev) during the first run except for the Adult, Covtype and Marketing datasets which require manual downloading:\n* Download 'adult.csv' from [here](https://github.com/ryan112358/private-pgm/tree/master/data) and place under `/synth_fl/data/`\n* Download 'covtype.csv' from [here](https://archive.ics.uci.edu/dataset/31/covertype) and place under `/synth_fl/data/`\n* Download 'marketing.csv' from [here](https://archive.ics.uci.edu/dataset/222/bank+marketing) and place under `synth_fl/data/`\n\n## Caching client partitions\n\nIn order to run experiments the partitions of client data into the federated setting must be formed. The partitions are generated and stored under `synth_fl/data`\n\nRun the following Python code to produce non-IID partitions of the benchmark datasets:\n\n```\npython3.9 launcher.py --sweep-name paper/cache_answers/cache_split_answers1.json --sweep-manager-type local --sweep-backend local\n```\n\nand to produce the SynthFS synthetic dataset:\n\n```\npython3.9 launcher.py --sweep-name paper/cache_answers/cache_split_answers2.json --sweep-manager-type local --sweep-backend local\n```\n\nNote this may take a while (around ~10-20 minutes) and will save client partition splits to `synth_fl/data`.\n\n\n# Replication Instructions\n\nFurther configs for experiments are contained within `sweep_configs/paper/`.\n\nThese can be run locally (over 4 CPU threads) as follows:\n```\npython3.9 launcher.py --sweep-backend local --sweep-manager-type local --sweep-name paper/SWEEP_NAME --workers 4\n```\n\nData from experiments is saved under `slurm/job_results` and `slurm/sweep_results`.\n\n`SWEEP_NAME` should be one of the following config files contained within `sweep_configs/paper`:\n\n* `varying_eps` - Used to produce Figure 3(a) in the main paper and Figure 6 in the Appendix.\n* `varying_feature_skew` - Used to produce Figure 1.\n* `varying_local_rounds` - Used to produce Figures 3(e,f) in the main paper and Figure 10 in the Appendix.\n* `varying_p` - Used to produce Figure 3(c) in the main paper and Figure 8 in the Appemndix.\n* `varying_t` - Used to produce Figures 3(b) and Table 1 in the main paper and Figure 7 and Table 6 in the Appendix.\n* `varying_beta` - prodcues Figures 3(d) in the main paper and Figure 9 in the Appendix.\n* `baselines.json` - Will train FLAIM baseline methods, used to produce Table 1\n* `communication_tracking` - Used to produce Table 3 in the main paper and Table 7 in the Appendix.\n* `appendix_non_iid_split` - Used to produce Table 5 in the Appendix.\n\n# Acknowledgements\n\nWe would like to acknowledge the following code that is used by this repo:\n* [PMLB](https://epistasislab.github.io/pmlb/) - For dataset loading\n* [Synthetic data vault](https://sdv.dev) - For additional datasets\n* [Private-PGM](https://github.com/ryan112358/private-pgm) by Ryan McKenna\n* [AutoDP](https://github.com/yuxiangw/autodp) by Yu-Xiang Wang\n* [FLSim](https://github.com/facebookresearch/FLSim) by Facebook Research (for running federated CTGAN examples)\n",
+ "hits": {
+  "sdv_any": [
+   {
+    "file": "synth_fl/utils/dataloaders/core.py",
+    "line": 13,
+    "text": "from sdv.datasets.demo import download_demo, get_available_demos",
+    "context": [
+     "from pmlb import fetch_data",
+     "from pmlb.update_dataset_files import get_dataset_stats",
+     "",
+     "# SDV",
+     "from sdv.datasets.demo import download_demo, get_available_demos",
+     "",
+     "from synth_fl.libs.private_pgm.mbi import Dataset as PGMDataset",
+     "from synth_fl.libs.private_pgm.mbi import Domain as PGMDomain",
+     "from synth_fl.utils import logger"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "synth_fl/generators/federated/fed_ctgan/flsim_helpers.py",
+    "line": 21,
+    "text": "from synth_fl.libs.snsynth.pytorch.nn.dpctgan import DataSampler, CTGANSynthesizer",
+    "context": [
+     "    DataProvider,",
+     "    IFLUserData,",
+     "    FLMetricsReporter,",
+     ")",
+     "from synth_fl.libs.snsynth.pytorch.nn.dpctgan import DataSampler, CTGANSynthesizer",
+     "",
+     "import torch.nn as nn",
+     "import torch",
+     "from tqdm import tqdm"
+    ]
+   },
+   {
+    "file": "synth_fl/generators/federated/fed_ctgan/flsim_helpers.py",
+    "line": 292,
+    "text": "transformed = CTGANSynthesizer._gumbel_softmax(data[:, st:ed], tau=0.2)",
+    "context": [
+     "                data_t.append(torch.tanh(data[:, st:ed]))",
+     "                st = ed",
+     "            elif transformer.is_categorical:",
+     "                ed = st + transformer.output_width",
+     "                transformed = CTGANSynthesizer._gumbel_softmax(data[:, st:ed], tau=0.2)",
+     "                data_t.append(transformed)",
+     "                st = ed",
+     "",
+     "        return torch.cat(data_t, dim=1)"
+    ]
+   },
+   {
+    "file": "synth_fl/generators/federated/fed_ctgan/ctgan_sync_trainer.py",
+    "line": 11,
+    "text": "from synth_fl.libs.snsynth.pytorch.nn.dpctgan import CTGANSynthesizer",
+    "context": [
+     "    init_self_cfg,",
+     "    is_target,",
+     ")",
+     "",
+     "from synth_fl.libs.snsynth.pytorch.nn.dpctgan import CTGANSynthesizer",
+     "",
+     "from dataclasses import dataclass",
+     "",
+     "from hydra.utils import instantiate"
+    ]
+   },
+   {
+    "file": "synth_fl/generators/federated/fed_ctgan/ctgan_sync_trainer.py",
+    "line": 191,
+    "text": "transformed = CTGANSynthesizer._gumbel_softmax(data[:, st:ed], tau=0.2)",
+    "context": [
+     "                data_t.append(torch.tanh(data[:, st:ed]))",
+     "                st = ed",
+     "            elif transformer.is_categorical:",
+     "                ed = st + transformer.output_width",
+     "                transformed = CTGANSynthesizer._gumbel_softmax(data[:, st:ed], tau=0.2)",
+     "                data_t.append(transformed)",
+     "                st = ed",
+     "",
+     "        return torch.cat(data_t, dim=1)"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "sdv_any"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv==1.8.0"
+  ]
+ }
+}

@@ -1,0 +1,213 @@
+{
+ "repo": "DarshilPungalia/Shell.ai-Hackathon",
+ "disk_kb": 6322,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Multi-Target Blend Property Prediction Pipeline\n\nA comprehensive machine learning pipeline for predicting 10 blend properties (`BlendProperty1` through `BlendProperty10`) using various advanced modeling approaches including TabPFN, Gradient Boosting, Deep Learning, and AutoML techniques.\n\n🏆 Hackathon Achievement\nThis project was developed for the Shell.AI Hackathon and achieved 44th nationally. The solution demonstrates a robust approach to multi-target regression problems using ensemble methods and advanced ML techniques.\n\n## 🎯 Overview\n\nThis project implements multiple machine learning pipelines to predict blend properties from component compositions and their individual properties. The system supports:\n\n- **Multi-target regression** for 10 blend properties\n- **Advanced feature engineering** with component fractions and weighted properties\n- **Multiple modeling approaches** from traditional ML to deep learning\n- **Automated hyperparameter optimization** using Optuna\n- **Ensemble methods** and stacking approaches\n\n## 🏗️ Pipeline Architecture\n\nThe system consists of several independent pipelines that can be run individually or in ensemble, below is one the pipeline's diagram:\n\n![Pipeline Architecture](pipeline_arch.png)\n\n## 🔧 Data Processing\n\n### DataFrameLoader (`ingestion.py`)\n\nThe core data processing module handles:\n\n- **Power Transformation**: Yeo-Johnson transformation for target variables\n- **Synthetic Data Generation**: Using Gaussian Copula Synthesizer **(Optional)**\n- **Dimensionality Reduction**: Kernel PCA for component properties  **(Optional)**\n- **Feature Engineering**: Advanced blend-specific features  **(Optional)**\n- **Robust Scaling**: Preprocessing for model stability\n\n### Key Features Generated\n\n- Fraction diversity (Shannon entropy)\n- Dominant component identification\n- Weighted property averages\n- Component-specific contributions\n- Statistical measures (std, range, CV)\n\n## 🤖 Model Pipelines\n\n| Pipeline | Model Type | Key Features | Hyperparameter Optimization | Multi-Output Approach | GPU Support |\n|----------|------------|--------------|------------------------------|----------------------|-------------|\n| **TabPFN Pipeline** | Prior-based Neural Network | Zero-shot learning, Quantile predictions | ❌ Pre-trained | Individual models | ✅ Auto |\n| **TabPFN Stacking** | TabPFN + Meta-learner | Quantile features + Secondary model | ✅ Optuna | Individual models | ✅ Auto |\n| **Gradient Boosting** | XGB/LightGBM/CatBoost | Tree-based, Feature importance | ✅ Optuna | Individual models | ✅ CUDA/OpenCL |\n| **Deep GBM** | Neural Network on Tree Leaves | Embedding layers, Tree leaf indices | ❌ Fixed architecture | Multi-output | ✅ TensorFlow |\n| **Ridge GBM** | Ridge on Tree Leaves | One-hot encoded leaves | ✅ Grid Search | Individual models | ❌ CPU only |\n| **AutoGluon** | AutoML Ensemble | Multiple algorithms, Auto-tuning | ✅ Built-in | Individual/Multi/Ensemble | ✅ Auto |\n| **Bayesian Ridge** | Bayesian Linear Model | Uncertainty quantification | ❌ Default params | Individual models | ❌ CPU only |\n\n### Detailed Pipeline Descriptions\n\n#### 1. TabPFN Pipeline (`tab_pipeline.py`)\n\n- **Model**: Prior-based transformer for tabular data\n- **Approach**: Individual models for each target\n- **Features:**\n  - Zero-shot learning (no hyperparameter tuning needed)\n  - Multiple output types: mean, median, mode\n  - Quantile predictions for uncertainty estimation\n  - RegChain variant for sequential target prediction\n\n#### 2. TabPFN Stacking Pipeline (`tab_gb_pipeline.py`)\n\n- **Model**: TabPFN + Gradient Boosting meta-learner\n- **Approach**: Two-stage learning\n- **Features**:\n  - Generates 12 quantile features per target (9 quantiles + mean/median/mode)\n  - Meta-model selection based on validation performance\n  - Supports XGBoost, LightGBM, CatBoost, HistGBM, RandomForest as meta-learners\n  - Optional feature combination (original + quantile features)\n\n#### 3. Gradient Boosting Pipeline (`gradient_boosting_pipeline.py`)\n\n- **Models**: XGBoost, LightGBM, CatBoost\n- **Approach**: Individual optimized models\n- **Features**:\n  - Extensive hyperparameter optimization with Optuna\n  - GPU acceleration support\n  - Cross-validation based optimization\n  - Model-specific configurations\n\n#### 4. Deep GBM Pipeline (`deepGBM.py`)\n\n- **Architecture**: Neural Network with Embedding layers\n- **Input**: Tree leaf indices from gradient boosting models\n- **Features**:\n  - Combines multiple gradient boosting models\n  - Embedding-based representation of tree leaves\n  - Multi-output regression head\n  - Ridge regression variant for comparison\n\n#### 5. AutoGluon Pipeline (`autogluon_pipeline.py`)\n\n- **Framework**: Automated Machine Learning\n- **Approaches:**\n  - Individual models per target\n  - Multi-output approach\n  - Ensemble of different configurations\n- **Features**:\n  - Automatic model selection and hyperparameter tuning\n  - Multiple preset configurations\n  - Temporary directory management\n  - Built-in validation and metrics\n\n#### 6. Bayesian Ridge Pipeline (`bayesian_pipeline.py`)\n\n- **Model**: Bayesian Ridge regression\n- **Features**: Uses TabPFN-generated features as input\n- **Approach**: Simple baseline with uncertainty quantification\n\n## 🚀 Usage\n\n### Basic Pipeline Execution\n\n```python\n# TabPFN Pipeline\nfrom tab_pipeline import TabPFNPipeline\nmodel = TabPFNPipeline(output_type='mean')\nmodel.get_submission('submissions/tabpfn_predictions.csv')\n\n# Gradient Boosting Pipeline\nfrom gradient_boosting_pipeline import GradientBoostingPipeline\nmodel = GradientBoostingPipeline(regressor=XGBRegressor, n_trials=50)\nmodel.get_submission('submissions/xgb_predictions.csv')\n\n# AutoGluon Pipeline\nfrom autogluon_pipeline import AutoGluonPipeline\nmodel = AutoGluonPipeline(approach='individual')\nmodel.get_submission('submissions/autogluon_predictions.csv')\n```\n\n### Advanced Usage\n\n```python\n# TabPFN Stacking with custom meta-learner\nfrom tab_gb_pipeline import TabPFNStackingPipeline\nmodel = TabPFNStackingPipeline(\n    meta_model=RandomForestRegressor,\n    n_trials=30,\n    combine_features=True\n)\nmodel.get_submission('submissions/tabpfn_stacking.csv')\n\n# Deep GBM with multiple boosting models\nfrom deepGBM import DeepGBM\nmodel = DeepGBM(gradient_models=[XGBRegressor, LGBMRegressor])\nmodel.train()\npredictions = model.predict()\n```\n\n## 📊 Results\n\nEach pipeline generates:\n\n- **Validation metrics**: MAPE and R² scores for each target\n- **Overall performance**: Average metrics across all targets\n- **Submission files**: CSV files with predictions for test set\n- **Model comparisons**: Performance comparisons between approaches\n\n### Key Metrics Tracked\n\n- **MAPE** (Mean Absolute Percentage Error)\n- **R²** (Coefficient of determination)\n- **Training time**\n\n## 📁 File Structure\n\n``` bash\n├── eda.ipynb\n├── ingestion.py             \n├── tab_pipeline.py           \n├── tab_gb_pipeline.py        \n├── gradient_boosting_pipeline.py  \n├── deepGBM.py               \n├── autogluon_pipeline.py    \n├── bayesian_pipeline.py \n├── pls_pipeline.py\n├── quantile_pipeline.py\n├── random_pipeline.py   \n├── dataset/\n│   ├── train.csv            \n│   ├── test.csv  \n│   └── sample_solution.csv           \n├── submissions/             \n├── models/                  \n├── README.md\n└── reqiurements.txt             \n```\n\n## 🛠️ Installation\n\n### Requirements\n\n```bash\npip install -r requirements.txt\n```\n\n### GPU Support (Optional)\n\nFor GPU acceleration:\n\n- **CUDA**: For XGBoost, LightGBM, TensorFlow, TabPFN\n- **OpenCL**: For LightGBM (alternative)\n- **ROCm**: For supported AMD GPUs\n\n## 🎯 Best Practices\n\n1. **Pipeline Selection**:\n   - Use TabPFN for quick, high-quality baselines\n   - Use Gradient Boosting for interpretable, robust models\n   - Use AutoGluon for automated model selection\n   - Use Deep GBM for capturing complex patterns\n\n2. **Hyperparameter Optimization**:\n   - Start with fewer trials (10-20) for quick iterations\n   - Increase trials (50-100) for final models\n   - Use cross-validation for robust optimization\n\n3. **Feature Engineering**:\n   - Enable `add_features=True` for enhanced performance\n   - Consider `reduce_dims=True` for high-dimensional data\n   - Use synthetic data generation for small datasets\n\n## 📈 Performance Tips\n\n1. **GPU Utilization**: Enable GPU support for XGBoost, LightGBM, and TensorFlow models\n2. **Memory Management**: Use data streaming for large datasets\n3. **Parallel Processing**: Most pipelines support multi-core processing\n4. **Caching**: Models and transformers are cached for efficiency\n5. **Early Stopping**: Implemented in deep learning and some boosting models\n\n---\n\n**Note**: This pipeline system is designed for flexibility and extensibility. Each component can be used independently or combined for ensemble approaches.\n",
+ "hits": {
+  "st": [
+   {
+    "file": "eda.ipynb",
+    "line": 9690,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "     ]",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"metadata = SingleTableMetadata()\\n\",",
+     "    \"metadata.detect_from_dataframe(trainData)\\n\","
+    ]
+   },
+   {
+    "file": "ingestion.py",
+    "line": 3,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sklearn.preprocessing import PowerTransformer",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sklearn.decomposition import KernelPCA",
+     "import numpy as np",
+     "from sklearn.preprocessing import RobustScaler"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "eda.ipynb",
+    "line": 9691,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"metadata = SingleTableMetadata()\\n\",",
+     "    \"metadata.detect_from_dataframe(trainData)\\n\",",
+     "    \"synthesizer = GaussianCopulaSynthesizer(metadata=metadata)\\n\","
+    ]
+   },
+   {
+    "file": "ingestion.py",
+    "line": 4,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "from sklearn.preprocessing import PowerTransformer",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sklearn.decomposition import KernelPCA",
+     "import numpy as np",
+     "from sklearn.preprocessing import RobustScaler",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "eda.ipynb",
+    "line": 9690,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "     ]",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"metadata = SingleTableMetadata()\\n\",",
+     "    \"metadata.detect_from_dataframe(trainData)\\n\","
+    ]
+   },
+   {
+    "file": "eda.ipynb",
+    "line": 9691,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"metadata = SingleTableMetadata()\\n\",",
+     "    \"metadata.detect_from_dataframe(trainData)\\n\",",
+     "    \"synthesizer = GaussianCopulaSynthesizer(metadata=metadata)\\n\","
+    ]
+   },
+   {
+    "file": "ingestion.py",
+    "line": 3,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sklearn.preprocessing import PowerTransformer",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sklearn.decomposition import KernelPCA",
+     "import numpy as np",
+     "from sklearn.preprocessing import RobustScaler"
+    ]
+   },
+   {
+    "file": "ingestion.py",
+    "line": 4,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "from sklearn.preprocessing import PowerTransformer",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sklearn.decomposition import KernelPCA",
+     "import numpy as np",
+     "from sklearn.preprocessing import RobustScaler",
+     ""
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "eda.ipynb",
+    "line": 9690,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "     ]",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"metadata = SingleTableMetadata()\\n\",",
+     "    \"metadata.detect_from_dataframe(trainData)\\n\","
+    ]
+   },
+   {
+    "file": "eda.ipynb",
+    "line": 9695,
+    "text": "\"synthesizer = GaussianCopulaSynthesizer(metadata=metadata)\\n\",",
+    "context": [
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"metadata = SingleTableMetadata()\\n\",",
+     "    \"metadata.detect_from_dataframe(trainData)\\n\",",
+     "    \"synthesizer = GaussianCopulaSynthesizer(metadata=metadata)\\n\",",
+     "    \"\\n\",",
+     "    \"synthesizer.fit(trainData)\\n\",",
+     "    \"synData= synthesizer.sample(2000)\"",
+     "   ]"
+    ]
+   },
+   {
+    "file": "ingestion.py",
+    "line": 3,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sklearn.preprocessing import PowerTransformer",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sklearn.decomposition import KernelPCA",
+     "import numpy as np",
+     "from sklearn.preprocessing import RobustScaler"
+    ]
+   },
+   {
+    "file": "ingestion.py",
+    "line": 31,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata=metadata)",
+    "context": [
+     "    def generate_synthetic_data(dataframe, no_of_samples=3000):",
+     "        print('Generating Synthetic Data...')",
+     "        metadata = SingleTableMetadata()",
+     "        metadata.detect_from_dataframe(dataframe)",
+     "        synthesizer = GaussianCopulaSynthesizer(metadata=metadata)",
+     "        synthesizer.fit(dataframe)",
+     "",
+     "        return synthesizer.sample(no_of_samples)",
+     "    "
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv"
+  ]
+ }
+}

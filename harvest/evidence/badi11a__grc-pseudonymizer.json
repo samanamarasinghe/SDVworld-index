@@ -1,0 +1,461 @@
+{
+ "repo": "badi11a/grc-pseudonymizer",
+ "disk_kb": 56,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# grc-pseudonymizer\n\nFramework de seudonimización batch para bases de datos relacionales con interfaz web y trazabilidad normativa, desarrollado como prueba de concepto para un Trabajo de Fin de Máster en ingeniería de datos con preservación de privacidad.\n\nProcesa 15.000 registros de clientes y 150.000 pedidos preservando la integridad referencial, la utilidad estadística y la trazabilidad normativa completa — con cero pérdida de datos.\n\n---\n\n## Live Demo\n\nA live demo showing a real pipeline execution on the TPC-H SF 0.1 dataset is available at:\n\nhttps://grc-pseudonymizer-demo.vercel.app/\n\nThe demo page (`demo/index.html`) is automatically synced to the demo repository by the `sync-demo` GitHub Actions workflow on every push to `main`.\n\n---\n\n## The problem it solves\n\nOrganisations that share or analyse personal data face a hard constraint: **raw data cannot leave the privacy perimeter**, but anonymising it naively destroys the statistical properties that make it useful.\n\nThe canonical failure modes are:\n\n| Naive approach | What breaks |\n|---|---|\n| Hash PK/FK blindly | Foreign-key joins fail; downstream analytics are broken |\n| Mask names with random values | Non-deterministic — same person gets a different alias each run |\n| Add Gaussian noise to quasi-identifiers | Correlation structure between variables collapses |\n\nThis pipeline solves all three simultaneously through a modular architecture, each module targeting a different category of personal data.\n\n---\n\n## Features at a glance\n\n- **M1 — Format-Preserving Encryption (FF1, NIST SP 800-38G)** of primary and foreign keys, with referential-integrity verification on every run.\n- **M3 — Deterministic semantic substitution** of direct identifiers (names, addresses) via HMAC-SHA256-seeded Faker (`es_ES`).\n- **M2 — Gaussian copula synthesis** of quasi-identifiers, with Frobenius-norm quality measurement.\n- **M0 — Automatic FK topology discovery** (standalone module): infers the table dependency graph from the SQL catalog and returns a safe processing order, breaking FK cycles when needed.\n- **Web UI** (FastAPI + Server-Sent Events): structured connection form, connection test, real-time per-module progress, dry-run mode, and in-browser audit report preview and download.\n- **REST API**: run the pipeline, stream progress events, test database connectivity, and retrieve audit reports programmatically.\n- **Structured JSON logging for SIEM**: every pipeline event is emitted as one JSON line on stdout with a `run_id` correlation key; human-readable output goes to stderr.\n- **Dry-run mode**: executes the full pipeline in-memory and marks the result as `SIMULACRO` without persisting the audit report.\n- **Machine-readable audit report** (`informe_trazabilidad.json`) referencing RGPD Art. 32, EDPB 01/2025 and ISO 27001:2022 A.8.33.\n- **Docker support**: one-command demo with a TPC-H PostgreSQL database.\n\n---\n\n## Architecture\n\n```\n┌──────────────────────────────────────────────────────────┐\n│                 grc-pseudonymizer Web UI                  │\n│        FastAPI · Server-Sent Events · localhost:8000      │\n│   /api/run · /api/events · /api/report · /api/test-db    │\n└───────────────────────┬──────────────────────────────────┘\n                        │ HTTP / SSE\n┌───────────────────────▼──────────────────────────────────┐\n│                 grc-pseudonymizer CLI                     │\n│           --config  ·  --db-url  ·  $DB_URL               │\n└───────────────────┬──────────────────────────────────────┘\n                    │\n        ┌───────────▼───────────┐      ┌──────────────────┐\n        │    pipeline.py        │─────▶│ logger.py        │\n        │ orchestrates M1→M3→M2 │      │ JSON lines (SIEM)│\n        └──┬────────┬───────┬───┘      └──────────────────┘\n           │        │       │\n     ┌─────▼──┐ ┌───▼───┐ ┌─▼───────┐   ┌──────────────────┐\n     │   M1   │ │  M3   │ │   M2    │   │  M0 (standalone) │\n     │  FPE   │ │ HMAC  │ │ Copulas │   │  FK topology     │\n     └────────┘ └───────┘ └─────────┘   └──────────────────┘\n```\n\n### M1 — Format-Preserving Encryption on primary and foreign keys\n\n**Algorithm:** FF1 (NIST SP 800-38G), via `fastfpe`\n\nPrimary keys (`c_custkey`) and their corresponding foreign keys (`o_custkey`) are encrypted with AES-FF1, a NIST-standardised format-preserving cipher over a decimal alphabet (values are zero-padded to 6 digits). A 6-digit integer in produces a 6-digit integer out, so all foreign-key joins continue to work on the pseudonymised dataset without any schema changes.\n\n**Guarantee verified at runtime:** the row count of `customer JOIN orders` is compared before and after encryption; the audit report records `join_antes`, `join_despues` and the resulting `integridad_ok` flag (150,000 / 150,000 in the reference run).\n\n### M3 — Deterministic semantic substitution of direct identifiers\n\n**Algorithm:** HMAC-SHA256 + Faker (locale `es_ES`)\n\nFree-text fields that directly identify a person — names (`c_name`) and postal addresses (`c_address`) — are replaced with realistic synthetic values generated by seeding Faker with the first 4 bytes of an HMAC-SHA256 digest of the original value. The same input always produces the same output across runs (deterministic), but the mapping is one-way without the secret key.\n\n**Effect:** `\"Customer#000000001\"` → `\"Sofía Miranda Belda\"` — consistent across every pipeline execution.\n\n### M2 — Gaussian copula synthesis for quasi-identifiers\n\n**Algorithm:** `copulas.GaussianMultivariate`\n\nQuasi-identifiers — numerical fields that are not directly identifying but can enable re-identification when combined (`c_acctbal`, `c_nationkey`) — are replaced with statistically equivalent synthetic values. A Gaussian copula model is fitted on a 2,000-row sample of the real data and used to generate a full-size replacement dataset that preserves the joint distribution and inter-variable correlations. Synthetic nation keys are rounded and clipped to the valid domain; non-finite values fall back to the median.\n\n**Quality metric:** Frobenius norm of the difference between the original and synthetic Spearman correlation matrices. A value close to zero means the multivariate dependency structure is preserved.\n\nReference run: **Frobenius = 0.0238** (threshold < 0.5).\n\n### M0 — Automatic FK topology discovery (standalone module)\n\n**Module:** `pseudonymize/modules/m0_topology.py` · `get_processing_order(engine)`\n\nM0 infers the foreign-key dependency graph of a schema directly from the database catalog — `INFORMATION_SCHEMA` on PostgreSQL, SQLAlchemy reflection on other dialects (e.g. SQLite) — and returns the tables in topological (root-first) processing order, together with each table's PK and FK metadata. If the schema contains FK **cycles**, the edge with the lowest `COUNT(DISTINCT fk_col)` cardinality is removed until the graph is acyclic, and every cut is recorded in a `cycle_breaks` entry.\n\n**Status:** implemented and unit-tested (`tests/test_m0_topology.py`, in-memory SQLite), but **not yet wired into the orchestrator** — it is the building block for generalising the pipeline beyond the two-table demo schema (see *Current scope* below).\n\n---\n\n## Web UI\n\n`pseudonymize-ui` starts a FastAPI server on **http://localhost:8000** with a single-page interface:\n\n- **Structured connection form** — individual **Host**, **Port**, **User**, **Password** and **Database** fields (no raw connection string), pre-filled for the Docker demo database.\n- **Probar conexión** — a connection-test button that validates the database credentials (`POST /api/test-db`, `SELECT 1` with a 5 s timeout) before launching anything.\n- **Key handling** — the FPE key and HMAC secret are entered in masked (password) fields; the FPE key is validated as exactly 32 hexadecimal characters both in the browser and server-side.\n- **Dry-run toggle** — runs the complete pipeline without persisting the audit report; the result is marked `SIMULACRO`.\n- **Real-time progress** — each module's start, per-module metrics and completion are streamed to the browser over Server-Sent Events.\n- **Audit report preview and download** — when the run completes, the UI shows a preview of `informe_trazabilidad.json` and offers a **Descargar informe de auditoría** button. In UI mode the report is served via the API (`GET /api/report/{run_id}`) and downloaded from the browser — it is *not* written to disk on the server.\n\n### REST API\n\n| Method & path | Purpose |\n|---|---|\n| `POST /api/run` | Launch a pipeline run. Body: `db_url`, `fpe_key` (32-hex, validated), `hmac_key`, optional `tweak`, `dry_run`. Returns `run_id`. |\n| `GET /api/events/{run_id}` | Server-Sent Events stream: `start`, `module_start`, `module_done` (with per-module stats), `complete` / `error`, terminated by `[DONE]`. |\n| `GET /api/report/{run_id}` | Retrieve the audit report (JSON) for a completed run. |\n| `POST /api/test-db` | Test database connectivity. Returns `{ok: true}` or `{ok: false, error}`. |\n\n---\n\n## Structured logging (SIEM integration)\n\nEvery pipeline event — from both the CLI and the UI — is emitted by `pseudonymize/logger.py` as **one JSON object per line on stdout**, so a Docker log driver (or any collector) can ship it verbatim to a SIEM. The human-readable banner and summary go to **stderr**, keeping the machine-readable stream clean.\n\nEach line carries a fixed envelope plus event-specific fields:\n\n```json\n{\"timestamp\": \"2026-05-14T20:21:03Z\", \"run_id\": \"c3adc2ce\", \"level\": \"INFO\", \"module\": \"M1\", \"event\": \"join_verificado\", \"filas_antes\": 150000, \"filas_despues\": 150000, \"diff\": 0, \"integridad_ok\": true}\n```\n\nThe short `run_id` is the correlation key: it is shared by every log line of a run and matches the `run_id` of the audit report, so a run can be reconstructed end-to-end from the SIEM.\n\n---\n\n## Project layout\n\n```\npseudonymize/\n├── cli.py              # argparse entry point (pseudonymize)\n├── config.py           # YAML config loader with CLI/env override\n├── crypto.py           # FF1 cipher factory (shared by M1 and M2)\n├── logger.py           # structured JSON logging for SIEM (stdout)\n├── pipeline.py         # module orchestrator + traceability report\n├── report.py           # JSON audit log writer\n├── modules/\n│   ├── m0_topology.py  # FK dependency graph inference (standalone)\n│   ├── m1_fpe.py       # Format-Preserving Encryption\n│   ├── m2_copulas.py   # Gaussian copula synthesis\n│   └── m3_faker.py     # HMAC + Faker substitution\n└── ui/\n    ├── app.py          # FastAPI + SSE server (pseudonymize-ui)\n    └── templates/\n        └── index.html  # Single-page UI (glassmorphism dark theme)\n\ntests/\n└── test_m0_topology.py # unit tests for M0 (in-memory SQLite)\n\ndemo/index.html         # static demo page (synced to the demo repo by CI)\n.github/workflows/\n└── sync-demo.yml       # pushes demo/index.html to grc-pseudonymizer-demo\ndocker-compose.yml      # PostgreSQL + pipeline services\nDockerfile              # python:3.11-slim, no torch\npyproject.toml          # pip-installable package definition\nconfig.example.yaml     # annotated configuration template\n```\n\n---\n\n## Quickstart (Docker — recommended)\n\n**Requirements:** Docker and Docker Compose.\n\n```bash\ngit clone https://github.com/badi11a/grc-pseudonymizer.git\ncd grc-pseudonymizer\n```\n\n### Option A — Web UI\n\nStart the UI server (FastAPI, port 8000) alongside the TPC-H demo database (PostgreSQL, port 5433):\n\n```bash\n# Start PostgreSQL in the background\ndocker compose up postgres -d\n\n# Start the web interface (runs locally, not in Docker)\npip install -e .\npseudonymize-ui\n```\n\nOpen **http://localhost:8000**, optionally hit **Probar conexión** to verify the database, then click **Proteger datos ahora** to run the full pipeline and watch real-time progress via Server-Sent Events. When the run finishes, preview the audit report in the browser and download it with **Descargar informe de auditoría**.\n\n### Option B — CLI only\n\nRun the pipeline headlessly against the demo database:\n\n```bash\ndocker compose up --build\n```\n\n`docker compose up` spins up:\n\n| Service | What it does | Exposed port |\n|---|---|---|\n| `postgres` | TPC-H demo database (15K customers, 150K orders) | `localhost:5433` |\n| `pseudonymize` | Runs the pipeline once and exits | — |\n\nThe audit log is written to `./output/informe_trazabilidad.json`.\n\n---\n\n## Local Development (Manual Setup)\n\n**Requirements:** Python 3.10+, a running PostgreSQL instance.\n\n```bash\n# 1. Clone and create a virtual environment\ngit clone https://github.com/badi11a/grc-pseudonymizer.git\ncd grc-pseudonymizer\npython -m venv venv && source venv/bin/activate\n\n# 2. Install\npip install -e .\n\n# 3. Configure\ncp config.example.yaml config.yaml\n# Edit config.yaml — set your db_url, FPE key, and HMAC secret\n\n# 4. Run the pipeline\npseudonymize --config config.yaml\n\n# 5. Or start the web UI\npseudonymize-ui\n# → http://localhost:8000\n```\n\n### CLI reference\n\n```\npseudonymize --config FILE [--db-url URL]\n```\n\n- `--config FILE` (required) — path to the YAML configuration file.\n- `--db-url URL` — SQLAlchemy connection URL; overrides `db_url` in the config file without modifying it. If the flag is absent, the **`DB_URL` environment variable** is used as a fallback — useful for CI/CD pipelines or injecting credentials from a secret manager (this is how the Docker service passes its connection string):\n\n```bash\npseudonymize --config config.yaml \\\n  --db-url postgresql://user:$DB_PASS@prod-host/mydb\n```\n\nExit codes: `1` config file not found · `2` invalid configuration · `3` unexpected error.\n\n### Configuration reference\n\n```yaml\n# config.example.yaml\ndb_url: \"postgresql://user:pass@localhost/mydb\"\n\nfpe:\n  key: \"2b7e151628aed2a6abf7158809cf4f3c\"   # 32-char hex AES key\n  tweak: \"\"\n  alphabet: \"0123456789\"\n\nhmac_key: \"your-secret-key\"                  # kept outside the codebase\n\ntablas:\n  customer:\n    pk: \"c_custkey\"\n    direct_identifiers: [\"c_name\", \"c_address\"]\n    quasi_identifiers:  [\"c_acctbal\", \"c_nationkey\"]\n  orders:\n    fk:\n      c_custkey: \"o_custkey\"\n```\n\n### Current scope\n\nThis is a proof of concept: the orchestrator currently targets the TPC-H `customer`/`orders` demo schema (the table and column names above). The `tablas` section documents that mapping; generalising the pipeline to arbitrary schemas is the purpose of the M0 topology module, which already infers the required table processing order but is not yet consumed by the orchestrator.\n\n### Output — audit and compliance artefact\n\nEvery CLI run writes a machine-readable audit report to `informe_trazabilidad.json` (in UI mode it is served via `GET /api/report/{run_id}` and downloaded from the browser). This file is the primary evidence artefact for **RGPD Art. 32** accountability obligations and **ISO 27001:2022 control A.8.33** (protection of test information). It records, in a single machine-readable JSON document, which algorithm was applied to which columns, at what time, and with what measured quality outcome — ready to attach to a DPIA or hand to an auditor.\n\n```json\n{\n  \"run_id\": \"c3adc2ce-5e98-4f0b-9179-be09c511d1f3\",\n  \"timestamp\": \"2026-05-14T20:21:03.485966+00:00\",\n  \"version\": \"0.1.0\",\n  \"modulos\": {\n    \"M1\": {\n      \"algoritmo\": \"FF1 NIST SP 800-38G\",\n      \"filas_pk\": 15000, \"filas_fk\": 150000,\n      \"join_antes\": 150000, \"join_despues\": 150000,\n      \"integridad_ok\": true, \"tiempo_s\": 0.915\n    },\n    \"M3\": {\n      \"tecnica\": \"HMAC-SHA256 + Faker es_ES\",\n      \"columnas\": [\"c_name\", \"c_address\"],\n      \"filas\": 15000, \"tiempo_s\": 1.2\n    },\n    \"M2\": {\n      \"tecnica\": \"GaussianMultivariate copulas\",\n      \"columnas\": [\"c_acctbal\", \"c_nationkey\"],\n      \"filas\": 15000, \"frobenius\": 0.023772,\n      \"fallback\": false, \"tiempo_s\": 25.76\n    }\n  },\n  \"normativa\": [\"RGPD Art. 32\", \"EDPB 01/2025\", \"ISO 27001:2022 A.8.33\"],\n  \"dry_run\": false,\n  \"resultado_global\": \"OK\",\n  \"tiempo_total_s\": 27.875\n}\n```\n\nIn dry-run mode `dry_run` is `true`, `resultado_global` is `\"SIMULACRO\"`, and the report is not persisted to disk.\n\n---\n\n## Benchmark\n\nTested on a TPC-H dataset (scale factor 0.1) loaded into PostgreSQL:\n\n| Dataset | Records | Time |\n|---|---|---|\n| `customer` (PK) | 15,000 | — |\n| `orders` (FK) | 150,000 | — |\n| Full pipeline | 165,000 rows processed | **27.9 s** |\n\n| Module | Operation | Time |\n|---|---|---|\n| M1 — FPE FF1 | PK + FK encryption (150,000 FKs) | **0.9 s** |\n| M3 — HMAC+Faker | Semantic substitution (15,000 records) | **1.2 s** |\n| M2 — Cópulas gaussianas | Fit (2,000 sample) + sample (15,000) | **25.8 s** |\n\n| Metric | Value | Threshold | Result |\n|---|---|---|---|\n| Referential integrity (M1) | 150,000 / 150,000 rows | 100% match | PASS |\n| Frobenius norm (M2) | 0.0238 | < 0.5 | PASS |\n| Determinism (M3) | verified by double-pass | exact match | PASS |\n\n---\n\n## Compliance\n\nThis pipeline is designed to assist with the **pseudonymisation obligations** established by the following regulations. It does not replace a full Data Protection Impact Assessment (DPIA).\n\n### GDPR Article 32 — Security of processing\n\nArticle 32 requires controllers and processors to implement appropriate technical measures to ensure a level of security appropriate to the risk, explicitly citing **pseudonymisation** as one such measure. This pipeline operationalises that requirement by replacing all direct and quasi-identifying fields before data leaves the production perimeter.\n\n### EDPB Guidelines 01/2025 — Pseudonymisation\n\nThe European Data Protection Board's 2025 guidelines clarify that effective pseudonymisation requires that re-identification be **not reasonably likely** without access to additional information held separately. This pipeline satisfies that standard through:\n\n- **M1:** The FF1 key is the only means of reversing PK/FK encryption. Without it, the mapping from original to pseudonymised identifier cannot be reconstructed.\n- **M3:** The HMAC secret is the only means of reproducing the name/address mapping. The substitution function is one-way for any party that does not hold the key.\n- **M2:** Synthetic quasi-identifiers are generated stochastically and have no deterministic link to the original values; re-identification via these fields is not feasible.\n\n### ISO/IEC 27001:2022 — Control A.8.33\n\nThe machine-readable audit log (`informe_trazabilidad.json`) produced on every run provides the evidence trail required by control A.8.33 (protection of test information), recording which algorithm was applied, to which columns, at what time, and with what measured quality outcome. The structured JSON log stream complements it with per-event traceability in the SIEM, correlated by `run_id`.\n\n---\n\n## Dependencies\n\n| Package | Purpose |\n|---|---|\n| `fastfpe` | FF1 format-preserving encryption (NIST SP 800-38G) |\n| `copulas` | Gaussian copula synthesis (`GaussianMultivariate`) |\n| `faker` | Locale-aware synthetic name and address generation |\n| `networkx` | FK dependency graph and topological sort (M0) |\n| `pandas` / `numpy` | In-memory dataframes and numerical operations |\n| `sqlalchemy` + `psycopg2-binary` | Database-agnostic SQL layer / PostgreSQL driver |\n| `scipy` | Spearman correlation and Frobenius norm computation |\n| `fastapi` + `uvicorn` | Web UI server, REST API and SSE streaming |\n| `pyyaml` | Configuration file parsing |\n| `xgboost` | Utility-evaluation experiments (root-level `test_xgboost*.py` scripts) |\n\n---\n\n## License\n\nMIT\n",
+ "hits": {
+  "st": [
+   {
+    "file": "test_xgboost_v2.py",
+    "line": 8,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "from xgboost import XGBClassifier",
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.metrics import roc_auc_score",
+     "from sklearn.preprocessing import LabelEncoder",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from fastfpe import ff1",
+     "import warnings",
+     "warnings.filterwarnings('ignore')"
+    ]
+   },
+   {
+    "file": "pipeline.py",
+    "line": 13,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "from datetime import datetime",
+     "from sqlalchemy import create_engine",
+     "from fastfpe import ff1",
+     "from faker import Faker",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "warnings.filterwarnings('ignore')",
+     ""
+    ]
+   },
+   {
+    "file": "test_m2_copulas.py",
+    "line": 4,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sqlalchemy import create_engine",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import time",
+     "import warnings",
+     "warnings.filterwarnings('ignore')"
+    ]
+   },
+   {
+    "file": "test_xgboost.py",
+    "line": 7,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "from sqlalchemy import create_engine",
+     "from xgboost import XGBClassifier",
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.metrics import roc_auc_score",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import hmac, hashlib",
+     "from faker import Faker",
+     "from fastfpe import ff1"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "test_xgboost_v2.py",
+    "line": 9,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.metrics import roc_auc_score",
+     "from sklearn.preprocessing import LabelEncoder",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from fastfpe import ff1",
+     "import warnings",
+     "warnings.filterwarnings('ignore')",
+     ""
+    ]
+   },
+   {
+    "file": "pipeline.py",
+    "line": 14,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from sqlalchemy import create_engine",
+     "from fastfpe import ff1",
+     "from faker import Faker",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "warnings.filterwarnings('ignore')",
+     "",
+     "# ============================================================"
+    ]
+   },
+   {
+    "file": "test_m2_copulas.py",
+    "line": 5,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sqlalchemy import create_engine",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import time",
+     "import warnings",
+     "warnings.filterwarnings('ignore')",
+     ""
+    ]
+   },
+   {
+    "file": "test_xgboost.py",
+    "line": 8,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from xgboost import XGBClassifier",
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.metrics import roc_auc_score",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import hmac, hashlib",
+     "from faker import Faker",
+     "from fastfpe import ff1",
+     "import warnings"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "test_xgboost_v2.py",
+    "line": 8,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "from xgboost import XGBClassifier",
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.metrics import roc_auc_score",
+     "from sklearn.preprocessing import LabelEncoder",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from fastfpe import ff1",
+     "import warnings",
+     "warnings.filterwarnings('ignore')"
+    ]
+   },
+   {
+    "file": "test_xgboost_v2.py",
+    "line": 9,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.metrics import roc_auc_score",
+     "from sklearn.preprocessing import LabelEncoder",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from fastfpe import ff1",
+     "import warnings",
+     "warnings.filterwarnings('ignore')",
+     ""
+    ]
+   },
+   {
+    "file": "pipeline.py",
+    "line": 13,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "from datetime import datetime",
+     "from sqlalchemy import create_engine",
+     "from fastfpe import ff1",
+     "from faker import Faker",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "warnings.filterwarnings('ignore')",
+     ""
+    ]
+   },
+   {
+    "file": "pipeline.py",
+    "line": 14,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from sqlalchemy import create_engine",
+     "from fastfpe import ff1",
+     "from faker import Faker",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "warnings.filterwarnings('ignore')",
+     "",
+     "# ============================================================"
+    ]
+   },
+   {
+    "file": "test_m2_copulas.py",
+    "line": 4,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sqlalchemy import create_engine",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import time",
+     "import warnings",
+     "warnings.filterwarnings('ignore')"
+    ]
+   },
+   {
+    "file": "test_m2_copulas.py",
+    "line": 5,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sqlalchemy import create_engine",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import time",
+     "import warnings",
+     "warnings.filterwarnings('ignore')",
+     ""
+    ]
+   },
+   {
+    "file": "test_xgboost.py",
+    "line": 7,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "from sqlalchemy import create_engine",
+     "from xgboost import XGBClassifier",
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.metrics import roc_auc_score",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import hmac, hashlib",
+     "from faker import Faker",
+     "from fastfpe import ff1"
+    ]
+   },
+   {
+    "file": "test_xgboost.py",
+    "line": 8,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from xgboost import XGBClassifier",
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.metrics import roc_auc_score",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import hmac, hashlib",
+     "from faker import Faker",
+     "from fastfpe import ff1",
+     "import warnings"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "test_xgboost_v2.py",
+    "line": 8,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "from xgboost import XGBClassifier",
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.metrics import roc_auc_score",
+     "from sklearn.preprocessing import LabelEncoder",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from fastfpe import ff1",
+     "import warnings",
+     "warnings.filterwarnings('ignore')"
+    ]
+   },
+   {
+    "file": "test_xgboost_v2.py",
+    "line": 71,
+    "text": "model_sdv = GaussianCopulaSynthesizer(meta)",
+    "context": [
+     "meta = SingleTableMetadata()",
+     "meta.detect_from_dataframe(df_qid)",
+     "meta.update_column('c_custkey', sdtype='id')",
+     "meta.set_primary_key('c_custkey')",
+     "model_sdv = GaussianCopulaSynthesizer(meta)",
+     "model_sdv.fit(df_qid)",
+     "df_sint = model_sdv.sample(num_rows=len(df_qid))",
+     "",
+     "# Reemplazar QIDs en dataset enmascarado"
+    ]
+   },
+   {
+    "file": "pipeline.py",
+    "line": 13,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "from datetime import datetime",
+     "from sqlalchemy import create_engine",
+     "from fastfpe import ff1",
+     "from faker import Faker",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "warnings.filterwarnings('ignore')",
+     ""
+    ]
+   },
+   {
+    "file": "pipeline.py",
+    "line": 143,
+    "text": "model = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "metadata.detect_from_dataframe(df_qid)",
+     "metadata.update_column('c_custkey', sdtype='id')",
+     "metadata.set_primary_key('c_custkey')",
+     "",
+     "model = GaussianCopulaSynthesizer(metadata)",
+     "model.fit(df_qid)",
+     "df_sint = model.sample(num_rows=len(df_qid))",
+     "",
+     "# Reemplazar QIDs en customer con valores sintéticos"
+    ]
+   },
+   {
+    "file": "pipeline.py",
+    "line": 166,
+    "text": "\"tecnica\":   \"GaussianCopulaSynthesizer SDV\",",
+    "context": [
+     "print(f\"  {len(df_sint):,} filas sintéticas generadas en {t1-t0:.2f}s\")",
+     "print(f\"  Norma de Frobenius: {frobenius}\")",
+     "",
+     "trace[\"modulos\"][\"M2\"] = {",
+     "    \"tecnica\":   \"GaussianCopulaSynthesizer SDV\",",
+     "    \"columnas\":  cols,",
+     "    \"filas\":     len(df_sint),",
+     "    \"frobenius\": frobenius,",
+     "    \"fallback\":  False,"
+    ]
+   },
+   {
+    "file": "test_m2_copulas.py",
+    "line": 4,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sqlalchemy import create_engine",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import time",
+     "import warnings",
+     "warnings.filterwarnings('ignore')"
+    ]
+   },
+   {
+    "file": "test_m2_copulas.py",
+    "line": 29,
+    "text": "print(\"\\nAjustando GaussianCopulaSynthesizer...\")",
+    "context": [
+     "metadata.update_column('c_custkey', sdtype='id')",
+     "metadata.set_primary_key('c_custkey')",
+     "",
+     "# --- 3. Ajustar modelo ---",
+     "print(\"\\nAjustando GaussianCopulaSynthesizer...\")",
+     "t0 = time.time()",
+     "model = GaussianCopulaSynthesizer(metadata)",
+     "model.fit(df)",
+     "t1 = time.time()"
+    ]
+   },
+   {
+    "file": "test_m2_copulas.py",
+    "line": 31,
+    "text": "model = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "",
+     "# --- 3. Ajustar modelo ---",
+     "print(\"\\nAjustando GaussianCopulaSynthesizer...\")",
+     "t0 = time.time()",
+     "model = GaussianCopulaSynthesizer(metadata)",
+     "model.fit(df)",
+     "t1 = time.time()",
+     "print(f\"  Modelo ajustado en {t1-t0:.2f}s\")",
+     ""
+    ]
+   },
+   {
+    "file": "test_xgboost.py",
+    "line": 7,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "from sqlalchemy import create_engine",
+     "from xgboost import XGBClassifier",
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.metrics import roc_auc_score",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import hmac, hashlib",
+     "from faker import Faker",
+     "from fastfpe import ff1"
+    ]
+   },
+   {
+    "file": "test_xgboost.py",
+    "line": 76,
+    "text": "model_sdv = GaussianCopulaSynthesizer(meta)",
+    "context": [
+     "meta = SingleTableMetadata()",
+     "meta.detect_from_dataframe(df_qid)",
+     "meta.update_column('c_custkey', sdtype='id')",
+     "meta.set_primary_key('c_custkey')",
+     "model_sdv = GaussianCopulaSynthesizer(meta)",
+     "model_sdv.fit(df_qid)",
+     "df_sint = model_sdv.sample(num_rows=len(df_qid))",
+     "",
+     "df_mask = df_mask.drop(columns=['c_acctbal','c_nationkey'])"
+    ]
+   }
+  ],
+  "copulas": [
+   {
+    "file": "pseudonymize/modules/m2_copulas.py",
+    "line": 8,
+    "text": "from copulas.multivariate import GaussianMultivariate",
+    "context": [
+     "from typing import Callable",
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from copulas.multivariate import GaussianMultivariate",
+     "from sqlalchemy import Engine",
+     "",
+     "warnings.filterwarnings(\"ignore\")",
+     ""
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "copulas",
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "pyproject.toml": [
+   "    \"copulas\","
+  ]
+ }
+}

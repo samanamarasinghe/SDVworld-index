@@ -1,0 +1,457 @@
+{
+ "repo": "amresh2000/sdv",
+ "disk_kb": 521,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# SDV Pipeline — Synthetic Data Generator\n\nA bank-grade synthetic data generation pipeline with LLM-driven constraint enforcement. Generates privacy-preserving synthetic datasets from real data, enforcing complex business rules via AWS Bedrock (Claude 3.5 Sonnet).\n\n---\n\n## Quick Start\n\n### 1. Install\n\n```bash\ngit clone <repository-url>\ncd synthetic_data_gen\n\npython -m venv venv && source venv/bin/activate\npip install -r requirements.txt\n```\n\n### 2. Configure AWS (required for LLM constraint generation)\n\n```bash\naws configure          # enter Access Key, Secret Key, region: us-east-1\n# or\nexport AWS_PROFILE=your-profile-name\n```\n\n### 3. Launch the UI\n\n```bash\nstreamlit run app/main.py\n```\n\nOpens at `http://localhost:8501`. Upload a CSV, paste business rules, click **Generate Data**.\n\n### 4. Or use the CLI\n\n```bash\n# Profile your data (no AWS needed)\npython -m src.sdv_pipeline.cli profile data.csv\n\n# Dry-run constraint validation (no AWS needed)\npython -m src.sdv_pipeline.cli dry-run data.csv --rules rules.txt\n\n# Full pipeline — generate synthetic data (requires AWS)\npython -m src.sdv_pipeline.cli run data.csv \\\n  --rules rules.txt \\\n  --rows 500 \\\n  --seed 42\n\n# With a specific model\npython -m src.sdv_pipeline.cli run data.csv \\\n  --rules rules.txt \\\n  --bedrock-model-id global.anthropic.claude-sonnet-4-5-20250929-v1:0\n```\n\n---\n\n## How It Works\n\nEight-stage pipeline:\n\n```\n1. Data Profiling          → column types, stats, PII detection\n2. SDV Metadata Detection  → infer SDV column types\n3. LLM Constraint Gen      → Claude reads rules → structured constraints (AWS Bedrock)\n4. Constraint Compilation  → compile to SDV, programmable, post-processing layers\n5. Metadata Application    → apply enhanced types (Faker providers, datetime formats)\n6. SDV Synthesis           → GaussianCopula fit + sample\n7. Post-Processing         → 10-stage constraint enforcement + repair\n8. Final Output            → CSV + JSON report + artifacts\n```\n\n---\n\n## Streamlit UI\n\nFour screens:\n\n| Screen | Description |\n|--------|-------------|\n| **Upload** | CSV or Parquet upload, auto-profiling, column type badges, data preview |\n| **Configure** | Business rules text area, row count, seed, ID regex hints |\n| **Running** | Live stage progress, elapsed timer, ETA hints for LLM and synthesis stages |\n| **Results** | Metric cards, data preview (100 rows), constraint table, CSV + JSON downloads |\n\n---\n\n## CLI Commands\n\n| Command | Purpose | AWS Required |\n|---------|---------|:---:|\n| `check` | Verify installation and AWS connectivity | No |\n| `profile <file>` | Analyse data structure and column stats | No |\n| `dry-run <file> --rules <file>` | Validate constraints without generating data | No |\n| `run <file> --rules <file>` | Full synthetic data generation | Yes |\n| `report <bundle>` | Analyse a saved pipeline result bundle | No |\n\n```bash\npython -m src.sdv_pipeline.cli run data.csv \\\n  --rules rules.txt \\\n  --size 1000 \\\n  --seed 42 \\\n  --region us-east-1\n```\n\n---\n\n## Test Datasets\n\nReady-to-use datasets in `tests/datasets/`. Each folder contains `data.csv` and `business_rules.txt`.\n\n### General Banking\n\n| Dataset | Rows | Cols | Rules | Domain |\n|---------|-----:|-----:|------:|--------|\n| `customer_accounts/` | 500 | 9 | 10 | Retail banking — accounts, balances, credit scores |\n| `insurance_claims/` | 1 000 | 14 | 13 | Insurance — claims lifecycle, approvals, fraud scores |\n| `aml_monitoring/` | 1 500 | 17 | 14 | AML — transaction alerts, risk scores, SAR filing |\n\n### Swap / Derivatives\n\n| Dataset | Rows | Cols | Rules | Instrument |\n|---------|-----:|-----:|------:|-----------|\n| `irs_trades/` | 300 | 16 | 20 | Interest Rate Swap — fixed/floating legs, CCY↔index alignment |\n| `cds_trades/` | 300 | 15 | 15 | Credit Default Swap — spread tiers by rating, ISDA restructuring clauses |\n| `trs_trades/` | 300 | 15 | 14 | Total Return Swap — asset types, return vs funding leg parties |\n| `equity_swap_trades/` | 300 | 14 | 17 | Equity Swap — index vs single-name rules, dividend treatment |\n\n> The FX Swap dataset used in the original test suite lives at `tests/swap_trade_test/`.\n\n### Notable constraint coverage across datasets\n\n| Constraint type | Example dataset |\n|----------------|----------------|\n| `REGEX_MATCH` | All trade IDs (`IRS-00000001`, `CDS-00000001`, …) |\n| `VALUE_IN_SET` | `floating_index`, `restructuring_clause`, `alert_type` |\n| `INEQUALITY` (date) | `effective_date ≥ trade_date`, `maturity_date > effective_date` |\n| `INEQUALITY` (value) | `approved_amount ≤ claim_amount` |\n| `SCALAR_RANGE` | `fixed_rate`, `spread_bps`, `risk_score`, `fraud_score` |\n| `CONDITIONAL` | SOFR→USD, Sanctions-Hit→risk≥75, Index→Excluded dividends |\n| `UNIQUE` | All ID columns |\n| `NULL_PATTERN` | `settlement_date` null unless status=Settled |\n\n---\n\n## Architecture\n\n```\nsrc/sdv_pipeline/\n├── cli.py                        ← Typer CLI (5 commands)\n├── core/\n│   ├── pipeline.py               ← SyntheticDataPipeline orchestrator\n│   ├── profiling/\n│   │   ├── profiler.py           ← DataProfiler (semantic type detection, PII masking)\n│   │   └── llm_interface.py      ← BedrockLLMInterface (Claude 3.5 Sonnet)\n│   ├── constraints/\n│   │   ├── compiler.py           ← ConstraintCompiler\n│   │   └── factory.py            ← ProgrammableConstraintFactory (19+ types)\n│   └── enforcement/\n│       └── post_processor.py     ← PostProcessor (10-stage enforcement)\n├── models/\n│   ├── profile.py                ← DataProfile, ColumnProfile\n│   ├── constraints.py            ← ConstraintSpec\n│   └── metadata.py               ← EnhancedMetadata\napp/\n├── main.py                       ← Streamlit entry point\n├── state.py                      ← Session state management\n├── pipeline_runner.py            ← Background thread + queue\n└── screens/\n    ├── upload.py                 ← Screen 1\n    ├── configure.py              ← Screen 2\n    ├── running.py                ← Screen 3\n    └── results.py                ← Screen 4\n```\n\n---\n\n## AWS / Bedrock Model\n\nThe pipeline uses **Claude Sonnet 4.5** via a global inference profile by default:\n\n```\nglobal.anthropic.claude-sonnet-4-5-20250929-v1:0\n```\n\nCredentials are loaded from `.env` in the project root:\n\n```\nAWS_ACCESS_KEY_ID=...\nAWS_SECRET_ACCESS_KEY=...\nAWS_DEFAULT_REGION=us-east-1\n```\n\nBefore running, ensure model access is enabled in **AWS Console → Bedrock → Model access**.\n\n---\n\n## Troubleshooting\n\n**Verify credentials**\n```bash\naws sts get-caller-identity\n```\n\n**Pipeline health check**\n```bash\npython -m src.sdv_pipeline.cli check\n```\n\n**Common data issues**\n- CSV must have a header row\n- Column names should use underscores, not spaces\n- Date columns should be ISO format (`YYYY-MM-DD`)\n# sdv\n",
+ "hits": {
+  "sdv_any": [
+   {
+    "file": "tests/README.md",
+    "line": 488,
+    "text": "python -c \"import sdv; print(f'SDV version: {sdv.__version__}')\"",
+    "context": [
+     "# Fix: Install dependencies",
+     "pip install -r requirements.txt",
+     "",
+     "# Verify SDV installation",
+     "python -c \"import sdv; print(f'SDV version: {sdv.__version__}')\"",
+     "```",
+     "",
+     "### Common Issues",
+     ""
+    ]
+   },
+   {
+    "file": "src/sdv_pipeline/cli.py",
+    "line": 163,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "        console.print(\"[yellow]Generating data profile...[/yellow]\")",
+     "        profile = pipeline.profiler.profile_dataset(df)",
+     "",
+     "        console.print(\"[yellow]Detecting SDV metadata...[/yellow]\")",
+     "        from sdv.metadata import Metadata",
+     "        sdv_metadata = Metadata.detect_from_dataframe(df, table_name='training_data')",
+     "        raw_metadata = sdv_metadata.to_dict()",
+     "",
+     "        console.print(\"[yellow]Processing rules via LLM...[/yellow]\")"
+    ]
+   },
+   {
+    "file": "src/sdv_pipeline/cli.py",
+    "line": 469,
+    "text": "import sdv",
+    "context": [
+     "                console.print(\"[yellow]⚠ AWS credentials not found[/yellow]\")",
+     "                console.print(\"Configure with: aws configure\")",
+     "",
+     "            # Check dependencies",
+     "            import sdv",
+     "            console.print(f\"[green]✓ SDV version: {sdv.__version__}[/green]\")",
+     "",
+     "            console.print(\"[green]Installation check passed![/green]\")",
+     ""
+    ]
+   },
+   {
+    "file": "src/sdv_pipeline/core/pipeline.py",
+    "line": 12,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import json",
+     "from datetime import datetime",
+     "",
+     "# SDV imports",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "# Pipeline components",
+     "from .profiling.profiler import DataProfiler"
+    ]
+   },
+   {
+    "file": "src/sdv_pipeline/core/pipeline.py",
+    "line": 13,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "from datetime import datetime",
+     "",
+     "# SDV imports",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "# Pipeline components",
+     "from .profiling.profiler import DataProfiler",
+     "from .profiling.llm_interface import BedrockLLMInterface"
+    ]
+   },
+   {
+    "file": "src/sdv_pipeline/core/pipeline.py",
+    "line": 213,
+    "text": "from sdv.cag import Inequality",
+    "context": [
+     "                    constraint_params = constraint_config[\"constraint_parameters\"]",
+     "",
+     "                    # Dynamically import and create constraint",
+     "                    if constraint_class == \"Inequality\":",
+     "                        from sdv.cag import Inequality",
+     "                        constraint = Inequality(**constraint_params)",
+     "                    elif constraint_class == \"FixedCombinations\":",
+     "                        from sdv.cag import FixedCombinations",
+     "                        constraint = FixedCombinations(**constraint_params)"
+    ]
+   },
+   {
+    "file": "src/sdv_pipeline/core/pipeline.py",
+    "line": 216,
+    "text": "from sdv.cag import FixedCombinations",
+    "context": [
+     "                    if constraint_class == \"Inequality\":",
+     "                        from sdv.cag import Inequality",
+     "                        constraint = Inequality(**constraint_params)",
+     "                    elif constraint_class == \"FixedCombinations\":",
+     "                        from sdv.cag import FixedCombinations",
+     "                        constraint = FixedCombinations(**constraint_params)",
+     "                    elif constraint_class == \"FixedIncrements\":",
+     "                        from sdv.cag import FixedIncrements",
+     "                        constraint = FixedIncrements(**constraint_params)"
+    ]
+   },
+   {
+    "file": "src/sdv_pipeline/core/pipeline.py",
+    "line": 219,
+    "text": "from sdv.cag import FixedIncrements",
+    "context": [
+     "                    elif constraint_class == \"FixedCombinations\":",
+     "                        from sdv.cag import FixedCombinations",
+     "                        constraint = FixedCombinations(**constraint_params)",
+     "                    elif constraint_class == \"FixedIncrements\":",
+     "                        from sdv.cag import FixedIncrements",
+     "                        constraint = FixedIncrements(**constraint_params)",
+     "                    elif constraint_class == \"OneHotEncoding\":",
+     "                        from sdv.cag import OneHotEncoding",
+     "                        constraint = OneHotEncoding(**constraint_params)"
+    ]
+   },
+   {
+    "file": "src/sdv_pipeline/core/pipeline.py",
+    "line": 222,
+    "text": "from sdv.cag import OneHotEncoding",
+    "context": [
+     "                    elif constraint_class == \"FixedIncrements\":",
+     "                        from sdv.cag import FixedIncrements",
+     "                        constraint = FixedIncrements(**constraint_params)",
+     "                    elif constraint_class == \"OneHotEncoding\":",
+     "                        from sdv.cag import OneHotEncoding",
+     "                        constraint = OneHotEncoding(**constraint_params)",
+     "                    elif constraint_class == \"ScalarRange\":",
+     "                        from sdv.cag import Range as ScalarRange",
+     "                        constraint = ScalarRange(**constraint_params)"
+    ]
+   },
+   {
+    "file": "src/sdv_pipeline/core/pipeline.py",
+    "line": 225,
+    "text": "from sdv.cag import Range as ScalarRange",
+    "context": [
+     "                    elif constraint_class == \"OneHotEncoding\":",
+     "                        from sdv.cag import OneHotEncoding",
+     "                        constraint = OneHotEncoding(**constraint_params)",
+     "                    elif constraint_class == \"ScalarRange\":",
+     "                        from sdv.cag import Range as ScalarRange",
+     "                        constraint = ScalarRange(**constraint_params)",
+     "                    else:",
+     "                        self.logger.warning(f\"Unknown SDV constraint class: {constraint_class}\")",
+     "                        continue"
+    ]
+   },
+   {
+    "file": "src/sdv_pipeline/core/constraints/programmable.py",
+    "line": 10,
+    "text": "from sdv.constraints.base import Constraint as SDVConstraint",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "",
+     "try:",
+     "    from sdv.constraints.base import Constraint as SDVConstraint",
+     "    from sdv.cag.programmable_constraint import SingleTableProgrammableConstraint",
+     "except ImportError:",
+     "    # Fallback for older SDV versions",
+     "    class SingleTableProgrammableConstraint:"
+    ]
+   },
+   {
+    "file": "src/sdv_pipeline/core/constraints/programmable.py",
+    "line": 11,
+    "text": "from sdv.cag.programmable_constraint import SingleTableProgrammableConstraint",
+    "context": [
+     "import numpy as np",
+     "",
+     "try:",
+     "    from sdv.constraints.base import Constraint as SDVConstraint",
+     "    from sdv.cag.programmable_constraint import SingleTableProgrammableConstraint",
+     "except ImportError:",
+     "    # Fallback for older SDV versions",
+     "    class SingleTableProgrammableConstraint:",
+     "        pass"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "src/sdv_pipeline/cli.py",
+    "line": 163,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "        console.print(\"[yellow]Generating data profile...[/yellow]\")",
+     "        profile = pipeline.profiler.profile_dataset(df)",
+     "",
+     "        console.print(\"[yellow]Detecting SDV metadata...[/yellow]\")",
+     "        from sdv.metadata import Metadata",
+     "        sdv_metadata = Metadata.detect_from_dataframe(df, table_name='training_data')",
+     "        raw_metadata = sdv_metadata.to_dict()",
+     "",
+     "        console.print(\"[yellow]Processing rules via LLM...[/yellow]\")"
+    ]
+   },
+   {
+    "file": "src/sdv_pipeline/core/pipeline.py",
+    "line": 12,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import json",
+     "from datetime import datetime",
+     "",
+     "# SDV imports",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "# Pipeline components",
+     "from .profiling.profiler import DataProfiler"
+    ]
+   },
+   {
+    "file": "src/sdv_pipeline/core/shared/synthesizer.py",
+    "line": 10,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import numpy as np",
+     "",
+     "try:",
+     "    from sdv.single_table import GaussianCopulaSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    # Use newer CAG constraints (have _is_single_table attribute) instead of legacy constraints",
+     "    from sdv.cag import Inequality, Range as ScalarRange, FixedCombinations, FixedIncrements, OneHotEncoding",
+     "    from sdv.constraints import Unique  # Unique still only in legacy system",
+     "except ImportError:"
+    ]
+   },
+   {
+    "file": "src/sdv_pipeline/core/profiling/profiler.py",
+    "line": 7,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import re",
+     "from typing import Dict, List, Any, Optional",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from ...models.profile import DataProfile, ColumnProfile",
+     "",
+     ""
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "src/sdv_pipeline/core/pipeline.py",
+    "line": 13,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "from datetime import datetime",
+     "",
+     "# SDV imports",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "# Pipeline components",
+     "from .profiling.profiler import DataProfiler",
+     "from .profiling.llm_interface import BedrockLLMInterface"
+    ]
+   },
+   {
+    "file": "src/sdv_pipeline/core/shared/synthesizer.py",
+    "line": 9,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "",
+     "try:",
+     "    from sdv.single_table import GaussianCopulaSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    # Use newer CAG constraints (have _is_single_table attribute) instead of legacy constraints",
+     "    from sdv.cag import Inequality, Range as ScalarRange, FixedCombinations, FixedIncrements, OneHotEncoding",
+     "    from sdv.constraints import Unique  # Unique still only in legacy system"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "src/sdv_pipeline/core/pipeline.py",
+    "line": 13,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "from datetime import datetime",
+     "",
+     "# SDV imports",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "# Pipeline components",
+     "from .profiling.profiler import DataProfiler",
+     "from .profiling.llm_interface import BedrockLLMInterface"
+    ]
+   },
+   {
+    "file": "src/sdv_pipeline/core/pipeline.py",
+    "line": 203,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata=sdv_metadata)",
+    "context": [
+     "        # Stage 6: SDV Synthesis",
+     "        self.logger.info(\"Stage 6: SDV Synthesis\")",
+     "        try:",
+     "            # Initialize synthesizer",
+     "            synthesizer = GaussianCopulaSynthesizer(metadata=sdv_metadata)",
+     "",
+     "            # Add SDV constraints",
+     "            if sdv_constraints:",
+     "                for constraint_config in sdv_constraints:"
+    ]
+   },
+   {
+    "file": "src/sdv_pipeline/core/shared/synthesizer.py",
+    "line": 9,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "",
+     "try:",
+     "    from sdv.single_table import GaussianCopulaSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    # Use newer CAG constraints (have _is_single_table attribute) instead of legacy constraints",
+     "    from sdv.cag import Inequality, Range as ScalarRange, FixedCombinations, FixedIncrements, OneHotEncoding",
+     "    from sdv.constraints import Unique  # Unique still only in legacy system"
+    ]
+   },
+   {
+    "file": "src/sdv_pipeline/core/shared/synthesizer.py",
+    "line": 376,
+    "text": "self.model = GaussianCopulaSynthesizer(",
+    "context": [
+     "",
+     "        # Initialize model with all constraints",
+     "        try:",
+     "            if all_constraints:",
+     "                self.model = GaussianCopulaSynthesizer(",
+     "                    metadata,",
+     "                    constraints=all_constraints,",
+     "                    enforce_min_max_values=True,",
+     "                    enforce_rounding=True,"
+    ]
+   },
+   {
+    "file": "src/sdv_pipeline/core/shared/synthesizer.py",
+    "line": 382,
+    "text": "self.logger.info(f\"Initialized GaussianCopulaSynthesizer with {len(all_constraints)} constraints \"",
+    "context": [
+     "                    constraints=all_constraints,",
+     "                    enforce_min_max_values=True,",
+     "                    enforce_rounding=True,",
+     "                )",
+     "                self.logger.info(f\"Initialized GaussianCopulaSynthesizer with {len(all_constraints)} constraints \"",
+     "                               f\"({len(sdv_constraint_instances)} SDV built-in, \"",
+     "                               f\"{len(programmable_constraints) if programmable_constraints else 0} programmable)\")",
+     "            else:",
+     "                self.model = GaussianCopulaSynthesizer("
+    ]
+   },
+   {
+    "file": "src/sdv_pipeline/core/shared/synthesizer.py",
+    "line": 386,
+    "text": "self.model = GaussianCopulaSynthesizer(",
+    "context": [
+     "                self.logger.info(f\"Initialized GaussianCopulaSynthesizer with {len(all_constraints)} constraints \"",
+     "                               f\"({len(sdv_constraint_instances)} SDV built-in, \"",
+     "                               f\"{len(programmable_constraints) if programmable_constraints else 0} programmable)\")",
+     "            else:",
+     "                self.model = GaussianCopulaSynthesizer(",
+     "                    metadata,",
+     "                    enforce_min_max_values=True,",
+     "                    enforce_rounding=True,",
+     "                )"
+    ]
+   },
+   {
+    "file": "src/sdv_pipeline/core/shared/synthesizer.py",
+    "line": 391,
+    "text": "self.logger.info(\"Initialized GaussianCopulaSynthesizer with no constraints\")",
+    "context": [
+     "                    metadata,",
+     "                    enforce_min_max_values=True,",
+     "                    enforce_rounding=True,",
+     "                )",
+     "                self.logger.info(\"Initialized GaussianCopulaSynthesizer with no constraints\")",
+     "        except Exception as e:",
+     "            self.logger.warning(f\"Failed to initialize with constraints, falling back to no constraints: {str(e)}\")",
+     "            # Fallback to model without constraints",
+     "            self.model = GaussianCopulaSynthesizer("
+    ]
+   },
+   {
+    "file": "src/sdv_pipeline/core/shared/synthesizer.py",
+    "line": 395,
+    "text": "self.model = GaussianCopulaSynthesizer(",
+    "context": [
+     "                self.logger.info(\"Initialized GaussianCopulaSynthesizer with no constraints\")",
+     "        except Exception as e:",
+     "            self.logger.warning(f\"Failed to initialize with constraints, falling back to no constraints: {str(e)}\")",
+     "            # Fallback to model without constraints",
+     "            self.model = GaussianCopulaSynthesizer(",
+     "                metadata,",
+     "                enforce_min_max_values=True,",
+     "                enforce_rounding=True,",
+     "            )"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv>=1.28.0",
+   "sdmetrics>=0.14.0",
+   "ctgan>=0.9.0"
+  ],
+  "pyproject.toml": [
+   "name = \"sdv-pipeline\"",
+   "    { name = \"SDV Pipeline Team\" },",
+   "    \"sdv>=1.28.0\",",
+   "sdv-pipeline = \"sdv_pipeline.cli:app\"",
+   "Homepage = \"https://github.com/sdv-pipeline/sdv-pipeline\"",
+   "Documentation = \"https://sdv-pipeline.readthedocs.io\"",
+   "Repository = \"https://github.com/sdv-pipeline/sdv-pipeline\"",
+   "Issues = \"https://github.com/sdv-pipeline/sdv-pipeline/issues\""
+  ]
+ }
+}

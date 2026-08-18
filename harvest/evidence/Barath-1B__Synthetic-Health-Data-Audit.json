@@ -1,0 +1,143 @@
+{
+ "repo": "Barath-1B/Synthetic-Health-Data-Audit",
+ "disk_kb": 1491,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Synthetic Mental Health Data Generation\n\nA graduate-level deep learning pipeline that generates privacy-safe synthetic tabular data from real mental health survey datasets using a Variational Autoencoder (VAE) and Conditional Tabular GAN (CTGAN).\n\n---\n\n## Overview\n\nSharing sensitive health data across institutions is legally and ethically constrained — even when the data is nominally anonymised. This project addresses that problem by learning the statistical distribution of real data and generating a synthetic twin: a dataset with no real individuals but identical statistical properties.\n\nThe pipeline covers end-to-end: data preprocessing → model training → synthetic generation → evaluation across three dimensions (statistical fidelity, downstream utility, privacy resilience).\n\n---\n\n## Datasets\n\n| Dataset | Type | Samples | Target |\n|---|---|---|---|\n| NHANES (DPQ module) | Tabular survey | ~5,000 | Binary depression (PHQ-9 ≥ 10) |\n| DASS-42 | Tabular survey | ~1,000+ | Severity category (5-class) |\n\n---\n\n## Models\n\n| Model | Purpose | Key Feature |\n|---|---|---|\n| VAE | Continuous latent representation | KL divergence regularisation |\n| CTGAN | Adversarial tabular generation | WGAN-GP + mode-specific normalisation |\n\n---\n\n## Evaluation\n\n| Dimension | Method | Tool |\n|---|---|---|\n| Statistical fidelity | KS test + correlation matrix | `evaluation/statistical.py` |\n| Downstream utility | TSTR vs TRTR (AUC-ROC) | `evaluation/utility.py` |\n| Privacy | DCR + Membership Inference Attack | `evaluation/privacy.py` |\n\n---\n\n## Tech Stack\n\n- Python 3.10+\n- PyTorch\n- scikit-learn\n- pandas / numpy\n- matplotlib / seaborn\n\n---\n\n## Quick Start\n\n```bash\npip install -r requirements.txt\npython preprocess.py --dataset nhanes\npython models/vae/train.py --dataset nhanes\npython generate.py --model vae --dataset nhanes --n 1000\n```\n\nSee `CLAUDE.md` for full architecture details, hyperparameters, and implementation rules.",
+ "hits": {
+  "st": [
+   {
+    "file": "baselines/tvae_baseline.py",
+    "line": 13,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "",
+     "import pandas as pd",
+     "import numpy as np",
+     "",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "import sys",
+     "ROOT = Path(__file__).resolve().parents[1]"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "baselines/tvae_baseline.py",
+    "line": 14,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "import sys",
+     "ROOT = Path(__file__).resolve().parents[1]",
+     "sys.path.insert(0, str(ROOT))"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "baselines/tvae_baseline.py",
+    "line": 13,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "",
+     "import pandas as pd",
+     "import numpy as np",
+     "",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "import sys",
+     "ROOT = Path(__file__).resolve().parents[1]"
+    ]
+   },
+   {
+    "file": "baselines/tvae_baseline.py",
+    "line": 14,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "import sys",
+     "ROOT = Path(__file__).resolve().parents[1]",
+     "sys.path.insert(0, str(ROOT))"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "baselines/tvae_baseline.py",
+    "line": 13,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "",
+     "import pandas as pd",
+     "import numpy as np",
+     "",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "import sys",
+     "ROOT = Path(__file__).resolve().parents[1]"
+    ]
+   },
+   {
+    "file": "baselines/tvae_baseline.py",
+    "line": 49,
+    "text": "synthesizer = TVAESynthesizer(",
+    "context": [
+     "    set_all_seeds(seed)",
+     "    train_df = pd.read_csv(DATA_PROCESSED / \"nhanes_train.csv\")",
+     "",
+     "    metadata = build_metadata(train_df)",
+     "    synthesizer = TVAESynthesizer(",
+     "        metadata,",
+     "        epochs=config.TVAE_EPOCHS,",
+     "        batch_size=500,",
+     "        embedding_dim=config.TVAE_EMBEDDING_DIM,"
+    ]
+   },
+   {
+    "file": "baselines/tvae_baseline.py",
+    "line": 84,
+    "text": "synthesizer = TVAESynthesizer.load(str(checkpoint_path))",
+    "context": [
+     "        DataFrame of synthetic data with same schema as training data",
+     "    \"\"\"",
+     "    set_all_seeds(seed)",
+     "    n = n or N_SYNTHETIC",
+     "    synthesizer = TVAESynthesizer.load(str(checkpoint_path))",
+     "    synthetic = synthesizer.sample(num_rows=n)",
+     "",
+     "    out_path = DATA_SYNTHETIC / f\"tvae_synthetic_seed{seed}.csv\"",
+     "    synthetic.to_csv(out_path, index=False)"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [
+  "models/ctgan"
+ ],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv>=1.9.0"
+  ]
+ }
+}

@@ -1,0 +1,52 @@
+{
+ "repo": "Qadeer2syed/CausalTGAN-Research-on-Cybersecurity",
+ "disk_kb": 44249,
+ "method": "partial_clone",
+ "tree_files": 79,
+ "status": "ok",
+ "readme": "# Causal-TGAN\nThis is the code for the project [Causal-TGAN: Causally-Aware Tabular Data Generative Adversarial Networks](https://openreview.net/forum?id=BEhxCh4dvW5)\n\n## Citation\nIf you use this code for your research, please cite:\n```\n@inproceedings{\nwen2022causaltgan,\ntitle={Causal-{TGAN}: Modeling Tabular Data Using Causally-Aware {GAN}},\nauthor={Bingyang Wen and Yupeng Cao and Fan Yang and Koduvayur Subbalakshmi and Rajarathnam Chandramouli},\nbooktitle={ICLR Workshop on Deep Generative Models for Highly Structured Data},\nyear={2022},\nurl={https://openreview.net/forum?id=BEhxCh4dvW5}\n}\n```\n\n## Prerequisties\nThe project is built on python3.6 with the pytorch version of 1.9.0.\n\nTo run this project, please add a new python environment path to this project. For example if your cloned repository reside in `/home/username/CausalTGAN`, then one way to do this is `export PYTHONPATH=\"/home/username\"` from command line or add it to your `~/.bashrc`. \n\n## To prepare a dataset for training Causal-TGAN\n- An example dataset is illustrated in `./data/real_world/adult`. <br>\n\n- Instructions of adding the customized dataset is following:\n\t- Step 1: Add your dataset name and name of column information into `helper/constant.py`. For example:\n\t```python\n\tDATASETS = ['asia', 'alarm', 'child', 'insurance', 'your dataset name']\n\tYOUR_DATASET_NAME = ['column_1', 'column_2', 'column_3']\n\n\t```\n\t\n\t- Step 2: Check your dataset type (Continuous, Discrete, Mix) and add the dataset type information into `check_BN_datatype()` function in `helper/utils.py`. For example, if your dataset is Continuous type dataset, you can modify the code as following:\n\t\n\t```python\n\tdef check_BN_datatype(data_name):\n\t...\n\t\n          if data_name in ['your_dataset_name']:\n              return 'continuous'\n\t      \n\t...\n\t```\n\t\n\t- Step 3 (Optional): If customized dataset is Continuous type, please declare Discrete Column in `get_discrete_cols()` function in `helper/utils.py`. For example,\n\t```python\n\tdef get_discrete_cols(data, data_name):\n\t...\n\t\n\t  if data_name == 'your_dataset_name':\n          discrete_cols = Discrete_Column_Name\n\t  \n\t...\n\t```\n\t\n\t- Step 4: Prepare your causal graph by using **Tetrad**. You can go to https://www.ccd.pitt.edu/tools/ and click [Tetrad Latest Executable] to download **Tetrad**. We have created a tutorial on how to use **Tetrad** to generate causal graphs. See in [Tetrad_Tutorial.pdf](Tetrad_Tutorial.pdf) <br> \n\t           After this steps, you should have a 'graph_tetrad.txt' file. \n\t\t   \n\t- Step 5: Use `helper/graphFromTetrad.py` to convert Tetrad graph to common graph data and save it as 'graph.txt'. \n\n- Now, you have completed the preparation steps for the dataset. Your dataset folder structure should look like the following:\n\n```\n|-data\n|  |-customized_dataset\n|     |-graph.txt\n|     |-train.csv\n|     |-test.csv\n\n```\nThen, you can use the `load_data_graph(args.data_name)` function in `train.py` to load your customized datasets and train model.\n\n\n## To train a Causal-TGAN\n`python train.py`. The training details such as dataset and epochs are set inside `train.py`\n\n## To sample from Causal-TGAN\n`python sampling.py`. The details such as number of samples to generate and causal-TGAN path are set inside `sampling.py`\n\n",
+ "hits": {
+  "rdt": [
+   {
+    "file": "dataset.py",
+    "line": 8,
+    "text": "from rdt.transformers import OneHotEncoder",
+    "context": [
+     "from collections import namedtuple",
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from rdt.transformers import OneHotEncoder",
+     "from sklearn.mixture import BayesianGaussianMixture",
+     "from sklearn.preprocessing import StandardScaler, LabelEncoder",
+     "",
+     "# from https://github.com/sdv-dev"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "docs/CYBERSECURITY_IMPLEMENTATION_GUIDE.md",
+    "line": 799,
+    "text": "from sdv.tabular import CopulaGAN",
+    "context": [
+     "# 2. CTGAN (no causal knowledge)",
+     "# Train with causal_graph = []",
+     "",
+     "# 3. CopulaGAN",
+     "from sdv.tabular import CopulaGAN",
+     "model = CopulaGAN()",
+     "model.fit(data)",
+     "synthetic = model.sample(100000)",
+     "```"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "rdt",
+  "sdv_any"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

@@ -1,0 +1,144 @@
+{
+ "repo": "umutuck/diyabet_projesi",
+ "disk_kb": 10683,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Diyabet Risk Tahmin Sistemi\n\nMakine öğrenmesi algoritmalarını karşılaştırarak diyabet riskini tahmin eden, 3 farklı veri seti üzerinde test edilmiş, Streamlit tabanlı interaktif web uygulaması.\n\n---\n\n## Ekran Görüntüleri\n\n| Korelasyon Matrisi | ROC Eğrisi | Confusion Matrix |\n|:-:|:-:|:-:|\n| ![Korelasyon](output/pima_diabetes/korelasyon.png) | ![ROC](output/pima_diabetes/roc_curve.png) | ![CM](output/pima_diabetes/confusion_matrix.png) |\n\n| Feature Selection | Karşılaştırma |\n|:-:|:-:|\n| ![FS](output/pima_diabetes/feature_selection_karsilastirma.png) | ![Karsilastirma](output/karsilastirma/karsilastirma_grafik.png) |\n\n---\n\n## Özellikler\n\n- 3 farklı veri setinde test edilmiş genellenebilir pipeline\n- 9 farklı ML algoritmasını otomatik karşılaştırır ve en iyisini seçer\n- 5 farklı feature selection yöntemi karşılaştırması\n- Optuna ile hiperparametre optimizasyonu (50 deneme, önbellekleme ile)\n- RepeatedStratifiedKFold ile 10 iterasyon (5 fold × 2 tekrar)\n- Sentetik veri üretimi (SDV GaussianCopula) ile veri artırma\n- Eşik optimizasyonu ile diyabetli bireyleri kaçırma riskini minimize eder\n- Streamlit arayüzü üzerinden anlık tahmin yapılabilir\n- Veri sızıntısı (data leakage) önlemleri alınmıştır\n\n---\n\n## Kullanılan Algoritmalar\n\n| Algoritma | Açıklama |\n|---|---|\n| Logistic Regression | Temel sınıflandırma |\n| Decision Tree | Karar ağacı |\n| KNN | K-en yakın komşu |\n| SVM | Destek vektör makinesi |\n| Random Forest | Topluluk yöntemi |\n| XGBoost | Gradient boosting |\n| LightGBM | Hızlı gradient boosting |\n| Gradient Boosting | Sklearn gradient boosting |\n| Naive Bayes | Olasılıksal sınıflandırma |\n\nHer algoritma hem **tüm özelliklerle** hem de **en önemli 5 özellikle** test edilir (18 kombinasyon).\n\n---\n\n## Veri Setleri\n\n| Veri Seti | Kaynak | Satır | Özellik | Hedef |\n|---|---|---|---|---|\n| Pima Indians Diabetes | UCI / NIDDK | 768 | 8 | Diyabet var/yok |\n| Early Stage Diabetes Risk | UCI (ID:529) | 520 | 16 | Diyabet var/yok |\n| Heart Disease (Cleveland) | UCI (ID:45) | 303 | 13 | Hastalık var/yok |\n\n---\n\n## Sonuçlar\n\n| Veri Seti | En İyi Model | Accuracy | AUC |\n|---|---|---|---|\n| Pima Indians Diabetes | XGBoost | %90.2 | 0.966 |\n| Early Stage Diabetes Risk | SVM | %97.1 | 0.996 |\n| Heart Disease (Cleveland) | Random Forest | %88.5 | 0.954 |\n\n---\n\n## Proje Yapısı\n\n```\ndiyabet_projesi/\n│\n├── data/                          ← Veri setleri\n│   ├── diabetes.csv               ← Pima Indians (orijinal)\n│   ├── early_stage_diabetes.csv   ← Early Stage Diabetes (UCI)\n│   └── heart_disease.csv          ← Heart Disease Cleveland (UCI)\n│\n├── output/                        ← Grafikler\n│   ├── pima_diabetes/             ← Pima grafikleri\n│   ├── early_stage_diabetes/      ← Early Stage grafikleri\n│   ├── heart_disease/             ← Heart Disease grafikleri\n│   └── karsilastirma/             ← 3 veri seti karşılaştırması\n│\n├── cache/                         ← Optuna parametre dosyaları\n│\n├── model.py                       ← Ana model (Pima, tam detay)\n├── coklu_veri.py                  ← 3 veri seti karşılaştırması\n├── veri_artir.py                  ← Sentetik veri üretimi (SDV)\n├── app.py                         ← Streamlit arayüzü\n├── tek_tikla_calistir.bat         ← Kolay çalıştırma (Windows)\n├── NASIL_CALISTIRILIR.md          ← Çalıştırma kılavuzu\n└── README.md\n```\n\n---\n\n## Kurulum ve Çalıştırma\n\n```bash\n# Gereksinimleri yükle\npip install -r requirements.txt\n\n# 1. Sentetik veri üret (isteğe bağlı)\npython veri_artir.py\n\n# 2. Ana modeli eğit (Pima)\npython model.py\n\n# 3. Çoklu veri seti karşılaştırması\npython coklu_veri.py\n\n# 4. Web uygulamasını başlat\nstreamlit run app.py\n```\n\n---\n\n## Model Pipeline\n\n```\nVeri Yükleme\n     ↓\nTemizleme (Medyan İmputasyon)\n     ↓\nKorelasyon Analizi\n     ↓\nTrain/Test Split (RepeatedStratifiedKFold — 10 iterasyon)\n     ↓\nSınıf Dengeleme (Downsampling, hedef 2:1)\n     ↓\nFeature Selection (5 Yöntem: MI, Chi2, ANOVA, RFE, SelectFromModel)\n     ↓\nHiperparametre Optimizasyonu (Optuna — 50 deneme, önbellekli)\n     ↓\n9 Algoritma × 2 Özellik Seti = 18 Kombinasyon\n     ↓\nEn İyi Model Seçimi (CV-AUC öncelikli)\n     ↓\nEşik Optimizasyonu (F1-Score bazlı)\n     ↓\nmodel.pkl kaydet\n```\n\n---\n\n## Feature Selection Yöntemleri\n\n| Yöntem | Açıklama |\n|---|---|\n| Mutual Information | Özellik-hedef bağımlılığı |\n| Chi-Squared | Kategorik ilişki testi |\n| ANOVA F-test | Gruplar arası varyans analizi |\n| RFE | Recursive Feature Elimination |\n| SelectFromModel | Model tabanlı özellik seçimi |\n\n---\n\n## Kullanılan Teknolojiler\n\n![Python](https://img.shields.io/badge/Python-3.8+-blue?logo=python)\n![Streamlit](https://img.shields.io/badge/Streamlit-red?logo=streamlit)\n![scikit-learn](https://img.shields.io/badge/scikit--learn-orange?logo=scikit-learn)\n![XGBoost](https://img.shields.io/badge/XGBoost-green)\n![Optuna](https://img.shields.io/badge/Optuna-blue)\n![SDV](https://img.shields.io/badge/SDV-purple)\n![LightGBM](https://img.shields.io/badge/LightGBM-yellow)\n![Pandas](https://img.shields.io/badge/Pandas-purple?logo=pandas)\n",
+ "hits": {
+  "st": [
+   {
+    "file": "veri_artir.py",
+    "line": 6,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "import numpy as np",
+     "import matplotlib",
+     "matplotlib.use('Agg')",
+     "import matplotlib.pyplot as plt",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "print(\"=\"*60)",
+     "print(\"VERİ ARTIRMA (Synthetic Data Generation)\")"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "veri_artir.py",
+    "line": 7,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import matplotlib",
+     "matplotlib.use('Agg')",
+     "import matplotlib.pyplot as plt",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "print(\"=\"*60)",
+     "print(\"VERİ ARTIRMA (Synthetic Data Generation)\")",
+     "print(\"=\"*60)"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "veri_artir.py",
+    "line": 6,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "import numpy as np",
+     "import matplotlib",
+     "matplotlib.use('Agg')",
+     "import matplotlib.pyplot as plt",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "print(\"=\"*60)",
+     "print(\"VERİ ARTIRMA (Synthetic Data Generation)\")"
+    ]
+   },
+   {
+    "file": "veri_artir.py",
+    "line": 7,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import matplotlib",
+     "matplotlib.use('Agg')",
+     "import matplotlib.pyplot as plt",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "print(\"=\"*60)",
+     "print(\"VERİ ARTIRMA (Synthetic Data Generation)\")",
+     "print(\"=\"*60)"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "veri_artir.py",
+    "line": 6,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "import numpy as np",
+     "import matplotlib",
+     "matplotlib.use('Agg')",
+     "import matplotlib.pyplot as plt",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "print(\"=\"*60)",
+     "print(\"VERİ ARTIRMA (Synthetic Data Generation)\")"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "veri_artir.py",
+    "line": 6,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "import numpy as np",
+     "import matplotlib",
+     "matplotlib.use('Agg')",
+     "import matplotlib.pyplot as plt",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "print(\"=\"*60)",
+     "print(\"VERİ ARTIRMA (Synthetic Data Generation)\")"
+    ]
+   },
+   {
+    "file": "veri_artir.py",
+    "line": 50,
+    "text": "synth = GaussianCopulaSynthesizer(meta_sinif)",
+    "context": [
+     "    df_sinif = df_original[df_original['Outcome'] == sinif].copy()",
+     "    meta_sinif = SingleTableMetadata()",
+     "    meta_sinif.detect_from_dataframe(df_sinif)",
+     "",
+     "    synth = GaussianCopulaSynthesizer(meta_sinif)",
+     "    synth.fit(df_sinif)",
+     "    df_sentetik = synth.sample(num_rows=uretilecek)",
+     "    df_sentetik['Outcome'] = sinif",
+     "    sentetik_parcalar.append(df_sentetik)"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv==1.36.1"
+  ]
+ }
+}

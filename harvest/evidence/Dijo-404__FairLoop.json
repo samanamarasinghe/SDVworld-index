@@ -1,0 +1,142 @@
+{
+ "repo": "Dijo-404/FairLoop",
+ "disk_kb": 112,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# FairLoop — In-Loop Bias Prevention System\n\n> **Every other team builds a bias detector. FairLoop builds a bias firewall.**\n\n[![Google Solution Challenge 2026](https://img.shields.io/badge/Google%20Solution%20Challenge-2026-4285F4?style=flat&logo=google)](https://developers.google.com/community/gdsc-solution-challenge)\n[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)\n[![Python 3.12+](https://img.shields.io/badge/Python-3.12+-blue.svg)](https://www.python.org/downloads/)\n\nFairLoop is an open-source, **hyperagent-powered** bias prevention system that embeds a **Neutral Validator Agent** directly inside the AI model training loop — catching, auditing, and correcting biased training data **before** it ever reaches the learning model.\n\n## Key Results\n\nTested on the UCI Adult Income dataset (32,561 records):\n\n| Metric | Baseline (No FairLoop) | With FairLoop | Change |\n|--------|----------------------|---------------|--------|\n| **Disparate Impact Ratio** | 0.606 | **0.887** | +46% improvement |\n| **Demographic Parity Diff** | -0.036 | **-0.017** | 53% closer to fair |\n| **Equal Opportunity Diff** | -0.091 | **0.099** | Within threshold |\n| **Accuracy** | 80.64% | **80.25%** | Only 0.4% cost |\n\n> Disparate Impact Ratio improved from **0.606 → 0.887**, crossing the **0.80 (80% rule) threshold** required by EEOC guidelines — with only **0.4% accuracy cost**.\n\n## Architecture\n\n```mermaid\ngraph TD\n    O[Orchestrator Agent<br/>State Machine] -->|coordinates| D[Data Agent]\n    O -->|coordinates| S[Synth Agent]\n    O -->|coordinates| F[Feature Agent]\n    \n    D -->|raw batch| V[Neutral Validator Agent]\n    S -->|raw batch| V\n    F -->|raw batch| V\n    \n    Gemini[Gemini 1.5 Pro<br/>independent LLM] -.-> V\n    \n    V -->|APPROVE| L[Learner Agent<br/>only clean batches]\n    V -->|REMEDIATE / REJECT| R[Remediation Agent]\n    \n    R -->|re-validate| V\n    \n    L --> A[Audit Log + Dashboard]\n```\n\n### Agent Network\n\n| Agent | Role | Technology |\n|-------|------|------------|\n| **Orchestrator** | Coordinates all agents, manages training loop state | LangGraph / Python |\n| **Data Agent** | Ingests data, validates schema, chunks into batches | HuggingFace Datasets |\n| **Synth Agent** | Generates balanced synthetic samples for underrepresented groups | SDV / Statistical Resampling |\n| **Feature Agent** | Transforms features, detects proxy variables | scikit-learn |\n| **Validator Agent** | Independent fairness auditor (statistical + semantic) | Custom + Gemini 1.5 Pro |\n| **Remediation Agent** | Repairs biased batches via 5-strategy hierarchy | AIF360 Reweighing + Custom |\n| **Learner Agent** | Trains only on validated batches | LogisticRegression / LoRA |\n\n## Quick Start\n\n### 1. Install\n\n```bash\ngit clone https://github.com/your-username/fairloop.git\ncd fairloop\npip install -r requirements.txt\n```\n\n### 2. Run the Demo\n\n```bash\n# Quick comparison: Baseline vs FairLoop (5 iterations each)\npython main.py demo\n\n# Full pipeline (20 iterations)\npython main.py run --iterations 20\n\n# Train WITHOUT FairLoop (biased baseline)\npython main.py baseline\n```\n\n### 3. Start the Dashboard\n\n```bash\n# Start API server\npython main.py server\n\n# Open dashboard/index.html in your browser\n# The dashboard connects to http://localhost:8000\n```\n\n### 4. Docker (production)\n\n```bash\ndocker-compose up\n# API: http://localhost:8000\n# Dashboard: http://localhost:3000\n```\n\n## Fairness Metrics\n\nFairLoop evaluates every batch against **7 statistical metrics**:\n\n| # | Metric | Threshold | Description |\n|---|--------|-----------|-------------|\n| 1 | **Demographic Parity Difference** | ≤ 0.10 | Outcome rate gap between groups |\n| 2 | **Disparate Impact Ratio** | ≥ 0.80 | EEOC 80% rule — ratio of positive outcomes |\n| 3 | **Equal Opportunity Difference** | ≤ 0.10 | True positive rate gap |\n| 4 | **Predictive Parity Difference** | ≤ 0.10 | Precision gap across groups |\n| 5 | **Individual Fairness Score** | ≥ 0.85 | Similar inputs → similar outcomes |\n| 6 | **Representation Balance** | ≥ 0.75 | Minority group representation |\n| 7 | **Proxy Variable Detection** | r < 0.60 | Flags correlated columns (zip code, etc.) |\n\nPlus an optional **semantic layer** via Gemini 1.5 Pro for detecting stereotyped language and coded bias.\n\n## Remediation Strategies\n\nWhen a batch is flagged, the Remediation Agent applies strategies in order:\n\n1. **Re-weighting** — Kamiran & Calders (2012) algorithm to equalize outcome rates\n2. **Disparate Impact Removal** — Repair feature distributions toward group-conditional medians\n3. **Counterfactual Augmentation** — Flip protected attributes to generate balanced samples\n4. **Synthetic Infill** — Generate targeted synthetic data for underrepresented groups\n5. **Balanced Resampling** — Oversample minority groups to match majority\n\nMax **2 remediation cycles per batch** to prevent infinite loops.\n\n## Audit Log & Compliance\n\nEvery Validator decision is logged immutably:\n\n```json\n{\n  \"iteration\": 5,\n  \"batch_id\": \"batch_abc123\",\n  \"verdict\": \"REMEDIATE\",\n  \"metrics\": {\n    \"disparate_impact_ratio\": 0.397,\n    \"demographic_parity_diff\": -0.188\n  },\n  \"reason\": \"DI ratio 0.397 below 0.80 threshold\",\n  \"remediation_applied\": \"reweighting + synthetic_infill\",\n  \"final_verdict\": \"APPROVE\"\n}\n```\n\nExport compliance reports for:\n- **EU AI Act** (Article 10 — Data Governance)\n- **US EEOC** Uniform Guidelines on Employee Selection (80% rule)\n- **IEEE 7010-2020** (Well-being Impact Assessment)\n\n## Live Dashboard\n\nThe React + Recharts dashboard shows:\n- **Fairness Metrics Over Time** — DI ratio trending toward 0.80+\n- **Verdict Distribution** — Approve/Remediate/Reject pie chart\n- **Model Performance** — Accuracy + loss curves\n- **Audit Log** — Real-time batch decisions with verdict badges\n\n## API Reference\n\n| Endpoint | Method | Description |\n|----------|--------|-------------|\n| `POST /pipeline/start` | Start pipeline | Configure and launch FairLoop |\n| `GET /pipeline/status` | Pipeline status | Current state, metrics, verdicts |\n| `GET /pipeline/metrics` | Training metrics | Full metrics history |\n| `GET /audit/entries` | Audit log | Filterable decision history |\n| `GET /audit/summary` | Audit summary | Aggregate statistics |\n| `GET /audit/compliance-report` | Compliance | Full regulatory report |\n| `WS /ws` | WebSocket | Live event stream |\n\n## Project Structure\n\n```\nfairloop/\n├── agents/\n│   ├── orchestrator.py      # Central coordinator (LangGraph state machine)\n│   ├── data_agent.py        # Data ingestion + batching\n│   ├── synth_agent.py       # Synthetic data generation\n│   ├── feature_agent.py     # Feature engineering + proxy detection\n│   ├── validator_agent.py   # Neutral Validator (statistical + semantic)\n│   ├── remediation_agent.py # 5-strategy bias repair\n│   └── learner_agent.py     # Model training (sklearn / LoRA)\n├── core/\n│   ├── config.py            # Central configuration\n│   ├── fairness_metrics.py  # 7 fairness metrics engine\n│   └── audit_log.py         # Immutable SQLite audit log\n├── api/\n│   └── main.py              # FastAPI backend\n├── dashboard/\n│   └── index.html           # React + Recharts live dashboard\n├── tests/\n│   ├── test_metrics.py      # Fairness metrics tests\n│   └── test_validator.py    # Validator agent tests\n├── main.py                  # CLI entry point\n├── requirements.txt\n├── Dockerfile\n├── docker-compose.yml\n└── .env.example\n```\n\n## Key Design Decisions\n\n### Why a Separate LLM for Validation?\nIf the Validator shared weights with the Learner, it would inherit the same biases it is supposed to catch — circular failure. Using Gemini as an independent validator ensures structural independence. Like financial auditing: the auditor cannot be employed by the entity they audit.\n\n### Why In-Loop, Not Post-Hoc?\nPost-hoc debiasing is a patch — it constrains output while bias stays in the weights. In-loop prevention ensures the model **never learns biased patterns**, producing structural fairness, not superficial.\n\n### Why Multi-Agent?\nEach agent has one well-defined responsibility — auditable, replaceable, extensible. Swap the Remediation Agent's strategies independently. Tune the Validator's thresholds per domain.\n\n## References\n\n- Bellamy et al. (2019) — [AI Fairness 360](https://arxiv.org/abs/1810.01943)\n- Kamiran & Calders (2012) — Reweighing Algorithm\n- Caton & Haas (2020) — [Fairness in ML Survey](https://arxiv.org/abs/2010.04053)\n- EEOC Uniform Guidelines (1978) — 80% Rule\n- EU AI Act (2024) — Article 10: Data Governance\n\n## License\n\nMIT License — see [LICENSE](LICENSE) for details.\n\n---\n\n**Google Solution Challenge 2026 — Unbiased AI Decision Track**\n\n*Ensuring Fairness and Detecting Bias in Automated Decisions*\n",
+ "hits": {
+  "st": [
+   {
+    "file": "agents/synth_agent.py",
+    "line": 35,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "        self.fitted = True",
+     "",
+     "        if self.mode == \"ctgan\":",
+     "            try:",
+     "                from sdv.single_table import CTGANSynthesizer",
+     "                from sdv.metadata import SingleTableMetadata",
+     "",
+     "                metadata = SingleTableMetadata()",
+     "                metadata.detect_from_dataframe(df)"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "agents/synth_agent.py",
+    "line": 36,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "        if self.mode == \"ctgan\":",
+     "            try:",
+     "                from sdv.single_table import CTGANSynthesizer",
+     "                from sdv.metadata import SingleTableMetadata",
+     "",
+     "                metadata = SingleTableMetadata()",
+     "                metadata.detect_from_dataframe(df)",
+     "                self.synthesizer = CTGANSynthesizer("
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "agents/synth_agent.py",
+    "line": 35,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "        self.fitted = True",
+     "",
+     "        if self.mode == \"ctgan\":",
+     "            try:",
+     "                from sdv.single_table import CTGANSynthesizer",
+     "                from sdv.metadata import SingleTableMetadata",
+     "",
+     "                metadata = SingleTableMetadata()",
+     "                metadata.detect_from_dataframe(df)"
+    ]
+   },
+   {
+    "file": "agents/synth_agent.py",
+    "line": 36,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "        if self.mode == \"ctgan\":",
+     "            try:",
+     "                from sdv.single_table import CTGANSynthesizer",
+     "                from sdv.metadata import SingleTableMetadata",
+     "",
+     "                metadata = SingleTableMetadata()",
+     "                metadata.detect_from_dataframe(df)",
+     "                self.synthesizer = CTGANSynthesizer("
+    ]
+   },
+   {
+    "file": "agents/synth_agent.py",
+    "line": 125,
+    "text": "from sdv.sampling import Condition",
+    "context": [
+     "        self, num_rows: int, conditions: Optional[Dict[str, str]]",
+     "    ) -> pd.DataFrame:",
+     "        \"\"\"Generate using SDV CTGAN synthesizer.\"\"\"",
+     "        if conditions:",
+     "            from sdv.sampling import Condition",
+     "            cond = Condition(num_rows=num_rows, column_values=conditions)",
+     "            synthetic = self.synthesizer.sample_from_conditions([cond])",
+     "        else:",
+     "            synthetic = self.synthesizer.sample(num_rows=num_rows)"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "agents/synth_agent.py",
+    "line": 35,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "        self.fitted = True",
+     "",
+     "        if self.mode == \"ctgan\":",
+     "            try:",
+     "                from sdv.single_table import CTGANSynthesizer",
+     "                from sdv.metadata import SingleTableMetadata",
+     "",
+     "                metadata = SingleTableMetadata()",
+     "                metadata.detect_from_dataframe(df)"
+    ]
+   },
+   {
+    "file": "agents/synth_agent.py",
+    "line": 40,
+    "text": "self.synthesizer = CTGANSynthesizer(",
+    "context": [
+     "                from sdv.metadata import SingleTableMetadata",
+     "",
+     "                metadata = SingleTableMetadata()",
+     "                metadata.detect_from_dataframe(df)",
+     "                self.synthesizer = CTGANSynthesizer(",
+     "                    metadata,",
+     "                    epochs=self.config.synth_epochs,",
+     "                    verbose=True,",
+     "                )"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "# Optional: SDV (for CTGAN synthetic data)",
+   "# sdv>=1.0.0"
+  ]
+ }
+}

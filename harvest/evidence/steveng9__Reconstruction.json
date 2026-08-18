@@ -1,0 +1,370 @@
+{
+ "repo": "steveng9/Reconstruction",
+ "disk_kb": 1392,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# SoK: Reconstruction Attacks on Synthetic Tabular Data\n\nThis repository is the artifact for:\n\n> **SoK: Reconstruction Attacks on Synthetic Tabular Data (Insights from Winning the NIST CRC)**\n> Submitted to *Privacy Enhancing Technologies Symposium (PoPETs) 2027*\n\nThe framework systematically evaluates **reconstruction attacks** (attribute inference) on de-identified and synthetic tabular data. Given a synthetic dataset and a target record's quasi-identifying features (e.g., age, sex, race), each attack attempts to reconstruct the target's hidden attribute values. We benchmark **13 attack algorithms** against **9 synthetic data generation (SDG) methods** across **5 benchmark datasets**, and introduce six new attacks: **CoBP-RA**, **CondMST**, **CondDDPM**, **CondRePaint**, **ARFFormer**, and **MultiHeadMLP**.\n\nThe same methodology placed **first among all red teams** in the 2025 NIST Privacy Collaborative Research Cycle (CRC).\n\n---\n\n## Table of Contents\n\n1. [Overview](#overview)\n2. [Installation](#installation)\n3. [Datasets](#datasets)\n4. [Quick Start](#quick-start)\n5. [Reproducing Paper Results](#reproducing-paper-results)\n6. [Repository Structure](#repository-structure)\n7. [Attack Taxonomy](#attack-taxonomy)\n8. [SDG Methods](#sdg-methods)\n9. [Configuration Reference](#configuration-reference)\n10. [Citation](#citation)\n\n---\n\n## Overview\n\n### What this repo does\n\nThe central workflow is:\n\n```\nRaw data → Disjoint training samples → Synthetic data (via SDG) → Reconstruction attack → Scored results\n```\n\n- **`sdg/generate_synth.py`**: Generates synthetic data from training samples using any of 9 SDG methods.\n- **`master_experiment_script.py`**: Runs a reconstruction (or MIA) attack for a single configuration and logs results to [Weights & Biases](https://wandb.ai).\n- **`experiment_scripts/run_production_sweep.py`**: Parallelized sweep over all samples × SDG methods × attacks for a given dataset.\n\n### Scoring\n\nWe use **rarity-weighted reconstruction advantage** ($R_{adv}$): a correct prediction of a rare attribute value earns proportionally more credit than predicting a common one. Under this metric, a mode-baseline attack scores exactly $100/C$% for a $C$-valued feature regardless of the distribution; a perfect attack scores 100%. This was also the official scoring metric for the NIST CRC competition.\n\n---\n\n## Installation\n\n### Step 1: Clone this repository\n\n```bash\ngit clone <repo-url>\ncd Reconstruction\n```\n\n### Step 2: Create the experiment environment (`recon_`)\n\nThis environment is used to run attacks and experiments.\n\n```bash\nconda env create -f environment.yaml\nconda activate recon_\n```\n\nAdditional packages not in `environment.yaml`:\n\n```bash\npip install wandb lightgbm tabpfn\n\n# For CondMST attack (private-pgm / mbi library):\npip install git+https://github.com/ryan112358/private-pgm.git@01f02f17eba440f4e76c1d06fa5ee9eed0bd2bca\n```\n\n### Step 3: Create the SDG environment (`sdg`)\n\nA separate environment is used for generating synthetic data, since some SDG libraries (e.g., SmartNoise, SDV, SynthCity) conflict with the attack dependencies.\n\n```bash\nconda create -n sdg python=3.10\nconda activate sdg\npip install smartnoise-synth sdv synthcity pandas numpy scikit-learn tqdm\n```\n\nFor R-based methods (Synthpop, RankSwap, CellSuppression via sdcMicro):\n```bash\n# Install R ≥ 4.2 and the following packages in R:\nRscript -e \"install.packages(c('synthpop', 'sdcMicro'))\"\n```\n\nFor GPU-accelerated methods (TVAE, CTGAN, ARF, TabDDPM), a CUDA-enabled GPU is recommended but not required.\n\n### Step 4: Install external attack dependencies\n\nTwo sibling repositories are required for the **CondDDPM / CondRePaint** and **LinearReconstruction** attacks.\n\n**TabDDPM / RePaint attacks** (must be a sibling directory of `Reconstruction/`):\n```bash\ncd ..\ngit clone <MIA_on_diffusion_repo_url>\n# Expected path: ../MIA_on_diffusion/midst_models/single_table_TabDDPM/\n```\n\n**Linear Reconstruction attack** (LP + Gurobi, must be a sibling directory):\n```bash\ngit clone https://github.com/steveng9/recon-synth\n# Expected path: ../recon-synth/\n```\n\nThe LinearReconstruction attack also requires a [Gurobi](https://www.gurobi.com/) academic license (free for academics). Install via `pip install gurobipy` and activate with your license key.\n\n### Verifying the installation\n\n```bash\nconda activate recon_\n\n# Smoke-test all SDG methods (in sdg env):\nconda run -n sdg python -m sdg.test_sdg\n\n# Run a minimal reconstruction experiment:\npython master_experiment_script.py --n_runs 1 --on_server T\n```\n\n---\n\n## Datasets\n\nAll experiments use pre-generated data stored under a root data directory. The expected layout is:\n\n```\n/path/to/data/reconstruction_data/\n  {dataset}/\n    meta.json          ← feature metadata (categorical / continuous / ordinal)\n    full_data.csv      ← full raw dataset\n    size_{N}/\n      sample_{XX}/\n        train.csv      ← training sample (N rows)\n        holdout.csv    ← holdout for memorization tests (optional)\n        {SDG_Method_params}/\n          synth.csv    ← synthetic data generated from train.csv\n```\n\nUpdate `DATA_ROOT` at the top of `experiment_scripts/run_production_sweep.py` to point to your data directory.\n\n### Dataset 1: Adult (Census Income)\n\n**Size**: 47,621 rows, 15 features  \n**Type**: Categorical  \n**Source**: UCI Machine Learning Repository\n\n```bash\n# Download via UCI ML Repo\npip install ucimlrepo\npython -c \"from ucimlrepo import fetch_ucirepo; d = fetch_ucirepo(id=2); d.data.original.to_csv('adult/full_data.csv', index=False)\"\n```\n\nOr download directly from [https://archive.ics.uci.edu/dataset/2/adult](https://archive.ics.uci.edu/dataset/2/adult).\n\n**Quasi-identifiers (QI1 / demo)**: age, sex, race, native-country, education, marital-status  \n**Hidden features**: workclass, fnlwgt, education-num, occupation, relationship, capital-gain, capital-loss, hours-per-week, income\n\n### Dataset 2: CDC Diabetes Health Indicators\n\n**Size**: 253,680 rows, 22 features  \n**Type**: Categorical (all binary or low-cardinality)  \n**Source**: Kaggle / CDC BRFSS 2015\n\nDownload `diabetes_binary_health_indicators_BRFSS2015.csv` from [Kaggle](https://www.kaggle.com/datasets/alexteboul/diabetes-health-indicators-dataset).\n\n**Quasi-identifiers (QI1)**: Sex, Age, Education, Income, BMI, PhysActivity, Fruits, Veggies, HvyAlcoholConsump  \n**Hidden features**: Diabetes_binary, HighBP, HighChol, CholCheck, Smoker, Stroke, HeartDiseaseorAttack, PhysHlth, MentHlth, DiffWalk, AnyHealthcare, NoDocbcCost, GenHlth\n\n### Dataset 3: California Housing\n\n**Size**: 20,640 rows, 9 features  \n**Type**: Continuous  \n**Source**: scikit-learn built-in\n\n```bash\npython -c \"\nfrom sklearn.datasets import fetch_california_housing\nimport pandas as pd\nd = fetch_california_housing(as_frame=True)\ndf = d.frame\ndf.to_csv('california/full_data.csv', index=False)\n\"\n```\n\n**Quasi-identifiers (QI1)**: Latitude, Longitude, HouseAge, AveRooms  \n**Hidden features**: AveBedrms, Population, AveOccup, MedInc, MedHouseVal\n\n### Dataset 4: NIST Arizona (IPUMS 1940 Census)\nThis was the dataset used in the NIST CRC competition.\n\n**Size**: 293,999 rows, up to 98 features  \n**Type**: Categorical (integer-coded IPUMS variables)  \n**Source**: IPUMS USA (registration required)\n\nRegister at [https://usa.ipums.org/](https://usa.ipums.org/) and request the 1940 Arizona census extract with the 25-column subset described below. Rename or link the downloaded file to `nist_arizona_data/full_data.csv`.\n\nWe study three feature-subset variants:\n- **`nist_arizona_25feat`**: 25 columns (mirrors the NIST CRC competition format)\n- **`nist_arizona_50feat`**: 50 columns\n- **`nist_arizona_data`**: all 98 columns\n\nSee `NIST_code/README.md` for the full feature list and QI definitions.\n\n### Dataset 5: NIST Survey of Business Owners (SBO)\n\n**Size**: ~123,892 rows (after cleaning), 130 features  \n**Type**: Categorical  \n**Source**: Available from NIST upon request as part of the Privacy CRC\n\nThe SBO dataset was provided to red teams in the 2025 NIST Privacy CRC. Place the cleaned CSV at `nist_sbo/full_data.csv`. Contact NIST or the CRC organizers for access.\n\n### Setting up the data directory\n\nAfter acquiring the datasets, create the directory structure and generate training samples:\n\n```bash\nconda activate sdg\n\n# Edit DATASET, SAMPLE_SIZE, NUM_SAMPLES at the top of sdg/generate_synth.py\n# then:\npython sdg/generate_synth.py sample   # Step 1: carve out disjoint training samples\npython sdg/generate_synth.py sdg      # Step 2: generate synthetic data for each sample\npython sdg/generate_synth.py count    # Verify expected synth.csv files exist\n```\n\n---\n\n## Quick Start\n\n### Run a single experiment\n\n```bash\nconda activate recon_\n\n# Edit configs/example_cfg.yaml to point to your data and set the attack/SDG method\npython master_experiment_script.py --n_runs 1 --on_server T\n```\n\nResults are logged to WandB under the project and group specified in the config YAML. Set `WANDB_MODE=offline` to run without a WandB account.\n\n### Run the CoBP-RA attack on Adult (our best attack)\n\n```bash\n# Create a config pointing to adult/size_10000/sample_00, SDG_method=MST_eps1\n# attack_method: CoBP-RA\n# data_type: categorical\npython master_experiment_script.py --n_runs 1 --on_server T\n```\n\n---\n\n## Reproducing Paper Results\n\nThe paper reports results averaged over **5 disjoint training samples** × **9 SDG methods** (MST at 5 ε values + AIM, TVAE, CTGAN, ARF, TabDDPM, Synthpop, RankSwap, CellSuppression). The full production sweep is run via:\n\n```bash\nconda activate recon_\n\n# Edit dataset/paths/workers at the top of the script\npython experiment_scripts/run_production_sweep.py \\\n    --workers 8 \\\n    --progress-log outfiles/progress.log\n```\n\nMonitor progress:\n```bash\ntail -f outfiles/progress.log\n```\n\n### Specific paper experiments\n\n| Paper section | Script |\n|---|---|\n| Main attack × SDG table (Table 1) | `experiment_scripts/run_production_sweep.py` |\n| Epsilon sweep (MST, AIM over ε) | `experiment_scripts/run_mst_epsilon_rf_nb_sweep.py` |\n| LinearReconstruction comparison | `experiment_scripts/run_linear_sweep.py` |\n| Memorization test (train vs. holdout) | `experiment_scripts/run_memorization_sweep.py` |\n| MIA comparison (SynthDistance vs. NNDR vs. RA-as-MIA) | `experiment_scripts/compare_mia_ra.py` |\n| QI composition/size analysis | `experiment_scripts/qi_analysis/run_qi_sweep.py` |\n| Subgroup / disparate-impact analysis | `experiment_scripts/analyze_ra_subgroups.py` |\n| Ensembling heatmap | `experiment_scripts/run_ensembling_heatmap.py` + `plot_ensembling_heatmap.py` |\n| Chaining analysis | `experiment_scripts/run_chaining_analysis.py` |\n| Synthetic data quality evaluation | `experiment_scripts/evaluate_synth_quality.py` |\n\n### Rebuttal: cross-mechanism / cross-dataset epsilon-plateau validation\n\nAdded for a POPETS rebuttal to show the RA-plateaus-at-ε>1 finding isn't MST-specific. Same 9-point ε sweep (0.1, 0.3, 1, 3, 10, 30, 100, 300, 1000) and same 3 attacks (RandomForest, NaiveBayes, CoBP-RA) throughout, run against 4 additional, mechanistically-distinct DP generators (PrivBayes, MWEMPGM, PrivSyn, PrivateGSD — see SDG Methods table above) and, separately, a second dataset (cdc_diabetes) with the original 3 DP generators (MST, PrivBayes, PrivSyn).\n\n| Script | Purpose |\n|---|---|\n| `experiment_scripts/generate_new_dp_sweep.py` | Generate synth.csv for any SDG method(s)/epsilon(s)/sample(s) at a given `--data-root`/`--meta-path`. Runs a quick per-file quality check (TVD/JSD/pairwise-TVD/mean-err%) inline. |\n| `experiment_scripts/run_new_dp_epsilon_sweep.py` | RF + NaiveBayes + CoBP-RA attack sweep across SDG methods × epsilons × QIs × samples, with memorization test. Dataset/size/data-root/N_samples/QI-variants/wandb-group all overridable via `SWEEP_*` env vars (needed for `ProcessPoolExecutor(spawn)` workers, which inherit env but not post-import globals). Writes `new_dp_epsilon_sweep_{dataset}_sz{size}_{timestamp}.csv`. |\n| `experiment_scripts/insert_new_dp_sweep_to_db.py` | Insert that CSV into `results.db` (3 rows/job: split=standard/train/nontraining), same convention as the rest of the DB. `--dataset`/`--dataset-size`/`--wandb-group` flags. |\n| `experiment_scripts/run_private_gsd_full_pipeline.sh` | End-to-end: PrivateGSD, adult size_1000, 4 trials × 9 ε × 3 QIs × 3 attacks. |\n| `experiment_scripts/run_private_gsd_10k_pipeline.sh` | End-to-end: PrivateGSD, adult size_10000, 1 trial × 9 ε × 3 QIs × 3 attacks (PrivateGSD does not scale cleanly to n=10000 on CPU-only jax — this run may be slow or partially incomplete; the script degrades gracefully, running attacks on whatever synth.csv did finish). |\n| `experiment_scripts/run_cdc_dp_sweep_pipeline.sh` | End-to-end: MST + PrivBayes + PrivSyn, cdc_diabetes size_1000, 5 trials × 9 ε × 2 QIs (QI1, QI_large) × 3 attacks. |\n\nWandB groups: `new-dp-epsilon-sweep-adult-10k` (PrivBayes/MWEMPGM/PrivSyn @ adult 10k), `new-dp-epsilon-sweep-adult-1k-privategsd` (PrivateGSD @ adult 1k), `new-dp-epsilon-sweep-adult-10k-privategsd` (PrivateGSD @ adult 10k), `new-dp-epsilon-sweep-cdc-1k` (cdc_diabetes).\n\nTo pull results back out of `results.db` (averaged across whatever trials have completed so far):\n```python\nimport sqlite3, pandas as pd\nconn = sqlite3.connect('experiment_scripts/results.db')\ndf = pd.read_sql_query(\"\"\"\n    select sdg_method, dataset, dataset_size, qi, attack_label, sample, ra_mean\n    from runs where split='standard'\n    and (sdg_method like 'PrivBayes_%' or sdg_method like 'MWEMPGM_%'\n         or sdg_method like 'PrivateGSD_%' or sdg_method like 'PrivSyn_%'\n         or (dataset='cdc_diabetes' and sdg_method like 'MST_%'))\n\"\"\", conn)\ndf['method'] = df['sdg_method'].str.extract(r'^([A-Za-z]+)_eps')\ndf['eps'] = df['sdg_method'].str.extract(r'_eps([\\d\\.]+)$').astype(float)\n# pivot: rows=attack_label, cols=eps, averaged over sample, per (dataset, method, qi)\ndf.groupby(['dataset','method','qi','attack_label','eps'])['ra_mean'].mean().unstack('eps')\n```\n\n### Generating LaTeX tables from WandB results\n\n```bash\n# Main results table\npython experiment_scripts/wandb_to_latex.py --dataset adult --size 10000 --qi QI1\n\n# Epsilon sweep table\npython experiment_scripts/wandb_to_latex_epsilon_sweep.py --dataset adult\n\n# Per-feature breakdown\npython experiment_scripts/wandb_to_latex_by_feature.py --dataset adult\n\n# LinearReconstruction binary-feature table\npython experiment_scripts/linear_sweep_to_latex.py\n\n# Synthetic data quality table\npython experiment_scripts/synth_quality_to_latex.py experiment_scripts/synth_quality_results_*.csv\n```\n\n---\n\n## Repository Structure\n\n```\nReconstruction/\n├── master_experiment_script.py   ← Main entry point: runs one experiment, logs to WandB\n├── attack_defaults.py            ← Default hyperparameters for all 13 attacks\n├── get_data.py                   ← Data loading: load_data(), load_mia_data(), QI definitions\n├── scoring.py                    ← Rarity-weighted accuracy (categorical), NRMSE (continuous)\n├── util.py                       ← Shared utilities\n├── environment.yaml              ← Conda environment for running experiments (recon_ env)\n│\n├── attacks/                      ← All attack implementations\n│   ├── __init__.py               ← ATTACK_REGISTRY: maps {data_type: {name: fn}}\n│   ├── baselines_classifiers.py  ← Mode, Random, Copy baselines (categorical)\n│   ├── baselines_continuous.py   ← Mean, Median baselines (continuous)\n│   ├── ML_classifiers.py         ← KNN, NaiveBayes, LogisticRegression, SVM, RandomForest, LightGBM\n│   ├── ML_regression.py          ← KNN, LinearRegression, Ridge, Lasso, ElasticNet, SGD, RandomForest, LightGBM (continuous)\n│   ├── NN_classifier.py          ← MLP (categorical)\n│   ├── NN_regression.py          ← MLP (continuous)\n│   ├── attention_classifier.py   ← ARFFormer, ARFFormerAutoregressive (new)\n│   ├── joint_mlp.py              ← MultiHeadMLP: single network over all hidden features (new)\n│   ├── marginal_rf.py            ← CoBP-RA: RF posteriors + belief propagation (new, strongest attack)\n│   ├── partialMST.py             ← CondMST, CondMSTIndep, CondMSTBounded, CondMSTHub (new)\n│   ├── partialDiffusion.py       ← CondDDPM, CondRePaint, RePaint, CondDDPMWithMLP (new)\n│   ├── tabpfn_attack.py          ← TabPFN: pre-trained transformer attack\n│   └── mia.py                    ← Membership inference: SynthDistance, NNDR, RA-as-MIA\n│\n├── enhancements/                 ← Composable attack wrappers\n│   ├── chaining_wrapper.py       ← Sequential feature prediction (any order strategy)\n│   └── ensembling_wrapper.py     ← Multi-attack aggregation (voting, soft_voting, averaging)\n│\n├── sdg/                          ← Synthetic data generation\n│   ├── generate_synth.py         ← Main script: sample / sdg / count subcommands\n│   ├── evaluate_synth.py         ← Fidelity metrics (TVD, JSD, pairwise TVD, SDV scores)\n│   ├── smartnoise_methods.py     ← MST and AIM (differentially private)\n│   ├── tvae_method.py            ← TVAE (SDV)\n│   ├── ctgan_method.py           ← CTGAN (SDV)\n│   ├── arf_method.py             ← ARF (SynthCity)\n│   ├── tabddpm_method.py         ← TabDDPM\n│   ├── r_methods.py              ← Synthpop, RankSwap, CellSuppression (via R)\n│   └── test_sdg.py               ← Smoke tests for all SDG methods\n│\n├── experiment_scripts/           ← Paper-specific experiment drivers\n│   ├── run_production_sweep.py   ← Main sweep: all samples × SDG × attacks (parallelized)\n│   ├── run_linear_sweep.py       ← LinearReconstruction comparison\n│   ├── run_memorization_sweep.py ← Memorization test: train vs. holdout targets\n│   ├── run_mst_epsilon_rf_nb_sweep.py  ← MST/AIM epsilon sweep\n│   ├── run_chaining_analysis.py  ← Chaining order strategy analysis\n│   ├── run_ensembling_heatmap.py ← All-pairs ensembling heatmap\n│   ├── compare_mia_ra.py         ← RA vs. MIA comparison (SynthDistance, NNDR, RA-as-MIA)\n│   ├── analyze_ra_subgroups.py   ← Disparate impact by subgroup\n│   ├── evaluate_synth_quality.py ← Fidelity + utility quality evaluation (multiprocessed)\n│   ├── qi_analysis/              ← QI composition and size sweep\n│   ├── wandb_to_latex.py         ← WandB results → LaTeX tables (main results)\n│   ├── wandb_to_latex_epsilon_sweep.py  ← ε-sweep LaTeX table\n│   ├── wandb_to_latex_by_feature.py     ← Per-feature breakdown table\n│   ├── linear_sweep_to_latex.py  ← LinearReconstruction LaTeX tables\n│   ├── synth_quality_to_latex.py ← Synth quality LaTeX table\n│   ├── results_db.py             ← SQLite results database utilities\n│   ├── audit_and_verify.py       ← Audit WandB runs against DB for completeness\n│   └── plot_ensembling_heatmap.py ← Heatmap visualization\n│\n├── configs/\n│   └── example_cfg.yaml          ← Fully annotated example configuration\n│\n├── SOTA_attacks/                 ← Wrapper for LinearReconstruction (Annamalai et al. 2024)\n│\n├── NIST-CRC_leaderboardScripts/  ← Our NIST CRC competition submission scripts\n│\n├── incomplete_attacks/           ← Exploratory/unfinished attack variants (not used in paper)\n└── maintenance_scripts/          ← Debug and integration test scripts\n```\n\n---\n\n## Attack Taxonomy\n\nAttacks are organized by how much joint structure they exploit, following the taxonomy in Figure 1 of the paper.\n\n### Reference points (not attacks)\n\n| Name | Description |\n|---|---|\n| Mode | Predict the most common value in the synthetic column |\n| Random | Sample randomly from the synthetic column's distribution |\n| Copy | Copy the synthetic row at the same index |\n\n### Each feature in isolation\n\nThese attacks treat each hidden feature independently, training one model per feature on synthetic data (QI → hidden feature) and applying it to the target's QI.\n\n| Name | Class | Notes |\n|---|---|---|\n| KNN | `ML_classifiers.py` | k-nearest neighbors (default k=1) |\n| NaiveBayes | `ML_classifiers.py` | Gaussian/categorical NB |\n| LogisticRegression | `ML_classifiers.py` | L2-regularized logistic regression |\n| SVM | `ML_classifiers.py` | RBF kernel SVM; excluded for n≥10k (O(n²)) |\n| RandomForest | `ML_classifiers.py` | 25 tree",
+ "hits": {
+  "st": [
+   {
+    "file": "sdg/tvae_method.py",
+    "line": 7,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "",
+     "",
+     "def tvae_generate(train_df, meta, **config):",
+     "    \"\"\"Generate synthetic data using TVAE (Tabular Variational Autoencoder)."
+    ]
+   },
+   {
+    "file": "sdg/ctgan_method.py",
+    "line": 7,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "",
+     "def ctgan_generate(train_df, meta, **config):",
+     "    \"\"\"Generate synthetic data using CTGAN (Conditional Tabular GAN)."
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "sdg/tvae_method.py",
+    "line": 6,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "TVAE synthetic data generation using the SDV library.",
+     "\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "",
+     "",
+     "def tvae_generate(train_df, meta, **config):"
+    ]
+   },
+   {
+    "file": "sdg/ctgan_method.py",
+    "line": 6,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "CTGAN synthetic data generation using the SDV library.",
+     "\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "",
+     "def ctgan_generate(train_df, meta, **config):"
+    ]
+   },
+   {
+    "file": "sdg/evaluate_synth.py",
+    "line": 75,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "# ============================================================",
+     "",
+     "def build_sdv_metadata(meta, columns):",
+     "    \"\"\"Build an SDV SingleTableMetadata object from our meta dict.\"\"\"",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    sdv_meta = SingleTableMetadata()",
+     "    for col in meta.get(\"categorical\", []):",
+     "        if col in columns:",
+     "            sdv_meta.add_column(col, sdtype=\"categorical\")"
+    ]
+   },
+   {
+    "file": "experiment_scripts/evaluate_synth_quality.py",
+    "line": 316,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "    # ── SDV quality ────────────────────────────────────────────────────────────",
+     "    try:",
+     "        from sdv.evaluation.single_table import evaluate_quality",
+     "        from sdv.metadata import SingleTableMetadata",
+     "",
+     "        sdv_meta = SingleTableMetadata()",
+     "        for col in cat_cols:",
+     "            sdv_meta.add_column(col, sdtype=\"categorical\")"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "sdg/tvae_method.py",
+    "line": 6,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "TVAE synthetic data generation using the SDV library.",
+     "\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "",
+     "",
+     "def tvae_generate(train_df, meta, **config):"
+    ]
+   },
+   {
+    "file": "sdg/tvae_method.py",
+    "line": 7,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "",
+     "",
+     "def tvae_generate(train_df, meta, **config):",
+     "    \"\"\"Generate synthetic data using TVAE (Tabular Variational Autoencoder)."
+    ]
+   },
+   {
+    "file": "sdg/ctgan_method.py",
+    "line": 6,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "CTGAN synthetic data generation using the SDV library.",
+     "\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "",
+     "def ctgan_generate(train_df, meta, **config):"
+    ]
+   },
+   {
+    "file": "sdg/ctgan_method.py",
+    "line": 7,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "",
+     "def ctgan_generate(train_df, meta, **config):",
+     "    \"\"\"Generate synthetic data using CTGAN (Conditional Tabular GAN)."
+    ]
+   },
+   {
+    "file": "sdg/evaluate_synth.py",
+    "line": 75,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "# ============================================================",
+     "",
+     "def build_sdv_metadata(meta, columns):",
+     "    \"\"\"Build an SDV SingleTableMetadata object from our meta dict.\"\"\"",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    sdv_meta = SingleTableMetadata()",
+     "    for col in meta.get(\"categorical\", []):",
+     "        if col in columns:",
+     "            sdv_meta.add_column(col, sdtype=\"categorical\")"
+    ]
+   },
+   {
+    "file": "sdg/evaluate_synth.py",
+    "line": 202,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "        results[\"corr_diff\"] = corr_diff.values[np.triu_indices_from(corr_diff, k=1)].mean()",
+     "",
+     "    # --- SDV quality scores ---",
+     "    try:",
+     "        from sdv.evaluation.single_table import evaluate_quality",
+     "        sdv_meta = build_sdv_metadata(meta, train_df.columns)",
+     "        quality = evaluate_quality(train_df, synth_df, sdv_meta, verbose=False)",
+     "        props = quality.get_properties()",
+     "        results[\"sdv_col_shapes\"] = props.loc[props[\"Property\"] == \"Column Shapes\", \"Score\"].values[0]"
+    ]
+   },
+   {
+    "file": "experiment_scripts/evaluate_synth_quality.py",
+    "line": 315,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "        results[\"corr_diff\"] = float(np.abs(rc[idx] - sc[idx]).mean())",
+     "",
+     "    # ── SDV quality ────────────────────────────────────────────────────────────",
+     "    try:",
+     "        from sdv.evaluation.single_table import evaluate_quality",
+     "        from sdv.metadata import SingleTableMetadata",
+     "",
+     "        sdv_meta = SingleTableMetadata()",
+     "        for col in cat_cols:"
+    ]
+   },
+   {
+    "file": "experiment_scripts/evaluate_synth_quality.py",
+    "line": 316,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "    # ── SDV quality ────────────────────────────────────────────────────────────",
+     "    try:",
+     "        from sdv.evaluation.single_table import evaluate_quality",
+     "        from sdv.metadata import SingleTableMetadata",
+     "",
+     "        sdv_meta = SingleTableMetadata()",
+     "        for col in cat_cols:",
+     "            sdv_meta.add_column(col, sdtype=\"categorical\")"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "sdg/tvae_method.py",
+    "line": 7,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "",
+     "",
+     "def tvae_generate(train_df, meta, **config):",
+     "    \"\"\"Generate synthetic data using TVAE (Tabular Variational Autoencoder)."
+    ]
+   },
+   {
+    "file": "sdg/tvae_method.py",
+    "line": 32,
+    "text": "synthesizer = TVAESynthesizer(metadata, epochs=epochs, cuda=cuda)",
+    "context": [
+     "    for col in meta.get(\"categorical\", []) + meta.get(\"ordinal\", []):",
+     "        if col in train_df.columns:",
+     "            metadata.update_column(column_name=col, sdtype=\"categorical\")",
+     "",
+     "    synthesizer = TVAESynthesizer(metadata, epochs=epochs, cuda=cuda)",
+     "    synthesizer.fit(train_df)",
+     "",
+     "    sample = synthesizer.sample(num_rows=num_rows)",
+     "    return sample"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "sdg/ctgan_method.py",
+    "line": 7,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "",
+     "def ctgan_generate(train_df, meta, **config):",
+     "    \"\"\"Generate synthetic data using CTGAN (Conditional Tabular GAN)."
+    ]
+   },
+   {
+    "file": "sdg/ctgan_method.py",
+    "line": 33,
+    "text": "synthesizer = CTGANSynthesizer(metadata, epochs=epochs, cuda=cuda, verbose=True)",
+    "context": [
+     "    for col in meta.get(\"categorical\", []) + meta.get(\"ordinal\", []):",
+     "        if col in train_df.columns:",
+     "            metadata.update_column(column_name=col, sdtype=\"categorical\")",
+     "",
+     "    synthesizer = CTGANSynthesizer(metadata, epochs=epochs, cuda=cuda, verbose=True)",
+     "    synthesizer.fit(train_df)",
+     "",
+     "    sample = synthesizer.sample(num_rows=num_rows)",
+     "    return sample"
+    ]
+   }
+  ],
+  "ctgan_mod": [
+   {
+    "file": "sdg/__init__.py",
+    "line": 48,
+    "text": "from .ctgan_method import ctgan_generate",
+    "context": [
+     "    def tvae_generate(*a, **kw):",
+     "        raise ImportError(f\"TVAE unavailable (SDV API mismatch): {_e}\") from _e",
+     "",
+     "try:",
+     "    from .ctgan_method import ctgan_generate",
+     "except ImportError as _e:",
+     "    def ctgan_generate(*a, **kw):",
+     "        raise ImportError(f\"CTGAN unavailable: {_e}\") from _e",
+     ""
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "sdg/evaluate_synth.py",
+    "line": 202,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "        results[\"corr_diff\"] = corr_diff.values[np.triu_indices_from(corr_diff, k=1)].mean()",
+     "",
+     "    # --- SDV quality scores ---",
+     "    try:",
+     "        from sdv.evaluation.single_table import evaluate_quality",
+     "        sdv_meta = build_sdv_metadata(meta, train_df.columns)",
+     "        quality = evaluate_quality(train_df, synth_df, sdv_meta, verbose=False)",
+     "        props = quality.get_properties()",
+     "        results[\"sdv_col_shapes\"] = props.loc[props[\"Property\"] == \"Column Shapes\", \"Score\"].values[0]"
+    ]
+   },
+   {
+    "file": "experiment_scripts/evaluate_synth_quality.py",
+    "line": 315,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "        results[\"corr_diff\"] = float(np.abs(rc[idx] - sc[idx]).mean())",
+     "",
+     "    # ── SDV quality ────────────────────────────────────────────────────────────",
+     "    try:",
+     "        from sdv.evaluation.single_table import evaluate_quality",
+     "        from sdv.metadata import SingleTableMetadata",
+     "",
+     "        sdv_meta = SingleTableMetadata()",
+     "        for col in cat_cols:"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ctgan_mod",
+  "ev",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

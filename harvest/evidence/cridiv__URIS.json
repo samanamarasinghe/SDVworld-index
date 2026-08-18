@@ -1,0 +1,141 @@
+{
+ "repo": "cridiv/URIS",
+ "disk_kb": 16671,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "[![URIS Presentation Demo](https://img.youtube.com/vi/HrdMXX7r1v4/maxresdefault.jpg)](https://www.youtube.com/watch?v=HrdMXX7r1v4)\n# URIS: Unified Reasoning Intelligence System\n\n> **Autonomous Data Intelligence, Powered by Amazon Nova 2 Lite**\n\nURIS is a multi-agent orchestration platform that autonomously diagnoses, fixes, and validates datasets for AI readiness. Five specialized agents work in sequence — and sometimes in opposition — to deliver clean, compliant, AI-ready data with a complete audit trail.\n\nUnlike orchestration pipelines where agents simply execute steps in order, URIS agents evaluate each other's outputs, reject failing strategies, and force the Planner to revise its approach. That distinction — between executing and reasoning — is the core of what URIS is.\n\n🔗 **Live Demo**: [uris-nu.vercel.app](https://uris-nu.vercel.app)  \n📦 **Backend API**: [uris.onrender.com](https://uris.onrender.com)  \n🤖 **Agents Service**: [uris-agent.onrender.com](https://uris-agent.onrender.com)\n\n---\n\n## What Makes URIS Different\n\nTraditional data pipelines hand you output and move on. They don't push back. They don't catch their own mistakes.\n\nURIS agents do.\n\nWhen the Synthesis Agent generates data that fails privacy checks, the Validation Agent rejects it — not because it was programmed to handle that specific failure, but because it evaluated the output against constraints and made a judgment. The Planner then revises the strategy and tries a structurally different approach. This rejection-revision cycle is what makes URIS autonomous rather than automated.\n\n---\n\n## Architecture\n\n```\n┌─────────────────────────────────────────────────────────────────┐\n│                    Frontend (Next.js 14)                        │\n│  - Dataset Upload & Management (Datasets.tsx)                  │\n│  - Orchestration Dashboard (Agent.tsx)                          │\n│  - Real-time Pipeline Visualization (AgentResult.tsx)          │\n│  - Pipeline Analysis Viewer (AgentAnalysis.tsx)                │\n│  - Dataset Metadata Browser (DatasetOverview.tsx)              │\n└─────────────────────────────────────────────────────────────────┘\n                              ↓\n                         HTTP REST API\n                              ↓\n┌─────────────────────────────────────────────────────────────────┐\n│              Backend (NestJS + PrismaORM + PostgreSQL)          │\n│  - Dataset Management & Profiling                              │\n│  - Agent Run Orchestration                                     │\n│  - Results Storage & Retrieval                                 │\n│  - AWS S3 File Management                                      │\n└─────────────────────────────────────────────────────────────────┘\n                              ↓\n                    Agents Microservice\n                              ↓\n┌─────────────────────────────────────────────────────────────────┐\n│          Agents Pipeline (Python FastAPI)                       │\n│                                                                 │\n│  Planner → Evaluator → Compliance → Synthesizer → Validator    │\n│      ↑___________________ Revision Loop ___________________↑   │\n│                                                                 │\n│  Powered by Amazon Nova 2 Lite via AWS Bedrock                 │\n└─────────────────────────────────────────────────────────────────┘\n```\n\n---\n\n## The Agent Pipeline\n\nEach agent has a single, well-defined job. The intelligence emerges from how they interact.\n\n### Planner Agent\nReceives the dataset and decomposes the task — identifying the target AI use case, defining constraints (balance targets, privacy thresholds, variance limits), and routing work to downstream agents. Critically, the Planner re-runs when the Validation Agent rejects a strategy, generating a structurally different approach rather than retrying the same one.\n\n### Evaluation Agent\nCalculates the **Autonomous Data Fitness Index (ADFI)** — a single score measuring how AI-ready a dataset is across five dimensions: completeness, uniqueness, balance, distribution quality, and consistency. Also identifies critical gaps with severity ratings.\n\n```\nADFI = w₁(Completeness) + w₂(Uniqueness) + w₃(Balance) − w₄(PrivacyRisk) − w₅(CorrelationDrift)\n```\n\n| Score | Interpretation |\n|-------|---------------|\n| > 0.9 | AI-ready |\n| 0.7 – 0.9 | Usable, improvements recommended |\n| < 0.7 | Significant work required |\n\n### Compliance Agent\nRuns **before any data is modified**. Scans every column for PII patterns, assesses GDPR and CCPA exposure, calculates re-identification risk, and enforces user-defined policy rules. Can block the entire pipeline if a proposed transformation increases privacy risk.\n\nPrivacy risk scoring combines PII detection, identifier cardinality analysis, and sensitivity flagging:\n\n| Score | Risk Level |\n|-------|-----------|\n| < 0.3 | Low |\n| 0.3 – 0.7 | Medium |\n| > 0.7 | High |\n\n### Synthesis Agent\nGenerates statistically similar synthetic samples to fix class imbalances and fill sparse columns. Preserves column relationships and distributions. Selects synthesis strategy based on dataset characteristics — GaussianCopula for numeric-heavy datasets, CTGAN for categorical-heavy ones. Proposes multiple strategies when the first fails.\n\n### Validation Agent\nCompares pre and post-augmentation metrics. Measures distribution similarity, exact match rates, and correlation drift. **Can reject synthesis output entirely** if quality degrades or constraints are violated. Triggers strategy revision with structured reasoning explaining what failed and why.\n\n---\n\n## The Compliance Policy Engine\n\nUsers define compliance rules through a visual policy rule builder. Rules compile into executable policy directives:\n\n```\nPOLICY gdpr_standard {\n  DROP direct_identifiers IF pii_type IS direct_identifier;\n  GENERALISE pii_columns IF pii_type IS quasi_identifier;\n  MASK financial_columns IF pii_type IS financial;\n}\n```\n\nAvailable actions: `BLOCK` · `MASK` · `FLAG` · `GENERALISE` · `DROP`\n\nAvailable conditions: `pii_type IS direct_identifier` · `pii_type IS quasi_identifier` · `pii_type IS financial` · `pii_type IS health` · `reid_risk > 0.3`\n\nPolicies attach to evaluation runs and are enforced by the Compliance Agent before synthesis begins.\n\n---\n\n## Key Engineering Decisions\n\n**Why structured JSON agent communication.**\nThe naive approach passes full agent output directly to the next agent. On a medium dataset, the Evaluation Agent alone produces enough output to bloat context significantly by the time the Validator runs — causing the model to contradict its earlier reasoning. URIS extracts a compact typed handoff object at each step, containing only the fields the next agent actually needs. This eliminated an entire class of hallucinations caused by context overflow.\n\n**Why GaussianCopula first, CTGAN on failure.**\nGaussianCopula is faster and generalizes well on numeric-heavy datasets. For categorical-heavy datasets like Titanic, it memorizes rather than generalizes — producing exact row matches that violate privacy thresholds. The Validator catches this and the Planner revises to CTGAN, which handles categorical distributions better at the cost of longer synthesis time. The architecture attempts the cheaper strategy first and escalates on failure.\n\n**Why the correlation baseline recomputes after imputation.**\nComputing correlation drift against the original schema after imputation and column drops produces invalid comparisons — the matrices have different shapes. URIS recomputes the baseline correlation matrix after every transformation step, ensuring drift is measured against what the data actually looked like at that point in the pipeline, not at upload.\n\n**Why a custom policy DSL over hardcoded rules.**\nHardcoded compliance rules make the system brittle — every new regulation or internal policy requires a code change. The policy rule builder compiles user-defined directives into executable policy objects that the Compliance Agent enforces. The same engine that enforces GDPR today can enforce a custom internal data governance policy tomorrow without touching agent code.\n\n**Why Amazon Nova 2 Lite for all agent reasoning.**\nConstraint-aware strategy revision requires a model that can hold multiple competing objectives simultaneously, evaluate an output against those constraints, and generate a structurally different alternative when the first approach fails. That is not prompt chaining. That is reasoning. Nova 2 Lite's extended thinking capabilities are what make the rejection-revision cycle possible — not just the happy path.\n\n---\n\n## Technology Stack\n\n### Frontend\n- **Framework**: Next.js 14 (React + TypeScript)\n- **Styling**: TailwindCSS\n- **State Management**: React Hooks\n- **Deployment**: Vercel\n\n### Backend\n- **Framework**: NestJS (TypeScript)\n- **Database**: PostgreSQL with PrismaORM\n- **Storage**: AWS S3\n- **Deployment**: Render\n\n### Agents Microservice\n- **Framework**: Python FastAPI\n- **LLM**: Amazon Nova 2 Lite via AWS Bedrock (`bedrock.py`)\n- **Synthesis**: SDV (Synthetic Data Vault) — GaussianCopula + CTGAN\n- **Privacy**: Custom PII detection (`privacy_checker.py`)\n- **Correlation**: Feature drift analysis (`correlation_checker.py`)\n- **Deployment**: Render\n\n---\n\n## Project Structure\n\n```\nuris-agents/                    # Python FastAPI agents microservice\n├── agents/\n│   ├── compliance/            # PII detection & policy enforcement\n│   ├── evaluation/            # ADFI scoring & quality metrics\n│   ├── planner/               # Task decomposition & routing\n│   ├── synthesis/             # Synthetic data generation\n│   └── validation/            # Output approval & rejection\n├── utils/\n│   ├── bedrock.py            # AWS Bedrock / Nova 2 Lite integration\n│   ├── correlation_checker.py # Feature correlation drift analysis\n│   ├── privacy_checker.py    # PII detection & risk scoring\n│   ├── profiler.py           # Column profiling & cardinality\n│   └── synthesizer.py        # SDV synthesis strategies\n└── main.py                    # FastAPI application entry\n\nuris-backend/                   # NestJS REST API\n├── src/\n│   ├── agents/               # Agent orchestration service\n│   │   ├── agents.controller.ts\n│   │   ├── agents.service.ts\n│   │   └── agents.module.ts\n│   ├── dataset/              # Dataset management\n│   ├── aws/                  # S3 integration\n│   └── prisma/               # Database service\n└── prisma/schema.prisma       # Database schema\n\nuris-frontend/                  # Next.js React application\n├── app/\n│   ├── Agents/               # Orchestration dashboard\n│   │   ├── Agent.tsx\n│   │   └── components/\n│   │       ├── AgentResult.tsx       # Metrics & scores panel\n│   │       ├── AgentAnalysis.tsx     # Pipeline JSON viewer\n│   │       ├── DatasetOverview.tsx   # Metadata sidebar\n│   │       └── DatasetStatusBar.tsx  # Header bar\n│   └── Datasets/             # Dataset management & upload\n└── package.json\n```\n\n---\n\n## Data Flow\n\n### Upload → Analyze → Download\n\n```\n1. User uploads CSV\n        ↓\n   Backend stores to S3 + creates database entry\n        ↓\n2. User triggers analysis\n        ↓\n   POST /agents/{datasetId}/orchestrate\n        ↓\n   Agents microservice runs pipeline:\n   Planner → Evaluator → Compliance → Synthesizer → Validator\n        ↓\n   If Validator rejects → Planner revises → Synthesizer reruns\n        ↓\n3. Results stored in PostgreSQL (JSONB)\n        ↓\n   Frontend renders: ADFI score, metrics, compliance status,\n   agent reasoning traces, audit log\n        ↓\n4. User downloads AI-ready synthetic dataset\n```\n\n### Agent Communication Protocol\n\nAgents pass compact typed handoff objects — not full outputs:\n\n```json\n{\n  \"task_id\": \"run-cmmrx9wj\",\n  \"agent\": \"Validation\",\n  \"status\": \"rejected\",\n  \"confidence\": 0.95,\n  \"risk_score\": 0.82,\n  \"reasoning\": \"712 exact row matches found. Privacy threshold violated.\",\n  \"recommendation\": \"Switch to CTGAN. Reduce augmentation budget to 300 rows.\"\n}\n```\n\n---\n\n## API Reference\n\n### `GET /agents/:datasetId`\nReturns dataset metadata and full run history.\n\n```typescript\n{\n  dataset: { id, name, rowCount, columnCount, sizeBytes, profileMeta, status },\n  runs: [{ id, status, adfiScore, privacy_risk_score, result, createdAt }]\n}\n```\n\n### `POST /agents/:datasetId/orchestrate`\nTriggers a new pipeline run. Returns run record and full pipeline output.\n\n```typescript\n{\n  run: { id, status, adfiScore, privacy_risk_score, createdAt, completedAt },\n  pipeline: {\n    adfiScore: 0.921,\n    evaluation: { completeness, uniqueness, balance },\n    compliance: { privacy_risk, pii_detected, sensitivity_score },\n    synthesis: { strategy, rows_generated, attempt_count },\n    validation: { passed, checks_total, checks_passed }\n  }\n}\n```\n\n### `GET /agents/:datasetId/runs/:runId`\nReturns a specific run with complete pipeline output.\n\n---\n\n## Database Schema\n\n```prisma\nmodel Dataset {\n  id          String   @id\n  name        String\n  rowCount    Int\n  columnCount Int\n  sizeBytes   BigInt\n  profileMeta Json     // Column types, cardinality, null counts\n  status      String   // active | archived\n  s3Path      String\n  createdAt   DateTime\n  runs        Run[]\n}\n\nmodel Run {\n  id               String    @id\n  datasetId        String\n  status           String    // pending | running | completed | failed\n  adfiScore        Float\n  privacy_risk_score Float\n  result           Json      // Complete pipeline output\n  createdAt        DateTime\n  completedAt      DateTime?\n  dataset          Dataset\n}\n```\n\n---\n\n## Setup & Installation\n\n### Prerequisites\n- Node.js 18+\n- Python 3.10+\n- PostgreSQL 14+\n- AWS account with S3 bucket and Bedrock access (Nova 2 Lite)\n\n### Environment Variables\n\n**Backend (`uris-backend/.env`)**\n```env\nDATABASE_URL=postgresql://user:password@localhost:5432/uris_db\nAWS_ACCESS_KEY_ID=your-key\nAWS_SECRET_ACCESS_KEY=your-secret\nAWS_S3_BUCKET=your-bucket\nAWS_REGION=us-east-1\nAGENTS_MICROSERVICE_URL=\nPORT=5000\n```\n\n**Frontend (`uris-frontend/.env.local`)**\n```env\nNEXT_PUBLIC_API_URL=\n```\n\n### Run Locally\n\n```bash\n# Agents microservice\ncd uris-agents\npip install -r requirements.txt\npython -m uvicorn main:app --reload --port 8000\n\n# Backend\ncd uris-backend\nnpm install\nnpx prisma migrate dev\nnpm run start:dev\n\n# Frontend\ncd uris-frontend\nnpm install\nnpm run dev\n```\n\n---\n\n## Performance\n\n| Dataset Size | Pipeline Time |\n|---|---|\n| < 1MB | 5 – 15 seconds |\n| 1MB – 100MB | 15 – 60 seconds |\n| > 100MB | 60 – 300 seconds |\n\n| Database Operation | Typical Latency |\n|---|---|\n| GetDatasetRuns | < 100ms |\n| GetRunResult | < 50ms |\n| CreateRun | < 30ms |\n\n---\n\n\n## Built With\n\n- [Amazon Nova 2 Lite](https://aws.amazon.com/bedrock/nova/) — Agent reasoning via AWS Bedrock\n- [SDV — Synthetic Data Vault](https://sdv.dev/) — GaussianCopula & CTGAN synthesis\n- [NestJS](https://nestjs.com/) — Backend framework\n- [Next.js 14](https://nextjs.org/) — Frontend framework\n- [Prisma](https://www.prisma.io/) — Database ORM\n- [FastAPI](https://fastapi.tiangolo.com/) — Agents microservice\n\n---\n\n*Amazon Nova AI Hackathon 2026 · #AmazonNova · Built by Ademola Deremi*\n",
+ "hits": {
+  "gc": [
+   {
+    "file": "uris-agents/app/utils/README.md",
+    "line": 102,
+    "text": "Fits an SDV `GaussianCopulaSynthesizer` on all non-protected columns, generates `num_rows_to_generate` synthetic rows, and concatenates them with the original. Protected columns are attached to synthetic rows as `NaN`. Returns the combined DataFrame and a synthesis report.",
+    "context": [
+     "- Protected columns are never touched.",
+     "Returns the imputed DataFrame and a per-column imputation report.",
+     "",
+     "### `run_sdv_gaussian_copula(df, protected_columns, num_rows_to_generate) → (DataFrame, dict)`",
+     "Fits an SDV `GaussianCopulaSynthesizer` on all non-protected columns, generates `num_rows_to_generate` synthetic rows, and concatenates them with the original. Protected columns are attached to synthe",
+     "",
+     "### `run_synthesis(dataset_path, strategy_decision) → dict`",
+     "Main entry point called by the Synthesis Agent. Reads the CSV, validates that blocked and extraction columns actually exist in the file, then runs the full pre-processing pipeline:",
+     ""
+    ]
+   },
+   {
+    "file": "uris-agents/app/utils/synthesizer.py",
+    "line": 6,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import numpy as np",
+     "from pathlib import Path",
+     "from typing import Dict, List, Optional, Tuple",
+     "import re",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import Metadata",
+     "import warnings",
+     "",
+     "# Suppress SDV warnings"
+    ]
+   },
+   {
+    "file": "uris-agents/app/utils/synthesizer.py",
+    "line": 190,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "",
+     "    # Auto-detect metadata using new Metadata class",
+     "    metadata = Metadata.detect_from_dataframe(df_for_fit, table_name='table')",
+     "",
+     "    synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "    synthesizer.fit(df_for_fit)",
+     "",
+     "    synthetic = synthesizer.sample(num_rows=num_rows_to_generate)",
+     ""
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "uris-agents/app/utils/synthesizer.py",
+    "line": 6,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import numpy as np",
+     "from pathlib import Path",
+     "from typing import Dict, List, Optional, Tuple",
+     "import re",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import Metadata",
+     "import warnings",
+     "",
+     "# Suppress SDV warnings"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "uris-agents/app/utils/synthesizer.py",
+    "line": 7,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "from pathlib import Path",
+     "from typing import Dict, List, Optional, Tuple",
+     "import re",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import Metadata",
+     "import warnings",
+     "",
+     "# Suppress SDV warnings",
+     "warnings.filterwarnings('ignore', category=FutureWarning, module='sdv')"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "uris-agents/app/utils/synthesizer.py",
+    "line": 6,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import numpy as np",
+     "from pathlib import Path",
+     "from typing import Dict, List, Optional, Tuple",
+     "import re",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import Metadata",
+     "import warnings",
+     "",
+     "# Suppress SDV warnings"
+    ]
+   },
+   {
+    "file": "uris-agents/app/utils/synthesizer.py",
+    "line": 7,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "from pathlib import Path",
+     "from typing import Dict, List, Optional, Tuple",
+     "import re",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import Metadata",
+     "import warnings",
+     "",
+     "# Suppress SDV warnings",
+     "warnings.filterwarnings('ignore', category=FutureWarning, module='sdv')"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "uris-agents/requirements.txt": [
+   "sdv"
+  ]
+ }
+}

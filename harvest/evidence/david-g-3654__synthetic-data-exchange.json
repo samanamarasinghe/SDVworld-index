@@ -1,0 +1,630 @@
+{
+ "repo": "david-g-3654/synthetic-data-exchange",
+ "disk_kb": 187,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Synthetic Data Exchange\n\nA FastAPI service for generating synthetic tabular datasets from a real sample —\ntrain a generative model on your data, sample new rows from it, then score how\nstatistically close the result is and how much it leaks about the original.\n\nBuilt on [SDV](https://sdv.dev/) (CTGAN, TVAE, Gaussian Copula) with JWT auth,\nschema/constraint management, quality evaluation, and CSV/Excel/SQL/PDF export.\n\n[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)\n[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)\n[![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com/)\n\n**Scope:** this repository is the backend API only. The React UI shown in the\ndemo video below is not published here — everything else is driven through the\nREST API or the interactive docs at `/docs`.\n\n## Demonstration\n\nhttps://github.com/user-attachments/assets/55ca4a0f-b15b-44b2-98ea-ce3c0b156755\n\n## Why it's built this way\n\nGenerating synthetic data is a tradeoff between three things that pull against\neach other: **fidelity** (does it look like the real data), **utility** (can you\nstill train a model on it), and **privacy** (can someone recover a real row).\nThe design reflects that:\n\n- **Four generation modes** instead of one, because the right model depends on\n  how much time you'll accept. Gaussian Copula fits in seconds and captures\n  correlations but not complex interactions; CTGAN takes minutes and captures\n  much more. Rather than pick for the user, the API exposes the whole spectrum.\n- **A model cache** keyed by schema fingerprint, so re-generating from a\n  previously seen schema skips training entirely — this is what makes repeated\n  calls usable interactively.\n- **Constraints layered on top of the model**, because a purely statistical fit\n  will happily produce a diastolic blood pressure above systolic, or energy\n  consumption uncorrelated with tonnage. Business rules are enforced after\n  sampling rather than hoped for.\n- **Evaluation as a first-class endpoint**, since synthetic data you haven't\n  scored is synthetic data you can't defend.\n\n## Generation modes\n\n| Mode | Endpoint | Typical time | Model |\n| --- | --- | --- | --- |\n| Ultra-fast | `POST /generate/ultra-fast` | seconds | Gaussian Copula |\n| Fast | `POST /generate/fast` | seconds–tens of seconds | Gaussian Copula |\n| Optimized | `POST /generate/optimized` | tens of seconds, near-instant when cached | auto-selected + cache |\n| Balanced | `POST /generate/balanced` | tens of seconds | CTGAN, reduced epochs |\n| Default | `POST /generate` | minutes | full CTGAN + constraints |\n\nTimings are rough figures measured on an Apple M2 with ~1,000 rows and 7\ncolumns. They vary a lot with row count, column count and cardinality — use\n`POST /generate/benchmark` to measure on your own data rather than trusting\nthese.\n\n## Quality evaluation\n\n`POST /evaluation/evaluate` compares a real and a synthetic file and returns a\ngraded report:\n\n- **Statistical similarity** — per-column Kolmogorov–Smirnov tests and\n  correlation-matrix preservation.\n- **Utility** — trains the same model on real and on synthetic data and compares\n  performance, which is the metric that actually matters if you're generating\n  training data.\n- **Privacy** — membership-inference resistance and k-anonymity checks, to catch\n  a model that has memorised rather than generalised.\n\nScores are combined into an A–F grade. Treat the grade as a smoke test, not a\ncompliance artifact.\n\n## Running it\n\nRequires Python 3.9+.\n\n```bash\ngit clone https://github.com/david-g-3654/synthetic-data-exchange\ncd synthetic-data-exchange\n\npython -m venv venv\nsource venv/bin/activate          # Windows: venv\\Scripts\\activate\npip install -r requirements.txt\n\ncp .env.example .env\n# Set SECRET_KEY to a random value — the app will refuse to start without one:\npython -c \"import secrets; print(secrets.token_urlsafe(32))\"\n\nuvicorn main:app --reload --port 8000\n```\n\nThen open http://localhost:8000/docs for the interactive API docs.\n\nWith Docker (reads `SECRET_KEY` from your `.env`):\n\n```bash\ndocker-compose up --build\n```\n\nOn Apple Silicon, SDV/PyTorch may need `PYTORCH_ENABLE_MPS_FALLBACK=1` — see\n`fix_mps_issue.py`.\n\n## API examples\n\nRegister and get a token. Accounts are identified by email; `/register` returns a\ntoken directly, and `/token` is the standard OAuth2 password form — pass the\nemail in its `username` field.\n\n```bash\ncurl -X POST localhost:8000/register \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"email\":\"me@example.com\",\"password\":\"hunter2\"}'\n\nTOKEN=$(curl -s -X POST localhost:8000/token \\\n  -d \"username=me@example.com&password=hunter2\" \\\n  | python -c \"import json,sys; print(json.load(sys.stdin)['access_token'])\")\n```\n\nGenerate from a CSV:\n\n```bash\ncurl -X POST localhost:8000/generate/fast \\\n  -H \"Authorization: Bearer $TOKEN\" \\\n  -F \"file=@your_data.csv\" -F \"num_rows=1000\"\n```\n\nScore the result:\n\n```bash\ncurl -X POST localhost:8000/evaluation/evaluate \\\n  -H \"Authorization: Bearer $TOKEN\" \\\n  -F \"real_data_file=@original.csv\" \\\n  -F \"synthetic_data_file=@synthetic.csv\"\n```\n\nGenerate from a built-in industry template, and export as Excel:\n\n```bash\ncurl localhost:8000/schemas/templates\n\ncurl -X POST localhost:8000/advanced-types/timeseries/energy \\\n  -H \"Authorization: Bearer $TOKEN\" \\\n  -F \"num_rows=1000\" -F \"frequency=H\" -F \"export_format=xlsx\"\n\ncurl -X POST localhost:8000/export/data/xlsx \\\n  -H \"Authorization: Bearer $TOKEN\" \\\n  -F \"file=@synthetic_data.csv\"\n```\n\nFull route list is at `/docs`; `GET /schemas/domains` and\n`GET /advanced-types/supported` enumerate what's available.\n\n## Industry templates\n\nPrebuilt schemas with domain constraints attached:\n\n| Domain | Example columns | Constraints enforced |\n| --- | --- | --- |\n| Mining | `mine_id, date, tonnage, energy_used, ore_grade` | energy ≈ 2.5–3.5× tonnage; positive values; chronological dates |\n| Healthcare | `patient_id, age, gender, bp_systolic, bp_diastolic` | systolic > diastolic; unique IDs; plausible clinical ranges |\n| Energy | `station_id, timestamp, power_output, max_capacity` | output ≤ capacity; efficiency 70–95% |\n\nThe healthcare and energy templates exist to *reduce* the amount of real\nsensitive data that needs to move around. They are not a compliance\ncertification — using this for anything regulated is your own due diligence.\n\n## Project structure\n\n| File | Responsibility |\n| --- | --- |\n| `main.py` | App setup, CORS, router mounting |\n| `routers/generate*.py` | The generation modes |\n| `routers/auth.py` | Registration, JWT issue/verify |\n| `routers/schemas.py` | Schema templates, inference, validation |\n| `routers/evaluation.py` | Quality/utility/privacy scoring |\n| `routers/exports.py` | CSV, Excel, SQL, PDF export |\n| `routers/advanced_types.py` | Time-series, geospatial, healthcare generators |\n| `model_manager.py` | Model selection, training, cache |\n| `constraints_manager.py` | Business-rule enforcement |\n| `evaluation_manager.py` | The metrics behind the grades |\n| `security.py` | JWT config, read from the environment |\n\n## Tech stack\n\nFastAPI · SDV (CTGAN / TVAE / Gaussian Copula) · SQLAlchemy + SQLite ·\nPyJWT + passlib/bcrypt · pandas · ReportLab (PDF) · OpenPyXL (Excel) · Docker\n\n## Known limitations\n\n- **No test suite.** The largest gap in the project.\n- SQLite by default; would need PostgreSQL for concurrent use.\n- No rate limiting, and uploads are bounded only by `MAX_FILE_SIZE_MB`.\n- Geospatial generation degrades to a warning if GeoPandas isn't installed\n  rather than failing clearly.\n- The privacy metrics are heuristics. They are useful for catching obvious\n  memorisation, not for making a formal differential-privacy guarantee.\n- The React frontend is not in this repository.\n\n## License\n\nMIT — see [LICENSE](./LICENSE).\n",
+ "hits": {
+  "st": [
+   {
+    "file": "model_manager.py",
+    "line": 16,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, TVAESynthesizer, CTGANSynthesizer",
+    "context": [
+     "from pathlib import Path",
+     "",
+     "# SDV imports with fallbacks",
+     "try:",
+     "    from sdv.single_table import GaussianCopulaSynthesizer, TVAESynthesizer, CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "except ImportError as e:",
+     "    logging.warning(f\"SDV import error: {e}\")",
+     ""
+    ]
+   },
+   {
+    "file": "routers/generate_fast.py",
+    "line": 11,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import io",
+     "import os",
+     "import json",
+     "from datetime import datetime",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from dependencies import validate_csv_file, validate_csv_content",
+     "from models import GenerateRequest",
+     "from typing import Optional, Union"
+    ]
+   },
+   {
+    "file": "routers/generate_optimized.py",
+    "line": 131,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "        contents = await file.read()",
+     "        data = await validate_csv_content(contents)",
+     "        ",
+     "        # Force Gaussian Copula for maximum speed",
+     "        from sdv.single_table import GaussianCopulaSynthesizer",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        ",
+     "        # Preprocess quickly",
+     "        processed_data = model_manager.preprocess_data_fast(data)"
+    ]
+   },
+   {
+    "file": "routers/generate.py",
+    "line": 8,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import io",
+     "import os",
+     "import json",
+     "from datetime import datetime",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from dependencies import validate_csv_file, validate_csv_content",
+     "from models import GenerateRequest, EvaluationResponse",
+     "from schema_manager import SchemaManager, DatasetSchema"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "model_manager.py",
+    "line": 17,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "# SDV imports with fallbacks",
+     "try:",
+     "    from sdv.single_table import GaussianCopulaSynthesizer, TVAESynthesizer, CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "except ImportError as e:",
+     "    logging.warning(f\"SDV import error: {e}\")",
+     "",
+     "# Try to use Polars for faster preprocessing"
+    ]
+   },
+   {
+    "file": "schema_manager.py",
+    "line": 359,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "        return errors",
+     "    ",
+     "    def apply_schema_to_metadata(self, schema: DatasetSchema) -> Dict[str, Any]:",
+     "        \"\"\"Convert schema to SDV metadata format\"\"\"",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        ",
+     "        metadata = SingleTableMetadata()",
+     "        ",
+     "        # Build column specifications"
+    ]
+   },
+   {
+    "file": "routers/generate_fast.py",
+    "line": 12,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import os",
+     "import json",
+     "from datetime import datetime",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from dependencies import validate_csv_file, validate_csv_content",
+     "from models import GenerateRequest",
+     "from typing import Optional, Union",
+     "from sqlalchemy.orm import Session"
+    ]
+   },
+   {
+    "file": "routers/generate_optimized.py",
+    "line": 132,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "        data = await validate_csv_content(contents)",
+     "        ",
+     "        # Force Gaussian Copula for maximum speed",
+     "        from sdv.single_table import GaussianCopulaSynthesizer",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        ",
+     "        # Preprocess quickly",
+     "        processed_data = model_manager.preprocess_data_fast(data)",
+     "        "
+    ]
+   },
+   {
+    "file": "routers/generate.py",
+    "line": 9,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import os",
+     "import json",
+     "from datetime import datetime",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from dependencies import validate_csv_file, validate_csv_content",
+     "from models import GenerateRequest, EvaluationResponse",
+     "from schema_manager import SchemaManager, DatasetSchema",
+     "from constraints_manager import ConstraintsManager"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "model_manager.py",
+    "line": 16,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, TVAESynthesizer, CTGANSynthesizer",
+    "context": [
+     "from pathlib import Path",
+     "",
+     "# SDV imports with fallbacks",
+     "try:",
+     "    from sdv.single_table import GaussianCopulaSynthesizer, TVAESynthesizer, CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "except ImportError as e:",
+     "    logging.warning(f\"SDV import error: {e}\")",
+     ""
+    ]
+   },
+   {
+    "file": "model_manager.py",
+    "line": 17,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "# SDV imports with fallbacks",
+     "try:",
+     "    from sdv.single_table import GaussianCopulaSynthesizer, TVAESynthesizer, CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "except ImportError as e:",
+     "    logging.warning(f\"SDV import error: {e}\")",
+     "",
+     "# Try to use Polars for faster preprocessing"
+    ]
+   },
+   {
+    "file": "advanced_data_types.py",
+    "line": 14,
+    "text": "from sdv.timeseries import PARSynthesizer",
+    "context": [
+     "from dataclasses import dataclass",
+     "",
+     "# Try to import specialized libraries",
+     "try:",
+     "    from sdv.timeseries import PARSynthesizer",
+     "    TIMESERIES_AVAILABLE = True",
+     "except ImportError:",
+     "    TIMESERIES_AVAILABLE = False",
+     "    logging.warning(\"SDV timeseries not available\")"
+    ]
+   },
+   {
+    "file": "constraints_manager.py",
+    "line": 9,
+    "text": "from sdv.constraints import create_custom_constraint",
+    "context": [
+     "import numpy as np",
+     "from typing import Dict, List, Any, Optional, Callable",
+     "from abc import ABC, abstractmethod",
+     "try:",
+     "    from sdv.constraints import create_custom_constraint",
+     "except ImportError:",
+     "    # Fallback for newer SDV versions",
+     "    def create_custom_constraint(*args, **kwargs):",
+     "        return None"
+    ]
+   },
+   {
+    "file": "schema_manager.py",
+    "line": 359,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "        return errors",
+     "    ",
+     "    def apply_schema_to_metadata(self, schema: DatasetSchema) -> Dict[str, Any]:",
+     "        \"\"\"Convert schema to SDV metadata format\"\"\"",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        ",
+     "        metadata = SingleTableMetadata()",
+     "        ",
+     "        # Build column specifications"
+    ]
+   },
+   {
+    "file": "routers/generate_fast.py",
+    "line": 11,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import io",
+     "import os",
+     "import json",
+     "from datetime import datetime",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from dependencies import validate_csv_file, validate_csv_content",
+     "from models import GenerateRequest",
+     "from typing import Optional, Union"
+    ]
+   },
+   {
+    "file": "routers/generate_fast.py",
+    "line": 12,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import os",
+     "import json",
+     "from datetime import datetime",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from dependencies import validate_csv_file, validate_csv_content",
+     "from models import GenerateRequest",
+     "from typing import Optional, Union",
+     "from sqlalchemy.orm import Session"
+    ]
+   },
+   {
+    "file": "routers/generate_optimized.py",
+    "line": 131,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "        contents = await file.read()",
+     "        data = await validate_csv_content(contents)",
+     "        ",
+     "        # Force Gaussian Copula for maximum speed",
+     "        from sdv.single_table import GaussianCopulaSynthesizer",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        ",
+     "        # Preprocess quickly",
+     "        processed_data = model_manager.preprocess_data_fast(data)"
+    ]
+   },
+   {
+    "file": "routers/generate_optimized.py",
+    "line": 132,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "        data = await validate_csv_content(contents)",
+     "        ",
+     "        # Force Gaussian Copula for maximum speed",
+     "        from sdv.single_table import GaussianCopulaSynthesizer",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        ",
+     "        # Preprocess quickly",
+     "        processed_data = model_manager.preprocess_data_fast(data)",
+     "        "
+    ]
+   },
+   {
+    "file": "routers/generate.py",
+    "line": 8,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import io",
+     "import os",
+     "import json",
+     "from datetime import datetime",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from dependencies import validate_csv_file, validate_csv_content",
+     "from models import GenerateRequest, EvaluationResponse",
+     "from schema_manager import SchemaManager, DatasetSchema"
+    ]
+   },
+   {
+    "file": "routers/generate.py",
+    "line": 9,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import os",
+     "import json",
+     "from datetime import datetime",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from dependencies import validate_csv_file, validate_csv_content",
+     "from models import GenerateRequest, EvaluationResponse",
+     "from schema_manager import SchemaManager, DatasetSchema",
+     "from constraints_manager import ConstraintsManager"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "model_manager.py",
+    "line": 16,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, TVAESynthesizer, CTGANSynthesizer",
+    "context": [
+     "from pathlib import Path",
+     "",
+     "# SDV imports with fallbacks",
+     "try:",
+     "    from sdv.single_table import GaussianCopulaSynthesizer, TVAESynthesizer, CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "except ImportError as e:",
+     "    logging.warning(f\"SDV import error: {e}\")",
+     ""
+    ]
+   },
+   {
+    "file": "model_manager.py",
+    "line": 204,
+    "text": "return CTGANSynthesizer(metadata, **ctgan_kwargs)",
+    "context": [
+     "                'epochs': kwargs.get('epochs', 100),",
+     "                'batch_size': kwargs.get('batch_size', 500),",
+     "                'verbose': False",
+     "            }",
+     "            return CTGANSynthesizer(metadata, **ctgan_kwargs)",
+     "        ",
+     "        else:",
+     "            # Default to Gaussian Copula for unknown types",
+     "            logger.warning(f\"Unknown model type {model_type}, using Gaussian Copula\")"
+    ]
+   },
+   {
+    "file": "routers/generate_fast.py",
+    "line": 11,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import io",
+     "import os",
+     "import json",
+     "from datetime import datetime",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from dependencies import validate_csv_file, validate_csv_content",
+     "from models import GenerateRequest",
+     "from typing import Optional, Union"
+    ]
+   },
+   {
+    "file": "routers/generate_fast.py",
+    "line": 62,
+    "text": "synthesizer = CTGANSynthesizer(metadata, epochs=50, verbose=False)",
+    "context": [
+     "        metadata.detect_from_dataframe(data=data)",
+     "",
+     "        # Fast generation with minimal epochs",
+     "        try:",
+     "            synthesizer = CTGANSynthesizer(metadata, epochs=50, verbose=False)",
+     "            synthesizer.fit(data)",
+     "        except Exception as e:",
+     "            print(f\"CTGAN error: {e}\")",
+     "            # Fallback to basic synthesizer"
+    ]
+   },
+   {
+    "file": "routers/generate_fast.py",
+    "line": 67,
+    "text": "synthesizer = CTGANSynthesizer(metadata)",
+    "context": [
+     "            synthesizer.fit(data)",
+     "        except Exception as e:",
+     "            print(f\"CTGAN error: {e}\")",
+     "            # Fallback to basic synthesizer",
+     "            synthesizer = CTGANSynthesizer(metadata)",
+     "            synthesizer.fit(data)",
+     "",
+     "        synthetic_data = synthesizer.sample(num_rows=rows_to_generate)",
+     ""
+    ]
+   },
+   {
+    "file": "routers/generate_fast.py",
+    "line": 142,
+    "text": "synthesizer = CTGANSynthesizer(metadata, epochs=100, verbose=False)",
+    "context": [
+     "            metadata.detect_from_dataframe(data=data)",
+     "",
+     "        # Optimized generation settings",
+     "        try:",
+     "            synthesizer = CTGANSynthesizer(metadata, epochs=100, verbose=False)",
+     "            synthesizer.fit(data)",
+     "        except Exception as e:",
+     "            print(f\"CTGAN error: {e}\")",
+     "            # Fallback to basic synthesizer"
+    ]
+   },
+   {
+    "file": "routers/generate_fast.py",
+    "line": 147,
+    "text": "synthesizer = CTGANSynthesizer(metadata)",
+    "context": [
+     "            synthesizer.fit(data)",
+     "        except Exception as e:",
+     "            print(f\"CTGAN error: {e}\")",
+     "            # Fallback to basic synthesizer",
+     "            synthesizer = CTGANSynthesizer(metadata)",
+     "            synthesizer.fit(data)",
+     "",
+     "        synthetic_data = synthesizer.sample(num_rows=rows_to_generate)",
+     ""
+    ]
+   },
+   {
+    "file": "routers/generate.py",
+    "line": 8,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import io",
+     "import os",
+     "import json",
+     "from datetime import datetime",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from dependencies import validate_csv_file, validate_csv_content",
+     "from models import GenerateRequest, EvaluationResponse",
+     "from schema_manager import SchemaManager, DatasetSchema"
+    ]
+   },
+   {
+    "file": "routers/generate.py",
+    "line": 123,
+    "text": "synthesizer = CTGANSynthesizer(metadata)",
+    "context": [
+     "            metadata = SingleTableMetadata()",
+     "            metadata.detect_from_dataframe(data=data)",
+     "",
+     "        # Apply constraints if any",
+     "        synthesizer = CTGANSynthesizer(metadata)",
+     "        ",
+     "        if constraints and apply_constraints:",
+     "            # Get SDV-compatible constraints",
+     "            sdv_constraints = constraints_manager.get_sdv_constraints(constraints)"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "model_manager.py",
+    "line": 16,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, TVAESynthesizer, CTGANSynthesizer",
+    "context": [
+     "from pathlib import Path",
+     "",
+     "# SDV imports with fallbacks",
+     "try:",
+     "    from sdv.single_table import GaussianCopulaSynthesizer, TVAESynthesizer, CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "except ImportError as e:",
+     "    logging.warning(f\"SDV import error: {e}\")",
+     ""
+    ]
+   },
+   {
+    "file": "model_manager.py",
+    "line": 186,
+    "text": "return GaussianCopulaSynthesizer(metadata, **kwargs)",
+    "context": [
+     "    def create_synthesizer(self, model_type: str, metadata: SingleTableMetadata, **kwargs) -> Any:",
+     "        \"\"\"Create the appropriate synthesizer based on model type\"\"\"",
+     "        ",
+     "        if model_type == \"gaussian_copula\":",
+     "            return GaussianCopulaSynthesizer(metadata, **kwargs)",
+     "        ",
+     "        elif model_type == \"tvae\":",
+     "            # Optimized TVAE settings for speed",
+     "            tvae_kwargs = {"
+    ]
+   },
+   {
+    "file": "model_manager.py",
+    "line": 209,
+    "text": "return GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "        ",
+     "        else:",
+     "            # Default to Gaussian Copula for unknown types",
+     "            logger.warning(f\"Unknown model type {model_type}, using Gaussian Copula\")",
+     "            return GaussianCopulaSynthesizer(metadata)",
+     "    ",
+     "    def generate_synthetic_data(self, ",
+     "                              data: pd.DataFrame, ",
+     "                              num_rows: int,"
+    ]
+   },
+   {
+    "file": "routers/generate_optimized.py",
+    "line": 131,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "        contents = await file.read()",
+     "        data = await validate_csv_content(contents)",
+     "        ",
+     "        # Force Gaussian Copula for maximum speed",
+     "        from sdv.single_table import GaussianCopulaSynthesizer",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        ",
+     "        # Preprocess quickly",
+     "        processed_data = model_manager.preprocess_data_fast(data)"
+    ]
+   },
+   {
+    "file": "routers/generate_optimized.py",
+    "line": 143,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "        metadata.detect_from_dataframe(processed_data)",
+     "        ",
+     "        # Ultra-fast generation",
+     "        start_time = datetime.now()",
+     "        synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "        synthesizer.fit(processed_data)",
+     "        synthetic_data = synthesizer.sample(rows_to_generate)",
+     "        generation_time = (datetime.now() - start_time).total_seconds()",
+     "        "
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "model_manager.py",
+    "line": 16,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, TVAESynthesizer, CTGANSynthesizer",
+    "context": [
+     "from pathlib import Path",
+     "",
+     "# SDV imports with fallbacks",
+     "try:",
+     "    from sdv.single_table import GaussianCopulaSynthesizer, TVAESynthesizer, CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "except ImportError as e:",
+     "    logging.warning(f\"SDV import error: {e}\")",
+     ""
+    ]
+   },
+   {
+    "file": "model_manager.py",
+    "line": 195,
+    "text": "return TVAESynthesizer(metadata, **tvae_kwargs)",
+    "context": [
+     "                'epochs': kwargs.get('epochs', 100),",
+     "                'batch_size': kwargs.get('batch_size', 500),",
+     "                'verbose': False",
+     "            }",
+     "            return TVAESynthesizer(metadata, **tvae_kwargs)",
+     "        ",
+     "        elif model_type == \"ctgan\":",
+     "            # Optimized CTGAN settings",
+     "            ctgan_kwargs = {"
+    ]
+   }
+  ],
+  "par": [
+   {
+    "file": "advanced_data_types.py",
+    "line": 14,
+    "text": "from sdv.timeseries import PARSynthesizer",
+    "context": [
+     "from dataclasses import dataclass",
+     "",
+     "# Try to import specialized libraries",
+     "try:",
+     "    from sdv.timeseries import PARSynthesizer",
+     "    TIMESERIES_AVAILABLE = True",
+     "except ImportError:",
+     "    TIMESERIES_AVAILABLE = False",
+     "    logging.warning(\"SDV timeseries not available\")"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "gc",
+  "md",
+  "par",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv>=1.12.0"
+  ]
+ }
+}

@@ -1,0 +1,404 @@
+{
+ "repo": "lucacorbucci/fire360",
+ "disk_kb": 7975,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# FIRE360\n\n<!-- markdownlint-disable MD033 MD041 MD002 -->\n<!-- markdownlint-disable commands-show-output no-duplicate-heading -->\n<!-- spell-checker:ignore markdownlint ; (options) DESTDIR UTILNAME manpages reimplementation oranda -->\n<div align=\"center\">\n\n![fire360 logo](logo.png)\n\nA comprehensive and fast local explanation approach tailored for tabular data.\n\n[![PyPI](https://img.shields.io/pypi/v/fire360)](https://pypi.org/project/fire360/)\n[![Python](https://img.shields.io/pypi/pyversions/fire360)](https://pypi.org/project/fire360/)\n[![License](https://img.shields.io/github/license/lucacorbucci/fire360)](https://github.com/lucacorbucci/fire360/blob/main/LICENSE)\n\n</div>\n\n## Description\n\nFIRE360 is a Python library for generating local explanations of black-box machine learning models on tabular data. It uses surrogate models trained on synthetic data neighborhoods to provide interpretable explanations while maintaining high fidelity to the original black-box predictions.\n\n## Features\n\n- **Multiple Surrogate Models**: Support for Decision Trees, Logistic Regression, SVM, and KNN as surrogate explainers\n- **Synthetic Data Generation**: Uses CTGAN and TVAE for generating synthetic datasets to create explanation neighborhoods\n- **Evaluation Metrics**: Computes fidelity, robustness, and stability of explanations\n- **Benchmarking**: Includes comparison tools with state-of-the-art explainers like LIME, SHAP, and LORE\n- **Extensible Architecture**: Easy to add new surrogate models and evaluation metrics\n- **Comprehensive Datasets**: Pre-configured support for Adult, Dutch, Covertype, House16, Letter, and Shuttle datasets\n\n## Installation\n\n### Prerequisites\n\n- Python >= 3.10, < 3.13\n- [uv](https://docs.astral.sh/uv/getting-started/installation/) for dependency management\n\n### Install uv\n\nYou can install uv using one of the following methods:\n\n```bash\n# Using pipx\npipx install uv\n\n# Using curl\ncurl -LsSf https://astral.sh/uv/install.sh | sh\n\n# Using wget\nwget -qO- https://astral.sh/uv/install.sh | sh\n```\n\nFor more details, visit the [uv documentation](https://docs.astral.sh/uv/getting-started/installation/).\n\n### Install FIRE360\n\n```bash\n# Clone the repository\ngit clone https://github.com/lucacorbucci/fire360.git\ncd fire360\n\n# Install dependencies and the package\nuv sync\n```\n\n## Quick Start\n\nHere's a basic example of how to use FIRE360 to explain a black-box model prediction:\n\n```python\nfrom fire360.explanations.explainer_model import ExplainerModel\nfrom fire360.explanations.explanation_utils import (\n    load_bb, load_synthetic_data, label_synthetic_data,\n    find_top_closest_rows, prepare_neighbours\n)\nimport pandas as pd\n\n# Load your trained black-box model\nbb_model = load_bb(\"path/to/black_box_model.pth\")\n\n# Load and prepare synthetic data\nsynthetic_data = load_synthetic_data(\"path/to/synthetic_data.csv\")\nsynthetic_data = label_synthetic_data(synthetic_data, \"target_column\", bb_model, scaler)\n\n# Select a sample to explain\nsample = test_data.iloc[[0]]  # Your test sample\n\n# Find similar samples from synthetic data\nneighborhood = find_top_closest_rows(synthetic_data, sample, k=1000, y_name=\"target_column\")\nX_neigh, y_neigh, _ = prepare_neighbours(neighborhood, \"target_column\")\n\n# Create explainer and generate explanation\nexplainer = ExplainerModel(explainer_type=\"dt\")  # or \"logistic\", \"svm\", \"knn\"\nexplainer.grid_search(X_neigh, y_neigh, seed=42)\n\nsample_pred, explanation, threshold, feature = explainer.extract_explanation(\n    explainer.best_model, \"target_column\", sample\n)\n\nprint(f\"Explanation: {explanation}\")\n```\n\nFor a complete working example, see [`src/examples/fire360_example.ipynb`](src/examples/fire360_example.ipynb).\n\n## API Reference\n\n### Core Classes\n\n#### `ExplainerModel`\n\nMain class for generating explanations using different surrogate models.\n\n**Parameters:**\n- `explainer_type` (str): Type of surrogate model (\"dt\", \"logistic\", \"svm\", \"knn\")\n\n**Methods:**\n- `grid_search(x_train, y_train, seed)`: Perform hyperparameter tuning\n- `extract_explanation(model, y_name, sample)`: Generate explanation for a sample\n- `predict(x_test)`: Make predictions with the surrogate model\n- `compute_stability(explanations)`: Calculate explanation stability\n- `compute_robustness(top_k_samples)`: Calculate explanation robustness\n- `compute_faithfulness(x_test, y_test)`: Calculate faithfulness metric\n\n### Utility Functions\n\nLocated in `fire360.explanations.explanation_utils`:\n\n- `load_bb(model_path)`: Load a pre-trained black-box model\n- `load_synthetic_data(data_path)`: Load synthetic dataset\n- `label_synthetic_data(synthetic_data, outcome_variable, bb, scaler)`: Label synthetic data with BB predictions\n- `find_top_closest_rows(synthetic_data, sample, k, y_name)`: Find k most similar samples\n- `prepare_neighbours(top_k_samples, y_name)`: Prepare neighborhood data for training\n- `evaluate_bb(x, y, bb)`: Evaluate black-box model accuracy\n\n\n\n## Generating Synthetic Data\n\nSynthetic datasets are generated using CTGAN and TVAE from the SDV library. Recommended training epochs:\n- CTGAN: 2500 epochs\n- TVAE: 2500 epochs\n\nScripts are available in `src/experiments/train_synth/` for generating synthetic data for each dataset.\n\n## Evaluation and Comparison\n\nFIRE360 includes comprehensive evaluation tools:\n\n- **Explanation Quality**: Fidelity, robustness, stability\n- **Comparison with Baselines**: LIME, SHAP, LORE (genetic)\n\nScripts for evaluation are in `src/experiments/evaluate_explanations/`.\n\n## Visualization Dashboard\n\nA dashboard for visualizing explanations is available at: [FIRE360 Dashboard](https://heroic-dasik-a43ca2.netlify.app/).\n\nCode for the dashboard can be found in the `UI` folder.\n\n## Contributing\n\nContributions are welcome! Please feel free to submit a Pull Request.\n\n## License\n\nThis project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.\n\n## Citation\n\nPaper will be available soon.",
+ "hits": {
+  "st": [
+   {
+    "file": "ctgan.ipynb",
+    "line": 90,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "     ]",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"synthesizer = CTGANSynthesizer(metadata)\\n\",",
+     "    \"synthesizer.fit(real_data)\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "src/fire360/dataset_generation/generate_synthetic_data.py",
+    "line": 32,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "    prepare_shuttle,",
+     ")",
+     "from loguru import logger",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from synthcity.metrics.eval_detection import (",
+     "    SyntheticDetectionGMM,",
+     "    SyntheticDetectionLinear,",
+     "    SyntheticDetectionMLP,"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "ctgan.ipynb",
+    "line": 18,
+    "text": "\"from sdv.metadata import Metadata\"",
+    "context": [
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import pandas as pd\\n\",",
+     "    \"from ctgan import CTGAN\\n\",",
+     "    \"from sdv.metadata import Metadata\"",
+     "   ]",
+     "  },",
+     "  {",
+     "   \"cell_type\": \"code\","
+    ]
+   },
+   {
+    "file": "src/fire360/dataset_generation/generate_synthetic_data.py",
+    "line": 31,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "    prepare_pima,",
+     "    prepare_shuttle,",
+     ")",
+     "from loguru import logger",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from synthcity.metrics.eval_detection import (",
+     "    SyntheticDetectionGMM,",
+     "    SyntheticDetectionLinear,"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "ctgan.ipynb",
+    "line": 18,
+    "text": "\"from sdv.metadata import Metadata\"",
+    "context": [
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import pandas as pd\\n\",",
+     "    \"from ctgan import CTGAN\\n\",",
+     "    \"from sdv.metadata import Metadata\"",
+     "   ]",
+     "  },",
+     "  {",
+     "   \"cell_type\": \"code\","
+    ]
+   },
+   {
+    "file": "ctgan.ipynb",
+    "line": 90,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "     ]",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"synthesizer = CTGANSynthesizer(metadata)\\n\",",
+     "    \"synthesizer.fit(real_data)\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "src/fire360/dataset_generation/generate_synthetic_data.py",
+    "line": 31,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "    prepare_pima,",
+     "    prepare_shuttle,",
+     ")",
+     "from loguru import logger",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from synthcity.metrics.eval_detection import (",
+     "    SyntheticDetectionGMM,",
+     "    SyntheticDetectionLinear,"
+    ]
+   },
+   {
+    "file": "src/fire360/dataset_generation/generate_synthetic_data.py",
+    "line": 32,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "    prepare_shuttle,",
+     ")",
+     "from loguru import logger",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from synthcity.metrics.eval_detection import (",
+     "    SyntheticDetectionGMM,",
+     "    SyntheticDetectionLinear,",
+     "    SyntheticDetectionMLP,"
+    ]
+   }
+  ],
+  "ctgan_mod": [
+   {
+    "file": "ctgan.ipynb",
+    "line": 17,
+    "text": "\"from ctgan import CTGAN\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import pandas as pd\\n\",",
+     "    \"from ctgan import CTGAN\\n\",",
+     "    \"from sdv.metadata import Metadata\"",
+     "   ]",
+     "  },",
+     "  {"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "ctgan.ipynb",
+    "line": 71,
+    "text": "\"Cell \\u001b[0;32mIn[17], line 4\\u001b[0m\\n\\u001b[1;32m      1\\u001b[0m \\u001b[38;5;28;01mfrom\\u001b[39;00m \\u001b[38;5;21;01msdv\\u001b[39;00m\\u001b[38;5;21;01m.\\u001b[39;00m\\u001b[38;5;21;01msingle_table\\u001b[39;00m \\u001b[38;5;28;01mimport\\u001b[39;00m CTGANSynthesizer\\n\\u001b[1;32m      3\\u001b[",
+    "context": [
+     "      \"\\u001b[0;31m_RemoteTraceback\\u001b[0m                          Traceback (most recent call last)\",",
+     "      \"\\u001b[0;31m_RemoteTraceback\\u001b[0m: \\n\\\"\\\"\\\"\\nTraceback (most recent call last):\\n  File \\\"/home/lcorbucci/personalized_explanations/.venv/lib/python3.10/site-packages/joblib/externals/loky/",
+     "      \"\\nThe above exception was the direct cause of the following exception:\\n\",",
+     "      \"\\u001b[0;31mBrokenProcessPool\\u001b[0m                         Traceback (most recent call last)\",",
+     "      \"Cell \\u001b[0;32mIn[17], line 4\\u001b[0m\\n\\u001b[1;32m      1\\u001b[0m \\u001b[38;5;28;01mfrom\\u001b[39;00m \\u001b[38;5;21;01msdv\\u001b[39;00m\\u001b[38;5;21;01m.\\u001b[39;00m\\u001b[38;5;21;01msi",
+     "      \"File \\u001b[0;32m~/personalized_explanations/.venv/lib/python3.10/site-packages/sdv/single_table/base.py:506\\u001b[0m, in \\u001b[0;36mBaseSynthesizer.fit\\u001b[0;34m(self, data)\\u001b[0m\\n\\u001",
+     "      \"File \\u001b[0;32m~/personalized_explanations/.venv/lib/python3.10/site-packages/sdv/single_table/base.py:476\\u001b[0m, in \\u001b[0;36mBaseSynthesizer.fit_processed_data\\u001b[0;34m(self, proces",
+     "      \"File \\u001b[0;32m~/personalized_explanations/.venv/lib/python3.10/site-packages/sdv/single_table/ctgan.py:293\\u001b[0m, in \\u001b[0;36mCTGANSynthesizer._fit\\u001b[0;34m(self, processed_data)\\u0",
+     "      \"File \\u001b[0;32m~/personalized_explanations/.venv/lib/python3.10/site-packages/ctgan/synthesizers/base.py:50\\u001b[0m, in \\u001b[0;36mrandom_state.<locals>.wrapper\\u001b[0;34m(self, *args, **k"
+    ]
+   },
+   {
+    "file": "ctgan.ipynb",
+    "line": 74,
+    "text": "\"File \\u001b[0;32m~/personalized_explanations/.venv/lib/python3.10/site-packages/sdv/single_table/ctgan.py:293\\u001b[0m, in \\u001b[0;36mCTGANSynthesizer._fit\\u001b[0;34m(self, processed_data)\\u001b[0m\\n\\u001b[1;32m    291\\u001b[0m \\u001b[38;5;28;01mwith\\u001b[39;00m warnings\\u001b[38;5;241m.\\u001b[3",
+    "context": [
+     "      \"\\u001b[0;31mBrokenProcessPool\\u001b[0m                         Traceback (most recent call last)\",",
+     "      \"Cell \\u001b[0;32mIn[17], line 4\\u001b[0m\\n\\u001b[1;32m      1\\u001b[0m \\u001b[38;5;28;01mfrom\\u001b[39;00m \\u001b[38;5;21;01msdv\\u001b[39;00m\\u001b[38;5;21;01m.\\u001b[39;00m\\u001b[38;5;21;01msi",
+     "      \"File \\u001b[0;32m~/personalized_explanations/.venv/lib/python3.10/site-packages/sdv/single_table/base.py:506\\u001b[0m, in \\u001b[0;36mBaseSynthesizer.fit\\u001b[0;34m(self, data)\\u001b[0m\\n\\u001",
+     "      \"File \\u001b[0;32m~/personalized_explanations/.venv/lib/python3.10/site-packages/sdv/single_table/base.py:476\\u001b[0m, in \\u001b[0;36mBaseSynthesizer.fit_processed_data\\u001b[0;34m(self, proces",
+     "      \"File \\u001b[0;32m~/personalized_explanations/.venv/lib/python3.10/site-packages/sdv/single_table/ctgan.py:293\\u001b[0m, in \\u001b[0;36mCTGANSynthesizer._fit\\u001b[0;34m(self, processed_data)\\u0",
+     "      \"File \\u001b[0;32m~/personalized_explanations/.venv/lib/python3.10/site-packages/ctgan/synthesizers/base.py:50\\u001b[0m, in \\u001b[0;36mrandom_state.<locals>.wrapper\\u001b[0;34m(self, *args, **k",
+     "      \"File \\u001b[0;32m~/personalized_explanations/.venv/lib/python3.10/site-packages/ctgan/synthesizers/ctgan.py:321\\u001b[0m, in \\u001b[0;36mCTGAN.fit\\u001b[0;34m(self, train_data, discrete_columns",
+     "      \"File \\u001b[0;32m~/personalized_explanations/.venv/lib/python3.10/site-packages/ctgan/data_transformer.py:187\\u001b[0m, in \\u001b[0;36mDataTransformer.transform\\u001b[0;34m(self, raw_data)\\u001",
+     "      \"File \\u001b[0;32m~/personalized_explanations/.venv/lib/python3.10/site-packages/ctgan/data_transformer.py:172\\u001b[0m, in \\u001b[0;36mDataTransformer._parallel_transform\\u001b[0;34m(self, raw_"
+    ]
+   },
+   {
+    "file": "ctgan.ipynb",
+    "line": 90,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "     ]",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"synthesizer = CTGANSynthesizer(metadata)\\n\",",
+     "    \"synthesizer.fit(real_data)\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "ctgan.ipynb",
+    "line": 92,
+    "text": "\"synthesizer = CTGANSynthesizer(metadata)\\n\",",
+    "context": [
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"synthesizer = CTGANSynthesizer(metadata)\\n\",",
+     "    \"synthesizer.fit(real_data)\\n\",",
+     "    \"\\n\",",
+     "    \"synthetic_data = synthesizer.sample(num_rows=10)\"",
+     "   ]"
+    ]
+   },
+   {
+    "file": "src/fire360/dataset_generation/generate_synthetic_data.py",
+    "line": 32,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "    prepare_shuttle,",
+     ")",
+     "from loguru import logger",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from synthcity.metrics.eval_detection import (",
+     "    SyntheticDetectionGMM,",
+     "    SyntheticDetectionLinear,",
+     "    SyntheticDetectionMLP,"
+    ]
+   },
+   {
+    "file": "src/fire360/dataset_generation/generate_synthetic_data.py",
+    "line": 486,
+    "text": "def log_losses(synthesizer: TVAESynthesizer | CTGANSynthesizer, synthesizer_name: str) -> None:",
+    "context": [
+     "            raise ValueError(msg)",
+     "    return real_data, outcome_variable",
+     "",
+     "",
+     "def log_losses(synthesizer: TVAESynthesizer | CTGANSynthesizer, synthesizer_name: str) -> None:",
+     "    \"\"\"",
+     "    Log the losses of the synthesizer. This depends on the synthesizer used.",
+     "    For instance for the TVAESynthesizer, we only have one loss while for the",
+     "    CTGANSynthesizer we have two losses: Generator Loss and Discriminator Loss"
+    ]
+   },
+   {
+    "file": "src/fire360/dataset_generation/generate_synthetic_data.py",
+    "line": 490,
+    "text": "CTGANSynthesizer we have two losses: Generator Loss and Discriminator Loss",
+    "context": [
+     "def log_losses(synthesizer: TVAESynthesizer | CTGANSynthesizer, synthesizer_name: str) -> None:",
+     "    \"\"\"",
+     "    Log the losses of the synthesizer. This depends on the synthesizer used.",
+     "    For instance for the TVAESynthesizer, we only have one loss while for the",
+     "    CTGANSynthesizer we have two losses: Generator Loss and Discriminator Loss",
+     "",
+     "    Args:",
+     "        synthesizer: The synthesizer used to generate the synthetic data",
+     "        synthesizer_name: The name of the synthesizer used"
+    ]
+   },
+   {
+    "file": "src/fire360/dataset_generation/generate_synthetic_data.py",
+    "line": 530,
+    "text": ") -> TVAESynthesizer | CTGANSynthesizer:",
+    "context": [
+     "",
+     "",
+     "def get_synthesizer(",
+     "    synthesizer_name: str, metadata: Metadata, epochs: int, cuda: bool = True",
+     ") -> TVAESynthesizer | CTGANSynthesizer:",
+     "    \"\"\"",
+     "    Get the synthesizer based on the synthesizer name",
+     "",
+     "    Args:"
+    ]
+   },
+   {
+    "file": "src/fire360/dataset_generation/generate_synthetic_data.py",
+    "line": 546,
+    "text": "return CTGANSynthesizer(metadata, epochs=epochs, cuda=cuda)",
+    "context": [
+     "",
+     "    \"\"\"",
+     "    match synthesizer_name:",
+     "        case \"ctgan\":",
+     "            return CTGANSynthesizer(metadata, epochs=epochs, cuda=cuda)",
+     "        case \"tvae\":",
+     "            return TVAESynthesizer(metadata, epochs=epochs, cuda=cuda)",
+     "        case _:",
+     "            msg = \"Invalid synthesizer name\""
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "src/fire360/dataset_generation/generate_synthetic_data.py",
+    "line": 32,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "    prepare_shuttle,",
+     ")",
+     "from loguru import logger",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from synthcity.metrics.eval_detection import (",
+     "    SyntheticDetectionGMM,",
+     "    SyntheticDetectionLinear,",
+     "    SyntheticDetectionMLP,"
+    ]
+   },
+   {
+    "file": "src/fire360/dataset_generation/generate_synthetic_data.py",
+    "line": 486,
+    "text": "def log_losses(synthesizer: TVAESynthesizer | CTGANSynthesizer, synthesizer_name: str) -> None:",
+    "context": [
+     "            raise ValueError(msg)",
+     "    return real_data, outcome_variable",
+     "",
+     "",
+     "def log_losses(synthesizer: TVAESynthesizer | CTGANSynthesizer, synthesizer_name: str) -> None:",
+     "    \"\"\"",
+     "    Log the losses of the synthesizer. This depends on the synthesizer used.",
+     "    For instance for the TVAESynthesizer, we only have one loss while for the",
+     "    CTGANSynthesizer we have two losses: Generator Loss and Discriminator Loss"
+    ]
+   },
+   {
+    "file": "src/fire360/dataset_generation/generate_synthetic_data.py",
+    "line": 489,
+    "text": "For instance for the TVAESynthesizer, we only have one loss while for the",
+    "context": [
+     "",
+     "def log_losses(synthesizer: TVAESynthesizer | CTGANSynthesizer, synthesizer_name: str) -> None:",
+     "    \"\"\"",
+     "    Log the losses of the synthesizer. This depends on the synthesizer used.",
+     "    For instance for the TVAESynthesizer, we only have one loss while for the",
+     "    CTGANSynthesizer we have two losses: Generator Loss and Discriminator Loss",
+     "",
+     "    Args:",
+     "        synthesizer: The synthesizer used to generate the synthetic data"
+    ]
+   },
+   {
+    "file": "src/fire360/dataset_generation/generate_synthetic_data.py",
+    "line": 530,
+    "text": ") -> TVAESynthesizer | CTGANSynthesizer:",
+    "context": [
+     "",
+     "",
+     "def get_synthesizer(",
+     "    synthesizer_name: str, metadata: Metadata, epochs: int, cuda: bool = True",
+     ") -> TVAESynthesizer | CTGANSynthesizer:",
+     "    \"\"\"",
+     "    Get the synthesizer based on the synthesizer name",
+     "",
+     "    Args:"
+    ]
+   },
+   {
+    "file": "src/fire360/dataset_generation/generate_synthetic_data.py",
+    "line": 548,
+    "text": "return TVAESynthesizer(metadata, epochs=epochs, cuda=cuda)",
+    "context": [
+     "    match synthesizer_name:",
+     "        case \"ctgan\":",
+     "            return CTGANSynthesizer(metadata, epochs=epochs, cuda=cuda)",
+     "        case \"tvae\":",
+     "            return TVAESynthesizer(metadata, epochs=epochs, cuda=cuda)",
+     "        case _:",
+     "            msg = \"Invalid synthesizer name\"",
+     "            raise ValueError(msg)",
+     ""
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ctgan_mod",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "pyproject.toml": [
+   "    \"ctgan<1.0.0,>=0.10.2\",",
+   "    \"sdv<2.0.0,>=1.17.2\","
+  ]
+ }
+}

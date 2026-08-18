@@ -1,0 +1,295 @@
+{
+ "repo": "BrejeshKoushal/MimicData",
+ "disk_kb": 2738,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# DataMimic\n\nGenerate high‑quality synthetic datasets from real CSVs with privacy‑preserving controls and rich evaluation. Full‑stack TypeScript app: Express API + Vite/React client with optional Postgres storage. A Python generator is used when available; otherwise a JS fallback produces baseline synthetic data and metrics.\n\n---\n\n## Table of Contents\n- [Features](#features)\n- [Tech Stack](#tech-stack)\n- [Architecture](#architecture)\n- [Directory Structure](#directory-structure)\n- [Getting Started](#getting-started)\n- [Environment Variables](#environment-variables)\n- [NPM Scripts](#npm-scripts)\n- [API Reference](#api-reference)\n- [Data Flow](#data-flow)\n- [Development Notes](#development-notes)\n- [Troubleshooting](#troubleshooting)\n- [License](#license)\n\n---\n\n## Features\n- Upload CSV and auto‑analyze columns (numeric/categorical, null counts, basic suggestions).\n- Generate synthetic data:\n  - Python engine (preferred) via `python_scripts/generate_synthetic.py`.\n  - JS fallback when Python is unavailable.\n  - Controlled generation: choose columns to synthesize, add constraints, define simple relations.\n- Evaluation metrics and charts: privacy/utility scores, KS test, correlation distance, distributions, and correlation overview.\n- Compare Original vs Synthetic samples side‑by‑side.\n- Download synthetic CSV and a PDF report of results.\n- Storage:\n  - In‑memory by default (no DB required for local dev).\n  - Postgres via Drizzle ORM + Neon when `DATABASE_URL` is set.\n\n---\n\n## Tech Stack\n- Frontend: React 18, Vite, TailwindCSS, shadcn/ui (Radix UI), Recharts, TanStack Query, Wouter.\n- Backend: Node.js, Express, Multer, PDFKit.\n- Database (optional): Postgres with Drizzle ORM and Neon serverless driver.\n- Shared Types: Drizzle schema + Zod insert schemas in `shared/`.\n- Build/Tooling: TypeScript, esbuild, TSX, Vite.\n- Python (optional): Synthetic generation and evaluation helpers.\n\n---\n\n## Architecture\n- server/index.ts\n  - Express app, request logging for `/api/*`, error handler.\n  - Registers routes from `server/routes.ts`.\n  - Dev: attaches Vite middleware for the client; Prod: serves built static assets.\n- server/routes.ts\n  - CSV upload, dataset CRUD, synthetic generation (Python + JS fallback), evaluation, downloads, and PDF report.\n- server/storage.ts\n  - Chooses storage backend:\n    - `DatabaseStorage` (Postgres via Drizzle) when `DATABASE_URL` is present.\n    - `InMemoryStorage` otherwise.\n- shared/schema.ts\n  - Drizzle table definitions (datasets, generations, evaluations) and Zod insert schemas.\n- client/\n  - React routes: Upload, Model Selection, Results, Download.\n  - TanStack Query default fetcher based on the `queryKey`.\n\n---\n\n## Directory Structure\n```\nDataMimic/\n├─ client/               # React app (Vite)\n│  └─ src/\n│     ├─ pages/          # upload, models, results, download\n│     ├─ components/     # UI components\n│     └─ lib/queryClient.ts\n├─ server/               # Express server\n│  ├─ index.ts           # entrypoint\n│  ├─ routes.ts          # REST API\n│  ├─ storage.ts         # DB/in-memory storage abstraction\n│  ├─ db.ts              # Drizzle + Neon DB client\n│  └─ vite.ts            # Vite dev/prod integration\n├─ shared/\n│  └─ schema.ts          # Drizzle tables + Zod insert schemas\n├─ python_scripts/\n│  └─ generate_synthetic.py\n├─ tsconfig.json\n├─ vite.config.ts\n├─ tailwind.config.ts\n├─ drizzle.config.ts\n├─ package.json\n└─ README.md\n```\n\n---\n\n## Getting Started\n\n### Prerequisites\n- Node.js 18+\n- Python 3.x (optional but recommended)\n- Postgres (optional, required only if you want persistent storage)\n\n### Install & Run (In‑Memory Storage)\n```\nnpm install\nnpm run dev\n```\n- App runs on `http://localhost:5000`.\n- In dev, Vite serves the React client through Express middleware with HMR.\n\n### Production Build\n```\nnpm run build\nnpm start\n```\n- Builds client and bundles server to `dist/`. Express serves the built client.\n\n### Using Postgres (Optional)\n1) Set `DATABASE_URL` (see Environment Variables).\n2) Run migrations: `npm run db:push`.\n3) Start the app (`dev` or `start`).\n\n---\n\n## Environment Variables\n- `PORT` (number) — Express port. Default: `5000`.\n- `DATABASE_URL` (string) — Postgres connection string. If set, enables DB storage.\n- `PYTHON_BIN` (string) — Path to python binary (optional). If not set, the server tries platform‑sensible defaults (`python`, `py`, `python3`).\n\nCreate a `.env` (not committed) if desired and load via your shell or a process manager.\n\n---\n\n## NPM Scripts\n- `dev` — Start Express in dev with Vite middleware.\n- `build` — Build client and bundle server.\n- `start` — Run the production server from `dist/index.js`.\n- `check` — Typecheck with `tsc`.\n- `db:push` — Apply Drizzle migrations when using Postgres.\n\n---\n\n## API Reference\nBase URL: `http://localhost:5000`\n\n- POST `/api/upload` (multipart/form-data)\n  - Field: `file` (CSV)\n  - Response: dataset metadata { id, name, rowCount, columnCount, columns }\n\n- GET `/api/datasets`\n  - List datasets.\n\n- GET `/api/datasets/:id`\n  - Get dataset including stored CSV (`fileData`).\n\n- POST `/api/analyze_dataset`\n  - Body: `{ datasetId }`\n  - Response: `{ columns, dtypes, relations }`\n\n- POST `/api/generate`\n  - Body: `{ datasetId, modelType, parameters }`\n  - Spawns Python; falls back to JS generator.\n  - Persists generation + evaluation.\n\n- POST `/api/generate_controlled`\n  - Body: `{ datasetId, cols_to_synthesize, constraints, relations, modelType, parameters }`\n\n- GET `/api/generations/:id`\n  - Returns generation and evaluation.\n\n- GET `/api/generations/latest`\n  - Returns the latest generation and its evaluation.\n\n- GET `/api/download/:id`\n  - Download synthetic CSV of a specific generation.\n\n- GET `/api/download_synthetic/:datasetId`\n  - Download latest synthetic CSV for a dataset.\n\n- GET `/api/report/:id`\n  - Download a PDF report of evaluation metrics.\n\n---\n\n## Data Flow\n1) Upload CSV → stored as text in storage (DB or memory) with derived column info.\n2) Generate → server spawns Python with JSON (CSV, model, parameters). If Python is unavailable/fails, a JS fallback synthesizes and evaluates.\n3) Persist → generation status/data and evaluation metrics stored.\n4) Visualize → client fetches generation/evaluation and dataset to plot charts and show samples.\n5) Export → download synthetic CSV or a PDF report.\n\n---\n\n## Development Notes\n- In dev, the server attaches Vite middleware (HMR). In prod, Express serves static files from the build.\n- Storage is chosen at runtime in `server/storage.ts` based on `DATABASE_URL`.\n- The Results page reads original sample rows from `GET /api/datasets/:id` and synthetic rows from generation data.\n- UI components are built with shadcn/ui and Tailwind; charts via Recharts.\n\n---\n\n## Troubleshooting\n- PowerShell blocks `npm`: use `npm.cmd` or adjust execution policy.\n- Python not found: set `PYTHON_BIN` or install Python; app will fall back to JS generator.\n- Postgres errors: ensure `DATABASE_URL` is set and run `npm run db:push`.\n- Port in use: set `PORT` to a free port.\n\n---\n\n",
+ "hits": {
+  "st": [
+   {
+    "file": "python_scripts/generate_synthetic.py",
+    "line": 21,
+    "text": "from sdv.single_table import (",
+    "context": [
+     "try:",
+     "    import pandas as pd",
+     "    # Prefer modern single_table API; fall back to tabular API if not present",
+     "    try:",
+     "        from sdv.single_table import (",
+     "            CTGANSynthesizer,",
+     "            GaussianCopulaSynthesizer,",
+     "            TVAESynthesizer,",
+     "            CopulaGANSynthesizer,"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "python_scripts/generate_synthetic.py",
+    "line": 27,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "            GaussianCopulaSynthesizer,",
+     "            TVAESynthesizer,",
+     "            CopulaGANSynthesizer,",
+     "        )",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.constraints import FixedCombinations, Range",
+     "        _SINGLE_TABLE_API = True",
+     "    except Exception:",
+     "        _SINGLE_TABLE_API = False"
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "python_scripts/generate_synthetic.py",
+    "line": 36,
+    "text": "from sdv.evaluation.single_table import evaluate_quality, evaluate_privacy",
+    "context": [
+     "        from sdv.tabular import CTGAN, CopulaGAN, GaussianCopula, TVAE",
+     "        SingleTableMetadata = None  # type: ignore",
+     "        FixedCombinations = None  # type: ignore",
+     "        Range = None  # type: ignore",
+     "    from sdv.evaluation.single_table import evaluate_quality, evaluate_privacy",
+     "except Exception:",
+     "    _SDV_AVAILABLE = False",
+     "",
+     "def parse_csv(csv_data):"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "python_scripts/generate_synthetic.py",
+    "line": 21,
+    "text": "from sdv.single_table import (",
+    "context": [
+     "try:",
+     "    import pandas as pd",
+     "    # Prefer modern single_table API; fall back to tabular API if not present",
+     "    try:",
+     "        from sdv.single_table import (",
+     "            CTGANSynthesizer,",
+     "            GaussianCopulaSynthesizer,",
+     "            TVAESynthesizer,",
+     "            CopulaGANSynthesizer,"
+    ]
+   },
+   {
+    "file": "python_scripts/generate_synthetic.py",
+    "line": 27,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "            GaussianCopulaSynthesizer,",
+     "            TVAESynthesizer,",
+     "            CopulaGANSynthesizer,",
+     "        )",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.constraints import FixedCombinations, Range",
+     "        _SINGLE_TABLE_API = True",
+     "    except Exception:",
+     "        _SINGLE_TABLE_API = False"
+    ]
+   },
+   {
+    "file": "python_scripts/generate_synthetic.py",
+    "line": 28,
+    "text": "from sdv.constraints import FixedCombinations, Range",
+    "context": [
+     "            TVAESynthesizer,",
+     "            CopulaGANSynthesizer,",
+     "        )",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.constraints import FixedCombinations, Range",
+     "        _SINGLE_TABLE_API = True",
+     "    except Exception:",
+     "        _SINGLE_TABLE_API = False",
+     "        from sdv.tabular import CTGAN, CopulaGAN, GaussianCopula, TVAE"
+    ]
+   },
+   {
+    "file": "python_scripts/generate_synthetic.py",
+    "line": 32,
+    "text": "from sdv.tabular import CTGAN, CopulaGAN, GaussianCopula, TVAE",
+    "context": [
+     "        from sdv.constraints import FixedCombinations, Range",
+     "        _SINGLE_TABLE_API = True",
+     "    except Exception:",
+     "        _SINGLE_TABLE_API = False",
+     "        from sdv.tabular import CTGAN, CopulaGAN, GaussianCopula, TVAE",
+     "        SingleTableMetadata = None  # type: ignore",
+     "        FixedCombinations = None  # type: ignore",
+     "        Range = None  # type: ignore",
+     "    from sdv.evaluation.single_table import evaluate_quality, evaluate_privacy"
+    ]
+   },
+   {
+    "file": "python_scripts/generate_synthetic.py",
+    "line": 36,
+    "text": "from sdv.evaluation.single_table import evaluate_quality, evaluate_privacy",
+    "context": [
+     "        from sdv.tabular import CTGAN, CopulaGAN, GaussianCopula, TVAE",
+     "        SingleTableMetadata = None  # type: ignore",
+     "        FixedCombinations = None  # type: ignore",
+     "        Range = None  # type: ignore",
+     "    from sdv.evaluation.single_table import evaluate_quality, evaluate_privacy",
+     "except Exception:",
+     "    _SDV_AVAILABLE = False",
+     "",
+     "def parse_csv(csv_data):"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "python_scripts/generate_synthetic.py",
+    "line": 22,
+    "text": "CTGANSynthesizer,",
+    "context": [
+     "    import pandas as pd",
+     "    # Prefer modern single_table API; fall back to tabular API if not present",
+     "    try:",
+     "        from sdv.single_table import (",
+     "            CTGANSynthesizer,",
+     "            GaussianCopulaSynthesizer,",
+     "            TVAESynthesizer,",
+     "            CopulaGANSynthesizer,",
+     "        )"
+    ]
+   },
+   {
+    "file": "python_scripts/generate_synthetic.py",
+    "line": 315,
+    "text": "return CTGANSynthesizer",
+    "context": [
+     "                if num_ratio >= 0.6:",
+     "                    return GaussianCopulaSynthesizer",
+     "                if cat_ratio >= 0.6:",
+     "                    return CopulaGANSynthesizer",
+     "                return CTGANSynthesizer",
+     "",
+     "            selected = None",
+     "            if model_type in ('ctgan',):",
+     "                selected = CTGANSynthesizer"
+    ]
+   },
+   {
+    "file": "python_scripts/generate_synthetic.py",
+    "line": 319,
+    "text": "selected = CTGANSynthesizer",
+    "context": [
+     "                return CTGANSynthesizer",
+     "",
+     "            selected = None",
+     "            if model_type in ('ctgan',):",
+     "                selected = CTGANSynthesizer",
+     "            elif model_type in ('copulagan', 'copula_gan'):",
+     "                selected = CopulaGANSynthesizer",
+     "            elif model_type in ('tvae',):",
+     "                selected = TVAESynthesizer"
+    ]
+   },
+   {
+    "file": "python_scripts/generate_synthetic.py",
+    "line": 330,
+    "text": "if isinstance(synth, CTGANSynthesizer):",
+    "context": [
+     "",
+     "            synth = selected(metadata, constraints=constraints) if metadata is not None else selected()",
+     "            # Stronger defaults for CTGAN-like models when available via kwargs",
+     "            try:",
+     "                if isinstance(synth, CTGANSynthesizer):",
+     "                    epochs_val = int(parameters.get('epochs', 300) or 300)",
+     "                    batch_val = int(parameters.get('batchSize', 500) or 500)",
+     "                    pac_val = int(parameters.get('pac', 10) or 10)",
+     "                    synth.set_parameters(epochs=epochs_val, batch_size=batch_val, pac=pac_val)"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "python_scripts/generate_synthetic.py",
+    "line": 23,
+    "text": "GaussianCopulaSynthesizer,",
+    "context": [
+     "    # Prefer modern single_table API; fall back to tabular API if not present",
+     "    try:",
+     "        from sdv.single_table import (",
+     "            CTGANSynthesizer,",
+     "            GaussianCopulaSynthesizer,",
+     "            TVAESynthesizer,",
+     "            CopulaGANSynthesizer,",
+     "        )",
+     "        from sdv.metadata import SingleTableMetadata"
+    ]
+   },
+   {
+    "file": "python_scripts/generate_synthetic.py",
+    "line": 312,
+    "text": "return GaussianCopulaSynthesizer",
+    "context": [
+     "                total = max(1, numeric_cols + cat_cols)",
+     "                num_ratio = numeric_cols / total",
+     "                cat_ratio = cat_cols / total",
+     "                if num_ratio >= 0.6:",
+     "                    return GaussianCopulaSynthesizer",
+     "                if cat_ratio >= 0.6:",
+     "                    return CopulaGANSynthesizer",
+     "                return CTGANSynthesizer",
+     ""
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "python_scripts/generate_synthetic.py",
+    "line": 24,
+    "text": "TVAESynthesizer,",
+    "context": [
+     "    try:",
+     "        from sdv.single_table import (",
+     "            CTGANSynthesizer,",
+     "            GaussianCopulaSynthesizer,",
+     "            TVAESynthesizer,",
+     "            CopulaGANSynthesizer,",
+     "        )",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.constraints import FixedCombinations, Range"
+    ]
+   },
+   {
+    "file": "python_scripts/generate_synthetic.py",
+    "line": 323,
+    "text": "selected = TVAESynthesizer",
+    "context": [
+     "                selected = CTGANSynthesizer",
+     "            elif model_type in ('copulagan', 'copula_gan'):",
+     "                selected = CopulaGANSynthesizer",
+     "            elif model_type in ('tvae',):",
+     "                selected = TVAESynthesizer",
+     "            else:",
+     "                selected = pick_auto_synth()",
+     "",
+     "            synth = selected(metadata, constraints=constraints) if metadata is not None else selected()"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ev",
+  "gc",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "pyproject.toml": [
+   "  \"sdv\",",
+   "  \"sdmetrics\","
+  ]
+ }
+}

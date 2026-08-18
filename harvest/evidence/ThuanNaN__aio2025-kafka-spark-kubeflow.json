@@ -1,0 +1,142 @@
+{
+ "repo": "ThuanNaN/aio2025-kafka-spark-kubeflow",
+ "disk_kb": 42,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Heart Disease ML Project\nReal-time Streaming, Dual Sink (Elasticsearch + MinIO), Kubeflow Pipeline, and KServe.\n\n![Project Architecture](https://res.cloudinary.com/dptjhpkmv/image/upload/v1766686516/stream_project_tmssic.png)\n\n## Overview\n- Real-time data generation with Kafka (SDV-based synthetic data)\n- Spark Structured Streaming processes Kafka messages and writes to:\n\t- Elasticsearch for real-time search/analytics\n\t- MinIO (S3) as Parquet for ML pipelines\n- Kubeflow pipeline compiles and runs training/evaluation and registers models to MinIO\n- KServe deploys the latest model from MinIO for online inference\n\n## Prerequisites\n- Docker and Docker Compose\n- Python 3.11+\n\n## Setup\n1) Install Python dependencies:\n\n```bash\npython -m venv .venv\nsource .venv/bin/activate\npip install -r requirements.txt\n```\n\n2) Start infrastructure (Kafka, Kafka UI, Elasticsearch, MinIO, Spark):\n\n```bash\ndocker-compose up -d\n```\n\nServices and UIs:\n- Kafka UI: http://localhost:18080\n- Elasticsearch: http://localhost:19200\n- MinIO API: http://localhost:19000\n- MinIO Console: http://localhost:19001 (login: `minioadmin` / `minioadmin`)\n\n## Elasticsearch Index (Dual Sink target)\nCreate the index and mapping used by Spark streaming:\n\n```bash\npython elasticsearch/create_index.py\n```\n\nBasic checks and queries:\n\n```bash\npython elasticsearch/test_es.py\n```\n\n## MinIO Bucket (Dual Sink target)\nCreate bucket `ml-data` in MinIO Console (http://localhost:19001) before streaming.\nSpark writes Parquet to: `s3a://ml-data/raw/heart-disease/` partitioned by `date` and `hour`.\n\n## Run Spark Streaming (Dual Sink: ES + MinIO)\nExecute the streaming job inside the Spark container:\n\n```bash\ndocker exec stream-project-spark /bin/bash /app/spark/run_dual_sink.sh\n```\n\nThis job:\n- Reads Kafka topic `heart-disease-stream`\n- Writes processed records to Elasticsearch index `heart-disease-stream`\n- Writes Parquet files to MinIO bucket `ml-data` under `raw/heart-disease/`\n\n## Produce Streaming Data (Kafka)\nThe producer trains an SDV model using a CSV dataset, then streams synthetic records to Kafka.\n\n1) Prepare dataset (required once):\n- Place the CSV at `raw-data/Heart_disease_cleveland_new.csv` (or update the path in `kafka/kafka_producer.py`)\n- Set categorical columns as defined in the script\n\n2) Run the producer:\n\n```bash\npython kafka/kafka_producer.py\n```\n\nDefaults (can be adjusted in `kafka/kafka_config.py`):\n- Bootstrap servers: `localhost:19092`\n- Topic: `heart-disease-stream`\n- Producer: gzip compression, acks=all\n\n## Verify Data Flow\n- Elasticsearch: run `python elasticsearch/test_es.py` for index info, counts, latest docs, aggregations\n- MinIO: check Parquet files in `ml-data/raw/heart-disease/` via Console (Browse) or S3 client\n- Kafka: use Kafka UI (http://localhost:18080) to inspect topic data\n\n## Kubeflow Pipeline (Training + Registry)\nCompile the pipeline to a YAML package for uploading to Kubeflow:\n\n```bash\npython kubeflow_pipeline/heart_disease_pipeline.py\n```\n\nUpload `heart_disease_pipeline_simple.yaml` to Kubeflow Pipelines UI and set parameters:\n- `minio_endpoint`: for local Docker use `http://localhost:19000`\n- `bucket_name`: `ml-data`\n- `data_prefix`: `raw/heart-disease`\n\nPipeline steps:\n1) Prepare data (collect from MinIO, preprocess, features)\n2) Validate data (basic quality checks)\n3) Train & Evaluate (RandomForest, fixed hyperparameters)\n4) Register model (store model + metadata to MinIO)\n\n## KServe Deployment\nDeploy the latest registered model from MinIO to KServe:\n\n```bash\npython kubeflow_pipeline/demo_kserve.py deploy\n```\n\nRequirements:\n- KServe installed in the cluster\n- Namespace (default): `kubeflow-user-example-com`\n- MinIO endpoint configured (defaults can be changed in the script)\n\n## Notes\n- Default index and topic: `heart-disease-stream`\n- Spark checkpoint path: `/app/spark/checkpoint` (mounted volume)\n- Parquet files are written with Snappy compression and partitioned by date/hour\n",
+ "hits": {
+  "st": [
+   {
+    "file": "kafka/kafka_producer.py",
+    "line": 11,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import os",
+     "os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'",
+     "",
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import time",
+     "import json",
+     "from datetime import datetime"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "kafka/kafka_producer.py",
+    "line": 12,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'",
+     "",
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import time",
+     "import json",
+     "from datetime import datetime",
+     "from kafka import KafkaProducer, KafkaAdminClient"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "kafka/kafka_producer.py",
+    "line": 11,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import os",
+     "os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'",
+     "",
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import time",
+     "import json",
+     "from datetime import datetime"
+    ]
+   },
+   {
+    "file": "kafka/kafka_producer.py",
+    "line": 12,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'",
+     "",
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import time",
+     "import json",
+     "from datetime import datetime",
+     "from kafka import KafkaProducer, KafkaAdminClient"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "kafka/kafka_producer.py",
+    "line": 11,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import os",
+     "os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'",
+     "",
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import time",
+     "import json",
+     "from datetime import datetime"
+    ]
+   },
+   {
+    "file": "kafka/kafka_producer.py",
+    "line": 104,
+    "text": "print(\"\\n[3] Training GaussianCopulaSynthesizer...\")",
+    "context": [
+     "        ",
+     "        print(f\"Configured {len(categorical_columns)} categorical columns\")",
+     "        ",
+     "        # Train model",
+     "        print(\"\\n[3] Training GaussianCopulaSynthesizer...\")",
+     "        self.synthesizer = GaussianCopulaSynthesizer(",
+     "            metadata=metadata,",
+     "            enforce_min_max_values=True,",
+     "            enforce_rounding=True"
+    ]
+   },
+   {
+    "file": "kafka/kafka_producer.py",
+    "line": 105,
+    "text": "self.synthesizer = GaussianCopulaSynthesizer(",
+    "context": [
+     "        print(f\"Configured {len(categorical_columns)} categorical columns\")",
+     "        ",
+     "        # Train model",
+     "        print(\"\\n[3] Training GaussianCopulaSynthesizer...\")",
+     "        self.synthesizer = GaussianCopulaSynthesizer(",
+     "            metadata=metadata,",
+     "            enforce_min_max_values=True,",
+     "            enforce_rounding=True",
+     "        )"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "# SDV - Synthetic Data Vault",
+   "sdv==1.9.0"
+  ]
+ }
+}

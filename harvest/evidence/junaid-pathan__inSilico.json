@@ -1,0 +1,126 @@
+{
+ "repo": "junaid-pathan/inSilico",
+ "disk_kb": 24498,
+ "method": "partial_clone",
+ "tree_files": 134,
+ "status": "ok",
+ "readme": "# 🧬 InSilico: Precision Clinical Trial Simulation Platform\n\n> **Accelerate clinical research. Reduce costs. Minimize patient risk. Maximize trial success.**\n\n**InSilico** is an AI-powered platform that revolutionizes clinical trial design through **Digital Twin** technology and explainable machine learning. Powered by 250,000+ real patient records from the CDC BRFSS dataset, InSilico enables researchers to simulate patient outcomes, validate intervention efficacy, and optimize trial cohorts—all before enrolling a single human subject.\n\nBuilt during **HackPrinceton**, this project combines cutting-edge generative AI, statistical rigor, and medical informatics to transform clinical research from a high-risk gamble into precision science.\n\n---\n\n## 🎯 The Problem\n\nTraditional clinical trials face a **perfect storm** of challenges:\n\n| Challenge | Impact | Cost |\n|-----------|--------|------|\n| **Extreme Costs** | Bringing a drug to market requires $2.6B+ investment | 💰 Prohibitive for smaller biotech firms |\n| **Patient Risk** | Early-phase trials expose vulnerable populations to unknown risks | ⚠️ Ethical liability |\n| **High Failure Rates** | 90% of drugs fail in clinical trials—often due to suboptimal cohort selection | 📉 Wasted resources |\n| **Extended Timelines** | 10+ years from discovery to FDA approval | ⏱️ Patient populations waiting for treatments |\n\n---\n\n## ✅ The InSilico Solution\n\nInSilico provides a **Digital Sandbox** for risk-free, cost-effective trial simulation:\n\n```\n┌─────────────────────────────────────────────────────────────┐\n│  Real Patient Data (250K+ BRFSS records)                    │\n│          ↓                                                    │\n│  TVAE Synthetic Patient Generation                          │\n│  (Privacy-preserving, Statistically Validated)              │\n│          ↓                                                    │\n│  Centroid Recovery + Gamma Formula Simulation               │\n│  (Drug + Biomarker Effects)                                 │\n│          ↓                                                    │\n│  SHAP Explainability Layer                                  │\n│  (Why this patient responds to treatment)                   │\n│          ↓                                                    │\n│  Trial Success Prediction & Cohort Optimization             │\n└─────────────────────────────────────────────────────────────┘\n```\n\n**Key Capabilities:**\n- ✅ **Simulate Intervention Impact**: Model how a patient's risk profile changes when biomarkers (BMI, Blood Pressure, A1C) are modified by a drug\n- ✅ **Synthetic Control Arms**: Generate thousands of high-fidelity synthetic patients to boost statistical power\n- ✅ **Explainable Risk Mapping**: Use SHAP values to explain *exactly* why a patient's risk is dropping or rising\n- ✅ **PDF Analysis Engine**: Extract drug mechanisms from trial PDFs using RAG + Google Gemini AI\n- ✅ **Interactive Dashboard**: Real-time visualization of trial outcomes and risk trajectories\n\n---\n\n## 🏗️ System Architecture\n\n```mermaid\ngraph TB\n    subgraph Data[\"📊 Data Layer\"]\n        CDC[\"CDC BRFSS Dataset<br/>250K+ Records\"]\n        PDF[\"Medical PDFs<br/>Trial Documents\"]\n    end\n    \n    subgraph ML[\"🤖 ML Pipeline\"]\n        TVAE[\"TVAE Encoder<br/>Synthetic Patient Gen\"]\n        VAL[\"Statistical Validation<br/>KS Test, Wasserstein\"]\n        RF[\"Random Forest<br/>Risk Classifier\"]\n    end\n    \n    subgraph Engine[\"⚙️ Simulation Engine\"]\n        CENT[\"Centroid Recovery<br/>Health → Disease Vector\"]\n        GAMMA[\"Gamma Formula<br/>Drug Potency Scoring\"]\n        SIM[\"Patient Trajectory<br/>Simulation\"]\n    end\n    \n    subgraph Explain[\"🔍 Explainability\"]\n        SHAP[\"SHAP Values<br/>Feature Attribution\"]\n        VIZ[\"Risk Radar Charts<br/>Visual Analytics\"]\n    end\n    \n    subgraph API[\"🔗 API Layer\"]\n        FAST[\"FastAPI Backend<br/>3 Core Endpoints\"]\n    end\n    \n    subgraph Frontend[\"💻 UI Layer\"]\n        NEXT[\"Next.js Dashboard<br/>Interactive Sim\"]\n    end\n    \n    CDC -->|Train| TVAE\n    PDF -->|Parse & Extract| GAMMA\n    TVAE -->|Validate| VAL\n    VAL -->|Train| RF\n    RF -->|Generate Twins| SIM\n    CENT -->|Vector Transform| SIM\n    GAMMA -->|Impact Score| SIM\n    SIM -->|Patient Data| SHAP\n    SHAP -->|Explanations| VIZ\n    RF -->|Score| API\n    SIM -->|Simulate| API\n    API -->|Data| FAST\n    FAST -->|Results| NEXT\n    VIZ -->|Charts| NEXT\n    \n    style Data fill:#e1f5ff\n    style ML fill:#f3e5f5\n    style Engine fill:#fff3e0\n    style Explain fill:#f1f8e9\n    style API fill:#fce4ec\n    style Frontend fill:#ede7f6\n```\n\n---\n\n## 📊 ML & Data Science\n\n**Synthetic Patients (TVAE):** 250K BRFSS records → 50K synthetic patients | Validation: KS test ✅, Wasserstein distance ✅, PCA manifold ✅ | Disease prevalence: 13.9% real vs 13.3% synthetic (<1% error)\n\n**Risk Model (Random Forest):** 12 biomarkers → Diabetes risk + SHAP importance | Accuracy: ~78% on holdout | Latency: <1ms per prediction\n\n---\n\n## ⚙️ Simulation Engine: Centroid Recovery\n\n**Algorithm:**\n1. Calculate health centroid ($\\mu_H$) and disease centroid ($\\mu_D$)\n2. Compute recovery vector: $\\vec{r} = \\mu_H - \\mu_D$\n3. Apply drug effect: $Patient_{new} = Patient_{old} + \\gamma \\cdot \\vec{r}$\n4. Re-score with Random Forest\n\n**Gamma (Drug Potency):** Range [0, 1], auto-extracted from MoA text\n- Weight loss → 0.12 | A1C reduction → 0.18 | Lifestyle intervention → 0.25\n\n---\n\n## 🔍 Explainability: SHAP\n\nEvery result includes SHAP feature attribution showing how each biomarker contributes to risk changes:\n```json\n{\"baseline_risk\": 0.42, \"simulated_risk\": 0.28, \"risk_reduction\": 0.14,\n \"shap_deltas\": {\"BMI\": -0.08, \"HighBP\": -0.04, \"PhysActivity\": -0.02}}\n```\n\n---\n\n## 🔗 API Endpoints\n\n| Endpoint | Purpose |\n|----------|---------|\n| `GET /health` | System status & model info |\n| `POST /score-patient` | Baseline risk assessment + SHAP |\n| `POST /simulate-trial` | Full intervention simulation |\n| `POST /parse-trial-pdf` | Extract drug MoA from PDFs (RAG + Gemini) |\n\n**Quick Example:** `POST /simulate-trial` → Returns baseline/simulated risk with SHAP attributions\n\n---\n\n## 💻 Frontend: Interactive Dashboard\n\nBuilt with **Next.js 14** + **TypeScript** + **Radix UI**\n\n### **Core Pages:**\n\n1. **`/` - Landing Page**\n   - Hero section with project vision\n   - Feature highlights\n   - Interactive Spline 3D animation\n\n2. **`/simulator` - Trial Simulator**\n   - Patient profile form (12 biomarkers)\n   - Drug MoA input interface\n   - Real-time risk visualization\n   - SHAP radar chart (6-axis: BMI, BP, Cholesterol, Activity, Gen Health, Phys Health)\n\n3. **`/assistant` - AI Assistant**\n   - Chat interface for MoA queries\n   - PDF upload & analysis\n   - Trial design recommendations\n\n### **Key Components:**\n- **Patient Profile Form**: Validated input for 12 patient features\n- **Trial Charts**: Risk trajectory visualization, cohort distribution\n- **Mini Bot**: Contextual help and recommendations\n- **Theme Provider**: Dark/light mode support\n\n---\n\n## 👥 Patient Engagement & Continuous Monitoring (Roadmap)\n\n### **Vision: Future Continuous Care System**\n\n> ⚠️ **Note**: Features in this section are planned for Phase 2 (Q2-Q4 2026). Current MVP focuses on core simulation engine.\n\n**Planned Capabilities:**\n- 🔮 **Wearable Integration** (Q2 2026): Real-time data from Apple Watch, Fitbit, Garmin\n- 🔮 **Calendar Sync** (Q3 2026): Auto-schedule appointments via Google Calendar, Apple Calendar, Outlook\n- 🔮 **Apple HealthKit** (Q4 2026): Bi-directional sync with Apple Health, medication adherence tracking\n- 🔮 **Agentic Intelligence** (Q2+): Open Claw framework for autonomous patient engagement, dropout prediction, adaptive interventions\n- 🔮 **Smart Alerts** (Q3+): SMS/push notifications for medication reminders, clinical alerts, risk escalations\n\n---\n\n## 🛠️ Technology Stack\n\n| Layer | Technology | Purpose |\n|-------|-----------|---------|\n| **Backend** | FastAPI + Python 3.11 | REST API, core simulation engine |\n| **ML/Data Science** | scikit-learn, pandas, NumPy | Random Forest, data processing |\n| **Synthetic Data** | SDV (TVAE) | Generate synthetic patients |\n| **Explainability** | SHAP | Feature attribution & interpretation |\n| **PDF Processing** | PyPDF, Google Gemini AI | Extract trial data from PDFs |\n| **Agentic Framework** | Open Claw | Multi-agent orchestration, tool use |\n| **Agent Memory** | LangChain + ChromaDB | Context persistence, retrieval |\n| **Health Integrations** | Apple HealthKit, Fitbit API, Google Fit | Real-time wearable data streaming |\n| **Calendar Integration** | Google Calendar API, Microsoft Graph | Appointment scheduling & sync |\n| **Messaging** | Twilio SMS + Firebase Cloud Messaging | Patient notifications & reminders |\n| **Frontend** | Next.js 14, TypeScript, React | Interactive dashboard |\n| **UI Components** | Radix UI, Tailwind CSS | Accessible component library |\n| **Visualization** | Matplotlib, Seaborn, Chart.js | Data visualization |\n| **Database** | ChromaDB, PostgreSQL (planned) | Vector & relational storage |\n| **Deployment** | Uvicorn, Vercel, Docker | Backend/frontend deployment |\n\n---\n\n## 📈 Projected Impact (Once Integrations Complete)\n\n**Potential Outcome Improvements** (Q4 2026+):\n- ↓ 65% dropout rate (23% → 8%)\n- ↑ 400% faster adverse event detection (<24h vs 2-3 weeks)\n- ↑ 25% treatment adherence (71% → 89%)\n- ↑ 300% faster efficacy determination (3 weeks vs 12 weeks)\n- ↑ 6600x more data points per patient (1000+ vs ~15)\n\n---\n\n### **Prerequisites**\n- Python 3.11+\n- Node.js 18+ (for frontend)\n- pip & npm/pnpm\n\n### **Backend Setup**\n\n```bash\n# Install Python dependencies\npip install -r requirements.txt\n\n# Set up environment variables\ncp .env.example .env\n# Add your GEMINI_API_KEY to .env\n\n# Run the backend server\npython -m uvicorn backend.app:app --reload --port 8000\n```\n\nBackend will be available at: `http://localhost:8000`\n\nAPI documentation (Swagger UI): `http://localhost:8000/docs`\n\n### **Frontend Setup**\n\n```bash\ncd latestfrontend\n\n# Install dependencies\npnpm install\n# or: npm install\n\n# Run development server\npnpm dev\n# or: npm run dev\n```\n\nFrontend will be available at: `http://localhost:3000`\n\n### **Run ML Pipeline**\n\n```bash\n# Generate synthetic patients & validate\njupyter notebook Hack_Princeton_final.ipynb\n\n# Or run simulations directly\npython insilico_simulation.py\n```\n\n---\n\n## 📁 Project Structure\n\n```\ntrialforge/\n├── backend/                          # FastAPI backend\n│   ├── app.py                        # Main API server\n│   ├── model_loader.py               # Load ML artifacts\n│   ├── rag_pipeline.py               # RAG for PDF analysis\n│   ├── pdf_parser.py                 # PDF extraction\n│   ├── gamma_formula.py              # Gamma calculation\n│   ├── endpoint_extractor.py         # API helpers\n│   ├── calibration/\n│   │   ├── coefficients.json         # Model coefficients\n│   │   └── reference_drugs.json      # Drug MoA database\n│   └── model_artifacts/\n│       └── risk_model.joblib         # Trained Random Forest\n├── latestfrontend/                   # Next.js frontend\n│   ├── app/                          # Page routes\n│   │   ├── page.tsx                  # Landing page\n│   │   ├── assistant/page.tsx        # AI assistant\n│   │   └── simulator/page.tsx        # Trial simulator\n│   ├── components/                   # Reusable UI components\n│   ├── lib/api.ts                    # API client\n│   └── context/simulator-context.tsx # State management\n├── Hack_Princeton_final.ipynb        # Core ML notebook\n├── insilico_simulation.py            # Simulation engine\n├── insilico_moa.py                   # MoA parser\n├── requirements.txt                  # Python dependencies\n└── readme.Md                         # This file\n```\n\n---\n\n## 🔬 Key Innovations\n\n### 1. **Centroid Recovery Algorithm**\nNovel approach to simulate drug effects by treating the health-disease spectrum as a vector space. Unlike traditional statistical models, this enables intuitive visualization of intervention impact.\n\n### 2. **MoA-to-Gamma Mapping**\nAutomated extraction of drug potency from clinical documents via LLM + RAG, eliminating manual parameter entry.\n\n### 3. **Privacy-Preserving Synthetic Cohorts**\nTVAE-generated patients maintain statistical fidelity while ensuring zero re-identification risk (HIPAA-compliant).\n\n### 4. **Real-Time Explainability**\nEvery simulation result includes SHAP decomposition, enabling researchers to understand *why* a patient responds to treatment.\n\n### 5. **End-to-End Interpretation**\nFrom PDF upload → MoA extraction → gamma estimation → simulation → SHAP explanation, all automated and transparent.\n\n---\n\n## 📈 Impact & Results\n\n### **Clinical Efficacy Simulation**\nExample: Testing a weight-loss intervention on diabetes cohort\n- **Baseline diabetes risk**: 42%\n- **Post-intervention risk**: 28% (33% reduction)\n- **Responder rate**: 42% of cohort shows significant improvement\n- **Time to answer**: <2 seconds (real-time)\n\n### **Cost Savings**\n- **Pre-trial validation**: Identify high-responder populations before enrollment\n- **Reduced trial duration**: Optimize cohort composition for faster recruitment\n- **Minimized dropouts**: Focus on patients likely to benefit from intervention\n\n### **Validation Against Real Data**\n- Synthetic patient distributions match real BRFSS distributions with <1% KS-test p-value\n- Random Forest achieves ~78% accuracy on diabetes prediction\n- SHAP explanations align with known clinical risk factors\n\n---\n\n## 🎓 Academic Rigor\n\nThis project integrates multiple advanced ML techniques:\n\n- **Generative Modeling**: TVAE for privacy-preserving synthetic data\n- **Ensemble Methods**: Random Forest for robust risk prediction\n- **Game Theory**: SHAP for explainable AI (based on Shapley values)\n- **Statistical Testing**: KS test, Wasserstein distance for distribution validation\n- **Information Geometry**: PCA manifold analysis for feature space visualization\n\n**References:**\n- Xu, L., et al. (2019). \"Modeling tabular data using GANs\" (*ICLR*)\n- Lundberg, S. M., & Lee, S. I. (2017). \"A unified approach to interpreting model predictions\" (*NeurIPS*)\n- CDC BRFSS Dataset: https://www.cdc.gov/brfss/\n\n---\n\n## 📝 License\n\nOpen source. Built for the clinical research community.\n\n---\n\n## 🙋 Team\n\nBuilt during **HackPrinceton 2026** by engineers passionate about democratizing clinical research through AI.\n\n---\n\n## 📞 Support & Questions\n\nFor questions about the system:\n- Check `/docs` endpoint for API documentation\n- Review `Hack_Princeton_final.ipynb` for ML pipeline details\n- Explore frontend components in `latestfrontend/components/`\n\n---\n\n**InSilico: Where precision medicine meets machine learning. Test outcomes before enrolling patients. Transform trials from risk into science.** 🚀\n",
+ "hits": {
+  "st": [
+   {
+    "file": "Hack_Princeton_final.ipynb",
+    "line": 439,
+    "text": "\"from sdv.single_table import TVAESynthesizer\\n\",",
+    "context": [
+     "    },",
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"\\n\",",
+     "        \"metadata = SingleTableMetadata()\\n\",",
+     "        \"metadata.detect_from_dataframe(data=train_real)\\n\","
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "Hack_Princeton_final.ipynb",
+    "line": 440,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"\\n\",",
+     "        \"metadata = SingleTableMetadata()\\n\",",
+     "        \"metadata.detect_from_dataframe(data=train_real)\\n\",",
+     "        \"\\n\","
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "Hack_Princeton_final.ipynb",
+    "line": 439,
+    "text": "\"from sdv.single_table import TVAESynthesizer\\n\",",
+    "context": [
+     "    },",
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"\\n\",",
+     "        \"metadata = SingleTableMetadata()\\n\",",
+     "        \"metadata.detect_from_dataframe(data=train_real)\\n\","
+    ]
+   },
+   {
+    "file": "Hack_Princeton_final.ipynb",
+    "line": 440,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"\\n\",",
+     "        \"metadata = SingleTableMetadata()\\n\",",
+     "        \"metadata.detect_from_dataframe(data=train_real)\\n\",",
+     "        \"\\n\","
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "Hack_Princeton_final.ipynb",
+    "line": 439,
+    "text": "\"from sdv.single_table import TVAESynthesizer\\n\",",
+    "context": [
+     "    },",
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"\\n\",",
+     "        \"metadata = SingleTableMetadata()\\n\",",
+     "        \"metadata.detect_from_dataframe(data=train_real)\\n\","
+    ]
+   },
+   {
+    "file": "Hack_Princeton_final.ipynb",
+    "line": 445,
+    "text": "\"synthesizer = TVAESynthesizer(\\n\",",
+    "context": [
+     "        \"\\n\",",
+     "        \"metadata = SingleTableMetadata()\\n\",",
+     "        \"metadata.detect_from_dataframe(data=train_real)\\n\",",
+     "        \"\\n\",",
+     "        \"synthesizer = TVAESynthesizer(\\n\",",
+     "        \"    metadata,\\n\",",
+     "        \"    epochs=300,\\n\",",
+     "        \"    batch_size=32,\\n\",",
+     "        \"    compress_dims=(128, 64),\\n\","
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv"
+  ]
+ }
+}

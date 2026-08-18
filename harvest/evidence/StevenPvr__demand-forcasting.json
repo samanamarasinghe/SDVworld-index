@@ -1,0 +1,32 @@
+{
+ "repo": "StevenPvr/demand-forcasting",
+ "disk_kb": 5835,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Praedixa Research\n\nRepo de recherche, data engineering et evaluation pour le wedge Praedixa de\nprevision de demande. Le repo sert a construire un pipeline auditable pour des\noperations alimentaires perissables: boulangerie, restauration, snacking,\ncoffee shops et concepts multi-sites.\n\nPraedixa ne cherche pas ici a produire un simple dashboard. L'objectif court\nterme est de mieux anticiper la demande et les besoins operationnels; l'objectif\nlong terme est de relier ces previsions a de meilleures decisions economiques.\n\n## Documentation\n\nPoint d'entree recommande:\n\n- [Documentation repo](docs/README.md)\n- [Architecture demand forecast](docs/demand_forecast/architecture.md)\n- [Protocole d'evaluation](docs/demand_forecast/evaluation_protocol.md)\n- [Resultats XGBoost 2026-04-30](docs/demand_forecast/results_xgboost_2026_04_30.md)\n- [Runbook local](docs/demand_forecast/runbook.md)\n- [Architecture medaillon](docs/data_engineering/medaillon/architecture_actuelle.md)\n\n## Etat Actuel\n\n- Source de verite data: `gold.gold_training_matrix_d1`.\n- Warehouse local: DuckDB + dbt, couches `bronze -> silver -> gold`.\n- Backend courant exploitable: `xgboost`.\n- Backend cible: TFT, encore en durcissement.\n- Evaluation reference: bakery holdout comparable ARIMA.\n- Cible ideale produit: demande latente quand les signaux de censure existent;\n  cible de repli: ventes observees.\n\n## Resultat Courant\n\nSnapshot XGBoost du 2026-04-30:\n\n| Mesure | Valeur |\n| --- | ---: |\n| test | 3 395 lignes |\n| produits | 35 |\n| fenetre test | 2022-06-26 -> 2022-09-30 |\n| MAE modele | 6.191286637 |\n| MAE baseline robuste | 5.954050074 |\n| economie estimee vs baseline | 3 274.27 EUR |\n\nLecture correcte: le modele ne bat pas la baseline en MAE globale, mais il\nreduit la perte economique sous la fonction de cout actuelle. Le resultat doit\ndonc etre presente comme un gain decisionnel / ROI, pas comme une victoire pure\nsur l'erreur moyenne.\n\n## Architecture Courte\n\n```text\nsources locales / open data / bakery / synthetic foodservice\n-> bronze DuckDB\n-> silver_daily_product_demand\n-> gold.gold_training_matrix_d1\n-> training bundle / feature selection\n-> XGBoost ou TFT\n-> evaluation bakery reference\n-> metrics + economic gain\n```\n\n## Commandes Essentielles\n\nDepuis la racine:\n\n```bash\nexport PYTHONPATH=\"$PWD:$PWD/platform/python/src:$PWD/products/demand_forecast/src\"\n```\n\nWarehouse complet:\n\n```bash\n.venv/bin/python -m apps.warehouse.main\n```\n\nGold seul:\n\n```bash\n.venv/bin/python -m apps.warehouse.run_gold.main\n```\n\nBundle demand forecast:\n\n```bash\n.venv/bin/python -m apps.demand_forecast.build_training_bundle.main\n```\n\nEvaluation XGBoost bakery reference:\n\n```bash\n.venv/bin/python products/demand_forecast/src/praedixa/demand_forecast/evaluation/xgboost/main.py\n```\n\nLecture rapide des resultats:\n\n```bash\njq '{overall_metrics, business_impact}' var/experiments/demand_forecast/evaluation/xgboost_test_metrics.json\n```\n\n## Principes Non Negociables\n\n- Split temporel strict.\n- Pas de fuite du futur dans les features.\n- Evaluation out-of-sample par date.\n- Lecture economique separee de la MAE.\n- Distinction explicite entre demande latente et ventes observees.\n- Documentation des contrats cible, sources et artefacts avant promotion d'un\n  resultat.\n\n## Dossiers A Connaitre\n\n- `apps/`: wrappers executables.\n- `platform/warehouse/`: projet dbt + DuckDB.\n- `platform/python/src/praedixa/platform/`: runtime, datasets, gouvernance,\n  signaux open data.\n- `products/demand_forecast/src/praedixa/demand_forecast/`: training,\n  evaluation, contrats et backends.\n- `tests/`: tests d'invariants repo.\n\n## Verification Rapide\n\n```bash\n.venv/bin/dbt parse --project-dir platform/warehouse --profiles-dir platform/warehouse\n.venv/bin/python -m unittest discover -s tests\n```\n\nPour les commandes detaillees et les checks anti-leakage cibles, voir\n[Runbook local](docs/demand_forecast/runbook.md).\n",
+ "hits": {
+  "par": [
+   {
+    "file": "docs/data_engineering/foodservice_synthetic_data_protocol.md",
+    "line": 91,
+    "text": "The Synthetic Data Vault `PARSynthesizer` can learn multi-sequence data with a `sequence_key`, but it needs real multi-sequence data and creates new sequences by learning from them: https://docs.sdv.dev/sdv/sequential-data/modeling/parsynthesizer",
+    "context": [
+     "Bahrpeyma et al. argue that synthetic time-series datasets need a methodological validation framework for diversity and coverage; otherwise they may favor one model type and undermine evaluation: http",
+     "",
+     "A 2026 systematic review of longitudinal/time-series synthetic data notes that utility evaluations often focus on descriptive statistics and predictive performance, while inferential validity and real",
+     "",
+     "The Synthetic Data Vault `PARSynthesizer` can learn multi-sequence data with a `sequence_key`, but it needs real multi-sequence data and creates new sequences by learning from them: https://docs.sdv.d",
+     "",
+     "Implication: SDV/PAR or VAE/GAN methods can become a later augmentation once Praedixa has first-party data. They are not the right primary methodology for the first commercial simulator, because Praed",
+     "",
+     "### TFT alignment"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "par"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

@@ -1,0 +1,215 @@
+{
+ "repo": "dhruvgoyal16/syntheticrows",
+ "disk_kb": 454,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "<div align=\"center\">\n\n# SyntheticRows\n\n### Turn a small CSV into a bigger, realistic dataset — with quality scoring you can actually trust.\n\n[**syntheticrows.com**](https://syntheticrows.com)\n\n</div>\n\n---\n\n## The problem\n\nGood machine-learning models need enough data — but real data is often scarce, imbalanced, or sensitive. Most \"synthetic data\" tools either generate fake-looking dummy records from scratch, hide their quality behind marketing, or lock everything behind enterprise pricing.\n\n## What SyntheticRows does\n\nSyntheticRows learns the real statistical patterns in **your own CSV** and generates additional rows that look and behave like the real thing — then tells you, honestly, how good the result actually is.\n\nUpload a small dataset. Get back a larger one that preserves your data's distributions, correlations, and structure — along with a transparent quality score and a real test of whether the synthetic data is good enough to train a model on.\n\nNo signup. No black box. No inflated scores.\n\n## Features\n\n- **Synthetic tabular generation** — powered by CTGAN, TVAE, and GaussianCopula (via SDV), with automatic model selection based on your data.\n- **Honest realism scoring** — a transparent three-part score covering distinguishability, statistical similarity, and coverage. When the data is poor, it says so.\n- **ML-readiness testing (TSTR)** — trains a model on your synthetic data and evaluates it on real data, so you know if it's genuinely usable for training, not just statistically pretty.\n- **Class imbalance handling** — rebalance class distributions on demand, with honest warnings when a minority class has too few real examples to synthesize reliably.\n- **Automatic data-quality fixes** — detects and handles missing values, outliers, and degenerate columns before generation.\n- **Text augmentation** — supports datasets containing free-text columns.\n\n## Why it's different\n\nMost tools optimize for data that *looks* real. SyntheticRows optimizes for data you can *trust* — and is honest when the data isn't good enough. That transparency is the whole point: you should never ship a model trained on synthetic data without knowing whether it actually holds up.\n\n## Tech stack\n\n| Layer | Technologies |\n|-------|-------------|\n| Backend | FastAPI · SDV (CTGAN / TVAE / GaussianCopula) · scikit-learn · pandas · PyTorch |\n| Frontend | Next.js (App Router) · Tailwind CSS |\n| Deployment | Hugging Face Spaces (backend) · Vercel (frontend) |\n\n## Project structure\n\n    synthiq/\n    ├── backend/                FastAPI backend — the synthetic data engine\n    │   ├── app/                Generation, scoring, profiling, validation\n    │   ├── Dockerfile          Container setup for deployment\n    │   └── requirements.txt    Python dependencies\n    └── frontend/               Next.js frontend\n        └── app/                Pages, components, and styles\n\n## Running locally\n\n**Backend**\n\n    cd backend\n    python -m venv venv\n    source venv/bin/activate\n    pip install -r requirements.txt\n    uvicorn app.main:app --reload\n\n**Frontend**\n\n    cd frontend\n    npm install\n    npm run dev\n\nThe frontend reads the backend URL from `NEXT_PUBLIC_API_URL`, defaulting to `http://localhost:8000` for local development.\n\n---\n\n<div align=\"center\">\n\nBuilt by [@dhruvgoyal16](https://github.com/dhruvgoyal16)\n\n</div>\n",
+ "hits": {
+  "st": [
+   {
+    "file": "backend/app/generator.py",
+    "line": 7,
+    "text": "from sdv.single_table import (",
+    "context": [
+     "import random",
+     "from .models import ModelType, DatasetProfile",
+     "from .router import select_model",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import (",
+     "    GaussianCopulaSynthesizer,",
+     "    CTGANSynthesizer,",
+     "    TVAESynthesizer,",
+     ")"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "backend/app/generator.py",
+    "line": 6,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import numpy as np",
+     "import random",
+     "from .models import ModelType, DatasetProfile",
+     "from .router import select_model",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import (",
+     "    GaussianCopulaSynthesizer,",
+     "    CTGANSynthesizer,",
+     "    TVAESynthesizer,"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "backend/app/generator.py",
+    "line": 6,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import numpy as np",
+     "import random",
+     "from .models import ModelType, DatasetProfile",
+     "from .router import select_model",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import (",
+     "    GaussianCopulaSynthesizer,",
+     "    CTGANSynthesizer,",
+     "    TVAESynthesizer,"
+    ]
+   },
+   {
+    "file": "backend/app/generator.py",
+    "line": 7,
+    "text": "from sdv.single_table import (",
+    "context": [
+     "import random",
+     "from .models import ModelType, DatasetProfile",
+     "from .router import select_model",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import (",
+     "    GaussianCopulaSynthesizer,",
+     "    CTGANSynthesizer,",
+     "    TVAESynthesizer,",
+     ")"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "backend/app/generator.py",
+    "line": 9,
+    "text": "CTGANSynthesizer,",
+    "context": [
+     "from .router import select_model",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import (",
+     "    GaussianCopulaSynthesizer,",
+     "    CTGANSynthesizer,",
+     "    TVAESynthesizer,",
+     ")",
+     "from .preprocessor import detect_skewed_columns, log_transform, reverse_log_transform, restore_dtypes, apply_domain_constraints, bootstrap_tiny_dataset",
+     ""
+    ]
+   },
+   {
+    "file": "backend/app/generator.py",
+    "line": 54,
+    "text": "return CTGANSynthesizer(metadata, epochs=epochs, verbose=False, cuda=False)",
+    "context": [
+     "    if model_type == ModelType.GAUSSIAN_COPULA:",
+     "        return GaussianCopulaSynthesizer(metadata)",
+     "    elif model_type == ModelType.CTGAN:",
+     "        epochs = kwargs.get(\"epochs\", 300)",
+     "        return CTGANSynthesizer(metadata, epochs=epochs, verbose=False, cuda=False)",
+     "    elif model_type == ModelType.TVAE:",
+     "        epochs = kwargs.get(\"epochs\", 300)",
+     "        return TVAESynthesizer(metadata, epochs=epochs, verbose=False)",
+     "    else:"
+    ]
+   },
+   {
+    "file": "backend/app/generator.py",
+    "line": 59,
+    "text": "return CTGANSynthesizer(metadata, epochs=200, verbose=False, cuda=False)",
+    "context": [
+     "    elif model_type == ModelType.TVAE:",
+     "        epochs = kwargs.get(\"epochs\", 300)",
+     "        return TVAESynthesizer(metadata, epochs=epochs, verbose=False)",
+     "    else:",
+     "        return CTGANSynthesizer(metadata, epochs=200, verbose=False, cuda=False)",
+     "",
+     "",
+     "def get_conditional_samples(",
+     "    df: pd.DataFrame,"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "backend/app/generator.py",
+    "line": 8,
+    "text": "GaussianCopulaSynthesizer,",
+    "context": [
+     "from .models import ModelType, DatasetProfile",
+     "from .router import select_model",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import (",
+     "    GaussianCopulaSynthesizer,",
+     "    CTGANSynthesizer,",
+     "    TVAESynthesizer,",
+     ")",
+     "from .preprocessor import detect_skewed_columns, log_transform, reverse_log_transform, restore_dtypes, apply_domain_constraints, bootstrap_tiny_dataset"
+    ]
+   },
+   {
+    "file": "backend/app/generator.py",
+    "line": 51,
+    "text": "return GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "    return df",
+     "",
+     "def build_synthesizer(model_type: ModelType, metadata: Metadata, kwargs: dict):",
+     "    if model_type == ModelType.GAUSSIAN_COPULA:",
+     "        return GaussianCopulaSynthesizer(metadata)",
+     "    elif model_type == ModelType.CTGAN:",
+     "        epochs = kwargs.get(\"epochs\", 300)",
+     "        return CTGANSynthesizer(metadata, epochs=epochs, verbose=False, cuda=False)",
+     "    elif model_type == ModelType.TVAE:"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "backend/app/generator.py",
+    "line": 10,
+    "text": "TVAESynthesizer,",
+    "context": [
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import (",
+     "    GaussianCopulaSynthesizer,",
+     "    CTGANSynthesizer,",
+     "    TVAESynthesizer,",
+     ")",
+     "from .preprocessor import detect_skewed_columns, log_transform, reverse_log_transform, restore_dtypes, apply_domain_constraints, bootstrap_tiny_dataset",
+     "",
+     "def encode_discrete_as_categorical(df: pd.DataFrame, profile: DatasetProfile) -> tuple[pd.DataFrame, list]:"
+    ]
+   },
+   {
+    "file": "backend/app/generator.py",
+    "line": 57,
+    "text": "return TVAESynthesizer(metadata, epochs=epochs, verbose=False)",
+    "context": [
+     "        epochs = kwargs.get(\"epochs\", 300)",
+     "        return CTGANSynthesizer(metadata, epochs=epochs, verbose=False, cuda=False)",
+     "    elif model_type == ModelType.TVAE:",
+     "        epochs = kwargs.get(\"epochs\", 300)",
+     "        return TVAESynthesizer(metadata, epochs=epochs, verbose=False)",
+     "    else:",
+     "        return CTGANSynthesizer(metadata, epochs=200, verbose=False, cuda=False)",
+     "",
+     ""
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "gc",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "backend/requirements.txt": [
+   "copulas==0.14.1",
+   "ctgan==0.11.0",
+   "rdt==1.21.0",
+   "sdmetrics==0.28.0",
+   "sdv==1.29.1"
+  ]
+ }
+}

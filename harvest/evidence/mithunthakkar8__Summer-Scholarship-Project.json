@@ -1,0 +1,1069 @@
+{
+ "repo": "mithunthakkar8/Summer-Scholarship-Project",
+ "disk_kb": 121505,
+ "method": "partial_clone",
+ "tree_files": 4918,
+ "status": "ok",
+ "readme": "# Benchmarking Synthetic Tabular Data Generators for Structural Coherence of Behavioral and Educational Datasets\n\n[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19759033.svg)](https://doi.org/10.5281/zenodo.19759033)\n\n## 🎓 Project Background\n\nThis project was completed during the 2025–26 summer as a Victoria University of Wellington Summer Scholarship project. It builds a system to evaluate synthetic tabular data using modern AI approaches.\n\nThe work is approached from a systems and data engineering perspective. Focus areas include reproducibility, evaluation design, and real-world applicability, such as privacy-preserving data generation and simulation scenarios.\n\n## 📌 Overview\n\nSynthetic tabular data is increasingly used to enable data sharing in privacy-sensitive behavioral and educational research contexts. However, its suitability for Structural Equation Modeling (SEM) remains to be fully understood. This study benchmarks LLM-based and diffusion-based synthetic data generators for their ability to preserve structural coherence required for valid SEM-based analysis. Structural coherence includes measurement properties, causal path directions, and global model fit.\n\nUsing data from PISA 2022 and TIMSS 2023 (Singapore samples), this work evaluates generators across distributional fidelity, measurement reliability, discriminant validity, structural path preservation, global model fit, and privacy risk.\n\n## 🎛️ Hyperparameter Tuning Approach\n\nThis is a benchmarking study. Model configurations were standardised rather than individually optimised.\n\nGenerator architectures were understood at a high level. This was sufficient to implement each pipeline correctly, including custom patches for the diffusion workflows. I also ran a controlled ablation on LLM model capacity and tuning depth. \n\nGenerators were trained using stable, method-recommended configurations. LLM-based generators used a common backbone (DistilGPT-2). They shared hyperparameters for batch size and number of epochs, since these are uniformly exposed across all frameworks. Defaults were used elsewhere. Diffusion-based generators (TabDiff, TabSyn) used their default architecture and noise schedule.\n\nThis design choice trades peak per-model performance for fairness and reproducibility. It ensures observed differences reflect inherent modelling characteristics, not differential tuning effort. See Section 5.4–5.6 of the accompanying report for full methodology.\n\n## 💡 Contributions\n\nThis section addresses a natural question: what makes this project methodologically novel, beyond routine benchmarking?\n\n**The core problem.** SEM-structured behavioral data has no explicit target variable. It only has interrelated latent constructs. Generators like GReaT don't strictly require a target to run. But without one, they failed to preserve the structural relationships needed for valid SEM analysis.\n\n**Naive fixes didn't work.** Two workarounds were tried first. Conditioning on raw PCA-derived scores was tested. Arbitrary single-column targets were tested too. Both failed to preserve the structural relationships encoded in the SEM.\n\n**The solution required SEM theory, not just ML tooling.** The endogenous latent construct's composite score was used as the target instead. This choice has theoretical grounding: in linear SEM, endogenous constructs function analogously to dependent variables in regression. The composite score was obtained directly from the PLS-SEM model in R. After generation, this column was discarded. Latent constructs were then re-estimated from observed indicators only, to prevent leakage into the SEM evaluation.\n\n**Why this matters.** This bridges two fields that don't usually talk to each other: SEM methodology and generative ML tooling. Most synthetic data benchmarks assume a ready-made target column. Behavioral and educational datasets built for SEM don't have one. This project shows a theoretically justified way to interface the two. It avoids defaulting to an arbitrary column that quietly breaks structural validity.\n\n**Basis for claiming this project is pioneering:**\n\n- **Method.** The target-construction approach is what makes SEM-based evaluatio in this project possible in the first place. It uses a SEM-derived composite score, not an arbitrary column or PCA derived column. This helps structural relationships survive the generation process.\n- **Results.** The findings are pioneering in the same sense. They come from a setting no prior study has tested. No prior study has systematically benchmarked trained diffusion- and transformer-based generators against SEM structural coherence criteria on real behavioral or educational data. Existing work either evaluates generators on standard ML metrics, or evaluates AI-generated survey data that was prompted rather than trained.\n\n**Literature confirmation.** A search of the current literature (Aug 2026) supports this gap. Existing benchmarks of trained tabular generators evaluate against machine learning efficiency, statistical similarity, and privacy risk. They never evaluate against SEM fit indices, factor loadings, or structural paths. Prior AI-generated survey and psychometric data work is prompting-based, such as using ChatGPT to simulate personas. It does not use trained generative modelling. No prior study benchmarks trained diffusion- and LLM-based generators against SEM structural coherence on real behavioral or educational data. See related work: van Kesteren & Oberski (2019) on SEM as computation graphs, and Structural Equation-VAE (arXiv 2508.06347), which aligns architecture with SEM structure but uses simulated ground-truth data rather than real assessment data or generator benchmarking.\n\n## 🔬 Key Findings\n\n| Finding | Details |\n|---|---|\n| Diffusion models excel | TabDiff and TabSyn achieve strong preservation of structural relationships and global SEM fit |\n| LLM sensitivity | LLM-based generators exhibit greater sensitivity to model size and hyperparameter configuration |\n| Privacy trade-offs | In small-sample settings, certain diffusion models show substantial privacy leakage; well-tuned LLMs demonstrate more balanced performance |\n| Model capacity matters | Increasing LLM model capacity (GReaT-Lrg) substantially improves measurement fidelity, rivaling diffusion-based approaches |\n\n## 📊 Generators Benchmarked\n\n| Category | Generators |\n|---|---|\n| Diffusion-based | TabDiff, TabSyn |\n| LLM-based | GReaT, PredLLM, TapTap, REaLTabFormer, TabuLa |\n| Classical | CTGAN |\n\n## 🛠️ Tech Stack\n\n| Category | Technologies |\n|---|---|\n| Languages | Python, R |\n| Deep Learning | PyTorch, HuggingFace Transformers |\n| Generation Models | TabSyn, TabDiff, GReaT, PredLLM, TapTap, REaLTabFormer, TabuLa, CTGAN |\n| SEM Evaluation | SEMinR (PLS-SEM), lavaan (CB-SEM) |\n| Infrastructure | Slurm, NeSI HPC, Raapoi Cluster |\n| Documentation | LaTeX |\n\n## 📊 End-to-End Evaluation Pipeline\n\nThis repository implements a fully automated SEM-oriented evaluation pipeline:\n\n- **Auto-preprocessing** — PISA 2022 and TIMSS 2023 datasets\n- **Generator Training** — LLM fine-tuning + diffusion model training on HPC cluster\n- **Structural Evaluation** — SEM fit indices (CFI, TLI, RMSEA, SRMR), directional consistency, rank preservation, measurement reliability, discriminant validity (HTMT)\n- **Privacy Assessment** — Exact match rate, nearest-neighbor distance ratio (NNDR), membership inference risk, distance to closest record (DCR)\n- **Automated Reporting** — Tabular reports + data visualization outputs\n\n## 📈 Output Visualizations\n\nAll figures and interactive tables referenced below are in the [`Outputs/`](./Outputs) folder of this repo. Static `.png` figures render directly below; interactive `.html` reports are linked to their live, rendered version via GitHub Pages.\n\n### Interactive Reports (HTML)\n\nThese are best viewed live via GitHub Pages rather than opened as raw source on GitHub:\n\n**Summary Tables**\n- [Final ranking — detailed metric breakdown](https://mithunthakkar8.github.io/Summer-Scholarship-Project/Outputs/table_00b_final_ranking_detailed_metric_breakdown.html)\n- [Boundary adherence](https://mithunthakkar8.github.io/Summer-Scholarship-Project/Outputs/table_boundary_adherence.html)\n- [Boundary adherence — diff vs real](https://mithunthakkar8.github.io/Summer-Scholarship-Project/Outputs/table_boundary_adherence_diff_vs_real.html)\n- [Category adherence](https://mithunthakkar8.github.io/Summer-Scholarship-Project/Outputs/table_category_adherence.html)\n- [Continuous summary](https://mithunthakkar8.github.io/Summer-Scholarship-Project/Outputs/table_continuous_summary.html)\n- [Covariate correlation error](https://mithunthakkar8.github.io/Summer-Scholarship-Project/Outputs/table_covariate_corr_error.html)\n- [Covariate correlation ranges](https://mithunthakkar8.github.io/Summer-Scholarship-Project/Outputs/table_covariate_corr_ranges.html)\n- [Discriminant margin](https://mithunthakkar8.github.io/Summer-Scholarship-Project/Outputs/table_discriminant_margin.html)\n- [Distribution summary — categorical](https://mithunthakkar8.github.io/Summer-Scholarship-Project/Outputs/table_distribution_summary_categorical.html)\n- [Distribution summary — continuous](https://mithunthakkar8.github.io/Summer-Scholarship-Project/Outputs/table_distribution_summary_continuous.html)\n- [Fornell-Larcker / HTMT RMSE](https://mithunthakkar8.github.io/Summer-Scholarship-Project/Outputs/table_fl_htmt_rmse.html)\n- [Fornell-Larcker diagonal](https://mithunthakkar8.github.io/Summer-Scholarship-Project/Outputs/table_fornell_larcker_diag.html)\n- [HTMT stability](https://mithunthakkar8.github.io/Summer-Scholarship-Project/Outputs/table_htmt_stability.html)\n- [HTMT summary](https://mithunthakkar8.github.io/Summer-Scholarship-Project/Outputs/table_htmt_summary.html)\n- [Indirect effects comparison](https://mithunthakkar8.github.io/Summer-Scholarship-Project/Outputs/table_indirect_effects_comparison.html)\n- [Latent correlation stability](https://mithunthakkar8.github.io/Summer-Scholarship-Project/Outputs/table_latent_correlation_stability.html)\n- [Missingness diagnostics](https://mithunthakkar8.github.io/Summer-Scholarship-Project/Outputs/table_missingness_diagnostics.html)\n- [Range sanity vs real](https://mithunthakkar8.github.io/Summer-Scholarship-Project/Outputs/table_range_sanity_vs_real.html)\n- [Sample size](https://mithunthakkar8.github.io/Summer-Scholarship-Project/Outputs/table_sample_size.html)\n\n**Global Model Fit (CB-SEM)**\n- [Global fit — mean](https://mithunthakkar8.github.io/Summer-Scholarship-Project/Outputs/cbsem_global_fit_mean.html)\n- [Global fit — stability](https://mithunthakkar8.github.io/Summer-Scholarship-Project/Outputs/cbsem_global_fit_stability.html)\n- [R² summary](https://mithunthakkar8.github.io/Summer-Scholarship-Project/Outputs/cbsem_r2_summary.html)\n\n**Measurement / Loadings**\n- [Loading delta matrix](https://mithunthakkar8.github.io/Summer-Scholarship-Project/Outputs/loading_delta_matrix.html)\n- [Loading range width](https://mithunthakkar8.github.io/Summer-Scholarship-Project/Outputs/loading_range_width.html)\n- [Loading sign flip](https://mithunthakkar8.github.io/Summer-Scholarship-Project/Outputs/loading_sign_flip.html)\n- [Mean absolute loading error](https://mithunthakkar8.github.io/Summer-Scholarship-Project/Outputs/mean_absolute_loading_error.html)\n\n**Structural Paths**\n- [Path direction rank summary](https://mithunthakkar8.github.io/Summer-Scholarship-Project/Outputs/path_direction_rank_summary.html)\n- [Path range overlap](https://mithunthakkar8.github.io/Summer-Scholarship-Project/Outputs/path_range_overlap.html)\n- [Standardized path betas](https://mithunthakkar8.github.io/Summer-Scholarship-Project/Outputs/standardized_path_betas.html)\n\n**Reliability**\n- [Reliability — MAD vs real](https://mithunthakkar8.github.io/Summer-Scholarship-Project/Outputs/reliability_mad_vs_real.html)\n- [Reliability — stability](https://mithunthakkar8.github.io/Summer-Scholarship-Project/Outputs/reliability_stability.html)\n- [Reliability — thresholds](https://mithunthakkar8.github.io/Summer-Scholarship-Project/Outputs/reliability_thresholds.html)\n\n**Privacy**\n- [Privacy — k-anonymity mean](https://mithunthakkar8.github.io/Summer-Scholarship-Project/Outputs/privacy_k_anonymity_mean.html)\n- [Privacy — mean](https://mithunthakkar8.github.io/Summer-Scholarship-Project/Outputs/privacy_mean.html)\n\n> **Note:** The links above point to the live GitHub Pages version of each report, which renders the interactive HTML/CSS as intended. If you instead browse to these files directly inside the [`Outputs/`](./Outputs) folder on GitHub, you'll see raw source code rather than the rendered page — use the links above instead.\n\n### Structural Fidelity\n\nHeatmaps comparing latent and observed correlation deltas between real and synthetic data (CB-SEM and PLS-SEM):\n\n![Latent correlation delta (CB-SEM)](./Outputs/heatmap_latent_delta_cb.png)\n![Latent correlation delta (PLS-SEM)](./Outputs/heatmap_latent_delta_pls.png)\n![Mean absolute delta heatmap](./Outputs/heatmap_mean_abs_delta.png)\n\nStandardized structural path comparisons across all generators:\n\n![Path coefficients — bar grid](./Outputs/paths_bar_grid.png)\n![Path coefficients — interval grid](./Outputs/paths_interval_grid.png)\n\n### Measurement Fidelity\n\nFactor loading deltas and reliability ranges across generators:\n\n![Loading delta heatmap](./Outputs/loading_delta_heatmap.png)\n![Loading range heatmap](./Outputs/loading_range_heatmap.png)\n\n### Covariate Stability (Interval Dot Plots)\n\nTo check whether relationships between key covariates (ESCS, age, class size, gender, grade, immigration status, mother's education, school size) and the latent outcomes (SMP, SMS, SPI) hold up under synthetic generation, interval dot plots were produced for every covariate × outcome pair (27 total). Two representative examples:\n\n![ESCS vs SMP interval dot plot](./Outputs/interval_dot_ESCS_SMP.png)\n![Age vs SPI interval dot plot](./Outputs/interval_dot_age_SPI.png)\n\nThe full set of 27 covariate plots (all combinations of ESCS, age, class size, gender, grade, immigration status, mother's education, school size × SMP/SMS/SPI) is available in [`Outputs/`](./Outputs).\n\n## 📄 License\n\nThis project is licensed under the GNU General Public License v3.0. See the LICENSE file for details.\n\nFor questions, collaborations, or code access: **mithun.thakkar8@gmail.com**\n\nAssociated Paper: arXiv preprint (forthcoming)\n\n> This work represents pioneering results at the intersection of generative AI and Structural Equation Modeling. If you build upon this work, please maintain the citation and license terms.\n\n## 📝 Citation\n\nIf you use this software or build upon these methods in your research, please cite:\n\nMithun Thakkar, \"Benchmarking Synthetic Tabular Data Generators for Structural Coherence of Behavioral and Educational Datasets\", arXiv preprint, 2026\n\n```bibtex\n@software{Thakkar_Benchmarking_Synthetic_Tabular_2026,\n  author = {Mithun Thakkar},\n  title = {Benchmarking Synthetic Tabular Data Generators for Structural Coherence of Behavioral and Educational Datasets},\n  url = {https://github.com/mithunthakkar8/Summer-Scholarship-Project},\n  doi = {10.5281/zenodo.19759033},\n  version = {1.0.0},\n  year = {2026}\n}\n```\n",
+ "hits": {
+  "st": [
+   {
+    "file": "Archive/Archive Python Scripts/Synthetic_Data_Generation_(CTGAN and Copula).ipynb",
+    "line": 11395,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "      ],",
+     "      \"source\": [",
+     "        \"# %%\\n\",",
+     "        \"from sdv.metadata import Metadata\\n\",",
+     "        \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "        \"\\n\",",
+     "        \"# Detect metadata automatically\\n\",",
+     "        \"metadata = Metadata.detect_from_dataframe(df_core)\\n\",",
+     "        \"metadata.save_to_json(\\\"pisa2022_metadata.json\\\")\\n\","
+    ]
+   },
+   {
+    "file": "Archive/Archive Python Scripts/Synthetic_Data_Generation_(CTGAN and Copula).ipynb",
+    "line": 11528,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "      },",
+     "      \"outputs\": [],",
+     "      \"source\": [",
+     "        \"# %%\\n\",",
+     "        \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "        \"import random\\n\",",
+     "        \"import numpy as np\\n\",",
+     "        \"import torch\\n\",",
+     "        \"\\n\","
+    ]
+   },
+   {
+    "file": "Archive/Colab/copy_of_synthetic_data_generation_(original).py",
+    "line": 256,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "    return paths",
+     "",
+     "# %%",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "# Detect metadata automatically",
+     "metadata = Metadata.detect_from_dataframe(df_core)",
+     "metadata.save_to_json(\"pisa2022_metadata.json\")"
+    ]
+   },
+   {
+    "file": "Archive/Colab/copy_of_synthetic_data_generation_(original).py",
+    "line": 380,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "print(\"\\n✅ Saved comparison tables & synthetic sample for GaussianCopula.\")",
+     "synth.to_csv(\"synthetic_gaussiancopula_sample.csv\", index=False)",
+     "",
+     "# %%",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "metadata = Metadata.detect_from_dataframe(df_core)",
+     "",
+     "ctgan = CTGANSynthesizer("
+    ]
+   },
+   {
+    "file": "Scripts/TIMSS/Python Scripts/003_python_generate_ctgan.py",
+    "line": 12,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import logging",
+     "import time",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "# =================================================",
+     "# GPU / CUDA diagnostics (HPC-safe)",
+     "# ================================================="
+    ]
+   },
+   {
+    "file": "Scripts/PISA/SGP/Python Scripts/003_python_generate_ctgan.py",
+    "line": 12,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import logging",
+     "import time",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "DATA_DIR = \"/nesi/project/vuw04485/pisa_sem_pipeline/data/\"",
+     "CNT = \"SGP\"",
+     "INPUT_CSV = os.path.join(DATA_DIR, f\"df_core{CNT}.csv\")"
+    ]
+   },
+   {
+    "file": "Scripts/PISA/KOR/Python Scripts/003_python_generate_ctgan.py",
+    "line": 68,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "DATA_DIR = PROJECT_ROOT",
+     "CNT = \"KOR\"",
+     "INPUT_CSV = os.path.join(DATA_DIR, f\"df_core{CNT}.csv\")"
+    ]
+   },
+   {
+    "file": "Scripts/PISA/KOR/Python Scripts/Archive/python_sem_great_phase1_exo_gc.py",
+    "line": 11,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "import os",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# ------------------------------------------------------",
+     "# PATHS"
+    ]
+   },
+   {
+    "file": "Scripts/PISA/KOR/Python Scripts/Archive/002_python_generate_gc_new.py",
+    "line": 6,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "import os",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "# DATA_DIR = \"/nesi/project/vuw04485/pisa_sem_pipeline/data/\"",
+     "DATA_DIR = r\"C:\\Users\\mithu\\Documents\\MEGA\\VUW\\Summer Research Project\\Datasets\\PISA 2022\"",
+     "CNT = \"SGP\""
+    ]
+   },
+   {
+    "file": "Scripts/PISA/KOR/Python Scripts/Archive/python_sem_great_phase1_exo_ctgan.py",
+    "line": 1,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from sdv.single_table import CTGANSynthesizer",
+     "import os",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     ""
+    ]
+   },
+   {
+    "file": "Scripts/PISA/KOR/Python Scripts/Archive/003_python_generate_ctgan.py",
+    "line": 10,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import torch",
+     "",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "DATA_DIR = \"/nesi/project/vuw04485/pisa_sem_pipeline/data/\"",
+     "INPUT_CSV = os.path.join(DATA_DIR, \"df_core.csv\")",
+     ""
+    ]
+   },
+   {
+    "file": "Scripts/PISA/KOR/Python Scripts/Archive/002_python_generate_gc.py",
+    "line": 7,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import os",
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "DATA_DIR = \"/nesi/project/vuw04485/pisa_sem_pipeline/data/\"",
+     "INPUT_CSV = os.path.join(DATA_DIR, \"df_core.csv\")",
+     ""
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "Archive/Archive Python Scripts/Synthetic_Data_Generation_(CTGAN and Copula).ipynb",
+    "line": 11394,
+    "text": "\"from sdv.metadata import Metadata\\n\",",
+    "context": [
+     "        }",
+     "      ],",
+     "      \"source\": [",
+     "        \"# %%\\n\",",
+     "        \"from sdv.metadata import Metadata\\n\",",
+     "        \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "        \"\\n\",",
+     "        \"# Detect metadata automatically\\n\",",
+     "        \"metadata = Metadata.detect_from_dataframe(df_core)\\n\","
+    ]
+   },
+   {
+    "file": "Archive/Colab/copy_of_synthetic_data_generation_(original).py",
+    "line": 255,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "    })",
+     "    return paths",
+     "",
+     "# %%",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "# Detect metadata automatically",
+     "metadata = Metadata.detect_from_dataframe(df_core)"
+    ]
+   },
+   {
+    "file": "Scripts/TIMSS/Python Scripts/003_python_generate_ctgan.py",
+    "line": 11,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import torch",
+     "import logging",
+     "import time",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "# =================================================",
+     "# GPU / CUDA diagnostics (HPC-safe)"
+    ]
+   },
+   {
+    "file": "Scripts/PISA/SGP/Python Scripts/003_python_generate_ctgan.py",
+    "line": 11,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import torch",
+     "import logging",
+     "import time",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "DATA_DIR = \"/nesi/project/vuw04485/pisa_sem_pipeline/data/\"",
+     "CNT = \"SGP\""
+    ]
+   },
+   {
+    "file": "Scripts/PISA/KOR/Python Scripts/003_python_generate_ctgan.py",
+    "line": 67,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "print(f\"Detected system: {SYSTEM}\")",
+     "",
+     "",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "DATA_DIR = PROJECT_ROOT",
+     "CNT = \"KOR\""
+    ]
+   },
+   {
+    "file": "Scripts/PISA/KOR/Python Scripts/Archive/python_sem_great_phase1_exo_gc.py",
+    "line": 12,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import os",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# ------------------------------------------------------",
+     "# PATHS",
+     "# ------------------------------------------------------"
+    ]
+   },
+   {
+    "file": "Scripts/PISA/KOR/Python Scripts/Archive/002_python_generate_gc_new.py",
+    "line": 5,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "# python_step2_generate_gc.py",
+     "",
+     "import os",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "# DATA_DIR = \"/nesi/project/vuw04485/pisa_sem_pipeline/data/\"",
+     "DATA_DIR = r\"C:\\Users\\mithu\\Documents\\MEGA\\VUW\\Summer Research Project\\Datasets\\PISA 2022\""
+    ]
+   },
+   {
+    "file": "Scripts/PISA/KOR/Python Scripts/Archive/python_sem_great_phase1_exo_ctgan.py",
+    "line": 4,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from sdv.single_table import CTGANSynthesizer",
+     "import os",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "DATA_DIR = \"/nesi/project/vuw04485/pisa_sem_pipeline/data/\"",
+     "# DATA_DIR = r\"C:\\Users\\mithu\\Documents\\MEGA\\VUW\\Summer Research Project\\Datasets\\PISA 2022\"",
+     "INPUT_CSV = os.path.join(DATA_DIR, \"df_core.csv\")"
+    ]
+   },
+   {
+    "file": "Scripts/PISA/KOR/Python Scripts/Archive/003_python_generate_ctgan.py",
+    "line": 9,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "import torch",
+     "",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "DATA_DIR = \"/nesi/project/vuw04485/pisa_sem_pipeline/data/\"",
+     "INPUT_CSV = os.path.join(DATA_DIR, \"df_core.csv\")"
+    ]
+   },
+   {
+    "file": "Scripts/PISA/KOR/Python Scripts/Archive/002_python_generate_gc.py",
+    "line": 6,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "import os",
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "DATA_DIR = \"/nesi/project/vuw04485/pisa_sem_pipeline/data/\"",
+     "INPUT_CSV = os.path.join(DATA_DIR, \"df_core.csv\")"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "Archive/Archive Python Scripts/Synthetic_Data_Generation_(CTGAN and Copula).ipynb",
+    "line": 85,
+    "text": "\"Collecting boto3<2.0.0,>=1.28 (from sdv==1.17.4)\\n\",",
+    "context": [
+     "            \"\\u001b[2K     \\u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\u001b[0m \\u001b[32m219.8/219.8 kB\\u001b[0m \\u001b[31m12.3 MB/s\\u001b[0m eta \\u001b[36m0:00:00\\u001b[0m\\n\",",
+     "            \"\\u001b[?25h  Installing build dependencies ... \\u001b[?25l\\u001b[?25hdone\\n\",",
+     "            \"  Getting requirements to build wheel ... \\u001b[?25l\\u001b[?25hdone\\n\",",
+     "            \"  Preparing metadata (pyproject.toml) ... \\u001b[?25l\\u001b[?25hdone\\n\",",
+     "            \"Collecting boto3<2.0.0,>=1.28 (from sdv==1.17.4)\\n\",",
+     "            \"  Downloading boto3-1.41.0-py3-none-any.whl.metadata (6.8 kB)\\n\",",
+     "            \"Collecting botocore<2.0.0,>=1.31 (from sdv==1.17.4)\\n\",",
+     "            \"  Downloading botocore-1.41.0-py3-none-any.whl.metadata (5.9 kB)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (3.1.2)\\n\","
+    ]
+   },
+   {
+    "file": "Archive/Archive Python Scripts/Synthetic_Data_Generation_(CTGAN and Copula).ipynb",
+    "line": 87,
+    "text": "\"Collecting botocore<2.0.0,>=1.31 (from sdv==1.17.4)\\n\",",
+    "context": [
+     "            \"  Getting requirements to build wheel ... \\u001b[?25l\\u001b[?25hdone\\n\",",
+     "            \"  Preparing metadata (pyproject.toml) ... \\u001b[?25l\\u001b[?25hdone\\n\",",
+     "            \"Collecting boto3<2.0.0,>=1.28 (from sdv==1.17.4)\\n\",",
+     "            \"  Downloading boto3-1.41.0-py3-none-any.whl.metadata (6.8 kB)\\n\",",
+     "            \"Collecting botocore<2.0.0,>=1.31 (from sdv==1.17.4)\\n\",",
+     "            \"  Downloading botocore-1.41.0-py3-none-any.whl.metadata (5.9 kB)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (3.1.2)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (0.21)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (2.0.2)\\n\","
+    ]
+   },
+   {
+    "file": "Archive/Archive Python Scripts/Synthetic_Data_Generation_(CTGAN and Copula).ipynb",
+    "line": 89,
+    "text": "\"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (3.1.2)\\n\",",
+    "context": [
+     "            \"Collecting boto3<2.0.0,>=1.28 (from sdv==1.17.4)\\n\",",
+     "            \"  Downloading boto3-1.41.0-py3-none-any.whl.metadata (6.8 kB)\\n\",",
+     "            \"Collecting botocore<2.0.0,>=1.31 (from sdv==1.17.4)\\n\",",
+     "            \"  Downloading botocore-1.41.0-py3-none-any.whl.metadata (5.9 kB)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (3.1.2)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (0.21)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (2.0.2)\\n\",",
+     "            \"Requirement already satisfied: pandas>=2.1.1 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (2.2.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (4.67.1)\\n\","
+    ]
+   },
+   {
+    "file": "Archive/Archive Python Scripts/Synthetic_Data_Generation_(CTGAN and Copula).ipynb",
+    "line": 90,
+    "text": "\"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (0.21)\\n\",",
+    "context": [
+     "            \"  Downloading boto3-1.41.0-py3-none-any.whl.metadata (6.8 kB)\\n\",",
+     "            \"Collecting botocore<2.0.0,>=1.31 (from sdv==1.17.4)\\n\",",
+     "            \"  Downloading botocore-1.41.0-py3-none-any.whl.metadata (5.9 kB)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (3.1.2)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (0.21)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (2.0.2)\\n\",",
+     "            \"Requirement already satisfied: pandas>=2.1.1 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (2.2.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (4.67.1)\\n\",",
+     "            \"Collecting ctgan>=0.10.2 (from sdv==1.17.4)\\n\","
+    ]
+   },
+   {
+    "file": "Archive/Archive Python Scripts/Synthetic_Data_Generation_(CTGAN and Copula).ipynb",
+    "line": 91,
+    "text": "\"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (2.0.2)\\n\",",
+    "context": [
+     "            \"Collecting botocore<2.0.0,>=1.31 (from sdv==1.17.4)\\n\",",
+     "            \"  Downloading botocore-1.41.0-py3-none-any.whl.metadata (5.9 kB)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (3.1.2)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (0.21)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (2.0.2)\\n\",",
+     "            \"Requirement already satisfied: pandas>=2.1.1 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (2.2.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (4.67.1)\\n\",",
+     "            \"Collecting ctgan>=0.10.2 (from sdv==1.17.4)\\n\",",
+     "            \"  Downloading ctgan-0.11.1-py3-none-any.whl.metadata (10 kB)\\n\","
+    ]
+   },
+   {
+    "file": "Archive/Archive Python Scripts/Synthetic_Data_Generation_(CTGAN and Copula).ipynb",
+    "line": 92,
+    "text": "\"Requirement already satisfied: pandas>=2.1.1 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (2.2.2)\\n\",",
+    "context": [
+     "            \"  Downloading botocore-1.41.0-py3-none-any.whl.metadata (5.9 kB)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (3.1.2)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (0.21)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (2.0.2)\\n\",",
+     "            \"Requirement already satisfied: pandas>=2.1.1 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (2.2.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (4.67.1)\\n\",",
+     "            \"Collecting ctgan>=0.10.2 (from sdv==1.17.4)\\n\",",
+     "            \"  Downloading ctgan-0.11.1-py3-none-any.whl.metadata (10 kB)\\n\",",
+     "            \"Collecting deepecho>=0.6.1 (from sdv==1.17.4)\\n\","
+    ]
+   },
+   {
+    "file": "Archive/Archive Python Scripts/Synthetic_Data_Generation_(CTGAN and Copula).ipynb",
+    "line": 93,
+    "text": "\"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (4.67.1)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (3.1.2)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (0.21)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (2.0.2)\\n\",",
+     "            \"Requirement already satisfied: pandas>=2.1.1 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (2.2.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (4.67.1)\\n\",",
+     "            \"Collecting ctgan>=0.10.2 (from sdv==1.17.4)\\n\",",
+     "            \"  Downloading ctgan-0.11.1-py3-none-any.whl.metadata (10 kB)\\n\",",
+     "            \"Collecting deepecho>=0.6.1 (from sdv==1.17.4)\\n\",",
+     "            \"  Downloading deepecho-0.7.0-py3-none-any.whl.metadata (10 kB)\\n\","
+    ]
+   },
+   {
+    "file": "Archive/Archive Python Scripts/Synthetic_Data_Generation_(CTGAN and Copula).ipynb",
+    "line": 94,
+    "text": "\"Collecting ctgan>=0.10.2 (from sdv==1.17.4)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (0.21)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (2.0.2)\\n\",",
+     "            \"Requirement already satisfied: pandas>=2.1.1 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (2.2.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (4.67.1)\\n\",",
+     "            \"Collecting ctgan>=0.10.2 (from sdv==1.17.4)\\n\",",
+     "            \"  Downloading ctgan-0.11.1-py3-none-any.whl.metadata (10 kB)\\n\",",
+     "            \"Collecting deepecho>=0.6.1 (from sdv==1.17.4)\\n\",",
+     "            \"  Downloading deepecho-0.7.0-py3-none-any.whl.metadata (10 kB)\\n\",",
+     "            \"Collecting rdt>=1.13.2 (from sdv==1.17.4)\\n\","
+    ]
+   },
+   {
+    "file": "Archive/Archive Python Scripts/Synthetic_Data_Generation_(CTGAN and Copula).ipynb",
+    "line": 96,
+    "text": "\"Collecting deepecho>=0.6.1 (from sdv==1.17.4)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: pandas>=2.1.1 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (2.2.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (4.67.1)\\n\",",
+     "            \"Collecting ctgan>=0.10.2 (from sdv==1.17.4)\\n\",",
+     "            \"  Downloading ctgan-0.11.1-py3-none-any.whl.metadata (10 kB)\\n\",",
+     "            \"Collecting deepecho>=0.6.1 (from sdv==1.17.4)\\n\",",
+     "            \"  Downloading deepecho-0.7.0-py3-none-any.whl.metadata (10 kB)\\n\",",
+     "            \"Collecting rdt>=1.13.2 (from sdv==1.17.4)\\n\",",
+     "            \"  Downloading rdt-1.18.2-py3-none-any.whl.metadata (10 kB)\\n\",",
+     "            \"Collecting sdmetrics>=0.17.0 (from sdv==1.17.4)\\n\","
+    ]
+   },
+   {
+    "file": "Archive/Archive Python Scripts/Synthetic_Data_Generation_(CTGAN and Copula).ipynb",
+    "line": 98,
+    "text": "\"Collecting rdt>=1.13.2 (from sdv==1.17.4)\\n\",",
+    "context": [
+     "            \"Collecting ctgan>=0.10.2 (from sdv==1.17.4)\\n\",",
+     "            \"  Downloading ctgan-0.11.1-py3-none-any.whl.metadata (10 kB)\\n\",",
+     "            \"Collecting deepecho>=0.6.1 (from sdv==1.17.4)\\n\",",
+     "            \"  Downloading deepecho-0.7.0-py3-none-any.whl.metadata (10 kB)\\n\",",
+     "            \"Collecting rdt>=1.13.2 (from sdv==1.17.4)\\n\",",
+     "            \"  Downloading rdt-1.18.2-py3-none-any.whl.metadata (10 kB)\\n\",",
+     "            \"Collecting sdmetrics>=0.17.0 (from sdv==1.17.4)\\n\",",
+     "            \"  Downloading sdmetrics-0.24.0-py3-none-any.whl.metadata (9.3 kB)\\n\",",
+     "            \"Requirement already satisfied: platformdirs>=4.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (4.5.0)\\n\","
+    ]
+   },
+   {
+    "file": "Archive/Archive Python Scripts/Synthetic_Data_Generation_(CTGAN and Copula).ipynb",
+    "line": 100,
+    "text": "\"Collecting sdmetrics>=0.17.0 (from sdv==1.17.4)\\n\",",
+    "context": [
+     "            \"Collecting deepecho>=0.6.1 (from sdv==1.17.4)\\n\",",
+     "            \"  Downloading deepecho-0.7.0-py3-none-any.whl.metadata (10 kB)\\n\",",
+     "            \"Collecting rdt>=1.13.2 (from sdv==1.17.4)\\n\",",
+     "            \"  Downloading rdt-1.18.2-py3-none-any.whl.metadata (10 kB)\\n\",",
+     "            \"Collecting sdmetrics>=0.17.0 (from sdv==1.17.4)\\n\",",
+     "            \"  Downloading sdmetrics-0.24.0-py3-none-any.whl.metadata (9.3 kB)\\n\",",
+     "            \"Requirement already satisfied: platformdirs>=4.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (4.5.0)\\n\",",
+     "            \"Requirement already satisfied: pyyaml>=6.0.1 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (6.0.3)\\n\",",
+     "            \"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.12/dist-packages (from copulas==0.12.3) (5.24.1)\\n\","
+    ]
+   },
+   {
+    "file": "Archive/Archive Python Scripts/Synthetic_Data_Generation_(CTGAN and Copula).ipynb",
+    "line": 102,
+    "text": "\"Requirement already satisfied: platformdirs>=4.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (4.5.0)\\n\",",
+    "context": [
+     "            \"Collecting rdt>=1.13.2 (from sdv==1.17.4)\\n\",",
+     "            \"  Downloading rdt-1.18.2-py3-none-any.whl.metadata (10 kB)\\n\",",
+     "            \"Collecting sdmetrics>=0.17.0 (from sdv==1.17.4)\\n\",",
+     "            \"  Downloading sdmetrics-0.24.0-py3-none-any.whl.metadata (9.3 kB)\\n\",",
+     "            \"Requirement already satisfied: platformdirs>=4.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (4.5.0)\\n\",",
+     "            \"Requirement already satisfied: pyyaml>=6.0.1 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (6.0.3)\\n\",",
+     "            \"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.12/dist-packages (from copulas==0.12.3) (5.24.1)\\n\",",
+     "            \"Requirement already satisfied: matplotlib in /usr/local/lib/python3.12/dist-packages (from pingouin==0.5.4) (3.10.0)\\n\",",
+     "            \"Requirement already satisfied: seaborn in /usr/local/lib/python3.12/dist-packages (from pingouin==0.5.4) (0.13.2)\\n\","
+    ]
+   }
+  ],
+  "ctgan_mod": [
+   {
+    "file": "Archive/Archive Python Scripts/Synthetic_Data_Generation_(CTGAN and Copula).ipynb",
+    "line": 125,
+    "text": "\"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.10.2->sdv==1.17.4) (2.8.0+cu126)\\n\",",
+    "context": [
+     "            \"  Downloading s3transfer-0.14.0-py3-none-any.whl.metadata (1.7 kB)\\n\",",
+     "            \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv==1.17.4) (2.9.0.post0)\\n\",",
+     "            \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv==1.17.4) (2.5.0)\\n\",",
+     "            \"Requirement already satisfied: pycparser in /usr/local/lib/python3.12/dist-packages (from cffi>=1.10.0->rpy2==3.5.15) (2.23)\\n\",",
+     "            \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.10.2->sdv==1.17.4) (2.8.0+cu126)\\n\",",
+     "            \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas>=2.1.1->sdv==1.17.4) (2025.2)\\n\",",
+     "            \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas>=2.1.1->sdv==1.17.4) (2025.2)\\n\",",
+     "            \"Requirement already satisfied: tenacity>=6.2.0 in /usr/local/lib/python3.12/dist-packages (from plotly>=5.10.0->copulas==0.12.3) (8.5.0)\\n\",",
+     "            \"Requirement already satisfied: packaging in /usr/local/lib/python3.12/dist-packages (from plotly>=5.10.0->copulas==0.12.3) (25.0)\\n\","
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "Archive/Archive Python Scripts/Synthetic_Data_Generation_(CTGAN and Copula).ipynb",
+    "line": 11528,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "      },",
+     "      \"outputs\": [],",
+     "      \"source\": [",
+     "        \"# %%\\n\",",
+     "        \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "        \"import random\\n\",",
+     "        \"import numpy as np\\n\",",
+     "        \"import torch\\n\",",
+     "        \"\\n\","
+    ]
+   },
+   {
+    "file": "Archive/Archive Python Scripts/Synthetic_Data_Generation_(CTGAN and Copula).ipynb",
+    "line": 11558,
+    "text": "\"    ctgan = CTGANSynthesizer(\\n\",",
+    "context": [
+     "        \"    if torch.cuda.is_available():\\n\",",
+     "        \"        torch.cuda.manual_seed_all(seed)\\n\",",
+     "        \"\\n\",",
+     "        \"    # Step 1: Train CTGAN\\n\",",
+     "        \"    ctgan = CTGANSynthesizer(\\n\",",
+     "        \"        metadata,\\n\",",
+     "        \"        enforce_min_max_values=True,\\n\",",
+     "        \"        epochs=300,\\n\",",
+     "        \"        batch_size=128,\\n\","
+    ]
+   },
+   {
+    "file": "Archive/Colab/copy_of_synthetic_data_generation_(original).py",
+    "line": 380,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "print(\"\\n✅ Saved comparison tables & synthetic sample for GaussianCopula.\")",
+     "synth.to_csv(\"synthetic_gaussiancopula_sample.csv\", index=False)",
+     "",
+     "# %%",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "metadata = Metadata.detect_from_dataframe(df_core)",
+     "",
+     "ctgan = CTGANSynthesizer("
+    ]
+   },
+   {
+    "file": "Archive/Colab/copy_of_synthetic_data_generation_(original).py",
+    "line": 384,
+    "text": "ctgan = CTGANSynthesizer(",
+    "context": [
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "metadata = Metadata.detect_from_dataframe(df_core)",
+     "",
+     "ctgan = CTGANSynthesizer(",
+     "    metadata,",
+     "    enforce_min_max_values=True,",
+     "    epochs=300,",
+     "    batch_size=128,"
+    ]
+   },
+   {
+    "file": "Scripts/TIMSS/Python Scripts/003_python_generate_ctgan.py",
+    "line": 12,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import logging",
+     "import time",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "# =================================================",
+     "# GPU / CUDA diagnostics (HPC-safe)",
+     "# ================================================="
+    ]
+   },
+   {
+    "file": "Scripts/TIMSS/Python Scripts/003_python_generate_ctgan.py",
+    "line": 108,
+    "text": "ctgan = CTGANSynthesizer(",
+    "context": [
+     "    torch.manual_seed(seed)",
+     "    if torch.cuda.is_available():",
+     "        torch.cuda.manual_seed_all(seed)",
+     "",
+     "    ctgan = CTGANSynthesizer(",
+     "        metadata,",
+     "        enforce_min_max_values=True,",
+     "        epochs=500,",
+     "        batch_size=64,"
+    ]
+   },
+   {
+    "file": "Scripts/PISA/SGP/Python Scripts/003_python_generate_ctgan.py",
+    "line": 12,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import logging",
+     "import time",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "DATA_DIR = \"/nesi/project/vuw04485/pisa_sem_pipeline/data/\"",
+     "CNT = \"SGP\"",
+     "INPUT_CSV = os.path.join(DATA_DIR, f\"df_core{CNT}.csv\")"
+    ]
+   },
+   {
+    "file": "Scripts/PISA/SGP/Python Scripts/003_python_generate_ctgan.py",
+    "line": 82,
+    "text": "ctgan = CTGANSynthesizer(",
+    "context": [
+     "    torch.manual_seed(seed)",
+     "    if torch.cuda.is_available():",
+     "        torch.cuda.manual_seed_all(seed)",
+     "",
+     "    ctgan = CTGANSynthesizer(",
+     "        metadata,",
+     "        enforce_min_max_values=True,",
+     "        epochs=500,",
+     "        batch_size=64,"
+    ]
+   },
+   {
+    "file": "Scripts/PISA/KOR/Python Scripts/003_python_generate_ctgan.py",
+    "line": 68,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "DATA_DIR = PROJECT_ROOT",
+     "CNT = \"KOR\"",
+     "INPUT_CSV = os.path.join(DATA_DIR, f\"df_core{CNT}.csv\")"
+    ]
+   },
+   {
+    "file": "Scripts/PISA/KOR/Python Scripts/003_python_generate_ctgan.py",
+    "line": 138,
+    "text": "ctgan = CTGANSynthesizer(",
+    "context": [
+     "    torch.manual_seed(seed)",
+     "    if torch.cuda.is_available():",
+     "        torch.cuda.manual_seed_all(seed)",
+     "",
+     "    ctgan = CTGANSynthesizer(",
+     "        metadata,",
+     "        enforce_min_max_values=True,",
+     "        epochs=500,",
+     "        batch_size=64,"
+    ]
+   },
+   {
+    "file": "Scripts/PISA/KOR/Python Scripts/Archive/python_sem_great_phase1_exo_ctgan.py",
+    "line": 1,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from sdv.single_table import CTGANSynthesizer",
+     "import os",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     ""
+    ]
+   },
+   {
+    "file": "Scripts/PISA/KOR/Python Scripts/Archive/python_sem_great_phase1_exo_ctgan.py",
+    "line": 21,
+    "text": "ctgan = CTGANSynthesizer(",
+    "context": [
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(df_exo)",
+     "",
+     "# Setup CTGAN",
+     "ctgan = CTGANSynthesizer(",
+     "    epochs=300,",
+     "    batch_size=128,",
+     "    verbose=True,",
+     "    pac = 1,"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "Archive/Archive Python Scripts/Synthetic_Data_Generation_(CTGAN and Copula).ipynb",
+    "line": 11395,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "      ],",
+     "      \"source\": [",
+     "        \"# %%\\n\",",
+     "        \"from sdv.metadata import Metadata\\n\",",
+     "        \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "        \"\\n\",",
+     "        \"# Detect metadata automatically\\n\",",
+     "        \"metadata = Metadata.detect_from_dataframe(df_core)\\n\",",
+     "        \"metadata.save_to_json(\\\"pisa2022_metadata.json\\\")\\n\","
+    ]
+   },
+   {
+    "file": "Archive/Archive Python Scripts/Synthetic_Data_Generation_(CTGAN and Copula).ipynb",
+    "line": 11401,
+    "text": "\"gc = GaussianCopulaSynthesizer(\\n\",",
+    "context": [
+     "        \"# Detect metadata automatically\\n\",",
+     "        \"metadata = Metadata.detect_from_dataframe(df_core)\\n\",",
+     "        \"metadata.save_to_json(\\\"pisa2022_metadata.json\\\")\\n\",",
+     "        \"\\n\",",
+     "        \"gc = GaussianCopulaSynthesizer(\\n\",",
+     "        \"    metadata,\\n\",",
+     "        \"    enforce_min_max_values=True\\n\",",
+     "        \")\\n\",",
+     "        \"gc.fit(df_core)\\n\","
+    ]
+   },
+   {
+    "file": "Archive/Colab/copy_of_synthetic_data_generation_(original).py",
+    "line": 256,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "    return paths",
+     "",
+     "# %%",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "# Detect metadata automatically",
+     "metadata = Metadata.detect_from_dataframe(df_core)",
+     "metadata.save_to_json(\"pisa2022_metadata.json\")"
+    ]
+   },
+   {
+    "file": "Archive/Colab/copy_of_synthetic_data_generation_(original).py",
+    "line": 262,
+    "text": "gc = GaussianCopulaSynthesizer(",
+    "context": [
+     "# Detect metadata automatically",
+     "metadata = Metadata.detect_from_dataframe(df_core)",
+     "metadata.save_to_json(\"pisa2022_metadata.json\")",
+     "",
+     "gc = GaussianCopulaSynthesizer(",
+     "    metadata,",
+     "    enforce_min_max_values=True",
+     ")",
+     "gc.fit(df_core)"
+    ]
+   },
+   {
+    "file": "Scripts/PISA/KOR/Python Scripts/Archive/python_sem_great_phase1_exo_gc.py",
+    "line": 2,
+    "text": "# Phase 1: GaussianCopulaSynthesizer → Exogenous Synthetic Data",
+    "context": [
+     "# ======================================================",
+     "# Phase 1: GaussianCopulaSynthesizer → Exogenous Synthetic Data",
+     "# + Structural Latent Generation (SMS, SMP)",
+     "#",
+     "# Output: df_exo_gc_with_latents.csv",
+     "# ======================================================"
+    ]
+   },
+   {
+    "file": "Scripts/PISA/KOR/Python Scripts/Archive/python_sem_great_phase1_exo_gc.py",
+    "line": 11,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "import os",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# ------------------------------------------------------",
+     "# PATHS"
+    ]
+   },
+   {
+    "file": "Scripts/PISA/KOR/Python Scripts/Archive/python_sem_great_phase1_exo_gc.py",
+    "line": 44,
+    "text": "synth = GaussianCopulaSynthesizer(",
+    "context": [
+     "",
+     "# ------------------------------------------------------",
+     "# FIT GAUSSIAN COPULA SYNTHESIZER",
+     "# ------------------------------------------------------",
+     "synth = GaussianCopulaSynthesizer(",
+     "    metadata=metadata,",
+     "    enforce_min_max_values=True",
+     ")",
+     ""
+    ]
+   },
+   {
+    "file": "Scripts/PISA/KOR/Python Scripts/Archive/002_python_generate_gc_new.py",
+    "line": 6,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "import os",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "# DATA_DIR = \"/nesi/project/vuw04485/pisa_sem_pipeline/data/\"",
+     "DATA_DIR = r\"C:\\Users\\mithu\\Documents\\MEGA\\VUW\\Summer Research Project\\Datasets\\PISA 2022\"",
+     "CNT = \"SGP\""
+    ]
+   },
+   {
+    "file": "Scripts/PISA/KOR/Python Scripts/Archive/002_python_generate_gc_new.py",
+    "line": 64,
+    "text": "gc = GaussianCopulaSynthesizer(",
+    "context": [
+     "metadata_json_path = os.path.join(DATA_DIR, \"pisa2022_metadata.json\")",
+     "metadata.save_to_json(metadata_json_path)",
+     "print(\"Saved SDV metadata JSON to:\", metadata_json_path)",
+     "",
+     "gc = GaussianCopulaSynthesizer(",
+     "    metadata,",
+     "    enforce_min_max_values=True",
+     ")",
+     "gc.fit(df_core)"
+    ]
+   },
+   {
+    "file": "Scripts/PISA/KOR/Python Scripts/Archive/002_python_generate_gc.py",
+    "line": 7,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import os",
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "DATA_DIR = \"/nesi/project/vuw04485/pisa_sem_pipeline/data/\"",
+     "INPUT_CSV = os.path.join(DATA_DIR, \"df_core.csv\")",
+     ""
+    ]
+   },
+   {
+    "file": "Scripts/PISA/KOR/Python Scripts/Archive/002_python_generate_gc.py",
+    "line": 24,
+    "text": "gc = GaussianCopulaSynthesizer(",
+    "context": [
+     "metadata_json_path = os.path.join(DATA_DIR, \"pisa2022_metadata.json\")",
+     "metadata.save_to_json(metadata_json_path)",
+     "print(\"Saved SDV metadata JSON to:\", metadata_json_path)",
+     "",
+     "gc = GaussianCopulaSynthesizer(",
+     "    metadata,",
+     "    enforce_min_max_values=True",
+     ")",
+     "gc.fit(df_core)"
+    ]
+   }
+  ],
+  "rdt": [
+   {
+    "file": "Archive/Archive Python Scripts/Synthetic_Data_Generation_(CTGAN and Copula).ipynb",
+    "line": 130,
+    "text": "\"Collecting Faker!=37.11.0,>=17 (from rdt>=1.13.2->sdv==1.17.4)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas>=2.1.1->sdv==1.17.4) (2025.2)\\n\",",
+     "            \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas>=2.1.1->sdv==1.17.4) (2025.2)\\n\",",
+     "            \"Requirement already satisfied: tenacity>=6.2.0 in /usr/local/lib/python3.12/dist-packages (from plotly>=5.10.0->copulas==0.12.3) (8.5.0)\\n\",",
+     "            \"Requirement already satisfied: packaging in /usr/local/lib/python3.12/dist-packages (from plotly>=5.10.0->copulas==0.12.3) (25.0)\\n\",",
+     "            \"Collecting Faker!=37.11.0,>=17 (from rdt>=1.13.2->sdv==1.17.4)\\n\",",
+     "            \"  Downloading faker-38.2.0-py3-none-any.whl.metadata (16 kB)\\n\",",
+     "            \"Requirement already satisfied: joblib>=1.2.0 in /usr/local/lib/python3.12/dist-packages (from scikit-learn->pingouin==0.5.4) (1.5.2)\\n\",",
+     "            \"Requirement already satisfied: threadpoolctl>=3.1.0 in /usr/local/lib/python3.12/dist-packages (from scikit-learn->pingouin==0.5.4) (3.6.0)\\n\",",
+     "            \"Requirement already satisfied: MarkupSafe>=2.0 in /usr/local/lib/python3.12/dist-packages (from jinja2->rpy2==3.5.15) (3.0.3)\\n\","
+    ]
+   }
+  ],
+  "copulas": [
+   {
+    "file": "Archive/Archive Python Scripts/Synthetic_Data_Generation_(CTGAN and Copula).ipynb",
+    "line": 104,
+    "text": "\"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.12/dist-packages (from copulas==0.12.3) (5.24.1)\\n\",",
+    "context": [
+     "            \"Collecting sdmetrics>=0.17.0 (from sdv==1.17.4)\\n\",",
+     "            \"  Downloading sdmetrics-0.24.0-py3-none-any.whl.metadata (9.3 kB)\\n\",",
+     "            \"Requirement already satisfied: platformdirs>=4.0 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (4.5.0)\\n\",",
+     "            \"Requirement already satisfied: pyyaml>=6.0.1 in /usr/local/lib/python3.12/dist-packages (from sdv==1.17.4) (6.0.3)\\n\",",
+     "            \"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.12/dist-packages (from copulas==0.12.3) (5.24.1)\\n\",",
+     "            \"Requirement already satisfied: matplotlib in /usr/local/lib/python3.12/dist-packages (from pingouin==0.5.4) (3.10.0)\\n\",",
+     "            \"Requirement already satisfied: seaborn in /usr/local/lib/python3.12/dist-packages (from pingouin==0.5.4) (0.13.2)\\n\",",
+     "            \"Requirement already satisfied: statsmodels in /usr/local/lib/python3.12/dist-packages (from pingouin==0.5.4) (0.14.5)\\n\",",
+     "            \"Requirement already satisfied: scikit-learn in /usr/local/lib/python3.12/dist-packages (from pingouin==0.5.4) (1.6.1)\\n\","
+    ]
+   }
+  ],
+  "sm": [
+   {
+    "file": "Scripts/TIMSS/Python Scripts/sem_report/evaluators/distribution.py",
+    "line": 15,
+    "text": "from sdmetrics.single_column import BoundaryAdherence, CategoryAdherence",
+    "context": [
+     "from scipy.spatial.distance import jensenshannon",
+     "from sem_report.utils.exporter import export_table",
+     "from sem_report.utils.export_config import ExportConfig",
+     "",
+     "from sdmetrics.single_column import BoundaryAdherence, CategoryAdherence",
+     "",
+     "",
+     "",
+     "logger = logging.getLogger(__name__)"
+    ]
+   },
+   {
+    "file": "Scripts/TIMSS/Python Scripts/Archive/sem_report/evaluators/distribution.py",
+    "line": 15,
+    "text": "from sdmetrics.single_column import BoundaryAdherence, CategoryAdherence",
+    "context": [
+     "from scipy.spatial.distance import jensenshannon",
+     "from sem_report.utils.exporter import export_table",
+     "from sem_report.utils.export_config import ExportConfig",
+     "",
+     "from sdmetrics.single_column import BoundaryAdherence, CategoryAdherence",
+     "",
+     "",
+     "",
+     "logger = logging.getLogger(__name__)"
+    ]
+   },
+   {
+    "file": "Scripts/TIMSS/Python Scripts/sem_report_/evaluators/distribution.py",
+    "line": 15,
+    "text": "from sdmetrics.single_column import BoundaryAdherence, CategoryAdherence",
+    "context": [
+     "from scipy.spatial.distance import jensenshannon",
+     "from sem_report.utils.exporter import export_table",
+     "from sem_report.utils.export_config import ExportConfig",
+     "",
+     "from sdmetrics.single_column import BoundaryAdherence, CategoryAdherence",
+     "",
+     "",
+     "",
+     "logger = logging.getLogger(__name__)"
+    ]
+   },
+   {
+    "file": "Scripts/PISA/SGP/Python Scripts/sem_report/evaluators/distribution.py",
+    "line": 15,
+    "text": "from sdmetrics.single_column import BoundaryAdherence, CategoryAdherence",
+    "context": [
+     "from scipy.spatial.distance import jensenshannon",
+     "from sem_report.utils.exporter import export_table",
+     "from sem_report.utils.export_config import ExportConfig",
+     "",
+     "from sdmetrics.single_column import BoundaryAdherence, CategoryAdherence",
+     "",
+     "",
+     "",
+     "logger = logging.getLogger(__name__)"
+    ]
+   },
+   {
+    "file": "Scripts/PISA/KOR/Python Scripts/sem_report/evaluators/distribution.py",
+    "line": 15,
+    "text": "from sdmetrics.single_column import BoundaryAdherence, CategoryAdherence",
+    "context": [
+     "from scipy.spatial.distance import jensenshannon",
+     "from sem_report.utils.exporter import export_table",
+     "from sem_report.utils.export_config import ExportConfig",
+     "",
+     "from sdmetrics.single_column import BoundaryAdherence, CategoryAdherence",
+     "",
+     "",
+     "",
+     "logger = logging.getLogger(__name__)"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "copulas",
+  "ct",
+  "ctgan_mod",
+  "gc",
+  "md",
+  "rdt",
+  "sdv_any",
+  "sm",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

@@ -1,0 +1,128 @@
+{
+ "repo": "srabuzied/telecom-churn-data-platform",
+ "disk_kb": 9596,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# 🚀 TelecoVision – Telecom Churn Analytics Platform\n\n## 📌 Overview\n\nTelecoVision is an end-to-end Telecom Data Engineering Platform that combines both **Batch** and **Streaming** data processing to provide real-time customer monitoring, churn prediction, customer experience analytics, and business intelligence reporting.\n\nThe platform integrates telecom data from multiple operational systems and transforms it into actionable insights through a scalable modern data architecture.\n\n---\n\n# 🎯 Business Problem\n\nTelecom companies lose a significant percentage of customers every year due to churn.\n\n### Challenges\n\n🔹 Customer data is scattered across multiple systems such as:\n\n* CRM Systems\n* Billing Systems\n* Network Monitoring Systems\n* Customer Service Systems\n\n🔹 No real-time visibility into customer behavior and network events.\n\n🔹 Lack of a centralized analytical layer for business reporting.\n\n🔹 Difficulty identifying customers who are likely to churn before they leave.\n\n### Solution\n\nTelecoVision unifies both streaming and batch data into a single platform, enabling:\n\n✅ Real-Time Churn Monitoring\n\n✅ Customer Analytics\n\n✅ Usage Analytics\n\n✅ Customer Experience Analytics\n\n✅ Revenue Impact Analysis\n\n✅ Interactive Dashboards\n\n---\n\n# 🏗️ Solution Architecture\n\n## Complete Platform Architecture\n\n![Architecture](architecture/architecture.jpg)\n\nThe platform combines both Batch and Streaming pipelines using a Medallion Architecture to support operational monitoring and analytical workloads.\n\n---\n\n## Real-Time Streaming Pipeline\n\n![Streaming Pipeline](architecture/Stream%20pipeline.jpg)\n\nThe streaming layer captures telecom events from Kafka topics and processes them using Spark Structured Streaming for real-time analytics and churn prediction.\n\n---\n\n# 🛠️ Technology Stack\n\n## ⚡ Streaming Layer\n\n* Apache Kafka\n* Apache Spark Structured Streaming\n* Microsoft SQL Server\n* Google Cloud Storage (GCS)\n\n## 📦 Batch Layer\n\n* Apache Spark\n* Google Cloud Storage (GCS)\n* BigQuery\n* dbt Cloud\n\n## 🎼 Orchestration\n\n* Apache Airflow\n\n## 📊 Visualization\n\n* Grafana\n* Looker Studio\n\n---\n\n# 🥉🥈🥇 Medallion Architecture\n\n## 🥉 Bronze Layer\n\nStores raw streaming and batch data exactly as received from source systems.\n\n### Storage\n\n* Raw JSON Files\n* Raw Telecom Events\n* Google Cloud Storage\n\n---\n\n## 🥈 Silver Layer\n\nProcesses raw data and applies business transformations.\n\n### Transformations\n\n✅ Data Cleaning\n\n✅ Data Validation\n\n✅ Standardization\n\n✅ Mapping\n\n✅ Feature Engineering\n\n✅ Data Enrichment\n\n### Storage\n\n* Parquet Files\n* Google Cloud Storage\n\n---\n\n## 🥇 Gold Layer\n\nBusiness-ready analytical layer optimized for reporting and dashboarding.\n\n### Storage\n\n* BigQuery\n* Data Warehouse Tables\n\n---\n\n# 🌌 Data Warehouse Design\n\n## Galaxy Schema\n\n![Galaxy Schema](architecture/Modeling.jpg)\n\nThe warehouse follows **Kimball Dimensional Modeling** principles and implements a **Fact Constellation (Galaxy Schema)**.\n\n---\n\n## 📈 Fact Tables\n\n### Fact Customer Snapshot\n\n**Type:** Periodic Snapshot Fact\n\n**Grain:** Customer + Date + Time Snapshot\n\nContains:\n\n* Churn Score\n* Risk Level\n* Customer Metrics\n* Network Metrics\n* Usage Metrics\n\n---\n\n### Fact Customer Care Call\n\n**Type:** Transaction Fact\n\n**Grain:** One Customer Care Call\n\nContains:\n\n* Call Duration\n* Anger Rate\n* Resolution Status\n* Issue Type\n\n---\n\n### Fact Usage Network Event\n\n**Type:** Transaction Fact\n\n**Grain:** One Usage or Network Event\n\nContains:\n\n* Internet Usage\n* Voice Minutes\n* SMS Usage\n* Network Performance Metrics\n\n---\n\n### Fact Churn Risk\n\n**Type:** Transaction Fact\n\n**Grain:** One Churn Scoring Event\n\nContains:\n\n* Churn Probability\n* Risk Category\n* Churn Indicators\n\n---\n\n## 📚 Dimension Tables\n\n### Conformed Dimensions\n\n* Dim Customer\n* Dim Date\n* Dim Time\n\n### Standard Dimensions\n\n* Dim Device\n* Dim Customer Loyalty\n\n---\n\n# ⚡ Streaming Pipeline\n\n## Apache Kafka\n\nTelecom events are continuously generated and streamed into Kafka.\n\n### Topics\n\n### Customer Care Calls\n\n* 2 Partitions\n\nContains:\n\n* Call Duration\n* Anger Rate\n* Issue Type\n* Resolution Status\n\n### Network Events\n\n* 2 Partitions\n\nContains:\n\n* Signal Strength\n* Internet Speed\n* Drop Calls\n* Network State\n\n### Usage Events\n\n* 3 Partitions\n\nContains:\n\n* Internet Usage\n* Voice Minutes\n* SMS Count\n\n---\n\n### Kafka Cluster\n\n* 3 Brokers\n* Replication Factor = 2\n\n### Benefits\n\n✅ Scalability\n\n✅ Parallel Processing\n\n✅ High Availability\n\n✅ Fault Tolerance\n\nIf a broker becomes unavailable, Kafka automatically switches to a replica and continues processing without interruption.\n\n---\n\n## Spark Structured Streaming\n\nSpark consumes telecom events from Kafka and processes them using micro-batches.\n\n### Streaming Operations\n\n✅ Read Events from Kafka\n\n✅ Store Raw Data in SQL Server\n\n✅ Store Raw Data in Bronze Layer\n\n✅ Join Multiple Streams\n\n✅ Calculate Churn Scores\n\n✅ Generate Risk Levels\n\n✅ Write Results to SQL Server\n\n✅ Write Results to GCS\n\nThis enables near real-time churn monitoring and customer analytics.\n\n---\n\n# 📦 Batch Pipeline\n\n## Raw Data Ingestion\n\nHistorical telecom datasets are uploaded to the Bronze Layer in Google Cloud Storage.\n\n---\n\n## Apache Spark Processing\n\nSpark processes data across multiple worker nodes.\n\n### Transformations\n\n✅ Cleaning\n\n✅ Mapping\n\n✅ Standardization\n\n✅ Feature Engineering\n\n✅ Data Enrichment\n\n### Output\n\nProcessed data is stored in the Silver Layer as optimized Parquet files.\n\n---\n\n## BigQuery + dbt\n\nSilver Layer data is loaded into BigQuery and transformed using dbt.\n\n### dbt Responsibilities\n\n✅ Data Modeling\n\n✅ Fact Table Creation\n\n✅ Dimension Table Creation\n\n✅ Business Logic Implementation\n\n✅ Data Warehouse Construction\n\n---\n\n# 🎼 Airflow Orchestration\n\nApache Airflow orchestrates the entire platform.\n![ Airflow ](airflow.png)\n\n### Responsibilities\n\n* Scheduling Pipelines\n* Managing Dependencies\n* Executing Spark Jobs\n* Triggering dbt Runs\n* Monitoring Workflow Execution\n* Failure Recovery\n\n---\n\n# 📊 Grafana Dashboards\n\nGrafana provides real-time operational monitoring over streaming telecom events.\n\n---\n\n## Churn Dashboard\n\n![Churn Dashboard](Stream/grafana%20dashboard/churn%20dashboard.png)\n\n### Insights\n\n* Real-Time Churn Monitoring\n* Churn Score Tracking\n* Risk Distribution\n* High-Risk Customer Detection\n\n---\n\n## Customer Service & Quality Dashboard\n\n![Customer Service Dashboard](Stream/grafana%20dashboard/customer%20service%20and%20quality%20dashboard.png)\n\n### Insights\n\n* Customer Service Monitoring\n* Resolution Performance\n* Anger Rate Tracking\n* Quality Indicators\n\n---\n\n## Telecom Network Dashboard\n\n![Network Dashboard](Stream/grafana%20dashboard/telecom%20network%20dashboard.png)\n\n### Insights\n\n* Network Quality Monitoring\n* Signal Strength Analytics\n* Internet Performance\n* Drop Call Monitoring\n\n---\n\n# 📈 Looker Studio Dashboards\n\nLooker Studio provides business-level analytics built on top of the Data Warehouse.\n\n---\n\n## Customer Overview Dashboard\n\n![Customer Overview](looker%20dashboard/customer%20overview%20dashboard.png)\n\n### Insights\n\n* Customer Segmentation\n* Loyalty Analytics\n* Customer Distribution\n* Behavioral Analysis\n\n---\n\n## Churn Risk Dashboard\n\n![Churn Risk Dashboard](looker%20dashboard/churn%20risk%20dashboard.png)\n\n### Insights\n\n* Churn Distribution\n* Risk Categories\n* Churn Drivers\n* Retention Opportunities\n\n---\n\n## Revenue Impact Dashboard\n\n![Revenue Impact Dashboard](looker%20dashboard/Revenue%20impact%20dashboard.png)\n\n### Insights\n\n* Revenue at Risk\n* Churn Cost Analysis\n* Revenue Trends\n* Customer Value Analysis\n\n---\n\n## Network Experience & Quality Dashboard\n\n![Network Dashboard](looker%20dashboard/Network%20experience%20&%20quality%20dashboard.png)\n\n### Insights\n\n* Network Performance Analytics\n* Customer Experience Metrics\n* Data Failure Analysis\n* Quality Distribution\n\n---\n\n\n# 🌟 Key Features\n\n✅ Batch + Streaming Integration\n\n✅ Real-Time Churn Monitoring\n\n✅ Customer Analytics\n\n✅ Usage Analytics\n\n✅ Customer Experience Analytics\n\n✅ Revenue Impact Analysis\n\n✅ Enterprise Data Warehouse\n\n✅ Automated Data Pipelines\n\n✅ Interactive Dashboards\n\n---\n# 📂 Data Sources\n\nThe project uses the public Telecom Customer Churn dataset from IBM Sample Data.\n\n### Dataset Features\n\n- Customer Demographics\n- Service Usage Information\n- Billing Information\n- Customer Support Interactions\n- Churn Indicators\n\n### Source\n\n🔗 [https://www.kaggle.com/datasets](https://www.kaggle.com/datasets/shenoudasafwat/telecom-customer-churn-100k-cleaned-records)\n---\n\n###\n# 👩‍💻 Team\n\n### ITI Data Engineering Graduation Project\n\n* Reham Mohammed\n* Sara Abuzeid\n* Yasmin Shamakh\n* Nermeen saad\n\n\n\n⭐ If you found this project interesting, don't forget to give it a Star.\n",
+ "hits": {
+  "st": [
+   {
+    "file": "data_generation/generate_data.py",
+    "line": 2,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import warnings",
+     "",
+     "warnings.filterwarnings('ignore')"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "data_generation/generate_data.py",
+    "line": 3,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import warnings",
+     "",
+     "warnings.filterwarnings('ignore')",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "data_generation/generate_data.py",
+    "line": 2,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import warnings",
+     "",
+     "warnings.filterwarnings('ignore')"
+    ]
+   },
+   {
+    "file": "data_generation/generate_data.py",
+    "line": 3,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import warnings",
+     "",
+     "warnings.filterwarnings('ignore')",
+     ""
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "data_generation/generate_data.py",
+    "line": 2,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import warnings",
+     "",
+     "warnings.filterwarnings('ignore')"
+    ]
+   },
+   {
+    "file": "data_generation/generate_data.py",
+    "line": 54,
+    "text": "client_synth = GaussianCopulaSynthesizer(client_meta)",
+    "context": [
+     "    column_name=\"Customer_ID\",",
+     "    sdtype=\"id\"",
+     ")",
+     "",
+     "client_synth = GaussianCopulaSynthesizer(client_meta)",
+     "",
+     "client_synth.fit(client)",
+     "",
+     "print(\"Generating Client synthetic rows...\")"
+    ]
+   },
+   {
+    "file": "data_generation/generate_data.py",
+    "line": 91,
+    "text": "record_synth = GaussianCopulaSynthesizer(record_meta)",
+    "context": [
+     "    column_name=\"Customer_ID\",",
+     "    sdtype=\"id\"",
+     ")",
+     "",
+     "record_synth = GaussianCopulaSynthesizer(record_meta)",
+     "",
+     "record_synth.fit(record)",
+     "",
+     "print(\"Generating Record synthetic rows...\")"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "data_generation/requirements.txt": [
+   "sdv"
+  ]
+ }
+}

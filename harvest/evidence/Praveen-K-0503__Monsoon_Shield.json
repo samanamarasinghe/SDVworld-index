@@ -1,0 +1,281 @@
+{
+ "repo": "Praveen-K-0503/Monsoon_Shield",
+ "disk_kb": 244,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# MonsoonShield ⛈️\n\nAI-powered water-borne disease early warning system for Coimbatore.\nReal-time risk predictions, GAN-based extreme scenario simulation, and WebSocket live updates.\n\n---\n\n## 🚀 Quick Start\n\nEnsure you have Python 3.10+ and Node.js v20+ installed.\n\n```bash\n# 1. Install dependencies\npip install \"fastapi[standard]\" \"uvicorn[standard]\" websockets uvicorn pandas scikit-learn prophet xgboost pydantic-settings python-multipart databases sqlalchemy aiosqlite httpx typer\ncd frontend && npm install && npm run build && cd ..\n\n# 2. Initialize the system (Creates DB, pulls NASA data, trains models)\npython cli.py init\n\n# 3. Start the entire system (FastAPI backend + React frontend proxy)\n# Open 2 terminals:\npython cli.py serve\npython cli.py dashboard\n```\n\n*The dashboard will be available at `http://localhost:5173` and the API docs at `http://localhost:8000/docs`.*\n\n---\n\n## 🏗 Architecture\n\n```mermaid\ngraph TD\n    A[NASA POWER API] -->|Daily Sync| B(Data Orchestrator)\n    C[OpenWeatherMap API] -->|Current Conditions| B\n    B -->|SQL| D{SQLite Vector DB}\n    \n    D -->|Features| E[ML Engine]\n    E --> F[Prophet Time-Series]\n    E --> G[XGBoost Classifier]\n    E --> H[CTGAN Simulation]\n    \n    F -->|Forecasts| I[FastAPI Backend]\n    G -->|Risk Levels| I\n    H -->|Synthetic Extremes| I\n    \n    I -->|REST API| J(React Frontend)\n    I -->|WebSocket| J\n    I -->|Alerts| K[Twilio / SendGrid]\n```\n\n---\n\n## ⚙️ Environment Variables\n\nCopy the `.env.example` file to `.env` if you need to override defaults.\n\n| Variable | Description | Default |\n|----------|-------------|---------|\n| `OWM_API_KEY` | OpenWeatherMap Key (Required for live weather) | `\"\"` |\n| `MAPBOX_TOKEN` | Mapbox token (Optional, for 3D terrain) | `\"\"` |\n| `API_PORT` | Port for FastAPI to listen on | `8000` |\n| `ENVIRONMENT` | One of `dev`, `staging`, `prod` | `dev` |\n| `SMS_ENABLED` | Toggle Twilio SMS dispatch | `False` |\n\n---\n\n## 🛠 Command-Line Interface (CLI)\n\nUse the built-in `cli.py` for all operations:\n\n```bash\npython cli.py --help\n\n# Operations\npython cli.py fetch-data --ward \"Gandhipuram\" --days 30\npython cli.py train --ward all\npython cli.py predict --ward \"Peelamedu\" --days 14\npython cli.py simulate --ward \"Gandhipuram\" --scenario \"100_year_flood\"\npython cli.py health\n```\n\n---\n\n## 🩺 Troubleshooting\n\n**Q: The map shows \"Backend Offline\".**\nA: Ensure you have run `python cli.py serve` in a separate terminal and it is bound to port 8000.\n\n**Q: \"Model not found\" error when predicting.**\nA: Run `python cli.py train` to generate the `.json` XGBoost and Prophet models for the requested ward.\n\n**Q: Empty database errors.**\nA: Run `python cli.py init` to automatically create the schema and seed initial data.\n",
+ "hits": {
+  "st": [
+   {
+    "file": "ml_engine.py",
+    "line": 49,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "# Optional heavy imports - graceful degradation",
+     "# ---------------------------------------------------------------------------",
+     "",
+     "try:",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    _HAS_SDV = True",
+     "except ImportError:",
+     "    CTGANSynthesizer = None   # type: ignore[assignment,misc]"
+    ]
+   },
+   {
+    "file": "dependencies.py",
+    "line": 85,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "                path = self._model_path(\"synthesizer\", ward)",
+     "                if not path.exists():",
+     "                    raise FileNotFoundError(f\"Synthesizer not found: {path}\")",
+     "                try:",
+     "                    from sdv.single_table import CTGANSynthesizer",
+     "                    self._cache[key] = CTGANSynthesizer.load(str(path))",
+     "                except Exception as exc:",
+     "                    raise RuntimeError(f\"Failed to load synthesizer: {exc}\") from exc",
+     "                logger.info(\"Loaded CTGAN synthesizer for ward=%s\", ward)"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "ml_engine.py",
+    "line": 50,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "# ---------------------------------------------------------------------------",
+     "",
+     "try:",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    _HAS_SDV = True",
+     "except ImportError:",
+     "    CTGANSynthesizer = None   # type: ignore[assignment,misc]",
+     "    SingleTableMetadata = None  # type: ignore[assignment]"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "ml_engine.py",
+    "line": 49,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "# Optional heavy imports - graceful degradation",
+     "# ---------------------------------------------------------------------------",
+     "",
+     "try:",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    _HAS_SDV = True",
+     "except ImportError:",
+     "    CTGANSynthesizer = None   # type: ignore[assignment,misc]"
+    ]
+   },
+   {
+    "file": "ml_engine.py",
+    "line": 50,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "# ---------------------------------------------------------------------------",
+     "",
+     "try:",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    _HAS_SDV = True",
+     "except ImportError:",
+     "    CTGANSynthesizer = None   # type: ignore[assignment,misc]",
+     "    SingleTableMetadata = None  # type: ignore[assignment]"
+    ]
+   },
+   {
+    "file": "dependencies.py",
+    "line": 85,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "                path = self._model_path(\"synthesizer\", ward)",
+     "                if not path.exists():",
+     "                    raise FileNotFoundError(f\"Synthesizer not found: {path}\")",
+     "                try:",
+     "                    from sdv.single_table import CTGANSynthesizer",
+     "                    self._cache[key] = CTGANSynthesizer.load(str(path))",
+     "                except Exception as exc:",
+     "                    raise RuntimeError(f\"Failed to load synthesizer: {exc}\") from exc",
+     "                logger.info(\"Loaded CTGAN synthesizer for ward=%s\", ward)"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "ml_engine.py",
+    "line": 49,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "# Optional heavy imports - graceful degradation",
+     "# ---------------------------------------------------------------------------",
+     "",
+     "try:",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    _HAS_SDV = True",
+     "except ImportError:",
+     "    CTGANSynthesizer = None   # type: ignore[assignment,misc]"
+    ]
+   },
+   {
+    "file": "ml_engine.py",
+    "line": 53,
+    "text": "CTGANSynthesizer = None   # type: ignore[assignment,misc]",
+    "context": [
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    _HAS_SDV = True",
+     "except ImportError:",
+     "    CTGANSynthesizer = None   # type: ignore[assignment,misc]",
+     "    SingleTableMetadata = None  # type: ignore[assignment]",
+     "    _HAS_SDV = False",
+     "",
+     "try:"
+    ]
+   },
+   {
+    "file": "ml_engine.py",
+    "line": 240,
+    "text": "Train a CTGANSynthesizer on tabular sensor data.",
+    "context": [
+     "    models_dir: Path = Path(\"models\"),",
+     "    ward_name: str = \"default\",",
+     ") -> Any:",
+     "    \"\"\"",
+     "    Train a CTGANSynthesizer on tabular sensor data.",
+     "",
+     "    Saves synthesizer to ``models_dir/synthesizer_{ward_name}.pkl``.",
+     "",
+     "    Parameters"
+    ]
+   },
+   {
+    "file": "ml_engine.py",
+    "line": 258,
+    "text": "CTGANSynthesizer or None (if SDV unavailable).",
+    "context": [
+     "    ward_name : str",
+     "",
+     "    Returns",
+     "    -------",
+     "    CTGANSynthesizer or None (if SDV unavailable).",
+     "    \"\"\"",
+     "    if not _HAS_SDV:",
+     "        logger.warning(\"SDV not installed. pip install sdv\")",
+     "        return None"
+    ]
+   },
+   {
+    "file": "ml_engine.py",
+    "line": 270,
+    "text": "syn = CTGANSynthesizer(meta, epochs=epochs, batch_size=min(500, len(df)), verbose=False, cuda=False)",
+    "context": [
+     "    df[TARGET_COL] = df[TARGET_COL].clip(lower=0)",
+     "",
+     "    logger.info(\"Training CTGAN: ward=%s, epochs=%d, rows=%d\", ward_name, epochs, len(df))",
+     "    meta = _build_sdv_metadata(df)",
+     "    syn = CTGANSynthesizer(meta, epochs=epochs, batch_size=min(500, len(df)), verbose=False, cuda=False)",
+     "    syn.fit(df)",
+     "",
+     "    path = models_dir / f\"synthesizer_{ward_name}.pkl\"",
+     "    syn.save(str(path))"
+    ]
+   },
+   {
+    "file": "ml_engine.py",
+    "line": 286,
+    "text": "Sample synthetic scenarios from a trained CTGANSynthesizer.",
+    "context": [
+     "    extreme: bool = True,",
+     "    seed: int = 42,",
+     ") -> pd.DataFrame:",
+     "    \"\"\"",
+     "    Sample synthetic scenarios from a trained CTGANSynthesizer.",
+     "",
+     "    Parameters",
+     "    ----------",
+     "    synthesizer : CTGANSynthesizer"
+    ]
+   },
+   {
+    "file": "ml_engine.py",
+    "line": 290,
+    "text": "synthesizer : CTGANSynthesizer",
+    "context": [
+     "    Sample synthetic scenarios from a trained CTGANSynthesizer.",
+     "",
+     "    Parameters",
+     "    ----------",
+     "    synthesizer : CTGANSynthesizer",
+     "    n_scenarios : int",
+     "    extreme : bool",
+     "        If True, 15% of rows are amplified (e_coli x2, cases x3).",
+     "    seed : int"
+    ]
+   },
+   {
+    "file": "main.py",
+    "line": 692,
+    "text": "Use the trained CTGANSynthesizer to generate an extreme disease outbreak",
+    "context": [
+     "    summary=\"Generate an extreme outbreak scenario using the trained GAN\",",
+     ")",
+     "async def simulate_extreme(req: SimulationRequest):",
+     "    \"\"\"",
+     "    Use the trained CTGANSynthesizer to generate an extreme disease outbreak",
+     "    scenario. The synthesized data is then passed through the Prophet and",
+     "    XGBoost models to produce a risk trajectory.",
+     "",
+     "    Available scenario types:"
+    ]
+   },
+   {
+    "file": "dependencies.py",
+    "line": 85,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "                path = self._model_path(\"synthesizer\", ward)",
+     "                if not path.exists():",
+     "                    raise FileNotFoundError(f\"Synthesizer not found: {path}\")",
+     "                try:",
+     "                    from sdv.single_table import CTGANSynthesizer",
+     "                    self._cache[key] = CTGANSynthesizer.load(str(path))",
+     "                except Exception as exc:",
+     "                    raise RuntimeError(f\"Failed to load synthesizer: {exc}\") from exc",
+     "                logger.info(\"Loaded CTGAN synthesizer for ward=%s\", ward)"
+    ]
+   },
+   {
+    "file": "dependencies.py",
+    "line": 86,
+    "text": "self._cache[key] = CTGANSynthesizer.load(str(path))",
+    "context": [
+     "                if not path.exists():",
+     "                    raise FileNotFoundError(f\"Synthesizer not found: {path}\")",
+     "                try:",
+     "                    from sdv.single_table import CTGANSynthesizer",
+     "                    self._cache[key] = CTGANSynthesizer.load(str(path))",
+     "                except Exception as exc:",
+     "                    raise RuntimeError(f\"Failed to load synthesizer: {exc}\") from exc",
+     "                logger.info(\"Loaded CTGAN synthesizer for ward=%s\", ward)",
+     "        return self._cache[key]"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

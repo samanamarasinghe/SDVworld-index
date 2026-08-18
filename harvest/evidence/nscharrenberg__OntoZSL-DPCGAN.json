@@ -1,0 +1,440 @@
+{
+ "repo": "nscharrenberg/OntoZSL-DPCGAN",
+ "disk_kb": 62502,
+ "method": "partial_clone",
+ "tree_files": 90,
+ "status": "ok",
+ "readme": "# 👯 DP-CGANS (Differentially Private - Conditional Generative Adversarial NetworkS)\n\n[![PyPi Shield](https://img.shields.io/pypi/v/dp-cgans)](https://pypi.org/project/dp-cgans/) [![Py versions](https://img.shields.io/pypi/pyversions/dp-cgans)](https://pypi.org/project/dp-cgans/) [![Test package](https://github.com/sunchang0124/dp_cgans/actions/workflows/test.yml/badge.svg)](https://github.com/sunchang0124/dp_cgans/actions/workflows/test.yml) [![Publish package](https://github.com/sunchang0124/dp_cgans/actions/workflows/publish.yml/badge.svg)](https://github.com/sunchang0124/dp_cgans/actions/workflows/publish.yml)\n\n\n\n<!-- [![Development Status](https://img.shields.io/badge/Development%20Status-2%20--%20Pre--Alpha-yellow)](https://pypi.org/search/?c=Development+Status+%3A%3A+2+-+Pre-Alpha) -->\n<!-- [![PyPi Shield](https://img.shields.io/badge/pypi-v0.0.2-blue)](https://pypi.org/project/dp-cgans/) -->\n<!-- [![Tests](https://github.com/sdv-dev/SDV/workflows/Run%20Tests/badge.svg)](https://github.com/sdv-dev/SDV/actions?query=workflow%3A%22Run+Tests%22+branch%3Amaster) -->\n\n**Abstract**: This repository presents a Conditional Generative Adversary Networks (GANs) on tabular data (and RDF data) combining with Differential Privacy techniques. Our pre-print publication: [Improving Correlation Capture in Generating Imbalanced Data using Differentially Private Conditional GANs](https://arxiv.org/abs/2206.13787).\n\n**Author**: Chang Sun, Institute of Data Science, Maastricht University\n**Start date**: Nov-2021\n**Status**: Under development\n\n**Note**: \"Standing on the shoulders of giants\". This repository is inspired by the excellent work of [CTGAN](https://github.com/sdv-dev/CTGAN) from [Synthetic Data Vault (SDV)](https://github.com/sdv-dev/SDV), [Tensorflow Privacy](https://github.com/tensorflow/privacy), and [RdfPdans](https://github.com/cadmiumkitty/rdfpandas). Highly appreciate they shared the ideas and implementations, made code publicly available, well-written documentation. More related work can be found in the References below.  \n\nThis package is extended from SDV (https://github.com/sdv-dev/SDV), CTGAN (https://github.com/sdv-dev/CTGAN), and Differential Privacy in GANs (https://github.com/civisanalytics/dpwgan). The author modified the conditional matrix and cost functions to emphasize on the relations between variables. The main changes are in ctgan/synthesizers/ctgan.py ../data_sampler.py ../data_transformer.py\n\n\n## 📥️ Installation\n\nYou will need Python >=3.8+ and <3.10 and Java JDK 8.\n\n```shell\npip install dp-cgans\n```\n\n## 🪄 Usage\n\n### ⌨️ Use as a command-line interface\n\nYou can easily generate synthetic data for a file using your terminal after installing `dp-cgans` with pip.\n\nTo quickly run our example, you can download the [example data](https://raw.githubusercontent.com/sunchang0124/dp_cgans/main/resources/example_tabular_data_UCIAdult.csv):\n\n```bash\nwget https://raw.githubusercontent.com/sunchang0124/dp_cgans/main/resources/example_tabular_data_UCIAdult.csv\n```\n\nThen run `dp-cgans`:\n\n```bash\ndp-cgans gen example_tabular_data_UCIAdult.csv --epochs 2 --output out.csv --gen-size 100\n```\n\nGet a full rundown of the available options for generating synthetic data with:\n\n```bash\ndp-cgans gen --help\n```\n\n#### Ontological Embeddings\nTo embed an ontology into an embedded model run the following:\n```bash\ndp-cgans embed --data resources/ontologies/doid.owl --model-path resources/models/doid.model\n```\n\nGet a full rundown of the available options for generating synthetic data with:\n```bash\ndp-cgans embed --help\n```\n\n\n### 🐍 Use with python \n\nThis library can also be used directly in python scripts\n\nIf your input is tabular data (e.g., csv):\n\n ```python\nfrom dp_cgans import DP_CGAN\nimport pandas as pd\n\ntabular_data=pd.read_csv(\"../resources/example_tabular_data_UCIAdult.csv\")\n\n# We adjusted the original CTGAN model from SDV. Instead of looking at the distribution of individual variable, we extended to two variables and keep their corrll\nmodel = DP_CGAN(\n    epochs=100, # number of training epochs\n    batch_size=1000, # the size of each batch\n    log_frequency=True,\n    verbose=True,\n    generator_dim=(128, 128, 128),\n    discriminator_dim=(128, 128, 128),\n    generator_lr=2e-4, \n    discriminator_lr=2e-4,\n    discriminator_steps=1, \n    private=False,\n)\n\nprint(\"Start training model\")\nmodel.fit(tabular_data)\nmodel.save(\"generator.pkl\")\n\n# Generate 100 synthetic rows\nsyn_data = model.sample(100)\nsyn_data.to_csv(\"syn_data_file.csv\")\n ```\n\n<!-- \n2. If your input data is in RDF format:\n\n  ```python\nfrom dp_cgans import DP_CGAN\nfrom dp_cgans import RDF_to_Tabular\n\n# Step 1. Load RDF to a plain table (dataframe)\nplain_tabular=RDF_to_Tabular(file_path=\"../resources/example_rdf_data.ttl\")\n\n# Step 2. Convert plain table to a structured table \n# After step 1, RDF data will be converted a plain tabular dataset (all the nodes/entities will be presented as rows. Step 2 will structure the table by recognizing and sorting the types of the entities, replacing the URI with actual value which is attached to that URI. Users can decide how many levels they want to unfold their RDF models to tabular datasets.)\ntabular_data,rel_pred_obj=plain_tabular.fit_convert(user_define_data_instance=\"http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C16960\", \n                                                    user_define_is_a=[\"rdf:type{URIRef}\"], \n                                                    user_define_has_value=[\"http://www.cancerdata.org/roo/P100042\"], \n                                                    set_level=\"full\", \n                                                    as_column='object', \n                                                    remove_columns_unique_values=True)\n\n# Step 3. Define your GANS model\nmodel = DP_CGAN(\n    epochs=100, # number of training epochs\n    batch_size=1000, # the size of each batch\n    log_frequency=True,\n    verbose=True,\n    generator_dim=(128, 128, 128),\n    discriminator_dim=(128, 128, 128),\n    generator_lr=2e-4, \n    discriminator_lr=2e-4,\n    discriminator_steps=1, \n    private=False,\n)\n\nprint(\"Start training model\")\nmodel.fit(tabular_data)\n\n# Sample the generated synthetic data\nmodel.sample(100)\n  ```\n-->\n\n\n## 🧑‍💻 Development setup\n\n<details>\n<summary>You will need to <a href=\"https://python-poetry.org/docs\">install Poetry</a></summary><br/>\n\nBe careful as poetry sometime uses a weird python version by default, you can check for the environment used by poetry for the current folder by running:\n\n```bash\npoetry env list\n```\n\nYou can easily tell `poetry` to use your current version of python for this folder by running the following command:\n\n```bash\npoetry env use $(which python)\n```\n</details>\n\n\n### Install\n\nClone the repository:\n\n```bash\ngit clone https://github.com/sunchang0124/dp_cgans\ncd dp_cgans\n```\n\nInstall the dependencies:\n\n```bash\npoetry install\n```\n\n### Run\n\nRun the library with the CLI:\n\n```bash\npoetry run dp-cgans gen --help\n```\n\nRun the tests locally:\n\n```bash\npoetry run pytest -s\n```\n\n### Add a new dependency\n\nYou can change the `pyproject.toml` file and run:\n\n```bash\npoetry update\n```\n\nOr you can do it directly with the CLI (e.g. for `pandas` here):\n\n```bash\npoetry add pandas\n```\n\n### Build and publish\n\nBuild:\n\n```bash\npoetry build\n```\n\nPublishing a new release is automatically done by a GitHub Action workflow when a release is created on GitHub:\n\n```bash\npoetry publish\n```\n\n## 📦️ New release process\n\nThe deployment of new releases is done automatically by a GitHub Action workflow when a new release is created on GitHub. To release a new version:\n\n1. Make sure the `PYPI_API_TOKEN` secret has been defined in the GitHub repository (in Settings > Secrets > Actions). You can get an API token from PyPI [here](https://pypi.org/manage/account/).\n2. Increment the `version` number in the `pyproject.toml` file in the root folder of the repository.\n3. Create a new release on GitHub, which will automatically trigger the publish workflow, and publish the new release to PyPI.\n\nYou can also manually trigger the workflow from the Actions tab in your GitHub repository webpage.\n\n## 📚️ References / Further reading \n\nThere are many excellent work on generating synthetic data using GANS and other methods. We list the studies that made great conbributions for the field and inspiring for our work.\n\n##### GANS\n\n   1. Synthetic Data Vault (SDV) [[Paper](https://dai.lids.mit.edu/wp-content/uploads/2018/03/SDV.pdf)] [[Github](https://github.com/sdv-dev/SDV)]\n   2. Modeling Tabular Data using Conditional GAN (a part of SDV) [[Paper](https://arxiv.org/abs/1907.00503)] [[Github](https://github.com/sdv-dev/CTGAN)]\n   3. Wasserstein GAN [[Paper](https://arxiv.org/pdf/1701.07875.pdf)]\n   4. Improved Training of Wasserstein GANs [[Paper](https://papers.nips.cc/paper/2017/file/892c3b1c6dccd52936e27cbd0ff683d6-Paper.pdf)]\n   5. Synthesising Tabular Data using Wasserstein Conditional GANs with Gradient Penalty (WCGAN-GP) [[Paper](http://ceur-ws.org/Vol-2771/AICS2020_paper_57.pdf)]\n   6. PacGAN: The power of two samples in generative adversarial networks [[Paper](https://proceedings.neurips.cc/paper/2018/file/288cc0ff022877bd3df94bc9360b9c5d-Paper.pdf)]\n   7. CTAB-GAN: Effective Table Data Synthesizing [[Paper](https://arxiv.org/pdf/2102.08369.pdf)]\n   8. Conditional Tabular GAN-Based Two-Stage Data Generation Scheme for Short-Term Load Forecasting [[Paper](https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=9253644)]\n   9. TabFairGAN: Fair Tabular Data Generation with Generative Adversarial Networks [[Paper](https://arxiv.org/pdf/2109.00666.pdf)]\n   10. Conditional Wasserstein GAN-based Oversampling of Tabular Data for Imbalanced Learning [[Paper](https://arxiv.org/pdf/2008.09202.pdf)]\n\n   ##### Differential Privacy\n\n   1. Tensorflow Privacy [[Github](https://github.com/tensorflow/privacy)]\n   2. Renyi Differential Privacy [[Paper](https://static.googleusercontent.com/media/research.google.com/en//pubs/archive/46029.pdf)]\n   3. DP-CGAN : Differentially Private Synthetic Data and Label Generation [[Paper](https://arxiv.org/pdf/2001.09700.pdf)]\n   4. Differentially Private Generative Adversarial Network [[Paper](https://arxiv.org/pdf/1802.06739.pdf)] [[Github](https://github.com/illidanlab/dpgan)] Another implementation [[Github](https://github.com/civisanalytics/dpwgan)]\n   5. Private Data Generation Toolbox [[Github](https://github.com/BorealisAI/private-data-generation)]\n   6. autodp: Automating differential privacy computation [[Github](https://github.com/yuxiangw/autodp)]\n   7. Differentially Private Synthetic Medical Data Generation using Convolutional GANs [[Paper](https://arxiv.org/pdf/2012.11774.pdf)]\n   8. DTGAN: Differential Private Training for Tabular GANs [[Paper](https://arxiv.org/pdf/2107.02521.pdf)]\n   9. DIFFERENTIALLY PRIVATE SYNTHETIC DATA: APPLIED EVALUATIONS AND ENHANCEMENTS [[Paper](https://arxiv.org/pdf/2011.05537.pdf)]\n   10. FFPDG: FAST, FAIR AND PRIVATE DATA GENERATION [[Paper](https://sdg-quality-privacy-bias.github.io/papers/SDG_paper_19.pdf)]\n\n##### Others\n\n   1. EvoGen: a Generator for Synthetic Versioned RDF [[Paper](http://ceur-ws.org/Vol-1558/paper9.pdf)]\n   2. Generation and evaluation of synthetic patient data [[Paper](https://bmcmedresmethodol.biomedcentral.com/track/pdf/10.1186/s12874-020-00977-1.pdf)]\n   3. Fake It Till You Make It: Guidelines for Effective Synthetic Data Generation [[Paper](https://www.mdpi.com/2076-3417/11/5/2158)]\n   4. Generating and evaluating cross-sectional synthetic electronic healthcare data: Preserving data utility and patient privacy [[Paper](https://onlinelibrary.wiley.com/doi/epdf/10.1111/coin.12427)]\n   5. Synthetic data for open and reproducible methodological research in social sciences and official statistics [[Paper](https://link.springer.com/article/10.1007/s11943-017-0214-8#Sec2)]\n   6. A Study of the Impact of Synthetic Data Generation Techniques on Data Utility using the 1991 UK Samples of Anonymised Records [[Paper](https://unece.org/fileadmin/DAM/stats/documents/ece/ces/ge.46/2017/4_utility_paper.pdf)]\n\n\n## Ontologies\n### Data Preparation\n#### Download Necessary Files\nThe Ontology dataset runs using the following datasets:\n- HOOM.owl\n- hp.obo\n- hpo.xml (products_en4.xml)\n- ordo.owl\n\nTo download them run the following command:\n```bash\ndp-cgans download --default --location-path {directory_path_to_store_datasets}\n```\n`directory_path_to_store_datasets` could be: `~/project/datasets\n\n#### Convert hpo.xml to csv\nWe want to process the xml to csv file.\nRun the following command:\n```bash\ndp-cgans xml_to_csv --source {path_to_hpo_xml} --target {file_path_for_csv_file}\n```\n`path_to_hpo_xml` could be: `~/projects/dataset/hpo.xml`\n`file_path_for_csv_file` could be: `~/projects/dataset/hpo.csv`\n\n#### Convert hpo.csv to txt\nThe next step is to process the csv to txt such that they can be more easily interpreted.\nRun the following command:\n```bash\ndp-cgans csv_to_txt --source {path_to_the_csv_file} --target {directory_path_to_save_txt_to}\n```\n`path_to_the_csv_file` could be: `~/projects/dataset/hpo.csv`\n`directory_path_to_save_txt_to` could be: `~/projects/dataset/triples`\n\n#### Merging HP, HOOM and ORDO\n**Note**: There's no implementation yet to merge the `hp.obo` into the `hoom.owl` (called `merged_hoom.owl`) and to then merge the `ordo.owl` into the `merged_hoom.owl` (called `merged_ordo_hoom.owl`).\nSo you can use Protege to merge perform the above merging steps and then save the new ontology dataset as a turtle file (ttl), an rdf/xml file (.rdf/.owl) and owl/xml file (.owx/.owl) \n**Note**: Later-on we'll only require 1 file-type to be exported manually, or preferably none at all and it all being done automatically.\n**Note**: You'll only need to save a copy of this in turtle (.ttl) format if you'd like to import it into a sparQL database such as Apache Jena Fuseki.\n\n\n#### Setup SPARQL Server\n**Note**: We'll use Apache Jena Fuseki as our SPARQL server. You are however, not limited to using other alternatives.\n**Note**: Fuseki may throw a `java heap space` exception when using an `in-memory` database. A persistent one is therefore recommended.\n\n1. Setup Apache Jena Fuseki as per their [documentation](https://jena.apache.org/documentation/fuseki2/).\n2. Create a new Database and upload the merged `.ttl` dataset to SPARQl. )\n3. To split the data up into training and test data, we can run the following command:\n```bash\ndp-cgans split --url {url_to_sparql_server} --target {directory_to_save_seen_and_unseen_data_to} \n```\n`{url_to_sparql_server}` could be: `http://localhost:3030/hoom/query` (assuming your databse is name `hoom`).\n`{directory_to_save_seen_and_unseen_data_to}` could be: `~/projects/dataset/split`.\n\n#### Generate Synthetic Phonetic Patient Data\nRun the following command:\n```bash\ndp-cgans genrd --file {path_to_hpo_csv} --seen {path_to_seen_pkl} --unseen {path_to_unseen_pkl} --directory {directory_to_save_patient_data}\n```\n`path_to_hpo_csv` could be `~/projects/dataset/hpo.csv`, `path_to_seen_pkl` could be `~/projects/dataset/seen.pkl`, `path_to_unseen` could be `~/projects/dataset/unseen.pkl`, `directory_to_save_patient_data` could be `~/projects/datasets/data`.\n\n#### Generate Phonetic Dictionary\nRun the following command\n```bash\ndp-cgans dict --file {path_to_hpo_csv} --directory {directory_to_save_dictionaries_to}\n```\n\n",
+ "hits": {
+  "ctgan_mod": [
+   {
+    "file": "src/dp_cgans/__init__.py",
+    "line": 9,
+    "text": "# This package is extended from ctgan and SDV",
+    "context": [
+     "# http://docs.pthon-guide.org/en/latest/writing/logging/",
+     "",
+     "\"\"\"Top-level package for SDV.\"\"\"",
+     "",
+     "# This package is extended from ctgan and SDV",
+     "# https://github.com/sdv-dev/SDV",
+     "# https://github.com/sdv-dev/CTGAN",
+     "# Modified the conditional matrix and cost functions",
+     "# The main changes are in ctgan/synthesizers/ctgan.py ../data_sampler.py ../data_transformer.py"
+    ]
+   }
+  ],
+  "rdt": [
+   {
+    "file": "src/dp_cgans/data_transformer.py",
+    "line": 5,
+    "text": "from rdt.transformers import OneHotEncodingTransformer",
+    "context": [
+     "from collections import namedtuple",
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from rdt.transformers import OneHotEncodingTransformer",
+     "from sklearn.mixture import BayesianGaussianMixture",
+     "",
+     "SpanInfo = namedtuple(\"SpanInfo\", [\"dim\", \"activation_fn\"])",
+     "ColumnTransformInfo = namedtuple("
+    ]
+   },
+   {
+    "file": "src/dp_cgans/constraints/base.py",
+    "line": 12,
+    "text": "from rdt import HyperTransformer",
+    "context": [
+     "",
+     "import pandas as pd",
+     "from copulas.multivariate.gaussian import GaussianMultivariate",
+     "from copulas.univariate import GaussianUnivariate",
+     "from rdt import HyperTransformer",
+     "",
+     "from sdv.constraints.errors import MissingConstraintColumnError",
+     "",
+     "LOGGER = logging.getLogger(__name__)"
+    ]
+   },
+   {
+    "file": "src/dp_cgans/metadata/dataset.py",
+    "line": 11,
+    "text": "from rdt import HyperTransformer, transformers",
+    "context": [
+     "from collections import defaultdict",
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from rdt import HyperTransformer, transformers",
+     "",
+     "from sdv.constraints import Constraint",
+     "from sdv.metadata import visualization",
+     "from sdv.metadata.errors import MetadataError"
+    ]
+   },
+   {
+    "file": "src/dp_cgans/metadata/table.py",
+    "line": 9,
+    "text": "import rdt",
+    "context": [
+     "import logging",
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "import rdt",
+     "from faker import Faker",
+     "",
+     "from sdv.constraints.base import Constraint",
+     "from sdv.constraints.errors import MissingConstraintColumnError"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "src/dp_cgans/onto_dp_cgan_init.py",
+    "line": 90,
+    "text": "\"\"\"Model wrapping ``CTGANSynthesizer`` model.",
+    "context": [
+     "        return self._model.xai_discriminator(data_samples)",
+     "",
+     "",
+     "class ONTO_DP_CGAN(ONTODPCGANModel):",
+     "    \"\"\"Model wrapping ``CTGANSynthesizer`` model.",
+     "",
+     "    Args:",
+     "        field_names (list[str]):",
+     "            List of names of the fields that need to be modeled"
+    ]
+   },
+   {
+    "file": "src/dp_cgans/dp_cgan_init.py",
+    "line": 93,
+    "text": "\"\"\"Model wrapping ``CTGANSynthesizer`` model.",
+    "context": [
+     "        return self._model.xai_discriminator(data_samples)",
+     "",
+     "",
+     "class DP_CGAN(DPCGANModel):",
+     "    \"\"\"Model wrapping ``CTGANSynthesizer`` model.",
+     "",
+     "    Args:",
+     "        field_names (list[str]):",
+     "            List of names of the fields that need to be modeled"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "src/dp_cgans/constraints/tabular.py",
+    "line": 31,
+    "text": "from sdv.constraints.base import Constraint, import_object",
+    "context": [
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "",
+     "from sdv.constraints.base import Constraint, import_object",
+     "from sdv.constraints.utils import is_datetime_type",
+     "",
+     "",
+     "class CustomConstraint(Constraint):"
+    ]
+   },
+   {
+    "file": "src/dp_cgans/constraints/tabular.py",
+    "line": 32,
+    "text": "from sdv.constraints.utils import is_datetime_type",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "",
+     "from sdv.constraints.base import Constraint, import_object",
+     "from sdv.constraints.utils import is_datetime_type",
+     "",
+     "",
+     "class CustomConstraint(Constraint):",
+     "    \"\"\"Custom Constraint Class."
+    ]
+   },
+   {
+    "file": "src/dp_cgans/constraints/__init__.py",
+    "line": 3,
+    "text": "from sdv.constraints.base import Constraint",
+    "context": [
+     "\"\"\"SDV Constraints module.\"\"\"",
+     "",
+     "from sdv.constraints.base import Constraint",
+     "from sdv.constraints.tabular import (",
+     "    Between, ColumnFormula, CustomConstraint, GreaterThan, Negative, OneHotEncoding, Positive,",
+     "    Rounding, Unique, UniqueCombinations)",
+     ""
+    ]
+   },
+   {
+    "file": "src/dp_cgans/constraints/__init__.py",
+    "line": 4,
+    "text": "from sdv.constraints.tabular import (",
+    "context": [
+     "\"\"\"SDV Constraints module.\"\"\"",
+     "",
+     "from sdv.constraints.base import Constraint",
+     "from sdv.constraints.tabular import (",
+     "    Between, ColumnFormula, CustomConstraint, GreaterThan, Negative, OneHotEncoding, Positive,",
+     "    Rounding, Unique, UniqueCombinations)",
+     "",
+     "__all__ = ["
+    ]
+   },
+   {
+    "file": "src/dp_cgans/constraints/base.py",
+    "line": 14,
+    "text": "from sdv.constraints.errors import MissingConstraintColumnError",
+    "context": [
+     "from copulas.multivariate.gaussian import GaussianMultivariate",
+     "from copulas.univariate import GaussianUnivariate",
+     "from rdt import HyperTransformer",
+     "",
+     "from sdv.constraints.errors import MissingConstraintColumnError",
+     "",
+     "LOGGER = logging.getLogger(__name__)",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "src/dp_cgans/experiments/statistics/evaluate.py",
+    "line": 15,
+    "text": "from sdv.evaluation import evaluate",
+    "context": [
+     "from dp_cgans.utils.files import get_or_create_directory, create_path",
+     "",
+     "warnings.filterwarnings('ignore')",
+     "",
+     "from sdv.evaluation import evaluate",
+     "",
+     "",
+     "# check this page for more evaluation: https://docs.sdv.dev/sdmetrics/metrics/metrics-glossary",
+     ""
+    ]
+   },
+   {
+    "file": "src/dp_cgans/metadata/__init__.py",
+    "line": 3,
+    "text": "from sdv.metadata import visualization",
+    "context": [
+     "\"\"\"Metadata module.\"\"\"",
+     "",
+     "from sdv.metadata import visualization",
+     "from sdv.metadata.dataset import Metadata",
+     "from sdv.metadata.errors import MetadataError, MetadataNotFittedError",
+     "from sdv.metadata.table import Table",
+     ""
+    ]
+   },
+   {
+    "file": "src/dp_cgans/metadata/__init__.py",
+    "line": 4,
+    "text": "from sdv.metadata.dataset import Metadata",
+    "context": [
+     "\"\"\"Metadata module.\"\"\"",
+     "",
+     "from sdv.metadata import visualization",
+     "from sdv.metadata.dataset import Metadata",
+     "from sdv.metadata.errors import MetadataError, MetadataNotFittedError",
+     "from sdv.metadata.table import Table",
+     "",
+     "__all__ = ("
+    ]
+   },
+   {
+    "file": "src/dp_cgans/metadata/__init__.py",
+    "line": 5,
+    "text": "from sdv.metadata.errors import MetadataError, MetadataNotFittedError",
+    "context": [
+     "\"\"\"Metadata module.\"\"\"",
+     "",
+     "from sdv.metadata import visualization",
+     "from sdv.metadata.dataset import Metadata",
+     "from sdv.metadata.errors import MetadataError, MetadataNotFittedError",
+     "from sdv.metadata.table import Table",
+     "",
+     "__all__ = (",
+     "    'Metadata',"
+    ]
+   },
+   {
+    "file": "src/dp_cgans/metadata/__init__.py",
+    "line": 6,
+    "text": "from sdv.metadata.table import Table",
+    "context": [
+     "",
+     "from sdv.metadata import visualization",
+     "from sdv.metadata.dataset import Metadata",
+     "from sdv.metadata.errors import MetadataError, MetadataNotFittedError",
+     "from sdv.metadata.table import Table",
+     "",
+     "__all__ = (",
+     "    'Metadata',",
+     "    'MetadataError',"
+    ]
+   },
+   {
+    "file": "src/dp_cgans/metadata/dataset.py",
+    "line": 13,
+    "text": "from sdv.constraints import Constraint",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "from rdt import HyperTransformer, transformers",
+     "",
+     "from sdv.constraints import Constraint",
+     "from sdv.metadata import visualization",
+     "from sdv.metadata.errors import MetadataError",
+     "",
+     "LOGGER = logging.getLogger(__name__)"
+    ]
+   },
+   {
+    "file": "src/dp_cgans/metadata/dataset.py",
+    "line": 14,
+    "text": "from sdv.metadata import visualization",
+    "context": [
+     "import pandas as pd",
+     "from rdt import HyperTransformer, transformers",
+     "",
+     "from sdv.constraints import Constraint",
+     "from sdv.metadata import visualization",
+     "from sdv.metadata.errors import MetadataError",
+     "",
+     "LOGGER = logging.getLogger(__name__)",
+     ""
+    ]
+   }
+  ],
+  "copulas": [
+   {
+    "file": "src/dp_cgans/constraints/base.py",
+    "line": 10,
+    "text": "from copulas.multivariate.gaussian import GaussianMultivariate",
+    "context": [
+     "import logging",
+     "import warnings",
+     "",
+     "import pandas as pd",
+     "from copulas.multivariate.gaussian import GaussianMultivariate",
+     "from copulas.univariate import GaussianUnivariate",
+     "from rdt import HyperTransformer",
+     "",
+     "from sdv.constraints.errors import MissingConstraintColumnError"
+    ]
+   },
+   {
+    "file": "src/dp_cgans/constraints/base.py",
+    "line": 11,
+    "text": "from copulas.univariate import GaussianUnivariate",
+    "context": [
+     "import warnings",
+     "",
+     "import pandas as pd",
+     "from copulas.multivariate.gaussian import GaussianMultivariate",
+     "from copulas.univariate import GaussianUnivariate",
+     "from rdt import HyperTransformer",
+     "",
+     "from sdv.constraints.errors import MissingConstraintColumnError",
+     ""
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "src/dp_cgans/experiments/statistics/evaluate.py",
+    "line": 15,
+    "text": "from sdv.evaluation import evaluate",
+    "context": [
+     "from dp_cgans.utils.files import get_or_create_directory, create_path",
+     "",
+     "warnings.filterwarnings('ignore')",
+     "",
+     "from sdv.evaluation import evaluate",
+     "",
+     "",
+     "# check this page for more evaluation: https://docs.sdv.dev/sdmetrics/metrics/metrics-glossary",
+     ""
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "src/dp_cgans/metadata/__init__.py",
+    "line": 3,
+    "text": "from sdv.metadata import visualization",
+    "context": [
+     "\"\"\"Metadata module.\"\"\"",
+     "",
+     "from sdv.metadata import visualization",
+     "from sdv.metadata.dataset import Metadata",
+     "from sdv.metadata.errors import MetadataError, MetadataNotFittedError",
+     "from sdv.metadata.table import Table",
+     ""
+    ]
+   },
+   {
+    "file": "src/dp_cgans/metadata/dataset.py",
+    "line": 14,
+    "text": "from sdv.metadata import visualization",
+    "context": [
+     "import pandas as pd",
+     "from rdt import HyperTransformer, transformers",
+     "",
+     "from sdv.constraints import Constraint",
+     "from sdv.metadata import visualization",
+     "from sdv.metadata.errors import MetadataError",
+     "",
+     "LOGGER = logging.getLogger(__name__)",
+     ""
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "copulas",
+  "ct",
+  "ctgan_mod",
+  "ev",
+  "md",
+  "rdt",
+  "sdv_any"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "pyproject.toml": [
+   "# description = \"This package is extended from SDV (https://github.com/sdv-dev/SDV), CTGAN (https://github.com/sdv-dev/CTGAN), and Differential Privacy in GANs (https://github.com/civisanalytics/dpwgan). The author modified the conditional matrix and cost functions to emphasize on the relations between variables. The main changes are in ctgan/synthesizers/ctgan.py ../data_sampler.py ../data_transformer.py\"",
+   "rdt= \"0.6.4\"",
+   "copulas = \"*\"",
+   "sdv = \"0.14.0\""
+  ],
+  "poetry.lock": [
+   "name = \"copulas\"",
+   "description = \"A python library for building different types of copulas and using them for sampling.\"",
+   "    {file = \"copulas-0.6.1-py2.py3-none-any.whl\", hash = \"sha256:9db6686acb5101d1d615f6530ff59b094a8e7f053c9e073c64800a0be240e667\"},",
+   "    {file = \"copulas-0.6.1.tar.gz\", hash = \"sha256:a2e00c46fe573e0f953871cf1f0dcf24a0a5a06f607df3aa1d373c24d826f449\"},",
+   "name = \"ctgan\"",
+   "    {file = \"ctgan-0.5.1-py2.py3-none-any.whl\", hash = \"sha256:b45e74085c563629745d923a9e6f18ea115c0c89d0b43b287e7ceb3716d328e3\"},",
+   "    {file = \"ctgan-0.5.1.tar.gz\", hash = \"sha256:21e1ebfe6aed6dc4f9edae64f6f59a9d3825401a0ae6dd9b8514a0fbc7752340\"},",
+   "rdt = \">=0.6.2,<0.7\"",
+   "name = \"rdt\"",
+   "    {file = \"rdt-0.6.4-py2.py3-none-any.whl\", hash = \"sha256:72d8a5567c5a50eded47ef4bd0ebdb13650852576ca5692bc4b04eb0539d8498\"},",
+   "    {file = \"rdt-0.6.4.tar.gz\", hash = \"sha256:a5c8b11943a5e3d474a4023c1dfcfeb83f58ace4864d74adb3a4c7a021c4ec3b\"},",
+   "copulas = [\"copulas (>=0.6.0,<0.7)\"]",
+   "dev = [\"autoflake (>=1.1,<2)\", \"autopep8 (>=1.4.3,<1.6)\", \"bumpversion (>=0.5.3,<0.6)\", \"copulas (>=0.6.0,<0.7)\", \"coverage (>=4.5.1,<6)\", \"dlint (>=0.11.0,<0.12)\", \"flake8 (>=3.7.7,<4)\", \"flake8-absolute-import (>=1.0,<2)\", \"flake8-builtins (>=1.5.3,<1.6)\", \"flake8-comprehensions (>=3.6.1,<3.7)\", \"flake8-debugger (>=4.0.0,<4.1)\", \"flake8-docstrings (>=1.5.0,<2)\", \"flake8-eradicate (>=1.1.0,<1.2)\", \"flake8-expression-complexity (>=0.0.9,<0.1)\", \"flake8-fixme (>=1.1.1,<1.2)\", \"flake8-mock (>=0.3,<0.4)\", \"flake8-multiline-containers (>=0.0.18,<0.1)\", \"flake8-mutable (>=1.2.0,<1.3)\", \"flake8-print (>=4.0.0,<4.1)\", \"flake8-pytest-style (>=1.5.0,<2)\", \"flake8-quotes (>=3.3.0,<4)\", \"flake8-sfs (>=0.0.3,<0.1)\", \"flake8-variables-names (>=0.0.4,<0.1)\", \"invoke\", \"isort (>=4.3.4,<5)\", \"jupyter (>=1.0.0,<2)\", \"pandas-vet (>=0.2.2,<0.3)\", \"pep8-naming (>=0.12.1,<0.13)\", \"pip (>=9.0.1)\", \"pycodestyle (>=2.7.0,<2.8.0)\", \"pydocstyle (>=6.1.1,<6.2)\", \"pyflakes (>=2.3.0,<2.4.0)\", \"pylint (>=2.5.3,<3)\", \"pytest (>=3.4.2)\", \"pytest-cov (>=2.6.0)\", \"pytest-subtests (>=0.5,<1.0)\", \"rundoc (>=0.4.3,<0.5)\", \"tabulate (>=0.8.9,<1)\", \"tox (>=2.9.1,<4)\", \"twine (>=1.10.0,<4)\", \"watchdog (>=0.8.3,<0.11)\", \"wheel (>=0.30.0)\"]",
+   "test = [\"copulas (>=0.6.0,<0.7)\", \"jupyter (>=1.0.0,<2)\", \"pytest (>=3.4.2)\", \"pytest-cov (>=2.6.0)\", \"pytest-subtests (>=0.5,<1.0)\", \"rundoc (>=0.4.3,<0.5)\"]",
+   "name = \"sdmetrics\"",
+   "    {file = \"sdmetrics-0.4.1-py2.py3-none-any.whl\", hash = \"sha256:479ab86f466e69e12edf6d707a892479a939eb9e42ffb2b7dc6afdfddb998ee9\"},",
+   "    {file = \"sdmetrics-0.4.1.tar.gz\", hash = \"sha256:28df1cdd6988b3464306c1d189da19ee13a49023c53ca8b3db399fc9fd45fae8\"},",
+   "copulas = \">=0.6.0,<0.7\"",
+   "rdt = \">=0.6.1,<0.7\"",
+   "name = \"sdv\""
+  ]
+ }
+}

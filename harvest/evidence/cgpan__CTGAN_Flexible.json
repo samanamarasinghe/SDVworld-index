@@ -1,0 +1,226 @@
+{
+ "repo": "cgpan/CTGAN_Flexible",
+ "disk_kb": 1630,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# A flexible CTGAN that can be customized by conditioning on user-specified variables(s)\n\n## 0.0 Introduction  \n### 0.1 Purpose  \nThis repo modified the [CTGAN official source code](https://github.com/sdv-dev/CTGAN) and made CTGAN conditional on any user-specified discrete columns for some research purposes.    \n\n**To Do:**   \n- How to ensure that the synthetic data have successfully been created by conditioning on user-specified discrete variables?\n- The loss function will force every column in the fake data to be as similar as the real data. Will this impact the research purpose (i.e., conditioning on specific column(s) )?\n- How to control whether the synthetic data should adhere to the same min/max boundaries set by the real data? \n\n### 0.2 How did I modify the original CTGAN  \n**TO BE UPDATED:** see section 1 in `01_tracing_source_code.ipynb` under the folder `Tests_PAN` for details.  \n\n### 0.3 Update memo  \n- 2024.11.01: Modified the source in data_sampler.py, data_transformer.py, and ctgan.py to make the overall codes can accept user-specified discrete column(s); ensure the modified module can run well.\n\n## 1.0 Usage  \n\nThe usage is similar to the original version of CTGAN; I added an extra parameter `user_specified_col=` in class objects like  `CTGAN` and `DataSampler.`   \n\nTo avoid future package conflicts, please uninstall the `ctgan` library from your environment if you already installed it.  \n```python\npip uninstall ctgan\n```\n\nDownload this repo to your project file path, then you can use it as the orginal `ctgan.` One example is:   \n```Python\n# import the modules\nfrom ctgan import CTGAN\nfrom ctgan import load_demo\nfrom ctgan.data_sampler import DataSampler\nfrom ctgan.data_transformer import DataTransformer\nimport seaborn as sns\nimport matplotlib.pyplot as plt\n\n# load the data\nreal_data = load_demo()\n\n# specifiy all discrete columns\ndiscrete_columns = [\n    'workclass',\n    'education',\n    'marital-status',\n    'occupation',\n    'relationship',\n    'race',\n    'sex',\n    'native-country',\n    'income'\n]\n\n# specificy the specific discrete column(s) you want to condition on\n# this must be a list containing the strings of column names\ncontrolled_col = [\"sex\", \"race\"]\n\n# instantiate a CTGAN object\nctgan = CTGAN(epochs=50, cuda=True, verbose=True)\n\n# fit ctgan model\nctgan.fit(real_data, discrete_columns, user_specified_col=controlled_col)\n\n# plot the training loss\nloss_df = ctgan.loss_values  # Retrieve the loss DataFrame\n\nplt.figure(figsize=(10, 6))\nplt.plot(loss_df['Epoch'], loss_df['Generator Loss'], label='Generator Loss', color='blue')\nplt.plot(loss_df['Epoch'], loss_df['Discriminator Loss'], label='Discriminator Loss', color='orange')\nplt.xlabel('Epoch')\nplt.ylabel('Loss')\nplt.title('CTGAN Training Loss Over Epochs')\nplt.legend()\nplt.grid(True)\nplt.show()\n\n# generate synthetic data\nsynthetic_data = ctgan.sample(32561)\n```\n\nBy default, the parameter `user_specified_col=None`. If you do not specify any columns, this function will run the same to the original `ctgan.`  \n\nYou can run `01_tracing_source_code.ipynb` under the folder `Tests_PAN` to see the performance.  \n\n\n\n## 2.0 SDV/CTGAN Official Resources\n\nCTGAN is a collection of Deep Learning based synthetic data generators for single table data, which are able to learn from real data and generate synthetic data with high fidelity.\n\n| Important Links                               |                                                                      |\n| --------------------------------------------- | -------------------------------------------------------------------- |\n| :computer: **[Website]**                      | Check out the SDV Website for more information about our overall synthetic data ecosystem.|\n| :orange_book: **[Blog]**                      | A deeper look at open source, synthetic data creation and evaluation.|\n| :book: **[Documentation]**                    | Quickstarts, User and Development Guides, and API Reference.         |\n| :octocat: **[Repository]**                    | The link to the Github Repository of this library.                   |\n| :keyboard: **[Development Status]**           | This software is in its Pre-Alpha stage.                             |\n| [![][Slack Logo] **Community**][Community]    | Join our Slack Workspace for announcements and discussions.          |\n\n[Website]: https://sdv.dev\n[Blog]: https://datacebo.com/blog\n[Documentation]: https://bit.ly/sdv-docs\n[Repository]: https://github.com/sdv-dev/CTGAN\n[License]: https://github.com/sdv-dev/CTGAN/blob/main/LICENSE\n[Development Status]: https://pypi.org/search/?c=Development+Status+%3A%3A+2+-+Pre-Alpha\n[Slack Logo]: https://github.com/sdv-dev/SDV/blob/stable/docs/images/slack.png\n[Community]: https://bit.ly/sdv-slack-invite\n\nCurrently, this library implements the **CTGAN** and **TVAE** models described in the [Modeling Tabular data using Conditional GAN](https://arxiv.org/abs/1907.00503) paper, presented at the 2019 NeurIPS conference.\n\n",
+ "hits": {
+  "ctgan_mod": [
+   {
+    "file": "README.md",
+    "line": 30,
+    "text": "from ctgan import CTGAN",
+    "context": [
+     "",
+     "Download this repo to your project file path, then you can use it as the orginal `ctgan.` One example is:   ",
+     "```Python",
+     "# import the modules",
+     "from ctgan import CTGAN",
+     "from ctgan import load_demo",
+     "from ctgan.data_sampler import DataSampler",
+     "from ctgan.data_transformer import DataTransformer",
+     "import seaborn as sns"
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 31,
+    "text": "from ctgan import load_demo",
+    "context": [
+     "Download this repo to your project file path, then you can use it as the orginal `ctgan.` One example is:   ",
+     "```Python",
+     "# import the modules",
+     "from ctgan import CTGAN",
+     "from ctgan import load_demo",
+     "from ctgan.data_sampler import DataSampler",
+     "from ctgan.data_transformer import DataTransformer",
+     "import seaborn as sns",
+     "import matplotlib.pyplot as plt"
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 32,
+    "text": "from ctgan.data_sampler import DataSampler",
+    "context": [
+     "```Python",
+     "# import the modules",
+     "from ctgan import CTGAN",
+     "from ctgan import load_demo",
+     "from ctgan.data_sampler import DataSampler",
+     "from ctgan.data_transformer import DataTransformer",
+     "import seaborn as sns",
+     "import matplotlib.pyplot as plt",
+     ""
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 33,
+    "text": "from ctgan.data_transformer import DataTransformer",
+    "context": [
+     "# import the modules",
+     "from ctgan import CTGAN",
+     "from ctgan import load_demo",
+     "from ctgan.data_sampler import DataSampler",
+     "from ctgan.data_transformer import DataTransformer",
+     "import seaborn as sns",
+     "import matplotlib.pyplot as plt",
+     "",
+     "# load the data"
+    ]
+   },
+   {
+    "file": "Tests_PAN/01_tracing_source_code.ipynb",
+    "line": 169,
+    "text": "\"from ctgan import CTGAN\\n\",",
+    "context": [
+     "    \"import os\\n\",",
+     "    \"print(os.getcwd()) # get current working directory\\n\",",
+     "    \"# change the current working directory\\n\",",
+     "    \"os.chdir('c:\\\\\\\\Users\\\\\\\\grepa\\\\\\\\iCloudDrive\\\\\\\\Desktop\\\\\\\\PhD_Learning\\\\\\\\Independent Studies\\\\\\\\Process_Data_Project\\\\\\\\CTGAN-main')\\n\",",
+     "    \"from ctgan import CTGAN\\n\",",
+     "    \"from ctgan import load_demo\\n\",",
+     "    \"from ctgan.data_sampler import DataSampler\\n\",",
+     "    \"from ctgan.data_transformer import DataTransformer\\n\",",
+     "    \"import seaborn as sns\\n\","
+    ]
+   },
+   {
+    "file": "Tests_PAN/01_tracing_source_code.ipynb",
+    "line": 170,
+    "text": "\"from ctgan import load_demo\\n\",",
+    "context": [
+     "    \"print(os.getcwd()) # get current working directory\\n\",",
+     "    \"# change the current working directory\\n\",",
+     "    \"os.chdir('c:\\\\\\\\Users\\\\\\\\grepa\\\\\\\\iCloudDrive\\\\\\\\Desktop\\\\\\\\PhD_Learning\\\\\\\\Independent Studies\\\\\\\\Process_Data_Project\\\\\\\\CTGAN-main')\\n\",",
+     "    \"from ctgan import CTGAN\\n\",",
+     "    \"from ctgan import load_demo\\n\",",
+     "    \"from ctgan.data_sampler import DataSampler\\n\",",
+     "    \"from ctgan.data_transformer import DataTransformer\\n\",",
+     "    \"import seaborn as sns\\n\",",
+     "    \"import matplotlib.pyplot as plt\""
+    ]
+   },
+   {
+    "file": "Tests_PAN/01_tracing_source_code.ipynb",
+    "line": 171,
+    "text": "\"from ctgan.data_sampler import DataSampler\\n\",",
+    "context": [
+     "    \"# change the current working directory\\n\",",
+     "    \"os.chdir('c:\\\\\\\\Users\\\\\\\\grepa\\\\\\\\iCloudDrive\\\\\\\\Desktop\\\\\\\\PhD_Learning\\\\\\\\Independent Studies\\\\\\\\Process_Data_Project\\\\\\\\CTGAN-main')\\n\",",
+     "    \"from ctgan import CTGAN\\n\",",
+     "    \"from ctgan import load_demo\\n\",",
+     "    \"from ctgan.data_sampler import DataSampler\\n\",",
+     "    \"from ctgan.data_transformer import DataTransformer\\n\",",
+     "    \"import seaborn as sns\\n\",",
+     "    \"import matplotlib.pyplot as plt\"",
+     "   ]"
+    ]
+   },
+   {
+    "file": "Tests_PAN/01_tracing_source_code.ipynb",
+    "line": 172,
+    "text": "\"from ctgan.data_transformer import DataTransformer\\n\",",
+    "context": [
+     "    \"os.chdir('c:\\\\\\\\Users\\\\\\\\grepa\\\\\\\\iCloudDrive\\\\\\\\Desktop\\\\\\\\PhD_Learning\\\\\\\\Independent Studies\\\\\\\\Process_Data_Project\\\\\\\\CTGAN-main')\\n\",",
+     "    \"from ctgan import CTGAN\\n\",",
+     "    \"from ctgan import load_demo\\n\",",
+     "    \"from ctgan.data_sampler import DataSampler\\n\",",
+     "    \"from ctgan.data_transformer import DataTransformer\\n\",",
+     "    \"import seaborn as sns\\n\",",
+     "    \"import matplotlib.pyplot as plt\"",
+     "   ]",
+     "  },"
+    ]
+   },
+   {
+    "file": "ctgan/__init__.py",
+    "line": 9,
+    "text": "from ctgan.demo import load_demo",
+    "context": [
+     "__author__ = 'DataCebo, Inc.'",
+     "__email__ = 'info@sdv.dev'",
+     "__version__ = '0.10.3.dev0'",
+     "",
+     "from ctgan.demo import load_demo",
+     "from ctgan.synthesizers.ctgan import CTGAN",
+     "from ctgan.synthesizers.tvae import TVAE",
+     "",
+     "__all__ = ('CTGAN', 'TVAE', 'load_demo')"
+    ]
+   },
+   {
+    "file": "ctgan/__init__.py",
+    "line": 10,
+    "text": "from ctgan.synthesizers.ctgan import CTGAN",
+    "context": [
+     "__email__ = 'info@sdv.dev'",
+     "__version__ = '0.10.3.dev0'",
+     "",
+     "from ctgan.demo import load_demo",
+     "from ctgan.synthesizers.ctgan import CTGAN",
+     "from ctgan.synthesizers.tvae import TVAE",
+     "",
+     "__all__ = ('CTGAN', 'TVAE', 'load_demo')"
+    ]
+   },
+   {
+    "file": "ctgan/__init__.py",
+    "line": 11,
+    "text": "from ctgan.synthesizers.tvae import TVAE",
+    "context": [
+     "__version__ = '0.10.3.dev0'",
+     "",
+     "from ctgan.demo import load_demo",
+     "from ctgan.synthesizers.ctgan import CTGAN",
+     "from ctgan.synthesizers.tvae import TVAE",
+     "",
+     "__all__ = ('CTGAN', 'TVAE', 'load_demo')"
+    ]
+   },
+   {
+    "file": "ctgan/__main__.py",
+    "line": 5,
+    "text": "from ctgan.data import read_csv, read_tsv, write_tsv",
+    "context": [
+     "\"\"\"CLI.\"\"\"",
+     "",
+     "import argparse",
+     "",
+     "from ctgan.data import read_csv, read_tsv, write_tsv",
+     "from ctgan.synthesizers.ctgan import CTGAN",
+     "",
+     "",
+     "def _parse_args():"
+    ]
+   }
+  ],
+  "rdt": [
+   {
+    "file": "ctgan/data_transformer.py",
+    "line": 8,
+    "text": "from rdt.transformers import ClusterBasedNormalizer, OneHotEncoder",
+    "context": [
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from joblib import Parallel, delayed",
+     "from rdt.transformers import ClusterBasedNormalizer, OneHotEncoder",
+     "",
+     "SpanInfo = namedtuple('SpanInfo', ['dim', 'activation_fn'])",
+     "ColumnTransformInfo = namedtuple(",
+     "    'ColumnTransformInfo',"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ctgan_mod",
+  "rdt"
+ ],
+ "vendored_dirs": [
+  "ctgan"
+ ],
+ "dependencies": {}
+}

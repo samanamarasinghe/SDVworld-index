@@ -1,0 +1,172 @@
+{
+ "repo": "hcdebarros/ESG-ML",
+ "disk_kb": 1096,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# ESG Score - Maturidade Socioambiental de Fornecedores\n\n> Solucao completa de Machine Learning para classificar fornecedores em\n> **Baixa / Media / Alta** maturidade ESG, a partir de respostas de\n> questionario socioambiental.\n\n## Equipe\n\n| Nome | GitHub |\n|------|--------|\n| Helder Barros | @hcdebarros |\n| Felipe Salustiano  | @___ |\n| José Kevin  | @___ |\n| Lucas Mendes  | @___ |\n| Lucas Gomes  | @___ |\n\n> Substituir os placeholders pelos nomes e usuarios reais do GitHub antes da entrega.\n\n## Disciplina e instituicao\n\n- **Disciplina:** Machine Learning I\n- **Projeto:** Projeto 3 (integracao com a disciplina)\n- **Instituicao:** CESAR School\n- **Periodo:** 2026.1\n- **Unidade:** 2a (AV2)\n\n## Solucao\n\nA solucao constroi um classificador supervisionado que prediz a **maturidade\nESG** de um fornecedor (Baixa / Media / Alta) a partir de praticas\noperacionais declaradas no questionario (porte, faturamento, certificacoes,\ntreinamentos, gestao de agua/energia/residuos, diversidade, clausulas em\ncontratos, etc.). O target e construido a partir de **9 questoes criticas**\n(compliance, trabalho digno, politica ESG formal, compras sustentaveis, etc.)\nque sao removidas das features de treino para evitar leakage; o modelo\naprende, portanto, a inferir maturidade atraves dos sinais correlatos.\n\nComo o dataset original tem apenas **10 registros**, a etapa 2 do pipeline\ngera **45 amostras sinteticas** combinando:\n- `SDV GaussianCopulaSynthesizer` (30 amostras) - aprende a distribuicao\n  conjunta dos originais e gera dados realistas;\n- **Perturbacao controlada** (15 amostras) - cria fornecedores de baixa\n  maturidade invertendo aleatoriamente 4-7 das questoes criticas, garantindo\n  representacao da classe minoritaria.\n\n> **Google Sites do projeto:** _(link a ser adicionado pela equipe)_\n\n## Arquitetura\n\n```\n.\n+- data/\n|   +- raw/                   # XLSX original (nao versionado)\n|   +- processed/             # CSV tratados (10 base, 45 sint, 55 final)\n+- notebooks/\n|   +- 01_eda.ipynb           # EDA com 6 visualizacoes interpretadas\n+- src/\n|   +- config.py              # paths, mapeamentos, parametros\n|   +- preprocess.py          # tratamento + target\n|   +- synthesize.py          # SDV + perturbacao\n|   +- train.py               # 4 modelos + holdout/CV/LOO + MLflow\n+- app/\n|   +- dashboard.py           # Streamlit (5 abas)\n+- mlruns/                    # tracking MLflow\n+- models/                    # melhor modelo + metadata\n+- reports/                   # leaderboard + figuras\n+- Dockerfile\n+- docker-compose.yml\n+- requirements.txt\n+- Makefile\n+- README.md\n```\n\n## Como executar\n\n### Opcao A: Docker (recomendado para reprodutibilidade)\n\n```bash\ndocker compose up --build\n```\n\nApos a inicializacao:\n- Dashboard Streamlit: <http://localhost:8501>\n- MLflow UI: <http://localhost:5000>\n\n### Opcao B: Local (Python 3.10+)\n\n```bash\n# 1. Instalar dependencias\npip install -r requirements.txt\n\n# 2. Rodar pipeline completo (preprocess -> synth -> train)\nmake all\n# ou separado:\npython -m src.preprocess\npython -m src.synthesize\npython -m src.train\n\n# 3. Subir dashboard\nstreamlit run app/dashboard.py\n# em outro terminal:\nmlflow ui --backend-store-uri ./mlruns --port 5000\n```\n\n### EDA\n\nPara reabrir/editar o notebook:\n\n```bash\njupyter lab notebooks/01_eda.ipynb\n```\n\n## Modelos avaliados\n\n| Modelo | Hiperparametros principais |\n|--------|---------------------------|\n| KNN | n_neighbors=5, weights=distance |\n| Decision Tree | max_depth=5, min_samples_split=4 |\n| Random Forest | n_estimators=200, max_depth=8 |\n| Logistic Regression (extra) | C=1.0, max_iter=2000 |\n\nCada modelo e avaliado com **3 estrategias de validacao**:\n1. **Holdout** estratificado (70/30) - metricas finais reportaveis\n2. **StratifiedKFold** (5-fold) - selecao de modelo por f1_macro medio\n3. **Leave-One-Out** - sanity check (n=55 ainda viavel)\n\nMetricas registradas no MLflow: accuracy, f1_macro, precision_macro,\nrecall_macro, alem da matriz de confusao como artefato. O leaderboard\nfinal e gravado em `reports/leaderboard.csv` e o melhor modelo (treinado\nem todo o dataset) em `models/best_model.joblib`.\n\n## Cobertura dos requisitos\n\n| Requisito | Onde |\n|-----------|------|\n| EDA + estatisticas + tratamento | `notebooks/01_eda.ipynb`, `src/preprocess.py` |\n| >= 5 visualizacoes interpretadas | `notebooks/01_eda.ipynb` (6 figuras) |\n| Holdout + CV + LOO + justificativa | `src/train.py` + relatorio SBC |\n| KNN + DT + RF + 1 extra | `src/train.py` |\n| MLflow com params/metrics/artefatos/modelo | `src/train.py` + `mlruns/` |\n| Dashboard interativo com previsoes/metricas | `app/dashboard.py` |\n| Containerizacao Docker + instrucoes | `Dockerfile`, `docker-compose.yml` |\n| Relatorio no template SBC | `reports/relatorio_sbc.docx` |\n\n## Notas sobre os dados\n\nOs 10 registros originais do dataset sao **dados ficticios** criados para\nmodelagem (campo `Confirma que todas as informacoes...` indica isso). Nenhum\nPII real e processado; ainda assim, colunas como CNPJ, email e nome do\nrespondente sao removidas no preprocessamento por padrao de governanca.\n",
+ "hits": {
+  "gc": [
+   {
+    "file": "README.md",
+    "line": 40,
+    "text": "- `SDV GaussianCopulaSynthesizer` (30 amostras) - aprende a distribuicao",
+    "context": [
+     "aprende, portanto, a inferir maturidade atraves dos sinais correlatos.",
+     "",
+     "Como o dataset original tem apenas **10 registros**, a etapa 2 do pipeline",
+     "gera **45 amostras sinteticas** combinando:",
+     "- `SDV GaussianCopulaSynthesizer` (30 amostras) - aprende a distribuicao",
+     "  conjunta dos originais e gera dados realistas;",
+     "- **Perturbacao controlada** (15 amostras) - cria fornecedores de baixa",
+     "  maturidade invertendo aleatoriamente 4-7 das questoes criticas, garantindo",
+     "  representacao da classe minoritaria."
+    ]
+   },
+   {
+    "file": "src/synthesize.py",
+    "line": 4,
+    "text": "1. SDV `GaussianCopulaSynthesizer` aprende a distribuicao conjunta dos 10",
+    "context": [
+     "\"\"\"Geracao de dados sinteticos com algoritmo de ML.",
+     "",
+     "Estrategia (dataset com 10 registros, classes desbalanceadas):",
+     "    1. SDV `GaussianCopulaSynthesizer` aprende a distribuicao conjunta dos 10",
+     "       registros base e gera 30 amostras sinteticas \"naturais\".",
+     "    2. Como os originais sao majoritariamente fornecedores de alta/media",
+     "       maturidade ESG, geramos 15 amostras adicionais via PERTURBACAO",
+     "       CONTROLADA: copiamos registros base e invertimos K (4-7) das 9 questoes"
+    ]
+   },
+   {
+    "file": "src/synthesize.py",
+    "line": 36,
+    "text": "\"\"\"Treina GaussianCopulaSynthesizer e gera `n_samples` amostras.\"\"\"",
+    "context": [
+     "# ---------------------------------------------------------------------------",
+     "# 1. SDV GaussianCopula",
+     "# ---------------------------------------------------------------------------",
+     "def synthesize_with_sdv(base_df: pd.DataFrame, n_samples: int) -> pd.DataFrame:",
+     "    \"\"\"Treina GaussianCopulaSynthesizer e gera `n_samples` amostras.\"\"\"",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "    # Trabalhamos em features apenas — score/target sao recalculados depois."
+    ]
+   },
+   {
+    "file": "src/synthesize.py",
+    "line": 38,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "# ---------------------------------------------------------------------------",
+     "def synthesize_with_sdv(base_df: pd.DataFrame, n_samples: int) -> pd.DataFrame:",
+     "    \"\"\"Treina GaussianCopulaSynthesizer e gera `n_samples` amostras.\"\"\"",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "    # Trabalhamos em features apenas — score/target sao recalculados depois.",
+     "    train_df = base_df.drop(columns=[\"esg_score\", config.TARGET_COLUMN], errors=\"ignore\")",
+     ""
+    ]
+   },
+   {
+    "file": "src/synthesize.py",
+    "line": 55,
+    "text": "synth = GaussianCopulaSynthesizer(metadata, default_distribution=\"beta\")",
+    "context": [
+     "        except Exception:",
+     "            # Se o SDV ja tiver detectado, ignora",
+     "            pass",
+     "",
+     "    synth = GaussianCopulaSynthesizer(metadata, default_distribution=\"beta\")",
+     "    synth.fit(train_df)",
+     "    samples = synth.sample(num_rows=n_samples)",
+     "    samples = samples.reset_index(drop=True)",
+     "    return samples"
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "src/synthesize.py",
+    "line": 38,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "# ---------------------------------------------------------------------------",
+     "def synthesize_with_sdv(base_df: pd.DataFrame, n_samples: int) -> pd.DataFrame:",
+     "    \"\"\"Treina GaussianCopulaSynthesizer e gera `n_samples` amostras.\"\"\"",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "    # Trabalhamos em features apenas — score/target sao recalculados depois.",
+     "    train_df = base_df.drop(columns=[\"esg_score\", config.TARGET_COLUMN], errors=\"ignore\")",
+     ""
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "src/synthesize.py",
+    "line": 37,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "# 1. SDV GaussianCopula",
+     "# ---------------------------------------------------------------------------",
+     "def synthesize_with_sdv(base_df: pd.DataFrame, n_samples: int) -> pd.DataFrame:",
+     "    \"\"\"Treina GaussianCopulaSynthesizer e gera `n_samples` amostras.\"\"\"",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "    # Trabalhamos em features apenas — score/target sao recalculados depois.",
+     "    train_df = base_df.drop(columns=[\"esg_score\", config.TARGET_COLUMN], errors=\"ignore\")"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "src/synthesize.py",
+    "line": 37,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "# 1. SDV GaussianCopula",
+     "# ---------------------------------------------------------------------------",
+     "def synthesize_with_sdv(base_df: pd.DataFrame, n_samples: int) -> pd.DataFrame:",
+     "    \"\"\"Treina GaussianCopulaSynthesizer e gera `n_samples` amostras.\"\"\"",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "    # Trabalhamos em features apenas — score/target sao recalculados depois.",
+     "    train_df = base_df.drop(columns=[\"esg_score\", config.TARGET_COLUMN], errors=\"ignore\")"
+    ]
+   },
+   {
+    "file": "src/synthesize.py",
+    "line": 38,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "# ---------------------------------------------------------------------------",
+     "def synthesize_with_sdv(base_df: pd.DataFrame, n_samples: int) -> pd.DataFrame:",
+     "    \"\"\"Treina GaussianCopulaSynthesizer e gera `n_samples` amostras.\"\"\"",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "    # Trabalhamos em features apenas — score/target sao recalculados depois.",
+     "    train_df = base_df.drop(columns=[\"esg_score\", config.TARGET_COLUMN], errors=\"ignore\")",
+     ""
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv==1.13.1"
+  ]
+ }
+}

@@ -1,0 +1,1238 @@
+{
+ "repo": "maxsonferovante/SyntheticDataPoc",
+ "disk_kb": 83,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# POC de Geração de Dados Sintéticos com SDV (Synthetic Data Vault)\n\nEste repositório contém uma Prova de Conceito (POC) para a geração de dados sintéticos baseada no conjunto de dados de **Transferências do Eleitorado Brasileiro (TSE)** de 2025 e 2026. A ideia principal é aprender a distribuição estatística e correlações da base real para projetar os dados para anos futuros (como **2027 e 2028**), além de explorar cenários de dados temporais/sequenciais e relacionamentos multi-tabelas.\n\n---\n\n## Estrutura do Projeto\n\n*   **`GaussianCopulaSynthesizer.py`**: Pipeline de dados usando o modelo matemático estatístico clássico de Cópula Gaussiana.\n*   **`CTGANSynthesizer.py`**: Pipeline de dados usando Redes Generativas Adversariais (GAN) baseadas em Deep Learning.\n*   **`TVAESynthesizer.py`**: Pipeline de dados usando Variational Autoencoders (VAE) baseados em Deep Learning.\n*   **`CopulaGANSynthesizer.py`**: Pipeline híbrido combinando a normalização estatística de Cópulas com o treino de redes GAN.\n*   **`sequential_synthesis.py`**: Teste de séries temporais e sequências de transações por cliente usando o modelo autoregressivo PAR.\n*   **`relational_synthesis.py`**: Teste relacional multi-tabelas com chaves primárias/estrangeiras (Clientes -> Contas -> Transações) usando HMA.\n*   **`data_analyzer.py`**: Módulo que contém o otimizador dinâmico de dados (`DataOptimizer`) para análise automática de redundâncias, dependências funcionais, correlações numéricas e identificação de IDs.\n*   **`utils.py`**: Funções compartilhadas para carregamento de dados reais, projeção de datas/anos e estruturação de arquivos.\n\n---\n\n## Comparativo dos Algoritmos de Modelagem\n\nAbaixo, detalhamos o funcionamento, vantagens, desvantagens e melhores contextos de aplicação de cada modelo testado na POC:\n\n### 1. Gaussian Copula Synthesizer (`GaussianCopulaSynthesizer`)\n*   **Como funciona:** Usa Cópulas Gaussianas clássicas. O algoritmo calcula a distribuição cumulativa de probabilidade de cada coluna de forma isolada (distribuição marginal) e usa a matriz de correlação de Spearman/Pearson para modelar as relações conjuntas multidimensionais.\n*   **Vantagens (Prós):**\n    *   **Extremamente rápido:** Roda em frações de segundo mesmo com bases grandes.\n    *   **Consistente e previsível:** Por se basear em fórmulas estatísticas determinísticas fechadas, não sofre com problemas de convergência ou \"Mode Collapse\" (repetição de categorias dominantes).\n    *   **Ótimo com poucos dados:** Não precisa de milhares de linhas para gerar distribuições razoáveis.\n*   **Limitações (Contras):**\n    *   **Apenas correlações lineares/monotônicas:** Não consegue aprender relações não-lineares muito complexas ou padrões de imagem/sequências intrínsecas nos dados.\n*   **Melhores Contextos:** Bases de dados tabulares financeiras estruturadas, relatórios de auditoria, e simulações rápidas onde a velocidade e estabilidade matemática são prioridades.\n\n### 2. CTGAN Synthesizer (`CTGANSynthesizer`)\n*   **Como funciona:** Baseado em Deep Learning. Implementa Redes Generativas Adversariais (GANs) condicionais otimizadas para dados tabulares. Um gerador cria registros artificiais a partir de ruído aleatório e um discriminador tenta diferenciar o registro real do sintético. Ambos treinam de forma competitiva.\n*   **Vantagens (Prós):**\n    *   **Captura relações não-lineares:** Excelente para aprender padrões comportamentais complexos que funções estatísticas simples não capturam.\n    *   **Preserva alta complexidade:** Ótimo para dados com distribuições multimodais complexas.\n*   **Limitações (Contras):**\n    *   **Processamento pesado:** Converte dados categóricos usando *One-Hot Encoding*. Se houver colunas com alta cardinalidade (como código de município), gera milhares de colunas internas, exigindo muita memória e GPU.\n    *   **Tempo de treinamento:** Lento para treinar (requer comumente 300+ épocas).\n    *   **Sensível a hiperparâmetros:** Pode oscilar muito nas perdas (loss) e gerar dados ruins se mal parametrizado.\n*   **Melhores Contextos:** Modelagem de dados de comportamento de usuários, fraudes de cartão de crédito e datasets de marketing onde existem interações ocultas complexas entre variáveis categóricas e contínuas.\n\n### 3. TVAE Synthesizer (`TVAESynthesizer`)\n*   **Como funciona:** Baseado em Deep Learning. Utiliza redes autoencoder variacionais tabulares (TVAE). O codificador (*encoder*) comprime as linhas de dados em um espaço latente contínuo de baixa dimensão e o decodificador (*decoder*) aprende a reconstruir as linhas originais a partir desse espaço comprimido.\n*   **Vantagens (Prós):**\n    *   **Mais rápido e estável que GANs:** O treinamento do TVAE converge de forma muito mais rápida e suave do que a disputa competitiva da GAN.\n    *   **Qualidade estatística alta:** Com épocas adequadas, frequentemente supera a GAN em métricas de similaridade de distribuição.\n*   **Limitações (Contras):**\n    *   **Mode Collapse sob treino curto:** Se treinado com poucas épocas, tende a convergir as previsões categóricas para os valores mais frequentes (ex: gerar somente a cidade \"SÃO PAULO\" por ser a maior classe da base).\n*   **Melhores Contextos:** Cenários onde você precisa de um modelo de Deep Learning tabular de alta fidelidade, mas deseja um treinamento mais rápido e previsível do que uma GAN.\n\n### 4. Copula GAN Synthesizer (`CopulaGANSynthesizer`)\n*   **Como funciona:** Modelo híbrido experimental. Primeiro, o algoritmo aprende a distribuição estatística de cada coluna individualmente e a normaliza em uma curva padrão normal (µ=0, σ=1). Depois, treina a rede neuronal CTGAN em cima dessas distribuições normalizadas.\n*   **Vantagens (Prós):**\n    *   **Melhor dos dois mundos:** A normalização estatística inicial simplifica radicalmente o aprendizado da rede neural, permitindo notas de qualidade muito superiores do que a CTGAN comum em treinos rápidos.\n    *   **Preserva formas individuais e tendências:** Excelente relação de proporcionalidade das categorias.\n*   **Limitações (Contras):**\n    *   **Lento e pesado:** O pipeline adiciona o custo de processamento das cópulas ao custo de treino da rede GAN.\n*   **Melhores Contextos:** Datasets de altíssima complexidade onde você busca a máxima fidelidade de distribuição individual aliada à capacidade de capturar padrões não-lineares.\n\n### 5. PAR Synthesizer (`PARSynthesizer`) - Cenário Sequencial\n*   **Como funciona:** Modelo de Deep Learning autoregressivo probabilístico (PAR) baseado em redes recorrentes (RNN). Ele aprende a dependência do tempo e a ordem dos registros. Para cada entidade identificada por uma chave de sequência, ele aprende que o registro atual depende do histórico de compras ou ações anteriores.\n*   **Vantagens (Prós):**\n    *   **Gera novos históricos consistentes:** Mantém a ordem lógica temporal e lógica das transações de cada cliente (como saldo decaindo conforme compras ocorrem).\n    *   **Suporta tipos de dados mistos:** Trata categorias e numéricos sequenciais.\n*   **Limitações (Contras):**\n    *   **Exige chave de agrupamento:** Só funciona se houver uma chave (`sequence_key`) separando as sequências individuais de cada entidade.\n*   **Melhores Contextos:** Históricos de transações bancárias de clientes, sequências de clique em sites (clickstream) e leituras de sensores IoT.\n\n### 6. HMA Synthesizer (`HMASynthesizer`) - Cenário Relacional\n*   **Como funciona:** Algoritmo de Modelagem Hierárquica para bancos de dados relacionais de múltiplas tabelas. Ele agrega colunas de tabelas filhas (ex: transações) gerando dados resumidos (como média de gastos) e injeta-os temporariamente nas tabelas pais (ex: contas) para aprender o relacionamento estrutural.\n*   **Vantagens (Prós):**\n    *   **Preserva integridade referencial:** Garante que chaves primárias e estrangeiras se encaixem perfeitamente.\n    *   **Aprende regras entre tabelas:** Contas com saldos iniciais maiores receberão transações estatisticamente maiores nas tabelas filhas.\n*   **Limitações (Contras):**\n    *   **Complexidade de relacionamento:** Pode falhar ou exigir muita memória em esquemas muito complexos de rede (muitas tabelas interligadas).\n*   **Melhores Contextos:** Bancos de dados relacionais empresariais (ERP, CRM, sistemas bancários com Clientes, Contas, Cartões e Transações).\n\n---\n\n## Limpeza de Redundâncias e Otimização (`data_analyzer.py`)\n\nEm dados do mundo real (como os do TSE), existem colunas que são amarradas entre si de forma lógica ou geográfica. Enviar todas essas colunas diretamente para o modelo ML causa **explosão de dimensionalidade** (excesso de parâmetros), **inconsistências lógicas** na geração probabilística (gerar cidades no estado errado) e **lentidão extrema**.\n\nPara resolver isso, desenvolvemos a classe **`DataOptimizer`** que analisa a base de forma 100% dinâmica aplicando 4 técnicas:\n\n### As 4 Técnicas de Otimização Automática\n\n#### 1. Mapeamento 1-para-1 Rígido (Cód. $\\leftrightarrow$ Descrição)\n*   **Conceito:** Identifica pares de colunas cuja relação de valores é de correspondência bidirecional estrita de 100%. Exemplo: `CD_GENERO` (ID) e `DS_GENERO` (Descrição).\n*   **Ação:** Removemos a coluna numérica/código do treinamento. O modelo de ML treina apenas com a coluna descritiva categórica.\n\n#### 2. Dependência Funcional Unidirecional (N-para-1)\n*   **Conceito:** Identifica dependências lógicas onde o valor de uma coluna determina de forma determinística o valor de outra (mas não o inverso). Exemplo: o código de um município (`CD_MUNICIPIO_ORIGEM`) determina unicamente seu nome descritivo (`NM_MUNICIPIO_ORIGEM`) e a sigla do estado (`SG_UF_ORIGEM`).\n*   **Ação:** Mantemos apenas a coluna determinante (`CD_MUNICIPIO_ORIGEM`) categórica e removemos as determinadas do treinamento.\n\n#### 3. Alta Correlação Estatística (Numéricos)\n*   **Conceito:** Identifica se colunas numéricas possuem correlação de Pearson/Spearman $\\ge 98\\%$.\n*   **Ação:** Elimina uma das colunas no treino (reduzindo redundâncias matemáticas de escala).\n\n#### 4. Detecção de ID / Cardinalidade Extrema\n*   **Conceito:** Varre colunas textuais únicas (UUIDs, CPFs, hashes) que apresentam $\\ge 95\\%$ de registros distintos.\n*   **Ação:** Exclui a coluna do modelo ML estatístico (evitando ruído de aprendizado) para que seja gerada via sequenciador programático.\n\n---\n\n### Resolução de Cadeia de Dependências por Ponto Fixo\n\nUm problema complexo em remoção de redundâncias é a **dependência em cadeia**. Exemplo:\n1.  `NR_ANO_REGISTRO` depende de `DT_GERACAO` (1-para-1).\n2.  `DT_GERACAO` depende de `HH_GERACAO` (1-para-1).\n\nSe reconstruirmos as colunas em uma ordem aleatória linear e tentarmos preencher `NR_ANO_REGISTRO` antes de `DT_GERACAO` ter sido recriada, o script falhará com erro de chave. \n\nPara resolver isso, implementamos um algoritmo de **ponto fixo iterativo** no processo de reconstrução:\n```python\nchanged = True\nwhile changed:\n    changed = False\n    for target_col, mapping in mappings.items():\n        if target_col in df_reconstructed.columns:\n            continue\n        source_col = mapping['source']\n        if source_col in df_reconstructed.columns:\n            # Reconstrói a coluna-alvo se a coluna-fonte já estiver disponível\n            if 'map_dict' in mapping:\n                df_reconstructed[target_col] = df_reconstructed[source_col].map(mapping['map_dict'])\n            elif 'scale' in mapping:\n                df_reconstructed[target_col] = df_reconstructed[source_col] * mapping['scale']\n            changed = True\n```\nEste laço roda repetidamente até que nenhuma coluna nova seja adicionada. Isso garante que colunas dependentes aguardem a reconstrução de suas fontes, resolvendo qualquer nível de encadeamento dinamicamente.\n\n### Reconstrução com Coerência Lógica Perfeita (100% de Acerto)\nApós a geração dos dados sintéticos otimizados (tabela reduzida de 15 colunas), os mapeamentos extraídos da base real são reaplicados. Isso garante consistência lógica perfeita:\n*   A associação entre Cidade e Estado fica **100% correta** (pois é preenchida por consulta a um dicionário real extraído da base de dados original).\n*   Não ocorrem misturas absurdas (como `CD_GENERO=2` associado com `Feminino` e `Masculino` simultaneamente).\n\n---\n\n## Sugestões de Bases Reais para Testes\n\nPara aprofundar nos testes com dados relacionais e sequenciais reais, recomendamos as seguintes bases de dados públicas:\n\n### 1. Czech Financial Dataset (PKDD 99) - Cenário Relacional Completo\n*   **O que é:** Um conjunto de dados bancários reais da República Tcheca (também conhecido como Berka Dataset), contendo contas, clientes, cartões de crédito, empréstimos e transações financeiras.\n*   **Estrutura:** Possui 8 tabelas interligadas por chaves. É a base ideal para testar o HMASynthesizer do SDV com relacionamentos reais complexos de finanças.\n*   **Onde baixar:** Disponível no Kaggle buscando por \"Czech Financial Dataset\".\n\n### 2. PaySim Mobile Money Simulator - Cenário Sequencial Temporal\n*   **O que é:** Um dataset de transações de dinheiro móvel contendo logs sequenciais de transferências e saques contendo marcações temporais e indicadores de fraude.\n*   **Estrutura:** Tabela plana ideal para o PARSynthesizer, agrupando transações sequenciais usando a conta de origem (`nameOrig`) como chave de sequência e as etapas de tempo (`step`) como índice.\n*   **Onde baixar:** Disponível no Kaggle buscando por \"PaySim Mobile Money Simulator\".\n\n---\n\n## Como Executar\nCertifique-se de que os datasets estejam na pasta `dataset` e execute qualquer um dos geradores:\n\n```bash\n# Baixar as bases reais de teste (PaySim e Czech Financial) via kagglehub\nuv run download_datasets.py\n\n# Executar Copula Gaussiana (Estatístico Clássico - Recomendado para POCs rápidas)\nuv run GaussianCopulaSynthesizer.py\n\n# Executar CTGAN (Rede Neural de Aprendizado Adversarial)\nuv run CTGANSynthesizer.py\n\n# Executar TVAE (Autoencoders Variacionais Tabulares)\nuv run TVAESynthesizer.py\n\n# Executar CopulaGAN (Modelo Híbrido Cópula + GAN)\nuv run CopulaGANSynthesizer.py\n\n# Executar Simulação Sequencial/Temporal (PARSynthesizer com dados simulados)\nuv run sequential_synthesis.py\n\n# Executar Simulação Relacional Multitabelas (HMASynthesizer com dados simulados)\nuv run relational_synthesis.py\n\n# Executar Simulação Relacional Real (HMASynthesizer com a base do Czech Financial)\nuv run relational_czech_synthesis.py\n```\n",
+ "hits": {
+  "md": [
+   {
+    "file": "relational_synthesis.py",
+    "line": 3,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.metadata import Metadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.evaluation.multi_table import evaluate_quality",
+     "",
+     "def generate_mock_relational_data():"
+    ]
+   },
+   {
+    "file": "CTGANSynthesizer.py",
+    "line": 2,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality, get_column_plot",
+     "",
+     "from utils import load_election_data, adjust_to_year"
+    ]
+   },
+   {
+    "file": "TVAESynthesizer.py",
+    "line": 2,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality, get_column_plot",
+     "",
+     "from utils import load_election_data, adjust_to_year"
+    ]
+   },
+   {
+    "file": "GaussianCopulaSynthesizer.py",
+    "line": 2,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality, get_column_plot",
+     "",
+     "from utils import load_election_data, adjust_to_year"
+    ]
+   },
+   {
+    "file": "relational_czech_synthesis.py",
+    "line": 4,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import os",
+     "import pandas as pd",
+     "import kagglehub",
+     "from sdv.metadata import Metadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.evaluation.multi_table import evaluate_quality",
+     "",
+     "def main():"
+    ]
+   },
+   {
+    "file": "sequential_synthesis.py",
+    "line": 5,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import os",
+     "import pandas as pd",
+     "import numpy as np",
+     "import kagglehub",
+     "from sdv.metadata import Metadata",
+     "from sdv.sequential import PARSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "def main():"
+    ]
+   },
+   {
+    "file": "CopulaGANSynthesizer.py",
+    "line": 2,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CopulaGANSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality, get_column_plot",
+     "",
+     "from utils import load_election_data, adjust_to_year"
+    ]
+   }
+  ],
+  "mt": [
+   {
+    "file": "relational_synthesis.py",
+    "line": 4,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.metadata import Metadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.evaluation.multi_table import evaluate_quality",
+     "",
+     "def generate_mock_relational_data():",
+     "    print(\"Gerando dados ficticios de Clientes, Contas e Transacoes...\")"
+    ]
+   },
+   {
+    "file": "relational_czech_synthesis.py",
+    "line": 5,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "import os",
+     "import pandas as pd",
+     "import kagglehub",
+     "from sdv.metadata import Metadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.evaluation.multi_table import evaluate_quality",
+     "",
+     "def main():",
+     "    print(\"--- 1. Verificando/Baixando Czech Financial Dataset (Berka) ---\")"
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "relational_synthesis.py",
+    "line": 5,
+    "text": "from sdv.evaluation.multi_table import evaluate_quality",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.metadata import Metadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.evaluation.multi_table import evaluate_quality",
+     "",
+     "def generate_mock_relational_data():",
+     "    print(\"Gerando dados ficticios de Clientes, Contas e Transacoes...\")",
+     "    np.random.seed(42)"
+    ]
+   },
+   {
+    "file": "CTGANSynthesizer.py",
+    "line": 4,
+    "text": "from sdv.evaluation.single_table import evaluate_quality, get_column_plot",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality, get_column_plot",
+     "",
+     "from utils import load_election_data, adjust_to_year",
+     "from data_analyzer import DataOptimizer",
+     ""
+    ]
+   },
+   {
+    "file": "TVAESynthesizer.py",
+    "line": 4,
+    "text": "from sdv.evaluation.single_table import evaluate_quality, get_column_plot",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality, get_column_plot",
+     "",
+     "from utils import load_election_data, adjust_to_year",
+     "from data_analyzer import DataOptimizer",
+     ""
+    ]
+   },
+   {
+    "file": "GaussianCopulaSynthesizer.py",
+    "line": 4,
+    "text": "from sdv.evaluation.single_table import evaluate_quality, get_column_plot",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality, get_column_plot",
+     "",
+     "from utils import load_election_data, adjust_to_year",
+     "from data_analyzer import DataOptimizer",
+     ""
+    ]
+   },
+   {
+    "file": "relational_czech_synthesis.py",
+    "line": 6,
+    "text": "from sdv.evaluation.multi_table import evaluate_quality",
+    "context": [
+     "import pandas as pd",
+     "import kagglehub",
+     "from sdv.metadata import Metadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.evaluation.multi_table import evaluate_quality",
+     "",
+     "def main():",
+     "    print(\"--- 1. Verificando/Baixando Czech Financial Dataset (Berka) ---\")",
+     "    # Define o cache do kagglehub para ser uma pasta local no projeto"
+    ]
+   },
+   {
+    "file": "sequential_synthesis.py",
+    "line": 7,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "import numpy as np",
+     "import kagglehub",
+     "from sdv.metadata import Metadata",
+     "from sdv.sequential import PARSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "def main():",
+     "    print(\"--- 1. Verificando/Baixando Financial Fraud Detection Dataset (PaySim) ---\")",
+     "    # Define o cache do kagglehub para ser uma pasta local no projeto"
+    ]
+   },
+   {
+    "file": "CopulaGANSynthesizer.py",
+    "line": 4,
+    "text": "from sdv.evaluation.single_table import evaluate_quality, get_column_plot",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CopulaGANSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality, get_column_plot",
+     "",
+     "from utils import load_election_data, adjust_to_year",
+     "from data_analyzer import DataOptimizer",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "relational_synthesis.py",
+    "line": 3,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.metadata import Metadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.evaluation.multi_table import evaluate_quality",
+     "",
+     "def generate_mock_relational_data():"
+    ]
+   },
+   {
+    "file": "relational_synthesis.py",
+    "line": 4,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.metadata import Metadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.evaluation.multi_table import evaluate_quality",
+     "",
+     "def generate_mock_relational_data():",
+     "    print(\"Gerando dados ficticios de Clientes, Contas e Transacoes...\")"
+    ]
+   },
+   {
+    "file": "relational_synthesis.py",
+    "line": 5,
+    "text": "from sdv.evaluation.multi_table import evaluate_quality",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.metadata import Metadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.evaluation.multi_table import evaluate_quality",
+     "",
+     "def generate_mock_relational_data():",
+     "    print(\"Gerando dados ficticios de Clientes, Contas e Transacoes...\")",
+     "    np.random.seed(42)"
+    ]
+   },
+   {
+    "file": "CTGANSynthesizer.py",
+    "line": 2,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality, get_column_plot",
+     "",
+     "from utils import load_election_data, adjust_to_year"
+    ]
+   },
+   {
+    "file": "CTGANSynthesizer.py",
+    "line": 3,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality, get_column_plot",
+     "",
+     "from utils import load_election_data, adjust_to_year",
+     "from data_analyzer import DataOptimizer"
+    ]
+   },
+   {
+    "file": "CTGANSynthesizer.py",
+    "line": 4,
+    "text": "from sdv.evaluation.single_table import evaluate_quality, get_column_plot",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality, get_column_plot",
+     "",
+     "from utils import load_election_data, adjust_to_year",
+     "from data_analyzer import DataOptimizer",
+     ""
+    ]
+   },
+   {
+    "file": "TVAESynthesizer.py",
+    "line": 2,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality, get_column_plot",
+     "",
+     "from utils import load_election_data, adjust_to_year"
+    ]
+   },
+   {
+    "file": "TVAESynthesizer.py",
+    "line": 3,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality, get_column_plot",
+     "",
+     "from utils import load_election_data, adjust_to_year",
+     "from data_analyzer import DataOptimizer"
+    ]
+   },
+   {
+    "file": "TVAESynthesizer.py",
+    "line": 4,
+    "text": "from sdv.evaluation.single_table import evaluate_quality, get_column_plot",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality, get_column_plot",
+     "",
+     "from utils import load_election_data, adjust_to_year",
+     "from data_analyzer import DataOptimizer",
+     ""
+    ]
+   },
+   {
+    "file": "GaussianCopulaSynthesizer.py",
+    "line": 2,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality, get_column_plot",
+     "",
+     "from utils import load_election_data, adjust_to_year"
+    ]
+   },
+   {
+    "file": "GaussianCopulaSynthesizer.py",
+    "line": 3,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality, get_column_plot",
+     "",
+     "from utils import load_election_data, adjust_to_year",
+     "from data_analyzer import DataOptimizer"
+    ]
+   },
+   {
+    "file": "GaussianCopulaSynthesizer.py",
+    "line": 4,
+    "text": "from sdv.evaluation.single_table import evaluate_quality, get_column_plot",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality, get_column_plot",
+     "",
+     "from utils import load_election_data, adjust_to_year",
+     "from data_analyzer import DataOptimizer",
+     ""
+    ]
+   }
+  ],
+  "hma": [
+   {
+    "file": "relational_synthesis.py",
+    "line": 4,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.metadata import Metadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.evaluation.multi_table import evaluate_quality",
+     "",
+     "def generate_mock_relational_data():",
+     "    print(\"Gerando dados ficticios de Clientes, Contas e Transacoes...\")"
+    ]
+   },
+   {
+    "file": "relational_synthesis.py",
+    "line": 64,
+    "text": "# 3. Treinar o HMASynthesizer (Hierarchical Modeling Algorithm)",
+    "context": [
+     "    print(\"Relacionamentos detectados:\")",
+     "    for rel in metadata.relationships:",
+     "        print(f\"  {rel['parent_table_name']}.{rel['parent_primary_key']} -> {rel['child_table_name']}.{rel['child_foreign_key']}\")",
+     "",
+     "    # 3. Treinar o HMASynthesizer (Hierarchical Modeling Algorithm)",
+     "    # HMA eh otimizado para dados multitabelas com niveis hierarquicos de relacionamento.",
+     "    print(\"\\nTreinando o HMASynthesizer...\")",
+     "    synthesizer = HMASynthesizer(metadata)",
+     "    synthesizer.fit(data)"
+    ]
+   },
+   {
+    "file": "relational_synthesis.py",
+    "line": 66,
+    "text": "print(\"\\nTreinando o HMASynthesizer...\")",
+    "context": [
+     "        print(f\"  {rel['parent_table_name']}.{rel['parent_primary_key']} -> {rel['child_table_name']}.{rel['child_foreign_key']}\")",
+     "",
+     "    # 3. Treinar o HMASynthesizer (Hierarchical Modeling Algorithm)",
+     "    # HMA eh otimizado para dados multitabelas com niveis hierarquicos de relacionamento.",
+     "    print(\"\\nTreinando o HMASynthesizer...\")",
+     "    synthesizer = HMASynthesizer(metadata)",
+     "    synthesizer.fit(data)",
+     "    print(\"Modelo HMA treinado com sucesso!\")",
+     ""
+    ]
+   },
+   {
+    "file": "relational_synthesis.py",
+    "line": 67,
+    "text": "synthesizer = HMASynthesizer(metadata)",
+    "context": [
+     "",
+     "    # 3. Treinar o HMASynthesizer (Hierarchical Modeling Algorithm)",
+     "    # HMA eh otimizado para dados multitabelas com niveis hierarquicos de relacionamento.",
+     "    print(\"\\nTreinando o HMASynthesizer...\")",
+     "    synthesizer = HMASynthesizer(metadata)",
+     "    synthesizer.fit(data)",
+     "    print(\"Modelo HMA treinado com sucesso!\")",
+     "",
+     "    # 4. Gerar dados multitabelas sinteticos"
+    ]
+   },
+   {
+    "file": "spark_spec.md",
+    "line": 19,
+    "text": "Estender o SDV para **aceitar PySpark DataFrames como entrada de primeira classe** ao longo de todo o pipeline do `HMASynthesizer` (fit → preprocess → augment → train → sample → evaluate), preservando 100% de compatibilidade retroativa com a API baseada em pandas existente. Quando o usuário passa um",
+    "context": [
+     "---",
+     "",
+     "## Solução",
+     "",
+     "Estender o SDV para **aceitar PySpark DataFrames como entrada de primeira classe** ao longo de todo o pipeline do `HMASynthesizer` (fit → preprocess → augment → train → sample → evaluate), preservando",
+     "",
+     "1. Envolve o `DataProcessor` de cada tabela em um novo `SparkDataProcessor` que distribui `transform` / `reverse_transform` pelos executores Spark via `mapInPandas`.",
+     "2. Computa extensões de copula do HMA (`_get_extension_spark`) fazendo fitting de copulas por grupo em paralelo via `groupBy().applyInPandas()`.",
+     "3. Treina cada modelo single-table (GaussianCopula, CTGAN, TVAE) no driver usando uma amostra representativa coletada via `.toPandas()`."
+    ]
+   },
+   {
+    "file": "spark_spec.md",
+    "line": 33,
+    "text": "1. Como engenheiro de dados, quero passar PySpark DataFrames diretamente para `HMASynthesizer.fit()`, para não precisar materializar todo meu data lake em pandas numa única máquina.",
+    "context": [
+     "---",
+     "",
+     "## User Stories",
+     "",
+     "1. Como engenheiro de dados, quero passar PySpark DataFrames diretamente para `HMASynthesizer.fit()`, para não precisar materializar todo meu data lake em pandas numa única máquina.",
+     "",
+     "2. Como engenheiro de dados, quero que `synthesizer.sample(scale=1.0)` retorne PySpark DataFrames, para poder escrever dados sintéticos de volta no meu data lake sem uma conversão intermediária para p",
+     "",
+     "3. Como cientista de dados, quero que a integração Spark seja transparente (mesma API do pandas), para não precisar aprender uma API separada ou reescrever meu workflow."
+    ]
+   },
+   {
+    "file": "spark_spec.md",
+    "line": 205,
+    "text": "- **Ignorar Validação Comercial de Complexidade**: O `HMASynthesizer` open-source impõe por padrão um limite rígido de complexidade (`num_tables > 5` ou `schema_depth > 2`) no método `_validate_schema_complexity()`, visando incentivar o upgrade para a versão Enterprise comercial. Como esse bloqueio ",
+    "context": [
+     "- Todos os imports PySpark estão em blocos `try/except` com fallbacks `None`",
+     "- `requires-python` restrito a `>=3.9,<3.13` para evitar conflito `pomegranate<1` vs `numpy>=2` no Python 3.14+",
+     "- Setup Docker: `Dockerfile` baseado em `apache/spark:latest`, instala SDV via `pip install .`",
+     "- `docker-compose.yml`: 3 serviços (spark-master, spark-worker, test-runner) com variável de ambiente `SPARK_MASTER_URL`",
+     "- **Ignorar Validação Comercial de Complexidade**: O `HMASynthesizer` open-source impõe por padrão um limite rígido de complexidade (`num_tables > 5` ou `schema_depth > 2`) no método `_validate_schema",
+     "",
+     "---",
+     "",
+     "## Decisões de Teste"
+    ]
+   },
+   {
+    "file": "spark_spec.md",
+    "line": 222,
+    "text": "4. Chama `HMASynthesizer.fit(spark_data)` → valida que o fit completa sem erro",
+    "context": [
+     "",
+     "1. Baixa o dataset Czech Financial (Berka) do Kaggle",
+     "2. Carrega 3 tabelas relacionadas (clientes, contas, disposições) com estrutura relacional real",
+     "3. Converte para Spark DataFrames",
+     "4. Chama `HMASynthesizer.fit(spark_data)` → valida que o fit completa sem erro",
+     "5. Chama `synthesizer.sample(scale=1.0)` → valida que todas as 3 tabelas são retornadas como Spark DataFrames",
+     "6. Converte para pandas e roda `evaluate_quality()` → valida que o relatório de qualidade do sdmetrics gera com sucesso",
+     "7. Imprime scores de qualidade (Column Shapes, Cardinality, etc.)",
+     ""
+    ]
+   },
+   {
+    "file": "spark_spec.md",
+    "line": 274,
+    "text": "| `HMASynthesizer` | ✅ distribuído | ✅ distribuído | Pipeline completo distribuído; usa sintetizador single-table internamente |",
+    "context": [
+     "| `GaussianCopulaSynthesizer` | ✅ collect driver | ✅ `mapInPandas` distribuído | Copula é scipy/numpy — collect inevitável; sample distribui normalmente |",
+     "| `CTGANSynthesizer` | ✅ `TorchDistributor` | ✅ driver + `createDataFrame` | PyTorch não roda em workers forked; sample rápido no driver |",
+     "| `TVAESynthesizer` | ✅ `TorchDistributor` | ✅ driver + `createDataFrame` | Mesma limitação PyTorch do CTGAN |",
+     "| `CopulaGANSynthesizer` | ✅ collect driver | ✅ driver + `createDataFrame` | GaussianNormalizer (pandas-only) + PyTorch — ambos exigem driver |",
+     "| `HMASynthesizer` | ✅ distribuído | ✅ distribuído | Pipeline completo distribuído; usa sintetizador single-table internamente |",
+     "| `PARSynthesizer` | ❌ bloqueio estrutural | ❌ | LSTM sequencial por entidade; incompatível com workers Spark paralelos |",
+     "",
+     "### Arquivos Alterados (10 arquivos)",
+     ""
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 72,
+    "text": "### 6. HMA Synthesizer (`HMASynthesizer`) - Cenário Relacional",
+    "context": [
+     "*   **Limitações (Contras):**",
+     "    *   **Exige chave de agrupamento:** Só funciona se houver uma chave (`sequence_key`) separando as sequências individuais de cada entidade.",
+     "*   **Melhores Contextos:** Históricos de transações bancárias de clientes, sequências de clique em sites (clickstream) e leituras de sensores IoT.",
+     "",
+     "### 6. HMA Synthesizer (`HMASynthesizer`) - Cenário Relacional",
+     "*   **Como funciona:** Algoritmo de Modelagem Hierárquica para bancos de dados relacionais de múltiplas tabelas. Ele agrega colunas de tabelas filhas (ex: transações) gerando dados resumidos (como méd",
+     "*   **Vantagens (Prós):**",
+     "    *   **Preserva integridade referencial:** Garante que chaves primárias e estrangeiras se encaixem perfeitamente.",
+     "    *   **Aprende regras entre tabelas:** Contas com saldos iniciais maiores receberão transações estatisticamente maiores nas tabelas filhas."
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 149,
+    "text": "*   **Estrutura:** Possui 8 tabelas interligadas por chaves. É a base ideal para testar o HMASynthesizer do SDV com relacionamentos reais complexos de finanças.",
+    "context": [
+     "Para aprofundar nos testes com dados relacionais e sequenciais reais, recomendamos as seguintes bases de dados públicas:",
+     "",
+     "### 1. Czech Financial Dataset (PKDD 99) - Cenário Relacional Completo",
+     "*   **O que é:** Um conjunto de dados bancários reais da República Tcheca (também conhecido como Berka Dataset), contendo contas, clientes, cartões de crédito, empréstimos e transações financeiras.",
+     "*   **Estrutura:** Possui 8 tabelas interligadas por chaves. É a base ideal para testar o HMASynthesizer do SDV com relacionamentos reais complexos de finanças.",
+     "*   **Onde baixar:** Disponível no Kaggle buscando por \"Czech Financial Dataset\".",
+     "",
+     "### 2. PaySim Mobile Money Simulator - Cenário Sequencial Temporal",
+     "*   **O que é:** Um dataset de transações de dinheiro móvel contendo logs sequenciais de transferências e saques contendo marcações temporais e indicadores de fraude."
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 181,
+    "text": "# Executar Simulação Relacional Multitabelas (HMASynthesizer com dados simulados)",
+    "context": [
+     "",
+     "# Executar Simulação Sequencial/Temporal (PARSynthesizer com dados simulados)",
+     "uv run sequential_synthesis.py",
+     "",
+     "# Executar Simulação Relacional Multitabelas (HMASynthesizer com dados simulados)",
+     "uv run relational_synthesis.py",
+     "",
+     "# Executar Simulação Relacional Real (HMASynthesizer com a base do Czech Financial)",
+     "uv run relational_czech_synthesis.py"
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "CTGANSynthesizer.py",
+    "line": 3,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality, get_column_plot",
+     "",
+     "from utils import load_election_data, adjust_to_year",
+     "from data_analyzer import DataOptimizer"
+    ]
+   },
+   {
+    "file": "TVAESynthesizer.py",
+    "line": 3,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality, get_column_plot",
+     "",
+     "from utils import load_election_data, adjust_to_year",
+     "from data_analyzer import DataOptimizer"
+    ]
+   },
+   {
+    "file": "GaussianCopulaSynthesizer.py",
+    "line": 3,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality, get_column_plot",
+     "",
+     "from utils import load_election_data, adjust_to_year",
+     "from data_analyzer import DataOptimizer"
+    ]
+   },
+   {
+    "file": "CopulaGANSynthesizer.py",
+    "line": 3,
+    "text": "from sdv.single_table import CopulaGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CopulaGANSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality, get_column_plot",
+     "",
+     "from utils import load_election_data, adjust_to_year",
+     "from data_analyzer import DataOptimizer"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "CTGANSynthesizer.py",
+    "line": 3,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality, get_column_plot",
+     "",
+     "from utils import load_election_data, adjust_to_year",
+     "from data_analyzer import DataOptimizer"
+    ]
+   },
+   {
+    "file": "CTGANSynthesizer.py",
+    "line": 34,
+    "text": "print(\"\\n--- 4. Treinando o CTGANSynthesizer (Rede Neural GAN) ---\")",
+    "context": [
+     "        metadata_reduced.update_column(column_name='CD_MUNICIPIO_ORIGEM', sdtype='categorical')",
+     "    if 'CD_MUNICIPIO_DESTINO' in df_train.columns:",
+     "        metadata_reduced.update_column(column_name='CD_MUNICIPIO_DESTINO', sdtype='categorical')",
+     "",
+     "    print(\"\\n--- 4. Treinando o CTGANSynthesizer (Rede Neural GAN) ---\")",
+     "    # CTGAN usa redes neurais profundas (Gerador e Discriminador).",
+     "    # Usaremos epochs=20 para demonstração rápida. Em produção, use mais épocas (ex: 300) e mais dados.",
+     "    synthesizer = CTGANSynthesizer(",
+     "        metadata_reduced,"
+    ]
+   },
+   {
+    "file": "CTGANSynthesizer.py",
+    "line": 37,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "",
+     "    print(\"\\n--- 4. Treinando o CTGANSynthesizer (Rede Neural GAN) ---\")",
+     "    # CTGAN usa redes neurais profundas (Gerador e Discriminador).",
+     "    # Usaremos epochs=20 para demonstração rápida. Em produção, use mais épocas (ex: 300) e mais dados.",
+     "    synthesizer = CTGANSynthesizer(",
+     "        metadata_reduced,",
+     "        epochs=20,",
+     "        verbose=True,",
+     "        enable_gpu=True # Tenta usar GPU (MPS no Mac/CUDA no Linux)"
+    ]
+   },
+   {
+    "file": "spark_spec.md",
+    "line": 271,
+    "text": "| `CTGANSynthesizer` | ✅ `TorchDistributor` | ✅ driver + `createDataFrame` | PyTorch não roda em workers forked; sample rápido no driver |",
+    "context": [
+     "",
+     "| Algoritmo | Fit Spark | Sample Spark | Estratégia |",
+     "|-----------|-----------|--------------|------------|",
+     "| `GaussianCopulaSynthesizer` | ✅ collect driver | ✅ `mapInPandas` distribuído | Copula é scipy/numpy — collect inevitável; sample distribui normalmente |",
+     "| `CTGANSynthesizer` | ✅ `TorchDistributor` | ✅ driver + `createDataFrame` | PyTorch não roda em workers forked; sample rápido no driver |",
+     "| `TVAESynthesizer` | ✅ `TorchDistributor` | ✅ driver + `createDataFrame` | Mesma limitação PyTorch do CTGAN |",
+     "| `CopulaGANSynthesizer` | ✅ collect driver | ✅ driver + `createDataFrame` | GaussianNormalizer (pandas-only) + PyTorch — ambos exigem driver |",
+     "| `HMASynthesizer` | ✅ distribuído | ✅ distribuído | Pipeline completo distribuído; usa sintetizador single-table internamente |",
+     "| `PARSynthesizer` | ❌ bloqueio estrutural | ❌ | LSTM sequencial por entidade; incompatível com workers Spark paralelos |"
+    ]
+   },
+   {
+    "file": "data_analyzer.md",
+    "line": 1,
+    "text": "Viewed CTGANSynthesizer.py:1-52",
+    "context": [
+     "Viewed CTGANSynthesizer.py:1-52",
+     "",
+     "Esta é uma excelente pergunta. Identificar colunas redundantes e relacionamentos determinísticos de forma automática é fundamental para criar geradores de dados sintéticos genéricos e escaláveis.",
+     "",
+     "Podemos descobrir essas relações programaticamente em **qualquer base de dados** usando três abordagens estatísticas e lógicas. "
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 10,
+    "text": "*   **`CTGANSynthesizer.py`**: Pipeline de dados usando Redes Generativas Adversariais (GAN) baseadas em Deep Learning.",
+    "context": [
+     "",
+     "## Estrutura do Projeto",
+     "",
+     "*   **`GaussianCopulaSynthesizer.py`**: Pipeline de dados usando o modelo matemático estatístico clássico de Cópula Gaussiana.",
+     "*   **`CTGANSynthesizer.py`**: Pipeline de dados usando Redes Generativas Adversariais (GAN) baseadas em Deep Learning.",
+     "*   **`TVAESynthesizer.py`**: Pipeline de dados usando Variational Autoencoders (VAE) baseados em Deep Learning.",
+     "*   **`CopulaGANSynthesizer.py`**: Pipeline híbrido combinando a normalização estatística de Cópulas com o treino de redes GAN.",
+     "*   **`sequential_synthesis.py`**: Teste de séries temporais e sequências de transações por cliente usando o modelo autoregressivo PAR.",
+     "*   **`relational_synthesis.py`**: Teste relacional multi-tabelas com chaves primárias/estrangeiras (Clientes -> Contas -> Transações) usando HMA."
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 34,
+    "text": "### 2. CTGAN Synthesizer (`CTGANSynthesizer`)",
+    "context": [
+     "*   **Limitações (Contras):**",
+     "    *   **Apenas correlações lineares/monotônicas:** Não consegue aprender relações não-lineares muito complexas ou padrões de imagem/sequências intrínsecas nos dados.",
+     "*   **Melhores Contextos:** Bases de dados tabulares financeiras estruturadas, relatórios de auditoria, e simulações rápidas onde a velocidade e estabilidade matemática são prioridades.",
+     "",
+     "### 2. CTGAN Synthesizer (`CTGANSynthesizer`)",
+     "*   **Como funciona:** Baseado em Deep Learning. Implementa Redes Generativas Adversariais (GANs) condicionais otimizadas para dados tabulares. Um gerador cria registros artificiais a partir de ruído ",
+     "*   **Vantagens (Prós):**",
+     "    *   **Captura relações não-lineares:** Excelente para aprender padrões comportamentais complexos que funções estatísticas simples não capturam.",
+     "    *   **Preserva alta complexidade:** Ótimo para dados com distribuições multimodais complexas."
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 170,
+    "text": "uv run CTGANSynthesizer.py",
+    "context": [
+     "# Executar Copula Gaussiana (Estatístico Clássico - Recomendado para POCs rápidas)",
+     "uv run GaussianCopulaSynthesizer.py",
+     "",
+     "# Executar CTGAN (Rede Neural de Aprendizado Adversarial)",
+     "uv run CTGANSynthesizer.py",
+     "",
+     "# Executar TVAE (Autoencoders Variacionais Tabulares)",
+     "uv run TVAESynthesizer.py",
+     ""
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "spark_spec.md",
+    "line": 84,
+    "text": "21. Como cientista de dados, quero que o `GaussianCopulaSynthesizer` aceite PySpark DataFrames no `fit()` e retorne PySpark DataFrames no `sample()`, para que copulas gaussianas possam ser treinadas e amostradas no ecossistema Spark sem converter dados para pandas manualmente.",
+    "context": [
+     "19. Como cientista de dados, quero que seeds aleatórias em workers paralelos sejam derivadas de entropia local do sistema (não uma seed global fixa), para que cada partição gere linhas sintéticas únic",
+     "",
+     "20. Como engenheiro de plataforma, quero que o harness de teste suporte configurar o master Spark via variável de ambiente `SPARK_MASTER_URL`, para que o mesmo script de teste funcione em modo local, ",
+     "",
+     "21. Como cientista de dados, quero que o `GaussianCopulaSynthesizer` aceite PySpark DataFrames no `fit()` e retorne PySpark DataFrames no `sample()`, para que copulas gaussianas possam ser treinadas e",
+     "",
+     "22. Como cientista de dados, quero que o `CopulaGANSynthesizer` aceite PySpark DataFrames no `fit()` e retorne PySpark DataFrames no `sample()`, para aproveitar o pipeline híbrido (normalização estatí",
+     "",
+     "23. Como engenheiro de dados, quero que colunas de chave primária do tipo `id` sejam geradas com `monotonically_increasing_id()` após a amostragem distribuída, para garantir unicidade global sem coord"
+    ]
+   },
+   {
+    "file": "spark_spec.md",
+    "line": 166,
+    "text": "### GaussianCopulaSynthesizer no Spark",
+    "context": [
+     "4. Rank 0 salva o modelo via `torch.save`; o driver carrega de volta",
+     "",
+     "> **Nota**: Este é um caminho protótipo. O treinamento em si ainda não é DDP-paralelo — cada processo do TorchDistributor treina independentemente. O caminho de upgrade é envolver CTGAN/TVAE em `Distr",
+     "",
+     "### GaussianCopulaSynthesizer no Spark",
+     "",
+     "O `GaussianCopulaSynthesizer._fit` detecta Spark DataFrames e os coleta para pandas no driver antes de ajustar o `GaussianMultivariate` (da biblioteca `copulas`, que depende de scipy/numpy e não pode ",
+     "",
+     "A amostragem usa `_sample_spark` herdado do `BaseSingleTableSynthesizer`, que distribui via `mapInPandas` (o `GaussianMultivariate` serializa corretamente para broadcast)."
+    ]
+   },
+   {
+    "file": "spark_spec.md",
+    "line": 168,
+    "text": "O `GaussianCopulaSynthesizer._fit` detecta Spark DataFrames e os coleta para pandas no driver antes de ajustar o `GaussianMultivariate` (da biblioteca `copulas`, que depende de scipy/numpy e não pode rodar distribuído). A coleta é **inevitável** para copulas estatísticas: o `GaussianMultivariate.fit",
+    "context": [
+     "> **Nota**: Este é um caminho protótipo. O treinamento em si ainda não é DDP-paralelo — cada processo do TorchDistributor treina independentemente. O caminho de upgrade é envolver CTGAN/TVAE em `Distr",
+     "",
+     "### GaussianCopulaSynthesizer no Spark",
+     "",
+     "O `GaussianCopulaSynthesizer._fit` detecta Spark DataFrames e os coleta para pandas no driver antes de ajustar o `GaussianMultivariate` (da biblioteca `copulas`, que depende de scipy/numpy e não pode ",
+     "",
+     "A amostragem usa `_sample_spark` herdado do `BaseSingleTableSynthesizer`, que distribui via `mapInPandas` (o `GaussianMultivariate` serializa corretamente para broadcast).",
+     "",
+     "### CopulaGANSynthesizer no Spark"
+    ]
+   },
+   {
+    "file": "spark_spec.md",
+    "line": 270,
+    "text": "| `GaussianCopulaSynthesizer` | ✅ collect driver | ✅ `mapInPandas` distribuído | Copula é scipy/numpy — collect inevitável; sample distribui normalmente |",
+    "context": [
+     "### Compatibilidade Spark por Algoritmo",
+     "",
+     "| Algoritmo | Fit Spark | Sample Spark | Estratégia |",
+     "|-----------|-----------|--------------|------------|",
+     "| `GaussianCopulaSynthesizer` | ✅ collect driver | ✅ `mapInPandas` distribuído | Copula é scipy/numpy — collect inevitável; sample distribui normalmente |",
+     "| `CTGANSynthesizer` | ✅ `TorchDistributor` | ✅ driver + `createDataFrame` | PyTorch não roda em workers forked; sample rápido no driver |",
+     "| `TVAESynthesizer` | ✅ `TorchDistributor` | ✅ driver + `createDataFrame` | Mesma limitação PyTorch do CTGAN |",
+     "| `CopulaGANSynthesizer` | ✅ collect driver | ✅ driver + `createDataFrame` | GaussianNormalizer (pandas-only) + PyTorch — ambos exigem driver |",
+     "| `HMASynthesizer` | ✅ distribuído | ✅ distribuído | Pipeline completo distribuído; usa sintetizador single-table internamente |"
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 9,
+    "text": "*   **`GaussianCopulaSynthesizer.py`**: Pipeline de dados usando o modelo matemático estatístico clássico de Cópula Gaussiana.",
+    "context": [
+     "---",
+     "",
+     "## Estrutura do Projeto",
+     "",
+     "*   **`GaussianCopulaSynthesizer.py`**: Pipeline de dados usando o modelo matemático estatístico clássico de Cópula Gaussiana.",
+     "*   **`CTGANSynthesizer.py`**: Pipeline de dados usando Redes Generativas Adversariais (GAN) baseadas em Deep Learning.",
+     "*   **`TVAESynthesizer.py`**: Pipeline de dados usando Variational Autoencoders (VAE) baseados em Deep Learning.",
+     "*   **`CopulaGANSynthesizer.py`**: Pipeline híbrido combinando a normalização estatística de Cópulas com o treino de redes GAN.",
+     "*   **`sequential_synthesis.py`**: Teste de séries temporais e sequências de transações por cliente usando o modelo autoregressivo PAR."
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 24,
+    "text": "### 1. Gaussian Copula Synthesizer (`GaussianCopulaSynthesizer`)",
+    "context": [
+     "## Comparativo dos Algoritmos de Modelagem",
+     "",
+     "Abaixo, detalhamos o funcionamento, vantagens, desvantagens e melhores contextos de aplicação de cada modelo testado na POC:",
+     "",
+     "### 1. Gaussian Copula Synthesizer (`GaussianCopulaSynthesizer`)",
+     "*   **Como funciona:** Usa Cópulas Gaussianas clássicas. O algoritmo calcula a distribuição cumulativa de probabilidade de cada coluna de forma isolada (distribuição marginal) e usa a matriz de correl",
+     "*   **Vantagens (Prós):**",
+     "    *   **Extremamente rápido:** Roda em frações de segundo mesmo com bases grandes.",
+     "    *   **Consistente e previsível:** Por se basear em fórmulas estatísticas determinísticas fechadas, não sofre com problemas de convergência ou \"Mode Collapse\" (repetição de categorias dominantes)."
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 167,
+    "text": "uv run GaussianCopulaSynthesizer.py",
+    "context": [
+     "# Baixar as bases reais de teste (PaySim e Czech Financial) via kagglehub",
+     "uv run download_datasets.py",
+     "",
+     "# Executar Copula Gaussiana (Estatístico Clássico - Recomendado para POCs rápidas)",
+     "uv run GaussianCopulaSynthesizer.py",
+     "",
+     "# Executar CTGAN (Rede Neural de Aprendizado Adversarial)",
+     "uv run CTGANSynthesizer.py",
+     ""
+    ]
+   },
+   {
+    "file": "GaussianCopulaSynthesizer.py",
+    "line": 3,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality, get_column_plot",
+     "",
+     "from utils import load_election_data, adjust_to_year",
+     "from data_analyzer import DataOptimizer"
+    ]
+   },
+   {
+    "file": "GaussianCopulaSynthesizer.py",
+    "line": 32,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata_reduced, locales=['pt_BR'])",
+    "context": [
+     "    if 'CD_MUNICIPIO_DESTINO' in df_train.columns:",
+     "        metadata_reduced.update_column(column_name='CD_MUNICIPIO_DESTINO', sdtype='categorical')",
+     "",
+     "    print(\"\\n--- 4. Treinando o Synthesizer (Gaussian Copula) ---\")",
+     "    synthesizer = GaussianCopulaSynthesizer(metadata_reduced, locales=['pt_BR'])",
+     "    synthesizer.fit(df_train)",
+     "    print(\"Modelo treinado com sucesso!\")",
+     "",
+     "    print(\"\\n--- 5. Gerando Dados Sintéticos Reduzidos ---\")"
+    ]
+   }
+  ],
+  "par": [
+   {
+    "file": "spark_spec.md",
+    "line": 248,
+    "text": "- **PARSynthesizer no Spark**: Bloqueio estrutural — `PARSynthesizer` herda de `BaseSynthesizer` (não de `BaseSingleTableSynthesizer`) com `fit()` completamente sobrescrito sem rota `_spark_mode`. O pipeline opera sequencialmente por entidade (groupby + iteração por `sequence_key`), incompatível com",
+    "context": [
+     "- **Treinamento DDP-paralelo de CTGAN/TVAE**: A integração com `TorchDistributor` é um protótipo que treina em um único processo. Treinamento verdadeiramente distribuído com data-parallel requer envol",
+     "- **Spark Connect / Databricks Connect**: A implementação atual usa `SparkSession` clássico com variáveis broadcast. Spark Connect (serverless) tem restrições de serialização diferentes.",
+     "- **Streaming / fit incremental**: O pipeline assume processamento batch. Integração com Structured Streaming não é abordada.",
+     "- **Testes unitários para métodos Spark individuais**: Apenas testes de integração end-to-end são fornecidos para o pipeline HMA. Testes unitários isolados para `SparkDataProcessor`, `_get_extension_s",
+     "- **PARSynthesizer no Spark**: Bloqueio estrutural — `PARSynthesizer` herda de `BaseSynthesizer` (não de `BaseSingleTableSynthesizer`) com `fit()` completamente sobrescrito sem rota `_spark_mode`. O p",
+     "- **Integração com catálogo Spark SQL**: Tabelas sintéticas são retornadas como DataFrames em memória, não registradas em Hive metastore ou Unity Catalog.",
+     "",
+     "---",
+     ""
+    ]
+   },
+   {
+    "file": "spark_spec.md",
+    "line": 275,
+    "text": "| `PARSynthesizer` | ❌ bloqueio estrutural | ❌ | LSTM sequencial por entidade; incompatível com workers Spark paralelos |",
+    "context": [
+     "| `CTGANSynthesizer` | ✅ `TorchDistributor` | ✅ driver + `createDataFrame` | PyTorch não roda em workers forked; sample rápido no driver |",
+     "| `TVAESynthesizer` | ✅ `TorchDistributor` | ✅ driver + `createDataFrame` | Mesma limitação PyTorch do CTGAN |",
+     "| `CopulaGANSynthesizer` | ✅ collect driver | ✅ driver + `createDataFrame` | GaussianNormalizer (pandas-only) + PyTorch — ambos exigem driver |",
+     "| `HMASynthesizer` | ✅ distribuído | ✅ distribuído | Pipeline completo distribuído; usa sintetizador single-table internamente |",
+     "| `PARSynthesizer` | ❌ bloqueio estrutural | ❌ | LSTM sequencial por entidade; incompatível com workers Spark paralelos |",
+     "",
+     "### Arquivos Alterados (10 arquivos)",
+     "",
+     "| Arquivo | Tipo de Mudança | Propósito |"
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 63,
+    "text": "### 5. PAR Synthesizer (`PARSynthesizer`) - Cenário Sequencial",
+    "context": [
+     "*   **Limitações (Contras):**",
+     "    *   **Lento e pesado:** O pipeline adiciona o custo de processamento das cópulas ao custo de treino da rede GAN.",
+     "*   **Melhores Contextos:** Datasets de altíssima complexidade onde você busca a máxima fidelidade de distribuição individual aliada à capacidade de capturar padrões não-lineares.",
+     "",
+     "### 5. PAR Synthesizer (`PARSynthesizer`) - Cenário Sequencial",
+     "*   **Como funciona:** Modelo de Deep Learning autoregressivo probabilístico (PAR) baseado em redes recorrentes (RNN). Ele aprende a dependência do tempo e a ordem dos registros. Para cada entidade id",
+     "*   **Vantagens (Prós):**",
+     "    *   **Gera novos históricos consistentes:** Mantém a ordem lógica temporal e lógica das transações de cada cliente (como saldo decaindo conforme compras ocorrem).",
+     "    *   **Suporta tipos de dados mistos:** Trata categorias e numéricos sequenciais."
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 154,
+    "text": "*   **Estrutura:** Tabela plana ideal para o PARSynthesizer, agrupando transações sequenciais usando a conta de origem (`nameOrig`) como chave de sequência e as etapas de tempo (`step`) como índice.",
+    "context": [
+     "*   **Onde baixar:** Disponível no Kaggle buscando por \"Czech Financial Dataset\".",
+     "",
+     "### 2. PaySim Mobile Money Simulator - Cenário Sequencial Temporal",
+     "*   **O que é:** Um dataset de transações de dinheiro móvel contendo logs sequenciais de transferências e saques contendo marcações temporais e indicadores de fraude.",
+     "*   **Estrutura:** Tabela plana ideal para o PARSynthesizer, agrupando transações sequenciais usando a conta de origem (`nameOrig`) como chave de sequência e as etapas de tempo (`step`) como índice.",
+     "*   **Onde baixar:** Disponível no Kaggle buscando por \"PaySim Mobile Money Simulator\".",
+     "",
+     "---",
+     ""
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 178,
+    "text": "# Executar Simulação Sequencial/Temporal (PARSynthesizer com dados simulados)",
+    "context": [
+     "",
+     "# Executar CopulaGAN (Modelo Híbrido Cópula + GAN)",
+     "uv run CopulaGANSynthesizer.py",
+     "",
+     "# Executar Simulação Sequencial/Temporal (PARSynthesizer com dados simulados)",
+     "uv run sequential_synthesis.py",
+     "",
+     "# Executar Simulação Relacional Multitabelas (HMASynthesizer com dados simulados)",
+     "uv run relational_synthesis.py"
+    ]
+   },
+   {
+    "file": "sequential_synthesis.py",
+    "line": 6,
+    "text": "from sdv.sequential import PARSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "import kagglehub",
+     "from sdv.metadata import Metadata",
+     "from sdv.sequential import PARSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "def main():",
+     "    print(\"--- 1. Verificando/Baixando Financial Fraud Detection Dataset (PaySim) ---\")"
+    ]
+   },
+   {
+    "file": "sequential_synthesis.py",
+    "line": 52,
+    "text": "print(\"\\n--- 4. Treinando o PARSynthesizer (Rede Recorrente Autoregressiva) ---\")",
+    "context": [
+     "    # Define a estrutura sequencial nos metadados",
+     "    metadata.set_sequence_key(column_name=\"nameDest\")",
+     "    metadata.set_sequence_index(column_name=\"tx_index\")",
+     "",
+     "    print(\"\\n--- 4. Treinando o PARSynthesizer (Rede Recorrente Autoregressiva) ---\")",
+     "    # Treina o modelo sequencial. Usaremos 5 epochs para demonstracao rapida.",
+     "    synthesizer = PARSynthesizer(",
+     "        metadata,",
+     "        epochs=5,"
+    ]
+   },
+   {
+    "file": "sequential_synthesis.py",
+    "line": 54,
+    "text": "synthesizer = PARSynthesizer(",
+    "context": [
+     "    metadata.set_sequence_index(column_name=\"tx_index\")",
+     "",
+     "    print(\"\\n--- 4. Treinando o PARSynthesizer (Rede Recorrente Autoregressiva) ---\")",
+     "    # Treina o modelo sequencial. Usaremos 5 epochs para demonstracao rapida.",
+     "    synthesizer = PARSynthesizer(",
+     "        metadata,",
+     "        epochs=5,",
+     "        verbose=True",
+     "    )"
+    ]
+   },
+   {
+    "file": "sequential_synthesis.py",
+    "line": 60,
+    "text": "print(\"Modelo PARSynthesizer treinado com sucesso!\")",
+    "context": [
+     "        epochs=5,",
+     "        verbose=True",
+     "    )",
+     "    synthesizer.fit(df_train)",
+     "    print(\"Modelo PARSynthesizer treinado com sucesso!\")",
+     "",
+     "    print(\"\\n--- 5. Gerando Sequências Temporais Sintéticas ---\")",
+     "    # Geramos 5 novas sequencias completas",
+     "    synthetic_data = synthesizer.sample(num_sequences=5)"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "spark_spec.md",
+    "line": 272,
+    "text": "| `TVAESynthesizer` | ✅ `TorchDistributor` | ✅ driver + `createDataFrame` | Mesma limitação PyTorch do CTGAN |",
+    "context": [
+     "| Algoritmo | Fit Spark | Sample Spark | Estratégia |",
+     "|-----------|-----------|--------------|------------|",
+     "| `GaussianCopulaSynthesizer` | ✅ collect driver | ✅ `mapInPandas` distribuído | Copula é scipy/numpy — collect inevitável; sample distribui normalmente |",
+     "| `CTGANSynthesizer` | ✅ `TorchDistributor` | ✅ driver + `createDataFrame` | PyTorch não roda em workers forked; sample rápido no driver |",
+     "| `TVAESynthesizer` | ✅ `TorchDistributor` | ✅ driver + `createDataFrame` | Mesma limitação PyTorch do CTGAN |",
+     "| `CopulaGANSynthesizer` | ✅ collect driver | ✅ driver + `createDataFrame` | GaussianNormalizer (pandas-only) + PyTorch — ambos exigem driver |",
+     "| `HMASynthesizer` | ✅ distribuído | ✅ distribuído | Pipeline completo distribuído; usa sintetizador single-table internamente |",
+     "| `PARSynthesizer` | ❌ bloqueio estrutural | ❌ | LSTM sequencial por entidade; incompatível com workers Spark paralelos |",
+     ""
+    ]
+   },
+   {
+    "file": "TVAESynthesizer.py",
+    "line": 3,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality, get_column_plot",
+     "",
+     "from utils import load_election_data, adjust_to_year",
+     "from data_analyzer import DataOptimizer"
+    ]
+   },
+   {
+    "file": "TVAESynthesizer.py",
+    "line": 34,
+    "text": "print(\"\\n--- 4. Treinando o TVAESynthesizer (Rede Neural VAE) ---\")",
+    "context": [
+     "        metadata_reduced.update_column(column_name='CD_MUNICIPIO_ORIGEM', sdtype='categorical')",
+     "    if 'CD_MUNICIPIO_DESTINO' in df_train.columns:",
+     "        metadata_reduced.update_column(column_name='CD_MUNICIPIO_DESTINO', sdtype='categorical')",
+     "",
+     "    print(\"\\n--- 4. Treinando o TVAESynthesizer (Rede Neural VAE) ---\")",
+     "    # TVAE usa um Variational Autoencoder para codificar a base tabular em um espaço latente contínuo e decodificá-la.",
+     "    # Usaremos epochs=50 para demonstração rápida. Em produção, aumente (ex: 300+).",
+     "    synthesizer = TVAESynthesizer(",
+     "        metadata_reduced,"
+    ]
+   },
+   {
+    "file": "TVAESynthesizer.py",
+    "line": 37,
+    "text": "synthesizer = TVAESynthesizer(",
+    "context": [
+     "",
+     "    print(\"\\n--- 4. Treinando o TVAESynthesizer (Rede Neural VAE) ---\")",
+     "    # TVAE usa um Variational Autoencoder para codificar a base tabular em um espaço latente contínuo e decodificá-la.",
+     "    # Usaremos epochs=50 para demonstração rápida. Em produção, aumente (ex: 300+).",
+     "    synthesizer = TVAESynthesizer(",
+     "        metadata_reduced,",
+     "        epochs=50,",
+     "        verbose=True,",
+     "        enable_gpu=True # Tenta usar GPU (MPS no Mac/CUDA no Linux)"
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 11,
+    "text": "*   **`TVAESynthesizer.py`**: Pipeline de dados usando Variational Autoencoders (VAE) baseados em Deep Learning.",
+    "context": [
+     "## Estrutura do Projeto",
+     "",
+     "*   **`GaussianCopulaSynthesizer.py`**: Pipeline de dados usando o modelo matemático estatístico clássico de Cópula Gaussiana.",
+     "*   **`CTGANSynthesizer.py`**: Pipeline de dados usando Redes Generativas Adversariais (GAN) baseadas em Deep Learning.",
+     "*   **`TVAESynthesizer.py`**: Pipeline de dados usando Variational Autoencoders (VAE) baseados em Deep Learning.",
+     "*   **`CopulaGANSynthesizer.py`**: Pipeline híbrido combinando a normalização estatística de Cópulas com o treino de redes GAN.",
+     "*   **`sequential_synthesis.py`**: Teste de séries temporais e sequências de transações por cliente usando o modelo autoregressivo PAR.",
+     "*   **`relational_synthesis.py`**: Teste relacional multi-tabelas com chaves primárias/estrangeiras (Clientes -> Contas -> Transações) usando HMA.",
+     "*   **`data_analyzer.py`**: Módulo que contém o otimizador dinâmico de dados (`DataOptimizer`) para análise automática de redundâncias, dependências funcionais, correlações numéricas e identificação d"
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 45,
+    "text": "### 3. TVAE Synthesizer (`TVAESynthesizer`)",
+    "context": [
+     "    *   **Tempo de treinamento:** Lento para treinar (requer comumente 300+ épocas).",
+     "    *   **Sensível a hiperparâmetros:** Pode oscilar muito nas perdas (loss) e gerar dados ruins se mal parametrizado.",
+     "*   **Melhores Contextos:** Modelagem de dados de comportamento de usuários, fraudes de cartão de crédito e datasets de marketing onde existem interações ocultas complexas entre variáveis categóricas ",
+     "",
+     "### 3. TVAE Synthesizer (`TVAESynthesizer`)",
+     "*   **Como funciona:** Baseado em Deep Learning. Utiliza redes autoencoder variacionais tabulares (TVAE). O codificador (*encoder*) comprime as linhas de dados em um espaço latente contínuo de baixa d",
+     "*   **Vantagens (Prós):**",
+     "    *   **Mais rápido e estável que GANs:** O treinamento do TVAE converge de forma muito mais rápida e suave do que a disputa competitiva da GAN.",
+     "    *   **Qualidade estatística alta:** Com épocas adequadas, frequentemente supera a GAN em métricas de similaridade de distribuição."
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 173,
+    "text": "uv run TVAESynthesizer.py",
+    "context": [
+     "# Executar CTGAN (Rede Neural de Aprendizado Adversarial)",
+     "uv run CTGANSynthesizer.py",
+     "",
+     "# Executar TVAE (Autoencoders Variacionais Tabulares)",
+     "uv run TVAESynthesizer.py",
+     "",
+     "# Executar CopulaGAN (Modelo Híbrido Cópula + GAN)",
+     "uv run CopulaGANSynthesizer.py",
+     ""
+    ]
+   }
+  ],
+  "sq": [
+   {
+    "file": "sequential_synthesis.py",
+    "line": 6,
+    "text": "from sdv.sequential import PARSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "import kagglehub",
+     "from sdv.metadata import Metadata",
+     "from sdv.sequential import PARSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "def main():",
+     "    print(\"--- 1. Verificando/Baixando Financial Fraud Detection Dataset (PaySim) ---\")"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ev",
+  "gc",
+  "hma",
+  "md",
+  "mt",
+  "par",
+  "sdv_any",
+  "sq",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "pyproject.toml": [
+   "    \"sdv>=1.37.3\","
+  ]
+ }
+}

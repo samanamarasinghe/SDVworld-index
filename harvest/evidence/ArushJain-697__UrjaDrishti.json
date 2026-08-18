@@ -1,0 +1,137 @@
+{
+ "repo": "ArushJain-697/UrjaDrishti",
+ "disk_kb": 8416,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# UrjaDrishti — KREDL / KSPDCL Renewable Forecasting\n\nUrjaDrishti is an **AI-enabled forecasting system** for Karnataka renewable generation. It sits on top of existing SCADA-style data flows **without modifying legacy systems**: forecasts and uncertainty are served to operators through a **FastAPI backend** and a **React (Vite) dashboard**.\n\n**What you get**\n\n- Plant and cluster forecasts with **P10 / P50 / P90** (80% prediction intervals)\n- **Explainability** (SHAP-driven signals mapped to operator-facing alerts)\n- **Evaluation** (baselines, holdout metrics, stress scenarios, report artifacts)\n- Dashboard areas: **Plant**, **Cluster**, **Evaluation**, **Logbook**, **War Room**\n- **English / Kannada** UI where implemented\n\n**Problem in one sentence:** Solar and wind output swing with weather and asset physics; operators need **accurate point forecasts**, **honest uncertainty**, and **plain-language drivers**—on-premise, without cloud-hosted training or inference on sensitive data.\n\n---\n\n## Architecture (high level)\n\n```mermaid\nflowchart LR\n  subgraph data [Data layer]\n    Syn[Synthetic feature matrix]\n    Stress[Stress scenario CSVs]\n  end\n  subgraph ml [ML layer]\n    Train[Train LightGBM + CQR]\n    Inf[Inference P10 P50 P90]\n    Eval[Evaluation and reports]\n  end\n  subgraph serve [Application]\n    API[FastAPI backend :8000]\n    UI[Vite React dashboard :5173]\n  end\n  Syn --> Train\n  Train --> Inf\n  Syn --> Eval\n  Stress --> Eval\n  Inf --> API\n  Eval --> API\n  API --> UI\n```\n\n**Runtime URLs (after `start.sh` / `start.bat`)**\n\n| Service | URL | Notes |\n|--------|-----|--------|\n| **Frontend (dashboard)** | http://localhost:5173 | Vite dev server |\n| **Backend (REST API)** | http://localhost:8000 | FastAPI (`uvicorn`) |\n| **OpenAPI / Swagger** | http://localhost:8000/docs | Interactive API docs |\n\nThe dashboard talks to the backend over HTTP; keep both processes running for a full demo.\n\n---\n\n## Data and physics (conceptual)\n\n```mermaid\nflowchart TB\n  subgraph inputs [Raw signals]\n    GHI[GHI temperature cloud]\n    WS[Wind speed direction]\n  end\n  subgraph physics [Physics transforms]\n    CMF[CMF solar: actual over clear-sky]\n    PCF[Power curve fraction wind]\n  end\n  subgraph model [Global model]\n    LGBM[LightGBM features + assets]\n    S2[Stage-2 residual correction]\n  end\n  GHI --> CMF\n  WS --> PCF\n  CMF --> LGBM\n  PCF --> LGBM\n  LGBM --> S2\n```\n\n- **Data:** Synthetic hourly history (Gaussian Copula–style multivariate series) mimicking Karnataka portfolio behaviour; **six plants**, **two clusters**; separate **stress** CSVs (cloud ramp, monsoon onset, wind spike, low irradiance)—evaluation only, not training.\n- **Solar:** **Cloud Modification Factor (CMF)** = actual GHI / clear-sky GHI (bounded, season-stable).\n- **Wind:** Hub-relevant wind passed through a **turbine power curve** so the model learns residuals, not the full nonlinear speed-to-power map.\n- **Uncertainty:** **Conformalized Quantile Regression (CQR)** via MAPIE on top of quantile LightGBM models—target **~80% empirical coverage** for the P10–P90 band on holdout data.\n\n---\n\n## Forecasting stack (two stages)\n\n```mermaid\nflowchart LR\n  D[Day-ahead features] --> S1[Stage 1 quantiles + CQR]\n  A[Recent actuals same day] --> S2[Stage 2 residual model]\n  S1 --> S2\n  S2 --> Out[P10 P50 P90 + optional MinT reconciliation]\n```\n\n- **Stage 1:** Global LightGBM across plants (asset encodings distinguish plants); outputs median and raw quantiles; **CQR** calibrates intervals.\n- **Stage 2:** Uses recent forecast errors (e.g. last hours) to **correct** remaining hours for intra-day-style updates.\n- **Reconciliation (Person 3):** **MinT** can align plant vs cluster totals so dashboards stay numerically consistent.\n\n---\n\n## Prerequisites\n\n- **Python 3.10+** (3.11 / 3.12 recommended)\n- **Node.js** LTS (18+ recommended) and **npm**\n- **Git**\n- **uvicorn** is pulled in via `backend/requirements.txt` (used to serve the API on port **8000**)\n\n---\n\n## One-command startup\n\nFrom the **repository root**:\n\n### macOS / Linux\n\n```bash\nbash start.sh\n```\n\n### Windows (CMD)\n\n```bat\nstart.bat\n```\n\n### What the scripts do (aligned with `start.sh` / `start.bat`)\n\n1. **Backend environment** — Create `backend/venv` if needed, activate it, `pip install -r backend/requirements.txt`.\n2. **Forecasting models** — `PYTHONPATH=<backend> python -m src.ml.forecasting.main` (trains / refreshes `kredl_stage1.pkl`, `kredl_stage2.pkl`).\n3. **Evaluation** — Runs, in order:\n   - `python -m src.ml.evaluation.test_baselines`\n   - `python -m src.ml.evaluation.test_harness`\n   - `python -m src.ml.evaluation.run_stress_evaluation`\n   - `python -m src.ml.evaluation.run_day5_report`  \n   (working directory must be `backend` with `PYTHONPATH` set; the scripts do this for you.)\n4. **Backend server** — `uvicorn src.main:app --reload --port 8000` → **http://localhost:8000** (Swagger at **`/docs`**).\n5. **Frontend** — `npm install` and `npm run dev` in `frontend/` → **http://localhost:5173**.\n\nOn **macOS/Linux**, `start.sh` runs backend and frontend in the background and waits on the frontend; **Ctrl+C** stops both (see `trap` in the script).\n\nOn **Windows**, `start.bat` opens **separate** terminal windows for uvicorn and Vite; you can close the launcher window after success.\n\n---\n\n## What success looks like in the terminal\n\nYou should see progress for **[1/5] … [5/5]** and messages such as:\n\n- `Backend environment ready.`\n- `Evaluation completed.` (after all four evaluation modules finish)\n- `SYSTEM READY`\n- `Dashboard: http://localhost:5173`\n- `API docs:  http://localhost:8000/docs` (printed by `start.sh`; `start.bat` prints the same URLs)\n\nOn the frontend process you should also see Vite **ready** and **Local: http://localhost:5173/**.\n\nIf any step fails, **fix that step first** (missing Python/npm, pip errors, missing `data/` files, etc.); both startup scripts are written to **fail fast** on model or evaluation errors where `set -e` / `exit /b 1` applies.\n\n---\n\n## Generated outputs (where to look)\n\n### Evaluation report artifacts\n\n`backend/src/ml/evaluation/reports/`\n\n- `comparison_table.csv`\n- `quantile_calibration_points.csv`\n- `season_stratified_table.csv`\n- `sharpness_summary.csv`\n- `evaluation_section.md`\n\n### Stress evaluation plots / tables\n\n`data/evaluation_plots/`\n\n- `stress_metrics_summary.csv`\n- `cloud_ramp_interval_width.png`\n- `monsoon_onset_interval_width.png`\n- `wind_spike_width_vs_wind.png`\n- `calm_vs_stress_interval_width.png`\n- `quantile_reliability.png` (when produced by the reporting flow)\n\n### Trained model binaries\n\n- `backend/src/ml/forecasting/kredl_stage1.pkl`\n- `backend/src/ml/forecasting/kredl_stage2.pkl`\n\n---\n\n## Frontend verification checklist\n\nWith **backend (8000)** and **frontend (5173)** running, open **http://localhost:5173** and check:\n\n- **Plant:** forecast ribbon (P10/P50/P90), confidence band, explainability alerts\n- **Cluster:** reconciliation behaviour and stacked / aggregate views\n- **Evaluation:** metrics table, forecast ledger, model health where wired\n- **Logbook:** add / search / filter entries\n- **War Room:** fullscreen-style monitor if enabled\n- **Language:** English / Kannada toggle where implemented\n\n---\n\n## 🚀 Deploy to Railway\n\nReady to deploy? Follow our quick deployment guide:\n\n### Quick Deploy (5 minutes)\n1. Push to GitHub\n2. Run `railway login && railway up`\n3. Set environment variables in Railway dashboard\n4. Your app is live!\n\n📖 **Full Guide:** [RAILWAY_DEPLOYMENT.md](./RAILWAY_DEPLOYMENT.md)\n\n**Quick Links:**\n- 🚀 [Quick Start](./QUICKSTART_RAILWAY.md)\n- 📖 [Detailed Guide](./RAILWAY_DEPLOYMENT.md)\n- 🔗 [Railway Docs](https://docs.railway.app/)\n\n---\n\n## Manual run (if you do not use `start.sh` / `start.bat`)\n\nAll commands assume repo root unless noted.\n\n### Backend: train models only\n\n```bash\ncd backend\npython -m venv venv\nsource venv/bin/activate   # Windows: venv\\Scripts\\activate\npython -m pip install -r requirements.txt\nPYTHONPATH=. python -m src.ml.forecasting.main\n```\n\n### Backend: API server (required for dashboard API calls)\n\n```bash\ncd backend\nsource venv/bin/activate\nPYTHONPATH=. uvicorn src.main:app --reload --port 8000\n```\n\nOpen **http://localhost:8000/docs** to inspect routes.\n\n### Backend: evaluation only (after models exist)\n\n```bash\ncd backend\nsource venv/bin/activate\nPYTHONPATH=. python -m src.ml.evaluation.test_baselines\nPYTHONPATH=. python -m src.ml.evaluation.test_harness\nPYTHONPATH=. python -m src.ml.evaluation.run_stress_evaluation\nPYTHONPATH=. python -m src.ml.evaluation.run_day5_report\n```\n\n### Frontend only\n\n```bash\ncd frontend\nnpm install\nnpm run dev\n```\n\nPoint the frontend’s API base URL to **http://localhost:8000** if your build uses an env variable (see `frontend` config if requests fail).\n\n---\n\n## Team and contributions\n\n```mermaid\nflowchart TB\n  P1[Person 1 Data and Physics]\n  P2[Person 2 Forecasting CQR]\n  P3[Person 3 SHAP Reconciliation]\n  P4[Person 4 Evaluation Stress]\n  P5[Person 5 Dashboard Submission]\n  P1 --> P2\n  P2 --> P3\n  P2 --> P4\n  P3 --> P5\n  P4 --> P5\n```\n\n| Person | Name | Focus |\n|--------|------|--------|\n| **Person 1** | Bhavya Garg | Synthetic data, physics features, stress scenario generators |\n| **Person 2** | Naman Bhandari | Global LightGBM, two-stage forecasts, MAPIE CQR |\n| **Person 3** | Surya Kiran Basava | SHAP explainability, alerts, MinT reconciliation |\n| **Person 4** | Manvik Kumar Gupta | Holdout evaluation, baselines, stress validation, reports |\n| **Person 5** | Arush Kumar Jain | React dashboard, integration, demo and submission packaging |\n\n---\n\n## Roadmap (not in this repo prototype)\n\nProduction narrative includes **spatio-temporal graph models** for weather propagation across plants and an **on-premise small language model** for richer alerts. The current hackathon path is **LightGBM + CQR + templates + MinT**, which is enough to demonstrate end-to-end value and evaluation discipline.\n\n---\n\n## License / data notice\n\nTraining uses **synthetic** Karnataka-like data. **No real SCADA** is bundled; deployment assumptions (on-prem, no cloud inference on sensitive data) are design goals described in team documentation.\n",
+ "hits": {
+  "st": [
+   {
+    "file": "backend/src/ml/data_pipeline/generate_data.py",
+    "line": 14,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import os",
+     "import warnings",
+     "warnings.filterwarnings(\"ignore\")",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from asset_registry import get_registry_df",
+     ""
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "backend/src/ml/data_pipeline/generate_data.py",
+    "line": 15,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import warnings",
+     "warnings.filterwarnings(\"ignore\")",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from asset_registry import get_registry_df",
+     "",
+     "np.random.seed(42)"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "backend/src/ml/data_pipeline/generate_data.py",
+    "line": 14,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import os",
+     "import warnings",
+     "warnings.filterwarnings(\"ignore\")",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from asset_registry import get_registry_df",
+     ""
+    ]
+   },
+   {
+    "file": "backend/src/ml/data_pipeline/generate_data.py",
+    "line": 15,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import warnings",
+     "warnings.filterwarnings(\"ignore\")",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from asset_registry import get_registry_df",
+     "",
+     "np.random.seed(42)"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "backend/src/ml/data_pipeline/generate_data.py",
+    "line": 14,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import os",
+     "import warnings",
+     "warnings.filterwarnings(\"ignore\")",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from asset_registry import get_registry_df",
+     ""
+    ]
+   },
+   {
+    "file": "backend/src/ml/data_pipeline/generate_data.py",
+    "line": 55,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "    # SDV needs metadata to understand column types",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(solar_seed_df.reset_index(drop=True))",
+     "",
+     "    synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "    synthesizer.fit(solar_seed_df.reset_index(drop=True))",
+     "    print(\"  Solar copula fitted.\")",
+     "    return synthesizer",
+     ""
+    ]
+   },
+   {
+    "file": "backend/src/ml/data_pipeline/generate_data.py",
+    "line": 71,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(wind_seed_df.reset_index(drop=True))",
+     "",
+     "    synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "    synthesizer.fit(wind_seed_df.reset_index(drop=True))",
+     "    print(\"  Wind copula fitted.\")",
+     "    return synthesizer",
+     ""
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

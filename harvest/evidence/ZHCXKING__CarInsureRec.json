@@ -1,0 +1,306 @@
+{
+ "repo": "ZHCXKING/CarInsureRec",
+ "disk_kb": 26471,
+ "method": "partial_clone",
+ "tree_files": 73,
+ "status": "ok",
+ "readme": "## CarInsureRec\n\nInsurance product recommendation experiments (target column: `product_item`). This repo includes:\n\n- Multiple recommenders (NN / tree / statistical baselines)\n- Missingness injection + imputation (MICE/KNN/GAIN/MIWAE)\n- A contrastive-learning recommender: `MICLRec` (`MICLRecommend`)\n\n### Requirements\n\n- Python 3.10+ (3.11 recommended)\n- Dependencies: `requirements.txt`\n\nNotes:\n\n- `torch~=2.9.1+cu126` is a CUDA 12.6 build tag. If you are on CPU-only or a different CUDA version, install a compatible PyTorch for your machine and adjust that line if needed.\n- Reading `*.parquet` via `pandas.read_parquet(...)` usually requires `pyarrow` (or `fastparquet`). If you see a parquet engine error, install one of them.\n\n### Setup\n\n```powershell\npython -m venv .venv\n.venv\\Scripts\\activate\npip install -r requirements.txt\n```\n\nIf you run `experiment/experiment.py` (writes to Excel with `engine='openpyxl'`), install:\n\n```powershell\npip install openpyxl\n```\n\n### Data\n\nDatasets live under `data/`:\n\n- `data/AWM/`\n- `data/HIP/`\n- `data/VID/`\n\nKey files per dataset:\n\n- `AllData.parquet`: full data (may contain missing values)\n- `DropNaData.parquet`: drop-NA version (`load(..., is_dropna=True)` uses this)\n- `Metadata.json`: column type metadata (categorical vs numerical)\n\nSource links are listed in `data/link.txt`.\n\n### Quick Start\n\nRun the default demo (loads `AWM`, injects missingness, trains/evaluates MICL variants):\n\n```powershell\npython main.py\n```\n\nCommon knobs in `main.py`:\n\n- `k`: Top-K for HR@K / NDCG@K\n- `seed`: random seed\n- `ratio`: missingness ratio for `inject_missingness(...)`\n- `load('AWM', ...)`: switch dataset (`AWM/HIP/VID`)\n\n### Reproduce Experiments\n\nRun the main experiment driver (loops datasets/models/seeds and writes into `experiment/experiment.xlsx`):\n\n```powershell\npython experiment/experiment.py\n```\n\nCurrent `__main__` runs:\n\n- `test_Perf()`: baseline performance across datasets/models\n- `test_NaRatio()`: performance under different missing ratios / imputers\n\nPlotting scripts (reads `experiment/experiment.xlsx`, outputs PDFs under `experiment/`):\n\n```powershell\npython experiment/figure_experiment.py\n```\n\nParameter tuning with Optuna (updates `experiment/<DATASET>/*_param.json`):\n\n```powershell\npython experiment/parameter_tuning.py\n```\n\n### Layout\n\n- `src/`\n  - `models/`: recommenders (NN/tree/statistical/MICL/ensemble)\n  - `utils/`: data loading, missingness injection, imputation\n  - `evaluation.py`: AUC, logloss, HR@K, NDCG@K, etc.\n- `data/`: datasets + metadata\n- `experiment/`: experiment scripts, params, outputs\n\n",
+ "hits": {
+  "st": [
+   {
+    "file": "data/VID/data_preproce.py",
+    "line": 5,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "# %%",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "# %%",
+     "feature = ['SEX', 'INSR_END', 'INSR_TYPE', 'INSURED_VALUE', 'PREMIUM', 'PROD_YEAR', 'SEATS_NUM', 'CARRYING_CAPACITY',",
+     "           'TYPE_VEHICLE', 'CCM_TON', 'MAKE', 'USAGE', 'CLAIM_PAID']",
+     "df1 = pd.read_csv('motor_data11-14lats.csv', usecols=feature)"
+    ]
+   },
+   {
+    "file": "data/AWM/data_preproce.py",
+    "line": 5,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "# %%",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "# %%",
+     "Data1_feature = ['Age', 'Driving exp', 'Occupation', 'Coverage', 'Insurer', 'NCD', 'Settlement Date', 'Make', 'Year of manufacturer', 'Sum of insured']",
+     "Data2_feature = ['Age', 'DE', 'Occupation', 'Coverage', 'Insur Co', 'NCD', 'Settlement Date', 'Make', 'Man. Year', 'Sum Insured']",
+     "feature = ['Age', 'DrivingExp', 'Occupation', 'Coverage', 'Insurer', 'NCD', 'Date', 'Make', 'Car.year', 'Car.price']"
+    ]
+   },
+   {
+    "file": "data/HIP/data_preproce.py",
+    "line": 5,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "# %%",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "# %%",
+     "Data_feature = ['gender', 'distribution_channel', 'C_C', 'C_H', 'age', 'premium', 'cost_claims_year', 'seniority_insured',",
+     "           'seniority_policy', 'exposure_time', 'n_medical_services', 'type_product', 'type_policy_dg', 'reimbursement']",
+     "feature = ['Gndr', 'Chan', 'Clim', 'Habt', 'Age', 'Prem', 'Clms', 'SnrU', 'SnrP', 'Expo', 'MedS', 'type_product', 'type_policy_dg', 'reimbursement']"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "data/VID/data_preproce.py",
+    "line": 4,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "# %%",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "# %%",
+     "feature = ['SEX', 'INSR_END', 'INSR_TYPE', 'INSURED_VALUE', 'PREMIUM', 'PROD_YEAR', 'SEATS_NUM', 'CARRYING_CAPACITY',",
+     "           'TYPE_VEHICLE', 'CCM_TON', 'MAKE', 'USAGE', 'CLAIM_PAID']"
+    ]
+   },
+   {
+    "file": "data/AWM/data_preproce.py",
+    "line": 4,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "# %%",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "# %%",
+     "Data1_feature = ['Age', 'Driving exp', 'Occupation', 'Coverage', 'Insurer', 'NCD', 'Settlement Date', 'Make', 'Year of manufacturer', 'Sum of insured']",
+     "Data2_feature = ['Age', 'DE', 'Occupation', 'Coverage', 'Insur Co', 'NCD', 'Settlement Date', 'Make', 'Man. Year', 'Sum Insured']"
+    ]
+   },
+   {
+    "file": "data/HIP/data_preproce.py",
+    "line": 4,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "# %%",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "# %%",
+     "Data_feature = ['gender', 'distribution_channel', 'C_C', 'C_H', 'age', 'premium', 'cost_claims_year', 'seniority_insured',",
+     "           'seniority_policy', 'exposure_time', 'n_medical_services', 'type_product', 'type_policy_dg', 'reimbursement']"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "data/VID/data_preproce.py",
+    "line": 4,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "# %%",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "# %%",
+     "feature = ['SEX', 'INSR_END', 'INSR_TYPE', 'INSURED_VALUE', 'PREMIUM', 'PROD_YEAR', 'SEATS_NUM', 'CARRYING_CAPACITY',",
+     "           'TYPE_VEHICLE', 'CCM_TON', 'MAKE', 'USAGE', 'CLAIM_PAID']"
+    ]
+   },
+   {
+    "file": "data/VID/data_preproce.py",
+    "line": 5,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "# %%",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "# %%",
+     "feature = ['SEX', 'INSR_END', 'INSR_TYPE', 'INSURED_VALUE', 'PREMIUM', 'PROD_YEAR', 'SEATS_NUM', 'CARRYING_CAPACITY',",
+     "           'TYPE_VEHICLE', 'CCM_TON', 'MAKE', 'USAGE', 'CLAIM_PAID']",
+     "df1 = pd.read_csv('motor_data11-14lats.csv', usecols=feature)"
+    ]
+   },
+   {
+    "file": "data/AWM/data_preproce.py",
+    "line": 4,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "# %%",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "# %%",
+     "Data1_feature = ['Age', 'Driving exp', 'Occupation', 'Coverage', 'Insurer', 'NCD', 'Settlement Date', 'Make', 'Year of manufacturer', 'Sum of insured']",
+     "Data2_feature = ['Age', 'DE', 'Occupation', 'Coverage', 'Insur Co', 'NCD', 'Settlement Date', 'Make', 'Man. Year', 'Sum Insured']"
+    ]
+   },
+   {
+    "file": "data/AWM/data_preproce.py",
+    "line": 5,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "# %%",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "# %%",
+     "Data1_feature = ['Age', 'Driving exp', 'Occupation', 'Coverage', 'Insurer', 'NCD', 'Settlement Date', 'Make', 'Year of manufacturer', 'Sum of insured']",
+     "Data2_feature = ['Age', 'DE', 'Occupation', 'Coverage', 'Insur Co', 'NCD', 'Settlement Date', 'Make', 'Man. Year', 'Sum Insured']",
+     "feature = ['Age', 'DrivingExp', 'Occupation', 'Coverage', 'Insurer', 'NCD', 'Date', 'Make', 'Car.year', 'Car.price']"
+    ]
+   },
+   {
+    "file": "data/HIP/data_preproce.py",
+    "line": 4,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "# %%",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "# %%",
+     "Data_feature = ['gender', 'distribution_channel', 'C_C', 'C_H', 'age', 'premium', 'cost_claims_year', 'seniority_insured',",
+     "           'seniority_policy', 'exposure_time', 'n_medical_services', 'type_product', 'type_policy_dg', 'reimbursement']"
+    ]
+   },
+   {
+    "file": "data/HIP/data_preproce.py",
+    "line": 5,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "# %%",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "# %%",
+     "Data_feature = ['gender', 'distribution_channel', 'C_C', 'C_H', 'age', 'premium', 'cost_claims_year', 'seniority_insured',",
+     "           'seniority_policy', 'exposure_time', 'n_medical_services', 'type_product', 'type_policy_dg', 'reimbursement']",
+     "feature = ['Gndr', 'Chan', 'Clim', 'Habt', 'Age', 'Prem', 'Clms', 'SnrU', 'SnrP', 'Expo', 'MedS', 'type_product', 'type_policy_dg', 'reimbursement']"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "data/VID/data_preproce.py",
+    "line": 5,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "# %%",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "# %%",
+     "feature = ['SEX', 'INSR_END', 'INSR_TYPE', 'INSURED_VALUE', 'PREMIUM', 'PROD_YEAR', 'SEATS_NUM', 'CARRYING_CAPACITY',",
+     "           'TYPE_VEHICLE', 'CCM_TON', 'MAKE', 'USAGE', 'CLAIM_PAID']",
+     "df1 = pd.read_csv('motor_data11-14lats.csv', usecols=feature)"
+    ]
+   },
+   {
+    "file": "data/VID/data_preproce.py",
+    "line": 35,
+    "text": "# synthesizer = CTGANSynthesizer(metadata, verbose=True)",
+    "context": [
+     "#df_drop.to_parquet('DropNaData.parquet', index=False)",
+     "# %%",
+     "# df_sdv = df.sample(n=100000, random_state=42)",
+     "# metadata = Metadata.load_from_json(filepath='Metadata.json')",
+     "# synthesizer = CTGANSynthesizer(metadata, verbose=True)",
+     "# synthesizer.fit(df_sdv)",
+     "# synthesizer.save(filepath='synthesizer.pkl')"
+    ]
+   },
+   {
+    "file": "data/AWM/data_preproce.py",
+    "line": 5,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "# %%",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "# %%",
+     "Data1_feature = ['Age', 'Driving exp', 'Occupation', 'Coverage', 'Insurer', 'NCD', 'Settlement Date', 'Make', 'Year of manufacturer', 'Sum of insured']",
+     "Data2_feature = ['Age', 'DE', 'Occupation', 'Coverage', 'Insur Co', 'NCD', 'Settlement Date', 'Make', 'Man. Year', 'Sum Insured']",
+     "feature = ['Age', 'DrivingExp', 'Occupation', 'Coverage', 'Insurer', 'NCD', 'Date', 'Make', 'Car.year', 'Car.price']"
+    ]
+   },
+   {
+    "file": "data/AWM/data_preproce.py",
+    "line": 83,
+    "text": "# synthesizer = CTGANSynthesizer(metadata, verbose=True)",
+    "context": [
+     "#df_drop.to_parquet('DropNaData.parquet', index=False)",
+     "# %%",
+     "# df_sdv = df.copy()",
+     "# metadata = Metadata.load_from_json(filepath='Metadata.json')",
+     "# synthesizer = CTGANSynthesizer(metadata, verbose=True)",
+     "# synthesizer.fit(df_sdv)",
+     "# synthesizer.save(filepath='synthesizer.pkl')"
+    ]
+   },
+   {
+    "file": "data/HIP/data_preproce.py",
+    "line": 5,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "# %%",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "# %%",
+     "Data_feature = ['gender', 'distribution_channel', 'C_C', 'C_H', 'age', 'premium', 'cost_claims_year', 'seniority_insured',",
+     "           'seniority_policy', 'exposure_time', 'n_medical_services', 'type_product', 'type_policy_dg', 'reimbursement']",
+     "feature = ['Gndr', 'Chan', 'Clim', 'Habt', 'Age', 'Prem', 'Clms', 'SnrU', 'SnrP', 'Expo', 'MedS', 'type_product', 'type_policy_dg', 'reimbursement']"
+    ]
+   },
+   {
+    "file": "data/HIP/data_preproce.py",
+    "line": 33,
+    "text": "# synthesizer = CTGANSynthesizer(metadata, verbose=True)",
+    "context": [
+     "#df_drop.to_parquet('DropNaData.parquet', index=False)",
+     "# %%",
+     "# df_sdv = df.copy()",
+     "# metadata = Metadata.load_from_json(filepath='Metadata.json')",
+     "# synthesizer = CTGANSynthesizer(metadata, verbose=True)",
+     "# synthesizer.fit(df_sdv)",
+     "# synthesizer.save(filepath='synthesizer.pkl')"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv~=1.30.0"
+  ]
+ }
+}

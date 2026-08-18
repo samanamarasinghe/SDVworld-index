@@ -1,0 +1,190 @@
+{
+ "repo": "Narayanan-07/Fraud-augumentation-pipeline",
+ "disk_kb": 190,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Real-Time Data Augmentation in Big Data Pipelines Using Generative AI\n\n![Python](https://img.shields.io/badge/Python-3.10-blue) ![Kafka](https://img.shields.io/badge/Kafka-3.7.0-orange) ![Spark](https://img.shields.io/badge/Spark-3.5.1-yellow) ![Docker](https://img.shields.io/badge/Docker-Compose-green) ![Streamlit](https://img.shields.io/badge/Streamlit-Dashboard-red)\n\n## 📜 Project Description\n\nThis project, **Fraud Augmentation Pipeline**, is a containerized real-time streaming pipeline designed for fraud detection. It leverages **CTGAN** (Conditional Tabular GAN) to augment imbalanced datasets in real time, enhancing the performance of machine learning classifiers. The pipeline processes streaming data, generates synthetic records, and provides live monitoring through an interactive dashboard.\n\n---\n\n## 🚀 Features\n\n1. **Real-Time Streaming**: Kafka producer streams credit card fraud data at 50 records/second.\n2. **Data Preprocessing**: PySpark cleans and scales data in 10-second micro-batches.\n3. **Synthetic Data Generation**: CTGAN generates synthetic fraud records to balance the dataset.\n4. **Data Storage**: Augmented data is saved as Parquet files for further analysis.\n5. **Model Evaluation**: Offline evaluation of Random Forest, XGBoost, and Logistic Regression.\n6. **Interactive Dashboard**: Streamlit dashboard visualizes pipeline metrics and evaluation results.\n\n---\n\n## 🛠️ Tech Stack\n\n- **Programming Language**: Python 3.10\n- **Streaming**: Apache Kafka 3.7.0\n- **Processing**: Apache Spark 3.5.1\n- **Data Augmentation**: CTGAN (via SDV library)\n- **Machine Learning**: Scikit-learn, XGBoost\n- **Visualization**: Streamlit, Plotly\n- **Containerization**: Docker Compose\n\n---\n\n## 📂 Folder Structure\n\n```plaintext\nfraud-augmentation-pipeline/\n├── data/\n│   ├── raw/                  # Place creditcard.csv here (gitignored)\n│   ├── processed/            # PySpark writes clean Parquet batches here\n│   ├── augmented/            # PySpark writes augmented Parquet batches here\n│   └── models/               # Place ctgan_model.pkl here after training\n├── pipeline/\n│   ├── producer.py           # Kafka CSV stream replay\n│   ├── stream_processor.py   # PySpark Structured Streaming + foreachBatch\n│   ├── preprocessor.py       # Cleaning, scaling, encoding\n│   └── storage_writer.py     # Parquet writer\n├── augmentation/\n│   ├── train_ctgan.py        # Offline CTGAN training script\n│   └── augmentor.py          # augment(df, batch_id) -> df interface\n├── models/\n│   └── train_eval.py         # Trains 3 classifiers, saves metrics.json\n├── evaluation/\n│   ├── metrics.py            # evaluate_model() and save_metrics() functions\n│   └── results/              # metrics.json written here\n├── dashboard/\n│   └── app.py                # Streamlit dashboard, auto-refresh 5s\n├── configs/\n│   ├── config.yaml           # All settings (broker, paths, augmentation params)\n│   └── schema.json           # Column names and dtypes contract\n├── setup/\n│   ├── install.sh            # Ubuntu local setup script\n│   ├── kafka_start.sh        # Local Kafka startup\n│   └── kafka_stop.sh         # Local Kafka stop\n├── docker/\n│   └── Dockerfile.pipeline   # Single Dockerfile for all Python services\n├── docker-compose.yaml       # All 5 services\n├── requirements.txt          # All Python dependencies\n└── .gitignore                # Ignores data/raw, data/processed, data/augmented, models\n```\n---\n\n## 🏗️ Architecture\n\n![Fraud Augmentation Architecture](docs/Fraud%20Augumentation%20Architecture.png)\n\n---\n\n## 🐳 Docker Services\n\n- **zookeeper**: Manages Kafka cluster metadata.\n- **kafka**: Apache Kafka broker for streaming data.\n- **producer**: Custom Python service for streaming credit card data.\n- **stream-processor**: PySpark service for data preprocessing and augmentation.\n- **dashboard**: Streamlit dashboard for real-time monitoring.\n\nAll services run on a user-defined bridge network `pipeline-net`.\n\n---\n\n## 🏗️ Setup and Usage\n\n### Step 1: Clone the Repository\n```bash\ngit clone https://github.com/Narayanan-07/fraud-augmentation-pipeline.git\ncd fraud-augmentation-pipeline\n```\n\n### Step 2: Prepare the Environment\n```bash\npython3 -m venv venv\nsource venv/bin/activate\npip install -r requirements.txt\n```\n\n### Step 3: Download Dataset\nDownload `creditcard.csv` from Kaggle and place it in `data/raw/`.\n\n### Step 4: Train CTGAN Model\n```bash\npython augmentation/train_ctgan.py\n```\nThis generates `data/models/ctgan_model.pkl`.\n\n### Step 5: Start the Pipeline\n```bash\ndocker compose up --build\n```\nWait for all services to initialize.\n\n### Step 6: View the Dashboard\nOpen [http://localhost:8501](http://localhost:8501) in your browser.\n\n### Step 7: Evaluate Models\n```bash\ndocker compose exec stream-processor python models/train_eval.py\n```\n\n### Step 8: Stop the Pipeline\n```bash\ndocker compose down -v\nrm -rf tmp/spark_checkpoint\n```\n\n---\n\n## 📊 Results\n\n| Classifier          | Baseline F1 | SMOTE F1 | CTGAN F1 |\n|---------------------|-------------|----------|----------|\n| Random Forest       | 0.732       | 0.798    | 0.841    |\n| XGBoost             | 0.751       | 0.812    | 0.857    |\n| Logistic Regression | 0.689       | 0.743    | 0.779    |\n\nCTGAN consistently achieves the best minority-class F1 score.\n\n---\n\n## 🛠️ Troubleshooting\n\n- **Offset mismatch error**: Run `docker compose down -v && rm -rf tmp/spark_checkpoint && docker compose up --build`.\n- **Synthetic rows = 0**: Ensure `data/models/ctgan_model.pkl` exists before starting Docker.\n- **Dashboard not refreshing**: Check Streamlit logs for errors.\n- **Model validation empty**: Ensure the pipeline has been running for at least 5 minutes.\n\n---\n\n## 📚 Acknowledgments\n\nThis project is based on the paper: *Generative AI for Real-Time Data Augmentation in Big Data Pipelines, CE2CT 2025*.\n\n---\n\n\n",
+ "hits": {
+  "st": [
+   {
+    "file": "augmentation/train_ctgan.py",
+    "line": 12,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import yaml",
+     "import json",
+     "import os",
+     "import logging",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')",
+     "log = logging.getLogger(\"train_ctgan\")"
+    ]
+   },
+   {
+    "file": "augmentation/augmentor.py",
+    "line": 70,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "        _ctgan_load_attempted = True",
+     "        return None",
+     "",
+     "    try:",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "        _ctgan_synthesizer = CTGANSynthesizer.load(str(model_path))",
+     "        # Bug 1 fix: distinct success log so operators know the retry worked",
+     "        log.info(",
+     "            f\"[CTGAN] ✅ Model loaded successfully from {model_path} \""
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "augmentation/train_ctgan.py",
+    "line": 13,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import json",
+     "import os",
+     "import logging",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')",
+     "log = logging.getLogger(\"train_ctgan\")",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "augmentation/train_ctgan.py",
+    "line": 12,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import yaml",
+     "import json",
+     "import os",
+     "import logging",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')",
+     "log = logging.getLogger(\"train_ctgan\")"
+    ]
+   },
+   {
+    "file": "augmentation/train_ctgan.py",
+    "line": 13,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import json",
+     "import os",
+     "import logging",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')",
+     "log = logging.getLogger(\"train_ctgan\")",
+     ""
+    ]
+   },
+   {
+    "file": "augmentation/augmentor.py",
+    "line": 70,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "        _ctgan_load_attempted = True",
+     "        return None",
+     "",
+     "    try:",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "        _ctgan_synthesizer = CTGANSynthesizer.load(str(model_path))",
+     "        # Bug 1 fix: distinct success log so operators know the retry worked",
+     "        log.info(",
+     "            f\"[CTGAN] ✅ Model loaded successfully from {model_path} \""
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "augmentation/train_ctgan.py",
+    "line": 12,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import yaml",
+     "import json",
+     "import os",
+     "import logging",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')",
+     "log = logging.getLogger(\"train_ctgan\")"
+    ]
+   },
+   {
+    "file": "augmentation/train_ctgan.py",
+    "line": 63,
+    "text": "synthesizer = CTGANSynthesizer(metadata, epochs=100)",
+    "context": [
+     "        metadata.update_column(column_name=id_col, sdtype='id')",
+     "",
+     "    log.info(\"Initializing CTGAN Synthesizer...\")",
+     "    # Using 100 epochs as a default for quick training, could be increased for better quality",
+     "    synthesizer = CTGANSynthesizer(metadata, epochs=100)",
+     "",
+     "    log.info(\"Training CTGAN model... (This may take a few minutes)\")",
+     "    synthesizer.fit(fraud_df)",
+     "    "
+    ]
+   },
+   {
+    "file": "augmentation/augmentor.py",
+    "line": 70,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "        _ctgan_load_attempted = True",
+     "        return None",
+     "",
+     "    try:",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "        _ctgan_synthesizer = CTGANSynthesizer.load(str(model_path))",
+     "        # Bug 1 fix: distinct success log so operators know the retry worked",
+     "        log.info(",
+     "            f\"[CTGAN] ✅ Model loaded successfully from {model_path} \""
+    ]
+   },
+   {
+    "file": "augmentation/augmentor.py",
+    "line": 71,
+    "text": "_ctgan_synthesizer = CTGANSynthesizer.load(str(model_path))",
+    "context": [
+     "        return None",
+     "",
+     "    try:",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "        _ctgan_synthesizer = CTGANSynthesizer.load(str(model_path))",
+     "        # Bug 1 fix: distinct success log so operators know the retry worked",
+     "        log.info(",
+     "            f\"[CTGAN] ✅ Model loaded successfully from {model_path} \"",
+     "            f\"(lazy retry={'yes' if _ctgan_load_attempted else 'no'}).\""
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv",
+   "ctgan"
+  ]
+ }
+}

@@ -1,0 +1,118 @@
+{
+ "repo": "Terminator19-ops/synthetic-data-generation",
+ "disk_kb": 1360,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Synthetic Sequential Data Generation (ACTGAN + SDV/RDT)\n\nEnd-to-end pipeline to generate synthetic sequential tabular data using Gretel's ACTGAN plus SDV/RDT preprocessing and optional quality assessment with MOSTLY AI QA.\n\n## Contents\n- `archive/sequential-training.csv` – source training data\n- `actgan_pipeline.py` – build metadata, transform, train ACTGAN, sample synthetic data\n- `testing.py` – quality report comparing real vs synthetic\n- `req.txt` – Python dependencies (pinning model libs)\n\n## Features\n- Deterministic reproducibility (seeded RNGs)\n- Custom metadata & sequence index (`group_id`, `sequence_index`)\n- ACTGAN tuned (deeper nets, PAC, decay) for richer categorical / numeric mix\n- RDT HyperTransformer for explicit per-column transformers\n- Bulk synthetic sampling with regenerated `group_id` pattern\n- Model checkpoint persistence (`synthesizer_checkpoint3.pkl`)\n\n## Quick Start\n### 1. Environment (Windows PowerShell/cmd)\n```powershell\npython -m venv venv\npip install --upgrade pip\n```\n\n### 2. Install Requirements\n```powershell\npip install --index-url https://download.pytorch.org/whl/cu118 torch==2.0.1+cu118\npip install -r req.txt\n```\nIf no compatible GPU: install CPU torch instead:\n```powershell\npip install torch==2.0.1\n```\n\n### 3. Run Pipeline\n```powershell\npython actgan_pipeline.py\n```\nOutputs:\n- `data.csv` – intermediate transformed data\n- `synthesizer_checkpoint3.pkl` – saved ACTGAN\n- `sequential_synthetic1.csv` – final synthetic dataset\n\n### 4. (Optional) Quality Report\n```powershell\npython -m venv test_env\ntest_env/scripts/activate\npython testing.py\n```\nGenerates a similarity metrics report (path returned in console) comparing training vs synthetic.\n\n## Configuration Highlights\n- `embedding_dim`, `generator_dim`, `discriminator_dim` tuned for balance\n- `pac=16` improves conditioning for mixed dtypes\n- `epochs=300` (reduce if overfitting or time constrained)\n- Replace / extend transformers inside `config` in `actgan_pipeline.py` to tailor normalization or encodings\n\n## Customizing\nEdit in `actgan_pipeline.py`:\n- Sampling volume: change size of `g1` or repetition logic\n- Hyperparameters: pass new dims or learning rates to `ACTGAN`\n- Columns: adjust metadata / transformer mapping if schema changes\n\n## Troubleshooting\n| Issue | Fix |\n|-------|-----|\n| Import errors (rdt, sdv, gretel) | Verify virtual env + `pip install -r req.txt` |\n| Torch CUDA not found | Install CPU torch or correct CUDA wheel index URL |\n| Memory usage high | Lower `batch_size` or network layer widths |\n| Poor synthetic variety | Increase epochs or embedding_dim; review transformer choices |\n| Column mismatch after sampling | Ensure dropped columns (e.g., `sequence_index`) align with downstream expectations |\n\n\n## Citation / Attribution\nTools: Gretel ACTGAN, SDV/RDT, MOSTLY AI QA, PyTorch.\n---\n\n\n",
+ "hits": {
+  "md": [
+   {
+    "file": "actgan_pipeline.py",
+    "line": 7,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "from gretel_synthetics.actgan import ACTGAN",
+     "import pandas as pd",
+     "import torch",
+     "import os",
+     "from sdv.metadata import Metadata",
+     "from rdt.transformers.numerical import FloatFormatter",
+     "from rdt import HyperTransformer",
+     "from rdt.transformers.numerical import ClusterBasedNormalizer",
+     "from rdt.transformers.categorical import LabelEncoder"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "actgan_pipeline.py",
+    "line": 7,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "from gretel_synthetics.actgan import ACTGAN",
+     "import pandas as pd",
+     "import torch",
+     "import os",
+     "from sdv.metadata import Metadata",
+     "from rdt.transformers.numerical import FloatFormatter",
+     "from rdt import HyperTransformer",
+     "from rdt.transformers.numerical import ClusterBasedNormalizer",
+     "from rdt.transformers.categorical import LabelEncoder"
+    ]
+   }
+  ],
+  "rdt": [
+   {
+    "file": "actgan_pipeline.py",
+    "line": 8,
+    "text": "from rdt.transformers.numerical import FloatFormatter",
+    "context": [
+     "import pandas as pd",
+     "import torch",
+     "import os",
+     "from sdv.metadata import Metadata",
+     "from rdt.transformers.numerical import FloatFormatter",
+     "from rdt import HyperTransformer",
+     "from rdt.transformers.numerical import ClusterBasedNormalizer",
+     "from rdt.transformers.categorical import LabelEncoder",
+     ""
+    ]
+   },
+   {
+    "file": "actgan_pipeline.py",
+    "line": 9,
+    "text": "from rdt import HyperTransformer",
+    "context": [
+     "import torch",
+     "import os",
+     "from sdv.metadata import Metadata",
+     "from rdt.transformers.numerical import FloatFormatter",
+     "from rdt import HyperTransformer",
+     "from rdt.transformers.numerical import ClusterBasedNormalizer",
+     "from rdt.transformers.categorical import LabelEncoder",
+     "",
+     "# Set random seed for reproducibility"
+    ]
+   },
+   {
+    "file": "actgan_pipeline.py",
+    "line": 10,
+    "text": "from rdt.transformers.numerical import ClusterBasedNormalizer",
+    "context": [
+     "import os",
+     "from sdv.metadata import Metadata",
+     "from rdt.transformers.numerical import FloatFormatter",
+     "from rdt import HyperTransformer",
+     "from rdt.transformers.numerical import ClusterBasedNormalizer",
+     "from rdt.transformers.categorical import LabelEncoder",
+     "",
+     "# Set random seed for reproducibility",
+     "SEED = 42"
+    ]
+   },
+   {
+    "file": "actgan_pipeline.py",
+    "line": 11,
+    "text": "from rdt.transformers.categorical import LabelEncoder",
+    "context": [
+     "from sdv.metadata import Metadata",
+     "from rdt.transformers.numerical import FloatFormatter",
+     "from rdt import HyperTransformer",
+     "from rdt.transformers.numerical import ClusterBasedNormalizer",
+     "from rdt.transformers.categorical import LabelEncoder",
+     "",
+     "# Set random seed for reproducibility",
+     "SEED = 42",
+     "random.seed(SEED)"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "md",
+  "rdt",
+  "sdv_any"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

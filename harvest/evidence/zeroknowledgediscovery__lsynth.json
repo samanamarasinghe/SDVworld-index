@@ -1,0 +1,401 @@
+{
+ "repo": "zeroknowledgediscovery/lsynth",
+ "disk_kb": 98482,
+ "method": "partial_clone",
+ "tree_files": 252,
+ "status": "ok",
+ "readme": "# lsynth\n\n**MAP-alignment fidelity and dataset distance for synthetic tabular data**\n\nThis package implements the one-sided MAP-alignment fidelity statistic\nintroduced by Chattopadhyay *et al.* and described in the manuscript\n“How Good Is Your Synthetic Data?”.\n\nThe package cleanly separates **synthetic data generation** from **evaluation**:\n\n* `generate_syndata(...)` produces synthetic tabular data using multiple generators.\n* `compute_upsilon(df, ...)` evaluates MAP-alignment fidelity on *any* external DataFrame.\n\nThe library is fully compatible with externally generated synthetic data and is primarily aimed at **evaluation**, although several reference generators are included.\n\n---\n\n## Core Idea\n\nFor a synthetic record to be realistic, each coordinate should agree\nwith the conditional MAP prediction inferred from real data.\n\nFor a data record `x` and coordinate `i`:\n\n```\nυ(x, i) = φ_i(x_i | x_{-i}) / max_y φ_i(y | x_{-i})\n```\n\nAveraged over samples and coordinates:\n\n```\nΥ(D) ∈ [0, 1]\n```\n\n* **High Υ** ⇒ synthetic preserves *real conditional structure*\n* **Low Υ** ⇒ structural distortion (even if marginals or covariance match)\n\n---\n\n## Installation\n\n```bash\npip install lsynth\n```\n\n---\n\n## Synthetic Data Generation\n\nSynthetic data generation is handled by `generate_syndata`, which always returns a **pandas DataFrame** whose columns exactly match the target feature space.\n\n```python\nfrom lsynth import generate_syndata\n```\n\n### Supported Generators\n\n* **`\"LSM\"`**\n  Uses a trained QuasiNet model as a generative model via `qsample`.\n\n* **`\"BASELINE\"`**\n  Independent-column null model (Gaussian for numeric, categorical sampling for discrete).\n\n* **`\"CTGAN\"`**\n  Uses SDV’s `CTGANSynthesizer`.\n\n* **Custom generators**\n  Any user-defined function returning a DataFrame with the correct columns.\n\n### Example: LSM Generation\n\n```python\ndf_lsm = generate_syndata(\n    num=1000,\n    model_path=\"gss_2018.joblib\",\n    gen_algorithm=\"LSM\",\n    n_workers=8,\n)\n```\n\n### Example: Baseline Generator\n\n```python\ndf_baseline = generate_syndata(\n    num=1000,\n    gen_algorithm=\"BASELINE\",\n    orig_df=df_real,\n    feature_names=df_real.columns.tolist(),\n)\n```\n\n### Example: CTGAN Generator\n\n```python\ndf_ctgan = generate_syndata(\n    num=1000,\n    gen_algorithm=\"CTGAN\",\n    orig_df=df_real,\n    feature_names=df_real.columns.tolist(),\n)\n```\n\n---\n\n## MAP-Alignment Fidelity Evaluation\n\nEvaluation is handled **only** by `compute_upsilon`, which operates on an external DataFrame.\n\n```python\nfrom lsynth import compute_upsilon\n```\n\n```python\nups, _ = compute_upsilon(\n    df=df_lsm,\n    model_path=\"gss_2018.joblib\",\n    n_workers=8,\n)\n\nprint(\"Mean Υ:\", ups.mean())\n```\n\nKey properties:\n\n* No data generation occurs inside `compute_upsilon`\n* Columns must match `model.feature_names` exactly and in order\n* Works identically for real or synthetic data\n\n---\n\n## Example Notebook\n\nSee **`example2.ipynb`** for a complete, reproducible workflow:\n\n1. Load real data\n2. Generate synthetic datasets using multiple generators\n3. Compute and compare MAP-alignment fidelity\n4. Interpret structural degradation across generators\n\n---\n\n## Why MAP-Alignment?\n\nBecause **covariance matching is insufficient**.\n\nThe manuscript shows explicit counterexamples where:\n\n* Real and synthetic data share identical means, variances, and covariance matrices\n* Yet differ strongly in higher-order and conditional structure\n* MAP-alignment detects the discrepancy immediately\n\nThis method:\n\n* Detects nonlinear and higher-order dependencies\n* Avoids embedding or representation artifacts\n* Comes with finite-sample uncertainty control\n\n---\n\n## Citation\n\n```\nChattopadhyay I, et al.\n“How Good Is Your Synthetic Data?”\n```\n",
+ "hits": {
+  "ct": [
+   {
+    "file": "README.md",
+    "line": 65,
+    "text": "Uses SDV’s `CTGANSynthesizer`.",
+    "context": [
+     "* **`\"BASELINE\"`**",
+     "  Independent-column null model (Gaussian for numeric, categorical sampling for discrete).",
+     "",
+     "* **`\"CTGAN\"`**",
+     "  Uses SDV’s `CTGANSynthesizer`.",
+     "",
+     "* **Custom generators**",
+     "  Any user-defined function returning a DataFrame with the correct columns.",
+     ""
+    ]
+   },
+   {
+    "file": "lsynth/core1.py",
+    "line": 222,
+    "text": "Use an SDV ``CTGANSynthesizer``. Requires ``orig_df`` with",
+    "context": [
+     "                :func:`_fit_independent_models` and sampled via",
+     "                :func:`_sample_independent`.",
+     "",
+     "            • ``\"CTGAN\"``:",
+     "                Use an SDV ``CTGANSynthesizer``. Requires ``orig_df`` with",
+     "                columns matching ``model.feature_names``. Imports SDV",
+     "                lazily. You must have ``sdv`` installed to use this option.",
+     "",
+     "            • Any other string:"
+    ]
+   },
+   {
+    "file": "lsynth/core1.py",
+    "line": 420,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "                print(f\"Generating {num} samples via CTGAN.\")",
+     "",
+     "            # Local import so BASELINE/LSM don't require sdv installed",
+     "            from sdv.metadata import SingleTableMetadata",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "",
+     "            metadata = SingleTableMetadata()",
+     "            metadata.detect_from_dataframe(data=orig_df)",
+     ""
+    ]
+   },
+   {
+    "file": "lsynth/core1.py",
+    "line": 425,
+    "text": "synthesizer = CTGANSynthesizer(metadata)",
+    "context": [
+     "",
+     "            metadata = SingleTableMetadata()",
+     "            metadata.detect_from_dataframe(data=orig_df)",
+     "",
+     "            synthesizer = CTGANSynthesizer(metadata)",
+     "            synthesizer.fit(orig_df)",
+     "",
+     "            synthetic_df = synthesizer.sample(num_rows=num)",
+     "            synthetic_df = synthetic_df[feature_names]"
+    ]
+   },
+   {
+    "file": "lsynth/core.py",
+    "line": 84,
+    "text": "- \"CTGAN\": SDV `CTGANSynthesizer` fit to `orig_df`; requires `orig_df` and",
+    "context": [
+     "               (either `model` or `model_path`). If `feature_names` is not provided, it is",
+     "               taken from `model.feature_names`.",
+     "      - \"BASELINE\": independent-column Gaussian/categorical model fit to `orig_df`;",
+     "                   requires `orig_df` and `feature_names` (or a model to infer them).",
+     "      - \"CTGAN\": SDV `CTGANSynthesizer` fit to `orig_df`; requires `orig_df` and",
+     "                 `feature_names` (or a model to infer them).",
+     "      - otherwise: calls `data_generator(model=model, num=num, orig_df=orig_df, feature_names=feature_names)`",
+     "                   and expects a DataFrame with columns exactly equal to `feature_names`.",
+     ""
+    ]
+   },
+   {
+    "file": "lsynth/core.py",
+    "line": 162,
+    "text": "# CTGAN: SDV CTGANSynthesizer from orig_df",
+    "context": [
+     "        df_syn = _sample_independent(models, num)",
+     "        df_syn = df_syn[feature_names]",
+     "        return df_syn",
+     "",
+     "    # CTGAN: SDV CTGANSynthesizer from orig_df",
+     "    if gen_algorithm == \"CTGAN\":",
+     "        if orig_df is None:",
+     "            raise ValueError(\"orig_df must be provided for gen_algorithm='CTGAN'.\")",
+     "        cols = list(orig_df.columns)"
+    ]
+   },
+   {
+    "file": "lsynth/core.py",
+    "line": 178,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "        if verbose:",
+     "            print(f\"Generating {num} rows via CTGAN.\")",
+     "",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "",
+     "",
+     "        with silence_output():",
+     "            metadata = SingleTableMetadata()"
+    ]
+   },
+   {
+    "file": "lsynth/core.py",
+    "line": 185,
+    "text": "synthesizer = CTGANSynthesizer(metadata)",
+    "context": [
+     "        with silence_output():",
+     "            metadata = SingleTableMetadata()",
+     "            metadata.detect_from_dataframe(data=orig_df)",
+     "",
+     "            synthesizer = CTGANSynthesizer(metadata)",
+     "            synthesizer.fit(orig_df)",
+     "",
+     "        df_syn = synthesizer.sample(num_rows=num)",
+     "        df_syn = df_syn[feature_names]"
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "lsynth/core1.py",
+    "line": 420,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "                print(f\"Generating {num} samples via CTGAN.\")",
+     "",
+     "            # Local import so BASELINE/LSM don't require sdv installed",
+     "            from sdv.metadata import SingleTableMetadata",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "",
+     "            metadata = SingleTableMetadata()",
+     "            metadata.detect_from_dataframe(data=orig_df)",
+     ""
+    ]
+   },
+   {
+    "file": "lsynth/core.py",
+    "line": 178,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "        if verbose:",
+     "            print(f\"Generating {num} rows via CTGAN.\")",
+     "",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "",
+     "",
+     "        with silence_output():",
+     "            metadata = SingleTableMetadata()"
+    ]
+   },
+   {
+    "file": "local_examples/lsynth_eval_comparators_fast_chow.py",
+    "line": 675,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     ") -> pd.DataFrame:",
+     "    \"\"\"Optional SDV Gaussian Copula comparator.\"\"\"",
+     "    try:",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import GaussianCopulaSynthesizer",
+     "    except ModuleNotFoundError as exc:",
+     "        raise RuntimeError(",
+     "            \"SDV Gaussian Copula requires the `sdv` package. Install it or rerun \"",
+     "            \"without --run-sdv-gaussian-copula.\""
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "lsynth/core1.py",
+    "line": 419,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "            if verbose:",
+     "                print(f\"Generating {num} samples via CTGAN.\")",
+     "",
+     "            # Local import so BASELINE/LSM don't require sdv installed",
+     "            from sdv.metadata import SingleTableMetadata",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "",
+     "            metadata = SingleTableMetadata()",
+     "            metadata.detect_from_dataframe(data=orig_df)"
+    ]
+   },
+   {
+    "file": "lsynth/core.py",
+    "line": 177,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "            )",
+     "        if verbose:",
+     "            print(f\"Generating {num} rows via CTGAN.\")",
+     "",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "",
+     "",
+     "        with silence_output():"
+    ]
+   },
+   {
+    "file": "local_examples/lsynth_eval_comparators_fast_chow.py",
+    "line": 674,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    train_rows: int,",
+     ") -> pd.DataFrame:",
+     "    \"\"\"Optional SDV Gaussian Copula comparator.\"\"\"",
+     "    try:",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import GaussianCopulaSynthesizer",
+     "    except ModuleNotFoundError as exc:",
+     "        raise RuntimeError(",
+     "            \"SDV Gaussian Copula requires the `sdv` package. Install it or rerun \""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "lsynth/core1.py",
+    "line": 419,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "            if verbose:",
+     "                print(f\"Generating {num} samples via CTGAN.\")",
+     "",
+     "            # Local import so BASELINE/LSM don't require sdv installed",
+     "            from sdv.metadata import SingleTableMetadata",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "",
+     "            metadata = SingleTableMetadata()",
+     "            metadata.detect_from_dataframe(data=orig_df)"
+    ]
+   },
+   {
+    "file": "lsynth/core1.py",
+    "line": 420,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "                print(f\"Generating {num} samples via CTGAN.\")",
+     "",
+     "            # Local import so BASELINE/LSM don't require sdv installed",
+     "            from sdv.metadata import SingleTableMetadata",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "",
+     "            metadata = SingleTableMetadata()",
+     "            metadata.detect_from_dataframe(data=orig_df)",
+     ""
+    ]
+   },
+   {
+    "file": "lsynth/core.py",
+    "line": 177,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "            )",
+     "        if verbose:",
+     "            print(f\"Generating {num} rows via CTGAN.\")",
+     "",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "",
+     "",
+     "        with silence_output():"
+    ]
+   },
+   {
+    "file": "lsynth/core.py",
+    "line": 178,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "        if verbose:",
+     "            print(f\"Generating {num} rows via CTGAN.\")",
+     "",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "",
+     "",
+     "        with silence_output():",
+     "            metadata = SingleTableMetadata()"
+    ]
+   },
+   {
+    "file": "local_examples/lsynth_eval_comparators_fast_chow.py",
+    "line": 674,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    train_rows: int,",
+     ") -> pd.DataFrame:",
+     "    \"\"\"Optional SDV Gaussian Copula comparator.\"\"\"",
+     "    try:",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import GaussianCopulaSynthesizer",
+     "    except ModuleNotFoundError as exc:",
+     "        raise RuntimeError(",
+     "            \"SDV Gaussian Copula requires the `sdv` package. Install it or rerun \""
+    ]
+   },
+   {
+    "file": "local_examples/lsynth_eval_comparators_fast_chow.py",
+    "line": 675,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     ") -> pd.DataFrame:",
+     "    \"\"\"Optional SDV Gaussian Copula comparator.\"\"\"",
+     "    try:",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import GaussianCopulaSynthesizer",
+     "    except ModuleNotFoundError as exc:",
+     "        raise RuntimeError(",
+     "            \"SDV Gaussian Copula requires the `sdv` package. Install it or rerun \"",
+     "            \"without --run-sdv-gaussian-copula.\""
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "local_examples/lsynth_eval_comparators_fast_chow.py",
+    "line": 675,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     ") -> pd.DataFrame:",
+     "    \"\"\"Optional SDV Gaussian Copula comparator.\"\"\"",
+     "    try:",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import GaussianCopulaSynthesizer",
+     "    except ModuleNotFoundError as exc:",
+     "        raise RuntimeError(",
+     "            \"SDV Gaussian Copula requires the `sdv` package. Install it or rerun \"",
+     "            \"without --run-sdv-gaussian-copula.\""
+    ]
+   },
+   {
+    "file": "local_examples/lsynth_eval_comparators_fast_chow.py",
+    "line": 690,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "        train_df = orig_df.reset_index(drop=True)",
+     "",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(data=train_df)",
+     "    synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "    synthesizer.fit(train_df)",
+     "    syn = synthesizer.sample(num_rows=num_rows)",
+     "    return align_columns(orig_df, syn, name=\"sdv_gaussian_copula\")",
+     ""
+    ]
+   },
+   {
+    "file": "local_examples/lsynth_eval_comparators_fast_chow.py",
+    "line": 1575,
+    "text": "help=\"Enable optional SDV GaussianCopulaSynthesizer comparator.\",",
+    "context": [
+     "",
+     "    p.add_argument(",
+     "        \"--run-sdv-gaussian-copula\",",
+     "        action=\"store_true\",",
+     "        help=\"Enable optional SDV GaussianCopulaSynthesizer comparator.\",",
+     "    )",
+     "",
+     "    p.add_argument(",
+     "        \"--sdv-train-rows\","
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "setup.py": [
+   "        \"sdv>=1.8\"],"
+  ]
+ }
+}

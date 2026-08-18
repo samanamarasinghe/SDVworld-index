@@ -1,0 +1,979 @@
+{
+ "repo": "WellbeingDataLab/SyntheticData",
+ "disk_kb": 3625,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Wellbeing DataLab\n\nWellbeing DataLab tarjoaa käyttäjilleen alustan, jolla voi kokeilla kuinka hyvin synteettinen data\nsoveltuu omaan alaan, matalalla kynnyksellä.\nAlusta koostuu kahdesta osa-alueesta, synteettisen datan generoinnista, ja sen laadun tarkistamisesta\neli validoinnista.\nNäiden ohjeistukset ja koodit ovat omissa kansioissaan, ja tässä dokumentissa on yleisinformaatiota\nsynteettisestä datasta.\n\n![iteraatiokuva](./images/synthetic_data_iteration.png)\n\n## Mitä on synteettinen data?\n\n- \"*Synthetic data is data that has been generated using a purposebuilt mathematical model or algorithm, with the aim of solving a (set of) data science task(s)*\", Jordon et al. (2022)\n\n\n\nMääritelmän mukaan synteettinen data on siis dataa joka on on generoitu tarkoituksenmukaisesti ratkomaan datatieteiden ongelmia sitä varten rakennetulla mallilla.\nSe ei rajaa pois erilaisia datatyyppejä, ja synteettinen data voi siis olla taulukkomuotoisen datan lisäksi\ntekstiä, kuvaa, videota, ääntä, signaalia jne., tai vaikka näiden sekoitusta.\nTarkoituksenmukaisuus datatieteiden ongelmanratkontaan tarkoittaa kuitenkin että kaikki koneellisesti generoitu data ei ole synteettistä dataa tässä\nmerkityksessä, ja esimerkiksi keskustelut Chat-GPT:n kanssa voidaan jättää määritelmän ulkopuolelle.\nToisaalta tietokonesimulaatioita pidetään omana tutkimusalanaan, vaikka niiden generoima data\nmääritelmän täyttääkin.\n\nMitä synteettinen data on siis käytännössä? Se voidaan määritellä myös aidon datan jäljitelmäksi, ja synteettistä dataa\ntutkimalla saavutaan samoihin johtopäätöksiin kuin aidolla datalla.\nSynteettinen data on siis aidon kopio, joka noudattaa mahdollisimman tarkasti sen ominaisuuksia kuten jakaumia ja korrelaatioita,\nja jota voidaan käyttää ratkaisemaan samoja ongelmia kuin aitoa data.\nEtuna tällä on luonnollisesti se että aitoa dataa ei tarvitse käyttää, joko tietosuojasyistä tai jos niitä\nei katsota riittävän edustaviksi.\nHeikkoutena synteettisellä datalla on sen tarkkuus: Siinä missä jokin aito datanäyte on aina approksimaatio\nkoko populaatiosta tai jostain ilmiöstä, on synteettinen data approksimaatio tästä aidosta datanäytteestä.\n\nSynteettinen data tarvitsee aina aitoa dataa jonka pohjalta se generoidaan.\nSe **ei** siis ratkaise datan puutetta.\nSillä ei myöskään voi lähtökohtaisesti lisätä näytteiden määrää, eli kymmenen henkilön pohjalta generoidut\nmiljoona synteettistä henkilöä eivät yhdessä edusta pienen valtion populaatiota.\nLisäksi synteettisen datan pohjalta tehtyjen johtopäätöksien kanssa täytyy olla varovainen, sillä\nyleistyminen reaalimaailmaan on aina riippuvainen aidosta datasta ja kuinka hyvin sen jäljittelemisessä\non onnistuttu.\nKäyttötarkoitusten valinnassa on siis oltava varovainen.\n\n## Mihin sitä voi käyttää?\n\nEU:n yleisen tietosuoja-asetuksen mukaan synteettistä dataa saa käyttää silloin kun käyttäjällä on \noikeudet alkuperäiseen dataan.\nTämä rajoittaa huomattavasti synteettisen datan käyttötarkoituksia, ja lisää tutkimusta etenkin\nturvallisen synteettisen datan generointiin tarvitaan.\nSynteettistä dataa voidaan kuitenkin käyttää myös datan augmentoitiin,\neli näytteiden, joita ei esiinny alkuperäisessä datassa, lisäämiseen dataan.\nTämä käyttötapa ei vaadi takeita yksityisyyden säilyttämisestä ja\non sovellettavissa myös tällä hetkellä.\n\nDatan augmentointia käytetään yleisesti koneoppimisessa mallien suorituskyvyn parantamiseen.\nEsimerkiksi kuvantunnistuksessa opetusaineistoon voidaan lisätä muunneltuja kuvia, kuten kierrettyjä, \npeilattuja, ylösalaisin olevia, tai vaikka mustavalkoisia kuvia.\nMustavalkoinen ja ylösalaisin oleva kuva koirasta esittää siinä missä muuntelematon, ja\nmalli voi oppia helpommin sietämään poikkeuksellisia kuvia vaikka niitä ei alkuperäisessä aineistossa\nesiintyisikään.\n\nAugmentointi synteettisellä datalla on noudattaa samaa perusperiaatetta. Se vaatii kuitenkin\nsuurempaa huolellisuutta, sillä nyt uudet näytteet eivät ole suoraan säännönmukaisesti\ngeneroituja, vaan ovat riippuvaisia generoivasta mallista.\nHeikkolaatuiset synteettiset näytteet voivat vääristää esimerkiksi ennustavaa mallia jos generoivan mallin\noppima jakauma ei noudatakaan aidon datan taustalla olevaa populaation jakaumaa.\nGeneroivat mallit saattavat myös generoida mahdottomia tapauksia, mikäli generoinnissa ei oteta näitä\nhuomioon esimerkiksi poistamalla negatiiviset arvot terveysdatasta.\n\nKäytännössä augmentointia voidaan soveltaa esimerkiksi datasetin tasapainottamiseen.\nKuvitellaan että datasetissämme on 1:9 suhteella miehiä ja naisia.\nNyt voidaan generoida aliedustetusta ryhmästä lisää näytteitä jolloin malli toivon mukaan\nennustaa tasa-arvoisemmin.\nSamaa voidaan soveltaa myös esimerkkitapausten generointiin.\nMikäli datasta ei löydy jotain hyvää näytettä esimerkiksi opetusmateriaaliksi,\nvoidaan sellainen generoida.\n\nIntuitiivisempi käyttötapa on kuitenkin yksityisyyden suojaaminen.\nTällöin synteettistä dataa käytetään aidon datan sijaan, ja teoriassa yksityisyydensuoja säilyy.\nHuomattavin etu anonymisointiin on se, että datasta ei jouduta poistamaan muuttujia tai\nmuokkaamaan informaatiota, vaan data on samalla tavalla käytettävissä kuin aito data.\nHeikkoutena on se että on jälleen haastavaa olla varma datan laadusta, jonka lisäksi\ntäytyy vielä varmistua yksityisyyden säilymisestä.\nSynteettinen data on luotu aidon datan perusteella, joten se aina sisältää jotain\ninformaatiota alkuperäisestä.\nTäytyy siis olla jollain osin varma kuinka sensitiivistä informaatiota\non vuotanut synteettiseen dataan.\n\n\n### References\n\nSynthcity: facilitating innovative use cases of synthetic data in different data modalities, https://doi.org/10.48550/arxiv.2301.07573\n\nSynthetic Data Vault (SDV), https://docs.sdv.dev/sdv",
+ "hits": {
+  "st": [
+   {
+    "file": "utils.py",
+    "line": 8,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "import numpy as np",
+     "",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.single_table import CTGANSynthesizer",
+     "import imblearn",
+     "",
+     "import matplotlib.pyplot as plt"
+    ]
+   },
+   {
+    "file": "utils.py",
+    "line": 9,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "import numpy as np",
+     "",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.single_table import CTGANSynthesizer",
+     "import imblearn",
+     "",
+     "import matplotlib.pyplot as plt",
+     ""
+    ]
+   },
+   {
+    "file": "Validointi/val_utils.py",
+    "line": 8,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "import numpy as np",
+     "",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.single_table import CTGANSynthesizer",
+     "import imblearn",
+     "",
+     "import matplotlib.pyplot as plt"
+    ]
+   },
+   {
+    "file": "Validointi/val_utils.py",
+    "line": 9,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "import numpy as np",
+     "",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.single_table import CTGANSynthesizer",
+     "import imblearn",
+     "",
+     "import matplotlib.pyplot as plt",
+     ""
+    ]
+   },
+   {
+    "file": "Validointi/validointi.ipynb",
+    "line": 51,
+    "text": "\"from sdv.single_table import TVAESynthesizer\\n\",",
+    "context": [
+     "    \"import pandas as pd\\n\",",
+     "    \"import sdmetrics\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdmetrics.reports import utils\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"#from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\","
+    ]
+   },
+   {
+    "file": "Validointi/validointi.ipynb",
+    "line": 52,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"import sdmetrics\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdmetrics.reports import utils\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"#from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\",",
+     "    \"from sklearn.impute import KNNImputer\\n\","
+    ]
+   },
+   {
+    "file": "Generointi/generointi.ipynb",
+    "line": 51,
+    "text": "\"from sdv.single_table import TVAESynthesizer\\n\",",
+    "context": [
+     "    \"from ucimlrepo import fetch_ucirepo \\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdmetrics.reports import utils\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"from DataSynthesizer.DataDescriber import DataDescriber\\n\","
+    ]
+   },
+   {
+    "file": "Generointi/generointi.ipynb",
+    "line": 52,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdmetrics.reports import utils\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"from DataSynthesizer.DataDescriber import DataDescriber\\n\",",
+     "    \"from DataSynthesizer.DataGenerator import DataGenerator\\n\","
+    ]
+   },
+   {
+    "file": "Generointi/generointi.ipynb",
+    "line": 53,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdmetrics.reports import utils\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"from DataSynthesizer.DataDescriber import DataDescriber\\n\",",
+     "    \"from DataSynthesizer.DataGenerator import DataGenerator\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "Generointi/.ipynb_checkpoints/generointi-checkpoint.ipynb",
+    "line": 51,
+    "text": "\"from sdv.single_table import TVAESynthesizer\\n\",",
+    "context": [
+     "    \"from ucimlrepo import fetch_ucirepo \\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdmetrics.reports import utils\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"from DataSynthesizer.DataDescriber import DataDescriber\\n\","
+    ]
+   },
+   {
+    "file": "Generointi/.ipynb_checkpoints/generointi-checkpoint.ipynb",
+    "line": 52,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdmetrics.reports import utils\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"from DataSynthesizer.DataDescriber import DataDescriber\\n\",",
+     "    \"from DataSynthesizer.DataGenerator import DataGenerator\\n\","
+    ]
+   },
+   {
+    "file": "Generointi/.ipynb_checkpoints/generointi-checkpoint.ipynb",
+    "line": 53,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdmetrics.reports import utils\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"from DataSynthesizer.DataDescriber import DataDescriber\\n\",",
+     "    \"from DataSynthesizer.DataGenerator import DataGenerator\\n\",",
+     "    \"\\n\","
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "utils.py",
+    "line": 4,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "import pandas as pd",
+     "from synthcity.plugins import Plugins",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "import numpy as np",
+     "",
+     "from sdv.single_table import TVAESynthesizer"
+    ]
+   },
+   {
+    "file": "Validointi/val_utils.py",
+    "line": 4,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "import pandas as pd",
+     "from synthcity.plugins import Plugins",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "import numpy as np",
+     "",
+     "from sdv.single_table import TVAESynthesizer"
+    ]
+   },
+   {
+    "file": "Validointi/validointi.ipynb",
+    "line": 49,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"import sdv\\n\",",
+     "    \"import scipy\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"import sdmetrics\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdmetrics.reports import utils\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"#from sdv.evaluation.single_table import evaluate_quality\\n\","
+    ]
+   },
+   {
+    "file": "Generointi/generointi.ipynb",
+    "line": 49,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"from sklearn.impute import KNNImputer\\n\",",
+     "    \"\\n\",",
+     "    \"from ucimlrepo import fetch_ucirepo \\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdmetrics.reports import utils\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\","
+    ]
+   },
+   {
+    "file": "Generointi/.ipynb_checkpoints/generointi-checkpoint.ipynb",
+    "line": 49,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"from sklearn.impute import KNNImputer\\n\",",
+     "    \"\\n\",",
+     "    \"from ucimlrepo import fetch_ucirepo \\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdmetrics.reports import utils\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\","
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "utils.py",
+    "line": 4,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "import pandas as pd",
+     "from synthcity.plugins import Plugins",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "import numpy as np",
+     "",
+     "from sdv.single_table import TVAESynthesizer"
+    ]
+   },
+   {
+    "file": "utils.py",
+    "line": 8,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "import numpy as np",
+     "",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.single_table import CTGANSynthesizer",
+     "import imblearn",
+     "",
+     "import matplotlib.pyplot as plt"
+    ]
+   },
+   {
+    "file": "utils.py",
+    "line": 9,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "import numpy as np",
+     "",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.single_table import CTGANSynthesizer",
+     "import imblearn",
+     "",
+     "import matplotlib.pyplot as plt",
+     ""
+    ]
+   },
+   {
+    "file": "Validointi/val_utils.py",
+    "line": 4,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "import pandas as pd",
+     "from synthcity.plugins import Plugins",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "import numpy as np",
+     "",
+     "from sdv.single_table import TVAESynthesizer"
+    ]
+   },
+   {
+    "file": "Validointi/val_utils.py",
+    "line": 8,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "import numpy as np",
+     "",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.single_table import CTGANSynthesizer",
+     "import imblearn",
+     "",
+     "import matplotlib.pyplot as plt"
+    ]
+   },
+   {
+    "file": "Validointi/val_utils.py",
+    "line": 9,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "import numpy as np",
+     "",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.single_table import CTGANSynthesizer",
+     "import imblearn",
+     "",
+     "import matplotlib.pyplot as plt",
+     ""
+    ]
+   },
+   {
+    "file": "Validointi/validointi.ipynb",
+    "line": 45,
+    "text": "\"import sdv\\n\",",
+    "context": [
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"import numpy as np\\n\",",
+     "    \"import sdv\\n\",",
+     "    \"import scipy\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"import sdmetrics\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\","
+    ]
+   },
+   {
+    "file": "Validointi/validointi.ipynb",
+    "line": 49,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"import sdv\\n\",",
+     "    \"import scipy\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"import sdmetrics\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdmetrics.reports import utils\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"#from sdv.evaluation.single_table import evaluate_quality\\n\","
+    ]
+   },
+   {
+    "file": "Validointi/validointi.ipynb",
+    "line": 51,
+    "text": "\"from sdv.single_table import TVAESynthesizer\\n\",",
+    "context": [
+     "    \"import pandas as pd\\n\",",
+     "    \"import sdmetrics\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdmetrics.reports import utils\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"#from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\","
+    ]
+   },
+   {
+    "file": "Validointi/validointi.ipynb",
+    "line": 52,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"import sdmetrics\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdmetrics.reports import utils\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"#from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\",",
+     "    \"from sklearn.impute import KNNImputer\\n\","
+    ]
+   },
+   {
+    "file": "Validointi/validointi.ipynb",
+    "line": 53,
+    "text": "\"#from sdv.evaluation.single_table import evaluate_quality\\n\",",
+    "context": [
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdmetrics.reports import utils\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"#from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\",",
+     "    \"from sklearn.impute import KNNImputer\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "Generointi/generointi.ipynb",
+    "line": 49,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"from sklearn.impute import KNNImputer\\n\",",
+     "    \"\\n\",",
+     "    \"from ucimlrepo import fetch_ucirepo \\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdmetrics.reports import utils\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\","
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "utils.py",
+    "line": 9,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "import numpy as np",
+     "",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.single_table import CTGANSynthesizer",
+     "import imblearn",
+     "",
+     "import matplotlib.pyplot as plt",
+     ""
+    ]
+   },
+   {
+    "file": "utils.py",
+    "line": 102,
+    "text": "gan_synthesizer = CTGANSynthesizer(metadata,",
+    "context": [
+     "",
+     "def generate_GAN(train_data, n_synth, com_dims=(128,128),emb_dims=64, decom_dims=(128,128),epochs=800):",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(train_data)",
+     "    gan_synthesizer = CTGANSynthesizer(metadata,",
+     "                                               enforce_min_max_values = False,",
+     "                                               epochs=epochs)",
+     "    gan_synthesizer.fit(train_data)",
+     "    tvae_samples = gan_synthesizer.sample(n_synth)"
+    ]
+   },
+   {
+    "file": "Validointi/val_utils.py",
+    "line": 9,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "import numpy as np",
+     "",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.single_table import CTGANSynthesizer",
+     "import imblearn",
+     "",
+     "import matplotlib.pyplot as plt",
+     ""
+    ]
+   },
+   {
+    "file": "Validointi/val_utils.py",
+    "line": 103,
+    "text": "gan_synthesizer = CTGANSynthesizer(metadata,",
+    "context": [
+     "",
+     "def generate_GAN(train_data, n_synth, com_dims=(128,128),emb_dims=64, decom_dims=(128,128),epochs=800):",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(train_data)",
+     "    gan_synthesizer = CTGANSynthesizer(metadata,",
+     "                                               enforce_min_max_values = False,",
+     "                                               epochs=epochs)",
+     "    gan_synthesizer.fit(train_data)",
+     "    tvae_samples = gan_synthesizer.sample(n_synth)"
+    ]
+   },
+   {
+    "file": "Validointi/validointi.ipynb",
+    "line": 52,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"import sdmetrics\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdmetrics.reports import utils\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"#from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\",",
+     "    \"from sklearn.impute import KNNImputer\\n\","
+    ]
+   },
+   {
+    "file": "Generointi/generointi.ipynb",
+    "line": 52,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdmetrics.reports import utils\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"from DataSynthesizer.DataDescriber import DataDescriber\\n\",",
+     "    \"from DataSynthesizer.DataGenerator import DataGenerator\\n\","
+    ]
+   },
+   {
+    "file": "Generointi/generointi.ipynb",
+    "line": 321,
+    "text": "\"    synth_data_sdv_CTGAN = CTGANSynthesizer(metadata,\\n\",",
+    "context": [
+     "    \"    if 'ID' in train_data.columns:\\n\",",
+     "    \"        train_data.drop('ID', axis=1, inplace=True)\\n\",",
+     "    \"    metadata = SingleTableMetadata()\\n\",",
+     "    \"    metadata.detect_from_dataframe(train_data)\\n\",",
+     "    \"    synth_data_sdv_CTGAN = CTGANSynthesizer(metadata,\\n\",",
+     "    \"                                                enforce_min_max_values = False,\\n\",",
+     "    \"                                                epochs=3000)\\n\",",
+     "    \"\\n\",",
+     "    \"    synth_data_sdv_CTGAN.fit(train_data)\\n\","
+    ]
+   },
+   {
+    "file": "Generointi/.ipynb_checkpoints/generointi-checkpoint.ipynb",
+    "line": 52,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdmetrics.reports import utils\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"from DataSynthesizer.DataDescriber import DataDescriber\\n\",",
+     "    \"from DataSynthesizer.DataGenerator import DataGenerator\\n\","
+    ]
+   },
+   {
+    "file": "Generointi/.ipynb_checkpoints/generointi-checkpoint.ipynb",
+    "line": 321,
+    "text": "\"    synth_data_sdv_CTGAN = CTGANSynthesizer(metadata,\\n\",",
+    "context": [
+     "    \"    if 'ID' in train_data.columns:\\n\",",
+     "    \"        train_data.drop('ID', axis=1, inplace=True)\\n\",",
+     "    \"    metadata = SingleTableMetadata()\\n\",",
+     "    \"    metadata.detect_from_dataframe(train_data)\\n\",",
+     "    \"    synth_data_sdv_CTGAN = CTGANSynthesizer(metadata,\\n\",",
+     "    \"                                                enforce_min_max_values = False,\\n\",",
+     "    \"                                                epochs=3000)\\n\",",
+     "    \"\\n\",",
+     "    \"    synth_data_sdv_CTGAN.fit(train_data)\\n\","
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "utils.py",
+    "line": 8,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "import numpy as np",
+     "",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.single_table import CTGANSynthesizer",
+     "import imblearn",
+     "",
+     "import matplotlib.pyplot as plt"
+    ]
+   },
+   {
+    "file": "utils.py",
+    "line": 87,
+    "text": "tvae_synthesizer = TVAESynthesizer(metadata,",
+    "context": [
+     "",
+     "def generate_TVAE(train_data, n_synth, com_dims=(128,64),emb_dims=32, decom_dims=(64,128),epochs=800):",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(train_data)",
+     "    tvae_synthesizer = TVAESynthesizer(metadata,",
+     "                                               compress_dims=com_dims,",
+     "                                               decompress_dims=decom_dims,",
+     "                                               embedding_dim = emb_dims,",
+     "                                               enforce_min_max_values = False,"
+    ]
+   },
+   {
+    "file": "Validointi/val_utils.py",
+    "line": 8,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "import numpy as np",
+     "",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.single_table import CTGANSynthesizer",
+     "import imblearn",
+     "",
+     "import matplotlib.pyplot as plt"
+    ]
+   },
+   {
+    "file": "Validointi/val_utils.py",
+    "line": 88,
+    "text": "tvae_synthesizer = TVAESynthesizer(metadata,",
+    "context": [
+     "",
+     "def generate_TVAE(train_data, n_synth, com_dims=(128,64),emb_dims=32, decom_dims=(64,128),epochs=800):",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(train_data)",
+     "    tvae_synthesizer = TVAESynthesizer(metadata,",
+     "                                               compress_dims=com_dims,",
+     "                                               decompress_dims=decom_dims,",
+     "                                               embedding_dim = emb_dims,",
+     "                                               enforce_min_max_values = False,"
+    ]
+   },
+   {
+    "file": "Validointi/validointi.ipynb",
+    "line": 51,
+    "text": "\"from sdv.single_table import TVAESynthesizer\\n\",",
+    "context": [
+     "    \"import pandas as pd\\n\",",
+     "    \"import sdmetrics\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdmetrics.reports import utils\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"#from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\","
+    ]
+   },
+   {
+    "file": "Generointi/generointi.ipynb",
+    "line": 51,
+    "text": "\"from sdv.single_table import TVAESynthesizer\\n\",",
+    "context": [
+     "    \"from ucimlrepo import fetch_ucirepo \\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdmetrics.reports import utils\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"from DataSynthesizer.DataDescriber import DataDescriber\\n\","
+    ]
+   },
+   {
+    "file": "Generointi/generointi.ipynb",
+    "line": 295,
+    "text": "\"    synth_data_sdv_TVAE = TVAESynthesizer(metadata,\\n\",",
+    "context": [
+     "    \"    if 'ID' in train_data.columns:\\n\",",
+     "    \"        train_data.drop('ID', axis=1, inplace=True)\\n\",",
+     "    \"    metadata = SingleTableMetadata()\\n\",",
+     "    \"    metadata.detect_from_dataframe(train_data)\\n\",",
+     "    \"    synth_data_sdv_TVAE = TVAESynthesizer(metadata,\\n\",",
+     "    \"                                               compress_dims=(256,128),\\n\",",
+     "    \"                                               decompress_dims=(128,256),\\n\",",
+     "    \"                                               embedding_dim = 64,\\n\",",
+     "    \"                                               enforce_min_max_values = False,\\n\","
+    ]
+   },
+   {
+    "file": "Generointi/.ipynb_checkpoints/generointi-checkpoint.ipynb",
+    "line": 51,
+    "text": "\"from sdv.single_table import TVAESynthesizer\\n\",",
+    "context": [
+     "    \"from ucimlrepo import fetch_ucirepo \\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdmetrics.reports import utils\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"from DataSynthesizer.DataDescriber import DataDescriber\\n\","
+    ]
+   },
+   {
+    "file": "Generointi/.ipynb_checkpoints/generointi-checkpoint.ipynb",
+    "line": 295,
+    "text": "\"    synth_data_sdv_TVAE = TVAESynthesizer(metadata,\\n\",",
+    "context": [
+     "    \"    if 'ID' in train_data.columns:\\n\",",
+     "    \"        train_data.drop('ID', axis=1, inplace=True)\\n\",",
+     "    \"    metadata = SingleTableMetadata()\\n\",",
+     "    \"    metadata.detect_from_dataframe(train_data)\\n\",",
+     "    \"    synth_data_sdv_TVAE = TVAESynthesizer(metadata,\\n\",",
+     "    \"                                               compress_dims=(256,128),\\n\",",
+     "    \"                                               decompress_dims=(128,256),\\n\",",
+     "    \"                                               embedding_dim = 64,\\n\",",
+     "    \"                                               enforce_min_max_values = False,\\n\","
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "Validointi/validointi.ipynb",
+    "line": 53,
+    "text": "\"#from sdv.evaluation.single_table import evaluate_quality\\n\",",
+    "context": [
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdmetrics.reports import utils\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"#from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\",",
+     "    \"from sklearn.impute import KNNImputer\\n\",",
+     "    \"\\n\","
+    ]
+   }
+  ],
+  "sm": [
+   {
+    "file": "Validointi/validointi.ipynb",
+    "line": 48,
+    "text": "\"import sdmetrics\\n\",",
+    "context": [
+     "    \"import numpy as np\\n\",",
+     "    \"import sdv\\n\",",
+     "    \"import scipy\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"import sdmetrics\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdmetrics.reports import utils\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\","
+    ]
+   },
+   {
+    "file": "Validointi/validointi.ipynb",
+    "line": 50,
+    "text": "\"from sdmetrics.reports import utils\\n\",",
+    "context": [
+     "    \"import scipy\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"import sdmetrics\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdmetrics.reports import utils\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"#from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "Validointi/validointi.ipynb",
+    "line": 171,
+    "text": "\"from sdmetrics.reports.single_table import QualityReport\\n\",",
+    "context": [
+     "   \"id\": \"318df27e\",",
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"from sdmetrics.reports.single_table import QualityReport\\n\",",
+     "    \"\\n\",",
+     "    \"def evaluate_quality(real_data, synthetic_data):\\n\",",
+     "    \"    \\\"\\\"\\\"\\n\",",
+     "    \"    Evaluate the quality of synthetic data against real data.\\n\","
+    ]
+   },
+   {
+    "file": "Validointi/validointi.ipynb",
+    "line": 2160,
+    "text": "\"from sdmetrics.visualization import get_column_plot\\n\",",
+    "context": [
+     "     \"output_type\": \"display_data\"",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdmetrics.visualization import get_column_plot\\n\",",
+     "    \"\\n\",",
+     "    \"fig = get_column_plot(\\n\",",
+     "    \"    real_data=training_data_list[0],\\n\",",
+     "    \"    synthetic_data=test_data_list[0],\\n\","
+    ]
+   },
+   {
+    "file": "Validointi/validointi.ipynb",
+    "line": 2196,
+    "text": "\"from sdmetrics.visualization import get_column_pair_plot\\n\",",
+    "context": [
+     "     \"output_type\": \"display_data\"",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdmetrics.visualization import get_column_pair_plot\\n\",",
+     "    \"\\n\",",
+     "    \"fig = get_column_pair_plot(\\n\",",
+     "    \"    real_data=training_data_list[0],\\n\",",
+     "    \"    synthetic_data=test_data_list[0],\\n\","
+    ]
+   },
+   {
+    "file": "Generointi/generointi.ipynb",
+    "line": 50,
+    "text": "\"from sdmetrics.reports import utils\\n\",",
+    "context": [
+     "    \"\\n\",",
+     "    \"from ucimlrepo import fetch_ucirepo \\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdmetrics.reports import utils\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "Generointi/.ipynb_checkpoints/generointi-checkpoint.ipynb",
+    "line": 50,
+    "text": "\"from sdmetrics.reports import utils\\n\",",
+    "context": [
+     "    \"\\n\",",
+     "    \"from ucimlrepo import fetch_ucirepo \\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdmetrics.reports import utils\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"\\n\","
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "Generointi/generointi.ipynb",
+    "line": 53,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdmetrics.reports import utils\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"from DataSynthesizer.DataDescriber import DataDescriber\\n\",",
+     "    \"from DataSynthesizer.DataGenerator import DataGenerator\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "Generointi/generointi.ipynb",
+    "line": 343,
+    "text": "\"    synth_data_sdv_gcopula = GaussianCopulaSynthesizer(metadata,\\n\",",
+    "context": [
+     "    \"    if 'ID' in train_data.columns:\\n\",",
+     "    \"        train_data.drop('ID', axis=1, inplace=True)\\n\",",
+     "    \"    metadata = SingleTableMetadata()\\n\",",
+     "    \"    metadata.detect_from_dataframe(train_data)\\n\",",
+     "    \"    synth_data_sdv_gcopula = GaussianCopulaSynthesizer(metadata,\\n\",",
+     "    \"                                                enforce_min_max_values = False)\\n\",",
+     "    \"\\n\",",
+     "    \"    synth_data_sdv_gcopula.fit(train_data)\\n\",",
+     "    \"    synth_data_sdv_gcopula = synth_data_sdv_gcopula.sample(n_synth)\\n\","
+    ]
+   },
+   {
+    "file": "Generointi/.ipynb_checkpoints/generointi-checkpoint.ipynb",
+    "line": 53,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdmetrics.reports import utils\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"from DataSynthesizer.DataDescriber import DataDescriber\\n\",",
+     "    \"from DataSynthesizer.DataGenerator import DataGenerator\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "Generointi/.ipynb_checkpoints/generointi-checkpoint.ipynb",
+    "line": 343,
+    "text": "\"    synth_data_sdv_gcopula = GaussianCopulaSynthesizer(metadata,\\n\",",
+    "context": [
+     "    \"    if 'ID' in train_data.columns:\\n\",",
+     "    \"        train_data.drop('ID', axis=1, inplace=True)\\n\",",
+     "    \"    metadata = SingleTableMetadata()\\n\",",
+     "    \"    metadata.detect_from_dataframe(train_data)\\n\",",
+     "    \"    synth_data_sdv_gcopula = GaussianCopulaSynthesizer(metadata,\\n\",",
+     "    \"                                                enforce_min_max_values = False)\\n\",",
+     "    \"\\n\",",
+     "    \"    synth_data_sdv_gcopula.fit(train_data)\\n\",",
+     "    \"    synth_data_sdv_gcopula = synth_data_sdv_gcopula.sample(n_synth)\\n\","
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ev",
+  "gc",
+  "md",
+  "sdv_any",
+  "sm",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [
+  "Generointi/data/ctgan"
+ ],
+ "dependencies": {}
+}

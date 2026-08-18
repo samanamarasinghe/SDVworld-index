@@ -1,0 +1,90 @@
+{
+ "repo": "gdiaz95/Oulad",
+ "disk_kb": 313,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# OULAD preprocessing\n\n## Build the students dataset\n\nTo generate the \"Who\" dataset, place the raw OULAD files below in `data/raw/`:\n\n- `studentInfo.csv`\n- `studentRegistration.csv`\n\nThen run:\n\n```bash\n.venv/bin/python source/preprocess_students.py\n```\n\nThe script performs an inner join on the full enrollment key\n`code_module`, `code_presentation`, and `id_student`, drops `id_student` from\nthe result, and writes the output to `data/pre_processed/students.csv`.\nJoining only on `id_student` can incorrectly expand the dataset when a student\nappears in multiple module presentations.\n\n## Conclusion consistency tests (real vs synthetic)\n\n`main.py` includes direct inferential comparison tests to answer questions like:\n\"Does gender affect course success in the same way on real and synthetic data?\"\n\nIt now runs a **Fisher exact test** for **all valid predictor/outcome pairs** where:\n- predictor has exactly two levels in the real data\n- outcome is numeric, binary categorical, or a categorical column with explicit positive labels\n\nand compares real vs synthetic conclusions using:\n- same effect sign\n- same significance decision\n- effect size (log-odds-ratio) within a relative tolerance\n\nYou can still provide positive labels for a specific outcome (for example, `final_result`):\n\n```bash\n.venv/bin/python main.py \\\n  --real data/pre_processed/students.csv \\\n  --synth data/post_processed/students.csv \\\n  --conclusion-outcome final_result \\\n  --conclusion-positive-outcome Pass \\\n  --conclusion-positive-outcome Distinction\n```\n",
+ "hits": {
+  "md": [
+   {
+    "file": "main.py",
+    "line": 10,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import argparse",
+     "from pathlib import Path",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sklearn.ensemble import RandomForestClassifier",
+     "from sklearn.metrics import accuracy_score",
+     "from sklearn.model_selection import train_test_split",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "main.py",
+    "line": 10,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import argparse",
+     "from pathlib import Path",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sklearn.ensemble import RandomForestClassifier",
+     "from sklearn.metrics import accuracy_score",
+     "from sklearn.model_selection import train_test_split",
+     ""
+    ]
+   },
+   {
+    "file": "source/metrics.py",
+    "line": 15,
+    "text": "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+    "context": [
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from mostlyai import qa",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "from scipy import stats",
+     "from sklearn.base import clone",
+     "from sklearn.compose import ColumnTransformer",
+     "from sklearn.model_selection import train_test_split"
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "source/metrics.py",
+    "line": 15,
+    "text": "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+    "context": [
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from mostlyai import qa",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "from scipy import stats",
+     "from sklearn.base import clone",
+     "from sklearn.compose import ColumnTransformer",
+     "from sklearn.model_selection import train_test_split"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ev",
+  "md",
+  "sdv_any"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "pyproject.toml": [
+   "    \"sdv>=1.35.0\","
+  ]
+ }
+}

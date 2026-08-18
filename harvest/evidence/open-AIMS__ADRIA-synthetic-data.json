@@ -1,0 +1,736 @@
+{
+ "repo": "open-AIMS/ADRIA-synthetic-data",
+ "disk_kb": 4250,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# ADRIA-synthetic-data\nRepository for the creation of synthetic input data layers for ADRIA.\n\n# Set-up\nCreate the environment by running,\n```\nconda env create -f ADRIA_synth_data_env.yml\n```\nThis environment can then be selected in your Python editor of choice.\n\nAdd the original data package you want to create synthetic data off to the `original_data` folder.\n\n# Creating site data\n\nSynthetic site data can be generated from the `site-data-generation.py` file in the `examples` folder. Add the name of your chosen original data package at the top of the file as `orig_data_package = \"name of file\"`. Adjust the parameters `N1`, `N2` and `N3` as desired also. `N1` is the number of unconditionalised samples to generate. `N2` is the final number of spatially conditionalised sites to generate. `N3` is the number of nodes to generate the final site positions in randomised radii around. Using the site data model automatically creates the synthetic data package and the package name will be given in the modal outputs as `synth_site_data_fn`.\n\n# Creating initial coral cover data\n\nSynthetic initial coal cover data can be generated from the `coral-cover-generation.py` file in the `examples` folder. Add the name of your chosen original data package at the top of the file as `orig_data_package = \"name of file\"` and the name of the synthetic site data file you want to base the cover data on: e.g. `root_site_data_synth = \"synth_2023-7-24_152038.csv\"`.\n\n# Creating environmental data\n\nSynthetic wave and DHW data can be generated from the `env-data-generation.py` file in the `examples` folder. Several inputs at the beginning of the file can be changed to adjust the output of the data model. An example is shown below:\n\n```\nlayer = \"Ub\"\nrcp = \"45\"\nroot_original_file = \"name of file\"\nroot_site_data_synth = \"synth_2023-7-24_152038.csv\"\nnsamples = 10\nnreplicates = 5\n```\n\nThe `layer` variable designates the type of data to generate, so `dhw` for DHW data and `Ub` for wave data. `rcp` is the RCP to use to generate data from in the original data file. `nsamples` is the number of samples to generate from each climate replicate. `nreplicates` is the number of climate replicates to use from the original dataset. In the example above, the final dataset will have `10*5` replicates based on `5` replicates from the original dataset.\n\n# Creating connectivity data\n\nSynthetic connectivity data can be generated from the `connectivity-generation.py` file in the `examples` folder. Several inputs at the beginning of the file can be changed to adjust the output of the data model. An example is shown below:\n\n```\nroot_original_file = \"name of file\"\nroot_site_data_synth = \"synth_2023-7-24_152038.csv\"\nyears = [\"2015\", \"2016\", \"2017\"]  # connectivity data years to use\nnum = [\"1\", \"2\", \"3\"]  # connectivity data sample number to use\nmodel_type = \"GAN\"  # \"GaussianCopula\"\n```\n`years` designates how many years to base the synthestic connectivity dataset off, with the average being used to generate the final dataset. `num` designates any replicates to be used in each year (also averaged over). `model_type` designates whether to use the `GAN` model from tensorflow/keras (slower but better quality) or \"Gaussian Copula\" model from SDV (faster but lesser quality).\n\n# Creating a synthetic JSON for the data package\n\nA synthetic JSON file can be added to the synthetic data package using the file `data-package-json-creation.py`.\n\n# Creating the whole data package\n\nThe whole data package can be created by running `data-package-creation.py`. The same inputs will need to be adjusted in this file as in the files described above, namely the sample number parameters and original dataset file name etc.\n",
+ "hits": {
+  "md": [
+   {
+    "file": "examples/env-data-generation.py",
+    "line": 12,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from src.data_processing.package_synth_data import save_csv_plotting",
+     "from src.models.env_PAR_model import env_data_model",
+     "",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sdv.metadata import SingleTableMetadata",
+     "import numpy as np",
+     "import matplotlib.pyplot as plt",
+     "from mpl_toolkits.mplot3d import Axes3D",
+     ""
+    ]
+   },
+   {
+    "file": "examples/connectivity-generation.py",
+    "line": 9,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from src.models.connectivity_GAN_model import connectivity_model",
+     "from src.data_processing.package_synth_data import save_csv_plotting",
+     "",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "### ------------------------------------------------Key Inputs---------------------------------------------------###",
+     "root_original_file = \"Moore_2022-11-17\"",
+     "root_site_data_synth = \"synth_2023-7-24_152038.csv\""
+    ]
+   },
+   {
+    "file": "examples/data-package-creation.py",
+    "line": 6,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "sys.path.append(\"..\")",
+     "",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from src.models.site_data_fastML_model import site_data_model",
+     "from src.models.site_data_fastML_model import site_data_model",
+     "from src.models.coral_cover_TVAE_model import coral_cover_model"
+    ]
+   },
+   {
+    "file": "examples/data-plotting-example.py",
+    "line": 13,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import numpy as np",
+     "import sys",
+     "",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdmetrics.reports.single_table import QualityReport, DiagnosticReport",
+     "from sdmetrics.single_table import NewRowSynthesis",
+     "from sdmetrics.single_column import RangeCoverage, BoundaryAdherence",
+     "from datetime import datetime"
+    ]
+   },
+   {
+    "file": "examples/site-data-generation.py",
+    "line": 8,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "# from sdmetrics.reports.single_table import QualityReport",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "import sys",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "sys.path.append(\"..\")",
+     "",
+     "from src.plotting.data_comparison_plots import comparison_plots_site_data"
+    ]
+   },
+   {
+    "file": "src/models/env_PAR_model.py",
+    "line": 6,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import numpy as np",
+     "",
+     "from deepecho import PARModel",
+     "#from sdv.sequential import PARSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import netCDF4",
+     "",
+     "from src.data_processing.preprocess_functions import (",
+     "    preprocess_env_data,"
+    ]
+   },
+   {
+    "file": "src/models/site_data_fastML_model.py",
+    "line": 6,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import geopandas as gp",
+     "from pathlib import Path",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from src.data_processing.preprocess_functions import (",
+     "    preprocess_site_data,",
+     "    convert_to_csv,"
+    ]
+   },
+   {
+    "file": "src/models/coral_cover_TVAE_model.py",
+    "line": 4,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "import netCDF4",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from src.data_processing.preprocess_functions import preprocess_cover_data",
+     "from src.data_processing.package_synth_data import (",
+     "    retrieve_synth_site_data_fp,"
+    ]
+   },
+   {
+    "file": "src/models/connectivity_GAN_model.py",
+    "line": 9,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    add_distances_conn_data,",
+     ")",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from src.models.GAN_model import GAN",
+     "from src.data_processing.postprocess_functions import anonymize_conn",
+     "from src.data_processing.sampling_functions import find_NN_conn_data"
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "examples/env-data-generation.py",
+    "line": 11,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "from src.plotting.data_comparison_plots import create_timeseries, get_data_quantiles",
+     "from src.data_processing.package_synth_data import save_csv_plotting",
+     "from src.models.env_PAR_model import env_data_model",
+     "",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sdv.metadata import SingleTableMetadata",
+     "import numpy as np",
+     "import matplotlib.pyplot as plt",
+     "from mpl_toolkits.mplot3d import Axes3D"
+    ]
+   },
+   {
+    "file": "examples/connectivity-generation.py",
+    "line": 8,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "",
+     "from src.models.connectivity_GAN_model import connectivity_model",
+     "from src.data_processing.package_synth_data import save_csv_plotting",
+     "",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "### ------------------------------------------------Key Inputs---------------------------------------------------###",
+     "root_original_file = \"Moore_2022-11-17\""
+    ]
+   },
+   {
+    "file": "examples/data-package-creation.py",
+    "line": 5,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "import sys",
+     "",
+     "sys.path.append(\"..\")",
+     "",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from src.models.site_data_fastML_model import site_data_model",
+     "from src.models.site_data_fastML_model import site_data_model"
+    ]
+   },
+   {
+    "file": "examples/data-plotting-example.py",
+    "line": 12,
+    "text": "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+    "context": [
+     "import sklearn",
+     "import numpy as np",
+     "import sys",
+     "",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdmetrics.reports.single_table import QualityReport, DiagnosticReport",
+     "from sdmetrics.single_table import NewRowSynthesis",
+     "from sdmetrics.single_column import RangeCoverage, BoundaryAdherence"
+    ]
+   },
+   {
+    "file": "examples/site-data-generation.py",
+    "line": 6,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "import time",
+     "sys.path.append(\"..\")",
+     "",
+     "# from sdmetrics.reports.single_table import QualityReport",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "import sys",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "sys.path.append(\"..\")"
+    ]
+   },
+   {
+    "file": "examples/coral-cover-generation.py",
+    "line": 12,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "",
+     "from sdv.metrics.tabular import LogisticDetection",
+     "",
+     "# from sdmetrics.reports.single_table import QualityReport",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "### --------------------- Use model to generate synthetic covers and sampled synthetic cover ------------------- ###",
+     "",
+     "root_original_file = \"Moore_2022-11-17\""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "examples/env-data-generation.py",
+    "line": 11,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "from src.plotting.data_comparison_plots import create_timeseries, get_data_quantiles",
+     "from src.data_processing.package_synth_data import save_csv_plotting",
+     "from src.models.env_PAR_model import env_data_model",
+     "",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sdv.metadata import SingleTableMetadata",
+     "import numpy as np",
+     "import matplotlib.pyplot as plt",
+     "from mpl_toolkits.mplot3d import Axes3D"
+    ]
+   },
+   {
+    "file": "examples/env-data-generation.py",
+    "line": 12,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from src.data_processing.package_synth_data import save_csv_plotting",
+     "from src.models.env_PAR_model import env_data_model",
+     "",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sdv.metadata import SingleTableMetadata",
+     "import numpy as np",
+     "import matplotlib.pyplot as plt",
+     "from mpl_toolkits.mplot3d import Axes3D",
+     ""
+    ]
+   },
+   {
+    "file": "examples/connectivity-generation.py",
+    "line": 8,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "",
+     "from src.models.connectivity_GAN_model import connectivity_model",
+     "from src.data_processing.package_synth_data import save_csv_plotting",
+     "",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "### ------------------------------------------------Key Inputs---------------------------------------------------###",
+     "root_original_file = \"Moore_2022-11-17\""
+    ]
+   },
+   {
+    "file": "examples/connectivity-generation.py",
+    "line": 9,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from src.models.connectivity_GAN_model import connectivity_model",
+     "from src.data_processing.package_synth_data import save_csv_plotting",
+     "",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "### ------------------------------------------------Key Inputs---------------------------------------------------###",
+     "root_original_file = \"Moore_2022-11-17\"",
+     "root_site_data_synth = \"synth_2023-7-24_152038.csv\""
+    ]
+   },
+   {
+    "file": "examples/data-package-creation.py",
+    "line": 5,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "import sys",
+     "",
+     "sys.path.append(\"..\")",
+     "",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from src.models.site_data_fastML_model import site_data_model",
+     "from src.models.site_data_fastML_model import site_data_model"
+    ]
+   },
+   {
+    "file": "examples/data-package-creation.py",
+    "line": 6,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "sys.path.append(\"..\")",
+     "",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from src.models.site_data_fastML_model import site_data_model",
+     "from src.models.site_data_fastML_model import site_data_model",
+     "from src.models.coral_cover_TVAE_model import coral_cover_model"
+    ]
+   },
+   {
+    "file": "examples/data-plotting-example.py",
+    "line": 12,
+    "text": "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+    "context": [
+     "import sklearn",
+     "import numpy as np",
+     "import sys",
+     "",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdmetrics.reports.single_table import QualityReport, DiagnosticReport",
+     "from sdmetrics.single_table import NewRowSynthesis",
+     "from sdmetrics.single_column import RangeCoverage, BoundaryAdherence"
+    ]
+   },
+   {
+    "file": "examples/data-plotting-example.py",
+    "line": 13,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import numpy as np",
+     "import sys",
+     "",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdmetrics.reports.single_table import QualityReport, DiagnosticReport",
+     "from sdmetrics.single_table import NewRowSynthesis",
+     "from sdmetrics.single_column import RangeCoverage, BoundaryAdherence",
+     "from datetime import datetime"
+    ]
+   },
+   {
+    "file": "examples/site-data-generation.py",
+    "line": 6,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "import time",
+     "sys.path.append(\"..\")",
+     "",
+     "# from sdmetrics.reports.single_table import QualityReport",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "import sys",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "sys.path.append(\"..\")"
+    ]
+   },
+   {
+    "file": "examples/site-data-generation.py",
+    "line": 8,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "# from sdmetrics.reports.single_table import QualityReport",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "import sys",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "sys.path.append(\"..\")",
+     "",
+     "from src.plotting.data_comparison_plots import comparison_plots_site_data"
+    ]
+   },
+   {
+    "file": "examples/coral-cover-generation.py",
+    "line": 9,
+    "text": "from sdv.metrics.tabular import LogisticDetection",
+    "context": [
+     "",
+     "from src.models.coral_cover_TVAE_model import coral_cover_model",
+     "from src.data_processing.package_synth_data import save_csv_plotting",
+     "",
+     "from sdv.metrics.tabular import LogisticDetection",
+     "",
+     "# from sdmetrics.reports.single_table import QualityReport",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     ""
+    ]
+   },
+   {
+    "file": "examples/coral-cover-generation.py",
+    "line": 12,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "",
+     "from sdv.metrics.tabular import LogisticDetection",
+     "",
+     "# from sdmetrics.reports.single_table import QualityReport",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "### --------------------- Use model to generate synthetic covers and sampled synthetic cover ------------------- ###",
+     "",
+     "root_original_file = \"Moore_2022-11-17\""
+    ]
+   }
+  ],
+  "sm": [
+   {
+    "file": "examples/data-plotting-example.py",
+    "line": 14,
+    "text": "from sdmetrics.reports.single_table import QualityReport, DiagnosticReport",
+    "context": [
+     "import sys",
+     "",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdmetrics.reports.single_table import QualityReport, DiagnosticReport",
+     "from sdmetrics.single_table import NewRowSynthesis",
+     "from sdmetrics.single_column import RangeCoverage, BoundaryAdherence",
+     "from datetime import datetime",
+     ""
+    ]
+   },
+   {
+    "file": "examples/data-plotting-example.py",
+    "line": 15,
+    "text": "from sdmetrics.single_table import NewRowSynthesis",
+    "context": [
+     "",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdmetrics.reports.single_table import QualityReport, DiagnosticReport",
+     "from sdmetrics.single_table import NewRowSynthesis",
+     "from sdmetrics.single_column import RangeCoverage, BoundaryAdherence",
+     "from datetime import datetime",
+     "",
+     "sys.path.append(\"..\")"
+    ]
+   },
+   {
+    "file": "examples/data-plotting-example.py",
+    "line": 16,
+    "text": "from sdmetrics.single_column import RangeCoverage, BoundaryAdherence",
+    "context": [
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdmetrics.reports.single_table import QualityReport, DiagnosticReport",
+     "from sdmetrics.single_table import NewRowSynthesis",
+     "from sdmetrics.single_column import RangeCoverage, BoundaryAdherence",
+     "from datetime import datetime",
+     "",
+     "sys.path.append(\"..\")",
+     "from src.plotting.data_comparison_plots import ("
+    ]
+   },
+   {
+    "file": "examples/site-data-generation.py",
+    "line": 5,
+    "text": "# from sdmetrics.reports.single_table import QualityReport",
+    "context": [
+     "import sys",
+     "import time",
+     "sys.path.append(\"..\")",
+     "",
+     "# from sdmetrics.reports.single_table import QualityReport",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "import sys",
+     "from sdv.metadata import SingleTableMetadata",
+     ""
+    ]
+   },
+   {
+    "file": "examples/coral-cover-generation.py",
+    "line": 11,
+    "text": "# from sdmetrics.reports.single_table import QualityReport",
+    "context": [
+     "from src.data_processing.package_synth_data import save_csv_plotting",
+     "",
+     "from sdv.metrics.tabular import LogisticDetection",
+     "",
+     "# from sdmetrics.reports.single_table import QualityReport",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "### --------------------- Use model to generate synthetic covers and sampled synthetic cover ------------------- ###",
+     ""
+    ]
+   }
+  ],
+  "sq": [
+   {
+    "file": "src/models/env_PAR_model.py",
+    "line": 5,
+    "text": "#from sdv.sequential import PARSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "",
+     "from deepecho import PARModel",
+     "#from sdv.sequential import PARSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import netCDF4",
+     "",
+     "from src.data_processing.preprocess_functions import ("
+    ]
+   }
+  ],
+  "par": [
+   {
+    "file": "src/models/env_PAR_model.py",
+    "line": 5,
+    "text": "#from sdv.sequential import PARSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "",
+     "from deepecho import PARModel",
+     "#from sdv.sequential import PARSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import netCDF4",
+     "",
+     "from src.data_processing.preprocess_functions import ("
+    ]
+   },
+   {
+    "file": "src/models/env_PAR_model.py",
+    "line": 53,
+    "text": "# model = PARSynthesizer(metadata_env, epochs=1024, cuda=False, context_columns=[\"lat\", \"long\"])",
+    "context": [
+     "        # metadata_env.set_sequence_index(column_name='year')",
+     "        # metadata_env.update_column(column_name='site',sdtype='id')",
+     "        # metadata_env.set_sequence_key(column_name='site')",
+     "        # breakpoint()",
+     "        # model = PARSynthesizer(metadata_env, epochs=1024, cuda=False, context_columns=[\"lat\", \"long\"])",
+     "",
+     "        model.fit(data=temp_env_df.loc[:, temp_env_df.columns != \"rep\"],",
+     "            context_columns=[\"lat\", \"long\"],",
+     "            entity_columns=[\"site\"],"
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "src/models/site_data_fastML_model.py",
+    "line": 5,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import geopandas as gp",
+     "from pathlib import Path",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from src.data_processing.preprocess_functions import (",
+     "    preprocess_site_data,"
+    ]
+   },
+   {
+    "file": "src/models/coral_cover_TVAE_model.py",
+    "line": 3,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import netCDF4",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from src.data_processing.preprocess_functions import preprocess_cover_data",
+     "from src.data_processing.package_synth_data import ("
+    ]
+   },
+   {
+    "file": "src/models/connectivity_GAN_model.py",
+    "line": 8,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "from src.data_processing.preprocess_functions import (",
+     "    add_distances_conn_data,",
+     ")",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from src.models.GAN_model import GAN",
+     "from src.data_processing.postprocess_functions import anonymize_conn"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "src/models/site_data_fastML_model.py",
+    "line": 5,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import geopandas as gp",
+     "from pathlib import Path",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from src.data_processing.preprocess_functions import (",
+     "    preprocess_site_data,"
+    ]
+   },
+   {
+    "file": "src/models/site_data_fastML_model.py",
+    "line": 49,
+    "text": "model = GaussianCopulaSynthesizer(",
+    "context": [
+     "    metadata_site.detect_from_dataframe(data=site_data)",
+     "    metadata_site.update_column(column_name=\"site_id\", sdtype=\"id\")",
+     "    metadata_site.set_primary_key(column_name=\"site_id\")",
+     "",
+     "    model = GaussianCopulaSynthesizer(",
+     "        metadata_site,",
+     "        enforce_min_max_values=True,",
+     "        enforce_rounding=False,",
+     "        default_distribution=\"gaussian_kde\","
+    ]
+   },
+   {
+    "file": "src/models/coral_cover_TVAE_model.py",
+    "line": 3,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import netCDF4",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from src.data_processing.preprocess_functions import preprocess_cover_data",
+     "from src.data_processing.package_synth_data import ("
+    ]
+   },
+   {
+    "file": "src/models/coral_cover_TVAE_model.py",
+    "line": 38,
+    "text": "model = GaussianCopulaSynthesizer(metadata_cover)",
+    "context": [
+     "    metadata_cover = SingleTableMetadata()",
+     "    metadata_cover.detect_from_dataframe(data=cover_df)",
+     "    metadata_cover.update_column(column_name=\"species\", sdtype=\"categorical\")",
+     "",
+     "    model = GaussianCopulaSynthesizer(metadata_cover)",
+     "",
+     "    model.fit(cover_df)",
+     "    synth_cover = model.sample(num_rows=N)",
+     ""
+    ]
+   },
+   {
+    "file": "src/models/connectivity_GAN_model.py",
+    "line": 8,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "from src.data_processing.preprocess_functions import (",
+     "    add_distances_conn_data,",
+     ")",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from src.models.GAN_model import GAN",
+     "from src.data_processing.postprocess_functions import anonymize_conn"
+    ]
+   },
+   {
+    "file": "src/models/connectivity_GAN_model.py",
+    "line": 58,
+    "text": "model = GaussianCopulaSynthesizer(",
+    "context": [
+     "    if model_type == \"GaussianCopula\":",
+     "        metadata_conn = SingleTableMetadata()",
+     "        metadata_conn.detect_from_dataframe(data=conn_data_store)",
+     "",
+     "        model = GaussianCopulaSynthesizer(",
+     "            metadata_conn,",
+     "            enforce_min_max_values=True,",
+     "            enforce_rounding=False,",
+     "            default_distribution=\"gaussian_kde\","
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ev",
+  "gc",
+  "md",
+  "par",
+  "sdv_any",
+  "sm",
+  "sq",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

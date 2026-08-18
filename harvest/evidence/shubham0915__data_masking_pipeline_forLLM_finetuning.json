@@ -1,0 +1,113 @@
+{
+ "repo": "shubham0915/data_masking_pipeline_forLLM_finetuning",
+ "disk_kb": 2006,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# 🛡️  Data Masking Pipeline v4\n\n## 📖 Project Overview\nAI models require massive amounts of production data for fine-tuning, but strict privacy laws (like the DPDP Act and GDPR) prohibit the use of Personally Identifiable Information (PII). Traditional masking tools replace data with `[REDACTED]`, destroying the structural integrity and context of the data, making it useless for Machine Learning.\n\nThis project is an **Enterprise-grade, Zero-Leakage Data Masking Pipeline**. It uses a multi-layered architecture—combining Mathematical Determinism (Regex + Checksums), Zero-Shot NLP (GLiNER), and Differential Privacy (Laplace Noise)—to create a safe **Digital Twin** of production data. This ensures 100% DPDP compliance while maintaining absolute statistical utility for AI training.\n\n👉 **[Read the Full Architecture Deep-Dive here (ARCHITECTURE.md)](ARCHITECTURE.md)**\n\n## 🖥️ Streamlit Dashboard\n* **Tab 1: Raw Data** - Inspect the generated unstructured fintech logs.\n* **Tab 2: Masked Data** - View the final output and export to CSV, Parquet, or JSONL for fine-tuning.\n* **Tab 4: Privacy vs Utility** - View k-Anonymity and distribution preservation metrics (KDE Plots).\n* **Tab 5: Leakage Auditor** - Run a simulated adversarial attack to prove zero leakage.\n\n---\n\n## 🌟 Key Features\n\n1. **Multi-Layer Architecture**:\n   - **Layer 1 (Regex + Intelligent Discovery)**: Deterministic matching for structured PII. Includes **Luhn Algorithm Validation** for Credit Cards to prevent false positives.\n   - **Layer 2 (GLiNER NER)**: Context-aware zero-shot detection for unstructured text.\n   - **Layer 3 (Validation)**: Recursive re-scanning to guarantee zero leakage.\n\n2. **Semantic Transformation (Digital Twin)**:\n   - **Synthetic Substitution (Salted SHA-256)**: Irreversible Faker-based substitution. We use a **Cryptographic Salted Hash (HMAC-SHA256)** to deterministically seed the generator.\n   - **Cross-Session Referential Integrity**: Because of the salted seed, `Rajesh` always maps to `Krishna` across every table and session in the enterprise, but he can NEVER be \"decrypted\" back to his original identity. This eliminates the \"Master Key\" risk of traditional encryption.\n\n3. **Advanced Utility Metrics (Market Standard 2026)**:\n   - **Jensen-Shannon Divergence**: Symmetric distribution similarity check for numeric data.\n   - **Semantic Utility Score**: Word-overlap analysis (Jaccard) to ensure the model learns \"human-speak,\" not \"redacted-speak.\"\n\n4. **Membership Inference Attack (MIA) Protection**:\n   - **Neural Memorization Defense**: Recent research (e.g., Purdue/Cisco 'SOFT' framework) proves that LLMs memorize training data after just one epoch. Our pipeline neutralizes this by ensuring the AI never sees real PII, preventing attackers from \"extracting\" identities from the trained model's weights.\n\n5. **Differential Privacy & Dynamic Type Inference**:\n   - **Laplace Noise (ε=1.0)**: Protects numeric values while maintaining statistical shape.\n   - **Smart Type Preservation**: Detects Integers vs Floats to prevent \"19.21 year old\" artifacts.\n\n6. **Content-First, Schema-Agnostic Processing**:\n   - The pipeline does **not** trust column headers. Classification is driven by **sampling actual cell values** and probing them with regex to measure PII density, cardinality, and average string length. A column named `col_A` containing PANs is detected and masked; a column named `Name` containing categorical data is auto-skipped. YAML column hints are demoted to soft tiebreakers — the only hard overrides are operational directives like `pseudonymize_columns`.\n\n7. **Quasi-Identifier Protection (LLM-Optimized)**:\n   - `Age` is protected using Differential Privacy (Laplace noise) rounded to the nearest integer. This maintains perfect natural age distributions instead of clunky text bands.\n   - `Pincode` is fully substituted with completely valid synthetic Indian Pincodes using the deterministic session cache, ensuring LLM fine-tuning datasets look 100% natural.\n\n8. **Confidence-Based Routing**:\n   - High confidence (>0.8) → Auto-redact.\n   - Medium confidence (0.4-0.8) → Mask and flag for review.\n   - Low confidence (<0.4) → Log only for audit.\n\n9. **Real-time Leakage Auditor & Attack Simulator**:\n   - Ground-truth evaluation cross-checking raw PII against masked output.\n   - Simulates targeted LLM memorization attacks to prove privacy.\n\n---\n\n## 📂 Architecture & Workflows\n\n### 1. Complete System Overview\nThis diagram shows the high-level flow of data from ingestion to final secure output.\n\n```mermaid\nflowchart TD\n    subgraph Input\n        A1[Structured Data <br/> CSV / JSON Paste] --> B\n        A2[Unstructured Text <br/> Chat Logs / Emails] --> B\n    end\n    \n    B{Data Type Router} -->|Structured| C[DataFrame Processing]\n    B -->|Unstructured| D[Text Masking]\n    \n    C --> E[Multi-Layer Masking Engine]\n    D --> E\n    \n    E --> F[Phase 4: Differential Privacy <br/> & Quasi-Identifiers]\n    F --> G[Phase 5: Validation Scanner <br/> & Leakage Audit]\n    \n    G --> H[Masked Output <br/> & PII Manifest]\n```\n\n### 2. Inner Workings: Multi-Layer Detection Engine\nHow the pipeline actually detects and decides what to do with PII.\n\n```mermaid\nflowchart LR\n    A[Raw Cell / Text] --> B[Layer 1: Regex Scanner]\n    B --> C{Regex Match?}\n    C -->|Yes| D{Checksum Check}\n    D -->|Pass/Luhn| E[Mask via Faker]\n    D -->|Fail| F[Layer 2: GLiNER NER]\n    C -->|No| F\n    F --> G{Confidence Score}\n    G -->|>= 0.8| H[Auto-Redact]\n    G -->|0.4 - 0.79| I[Review Queue]\n    G -->|< 0.4| J[Log Only]\n```\n\n### 3. Inner Workings: Referential Integrity & Salted Hashing\nHow the system handles complex edge cases like case-sensitivity without losing context across sessions.\n\n```mermaid\nflowchart TD\n    A[Detected Entity: 'Rajesh Sharma'] --> B[Salted HMAC-SHA256 Hashing]\n    B --> C[Generate Deterministic Seed]\n    C --> D[Seed Faker Instance]\n    D --> E[Generate Synthetic: 'Krishna Choudhury']\n    E --> F[Cache Full String & Partials]\n    \n    G[Later Detected: 'rajesh'] --> H[Lowercase Cache Lookup]\n    H --> I[Return 'Krishna' instantly]\n```\n\n### 4. Inner Workings: Differential Privacy & Dynamic Type Inference\nHow the system protects numbers (like Balances and Ages) while smartly maintaining their original data types (Floats vs Integers).\n\n```mermaid\nflowchart TD\n    A[Numeric Data Input] --> B{Data Type Check}\n    B -->|Integer e.g. Age| C[Calculate Variance Sensitivity]\n    B -->|Float e.g. Balance| D[Calculate Variance Sensitivity]\n    \n    C --> E[Apply Laplace Noise]\n    D --> F[Apply Laplace Noise]\n    \n    E --> G[Round & Convert back to Integer]\n    F --> H[Round to 2 Decimal Places]\n    \n    G --> I[Secure Output]\n    H --> I\n```\n\n---\n\n## 🚀 Setup Instructions\n\n### Prerequisites\n- Python 3.9+\n- Virtual Environment\n\n### Installation\n\n```bash\n# 1. Create and activate virtual environment\npython -m venv venv\nsource venv/bin/activate  # On Mac/Linux\n\n# 2. Install dependencies\npip install -r requirements.txt\n```\n\n## 🎮 Running the Dashboard\n\n```bash\nstreamlit run app.py\n```\n\n### Demo Guide\n\n1. **Ingest Data**: \n   - **Upload** a raw CSV file.\n   - **Paste** raw JSON/CSV directly into the sidebar text area.\n   - **Generate** a sample synthetic dataset.\n2. **Toggle NER**: Check \"Enable GLiNER NER\" to use the ML model.\n3. **Select Model**: Choose between `urchade/gliner_multi_pii-v1` or `nvidia/gliner-PII`.\n4. **Run Pipeline**: Click \"Run Masking Pipeline\".\n5. **Explore Tabs**:\n   - **Tab 1: Raw Data**: See the generated sensitive data.\n   - **Tab 2: Masked Data**: Observe **Differential Privacy** and **Salted Synthetic Substitution**.\n   - **Tab 3: PII Manifest**: View detection charts and breakdown by severity.\n   - **Tab 4: Utility Report**: Compare distributions with **JS-Divergence** and **Semantic Utility**.\n   - **Tab 5: Leakage Audit**: Run the \"Targeted Attack Simulation\" to prove zero-leakage.\n   - **Tab 6: Text Masking**: Mask unstructured PII in real-time.\n\n## 🧠 Technical Design Decisions: Why GLiNER?\n\nFor Layer 2 (Contextual NER), we chose **GLiNER** over Generative Small Language Models (SLMs) like Microsoft Phi for four reasons:\n1. **Exact Precision**: Encoder-based character-level offsets prevent alignment errors.\n2. **Zero Hallucination**: Strictly classifies existing tokens; never rewrites text.\n3. **Extreme Efficiency**: 10x smaller and faster than 3B-parameter SLMs.\n4. **Zero-Shot Flexibility**: Custom labels can be added in `pii_config.yaml` without fine-tuning.\n\n## � Bug Fixes & Technical Improvements\n\nDuring rigorous testing with custom inputs and unstructured text, two significant edge cases were identified and resolved to ensure enterprise stability:\n\n### 1. The ID-Column Laplace Noise Bug\n- **The Issue**: Identifier columns (like `Tracking_Number`, `Account_Number`, `Pincode`) that lacked standard headers but contained purely numeric data were being automatically categorized as \"continuous numerical variables\". The pipeline applied Differential Privacy (Laplace noise) to these columns, mathematically scrambling critical IDs.\n- **The Solution**: We introduced a dynamic `is_id_like` string-matching heuristic in the column classification engine (`_classify_columns` in `core/pipeline.py`). By scanning the column headers for substrings like `id`, `num`, `code`, or `pin`, the pipeline now intelligently reroutes these columns to the Regex tier (categorical assignment) rather than subjecting them to continuous mathematical noise.\n\n### 2. The \"Double-Masking\" NER Collision Flaw\n- **The Issue**: When testing unstructured text containing deep identifiers (like a UPI ID `anj123@okhdfcbank`), the Regex Layer (Layer 1) correctly masked it into a visually authentic synthetic string like `zarna40@okhdfcbank`. However, the NER Layer (Layer 2 - GLiNER) ran immediately *after*, analyzing the *already mutated* text. GLiNER hallucinated that \"zarna40\" was a person and \"okhdfcbank\" was a company, re-masking the output into a mangled format like `Reyansh Baral@Sahni-Sood`.\n- **The Solution**: We completely refactored the pipeline logic (`_apply_ner_layer` and `mask_text` in `core/pipeline.py`) so that the advanced NER layer always scans the **raw, unmasked original strings** (e.g., `raw_df`) alongside the Regex engine. This prevents the AI from misidentifying Layer 1's synthetic data as real entities, eliminating the double-masking conflict and preserving clean, natural fake output.\n\n## �🗺️ Roadmap: Agentic Masking (2026 Frontier)\nWe have published a research note in `RESEARCH/AGENTIC_MASKING_UPGRADE.md` detailing the next evolution of this project: **Role-Based Agentic Masking**. \n*   **The Goal**: A middleware that adjusts masking strength (Data Scientist vs. Public Auditor) based on real-time \"Need-to-Know\" requirements.\n\n## ⚙️ Configuration\nAdd or modify regex patterns, GLiNER labels, and routing thresholds in `config/pii_config.yaml` without changing core Python code.\n",
+ "hits": {
+  "st": [
+   {
+    "file": "synthetic_augmenter.py",
+    "line": 3,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "import logging",
+     "",
+     "logging.basicConfig(level=logging.INFO)",
+     "logger = logging.getLogger(__name__)"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "synthetic_augmenter.py",
+    "line": 2,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "import logging",
+     "",
+     "logging.basicConfig(level=logging.INFO)"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "synthetic_augmenter.py",
+    "line": 2,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "import logging",
+     "",
+     "logging.basicConfig(level=logging.INFO)"
+    ]
+   },
+   {
+    "file": "synthetic_augmenter.py",
+    "line": 3,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "import logging",
+     "",
+     "logging.basicConfig(level=logging.INFO)",
+     "logger = logging.getLogger(__name__)"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "synthetic_augmenter.py",
+    "line": 3,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "import logging",
+     "",
+     "logging.basicConfig(level=logging.INFO)",
+     "logger = logging.getLogger(__name__)"
+    ]
+   },
+   {
+    "file": "synthetic_augmenter.py",
+    "line": 25,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "        metadata.update_column(column_name='Transaction_ID', sdtype='id')",
+     "        metadata.set_primary_key(column_name='Transaction_ID')",
+     "        ",
+     "    logger.info(\"Training Gaussian Copula Synthesizer (Fast & Tabular)...\")",
+     "    synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "    synthesizer.fit(df)",
+     "    ",
+     "    logger.info(f\"Generating {num_rows} synthetic rows...\")",
+     "    synthetic_data = synthesizer.sample(num_rows=num_rows)"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv>=1.0"
+  ]
+ }
+}

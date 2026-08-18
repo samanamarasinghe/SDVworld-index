@@ -1,0 +1,789 @@
+{
+ "repo": "Sheshank212/Syntheticdatageneration-SDV",
+ "disk_kb": 4645,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Synthetic Data Generation for COVID-19 & Cardiovascular Data using CTGAN, TVAE & CopulaGAN\n\n## Overview\n\nThis project applies deep generative models — **CTGAN**, **TVAE**, and **CopulaGAN** — from the SDV library to generate high-fidelity synthetic datasets for healthcare analytics. The main goals include:\n\n- Preserving patient privacy  \n- Enabling model training without exposing sensitive real data  \n- Analyzing prediction consistency using SHAP  \n\n### Public datasets used:\n\n- **COVID-19** dataset from Mexican government (via [Kaggle](https://www.kaggle.com/datasets/meirnizri/covid19-dataset))  \n- **UCI Heart Disease** dataset\n\n---\n\n## Objectives\n\n- Handle missing/inconsistent medical data (97/98/99 → NaN)  \n- Generate synthetic data using:  \n  - CTGAN (Conditional Tabular GAN)  \n  - TVAE (Tabular Variational Autoencoder)  \n  - GaussianCopula (baseline comparison for AGE)  \n- Evaluate data quality and realism via:  \n  - **KDE plots** (numerical comparison)  \n  - **Bar plots** (categorical comparison)  \n  - **SHAP** interpretability  \n  - **Random Forest** prediction tests  \n\n---\n\n## Datasets\n\n### COVID-19 Dataset\n\n- ~1M records; sampled 1000 for efficient experimentation  \n- Comorbidities: COPD, Diabetes, Hypertension, etc.  \n- Target: ICU admission\n\n**Preprocessing**:\n- Replaced 97, 98, 99 with NaN  \n- Imputed numerical NaNs using median  \n- Clipped AGE between 1–100  \n- Label encoding applied for model input  \n\n### UCI Heart Disease Dataset\n\n- Attributes: Cholesterol, Age, Blood Pressure, etc.  \n- Target: Heart disease classification  \n\n---\n\n## Methodology\n\n### Preprocessing\n\n- Uniform NaN handling across datasets  \n- Label encoding for model input and SHAP compatibility  \n- Separate pipelines for COVID and Cardio datasets  \n\n### Synthetic Data Generation\n\n- **CTGAN**: Trained for 50+ epochs with batch size 1000  \n- **TVAE**: Trained separately and compared with CTGAN  \n- **CopulaGAN**: Used for baseline distribution alignment (AGE column)  \n\n---\n\n## Evaluation Techniques\n\n- **Statistical Summaries**: mean, std, min, max  \n- **KDE Plots**: AGE comparisons (Real vs CTGAN vs TVAE vs CopulaGAN)  \n- **Bar Plots**: ICU and PREGNANT categorical columns  \n- **SHAP Interpretability**:  \n  - Random Forest models trained on synthetic datasets  \n  - CTGAN SHAP → AGE, DIABETES, INTUBED among top factors  \n  - TVAE SHAP → INTUBED dominant; DIABETES underweighted  \n\n---\n\n## Key Observations\n\n- **CTGAN** produced more balanced SHAP contributions across clinical factors  \n- **TVAE** emphasized INTUBED but downplayed AGE and DIABETES  \n- **AGE** distribution closer to real data with **TVAE**, but **CTGAN** preserved overall diversity better  \n- **CopulaGAN** aligned reasonably with the real distribution for AGE  \n\n---\n\n## Visual Output Examples\n\n\n| Plot Type                      | Thumbnail Preview |\n|-------------------------------|-------------------|\n| SHAP (CTGAN)                  | [![SHAP CTGAN](results/shap_ctgan.png)](results/shap_ctgan.png) |\n| SHAP (TVAE)                   | [![SHAP TVAE](results/shap_tvae.png)](results/shap_tvae.png) |\n| CTGAN Loss                    | [![CTGAN Loss](results/loss_ctgan.png)](results/loss_ctgan.png) |\n| KDE AGE (CTGAN only)          | [![CTGAN AGE](results/ctgan_age_covid.png)](results/ctgan_age_covid.png) |\n| KDE AGE (TVAE only)           | [![TVAE AGE](results/tvae_age_covid.png)](results/tvae_age_covid.png) |\n| KDE AGE (CopulaGAN)           | [![CopulaGAN AGE](results/copula_age_covid.png)](results/copula_age_covid.png) |\n| KDE AGE (All Models)          | [![AGE Distribution](results/AGE_distribution_comparison.png)](results/AGE_distribution_comparison.png) |\n| ICU Comparison                | [![ICU Comparison](results/ICU_categorical_comparison.png)](results/ICU_categorical_comparison.png) |\n| PREGNANT Comparison           | [![Pregnant Comparison](results/PREGNANT_categorical_comparison.png)](results/PREGNANT_categorical_comparison.png) |\n\n\n\n---\n\n\n## File Structure\n\n```\nRepo1/\n├── datasets/\n│   ├── Covid_Data.csv\n│   └── heart_disease_dataset.csv\n├── ctgan_tvae_covid_cardio.py\n├── results/\n│   ├── shap_ctgan.png\n│   ├── shap_tvae.png\n│   ├── loss_ctgan.png\n│   ├── loss_tvae.png\n│   └── *.png\n├── Covid_Synthetic_Data_CTGAN.csv\n├── Covid_Synthetic_Data_TVAE.csv\n├── Heart_Synthetic_Data_CTGAN.csv\n├── Heart_Synthetic_Data_TVAE.csv\n├── README.md\n├── requirements.txt\n└── .gitignore\n```\n\n---\n\n## Tools Used\n\n- **Python** (Pandas, NumPy)  \n- **SDV** (CTGAN, TVAE, GaussianCopula)  \n- **SHAP**, **LIME** (exploratory)  \n- **Plotly**, **Matplotlib**, **Seaborn**  \n- **Scikit-learn** (Random Forest)  \n\n---\n\n## Authors\n\n- **Sheshank Priyadarshi**  \n- **Parth Chopra**  \n\n---\n\n## License\n\nMIT",
+ "hits": {
+  "st": [
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 25,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import shap",
+     "from sklearn.ensemble import RandomForestClassifier",
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.preprocessing import LabelEncoder",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from ctgan import CTGAN",
+     "from sdv.single_table import CTGANSynthesizer",
+     "import os"
+    ]
+   },
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 28,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from sklearn.preprocessing import LabelEncoder",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from ctgan import CTGAN",
+     "from sdv.single_table import CTGANSynthesizer",
+     "import os",
+     "# %%",
+     "",
+     "# Setup results directory"
+    ]
+   },
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 201,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "# %%",
+     "#CopulaGANSynthesizer",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "synthesizer.fit(real_data)",
+     ""
+    ]
+   },
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 366,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "from sklearn.ensemble import RandomForestClassifier",
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.preprocessing import LabelEncoder",
+     "from ctgan import CTGAN",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from ctgan import CTGAN",
+     "import os",
+     "# Load and Preprocess the data"
+    ]
+   },
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 398,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "# %%",
+     "#CTGAN synthesizer",
+     "",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "h_ctgan_synthesizer = CTGANSynthesizer(h_metadata,verbose =True)",
+     "h_ctgan_synthesizer.fit(h_real_data)",
+     ""
+    ]
+   },
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 455,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "# %%",
+     "",
+     "# TVAE on Cardio",
+     "",
+     "from sdv.single_table import TVAESynthesizer",
+     "",
+     "h_tvae_synthesizer = TVAESynthesizer(h_metadata, verbose=True)",
+     "h_tvae_synthesizer.fit(h_real_data)",
+     ""
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 26,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from sklearn.ensemble import RandomForestClassifier",
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.preprocessing import LabelEncoder",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from ctgan import CTGAN",
+     "from sdv.single_table import CTGANSynthesizer",
+     "import os",
+     "# %%"
+    ]
+   },
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 367,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.preprocessing import LabelEncoder",
+     "from ctgan import CTGAN",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from ctgan import CTGAN",
+     "import os",
+     "# Load and Preprocess the data",
+     ""
+    ]
+   },
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 386,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "missing_value_cols =['thal', 'ca',]",
+     "",
+     "# Creating Metadata for SDV Library",
+     "from sdv.metadata import Metadata",
+     "h_metadata = Metadata.detect_from_dataframe(",
+     "    data=h_real_data,",
+     "    table_name='Heart')",
+     ""
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 102,
+    "text": "from sdv.evaluation.single_table import run_diagnostic",
+    "context": [
+     "fig.show()",
+     "",
+     "# %%",
+     "# Diagonostic Report for CTGAN",
+     "from sdv.evaluation.single_table import run_diagnostic",
+     "",
+     "diagnostic_report = run_diagnostic(",
+     "    real_data=real_data,",
+     "    synthetic_data=synthetic_data_ctgan,"
+    ]
+   },
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 114,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "diagnostic_report.get_details(property_name='Data Validity')",
+     "# %%",
+     "#Quality Report for CTGAN",
+     "",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "quality_report = evaluate_quality(",
+     "    real_data=real_data,",
+     "    synthetic_data=synthetic_data_ctgan,"
+    ]
+   },
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 124,
+    "text": "from sdv.evaluation.single_table import get_column_plot",
+    "context": [
+     "",
+     "# %%",
+     "# Example of Data coloumn compared to orignal",
+     "",
+     "from sdv.evaluation.single_table import get_column_plot",
+     "",
+     "fig = get_column_plot(",
+     "    real_data=real_data,",
+     "    synthetic_data=synthetic_data_ctgan,"
+    ]
+   },
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 162,
+    "text": "from sdv.evaluation.single_table import run_diagnostic",
+    "context": [
+     "",
+     "# %%",
+     "# Diagonostic Report for TVAE",
+     "",
+     "from sdv.evaluation.single_table import run_diagnostic",
+     "",
+     "diagnostic_report = run_diagnostic(",
+     "    real_data=real_data,",
+     "    synthetic_data=synthetic_data_tvae,"
+    ]
+   },
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 174,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "diagnostic_report.get_details(property_name='Data Validity')",
+     "# %%",
+     "",
+     "# Quality Report for TVAE",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "quality_report = evaluate_quality(",
+     "    real_data=real_data,",
+     "    synthetic_data=synthetic_data_tvae,"
+    ]
+   },
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 185,
+    "text": "from sdv.evaluation.single_table import get_column_plot",
+    "context": [
+     "# %%",
+     "",
+     "# Example of Data coloumn compared to orignal",
+     "",
+     "from sdv.evaluation.single_table import get_column_plot",
+     "",
+     "fig = get_column_plot(",
+     "    real_data=real_data,",
+     "    synthetic_data=synthetic_data_tvae,"
+    ]
+   },
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 211,
+    "text": "from sdv.evaluation.single_table import get_column_plot",
+    "context": [
+     "",
+     "# %%",
+     "# Example of Data coloumn compared to orignal",
+     "",
+     "from sdv.evaluation.single_table import get_column_plot",
+     "",
+     "fig = get_column_plot(",
+     "    real_data=real_data,",
+     "    synthetic_data=gauss_synthetic_data,"
+    ]
+   },
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 418,
+    "text": "from sdv.evaluation.single_table import run_diagnostic",
+    "context": [
+     "fig.show()",
+     "",
+     "# %%",
+     "# Diagnostic report CTGAN",
+     "from sdv.evaluation.single_table import run_diagnostic",
+     "",
+     "diagnostic_report = run_diagnostic(",
+     "    real_data=h_real_data,",
+     "    synthetic_data=h_ctgan_synthetic_data,"
+    ]
+   },
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 430,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "diagnostic_report.get_details(property_name='Data Validity')",
+     "# %%",
+     "",
+     "## Evaluation report CTGAN",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "quality_report = evaluate_quality(",
+     "    real_data=h_real_data,",
+     "    synthetic_data=h_ctgan_synthetic_data,"
+    ]
+   },
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 440,
+    "text": "from sdv.evaluation.single_table import get_column_plot",
+    "context": [
+     "",
+     "# %%",
+     "",
+     "#Plot",
+     "from sdv.evaluation.single_table import get_column_plot",
+     "",
+     "fig = get_column_plot(",
+     "    real_data=h_real_data,",
+     "    synthetic_data=h_ctgan_synthetic_data,"
+    ]
+   },
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 466,
+    "text": "from sdv.evaluation.single_table import run_diagnostic",
+    "context": [
+     "",
+     "# %%",
+     "",
+     "# Diagnostic Report TVAE",
+     "from sdv.evaluation.single_table import run_diagnostic",
+     "",
+     "diagnostic_report = run_diagnostic(",
+     "    real_data=h_real_data,",
+     "    synthetic_data=h_tvae_synthetic_data,"
+    ]
+   },
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 478,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "diagnostic_report.get_details(property_name='Data Validity')",
+     "# %%",
+     "# Evaluate Report TVAE",
+     "",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "quality_report = evaluate_quality(",
+     "    real_data=h_real_data,",
+     "    synthetic_data=h_tvae_synthetic_data,"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 25,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import shap",
+     "from sklearn.ensemble import RandomForestClassifier",
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.preprocessing import LabelEncoder",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from ctgan import CTGAN",
+     "from sdv.single_table import CTGANSynthesizer",
+     "import os"
+    ]
+   },
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 26,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from sklearn.ensemble import RandomForestClassifier",
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.preprocessing import LabelEncoder",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from ctgan import CTGAN",
+     "from sdv.single_table import CTGANSynthesizer",
+     "import os",
+     "# %%"
+    ]
+   },
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 28,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from sklearn.preprocessing import LabelEncoder",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from ctgan import CTGAN",
+     "from sdv.single_table import CTGANSynthesizer",
+     "import os",
+     "# %%",
+     "",
+     "# Setup results directory"
+    ]
+   },
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 102,
+    "text": "from sdv.evaluation.single_table import run_diagnostic",
+    "context": [
+     "fig.show()",
+     "",
+     "# %%",
+     "# Diagonostic Report for CTGAN",
+     "from sdv.evaluation.single_table import run_diagnostic",
+     "",
+     "diagnostic_report = run_diagnostic(",
+     "    real_data=real_data,",
+     "    synthetic_data=synthetic_data_ctgan,"
+    ]
+   },
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 114,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "diagnostic_report.get_details(property_name='Data Validity')",
+     "# %%",
+     "#Quality Report for CTGAN",
+     "",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "quality_report = evaluate_quality(",
+     "    real_data=real_data,",
+     "    synthetic_data=synthetic_data_ctgan,"
+    ]
+   },
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 124,
+    "text": "from sdv.evaluation.single_table import get_column_plot",
+    "context": [
+     "",
+     "# %%",
+     "# Example of Data coloumn compared to orignal",
+     "",
+     "from sdv.evaluation.single_table import get_column_plot",
+     "",
+     "fig = get_column_plot(",
+     "    real_data=real_data,",
+     "    synthetic_data=synthetic_data_ctgan,"
+    ]
+   },
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 162,
+    "text": "from sdv.evaluation.single_table import run_diagnostic",
+    "context": [
+     "",
+     "# %%",
+     "# Diagonostic Report for TVAE",
+     "",
+     "from sdv.evaluation.single_table import run_diagnostic",
+     "",
+     "diagnostic_report = run_diagnostic(",
+     "    real_data=real_data,",
+     "    synthetic_data=synthetic_data_tvae,"
+    ]
+   },
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 174,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "diagnostic_report.get_details(property_name='Data Validity')",
+     "# %%",
+     "",
+     "# Quality Report for TVAE",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "quality_report = evaluate_quality(",
+     "    real_data=real_data,",
+     "    synthetic_data=synthetic_data_tvae,"
+    ]
+   },
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 185,
+    "text": "from sdv.evaluation.single_table import get_column_plot",
+    "context": [
+     "# %%",
+     "",
+     "# Example of Data coloumn compared to orignal",
+     "",
+     "from sdv.evaluation.single_table import get_column_plot",
+     "",
+     "fig = get_column_plot(",
+     "    real_data=real_data,",
+     "    synthetic_data=synthetic_data_tvae,"
+    ]
+   },
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 201,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "# %%",
+     "#CopulaGANSynthesizer",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "synthesizer.fit(real_data)",
+     ""
+    ]
+   },
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 211,
+    "text": "from sdv.evaluation.single_table import get_column_plot",
+    "context": [
+     "",
+     "# %%",
+     "# Example of Data coloumn compared to orignal",
+     "",
+     "from sdv.evaluation.single_table import get_column_plot",
+     "",
+     "fig = get_column_plot(",
+     "    real_data=real_data,",
+     "    synthetic_data=gauss_synthetic_data,"
+    ]
+   },
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 366,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "from sklearn.ensemble import RandomForestClassifier",
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.preprocessing import LabelEncoder",
+     "from ctgan import CTGAN",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from ctgan import CTGAN",
+     "import os",
+     "# Load and Preprocess the data"
+    ]
+   }
+  ],
+  "ctgan_mod": [
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 27,
+    "text": "from ctgan import CTGAN",
+    "context": [
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.preprocessing import LabelEncoder",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from ctgan import CTGAN",
+     "from sdv.single_table import CTGANSynthesizer",
+     "import os",
+     "# %%",
+     ""
+    ]
+   },
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 365,
+    "text": "from ctgan import CTGAN",
+    "context": [
+     "import lime.lime_tabular",
+     "from sklearn.ensemble import RandomForestClassifier",
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.preprocessing import LabelEncoder",
+     "from ctgan import CTGAN",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from ctgan import CTGAN",
+     "import os"
+    ]
+   },
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 368,
+    "text": "from ctgan import CTGAN",
+    "context": [
+     "from sklearn.preprocessing import LabelEncoder",
+     "from ctgan import CTGAN",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from ctgan import CTGAN",
+     "import os",
+     "# Load and Preprocess the data",
+     "",
+     "# Load the dataset"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 28,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from sklearn.preprocessing import LabelEncoder",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from ctgan import CTGAN",
+     "from sdv.single_table import CTGANSynthesizer",
+     "import os",
+     "# %%",
+     "",
+     "# Setup results directory"
+    ]
+   },
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 84,
+    "text": "ctgan_synthesizer = CTGANSynthesizer(metadata,verbose =True)",
+    "context": [
+     "metadata.detect_from_dataframe(real_data)",
+     "",
+     "# CTGAN",
+     "print(\"\\n Training CTGAN model...\")",
+     "ctgan_synthesizer = CTGANSynthesizer(metadata,verbose =True)",
+     "ctgan_synthesizer.fit(real_data)",
+     "",
+     "synthetic_data_ctgan = ctgan_synthesizer.sample(num_rows=1000)",
+     ""
+    ]
+   },
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 398,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "# %%",
+     "#CTGAN synthesizer",
+     "",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "h_ctgan_synthesizer = CTGANSynthesizer(h_metadata,verbose =True)",
+     "h_ctgan_synthesizer.fit(h_real_data)",
+     ""
+    ]
+   },
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 400,
+    "text": "h_ctgan_synthesizer = CTGANSynthesizer(h_metadata,verbose =True)",
+    "context": [
+     "#CTGAN synthesizer",
+     "",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "h_ctgan_synthesizer = CTGANSynthesizer(h_metadata,verbose =True)",
+     "h_ctgan_synthesizer.fit(h_real_data)",
+     "",
+     "h_ctgan_synthetic_data = h_ctgan_synthesizer.sample(num_rows=1000)",
+     ""
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 201,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "# %%",
+     "#CopulaGANSynthesizer",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "synthesizer.fit(real_data)",
+     ""
+    ]
+   },
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 203,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "#CopulaGANSynthesizer",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "synthesizer.fit(real_data)",
+     "",
+     "gauss_synthetic_data = synthesizer.sample(num_rows=1000)",
+     ""
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 25,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import shap",
+     "from sklearn.ensemble import RandomForestClassifier",
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.preprocessing import LabelEncoder",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from ctgan import CTGAN",
+     "from sdv.single_table import CTGANSynthesizer",
+     "import os"
+    ]
+   },
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 142,
+    "text": "tvae = TVAESynthesizer(metadata)",
+    "context": [
+     "# %%",
+     "",
+     "# TVAE",
+     "print(\"\\n Training TVAE model...\")",
+     "tvae = TVAESynthesizer(metadata)",
+     "tvae.fit(real_data)",
+     "print(\" TVAE Training Completed!\")",
+     "",
+     "synthetic_data_tvae = tvae.sample(num_rows=1000)"
+    ]
+   },
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 366,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "from sklearn.ensemble import RandomForestClassifier",
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.preprocessing import LabelEncoder",
+     "from ctgan import CTGAN",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from ctgan import CTGAN",
+     "import os",
+     "# Load and Preprocess the data"
+    ]
+   },
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 455,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "# %%",
+     "",
+     "# TVAE on Cardio",
+     "",
+     "from sdv.single_table import TVAESynthesizer",
+     "",
+     "h_tvae_synthesizer = TVAESynthesizer(h_metadata, verbose=True)",
+     "h_tvae_synthesizer.fit(h_real_data)",
+     ""
+    ]
+   },
+   {
+    "file": "ctgan_tvae_covid_cardio.py",
+    "line": 457,
+    "text": "h_tvae_synthesizer = TVAESynthesizer(h_metadata, verbose=True)",
+    "context": [
+     "# TVAE on Cardio",
+     "",
+     "from sdv.single_table import TVAESynthesizer",
+     "",
+     "h_tvae_synthesizer = TVAESynthesizer(h_metadata, verbose=True)",
+     "h_tvae_synthesizer.fit(h_real_data)",
+     "",
+     "h_tvae_synthetic_data = h_tvae_synthesizer.sample(num_rows=1000)",
+     ""
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ctgan_mod",
+  "ev",
+  "gc",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

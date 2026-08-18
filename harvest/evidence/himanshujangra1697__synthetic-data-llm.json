@@ -1,0 +1,153 @@
+{
+ "repo": "himanshujangra1697/synthetic-data-llm",
+ "disk_kb": 40,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Synthetic Data Generator\n\n![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)\n![Streamlit](https://img.shields.io/badge/Streamlit-1.28.0-FF4B4B.svg)\n![License](https://img.shields.io/badge/License-MIT/Apache2.0-green.svg)\n\nA multi-engine synthetic data generation tool developed by [Himanshu Jangra](https://github.com/himanshujangra1697) for creating domain-specific datasets using cutting-edge AI models.\n\n## Features -\n\n- **Three Generation Engines**:\n  - Local LLM (OpenHermes)\n  - Cloud API (OpenRouter)\n  - Statistical Model (CTGAN)\n  \n- **Customizable** via `config.py`:\n  - Model configurations\n  - Token limits\n  - Batch processing controls\n  - Schema validation\n\n- **User-Friendly Interface**:\n  - Streamlit web app\n  - JSON schema upload\n  - Real-time preview\n\n## Generation Engines\n\n### 1. OpenHermes (Local LLM)\n**Model:** OpenHermes-2.5-Mistral-7B (Quantized)<br>\n**Provider:** HuggingFace<br>\n**Location:** Local Machine<br>\n**Best For:** Small datasets (1-1000 rows)<br>\n\n**Input Requirements:** Needs No. of Rows, Schema JSON\n\n**Advantages:**\n- Fully offline operation\n- No API costs\n- Optimized for structured JSON output\n\n### 2. OpenRouter (Cloud API)\n**Model:** mistralai/mistral-7b-instruct<br>\n**Provider:** OpenRouter.ai<br>\n**Location:** Cloud<br>\n**Best For:** Medium datasets (100-10,000 rows)<br>\n\n**Input Requirements:** Needs No. of Rows, Schema JSON\n\n**Advantages:**\n- Handles complex schemas\n- Faster than local LLM\n- Supports larger batches\n\n**Configuration:**\n```python\n# config.py\nOPENROUTER_API_KEY = \"your_key\"\nOPENROUTER_MODEL = \"mistralai/mistral-7b-instruct\"  # Can switch to claude-2, GPT-4, Llama2, etc.\nMAX_TOKENS = 4000\n```\n\n### 3. CTGAN + Faker (Statistical)\n**Model:** Conditional Tabular GAN<br>\n**Provider:** SDV + Faker<br>\n**Location:** Cloud<br>\n**Best For:** Large datasets (10,000+ rows)<br>\n\n**Input Requirements:** No. of Rows, Schema JSON, Example rows>=2 in JSON (Optional)\n\n**Unique Capabilities:**\n- Learns from example data\n- Preserves statistical properties\n- Supports conditional generation\n\n**Configuration:**\nNo Configuration required.\n\n## Installation\n\n```bash\n# 1. Clone repository\ngit clone https://github.com/himanshujangra1697/synthetic-data-llm.git\ncd synthetic-data-llm\n\n# 2. Set up environment\npython -m venv venv\nsource venv/bin/activate  # Windows: venv\\Scripts\\activate\n\n# 3. Install dependencies\npip install -r requirements.txt\n\n# 4. Download models (optional)\nwget https://huggingface.co/TheBloke/OpenHermes-2.5-Mistral-7B-GGUF/resolve/main/openhermes-2.5-mistral-7b.Q4_K_M.gguf -P models/\n```\n\n## Usage\n\n```bash\nstreamlit run app.py\n```\n\n### Workflow:\n\n1. Select the generation engine\n2. Upload JSON schema\n3. Set row count\n4. Generate & download data\n\n## Example Schemas\n\nSee `schema/` directory for:<br>\n`patient_schema.json` - Healthcare data (For all engines)<br>\n`patient_schema_example.json` - Healthcare data (Only for CTGAN)\n\n## Contributing\n\n1. Fork the repository\n2. Create your feature branch (`git checkout -b feature/[YourFeatureName]`)\n3. Commit your changes (`git commit -m 'Add some [YourFeatureName]'`)\n4. Push to the branch (`git push origin feature/[YourFeatureName]`)\n5. Open a Pull Request\n\n## License\n\nDistributed under the MIT License. See [LICENSE](LICENSE) for more information.<br><br><br>\n\n---\n\nDeveloped with ❤️ by Himanshu Jangra | Data Scientist\n\n",
+ "hits": {
+  "sdv_any": [
+   {
+    "file": "syntheticgen/constraints.py",
+    "line": 1,
+    "text": "from sdv.constraints import Constraint, FixedCombinations",
+    "context": [
+     "from sdv.constraints import Constraint, FixedCombinations",
+     "",
+     "class TypeConstraint(Constraint):",
+     "    def __init__(self, field_name, field_type):",
+     "        self.field_name = field_name"
+    ]
+   },
+   {
+    "file": "syntheticgen/main.py",
+    "line": 5,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import json",
+     "import time",
+     "from typing import Dict, Any, List, Union",
+     "from llama_cpp import Llama",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.sampling import Condition",
+     "import torch",
+     "import numpy as np"
+    ]
+   },
+   {
+    "file": "syntheticgen/main.py",
+    "line": 6,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import time",
+     "from typing import Dict, Any, List, Union",
+     "from llama_cpp import Llama",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.sampling import Condition",
+     "import torch",
+     "import numpy as np",
+     "import pandas as pd"
+    ]
+   },
+   {
+    "file": "syntheticgen/main.py",
+    "line": 7,
+    "text": "from sdv.sampling import Condition",
+    "context": [
+     "from typing import Dict, Any, List, Union",
+     "from llama_cpp import Llama",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.sampling import Condition",
+     "import torch",
+     "import numpy as np",
+     "import pandas as pd",
+     "import warnings"
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "syntheticgen/main.py",
+    "line": 6,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import time",
+     "from typing import Dict, Any, List, Union",
+     "from llama_cpp import Llama",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.sampling import Condition",
+     "import torch",
+     "import numpy as np",
+     "import pandas as pd"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "syntheticgen/main.py",
+    "line": 5,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import json",
+     "import time",
+     "from typing import Dict, Any, List, Union",
+     "from llama_cpp import Llama",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.sampling import Condition",
+     "import torch",
+     "import numpy as np"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "syntheticgen/main.py",
+    "line": 6,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import time",
+     "from typing import Dict, Any, List, Union",
+     "from llama_cpp import Llama",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.sampling import Condition",
+     "import torch",
+     "import numpy as np",
+     "import pandas as pd"
+    ]
+   },
+   {
+    "file": "syntheticgen/main.py",
+    "line": 178,
+    "text": "self.ctgan = CTGANSynthesizer(",
+    "context": [
+     "                    metadata.add_column(field, sdtype='boolean')",
+     "                else:",
+     "                    metadata.add_column(field, sdtype='categorical')",
+     "            ",
+     "            self.ctgan = CTGANSynthesizer(",
+     "                metadata,",
+     "                epochs=300,  # Increased epochs for better learning",
+     "                batch_size=500,",
+     "                cuda=True if torch.cuda.is_available() else False,"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv"
+  ]
+ }
+}

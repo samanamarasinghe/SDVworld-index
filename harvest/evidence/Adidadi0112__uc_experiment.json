@@ -1,0 +1,289 @@
+{
+ "repo": "Adidadi0112/uc_experiment",
+ "disk_kb": 30101,
+ "method": "partial_clone",
+ "tree_files": 41,
+ "status": "ok",
+ "readme": "# UC Experiment — Synthetic Data Augmentation for Ulcerative Colitis Severity Prediction\n\nThis project investigates how **missing-value imputation** and **synthetic data augmentation** affect the classification of Ulcerative Colitis severity (Mayo endoscopic score 0–3) from routine laboratory blood tests.\n\n## Dataset\n\n- **251 patients**, **55 clinical lab features** (blood morphology, inflammatory markers, liver/kidney panels, lipid panels)\n- Target: `mayo` score (0 = remission, 1 = mild, 2 = moderate, 3 = severe)\n- Source: `data/raw/uc_diagnostic_tests.csv` (European decimal format)\n\n## Pipeline Overview\n\n```\nRaw Data (N=251, many NaNs)\n    │\n    ▼\n5 Imputation Methods ──► 9 Synthesis Strategies ──► 3 Classifiers\n(MICE, KNN, SoftImpute,   (none, SMOTE, ADASYN,     (Random Forest,\n GAIN, PMM)                CTGAN, TVAE,               CatBoost,\n                           SMOTE→CTGAN, SMOTE→TVAE,   Stacking)\n                           ADASYN→CTGAN, ADASYN→TVAE)\n    │\n    ▼\n5×2 Cross-Validation (10 folds)\n    │\n    ▼\nStatistical Testing (Dietterich's 5×2 CV paired t-test + Holm-Bonferroni)\n```\n\n**Total configurations evaluated:** 138 (5 imputation × 9 synthesis × 3 classifiers + 3 baseline) × 10 folds = 1,380 model trainings.\n\n## Project Structure\n\n```\nuc_experiment/\n├── pipeline/                 # Refactored experiment code\n│   ├── config.py             # Constants, hyperparameters, method registries\n│   ├── imputers.py           # 6 imputation methods (fit/transform API)\n│   ├── synthesizers.py       # 9 synthesis strategies (single + mixed)\n│   ├── classifiers.py        # Classifier factory (RF, CatBoost, Stacking)\n│   ├── stats.py              # 5×2 CV paired t-test, Holm-Bonferroni\n│   ├── visualize.py          # All plotting functions\n│   └── run.py                # Main experiment runner\n├── notebooks/                # Legacy Jupyter notebooks (reference only)\n├── data/raw/                 # Raw dataset\n├── results/                  # Generated outputs (CSVs + plots)\n├── requirements.txt          # Python dependencies\n└── README.md\n```\n\n## Setup\n\n### 1. Create a conda environment\n\n```bash\nconda create -n uc_experiment python=3.13 -y\nconda activate uc_experiment\n```\n\n### 2. Install dependencies\n\n```bash\npip install -r requirements.txt\n```\n\n### 3. Verify installation\n\n```bash\npython -c \"from pipeline.config import ALL_SYNTH; print('OK:', ALL_SYNTH)\"\n```\n\n## Running the Experiment\n\n```bash\nconda activate uc_experiment\npython -m pipeline.run\n```\n\n> **Note:** The full experiment takes approximately **5–8 hours** due to CTGAN/TVAE training (150 epochs × ~300 GAN runs across all folds). Plan to run overnight.\n\n### Outputs\n\nAll results are saved to the `results/` directory:\n\n| File | Description |\n|---|---|\n| `all_fold_results.csv` | Raw per-fold scores (1,380 rows) |\n| `summary.csv` | Mean ± std per configuration (138 rows) |\n| `statistical_tests.csv` | Paired t-test results with Holm-Bonferroni correction |\n| `imputation_impact.png` | Bar chart: imputation methods vs balanced accuracy |\n| `synthesis_impact.png` | Bar chart: synthesis methods vs balanced accuracy |\n| `heatmap_*.png` | Imputation × synthesis heatmap per classifier |\n| `best_confusion_matrix.png` | Confusion matrix for the top configuration |\n| `statistical_tests.png` | Significance plot for targeted comparisons |\n\n## Methodology\n\n### Imputation Methods\n| Method | Description |\n|---|---|\n| **MICE** | Iterative multivariate imputation (20 iterations) |\n| **KNN** | K-nearest neighbors (k=5) |\n| **SoftImpute** | Low-rank matrix completion via SVD |\n| **GAIN** | Generative Adversarial Imputation Nets (PyTorch) |\n| **PMM** | Predictive Mean Matching |\n\n### Synthesis Strategies\n| Method | Type | Description |\n|---|---|---|\n| **none** | Baseline | No augmentation |\n| **SMOTE** | Oversampling | Synthetic Minority Over-sampling Technique |\n| **ADASYN** | Oversampling | Adaptive Synthetic Sampling (borderline-focused) |\n| **CTGAN** | Generative | Conditional Tabular GAN (150 epochs) |\n| **TVAE** | Generative | Tabular Variational Autoencoder (150 epochs) |\n| **SMOTE→CTGAN** | Mixed | Balance classes first, then generate from balanced distribution |\n| **SMOTE→TVAE** | Mixed | Balance classes first, then generate from balanced distribution |\n| **ADASYN→CTGAN** | Mixed | Adaptive balance, then generate |\n| **ADASYN→TVAE** | Mixed | Adaptive balance, then generate |\n\n### Evaluation\n- **Cross-validation:** 5×2 CV (Dietterich, 1998) — 5 repetitions of 2-fold stratified CV\n- **Primary metric:** Balanced Accuracy (handles class imbalance)\n- **Statistical testing:** 5×2 CV paired t-test with Holm-Bonferroni correction for family-wise error rate control\n",
+ "hits": {
+  "st": [
+   {
+    "file": "pipeline/synthesizers.py",
+    "line": 8,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sklearn.preprocessing import StandardScaler",
+     "from imblearn.over_sampling import ADASYN, SMOTE",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from .config import TARGET, CTGAN_EPOCHS, TVAE_EPOCHS",
+     ""
+    ]
+   },
+   {
+    "file": "notebooks/02_Synthetic_Data.ipynb",
+    "line": 12,
+    "text": "\"from sdv.single_table import CTGANSynthesizer, TVAESynthesizer\\n\",",
+    "context": [
+     "            \"outputs\": [],",
+     "            \"source\": [",
+     "                \"import pandas as pd\\n\",",
+     "                \"import numpy as np\\n\",",
+     "                \"from sdv.single_table import CTGANSynthesizer, TVAESynthesizer\\n\",",
+     "                \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "                \"from imblearn.over_sampling import ADASYN, SMOTE\\n\",",
+     "                \"from sklearn.preprocessing import StandardScaler\\n\",",
+     "                \"import os\\n\","
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "pipeline/synthesizers.py",
+    "line": 9,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import numpy as np",
+     "from sklearn.preprocessing import StandardScaler",
+     "from imblearn.over_sampling import ADASYN, SMOTE",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from .config import TARGET, CTGAN_EPOCHS, TVAE_EPOCHS",
+     "",
+     "warnings.filterwarnings(\"ignore\")"
+    ]
+   },
+   {
+    "file": "notebooks/02_Synthetic_Data.ipynb",
+    "line": 13,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "            \"source\": [",
+     "                \"import pandas as pd\\n\",",
+     "                \"import numpy as np\\n\",",
+     "                \"from sdv.single_table import CTGANSynthesizer, TVAESynthesizer\\n\",",
+     "                \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "                \"from imblearn.over_sampling import ADASYN, SMOTE\\n\",",
+     "                \"from sklearn.preprocessing import StandardScaler\\n\",",
+     "                \"import os\\n\",",
+     "                \"\\n\","
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "pipeline/synthesizers.py",
+    "line": 8,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sklearn.preprocessing import StandardScaler",
+     "from imblearn.over_sampling import ADASYN, SMOTE",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from .config import TARGET, CTGAN_EPOCHS, TVAE_EPOCHS",
+     ""
+    ]
+   },
+   {
+    "file": "pipeline/synthesizers.py",
+    "line": 9,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import numpy as np",
+     "from sklearn.preprocessing import StandardScaler",
+     "from imblearn.over_sampling import ADASYN, SMOTE",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from .config import TARGET, CTGAN_EPOCHS, TVAE_EPOCHS",
+     "",
+     "warnings.filterwarnings(\"ignore\")"
+    ]
+   },
+   {
+    "file": "notebooks/02_Synthetic_Data.ipynb",
+    "line": 12,
+    "text": "\"from sdv.single_table import CTGANSynthesizer, TVAESynthesizer\\n\",",
+    "context": [
+     "            \"outputs\": [],",
+     "            \"source\": [",
+     "                \"import pandas as pd\\n\",",
+     "                \"import numpy as np\\n\",",
+     "                \"from sdv.single_table import CTGANSynthesizer, TVAESynthesizer\\n\",",
+     "                \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "                \"from imblearn.over_sampling import ADASYN, SMOTE\\n\",",
+     "                \"from sklearn.preprocessing import StandardScaler\\n\",",
+     "                \"import os\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/02_Synthetic_Data.ipynb",
+    "line": 13,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "            \"source\": [",
+     "                \"import pandas as pd\\n\",",
+     "                \"import numpy as np\\n\",",
+     "                \"from sdv.single_table import CTGANSynthesizer, TVAESynthesizer\\n\",",
+     "                \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "                \"from imblearn.over_sampling import ADASYN, SMOTE\\n\",",
+     "                \"from sklearn.preprocessing import StandardScaler\\n\",",
+     "                \"import os\\n\",",
+     "                \"\\n\","
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "pipeline/synthesizers.py",
+    "line": 8,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sklearn.preprocessing import StandardScaler",
+     "from imblearn.over_sampling import ADASYN, SMOTE",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from .config import TARGET, CTGAN_EPOCHS, TVAE_EPOCHS",
+     ""
+    ]
+   },
+   {
+    "file": "pipeline/synthesizers.py",
+    "line": 72,
+    "text": "return _generate_with_gan(X, y, CTGANSynthesizer, CTGAN_EPOCHS, rs)",
+    "context": [
+     "    return _resample(X, y, ADASYN(sampling_strategy=\"not majority\", random_state=rs))",
+     "",
+     "",
+     "def _ctgan(X, y, rs):",
+     "    return _generate_with_gan(X, y, CTGANSynthesizer, CTGAN_EPOCHS, rs)",
+     "",
+     "",
+     "def _tvae(X, y, rs):",
+     "    return _generate_with_gan(X, y, TVAESynthesizer, TVAE_EPOCHS, rs)"
+    ]
+   },
+   {
+    "file": "notebooks/02_Synthetic_Data.ipynb",
+    "line": 12,
+    "text": "\"from sdv.single_table import CTGANSynthesizer, TVAESynthesizer\\n\",",
+    "context": [
+     "            \"outputs\": [],",
+     "            \"source\": [",
+     "                \"import pandas as pd\\n\",",
+     "                \"import numpy as np\\n\",",
+     "                \"from sdv.single_table import CTGANSynthesizer, TVAESynthesizer\\n\",",
+     "                \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "                \"from imblearn.over_sampling import ADASYN, SMOTE\\n\",",
+     "                \"from sklearn.preprocessing import StandardScaler\\n\",",
+     "                \"import os\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/02_Synthetic_Data.ipynb",
+    "line": 315,
+    "text": "\"        ctgan = CTGANSynthesizer(metadata, epochs=300, verbose=True)\\n\",",
+    "context": [
+     "                \"    \\n\",",
+     "                \"    # --- CTGAN ---\\n\",",
+     "                \"    print(f\\\"  > Generating CTGAN for {method} (Augmentation)...\\\")\\n\",",
+     "                \"    try:\\n\",",
+     "                \"        ctgan = CTGANSynthesizer(metadata, epochs=300, verbose=True)\\n\",",
+     "                \"        ctgan.fit(df_scaled)\\n\",",
+     "                \"        # Generate new records\\n\",",
+     "                \"        synthetic_ctgan_scaled = ctgan.sample(num_rows=len(df_original))\\n\",",
+     "                \"        synthetic_ctgan_inv = inverse_transform_data(synthetic_ctgan_scaled, scaler, target_col)\\n\","
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "pipeline/synthesizers.py",
+    "line": 8,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sklearn.preprocessing import StandardScaler",
+     "from imblearn.over_sampling import ADASYN, SMOTE",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from .config import TARGET, CTGAN_EPOCHS, TVAE_EPOCHS",
+     ""
+    ]
+   },
+   {
+    "file": "pipeline/synthesizers.py",
+    "line": 76,
+    "text": "return _generate_with_gan(X, y, TVAESynthesizer, TVAE_EPOCHS, rs)",
+    "context": [
+     "    return _generate_with_gan(X, y, CTGANSynthesizer, CTGAN_EPOCHS, rs)",
+     "",
+     "",
+     "def _tvae(X, y, rs):",
+     "    return _generate_with_gan(X, y, TVAESynthesizer, TVAE_EPOCHS, rs)",
+     "",
+     "",
+     "# ---------------------------------------------------------------------------",
+     "# Mixed pipelines: resampler → GAN"
+    ]
+   },
+   {
+    "file": "notebooks/02_Synthetic_Data.ipynb",
+    "line": 12,
+    "text": "\"from sdv.single_table import CTGANSynthesizer, TVAESynthesizer\\n\",",
+    "context": [
+     "            \"outputs\": [],",
+     "            \"source\": [",
+     "                \"import pandas as pd\\n\",",
+     "                \"import numpy as np\\n\",",
+     "                \"from sdv.single_table import CTGANSynthesizer, TVAESynthesizer\\n\",",
+     "                \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "                \"from imblearn.over_sampling import ADASYN, SMOTE\\n\",",
+     "                \"from sklearn.preprocessing import StandardScaler\\n\",",
+     "                \"import os\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/02_Synthetic_Data.ipynb",
+    "line": 331,
+    "text": "\"        tvae = TVAESynthesizer(metadata, epochs=300, verbose=True)\\n\",",
+    "context": [
+     "                \"    \\n\",",
+     "                \"    # --- TVAE ---\\n\",",
+     "                \"    print(f\\\"  > Generating TVAE for {method} (Augmentation)...\\\")\\n\",",
+     "                \"    try:\\n\",",
+     "                \"        tvae = TVAESynthesizer(metadata, epochs=300, verbose=True)\\n\",",
+     "                \"        tvae.fit(df_scaled)\\n\",",
+     "                \"        # Generate new records\\n\",",
+     "                \"        synthetic_tvae_scaled = tvae.sample(num_rows=len(df_original))\\n\",",
+     "                \"        synthetic_tvae_inv = inverse_transform_data(synthetic_tvae_scaled, scaler, target_col)\\n\","
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv>=1.10"
+  ]
+ }
+}

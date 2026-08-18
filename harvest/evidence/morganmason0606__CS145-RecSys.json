@@ -1,0 +1,94 @@
+{
+ "repo": "morganmason0606/CS145-RecSys",
+ "disk_kb": 20114,
+ "method": "partial_clone",
+ "tree_files": 47,
+ "status": "ok",
+ "readme": "\n# Recommendation System Competition Platform\n\nA data mining course competition platform for designing recommendation algorithms that maximize revenue through multi-iteration learning.\n\n## Overview\n\nThis platform uses the [Sim4Rec](https://github.com/sb-ai-lab/Sim4Rec) simulation framework to:\n\n1. Generate synthetic users and items with various properties\n2. Simulate user responses to recommendations over multiple iterations\n3. Evaluate recommendation algorithms based on revenue generation\n4. Compare performance across different algorithms\n\nStudents will compete to design recommendation algorithms that earn the most money by recommending the right items to the right users. The system implements a multi-iteration learning environment where algorithms can adapt over time based on user feedback.\n\n## Problem Setting: Multi-Iteration Ranking Task\n\nThe competition focuses on a sequential recommendation problem where:\n\n- Each recommendation algorithm interacts with users across multiple iterations\n- Algorithms make top-k item recommendations to users in each iteration\n- User responses (purchases) generate revenue based on item prices\n- Algorithms can learn from past interactions to improve future recommendations\n- The goal is to maximize cumulative revenue across all iterations\n\nThis setup realistically simulates how recommendation systems operate in production environments, where models continuously learn from user interactions.\n\n## Training and Evaluation Setup\n\nThe platform uses a train-test split evaluation approach:\n\n1. **Training Phase**:\n   - Algorithms interact with users for a fixed number of training iterations\n   - Recommenders can be retrained after each iteration based on new feedback\n   - This phase allows algorithms to learn user preferences\n\n2. **Testing Phase**:\n   - Algorithms make recommendations for additional test iterations\n   - No retraining occurs during testing phase\n   - Performance on test iterations determines final evaluation\n\nThis approach tests both an algorithm's ability to learn from interactions and its generalization performance on unseen data.\n\n## Metrics\n\nThe platform evaluates recommenders using the following metrics:\n\n1. **Total Revenue (Primary)**: Sum of prices for all purchased items\n   ```\n   Revenue = Sum(price * response)\n   ```\n   where `response` is 1 for purchased items and 0 otherwise\n\n2. **Discounted Revenue**: Revenue weighted by recommendation position\n   ```\n   Discounted Revenue = Sum(price * response * (1/log2(rank + 1)))\n   ```\n\n3. **Precision@K**: Fraction of recommended items that were relevant\n   ```\n   Precision@K = (# of recommended items that were purchased) / K\n   ```\n\n4. **NDCG@K**: Normalized Discounted Cumulative Gain, which measures ranking quality\n   ```\n   DCG = Sum(relevance_i / log2(i+1))\n   IDCG = DCG of the ideal ranking\n   NDCG = DCG / IDCG\n   ```\n\n5. **MRR**: Mean Reciprocal Rank, the average of reciprocal ranks of the first relevant item\n   ```\n   MRR = Average(1/rank of first relevant item)\n   ```\n\n6. **Hit Rate**: Fraction of users for whom at least one recommended item was relevant\n   ```\n   Hit Rate = (# of users with at least one purchased item) / (# of users)\n   ```\n\n## Installation\n\n### Prerequisites\n\n- Python 3.9\n- Java 8+ (required for PySpark)\n\n### Setup\n\n1. Clone this repository\n```bash\ngit clone https://github.com/FrancoTSolis/CS145-RecSys.git\ncd CS145-RecSys\n```\n\n2. Install dependencies\n```bash\npip install --upgrade pip wheel poetry\npoetry install\npip install PyYAML==6.0.1\npip install pyspark==3.5.5 numpy matplotlib==3.7.5 seaborn==0.13.2 torch sdv==0.18.0 pyarrow\n```\n\n## Getting Started\n\nThe main execution flow is in `recommender_analysis_visualization.py`, which:\n\n1. Generates synthetic user and item data\n2. Performs exploratory data analysis\n3. Sets up and evaluates baseline recommenders\n4. Visualizes performance metrics\n\nRun the analysis script to get started:\n```bash\npython recommender_analysis_visualization.py\n```\n\nThis will:\n- Generate a synthetic dataset with users and items\n- Create visualizations of user segments, item categories, and interactions\n- Run multiple baseline recommenders (Random, Popularity, Content-Based)\n- Compare their performance using train-test evaluation\n- Generate visualizations of recommender performance\n\n## Developing Your Algorithm\n\n1. Start with the `MyRecommender` class in `recommender_analysis_visualization.py`\n\n2. Implement your recommendation algorithm with:\n   - `__init__`: Initialize your algorithm and parameters\n   - `fit`: Train your model on historical data\n   - `predict`: Generate recommendations for users\n\n3. Test your algorithm using the `run_recommender_analysis` function\n\n## Checkpoints\n\nThe competition consists of three checkpoints, each focusing on a different type of recommendation algorithm:\n\n1. **Content-based Recommender**: Leverage user and item attributes to make recommendations\n2. **Sequence-based Recommender**: Use sequential patterns in user interactions\n3. **Graph-based Recommender**: Exploit relationships between users and items\n\nDetailed instructions for each checkpoint will be released later.\n\n## Leaderboard\n\nA competition leaderboard will track the performance of submitted algorithms. Submissions will be evaluated in hidden environments with the same setup but different random seeds to test robustness. More information on the leaderboard and submission process will be provided later.\n\n## Baseline Recommenders\n\nSeveral baseline algorithms are provided for comparison:\n\n- `RandomRecommender`: Recommends random items\n- `PopularityRecommender`: Recommends items based on popularity\n- `ContentBasedRecommender`: Recommends items similar to previously liked items\n- `EnhancedUCB`: Upper Confidence Bound algorithm with price consideration\n- `HybridRecommender`: Combines multiple recommendation strategies\n\n## Tips for Success\n\n1. **Consider item prices**: Since revenue is the primary metric, recommending high-priced items that users are likely to purchase can be effective\n2. **User segmentation**: Different user segments may have different preferences\n3. **Content-based features**: Use user and item attributes for personalization\n4. **Hybrid approaches**: Combine multiple recommendation strategies\n5. **Exploration vs. exploitation**: Balance between recommending items you know users will like and discovering new items\n6. **Iterative learning**: Update your model as new interaction data becomes available\n\n## Questions and Support\n\nFor questions or support, please contact the course instructors or teaching assistants.\n\nGood luck with your algorithms!\n",
+ "hits": {
+  "ev": [
+   {
+    "file": "sim4rec/modules/evaluation.py",
+    "line": 18,
+    "text": "from sdv.evaluation import evaluate",
+    "context": [
+     "    RegressionEvaluator,",
+     "    MulticlassClassificationEvaluator",
+     ")",
+     "",
+     "from sdv.evaluation import evaluate",
+     "",
+     "",
+     "def evaluate_synthetic(",
+     "    synth_df : DataFrame,"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "sim4rec/modules/evaluation.py",
+    "line": 18,
+    "text": "from sdv.evaluation import evaluate",
+    "context": [
+     "    RegressionEvaluator,",
+     "    MulticlassClassificationEvaluator",
+     ")",
+     "",
+     "from sdv.evaluation import evaluate",
+     "",
+     "",
+     "def evaluate_synthetic(",
+     "    synth_df : DataFrame,"
+    ]
+   },
+   {
+    "file": "sim4rec/modules/generator.py",
+    "line": 12,
+    "text": "from sdv.tabular import CopulaGAN, CTGAN, GaussianCopula, TVAE",
+    "context": [
+     "",
+     "import pyspark.sql.types as st",
+     "from pyspark.sql import DataFrame",
+     "from pyspark.sql import functions as sf",
+     "from sdv.tabular import CopulaGAN, CTGAN, GaussianCopula, TVAE",
+     "",
+     "from sim4rec.utils.session_handler import State",
+     "from sim4rec.params import (",
+     "    HasLabel, HasDevice, HasDataSize,"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ev",
+  "sdv_any"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "pyproject.toml": [
+   "sdv = \"0.15.0\""
+  ],
+  "poetry.lock": [
+   "name = \"copulas\"",
+   "description = \"A python library for building different types of copulas and using them for sampling.\"",
+   "    {file = \"copulas-0.7.0-py2.py3-none-any.whl\", hash = \"sha256:5f4c2419615882d589142916b56f837aa5b263ece6abd2acbbce95112e77ae40\"},",
+   "    {file = \"copulas-0.7.0.tar.gz\", hash = \"sha256:e0761d00a934d2fe9d56cf3cb955ba23b01e6103f965111a02825d45c4719e9f\"},",
+   "name = \"ctgan\"",
+   "    {file = \"ctgan-0.5.1-py2.py3-none-any.whl\", hash = \"sha256:b45e74085c563629745d923a9e6f18ea115c0c89d0b43b287e7ceb3716d328e3\"},",
+   "    {file = \"ctgan-0.5.1.tar.gz\", hash = \"sha256:21e1ebfe6aed6dc4f9edae64f6f59a9d3825401a0ae6dd9b8514a0fbc7752340\"},",
+   "rdt = \">=0.6.2,<0.7\"",
+   "name = \"rdt\"",
+   "    {file = \"rdt-0.6.3-py2.py3-none-any.whl\", hash = \"sha256:fdca21cab7a4f27284e15c09920636084add5cf8934e0fd26bfdb3af8eeabada\"},",
+   "    {file = \"rdt-0.6.3.tar.gz\", hash = \"sha256:c5a02b334b5c0ccefc548b0ea5720f29c26d9bec7e77b706f6779a1c2a00c5e8\"},",
+   "copulas = [\"copulas (>=0.6.0,<0.7)\"]",
+   "dev = [\"autoflake (>=1.1,<2)\", \"autopep8 (>=1.4.3,<1.6)\", \"bumpversion (>=0.5.3,<0.6)\", \"copulas (>=0.6.0,<0.7)\", \"coverage (>=4.5.1,<6)\", \"dlint (>=0.11.0,<0.12)\", \"flake8 (>=3.7.7,<4)\", \"flake8-absolute-import (>=1.0,<2)\", \"flake8-builtins (>=1.5.3,<1.6)\", \"flake8-comprehensions (>=3.6.1,<3.7)\", \"flake8-debugger (>=4.0.0,<4.1)\", \"flake8-docstrings (>=1.5.0,<2)\", \"flake8-eradicate (>=1.1.0,<1.2)\", \"flake8-expression-complexity (>=0.0.9,<0.1)\", \"flake8-fixme (>=1.1.1,<1.2)\", \"flake8-mock (>=0.3,<0.4)\", \"flake8-multiline-containers (>=0.0.18,<0.1)\", \"flake8-mutable (>=1.2.0,<1.3)\", \"flake8-print (>=4.0.0,<4.1)\", \"flake8-pytest-style (>=1.5.0,<2)\", \"flake8-quotes (>=3.3.0,<4)\", \"flake8-sfs (>=0.0.3,<0.1)\", \"flake8-variables-names (>=0.0.4,<0.1)\", \"invoke\", \"isort (>=4.3.4,<5)\", \"jupyter (>=1.0.0,<2)\", \"pandas-vet (>=0.2.2,<0.3)\", \"pep8-naming (>=0.12.1,<0.13)\", \"pip (>=9.0.1)\", \"pycodestyle (>=2.7.0,<2.8.0)\", \"pydocstyle (>=6.1.1,<6.2)\", \"pyflakes (>=2.3.0,<2.4.0)\", \"pylint (>=2.5.3,<3)\", \"pytest (>=3.4.2)\", \"pytest-cov (>=2.6.0)\", \"pytest-subtests (>=0.5,<1.0)\", \"rundoc (>=0.4.3,<0.5)\", \"tabulate (>=0.8.9,<1)\", \"tox (>=2.9.1,<4)\", \"twine (>=1.10.0,<4)\", \"watchdog (>=0.8.3,<0.11)\", \"wheel (>=0.30.0)\"]",
+   "test = [\"copulas (>=0.6.0,<0.7)\", \"jupyter (>=1.0.0,<2)\", \"pytest (>=3.4.2)\", \"pytest-cov (>=2.6.0)\", \"pytest-subtests (>=0.5,<1.0)\", \"rundoc (>=0.4.3,<0.5)\"]",
+   "name = \"sdmetrics\"",
+   "    {file = \"sdmetrics-0.5.0-py2.py3-none-any.whl\", hash = \"sha256:03c52e93bfd9b20ea11e809482dde1f81f5ea09f1463075eeab01c31e4c7fd10\"},",
+   "    {file = \"sdmetrics-0.5.0.tar.gz\", hash = \"sha256:6e202661d2a62f27cbe438a130a5945a610ed55eac5bed3a8cc13493ee978a1b\"},",
+   "copulas = \">=0.7.0,<0.8\"",
+   "rdt = \">=0.6.1,<0.7\"",
+   "name = \"sdv\""
+  ]
+ }
+}

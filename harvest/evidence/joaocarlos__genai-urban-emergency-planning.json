@@ -1,0 +1,434 @@
+{
+ "repo": "joaocarlos/genai-urban-emergency-planning",
+ "disk_kb": 2501,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "![LES2 Banner](https://raw.githubusercontent.com/les2feup/guidelines/main/src/figures/les2banner.png)\n\n# Generative AI for Climate-Resilient Urban Emergency Planning\n\n[![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/release/python-3120/)\n[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)\n[![Git LFS](https://img.shields.io/badge/dataset-Git%20LFS-8A2BE2.svg)](https://git-lfs.com)\n\nGenerative AI evaluation framework for emergency response scenarios across five municipalities in metropolitan Porto, Portugal. Trains and compares five tabular generative model families — GaussianCopula, CTGAN, TVAE, ForestDiffusion, and TabSyn — on a published real-world emergency events dataset, assessed across fidelity, utility, privacy, and energy cost dimensions.\n\n## Installation\n\nRequires [Git LFS](https://git-lfs.com) to fetch the published dataset.\n\n```bash\ngit clone git@github.com:joaocarlos/genai-urban-emergency-planning.git\ncd genai-urban-emergency-planning\ngit lfs pull\npython -m venv .venv\nsource .venv/bin/activate\npip install -e .\n```\n\nCTGAN and TVAE require a separate environment due to a `synthcity` dependency conflict:\n\n```bash\npython -m venv .venv_synthcity\nsource .venv_synthcity/bin/activate\npip install synthcity\n```\n\n## Reproducing Results\n\nRun notebooks sequentially from the project root:\n\n```bash\nsource .venv/bin/activate\n\n# Stages 1–4: data ingestion → published dataset\njupyter nbconvert --to notebook --execute notebooks/01_source_standardization.ipynb\njupyter nbconvert --to notebook --execute notebooks/02_spatial_grid.ipynb\njupyter nbconvert --to notebook --execute notebooks/03_dataset_enrichment.ipynb\njupyter nbconvert --to notebook --execute notebooks/04_dataset_preparation.ipynb\n\n# Stage 5: generative model training\njupyter nbconvert --to notebook --execute notebooks/05a_gaussiancopula.ipynb\n.venv_synthcity/bin/python -m jupyter nbconvert --to notebook --execute notebooks/05b_ctgan.ipynb\n.venv_synthcity/bin/python -m jupyter nbconvert --to notebook --execute notebooks/05c_tvae.ipynb\npython scripts/patch_synthcity_tvcomplement.py   # fix TVComplement scores post-hoc\njupyter nbconvert --to notebook --execute notebooks/05d_forestdiffusion.ipynb\njupyter nbconvert --to notebook --execute notebooks/05e_tabsyn.ipynb\n\n# Stage 6–8: evaluation, demonstrations, scenario map\njupyter nbconvert --to notebook --execute notebooks/06_model_evaluation.ipynb\njupyter nbconvert --to notebook --execute notebooks/07_demonstrations.ipynb\njupyter nbconvert --to notebook --execute notebooks/08_scenario_map.ipynb\n```\n\n## Usage\n\nThe published dataset is available in `data/published/` and can be loaded directly:\n\n```python\nimport pandas as pd\n\nevents = pd.read_parquet(\"data/published/events.parquet\")\ntrain  = pd.read_parquet(\"data/published/splits/events_random_split.parquet\")\n```\n\nSee [`data/published/DATASET_CARD.md`](data/published/DATASET_CARD.md) for full schema and provenance details.\n\n## Contribution\n\nThis repository accompanies a scientific publication. Bug reports and questions are welcome via [GitHub Issues](https://github.com/joaocarlos/genai-urban-emergency-planning/issues).\n\n## License\n\nThis project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.\n",
+ "hits": {
+  "md": [
+   {
+    "file": "notebooks/05e_tabsyn.ipynb",
+    "line": 931,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"import json\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from src.evaluation import model_metrics\\n\",",
+     "    \"\\n\",",
+     "    \"_meta = SingleTableMetadata()\\n\",",
+     "    \"_meta.detect_from_dataframe(train_real)\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/05a_gaussiancopula.ipynb",
+    "line": 113,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "     ]",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"metadata = SingleTableMetadata()\\n\",",
+     "    \"metadata.detect_from_dataframe(train_real)\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/05d_forestdiffusion.ipynb",
+    "line": 293,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "     ]",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"_meta = SingleTableMetadata()\\n\",",
+     "    \"_meta.detect_from_dataframe(train_real)\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "src/evaluation/conditional_ctgan.py",
+    "line": 129,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "        train_real,",
+     "    )",
+     "",
+     "    try:",
+     "        from sdv.metadata import SingleTableMetadata",
+     "",
+     "        _meta = SingleTableMetadata()",
+     "        _meta.detect_from_dataframe(train_real)",
+     "    except Exception:"
+    ]
+   },
+   {
+    "file": "src/evaluation/sdv_quality.py",
+    "line": 16,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "def compute_tvcomplement(train_real: pd.DataFrame, synth: pd.DataFrame) -> float:",
+     "    \"\"\"Compute SDV's table-level quality score for any generator output.\"\"\"",
+     "    from sdv.evaluation.single_table import evaluate_quality",
+     "    from sdv.metadata import SingleTableMetadata",
+     "",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(train_real)",
+     "    return float(evaluate_quality(train_real, synth, metadata, verbose=False).get_score())"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "notebooks/05e_tabsyn.ipynb",
+    "line": 931,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"import json\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from src.evaluation import model_metrics\\n\",",
+     "    \"\\n\",",
+     "    \"_meta = SingleTableMetadata()\\n\",",
+     "    \"_meta.detect_from_dataframe(train_real)\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/08_scenario_map.ipynb",
+    "line": 135,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "   },",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"# Load the CTGAN model trained by 05b_ctgan.ipynb and saved to artifacts/models/ctgan.pkl.\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"ctgan = CTGANSynthesizer.load(\\\"artifacts/models/ctgan.pkl\\\")\\n\",",
+     "    \"print(\\\"CTGAN model loaded from artifacts/models/ctgan.pkl\\\")\\n\",",
+     "    \"\\n\""
+    ]
+   },
+   {
+    "file": "notebooks/08_scenario_map.ipynb",
+    "line": 167,
+    "text": "\"from sdv.sampling import Condition\\n\",",
+    "context": [
+     "   \"source\": [",
+     "    \"from contextlib import redirect_stdout\\n\",",
+     "    \"from io import StringIO\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.sampling import Condition\\n\",",
+     "    \"\\n\",",
+     "    \"from src.evaluation import sample_and_track\\n\",",
+     "    \"\\n\",",
+     "    \"BASE_DAY = {\\\"day_of_week\\\": 1, \\\"month\\\": 7, \\\"is_holiday\\\": 0}\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/05a_gaussiancopula.ipynb",
+    "line": 113,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "     ]",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"metadata = SingleTableMetadata()\\n\",",
+     "    \"metadata.detect_from_dataframe(train_real)\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/05a_gaussiancopula.ipynb",
+    "line": 163,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "     ]",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"MODEL_NAME = \\\"gaussiancopula\\\"\\n\",",
+     "    \"PREFIX = \\\"01_\\\"\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/05d_forestdiffusion.ipynb",
+    "line": 293,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "     ]",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"_meta = SingleTableMetadata()\\n\",",
+     "    \"_meta.detect_from_dataframe(train_real)\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "src/evaluation/metrics.py",
+    "line": 609,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "    frob = correlation_frobenius(train_real, synth, NUMERIC_CORR_COLS)",
+     "",
+     "    tv: float | None = None",
+     "    if metadata is not None:",
+     "        from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "        tv = float(evaluate_quality(train_real, synth, metadata, verbose=False).get_score())",
+     "",
+     "    utility = tstr_evaluation(train_real, test_real, {name: synth})"
+    ]
+   },
+   {
+    "file": "src/evaluation/conditional_sdv.py",
+    "line": 10,
+    "text": "from sdv.sampling import Condition",
+    "context": [
+     "from typing import Any",
+     "",
+     "import pandas as pd",
+     "from scipy.stats import ks_2samp",
+     "from sdv.sampling import Condition",
+     "",
+     "DEFAULT_TARGET_EVENT = \"urban_fire\"",
+     "DEFAULT_N_CONDITIONAL = 2_000",
+     "AUDIT_COLUMNS = [\"hour\", \"resource_load\", \"duration_minutes\", \"day_of_week\", \"month\"]"
+    ]
+   },
+   {
+    "file": "src/evaluation/conditional_ctgan.py",
+    "line": 129,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "        train_real,",
+     "    )",
+     "",
+     "    try:",
+     "        from sdv.metadata import SingleTableMetadata",
+     "",
+     "        _meta = SingleTableMetadata()",
+     "        _meta.detect_from_dataframe(train_real)",
+     "    except Exception:"
+    ]
+   },
+   {
+    "file": "src/evaluation/sdv_quality.py",
+    "line": 15,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "",
+     "",
+     "def compute_tvcomplement(train_real: pd.DataFrame, synth: pd.DataFrame) -> float:",
+     "    \"\"\"Compute SDV's table-level quality score for any generator output.\"\"\"",
+     "    from sdv.evaluation.single_table import evaluate_quality",
+     "    from sdv.metadata import SingleTableMetadata",
+     "",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(train_real)"
+    ]
+   },
+   {
+    "file": "src/evaluation/sdv_quality.py",
+    "line": 16,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "def compute_tvcomplement(train_real: pd.DataFrame, synth: pd.DataFrame) -> float:",
+     "    \"\"\"Compute SDV's table-level quality score for any generator output.\"\"\"",
+     "    from sdv.evaluation.single_table import evaluate_quality",
+     "    from sdv.metadata import SingleTableMetadata",
+     "",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(train_real)",
+     "    return float(evaluate_quality(train_real, synth, metadata, verbose=False).get_score())"
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "notebooks/08_scenario_map.ipynb",
+    "line": 135,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "   },",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"# Load the CTGAN model trained by 05b_ctgan.ipynb and saved to artifacts/models/ctgan.pkl.\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"ctgan = CTGANSynthesizer.load(\\\"artifacts/models/ctgan.pkl\\\")\\n\",",
+     "    \"print(\\\"CTGAN model loaded from artifacts/models/ctgan.pkl\\\")\\n\",",
+     "    \"\\n\""
+    ]
+   },
+   {
+    "file": "notebooks/05a_gaussiancopula.ipynb",
+    "line": 163,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "     ]",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"MODEL_NAME = \\\"gaussiancopula\\\"\\n\",",
+     "    \"PREFIX = \\\"01_\\\"\\n\",",
+     "    \"\\n\","
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "notebooks/08_scenario_map.ipynb",
+    "line": 135,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "   },",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"# Load the CTGAN model trained by 05b_ctgan.ipynb and saved to artifacts/models/ctgan.pkl.\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"ctgan = CTGANSynthesizer.load(\\\"artifacts/models/ctgan.pkl\\\")\\n\",",
+     "    \"print(\\\"CTGAN model loaded from artifacts/models/ctgan.pkl\\\")\\n\",",
+     "    \"\\n\""
+    ]
+   },
+   {
+    "file": "notebooks/08_scenario_map.ipynb",
+    "line": 137,
+    "text": "\"ctgan = CTGANSynthesizer.load(\\\"artifacts/models/ctgan.pkl\\\")\\n\",",
+    "context": [
+     "   \"source\": [",
+     "    \"# Load the CTGAN model trained by 05b_ctgan.ipynb and saved to artifacts/models/ctgan.pkl.\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"ctgan = CTGANSynthesizer.load(\\\"artifacts/models/ctgan.pkl\\\")\\n\",",
+     "    \"print(\\\"CTGAN model loaded from artifacts/models/ctgan.pkl\\\")\\n\",",
+     "    \"\\n\"",
+     "   ]",
+     "  },"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "notebooks/05a_gaussiancopula.ipynb",
+    "line": 163,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "     ]",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"MODEL_NAME = \\\"gaussiancopula\\\"\\n\",",
+     "    \"PREFIX = \\\"01_\\\"\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/05a_gaussiancopula.ipynb",
+    "line": 168,
+    "text": "\"gaussian, t_fit, energy_kwh, co2_kg = fit_and_track(GaussianCopulaSynthesizer(metadata), train_real)\\n\",",
+    "context": [
+     "    \"\\n\",",
+     "    \"MODEL_NAME = \\\"gaussiancopula\\\"\\n\",",
+     "    \"PREFIX = \\\"01_\\\"\\n\",",
+     "    \"\\n\",",
+     "    \"gaussian, t_fit, energy_kwh, co2_kg = fit_and_track(GaussianCopulaSynthesizer(metadata), train_real)\\n\",",
+     "    \"print(\\n\",",
+     "    \"    f\\\"GaussianCopula fit time : {t_fit:.1f}s  energy: {energy_kwh:.4f} kWh  CO2: {co2_kg * 1000:.2f} gCO2eq\\\"\\n\",",
+     "    \")\"",
+     "   ]"
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "src/evaluation/metrics.py",
+    "line": 609,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "    frob = correlation_frobenius(train_real, synth, NUMERIC_CORR_COLS)",
+     "",
+     "    tv: float | None = None",
+     "    if metadata is not None:",
+     "        from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "        tv = float(evaluate_quality(train_real, synth, metadata, verbose=False).get_score())",
+     "",
+     "    utility = tstr_evaluation(train_real, test_real, {name: synth})"
+    ]
+   },
+   {
+    "file": "src/evaluation/sdv_quality.py",
+    "line": 15,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "",
+     "",
+     "def compute_tvcomplement(train_real: pd.DataFrame, synth: pd.DataFrame) -> float:",
+     "    \"\"\"Compute SDV's table-level quality score for any generator output.\"\"\"",
+     "    from sdv.evaluation.single_table import evaluate_quality",
+     "    from sdv.metadata import SingleTableMetadata",
+     "",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(train_real)"
+    ]
+   }
+  ],
+  "ctgan_mod": [
+   {
+    "file": "src/evaluation/conditional_ctgan.py",
+    "line": 94,
+    "text": "from ctgan import CTGAN",
+    "context": [
+     "    seed: int = 42,",
+     "    model_kwargs: dict[str, Any] | None = None,",
+     "    artifact_name: str | None = None,",
+     ") -> CTGANArtifactResult:",
+     "    from ctgan import CTGAN",
+     "",
+     "    np.random.seed(seed)",
+     "    kwargs: dict[str, Any] = {\"epochs\": epochs, **(model_kwargs or {})}",
+     "    energy_kwh: float | None = None"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ctgan_mod",
+  "ev",
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

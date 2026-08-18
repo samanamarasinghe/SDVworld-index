@@ -1,0 +1,134 @@
+{
+ "repo": "synthir/synthetic-data-evaluation",
+ "disk_kb": 169,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "<h2 align=\"center\">\n  <img src=\"README_images/SyntHIR_logo.PNG\" height=\"150px\">\n</h2>\n\n<h4 align=\"center\">\n    Accelerating translation from clinical research to tools\n</h4>\n\n\n## Synthetic Data Quality Evaluation:\n\nIt is used to asses the quality of synthetic data for fidelity, utility and privacy. A randomization-based model is used to simulate synthetic data, by distorting the original datasets row-wise or colum-wise. Then, the simulated data is evaluated using the most commonly used metrics, implemented by synthcity (Add reference). \n\n## Getting Started\n\nIf you want to just run the quality evaluation component, should follow the [Run the component using Docker image](#run-the-component-using-docker-image) instructions instead, and to examine or extend the source code, follow [Developer Start Guide](#developer-start-guide) instructions.\n\n### [Run the component using Docker image](#run-the-component-using-docker-image)\n\nThe docker image of the component is uploaded on the DockerHub. The docker image can run on the local machine or on 'play with docker' (https://www.docker.com/play-with-docker/).\n\nTo run the dockerfile on the local machine, install docker desktop on windows, linux or mac using the link : https://docs.docker.com/get-docker/. Pull the docker image from docker hub and run it.\n\nTo use the docker image from docker hub, pull and run:\n\n```\ndocker pull synthir21/synthir_quality_evaluation:latest\ndocker run -p 1234:8081 synthir_quality_evaluation:latest\n```\n\nArgument 8081 is the port number on which the application is running in the container and 1234 is the port number mapped to 8081 port of the container. After this, clone the code from github. \n\n\n### [Developer Start Guide](#developer-start-guide)\n\nThese instructions are intended for those who want to examine the source code, extend it or build the code locally.\n\n**System Requirements:** Quality evaluation component requires Python 3.10, since it uses synthcity implementation. To clone the repository:\n\n```bash\n\ngit clone https://github.com/synthir/synthetic-data-evaluation.git\ncd synthetic-data-evaluation\n\n```\n\nInstall pip version (21.2.3) required by the synthcity dependencies\n\n```bash\npython3.10 -m pip install pip==21.2.3\n```\n\nInstall all the libraries using the requirements file.  For ubuntu:\n\n```bash\npip install -r synthcity_req_3.10_ubuntu.txt\n```\n\nFor windows:\n\n```bash\npip install -r synthcity_req_3.10_windows.txt\n```\n\n## Dataset\n\nTwo datasets are used for quality and utility evaluation:\n\n- **Norwegian Patient Registry (NPR)**: A sample dataset can be accessed at [Dataverse NO](https://dataverse.no/dataset.xhtml?persistentId=doi:10.18710/YABAGM).\n- **MIMIC-IV**: This includes only the Hospitalization module. Access to this dataset requires credentialed approval from PhysioNet or the appropriate governing body.\n\n### Dataset pre-processing \n\n#### Norwegian Patient Registry (NPR)\n\nThe NPR dataset contains structured patient records with categorical and numerical fields. Prior to metric evaluation, the dataset is pre-processed before quality evaluation, where missing values are imputed using a custom imputation method. The steps include:\n\n- Standardizing column names to uppercase  \n- Dropping unused or redundant columns  \n- Handling missing values using custom imputation rules  \n\nThe full pre-processing logic is implemented in the `pre_process_registry_data()` function. For details, refer to the [preprocessing script](data_preprocessing/registry_data.py).\n\n#### MIMIC-IV\n\nThe hospitalization module of the MIMIC-IV dataset is used in this study. The dataset is assumed to be pre-cleaned upon download. Prior to metric evaluation, records with missing values are removed.\n\n## Commands to Run Python Script for Evaluation Metrics\n\nThe **fidelity metrics** are divided into the following categories:\n\n- **Sanity**\n- **Statistical**\n- **Pairwise Correlation**\n- **Distinguishability**\n\nBelow is the base command to run the **Sanity Metrics** module:\n\n```bash\npython3.10 -m metrics.synthir_evaluate_sanity \\\n  --real_data_file ../path/to/real_data_file \\\n  --number_of_iterations 10 \\\n  --dataset_name my_dataset \\\n  --randomization_func_name randomize_records\n```\n\n\nBelow is the base command to run the **Statistical Metrics** module:\n\n```bash\npython3.10 -m metrics.synthir_evaluate_statistical \\\n  --real_data_file ../path/to/real_data_file \\\n  --number_of_iterations 10 \\\n  --dataset_name my_dataset \\\n  --randomization_func_name randomize_records\n```\nPlease note that sample-level metrics such as precision, recall, density and coverage (as mentioned in the manuscript) is calculated in the statistical metrics.\n\nBelow is the base command to run the **Pairwise correlation Metrics** module:\n\n```bash\npython3.10 -m metrics.synthir_evaluate_pairwise_correlation \\\n  --real_data_file ../path/to/real_data_file \\\n  --number_of_iterations 10 \\\n  --dataset_name my_dataset \\\n  --randomization_func_name randomize_records\n```\n\nBelow is the base command to run the **Distinguishability Metrics** module:\n\n```bash\npython3.10 -m metrics.synthir_evaluate_distinguishability \\\n  --real_data_file ../path/to/real_data_file \\\n  --number_of_iterations 10 \\\n  --dataset_name my_dataset \\\n  --randomization_func_name randomize_records \\\n  --model_name linear\n```\n\nThe **utility metrics** to evaluate how well a model trained on synthetic data generalizes to ground truth. It evaluates using two models: XGBoost classifier and Logistic Regression classifier. Below is the base command to run the **Utility Metrics** module:\n\n```bash\npython3.10 -m metrics.synthir_evaluate_utility_performance \\\n  --real_data_file ../path/to/real_data_file \\\n  --number_of_iterations 10 \\\n  --dataset_name my_dataset \\\n  --randomization_func_name randomize_records \\\n```\n\n\nThe **privacy metrics** to assess if the synthetic data is privacy-preserving. Below is the base command to run the **Privacy Metrics** module:\n\n```bash\npython3.10 -m metrics.synthir_evaluate_privacy \\\n  --real_data_file ../path/to/real_data_file \\\n  --number_of_iterations 10 \\\n  --dataset_name my_dataset \\\n  --randomization_func_name randomize_records \\\n```\n\n\n### 🧾 Argument Details\n\n| Argument                     | Type       | Required | Description                                                                 |\n|------------------------------|------------|----------|-----------------------------------------------------------------------------|\n| `--real_data_file`           | `str`      | ✅ Yes   | Path to the CSV file containing the real (ground truth) data                |\n| `--number_of_iterations`     | `int`      | ✅ Yes   | Number of times to repeat the metric evaluation                             |\n| `--dataset_name`             | `str`      | ✅ Yes   | Name of the dataset being evaluated                                         |\n| `--randomization_func_name`  | `str` *(via `get_randomization_function`)* | ✅ Yes | Name of the randomization function (randomize_records OR randomize_columns)      |\n| `--model_name`               | `str`      | ✅ Yes   | Name of the model for distinguishability metric (gmm, linear OR xgb)        | \n\n\n\n\n",
+ "hits": {
+  "st": [
+   {
+    "file": "synthetic_data_generation/sdv_synthetic_data_generation.py",
+    "line": 1,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import Metadata",
+     "import pandas as pd",
+     "import argparse",
+     "import os"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "synthetic_data_generation/sdv_synthetic_data_generation.py",
+    "line": 2,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import Metadata",
+     "import pandas as pd",
+     "import argparse",
+     "import os",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "synthetic_data_generation/sdv_synthetic_data_generation.py",
+    "line": 1,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import Metadata",
+     "import pandas as pd",
+     "import argparse",
+     "import os"
+    ]
+   },
+   {
+    "file": "synthetic_data_generation/sdv_synthetic_data_generation.py",
+    "line": 2,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import Metadata",
+     "import pandas as pd",
+     "import argparse",
+     "import os",
+     ""
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "synthetic_data_generation/sdv_synthetic_data_generation.py",
+    "line": 1,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import Metadata",
+     "import pandas as pd",
+     "import argparse",
+     "import os"
+    ]
+   },
+   {
+    "file": "synthetic_data_generation/sdv_synthetic_data_generation.py",
+    "line": 12,
+    "text": "'ctgan': CTGANSynthesizer,",
+    "context": [
+     "def get_synthesizer_func(name):",
+     "",
+     "    # Mapping of function names to function objects",
+     "    synthesizer_functions = {",
+     "        'ctgan': CTGANSynthesizer,",
+     "        'tvae': TVAESynthesizer",
+     "    }",
+     "    \"\"\"Retrieve a synthesizer function by name.\"\"\"",
+     "    try:"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "synthetic_data_generation/sdv_synthetic_data_generation.py",
+    "line": 1,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import Metadata",
+     "import pandas as pd",
+     "import argparse",
+     "import os"
+    ]
+   },
+   {
+    "file": "synthetic_data_generation/sdv_synthetic_data_generation.py",
+    "line": 13,
+    "text": "'tvae': TVAESynthesizer",
+    "context": [
+     "",
+     "    # Mapping of function names to function objects",
+     "    synthesizer_functions = {",
+     "        'ctgan': CTGANSynthesizer,",
+     "        'tvae': TVAESynthesizer",
+     "    }",
+     "    \"\"\"Retrieve a synthesizer function by name.\"\"\"",
+     "    try:",
+     "        return synthesizer_functions[name]"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

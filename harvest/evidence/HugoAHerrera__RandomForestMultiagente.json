@@ -1,0 +1,115 @@
+{
+ "repo": "HugoAHerrera/RandomForestMultiagente",
+ "disk_kb": 49471,
+ "method": "partial_clone",
+ "tree_files": 149,
+ "status": "ok",
+ "readme": "# TFG: Distribución del Algoritmo Random Forest mediante un Sistema Multiagente\n\n## Índice\n- [Introducción](#introduccion)\n- [Estructura](#estructura)\n- [Requisitos](#requisitos)\n- [Ejecución de la aplicación java SMA](#ejecución-de-la-aplicación-java-sma)\n- [Ejecución de la aplicación en Flask](#ejecución-de-la-aplicación-en-flask)\n- [Ejecución de la aplicación Java sin SMA](#ejecución-de-la-aplicación-java-sin-sma)\n- [Ejecución de las pruebas de tiempos](#ejecución-de-las-pruebas-de-tiempos)\n\n## Introducción\n\nEste repositorio contiene todo el código generado para desarrollar el sistema junto al código hecho para las distintas pruebas.\n\n## Estructura\n```\n├── backend: backend del sistema  \n│   ├── lib: jar de JADE  \n│   ├── src  \n│   │   ├── main  \n│   │   │   ├── resources  \n│   │   │   └── java  \n│   │   │       └── com  \n│   │   │           └── randomforest  \n│   │   │               ├── controller: controladores  \n│   │   │               ├── dto: objetos dto  \n│   │   │               ├── jade:   \n│   │   │               │   ├── MainContainerLauncher:  definición contenedor main de JADE  \n│   │   │               │   ├── agent: agentes del SMA  \n│   │   │               │   └── behaviour: comportamientos de los agentes  \n│   │   │               ├── model: entidades de la base de datos mapeados  \n│   │   │               ├── randomforest: clases relacionadas con la lógica del RF  \n│   │   │               ├── repository: operaciones realizadas en la base de datos  \n│   │   │               ├── service: servicios definidos  \n│   │   │               ├── RandomForestApplication.java: main del backend  \n│   │   │               └── SpringContext.java: configuración de beans  \n│   │   └── test: test unitarios del proyecto  \n│   ├── Dockerfile: creación imagen docker backend   \n│   └── pom.xml: definición dependencias  \n├── frontend  \n│   ├── css: ficheros Cascading Style Sheets \n│   ├── html: ficheros HTML  \n│   ├── images: imagenes usadas en las páginas  \n│   ├── js: código JavaScript de las páginas  \n│   ├── default.conf: configuración del servicio Nginx  \n│   └── Dockerfile: creación imagen docker frontend   \n├── javaSinAgentes: mismo contenido que en backend y frontend sin el SMA  \n├── pruebasRendimiento \n│   ├── pruebaJava: carpeta con los resultados y código para analizar el tiempo de Common-CSV y BufferReader  \n│   └── pruebasPython: carpeta con los resultados y código para analizar el tiempo de Pandas  \n├── python  \n│   ├── flask: applicación en flask con backend y frontend, el equivalente de javaSinAgentes  \n│   └── rows_generator.py: fichero para generar datasets por medio de un CSV de entrenamiento y SDV \n├── docker-compose.yml: archivo YAML para configurar los contenedores de la carpeta backend y frontend  \n└── readmeImagenes: imagenes mostradas en el readme\n```\n\n## Requisitos\nTener clonado el repositorio. Para usar la aplicación fuera de los contenedore docker o usar la aplicación de Python desarrollada en Flask es necesario tener:\n- Java 17.0.12\n- Python 3.10.11  \nY en Python haber hecho este pip install:\n```\npip install pandas numpy sdv flask flask-cors scikit-learn\n```\n\n## Ejecución de la aplicación java SMA\nPrimero, hay que asegurar que la librería de JADE y las dependencias están instaladas\n1. Cambie al directo backend:\n```\ncd .\\backend\\\n```\n2. Instalar JADE con el siguiente comando:\n```\nmvn install:install-file \"-Dfile=lib/jade.jar\" \"-DgroupId=jade\" \"-DartifactId=jade\" \"-Dversion=4\" \"-Dpackaging=jar\"\n```\n3. Instalar el resto de dependencias y ejecución de tests unitarios:  \n```\nmvn clean install\n```\nSi aparece \"BUILD SUCCESS\" todo está listo.  \nPara solicitar predicciones al sistema, sigue estos pasos:  \n4. Volver al directorio raíz:\n```\ncd ..\n```\n5. Crear los contenedores e imágenes Docker:\n```\ndocker-compose up --build\n```\nEste proceso lleva unos minutos, esperar hasta ver por la pantalla: \"Started RandomForestApplication in X.X seconds\".  \n6. Acceder a la aplicación: Buscar en el navegador \"localhost\".  \n7. Pulsar en el botón \"Registrar\" y crear un usuario. ![Registro usuario](readmeImagenes/registro.png)  \n8. Una vez dentro de la aplicación solo hay que cargar un fichero CSV y rellenar el formulario de muestras indicando la configuración correspondiente (tipo de columnas, número de muestras, valores de las muestras, etc). Después de tener todo listo, solo hay que pulsar en \"Predecir muestras\", y el sistema empieza a realizar todo el proceso de creación de árboles y predicción de muestras. ![Ventana de solicitud de predicciones](readmeImagenes/prediccion.png)    \n9. Cuando estén todas las muestras predichas, automáticamente redirige a la ventana para ver los resultados. Para realizar más predicciones, pulsar en el botón \"Predecir\" y volver al paso 8. ![Ventana historial](readmeImagenes/historial.png)    \n\n## Ejecución de la aplicación en Flask\n1. Haber instalado las librerías con el pip de [Requisitos](#requisitos) y estar en el directorio raíz, para cambiar al backend de Flask:\n```\ncd .\\python\\flask\\backend\\\n```\n2. Ejecutar el framework:\n```\npy app.py\n```\nEsperar a que aparezca el mensaje \"Running on http://127.0.0.1:5000\".  \n3. Buscar en el navegador \"localhost:5000\".  \nLa funcionalidad es la misma que la descrita en punto 6 de [Ejecución de la aplicación java SMA](#ejecución-de-la-aplicación-java-sma), solo que no hay ventana de inicio de sesión, los resultados de las predicciones se imprimen en el terminal.  \n\n## Ejecución de la aplicación Java sin SMA\n1. Estar en el directorio raíz, para cambiar al directorio \"javaSinAgentes\":\n```\ncd .\\javaSinAgentes\\\n```\n2. Crear los contenedores e imágenes Docker y seguir el mismo proceso desde el punto 6 de [Ejecución de la aplicación java SMA](#ejecución-de-la-aplicación-java-sma).  \n```\ndocker-compose up --build\n```\n## Ejecución de las pruebas de tiempos\n1. Se recomienda ejecutar las pruebas desde un IDE como Visual Studio Code o IntelliJ IDEA.\n2. Es necesario corregir las rutas de los ficheros CSV al igual que el índide máximo del número de filas.\n3. Se genera un txt en la carpeta con los tiempos.  \n\n#### Hecho por: Hugo Andrés Herrera de Miguel\n#### Tutor: Sergio Saugar García\n",
+ "hits": {
+  "st": [
+   {
+    "file": "python/rows_generator.py",
+    "line": 4,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "df = pd.read_csv(\"data/winequality-combined.csv\")",
+     "",
+     "df.dropna(inplace=True)"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "python/rows_generator.py",
+    "line": 3,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "df = pd.read_csv(\"data/winequality-combined.csv\")",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "python/rows_generator.py",
+    "line": 3,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "df = pd.read_csv(\"data/winequality-combined.csv\")",
+     ""
+    ]
+   },
+   {
+    "file": "python/rows_generator.py",
+    "line": 4,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "df = pd.read_csv(\"data/winequality-combined.csv\")",
+     "",
+     "df.dropna(inplace=True)"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "python/rows_generator.py",
+    "line": 4,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "df = pd.read_csv(\"data/winequality-combined.csv\")",
+     "",
+     "df.dropna(inplace=True)"
+    ]
+   },
+   {
+    "file": "python/rows_generator.py",
+    "line": 14,
+    "text": "synthesizer = CTGANSynthesizer(metadata, enforce_rounding=True, epochs=2000, verbose=True)",
+    "context": [
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(data=df)",
+     "metadata.update_column(column_name='type', sdtype='categorical')",
+     "",
+     "synthesizer = CTGANSynthesizer(metadata, enforce_rounding=True, epochs=2000, verbose=True)",
+     "synthesizer.fit(df)",
+     "",
+     "chunk_sizes = [10_000, 50_000, 100_000]",
+     "base_filename = \"data/winequality-synthetic-\""
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

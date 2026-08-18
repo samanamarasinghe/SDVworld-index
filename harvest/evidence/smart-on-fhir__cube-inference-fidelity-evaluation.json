@@ -1,0 +1,126 @@
+{
+ "repo": "smart-on-fhir/cube-inference-fidelity-evaluation",
+ "disk_kb": 21,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Sharing Aggregated Patient Counts in Place of Line-Level EHR Data\n\nThis repository implements a Bayesian count-inference pipeline for \"cube\" releases — tables of aggregate counts over every subset of a set of categorical grouping variables, with cells below a suppression threshold withheld. \n\nThe pipeline infers the suppressed cells, and the same reconstruction is used to (1) measure statistical fidelity of the cube against the original line-level data, (2) evaluate analytical utility on descriptive, inferential, and predictive tasks, and (3) quantify how much suppressed information the reconstruction recovers, i.e., the privacy risk of threshold suppression. CTGAN synthetic data serves as the comparator throughout.\n\n## Repository structure\n\n```\nsrc/\n├── infer_counts.py    # Count inference pipeline\n└── evaluate.py    # Fidelity & Utility Evaluation\n```\n\n## Installation\n\nPython ≥ 3.12:\n\n```\npip install -r requirements.txt\n```\n\n`cmdstanpy` additionally requires a one-time CmdStan installation:\n\n```python\nimport cmdstanpy\ncmdstanpy.install_cmdstan()\n```\n\n## How it works\n\n`run_complete_bayesian_reconstruction()` in `src/infer_counts.py` converts line-level data to cube (at the specified threshold) and runs the full count inference pipeline.\n\nEvery fidelity/utility statistic uses one common uncertainty procedure (`src/evaluate.py`): cube reconstruction or CTGAN sample is held fixed while the reference data are resampled with replacement over shared bootstrap indices; each statistic is reported as a bootstrap mean with a 95% percentile confidence interval.\n\n## Usage\n\nThe input is a pandas DataFrame in which each row is one record and each column a categorical variable.\n\n### 1. Reconstruct a suppressed cube\n\n```python\nimport src.infer_counts as ifc\n\nrec = ifc.run_complete_bayesian_reconstruction(\n    df_line_level=df,                     # line-level DataFrame, categorical columns only\n    demographic_cols=df.columns.tolist(), # the cube's grouping variables\n    suppress_threshold=9,                 # counts <= 9 (i.e., below k = 10) are suppressed\n    iter_sampling=200,                    # NUTS sampling iterations per chain\n    iter_warmup=100,                      # NUTS warmup iterations per chain\n    chains=2,\n    mh_iters=2000,                        # constrained MH iterations (thinned by 10)\n)\n\n# Per-cell summary: Published / Deterministic (exactly recovered) / Uncertain (inferred)\ntable = ifc.display_complete_powerset_table(rec)\ntable[\"Status\"].value_counts()\n```\n\nThe returned dict `rec` contains the constraint system, ILP bounds, posterior samples of the atomic-cell counts, and the original line-level DataFrame; it is the object every evaluation function below takes. It can be pickled and reloaded to avoid re-running the (expensive) reconstruction.\n\n### 2. Generate the CTGAN comparator\n\n```python\nfrom sdv.metadata import SingleTableMetadata\nfrom sdv.single_table import CTGANSynthesizer\n\nmetadata = SingleTableMetadata()\nmetadata.detect_from_dataframe(df)\nsynthesizer = CTGANSynthesizer(metadata)   # default hyperparameters\nsynthesizer.fit(df)\nsynthetic_df = synthesizer.sample(len(df))\n```\n\n### 3. Evaluate fidelity\n\n```python\nimport src.evaluate as evaluate\n\ncols = df.columns.tolist()\n\n# One shared set of bootstrap resample indices for all statistics\nidx = evaluate.make_boot_indices(len(df), n_boot=2000, seed=0)\n\n# Suppressed-count MAE: reconstruction vs. impute-0 / impute-5 / random / CTGAN baselines\nmae = evaluate.compare_suppressed_mae(df, rec, synthetic_df, cols,\n                                suppress_threshold=9, n_boot=2000, seed=0)\n\n# Jensen–Shannon divergence, per marginal and joint\ndist = evaluate.compare_distribution_fidelity(df, rec, synthetic_df, cols, boot_idx=idx)\nfig = evaluate.plot_distribution_fidelity_compare(df, rec, synthetic_df, cols,\n                                            labels=(\"Original vs. Cube\", \"Original vs. CTGAN\"),\n                                            boot_idx=idx)\n\n# Cramér's V per variable pair, and mean |difference| across pairs\nassoc = evaluate.compare_association_fidelity(df, rec, synthetic_df, cols, boot_idx=idx)\nassoc_mae = evaluate.compare_association_mae(df, rec, synthetic_df, cols, boot_idx=idx)\n\n# R² between original and surrogate atomic-cell count vectors\nr2 = evaluate.compare_r2(df, rec, synthetic_df, cols, boot_idx=idx)\n```\n\n### 4. Evaluate utility\n\n```python\n# Marginal probabilities per category, and MAE across categories\nprobs = evaluate.compare_marginal_probs(df, rec, synthetic_df, \"column_name\", cols, boot_idx=idx)\nprob_mae = evaluate.compare_marginal_prob_mae(df, rec, synthetic_df, cols, boot_idx=idx)\n\n# Subgroup odds ratios for a binary outcome column: log-OR MAE and direction flips,\n# plus how many flips involve associations significant in the original (Fisher's exact)\nodds = evaluate.compare_odds_ratios(df, rec, synthetic_df, cols, \"outcome_col\", boot_idx=idx)\nflip_summary, flip_detail = evaluate.flipped_odds_ratio_significance(\n    df, rec, synthetic_df, cols, \"outcome_col\", alpha=0.05, boot_idx=idx)\n\n# Classification: train on original / reconstructed cube / CTGAN, evaluate on one held-out test set\nfrom sklearn.model_selection import train_test_split\ntrain_df, test_df = train_test_split(df, test_size=0.20, random_state=42,\n                                     stratify=df[\"outcome_col\"])\nrec_train = ifc.run_complete_bayesian_reconstruction(\n    df_line_level=train_df, demographic_cols=train_df.columns.tolist(), suppress_threshold=9)\n# ... fit CTGAN on train_df as in step 2 -> synthetic_train_df ...\ntidx = evaluate.make_boot_indices(len(test_df), n_boot=2000, seed=0)\nclf = evaluate.compare_classification(train_df, test_df, rec_train, synthetic_train_df,\n                                \"outcome_col\", cat_cols=[\"categorical_col_1\", \"categorical_col_2\"],\n                                demographic_cols=train_df.columns.tolist(), boot_idx=tidx)\n```\n`cat_cols` lists only the **multi-level** categorical predictors (those are the columns that need label-encoding before the logistic regression).\n",
+ "hits": {
+  "st": [
+   {
+    "file": "README.md",
+    "line": 66,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "### 2. Generate the CTGAN comparator",
+     "",
+     "```python",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(df)",
+     "synthesizer = CTGANSynthesizer(metadata)   # default hyperparameters"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "README.md",
+    "line": 65,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "### 2. Generate the CTGAN comparator",
+     "",
+     "```python",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(df)"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "README.md",
+    "line": 65,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "### 2. Generate the CTGAN comparator",
+     "",
+     "```python",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(df)"
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 66,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "### 2. Generate the CTGAN comparator",
+     "",
+     "```python",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(df)",
+     "synthesizer = CTGANSynthesizer(metadata)   # default hyperparameters"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "README.md",
+    "line": 66,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "### 2. Generate the CTGAN comparator",
+     "",
+     "```python",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(df)",
+     "synthesizer = CTGANSynthesizer(metadata)   # default hyperparameters"
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 70,
+    "text": "synthesizer = CTGANSynthesizer(metadata)   # default hyperparameters",
+    "context": [
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(df)",
+     "synthesizer = CTGANSynthesizer(metadata)   # default hyperparameters",
+     "synthesizer.fit(df)",
+     "synthetic_df = synthesizer.sample(len(df))",
+     "```",
+     ""
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "ctgan==0.12.1",
+   "sdv==1.38.0"
+  ]
+ }
+}

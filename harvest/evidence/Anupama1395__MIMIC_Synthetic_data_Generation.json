@@ -1,0 +1,1573 @@
+{
+ "repo": "Anupama1395/MIMIC_Synthetic_data_Generation",
+ "disk_kb": 5457,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "Privacy Preserving Synthetic Data Generation on Full MIMIC III Dataset\nOverview\n\nThis repository presents a scalable, privacy preserving synthetic data generation pipeline built on the full MIMIC III clinical database.\n\nThe project extends beyond a single table and implements synthetic data generation, evaluation, and downstream validation across multiple structured healthcare tables including:\n\nADMISSIONS\n\nPATIENTS\n\nDIAGNOSES_ICD\n\nD_ICD_DIAGNOSES\n\nCPTEVENTS\n\nLABEVENTS\n\nMICROBIOLOGYEVENTS\n\nTRANSFERS\n\nSERVICES\n\nINPUTEVENTS\n\nAnd additional structured tables\n\nThe work is grounded in our research paper:\n\nSynthetic Data Generation for Healthcare\nDepartment of Computer Science\nCalifornia State Polytechnic University, Pomona\n\nAs described in the paper \n\nSynthetic Data Generation in He…\n\n, we developed a TVAE based pipeline using the SDV framework to generate statistically faithful and machine learning useful synthetic healthcare data.\n\nWhat is MIMIC III?\n\nMIMIC III (Medical Information Mart for Intensive Care III) is a large, publicly available critical care database developed by MIT and hosted on PhysioNet.\n\nIt contains:\n\nOver 60,000 ICU admissions\n\nDemographics\n\nAdmission records\n\nDiagnoses and procedures\n\nLab measurements\n\nMedications\n\nClinical notes\n\nMortality indicators\n\nAlthough de identified, MIMIC III remains sensitive healthcare data and requires credentialed access due to HIPAA regulations.\n\nIt is widely used for:\n\nClinical machine learning research\n\nMortality prediction\n\nRisk stratification\n\nTime series modeling\n\nHealthcare analytics benchmarking\n\nResearch Motivation\n\nHealthcare data access is heavily restricted due to HIPAA and privacy laws.\n\nAs discussed in our paper \n\nSynthetic Data Generation in He…\n\n:\n\nReal patient data is difficult to share\n\nModel reproducibility becomes challenging\n\nAcademic experimentation is limited\n\nIndustrial prototyping slows down\n\nSynthetic data provides a solution by:\n\nPreserving statistical properties\n\nRemoving personally identifiable information\n\nRetaining predictive utility\n\nEnabling privacy compliant experimentation\n\nResearch Contribution\n\nThis project delivers:\n\nEnd to end preprocessing pipelines for multiple MIMIC III tables\n\nTVAE based synthetic generation\n\nCTGAN comparison experiments\n\nStatistical validation\n\nMachine learning utility validation\n\nCorrelation structure preservation analysis\n\nMulti table extension beyond admissions\n\nRandomForest trained on real data achieved 86 percent accuracy\n\nRandomForest trained on synthetic data achieved 84 percent accuracy\n\nCorrelation structures were largely preserved\n\nFeature distributions closely matched\n\nThis demonstrates minimal predictive degradation while maintaining privacy safety.\n\nMethodology\n1 Data Preprocessing\n\nMissing value imputation\n\nRemoval of high missing columns\n\nLabel encoding for categorical variables\n\nStandardScaler normalization for numerical features\n\nMetadata detection using SDV SingleTableMetadata\n\n2 Model Architecture\n\nWe primarily used:\n\nTVAE – Tabular Variational Autoencoder\n\nEncoder → latent space → decoder\n\nReparameterization trick\n\nELBO loss (reconstruction + KL divergence)\n\nOptimized for mixed type tabular healthcare data\n\nTVAE was selected because:\n\nStable training\n\nLower memory requirements\n\nWorks well in Jupyter environments\n\nSuitable for large tabular healthcare datasets\n\nCTGAN was evaluated but proved resource intensive for full table training on local systems.\n\nSynthetic Data Generation Workflow\n\nFor each table:\n\nLoad raw CSV from MIMIC III\n\nClean and preprocess\n\nDetect metadata schema\n\nTrain TVAESynthesizer\n\nGenerate synthetic samples\n\nSave synthetic CSV\n\nEvaluate statistical similarity\n\nEvaluate ML utility\n\nEvaluation Strategy\nStatistical Evaluation\n\nDistribution comparison plots\n\nKDE overlays for numerical features\n\nBar plots for categorical variables\n\nCorrelation heatmap comparison\n\nMachine Learning Utility\n\nTask: Predict HOSPITAL_EXPIRE_FLAG\n\nProcedure:\n\nTrain RandomForest on real dataset\n\nTrain RandomForest on synthetic dataset\n\nCompare accuracy\n\nResult from research \n\nSynthetic Data Generation in He…\n\n:\n\nTraining Data\tAccuracy\nReal Data\t86%\nSynthetic Data\t84%\n\nSmall performance gap confirms retained predictive utility.\n\nFull Dataset Extension\n\nUnlike many studies limited to a single table, this repository extends synthetic modeling to:\n\nClinical diagnoses tables\n\nCPT procedure tables\n\nLaboratory events\n\nMicrobiology events\n\nTransfers and services\n\nPatient demographics\n\nEach table follows a standardized pipeline architecture, making the framework modular and reusable.\n\nRepository Structure\n.\n├── 1. Admissions.ipynb\n├── 2. Patient_Table.ipynb\n├── 10. D_CPT.ipynb\n├── 11. D_ICD_DIAGNOSES.ipynb\n├── 12. D_ICD_PROCEDURES.ipynb\n├── 13. D_ITEMS.ipynb\n├── 14. D_LABITEMS.ipynb\n├── 15. ICUSTAYS.ipynb\n├── ...\n├── Synthetic Data Generation in Healthcare.pdf\n├── README.md\n└── requirements.txt\n\nEach notebook implements:\n\nTable specific preprocessing\n\nTVAE training\n\nSynthetic sampling\n\nEvaluation\n\nTechnologies Used\n\nPython\n\nPandas\n\nNumPy\n\nScikit learn\n\nSDV\n\nMatplotlib\n\nSeaborn\n\nJupyter Notebook\n\nWhy This Project Matters\n\nThis work demonstrates that:\n\nSynthetic healthcare data can preserve statistical integrity\n\nMachine learning models trained on synthetic data remain competitive\n\nPrivacy compliant ML experimentation is achievable\n\nTabular VAEs are practical for large structured clinical datasets\n\nThis creates strong foundations for:\n\nFederated learning\n\nDifferential privacy integration\n\nSecure healthcare AI research\n\nReproducible ML experimentation\n\nFuture Directions\n\nMulti table relational synthesis\n\nDifferential privacy noise injection\n\nFederated synthetic data training\n\nTransformer based tabular models\n\nBenchmarking against MIMIC IV\n\nSynthetic data risk evaluation\n\nAcademic Context\n\nDeveloped as part of graduate research in Machine Learning and Data Mining at California State Polytechnic University, Pomona.\n\nCo authored research paper:\nSynthetic Data Generation for Healthcare \n\nThis repository is for research and academic purposes.\n\nMIMIC III data usage requires credentialed PhysioNet access and compliance with data use agreements.\n",
+ "hits": {
+  "st": [
+   {
+    "file": "22. PRESCRIPTIONS.ipynb",
+    "line": 697,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    }",
+     "   },",
+     "   \"source\": [",
+     "    \"import os\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"# Set environment variables for multiprocessing\\n\",",
+     "    \"os.environ[\\\"NUMBA_NUM_THREADS\\\"] = \\\"1\\\"\\n\","
+    ]
+   },
+   {
+    "file": "22. PRESCRIPTIONS.ipynb",
+    "line": 843,
+    "text": "\"from sdv.single_table import TVAESynthesizer\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"source\": [",
+     "    \"\\n\",",
+     "    \"#  Import TVAESynthesizer\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"#  Initialize VAE synthesizer\\n\",",
+     "    \"vae_synthesizer = TVAESynthesizer(\\n\",",
+     "    \"    metadata=metadata,\\n\","
+    ]
+   },
+   {
+    "file": "23. PROCEDUREEVENTS_MV.ipynb",
+    "line": 660,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import os\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"# Set environment variables for multiprocessing\\n\",",
+     "    \"os.environ[\\\"NUMBA_NUM_THREADS\\\"] = \\\"1\\\"\\n\","
+    ]
+   },
+   {
+    "file": "6.CPTEVENTS.ipynb",
+    "line": 371,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"#  Initialize synthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"synthesizer = CTGANSynthesizer(metadata=metadata, epochs=30)\\n\",",
+     "    \"cpt_sample = cpt_cleaned.sample(n=1000, random_state=42)\\n\",",
+     "    \"\\n\",",
+     "    \"\\n\""
+    ]
+   },
+   {
+    "file": "6.CPTEVENTS.ipynb",
+    "line": 654,
+    "text": "\"from sdv.single_table import TVAESynthesizer\\n\",",
+    "context": [
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"#  Import TVAESynthesizer\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"# Initialize VAE synthesizer\\n\",",
+     "    \"vae_synthesizer = TVAESynthesizer(\\n\",",
+     "    \"    metadata=metadata,\\n\","
+    ]
+   },
+   {
+    "file": "19. MICROBIOLOGYEVENTS.ipynb",
+    "line": 26,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"from sklearn.preprocessing import MinMaxScaler\\n\",",
+     "    \"from sklearn.ensemble import RandomForestClassifier\\n\",",
+     "    \"from sklearn.model_selection import train_test_split\\n\",",
+     "    \"from sklearn.metrics import accuracy_score\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"# Fix multiprocessing issue on Windows\\n\",",
+     "    \"os.environ[\\\"NUMBA_NUM_THREADS\\\"] = \\\"1\\\"\\n\","
+    ]
+   },
+   {
+    "file": "19. MICROBIOLOGYEVENTS.ipynb",
+    "line": 823,
+    "text": "\"from sdv.single_table import TVAESynthesizer\\n\",",
+    "context": [
+     "   \"cell_type\": \"code\",",
+     "   \"id\": \"a3b90123\",",
+     "   \"metadata\": {},",
+     "   \"source\": [",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"from sklearn.ensemble import RandomForestClassifier\\n\",",
+     "    \"from sklearn.model_selection import train_test_split\\n\",",
+     "    \"from sklearn.metrics import accuracy_score\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "3.CALLOUT.ipynb",
+    "line": 676,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "     \"start_time\": \"2025-07-24T20:16:31.990978Z\"",
+     "    }",
+     "   },",
+     "   \"source\": [",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"# Fix multiprocessing (optional for Windows)\\n\",",
+     "    \"os.environ[\\\"NUMBA_NUM_THREADS\\\"] = \\\"1\\\"\\n\","
+    ]
+   },
+   {
+    "file": "3.CALLOUT.ipynb",
+    "line": 822,
+    "text": "\"from sdv.single_table import TVAESynthesizer\\n\",",
+    "context": [
+     "    }",
+     "   },",
+     "   \"source\": [",
+     "    \"#  Import TVAESynthesizer\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"#  Initialize VAE synthesizer\\n\",",
+     "    \"vae_synthesizer = TVAESynthesizer(\\n\",",
+     "    \"    metadata=metadata,\\n\","
+    ]
+   },
+   {
+    "file": "26. D_ICD_DIAGNOSES.ipynb",
+    "line": 431,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    }",
+     "   },",
+     "   \"source\": [",
+     "    \"import os\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"# Fix multiprocessing issues\\n\",",
+     "    \"os.environ[\\\"NUMBA_NUM_THREADS\\\"] = \\\"1\\\"\\n\","
+    ]
+   },
+   {
+    "file": "26. D_ICD_DIAGNOSES.ipynb",
+    "line": 696,
+    "text": "\"from sdv.single_table import TVAESynthesizer\\n\",",
+    "context": [
+     "   \"cell_type\": \"code\",",
+     "   \"outputs\": [],",
+     "   \"execution_count\": null,",
+     "   \"source\": [",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"from sklearn.ensemble import RandomForestClassifier\\n\",",
+     "    \"from sklearn.model_selection import train_test_split\\n\",",
+     "    \"from sklearn.metrics import accuracy_score\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "1. Admissions.ipynb",
+    "line": 1495,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"# Imports\\n\",",
+     "    \" \\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\"",
+     "   ]",
+     "  },",
+     "  {"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "22. PRESCRIPTIONS.ipynb",
+    "line": 698,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "   },",
+     "   \"source\": [",
+     "    \"import os\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"# Set environment variables for multiprocessing\\n\",",
+     "    \"os.environ[\\\"NUMBA_NUM_THREADS\\\"] = \\\"1\\\"\\n\",",
+     "    \"os.environ[\\\"JOBLIB_START_METHOD\\\"] = \\\"spawn\\\"\\n\","
+    ]
+   },
+   {
+    "file": "23. PROCEDUREEVENTS_MV.ipynb",
+    "line": 661,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import os\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"# Set environment variables for multiprocessing\\n\",",
+     "    \"os.environ[\\\"NUMBA_NUM_THREADS\\\"] = \\\"1\\\"\\n\",",
+     "    \"os.environ[\\\"JOBLIB_START_METHOD\\\"] = \\\"spawn\\\"\\n\","
+    ]
+   },
+   {
+    "file": "6.CPTEVENTS.ipynb",
+    "line": 16,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"import numpy as np\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\",",
+     "    \"import seaborn as sns\\n\",",
+     "    \"import os\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sklearn.preprocessing import MinMaxScaler\\n\",",
+     "    \"from sklearn.ensemble import RandomForestClassifier\\n\",",
+     "    \"from sklearn.model_selection import train_test_split\\n\",",
+     "    \"from sklearn.metrics import accuracy_score\""
+    ]
+   },
+   {
+    "file": "19. MICROBIOLOGYEVENTS.ipynb",
+    "line": 27,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"from sklearn.ensemble import RandomForestClassifier\\n\",",
+     "    \"from sklearn.model_selection import train_test_split\\n\",",
+     "    \"from sklearn.metrics import accuracy_score\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"# Fix multiprocessing issue on Windows\\n\",",
+     "    \"os.environ[\\\"NUMBA_NUM_THREADS\\\"] = \\\"1\\\"\\n\",",
+     "    \"os.environ[\\\"JOBLIB_START_METHOD\\\"] = \\\"spawn\\\"\\n\","
+    ]
+   },
+   {
+    "file": "3.CALLOUT.ipynb",
+    "line": 677,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    }",
+     "   },",
+     "   \"source\": [",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"# Fix multiprocessing (optional for Windows)\\n\",",
+     "    \"os.environ[\\\"NUMBA_NUM_THREADS\\\"] = \\\"1\\\"\\n\",",
+     "    \"os.environ[\\\"JOBLIB_START_METHOD\\\"] = \\\"spawn\\\"\\n\","
+    ]
+   },
+   {
+    "file": "26. D_ICD_DIAGNOSES.ipynb",
+    "line": 432,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "   },",
+     "   \"source\": [",
+     "    \"import os\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"# Fix multiprocessing issues\\n\",",
+     "    \"os.environ[\\\"NUMBA_NUM_THREADS\\\"] = \\\"1\\\"\\n\",",
+     "    \"os.environ[\\\"JOBLIB_START_METHOD\\\"] = \\\"spawn\\\"\\n\","
+    ]
+   },
+   {
+    "file": "1. Admissions.ipynb",
+    "line": 1496,
+    "text": "\"from sdv.metadata import SingleTableMetadata\"",
+    "context": [
+     "   \"source\": [",
+     "    \"# Imports\\n\",",
+     "    \" \\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\"",
+     "   ]",
+     "  },",
+     "  {",
+     "   \"cell_type\": \"code\","
+    ]
+   },
+   {
+    "file": "1. Admissions.ipynb",
+    "line": 1813,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "   \"source\": [",
+     "    \"# Imports\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"admissions_cleaned = pd.read_csv(\\\"admissions_cleaned.csv\\\")\\n\",",
+     "    \"\\n\",",
+     "    \"#  Generate metadata for SINGLE TABLE\\n\","
+    ]
+   },
+   {
+    "file": "27.DRG_CODES.ipynb",
+    "line": 31,
+    "text": "\"from sdv.metadata import SingleTableMetadata\"",
+    "context": [
+     "    \"from sklearn.ensemble import RandomForestClassifier\\n\",",
+     "    \"from sklearn.model_selection import train_test_split\\n\",",
+     "    \"from sklearn.metrics import accuracy_score\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\"",
+     "   ],",
+     "   \"outputs\": [],",
+     "   \"execution_count\": 44",
+     "  },"
+    ]
+   },
+   {
+    "file": "27.DRG_CODES.ipynb",
+    "line": 1452,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "   \"source\": [",
+     "    \"# Imports\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from rdt.transformers import LabelEncoder\\n\",",
+     "    \"from rdt.hyper_transformer import HyperTransformer\\n\",",
+     "    \"from joblib import parallel_backend\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "18.LABEVENTS.ipynb",
+    "line": 22,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"import os\\n\",",
+     "    \"import warnings\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sklearn.ensemble import RandomForestRegressor\\n\",",
+     "    \"from sklearn.model_selection import train_test_split\\n\",",
+     "    \"from sklearn.metrics import mean_squared_error\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "18.LABEVENTS.ipynb",
+    "line": 481,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "   \"source\": [",
+     "    \"# Imports\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"LABEVENTS_cleaned = pd.read_csv(\\\"LABEVENTS_cleaned.csv\\\")\\n\",",
+     "    \"\\n\",",
+     "    \"#  Generate metadata for SINGLE TABLE\\n\","
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "22. PRESCRIPTIONS.ipynb",
+    "line": 624,
+    "text": "\"Requirement already satisfied: boto3<2.0.0,>=1.28 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (1.39.4)\\r\\n\",",
+    "context": [
+     "     \"name\": \"stdout\",",
+     "     \"output_type\": \"stream\",",
+     "     \"text\": [",
+     "      \"Requirement already satisfied: sdv in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (1.24.1)\\r\\n\",",
+     "      \"Requirement already satisfied: boto3<2.0.0,>=1.28 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (1.39.4)\\r\\n\",",
+     "      \"Requirement already satisfied: botocore<2.0.0,>=1.31 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (1.39.4)\\r\\n\",",
+     "      \"Requirement already satisfied: cloudpickle>=2.1.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (3.1.1)\\r\\n\",",
+     "      \"Requirement already satisfied: graphviz>=0.13.2 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (0.21)\\r\\n\",",
+     "      \"Requirement already satisfied: numpy>=1.26.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (2.3.1)\\r\\n\","
+    ]
+   },
+   {
+    "file": "22. PRESCRIPTIONS.ipynb",
+    "line": 625,
+    "text": "\"Requirement already satisfied: botocore<2.0.0,>=1.31 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (1.39.4)\\r\\n\",",
+    "context": [
+     "     \"output_type\": \"stream\",",
+     "     \"text\": [",
+     "      \"Requirement already satisfied: sdv in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (1.24.1)\\r\\n\",",
+     "      \"Requirement already satisfied: boto3<2.0.0,>=1.28 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (1.39.4)\\r\\n\",",
+     "      \"Requirement already satisfied: botocore<2.0.0,>=1.31 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (1.39.4)\\r\\n\",",
+     "      \"Requirement already satisfied: cloudpickle>=2.1.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (3.1.1)\\r\\n\",",
+     "      \"Requirement already satisfied: graphviz>=0.13.2 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (0.21)\\r\\n\",",
+     "      \"Requirement already satisfied: numpy>=1.26.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (2.3.1)\\r\\n\",",
+     "      \"Requirement already satisfied: pandas>=2.1.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (2.3.1)\\r\\n\","
+    ]
+   },
+   {
+    "file": "22. PRESCRIPTIONS.ipynb",
+    "line": 626,
+    "text": "\"Requirement already satisfied: cloudpickle>=2.1.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (3.1.1)\\r\\n\",",
+    "context": [
+     "     \"text\": [",
+     "      \"Requirement already satisfied: sdv in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (1.24.1)\\r\\n\",",
+     "      \"Requirement already satisfied: boto3<2.0.0,>=1.28 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (1.39.4)\\r\\n\",",
+     "      \"Requirement already satisfied: botocore<2.0.0,>=1.31 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (1.39.4)\\r\\n\",",
+     "      \"Requirement already satisfied: cloudpickle>=2.1.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (3.1.1)\\r\\n\",",
+     "      \"Requirement already satisfied: graphviz>=0.13.2 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (0.21)\\r\\n\",",
+     "      \"Requirement already satisfied: numpy>=1.26.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (2.3.1)\\r\\n\",",
+     "      \"Requirement already satisfied: pandas>=2.1.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (2.3.1)\\r\\n\",",
+     "      \"Requirement already satisfied: tqdm>=4.29 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (4.67.1)\\r\\n\","
+    ]
+   },
+   {
+    "file": "22. PRESCRIPTIONS.ipynb",
+    "line": 627,
+    "text": "\"Requirement already satisfied: graphviz>=0.13.2 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (0.21)\\r\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: sdv in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (1.24.1)\\r\\n\",",
+     "      \"Requirement already satisfied: boto3<2.0.0,>=1.28 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (1.39.4)\\r\\n\",",
+     "      \"Requirement already satisfied: botocore<2.0.0,>=1.31 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (1.39.4)\\r\\n\",",
+     "      \"Requirement already satisfied: cloudpickle>=2.1.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (3.1.1)\\r\\n\",",
+     "      \"Requirement already satisfied: graphviz>=0.13.2 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (0.21)\\r\\n\",",
+     "      \"Requirement already satisfied: numpy>=1.26.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (2.3.1)\\r\\n\",",
+     "      \"Requirement already satisfied: pandas>=2.1.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (2.3.1)\\r\\n\",",
+     "      \"Requirement already satisfied: tqdm>=4.29 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (4.67.1)\\r\\n\",",
+     "      \"Requirement already satisfied: copulas>=0.12.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (0.12.3)\\r\\n\","
+    ]
+   },
+   {
+    "file": "22. PRESCRIPTIONS.ipynb",
+    "line": 628,
+    "text": "\"Requirement already satisfied: numpy>=1.26.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (2.3.1)\\r\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: boto3<2.0.0,>=1.28 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (1.39.4)\\r\\n\",",
+     "      \"Requirement already satisfied: botocore<2.0.0,>=1.31 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (1.39.4)\\r\\n\",",
+     "      \"Requirement already satisfied: cloudpickle>=2.1.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (3.1.1)\\r\\n\",",
+     "      \"Requirement already satisfied: graphviz>=0.13.2 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (0.21)\\r\\n\",",
+     "      \"Requirement already satisfied: numpy>=1.26.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (2.3.1)\\r\\n\",",
+     "      \"Requirement already satisfied: pandas>=2.1.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (2.3.1)\\r\\n\",",
+     "      \"Requirement already satisfied: tqdm>=4.29 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (4.67.1)\\r\\n\",",
+     "      \"Requirement already satisfied: copulas>=0.12.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (0.12.3)\\r\\n\",",
+     "      \"Requirement already satisfied: ctgan>=0.11.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (0.11.0)\\r\\n\","
+    ]
+   },
+   {
+    "file": "22. PRESCRIPTIONS.ipynb",
+    "line": 629,
+    "text": "\"Requirement already satisfied: pandas>=2.1.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (2.3.1)\\r\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: botocore<2.0.0,>=1.31 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (1.39.4)\\r\\n\",",
+     "      \"Requirement already satisfied: cloudpickle>=2.1.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (3.1.1)\\r\\n\",",
+     "      \"Requirement already satisfied: graphviz>=0.13.2 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (0.21)\\r\\n\",",
+     "      \"Requirement already satisfied: numpy>=1.26.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (2.3.1)\\r\\n\",",
+     "      \"Requirement already satisfied: pandas>=2.1.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (2.3.1)\\r\\n\",",
+     "      \"Requirement already satisfied: tqdm>=4.29 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (4.67.1)\\r\\n\",",
+     "      \"Requirement already satisfied: copulas>=0.12.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (0.12.3)\\r\\n\",",
+     "      \"Requirement already satisfied: ctgan>=0.11.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (0.11.0)\\r\\n\",",
+     "      \"Requirement already satisfied: deepecho>=0.7.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (0.7.0)\\r\\n\","
+    ]
+   },
+   {
+    "file": "22. PRESCRIPTIONS.ipynb",
+    "line": 630,
+    "text": "\"Requirement already satisfied: tqdm>=4.29 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (4.67.1)\\r\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: cloudpickle>=2.1.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (3.1.1)\\r\\n\",",
+     "      \"Requirement already satisfied: graphviz>=0.13.2 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (0.21)\\r\\n\",",
+     "      \"Requirement already satisfied: numpy>=1.26.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (2.3.1)\\r\\n\",",
+     "      \"Requirement already satisfied: pandas>=2.1.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (2.3.1)\\r\\n\",",
+     "      \"Requirement already satisfied: tqdm>=4.29 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (4.67.1)\\r\\n\",",
+     "      \"Requirement already satisfied: copulas>=0.12.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (0.12.3)\\r\\n\",",
+     "      \"Requirement already satisfied: ctgan>=0.11.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (0.11.0)\\r\\n\",",
+     "      \"Requirement already satisfied: deepecho>=0.7.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (0.7.0)\\r\\n\",",
+     "      \"Requirement already satisfied: rdt>=1.17.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (1.17.1)\\r\\n\","
+    ]
+   },
+   {
+    "file": "22. PRESCRIPTIONS.ipynb",
+    "line": 631,
+    "text": "\"Requirement already satisfied: copulas>=0.12.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (0.12.3)\\r\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: graphviz>=0.13.2 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (0.21)\\r\\n\",",
+     "      \"Requirement already satisfied: numpy>=1.26.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (2.3.1)\\r\\n\",",
+     "      \"Requirement already satisfied: pandas>=2.1.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (2.3.1)\\r\\n\",",
+     "      \"Requirement already satisfied: tqdm>=4.29 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (4.67.1)\\r\\n\",",
+     "      \"Requirement already satisfied: copulas>=0.12.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (0.12.3)\\r\\n\",",
+     "      \"Requirement already satisfied: ctgan>=0.11.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (0.11.0)\\r\\n\",",
+     "      \"Requirement already satisfied: deepecho>=0.7.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (0.7.0)\\r\\n\",",
+     "      \"Requirement already satisfied: rdt>=1.17.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (1.17.1)\\r\\n\",",
+     "      \"Requirement already satisfied: sdmetrics>=0.21.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (0.21.0)\\r\\n\","
+    ]
+   },
+   {
+    "file": "22. PRESCRIPTIONS.ipynb",
+    "line": 632,
+    "text": "\"Requirement already satisfied: ctgan>=0.11.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (0.11.0)\\r\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: numpy>=1.26.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (2.3.1)\\r\\n\",",
+     "      \"Requirement already satisfied: pandas>=2.1.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (2.3.1)\\r\\n\",",
+     "      \"Requirement already satisfied: tqdm>=4.29 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (4.67.1)\\r\\n\",",
+     "      \"Requirement already satisfied: copulas>=0.12.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (0.12.3)\\r\\n\",",
+     "      \"Requirement already satisfied: ctgan>=0.11.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (0.11.0)\\r\\n\",",
+     "      \"Requirement already satisfied: deepecho>=0.7.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (0.7.0)\\r\\n\",",
+     "      \"Requirement already satisfied: rdt>=1.17.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (1.17.1)\\r\\n\",",
+     "      \"Requirement already satisfied: sdmetrics>=0.21.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (0.21.0)\\r\\n\",",
+     "      \"Requirement already satisfied: platformdirs>=4.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (4.3.8)\\r\\n\","
+    ]
+   },
+   {
+    "file": "22. PRESCRIPTIONS.ipynb",
+    "line": 633,
+    "text": "\"Requirement already satisfied: deepecho>=0.7.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (0.7.0)\\r\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: pandas>=2.1.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (2.3.1)\\r\\n\",",
+     "      \"Requirement already satisfied: tqdm>=4.29 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (4.67.1)\\r\\n\",",
+     "      \"Requirement already satisfied: copulas>=0.12.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (0.12.3)\\r\\n\",",
+     "      \"Requirement already satisfied: ctgan>=0.11.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (0.11.0)\\r\\n\",",
+     "      \"Requirement already satisfied: deepecho>=0.7.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (0.7.0)\\r\\n\",",
+     "      \"Requirement already satisfied: rdt>=1.17.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (1.17.1)\\r\\n\",",
+     "      \"Requirement already satisfied: sdmetrics>=0.21.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (0.21.0)\\r\\n\",",
+     "      \"Requirement already satisfied: platformdirs>=4.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (4.3.8)\\r\\n\",",
+     "      \"Requirement already satisfied: pyyaml>=6.0.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (6.0.2)\\r\\n\","
+    ]
+   },
+   {
+    "file": "22. PRESCRIPTIONS.ipynb",
+    "line": 634,
+    "text": "\"Requirement already satisfied: rdt>=1.17.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (1.17.1)\\r\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: tqdm>=4.29 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (4.67.1)\\r\\n\",",
+     "      \"Requirement already satisfied: copulas>=0.12.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (0.12.3)\\r\\n\",",
+     "      \"Requirement already satisfied: ctgan>=0.11.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (0.11.0)\\r\\n\",",
+     "      \"Requirement already satisfied: deepecho>=0.7.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (0.7.0)\\r\\n\",",
+     "      \"Requirement already satisfied: rdt>=1.17.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (1.17.1)\\r\\n\",",
+     "      \"Requirement already satisfied: sdmetrics>=0.21.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (0.21.0)\\r\\n\",",
+     "      \"Requirement already satisfied: platformdirs>=4.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (4.3.8)\\r\\n\",",
+     "      \"Requirement already satisfied: pyyaml>=6.0.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (6.0.2)\\r\\n\",",
+     "      \"Requirement already satisfied: jmespath<2.0.0,>=0.7.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from boto3<2.0.0,>=1.28->sdv) (1.0.1)\\r\\n\","
+    ]
+   },
+   {
+    "file": "22. PRESCRIPTIONS.ipynb",
+    "line": 635,
+    "text": "\"Requirement already satisfied: sdmetrics>=0.21.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (0.21.0)\\r\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: copulas>=0.12.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (0.12.3)\\r\\n\",",
+     "      \"Requirement already satisfied: ctgan>=0.11.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (0.11.0)\\r\\n\",",
+     "      \"Requirement already satisfied: deepecho>=0.7.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (0.7.0)\\r\\n\",",
+     "      \"Requirement already satisfied: rdt>=1.17.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (1.17.1)\\r\\n\",",
+     "      \"Requirement already satisfied: sdmetrics>=0.21.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (0.21.0)\\r\\n\",",
+     "      \"Requirement already satisfied: platformdirs>=4.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (4.3.8)\\r\\n\",",
+     "      \"Requirement already satisfied: pyyaml>=6.0.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from sdv) (6.0.2)\\r\\n\",",
+     "      \"Requirement already satisfied: jmespath<2.0.0,>=0.7.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from boto3<2.0.0,>=1.28->sdv) (1.0.1)\\r\\n\",",
+     "      \"Requirement already satisfied: s3transfer<0.14.0,>=0.13.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from boto3<2.0.0,>=1.28->sdv) (0.13.0)\\r\\n\","
+    ]
+   }
+  ],
+  "ctgan_mod": [
+   {
+    "file": "22. PRESCRIPTIONS.ipynb",
+    "line": 644,
+    "text": "\"Requirement already satisfied: torch>=2.2.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from ctgan>=0.11.0->sdv) (2.7.1)\\r\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\r\\n\",",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\r\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (6.2.0)\\r\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.12.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (1.16.0)\\r\\n\",",
+     "      \"Requirement already satisfied: torch>=2.2.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from ctgan>=0.11.0->sdv) (2.7.1)\\r\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.3.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (1.7.0)\\r\\n\",",
+     "      \"Requirement already satisfied: Faker>=17 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (37.4.2)\\r\\n\","
+    ]
+   },
+   {
+    "file": "23. PROCEDUREEVENTS_MV.ipynb",
+    "line": 627,
+    "text": "\"Requirement already satisfied: torch>=2.0.0 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from ctgan>=0.11.0->sdv) (2.6.0)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.8.2)\\n\",",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from botocore<2.0.0,>=1.31->sdv) (1.26.16)\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from copulas>=0.12.1->sdv) (6.0.1)\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.9.2 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from copulas>=0.12.1->sdv) (1.10.1)\\n\",",
+     "      \"Requirement already satisfied: torch>=2.0.0 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from ctgan>=0.11.0->sdv) (2.6.0)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from pandas>=1.5.0->sdv) (2023.3.post1)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.1.3 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from rdt>=1.14.0->sdv) (1.5.0)\\n\",",
+     "      \"Requirement already satisfied: Faker>=17 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from rdt>=1.14.0->sdv) (37.1.0)\\n\",",
+     "      \"Requirement already satisfied: tzdata in /Users/anupama/anaconda3/lib/python3.11/site-packages (from Faker>=17->rdt>=1.14.0->sdv) (2023.3)\\n\","
+    ]
+   },
+   {
+    "file": "3.CALLOUT.ipynb",
+    "line": 600,
+    "text": "\"Requirement already satisfied: torch>=2.2.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from ctgan>=0.11.0->sdv) (2.7.1)\\r\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\r\\n\",",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\r\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (6.2.0)\\r\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.12.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (1.16.0)\\r\\n\",",
+     "      \"Requirement already satisfied: torch>=2.2.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from ctgan>=0.11.0->sdv) (2.7.1)\\r\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.3.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (1.7.0)\\r\\n\",",
+     "      \"Requirement already satisfied: Faker>=17 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (37.4.2)\\r\\n\","
+    ]
+   },
+   {
+    "file": "26. D_ICD_DIAGNOSES.ipynb",
+    "line": 378,
+    "text": "\"Requirement already satisfied: torch>=2.2.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from ctgan>=0.11.0->sdv) (2.7.1)\\r\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\r\\n\",",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\r\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (6.2.0)\\r\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.12.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (1.16.0)\\r\\n\",",
+     "      \"Requirement already satisfied: torch>=2.2.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from ctgan>=0.11.0->sdv) (2.7.1)\\r\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.3.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (1.7.0)\\r\\n\",",
+     "      \"Requirement already satisfied: Faker>=17 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (37.4.2)\\r\\n\","
+    ]
+   },
+   {
+    "file": "1. Admissions.ipynb",
+    "line": 1413,
+    "text": "\"Requirement already satisfied: torch>=2.2.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from ctgan>=0.11.0->sdv) (2.7.1)\\r\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\r\\n\",",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\r\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (6.2.0)\\r\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.12.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (1.16.0)\\r\\n\",",
+     "      \"Requirement already satisfied: torch>=2.2.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from ctgan>=0.11.0->sdv) (2.7.1)\\r\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.3.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (1.7.0)\\r\\n\",",
+     "      \"Requirement already satisfied: Faker>=17 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (37.4.2)\\r\\n\","
+    ]
+   },
+   {
+    "file": "18.LABEVENTS.ipynb",
+    "line": 426,
+    "text": "\"Requirement already satisfied: torch>=2.2.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from ctgan>=0.11.0->sdv) (2.7.1)\\r\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\r\\n\",",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\r\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (6.2.0)\\r\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.12.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (1.16.0)\\r\\n\",",
+     "      \"Requirement already satisfied: torch>=2.2.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from ctgan>=0.11.0->sdv) (2.7.1)\\r\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.3.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (1.7.0)\\r\\n\",",
+     "      \"Requirement already satisfied: Faker>=17 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (37.4.2)\\r\\n\","
+    ]
+   },
+   {
+    "file": "21. OUTPUTEVENTS.ipynb",
+    "line": 557,
+    "text": "\"Requirement already satisfied: torch>=2.2.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from ctgan>=0.11.0->sdv) (2.7.1)\\r\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\r\\n\",",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\r\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (6.2.0)\\r\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.12.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (1.16.0)\\r\\n\",",
+     "      \"Requirement already satisfied: torch>=2.2.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from ctgan>=0.11.0->sdv) (2.7.1)\\r\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.3.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (1.7.0)\\r\\n\",",
+     "      \"Requirement already satisfied: Faker>=17 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (37.4.2)\\r\\n\","
+    ]
+   },
+   {
+    "file": "11. D_ICD_DIAGNOSES.ipynb",
+    "line": 377,
+    "text": "\"Requirement already satisfied: torch>=1.13.0 in /usr/local/lib/python3.10/dist-packages (from ctgan>=0.11.0->sdv) (2.7.0)\\r\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /usr/local/lib/python3.10/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\r\\n\",",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /usr/lib/python3/dist-packages (from botocore<2.0.0,>=1.31->sdv) (1.26.5)\\r\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /home/ehr/.local/lib/python3.10/site-packages (from copulas>=0.12.1->sdv) (6.2.0)\\r\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.9.2 in /usr/local/lib/python3.10/dist-packages (from copulas>=0.12.1->sdv) (1.15.2)\\r\\n\",",
+     "      \"Requirement already satisfied: torch>=1.13.0 in /usr/local/lib/python3.10/dist-packages (from ctgan>=0.11.0->sdv) (2.7.0)\\r\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /usr/lib/python3/dist-packages (from pandas>=1.4.0->sdv) (2022.1)\\r\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.10/dist-packages (from pandas>=1.4.0->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.1.0 in /home/ehr/.local/lib/python3.10/site-packages (from rdt>=1.17.0->sdv) (1.7.0)\\r\\n\",",
+     "      \"Requirement already satisfied: Faker>=17 in /home/ehr/.local/lib/python3.10/site-packages (from rdt>=1.17.0->sdv) (37.4.0)\\r\\n\","
+    ]
+   },
+   {
+    "file": "17. INPUTEVENTS_MV.ipynb",
+    "line": 1231,
+    "text": "\"Requirement already satisfied: torch>=2.2.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from ctgan>=0.11.0->sdv) (2.7.1)\\r\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\r\\n\",",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\r\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (6.2.0)\\r\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.12.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (1.16.0)\\r\\n\",",
+     "      \"Requirement already satisfied: torch>=2.2.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from ctgan>=0.11.0->sdv) (2.7.1)\\r\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.3.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (1.7.0)\\r\\n\",",
+     "      \"Requirement already satisfied: Faker>=17 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (37.4.2)\\r\\n\","
+    ]
+   },
+   {
+    "file": "4.CAREGIVERS.ipynb",
+    "line": 362,
+    "text": "\"Requirement already satisfied: torch>=1.13.0 in /usr/local/lib/python3.10/dist-packages (from ctgan>=0.11.0->sdv) (2.7.0)\\r\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /usr/local/lib/python3.10/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\r\\n\",",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /usr/lib/python3/dist-packages (from botocore<2.0.0,>=1.31->sdv) (1.26.5)\\r\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /home/ehr/.local/lib/python3.10/site-packages (from copulas>=0.12.1->sdv) (6.2.0)\\r\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.9.2 in /usr/local/lib/python3.10/dist-packages (from copulas>=0.12.1->sdv) (1.15.2)\\r\\n\",",
+     "      \"Requirement already satisfied: torch>=1.13.0 in /usr/local/lib/python3.10/dist-packages (from ctgan>=0.11.0->sdv) (2.7.0)\\r\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /usr/lib/python3/dist-packages (from pandas>=1.4.0->sdv) (2022.1)\\r\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.10/dist-packages (from pandas>=1.4.0->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.1.0 in /home/ehr/.local/lib/python3.10/site-packages (from rdt>=1.17.0->sdv) (1.7.0)\\r\\n\",",
+     "      \"Requirement already satisfied: Faker>=17 in /home/ehr/.local/lib/python3.10/site-packages (from rdt>=1.17.0->sdv) (37.4.0)\\r\\n\","
+    ]
+   },
+   {
+    "file": "13. D_ITEMS.ipynb",
+    "line": 318,
+    "text": "\"Requirement already satisfied: torch>=2.2.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from ctgan>=0.11.0->sdv) (2.7.1)\\r\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\r\\n\",",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\r\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (6.2.0)\\r\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.12.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (1.16.0)\\r\\n\",",
+     "      \"Requirement already satisfied: torch>=2.2.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from ctgan>=0.11.0->sdv) (2.7.1)\\r\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.3.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (1.7.0)\\r\\n\",",
+     "      \"Requirement already satisfied: Faker>=17 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (37.4.2)\\r\\n\","
+    ]
+   },
+   {
+    "file": "8. Diagnoses_ICD.ipynb",
+    "line": 446,
+    "text": "\"Requirement already satisfied: torch>=2.0.0 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from ctgan>=0.11.0->sdv) (2.6.0)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.8.2)\\n\",",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from botocore<2.0.0,>=1.31->sdv) (1.26.16)\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from copulas>=0.12.1->sdv) (6.0.1)\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.9.2 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from copulas>=0.12.1->sdv) (1.11.4)\\n\",",
+     "      \"Requirement already satisfied: torch>=2.0.0 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from ctgan>=0.11.0->sdv) (2.6.0)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from pandas>=1.5.0->sdv) (2023.3.post1)\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.1 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from pandas>=1.5.0->sdv) (2023.3)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.1.3 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from rdt>=1.14.0->sdv) (1.6.1)\\n\",",
+     "      \"Requirement already satisfied: Faker>=17 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from rdt>=1.14.0->sdv) (37.1.0)\\n\","
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "22. PRESCRIPTIONS.ipynb",
+    "line": 697,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    }",
+     "   },",
+     "   \"source\": [",
+     "    \"import os\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"# Set environment variables for multiprocessing\\n\",",
+     "    \"os.environ[\\\"NUMBA_NUM_THREADS\\\"] = \\\"1\\\"\\n\","
+    ]
+   },
+   {
+    "file": "22. PRESCRIPTIONS.ipynb",
+    "line": 727,
+    "text": "\"synthesizer = CTGANSynthesizer(metadata=metadata, epochs=300)\\n\",",
+    "context": [
+     "    \"metadata = SingleTableMetadata()\\n\",",
+     "    \"metadata.detect_from_dataframe(prescriptions_cleaned)\\n\",",
+     "    \"\\n\",",
+     "    \"# Initialize and fit the synthesizer\\n\",",
+     "    \"synthesizer = CTGANSynthesizer(metadata=metadata, epochs=300)\\n\",",
+     "    \"synthesizer.fit(prescriptions_cleaned)\\n\"",
+     "   ],",
+     "   \"outputs\": [",
+     "    {"
+    ]
+   },
+   {
+    "file": "22. PRESCRIPTIONS.ipynb",
+    "line": 735,
+    "text": "\"PerformanceAlert: Using the CTGANSynthesizer on this data is not recommended. To model this data, CTGAN will generate a large number of columns.\\n\",",
+    "context": [
+     "    {",
+     "     \"name\": \"stdout\",",
+     "     \"output_type\": \"stream\",",
+     "     \"text\": [",
+     "      \"PerformanceAlert: Using the CTGANSynthesizer on this data is not recommended. To model this data, CTGAN will generate a large number of columns.\\n\",",
+     "      \"\\n\",",
+     "      \"Original Column Name   Est # of Columns (CTGAN)\\n\",",
+     "      \"STARTDATE              11\\n\",",
+     "      \"ENDDATE                11\\n\","
+    ]
+   },
+   {
+    "file": "23. PROCEDUREEVENTS_MV.ipynb",
+    "line": 660,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import os\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"# Set environment variables for multiprocessing\\n\",",
+     "    \"os.environ[\\\"NUMBA_NUM_THREADS\\\"] = \\\"1\\\"\\n\","
+    ]
+   },
+   {
+    "file": "23. PROCEDUREEVENTS_MV.ipynb",
+    "line": 683,
+    "text": "\"synthesizer = CTGANSynthesizer(metadata=metadata, epochs=300)\\n\",",
+    "context": [
+     "    \"metadata = SingleTableMetadata()\\n\",",
+     "    \"metadata.detect_from_dataframe(procedureevents_mv_cleaned)\\n\",",
+     "    \"\\n\",",
+     "    \"# Initialize and fit the synthesizer\\n\",",
+     "    \"synthesizer = CTGANSynthesizer(metadata=metadata, epochs=300)\\n\",",
+     "    \"synthesizer.fit(procedureevents_mv_cleaned)\\n\"",
+     "   ]",
+     "  },",
+     "  {"
+    ]
+   },
+   {
+    "file": "6.CPTEVENTS.ipynb",
+    "line": 371,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"#  Initialize synthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"synthesizer = CTGANSynthesizer(metadata=metadata, epochs=30)\\n\",",
+     "    \"cpt_sample = cpt_cleaned.sample(n=1000, random_state=42)\\n\",",
+     "    \"\\n\",",
+     "    \"\\n\""
+    ]
+   },
+   {
+    "file": "6.CPTEVENTS.ipynb",
+    "line": 372,
+    "text": "\"synthesizer = CTGANSynthesizer(metadata=metadata, epochs=30)\\n\",",
+    "context": [
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"#  Initialize synthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"synthesizer = CTGANSynthesizer(metadata=metadata, epochs=30)\\n\",",
+     "    \"cpt_sample = cpt_cleaned.sample(n=1000, random_state=42)\\n\",",
+     "    \"\\n\",",
+     "    \"\\n\"",
+     "   ]"
+    ]
+   },
+   {
+    "file": "19. MICROBIOLOGYEVENTS.ipynb",
+    "line": 26,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"from sklearn.preprocessing import MinMaxScaler\\n\",",
+     "    \"from sklearn.ensemble import RandomForestClassifier\\n\",",
+     "    \"from sklearn.model_selection import train_test_split\\n\",",
+     "    \"from sklearn.metrics import accuracy_score\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"# Fix multiprocessing issue on Windows\\n\",",
+     "    \"os.environ[\\\"NUMBA_NUM_THREADS\\\"] = \\\"1\\\"\\n\","
+    ]
+   },
+   {
+    "file": "19. MICROBIOLOGYEVENTS.ipynb",
+    "line": 736,
+    "text": "\"synthesizer = CTGANSynthesizer(metadata=metadata, epochs=300)\\n\",",
+    "context": [
+     "    \"metadata = SingleTableMetadata()\\n\",",
+     "    \"metadata.detect_from_dataframe(MICROBIOLOGYEVENTS_cleaned)\\n\",",
+     "    \"\\n\",",
+     "    \"# Initialize CTGAN\\n\",",
+     "    \"synthesizer = CTGANSynthesizer(metadata=metadata, epochs=300)\\n\",",
+     "    \"synthesizer.fit(MICROBIOLOGYEVENTS_cleaned)\\n\",",
+     "    \"\\n\",",
+     "    \"# Generate synthetic data\\n\",",
+     "    \"synthetic_MICROBIOLOGYEVENTS = synthesizer.sample(num_rows=1000)\\n\","
+    ]
+   },
+   {
+    "file": "19. MICROBIOLOGYEVENTS.ipynb",
+    "line": 751,
+    "text": "\"\\u001B[36mCell\\u001B[39m\\u001B[36m \\u001B[39m\\u001B[32mIn[10]\\u001B[39m\\u001B[32m, line 7\\u001B[39m\\n\\u001B[32m      5\\u001B[39m \\u001B[38;5;66;03m# Initialize CTGAN\\u001B[39;00m\\n\\u001B[32m      6\\u001B[39m synthesizer = CTGANSynthesizer(metadata=metadata, epochs=\\u001B[32m300\\u001B[39m)\\n\\u001B[3",
+    "context": [
+     "     \"output_type\": \"error\",",
+     "     \"traceback\": [",
+     "      \"\\u001B[31m---------------------------------------------------------------------------\\u001B[39m\",",
+     "      \"\\u001B[31mOutOfMemoryError\\u001B[39m                          Traceback (most recent call last)\",",
+     "      \"\\u001B[36mCell\\u001B[39m\\u001B[36m \\u001B[39m\\u001B[32mIn[10]\\u001B[39m\\u001B[32m, line 7\\u001B[39m\\n\\u001B[32m      5\\u001B[39m \\u001B[38;5;66;03m# Initialize CTGAN\\u001B[39;00m\\n\\u001B[32m   ",
+     "      \"\\u001B[36mFile \\u001B[39m\\u001B[32m~/Desktop/anupama/.venv/lib/python3.12/site-packages/sdv/single_table/base.py:667\\u001B[39m, in \\u001B[36mBaseSynthesizer.fit\\u001B[39m\\u001B[34m(self, data)\\",
+     "      \"\\u001B[36mFile \\u001B[39m\\u001B[32m~/Desktop/anupama/.venv/lib/python3.12/site-packages/sdv/single_table/base.py:636\\u001B[39m, in \\u001B[36mBaseSynthesizer.fit_processed_data\\u001B[39m\\u001B[3",
+     "      \"\\u001B[36mFile \\u001B[39m\\u001B[32m~/Desktop/anupama/.venv/lib/python3.12/site-packages/sdv/single_table/ctgan.py:303\\u001B[39m, in \\u001B[36mCTGANSynthesizer._fit\\u001B[39m\\u001B[34m(self, pro",
+     "      \"\\u001B[36mFile \\u001B[39m\\u001B[32m~/Desktop/anupama/.venv/lib/python3.12/site-packages/ctgan/synthesizers/base.py:50\\u001B[39m, in \\u001B[36mrandom_state.<locals>.wrapper\\u001B[39m\\u001B[34m(s"
+    ]
+   },
+   {
+    "file": "19. MICROBIOLOGYEVENTS.ipynb",
+    "line": 754,
+    "text": "\"\\u001B[36mFile \\u001B[39m\\u001B[32m~/Desktop/anupama/.venv/lib/python3.12/site-packages/sdv/single_table/ctgan.py:303\\u001B[39m, in \\u001B[36mCTGANSynthesizer._fit\\u001B[39m\\u001B[34m(self, processed_data)\\u001B[39m\\n\\u001B[32m    301\\u001B[39m \\u001B[38;5;28;01mwith\\u001B[39;00m warnings.catch_war",
+    "context": [
+     "      \"\\u001B[31mOutOfMemoryError\\u001B[39m                          Traceback (most recent call last)\",",
+     "      \"\\u001B[36mCell\\u001B[39m\\u001B[36m \\u001B[39m\\u001B[32mIn[10]\\u001B[39m\\u001B[32m, line 7\\u001B[39m\\n\\u001B[32m      5\\u001B[39m \\u001B[38;5;66;03m# Initialize CTGAN\\u001B[39;00m\\n\\u001B[32m   ",
+     "      \"\\u001B[36mFile \\u001B[39m\\u001B[32m~/Desktop/anupama/.venv/lib/python3.12/site-packages/sdv/single_table/base.py:667\\u001B[39m, in \\u001B[36mBaseSynthesizer.fit\\u001B[39m\\u001B[34m(self, data)\\",
+     "      \"\\u001B[36mFile \\u001B[39m\\u001B[32m~/Desktop/anupama/.venv/lib/python3.12/site-packages/sdv/single_table/base.py:636\\u001B[39m, in \\u001B[36mBaseSynthesizer.fit_processed_data\\u001B[39m\\u001B[3",
+     "      \"\\u001B[36mFile \\u001B[39m\\u001B[32m~/Desktop/anupama/.venv/lib/python3.12/site-packages/sdv/single_table/ctgan.py:303\\u001B[39m, in \\u001B[36mCTGANSynthesizer._fit\\u001B[39m\\u001B[34m(self, pro",
+     "      \"\\u001B[36mFile \\u001B[39m\\u001B[32m~/Desktop/anupama/.venv/lib/python3.12/site-packages/ctgan/synthesizers/base.py:50\\u001B[39m, in \\u001B[36mrandom_state.<locals>.wrapper\\u001B[39m\\u001B[34m(s",
+     "      \"\\u001B[36mFile \\u001B[39m\\u001B[32m~/Desktop/anupama/.venv/lib/python3.12/site-packages/ctgan/synthesizers/ctgan.py:434\\u001B[39m, in \\u001B[36mCTGAN.fit\\u001B[39m\\u001B[34m(self, train_data, d",
+     "      \"\\u001B[36mFile \\u001B[39m\\u001B[32m~/Desktop/anupama/.venv/lib/python3.12/site-packages/torch/_tensor.py:648\\u001B[39m, in \\u001B[36mTensor.backward\\u001B[39m\\u001B[34m(self, gradient, retain_g",
+     "      \"\\u001B[36mFile \\u001B[39m\\u001B[32m~/Desktop/anupama/.venv/lib/python3.12/site-packages/torch/autograd/__init__.py:353\\u001B[39m, in \\u001B[36mbackward\\u001B[39m\\u001B[34m(tensors, grad_tensors"
+    ]
+   },
+   {
+    "file": "3.CALLOUT.ipynb",
+    "line": 676,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "     \"start_time\": \"2025-07-24T20:16:31.990978Z\"",
+     "    }",
+     "   },",
+     "   \"source\": [",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"# Fix multiprocessing (optional for Windows)\\n\",",
+     "    \"os.environ[\\\"NUMBA_NUM_THREADS\\\"] = \\\"1\\\"\\n\","
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "22. PRESCRIPTIONS.ipynb",
+    "line": 842,
+    "text": "\"#  Import TVAESynthesizer\\n\",",
+    "context": [
+     "   \"id\": \"17187865\",",
+     "   \"metadata\": {},",
+     "   \"source\": [",
+     "    \"\\n\",",
+     "    \"#  Import TVAESynthesizer\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"#  Initialize VAE synthesizer\\n\",",
+     "    \"vae_synthesizer = TVAESynthesizer(\\n\","
+    ]
+   },
+   {
+    "file": "22. PRESCRIPTIONS.ipynb",
+    "line": 843,
+    "text": "\"from sdv.single_table import TVAESynthesizer\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"source\": [",
+     "    \"\\n\",",
+     "    \"#  Import TVAESynthesizer\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"#  Initialize VAE synthesizer\\n\",",
+     "    \"vae_synthesizer = TVAESynthesizer(\\n\",",
+     "    \"    metadata=metadata,\\n\","
+    ]
+   },
+   {
+    "file": "22. PRESCRIPTIONS.ipynb",
+    "line": 846,
+    "text": "\"vae_synthesizer = TVAESynthesizer(\\n\",",
+    "context": [
+     "    \"#  Import TVAESynthesizer\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"#  Initialize VAE synthesizer\\n\",",
+     "    \"vae_synthesizer = TVAESynthesizer(\\n\",",
+     "    \"    metadata=metadata,\\n\",",
+     "    \"    epochs=10\\n\",",
+     "    \")\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "6.CPTEVENTS.ipynb",
+    "line": 653,
+    "text": "\"#  Import TVAESynthesizer\\n\",",
+    "context": [
+     "     \"output_type\": \"execute_result\"",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"#  Import TVAESynthesizer\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"# Initialize VAE synthesizer\\n\",",
+     "    \"vae_synthesizer = TVAESynthesizer(\\n\","
+    ]
+   },
+   {
+    "file": "6.CPTEVENTS.ipynb",
+    "line": 654,
+    "text": "\"from sdv.single_table import TVAESynthesizer\\n\",",
+    "context": [
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"#  Import TVAESynthesizer\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"# Initialize VAE synthesizer\\n\",",
+     "    \"vae_synthesizer = TVAESynthesizer(\\n\",",
+     "    \"    metadata=metadata,\\n\","
+    ]
+   },
+   {
+    "file": "6.CPTEVENTS.ipynb",
+    "line": 657,
+    "text": "\"vae_synthesizer = TVAESynthesizer(\\n\",",
+    "context": [
+     "    \"#  Import TVAESynthesizer\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"# Initialize VAE synthesizer\\n\",",
+     "    \"vae_synthesizer = TVAESynthesizer(\\n\",",
+     "    \"    metadata=metadata,\\n\",",
+     "    \"    epochs=30  # Same as CTGAN for fair comparison\\n\",",
+     "    \")\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "19. MICROBIOLOGYEVENTS.ipynb",
+    "line": 823,
+    "text": "\"from sdv.single_table import TVAESynthesizer\\n\",",
+    "context": [
+     "   \"cell_type\": \"code\",",
+     "   \"id\": \"a3b90123\",",
+     "   \"metadata\": {},",
+     "   \"source\": [",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"from sklearn.ensemble import RandomForestClassifier\\n\",",
+     "    \"from sklearn.model_selection import train_test_split\\n\",",
+     "    \"from sklearn.metrics import accuracy_score\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "19. MICROBIOLOGYEVENTS.ipynb",
+    "line": 840,
+    "text": "\"vae_synthesizer = TVAESynthesizer(metadata=metadata, epochs=30)\\n\",",
+    "context": [
+     "    \"metadata = SingleTableMetadata()\\n\",",
+     "    \"metadata.detect_from_dataframe(MICROBIOLOGYEVENTS_cleaned.drop(columns=['target']))\\n\",",
+     "    \"\\n\",",
+     "    \"# Fit TVAE (drop target column before fitting)\\n\",",
+     "    \"vae_synthesizer = TVAESynthesizer(metadata=metadata, epochs=30)\\n\",",
+     "    \"vae_synthesizer.fit(MICROBIOLOGYEVENTS_cleaned.drop(columns=['target']))\\n\",",
+     "    \"\\n\",",
+     "    \"# Sample synthetic data\\n\",",
+     "    \"synthetic_data_vae = vae_synthesizer.sample(num_rows=1000)\\n\","
+    ]
+   },
+   {
+    "file": "3.CALLOUT.ipynb",
+    "line": 821,
+    "text": "\"#  Import TVAESynthesizer\\n\",",
+    "context": [
+     "     \"start_time\": \"2025-07-24T20:16:51.251618Z\"",
+     "    }",
+     "   },",
+     "   \"source\": [",
+     "    \"#  Import TVAESynthesizer\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"#  Initialize VAE synthesizer\\n\",",
+     "    \"vae_synthesizer = TVAESynthesizer(\\n\","
+    ]
+   },
+   {
+    "file": "3.CALLOUT.ipynb",
+    "line": 822,
+    "text": "\"from sdv.single_table import TVAESynthesizer\\n\",",
+    "context": [
+     "    }",
+     "   },",
+     "   \"source\": [",
+     "    \"#  Import TVAESynthesizer\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"#  Initialize VAE synthesizer\\n\",",
+     "    \"vae_synthesizer = TVAESynthesizer(\\n\",",
+     "    \"    metadata=metadata,\\n\","
+    ]
+   },
+   {
+    "file": "3.CALLOUT.ipynb",
+    "line": 825,
+    "text": "\"vae_synthesizer = TVAESynthesizer(\\n\",",
+    "context": [
+     "    \"#  Import TVAESynthesizer\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"#  Initialize VAE synthesizer\\n\",",
+     "    \"vae_synthesizer = TVAESynthesizer(\\n\",",
+     "    \"    metadata=metadata,\\n\",",
+     "    \"    epochs=30  # Same as CTGAN for fair comparison\\n\",",
+     "    \")\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "26. D_ICD_DIAGNOSES.ipynb",
+    "line": 696,
+    "text": "\"from sdv.single_table import TVAESynthesizer\\n\",",
+    "context": [
+     "   \"cell_type\": \"code\",",
+     "   \"outputs\": [],",
+     "   \"execution_count\": null,",
+     "   \"source\": [",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"from sklearn.ensemble import RandomForestClassifier\\n\",",
+     "    \"from sklearn.model_selection import train_test_split\\n\",",
+     "    \"from sklearn.metrics import accuracy_score\\n\",",
+     "    \"\\n\","
+    ]
+   }
+  ],
+  "rdt": [
+   {
+    "file": "22. PRESCRIPTIONS.ipynb",
+    "line": 647,
+    "text": "\"Requirement already satisfied: scikit-learn>=1.3.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (1.7.0)\\r\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: scipy>=1.12.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (1.16.0)\\r\\n\",",
+     "      \"Requirement already satisfied: torch>=2.2.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from ctgan>=0.11.0->sdv) (2.7.1)\\r\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.3.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (1.7.0)\\r\\n\",",
+     "      \"Requirement already satisfied: Faker>=17 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (37.4.2)\\r\\n\",",
+     "      \"Requirement already satisfied: narwhals>=1.15.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (1.47.0)\\r\\n\",",
+     "      \"Requirement already satisfied: packaging in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (25.0)\\r\\n\",",
+     "      \"Requirement already satisfied: six>=1.5 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from python-dateutil<3.0.0,>=2.1->botocore<2.0.0,>=1.31->sdv) (1.17.0)\\r\\n\","
+    ]
+   },
+   {
+    "file": "22. PRESCRIPTIONS.ipynb",
+    "line": 648,
+    "text": "\"Requirement already satisfied: Faker>=17 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (37.4.2)\\r\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: torch>=2.2.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from ctgan>=0.11.0->sdv) (2.7.1)\\r\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.3.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (1.7.0)\\r\\n\",",
+     "      \"Requirement already satisfied: Faker>=17 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (37.4.2)\\r\\n\",",
+     "      \"Requirement already satisfied: narwhals>=1.15.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (1.47.0)\\r\\n\",",
+     "      \"Requirement already satisfied: packaging in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (25.0)\\r\\n\",",
+     "      \"Requirement already satisfied: six>=1.5 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from python-dateutil<3.0.0,>=2.1->botocore<2.0.0,>=1.31->sdv) (1.17.0)\\r\\n\",",
+     "      \"Requirement already satisfied: joblib>=1.2.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from scikit-learn>=1.3.1->rdt>=1.17.0->sdv) (1.5.1)\\r\\n\","
+    ]
+   },
+   {
+    "file": "23. PROCEDUREEVENTS_MV.ipynb",
+    "line": 629,
+    "text": "\"Requirement already satisfied: scikit-learn>=1.1.3 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from rdt>=1.14.0->sdv) (1.5.0)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from copulas>=0.12.1->sdv) (6.0.1)\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.9.2 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from copulas>=0.12.1->sdv) (1.10.1)\\n\",",
+     "      \"Requirement already satisfied: torch>=2.0.0 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from ctgan>=0.11.0->sdv) (2.6.0)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from pandas>=1.5.0->sdv) (2023.3.post1)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.1.3 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from rdt>=1.14.0->sdv) (1.5.0)\\n\",",
+     "      \"Requirement already satisfied: Faker>=17 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from rdt>=1.14.0->sdv) (37.1.0)\\n\",",
+     "      \"Requirement already satisfied: tzdata in /Users/anupama/anaconda3/lib/python3.11/site-packages (from Faker>=17->rdt>=1.14.0->sdv) (2023.3)\\n\",",
+     "      \"Requirement already satisfied: narwhals>=1.15.1 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (1.34.1)\\n\",",
+     "      \"Requirement already satisfied: packaging in /Users/anupama/anaconda3/lib/python3.11/site-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (24.2)\\n\","
+    ]
+   },
+   {
+    "file": "23. PROCEDUREEVENTS_MV.ipynb",
+    "line": 630,
+    "text": "\"Requirement already satisfied: Faker>=17 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from rdt>=1.14.0->sdv) (37.1.0)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: scipy>=1.9.2 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from copulas>=0.12.1->sdv) (1.10.1)\\n\",",
+     "      \"Requirement already satisfied: torch>=2.0.0 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from ctgan>=0.11.0->sdv) (2.6.0)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from pandas>=1.5.0->sdv) (2023.3.post1)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.1.3 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from rdt>=1.14.0->sdv) (1.5.0)\\n\",",
+     "      \"Requirement already satisfied: Faker>=17 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from rdt>=1.14.0->sdv) (37.1.0)\\n\",",
+     "      \"Requirement already satisfied: tzdata in /Users/anupama/anaconda3/lib/python3.11/site-packages (from Faker>=17->rdt>=1.14.0->sdv) (2023.3)\\n\",",
+     "      \"Requirement already satisfied: narwhals>=1.15.1 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (1.34.1)\\n\",",
+     "      \"Requirement already satisfied: packaging in /Users/anupama/anaconda3/lib/python3.11/site-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (24.2)\\n\",",
+     "      \"Requirement already satisfied: six>=1.5 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from python-dateutil<3.0.0,>=2.1->botocore<2.0.0,>=1.31->sdv) (1.16.0)\\n\","
+    ]
+   },
+   {
+    "file": "3.CALLOUT.ipynb",
+    "line": 603,
+    "text": "\"Requirement already satisfied: scikit-learn>=1.3.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (1.7.0)\\r\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: scipy>=1.12.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (1.16.0)\\r\\n\",",
+     "      \"Requirement already satisfied: torch>=2.2.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from ctgan>=0.11.0->sdv) (2.7.1)\\r\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.3.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (1.7.0)\\r\\n\",",
+     "      \"Requirement already satisfied: Faker>=17 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (37.4.2)\\r\\n\",",
+     "      \"Requirement already satisfied: narwhals>=1.15.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (1.47.0)\\r\\n\",",
+     "      \"Requirement already satisfied: packaging in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (25.0)\\r\\n\",",
+     "      \"Requirement already satisfied: six>=1.5 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from python-dateutil<3.0.0,>=2.1->botocore<2.0.0,>=1.31->sdv) (1.17.0)\\r\\n\","
+    ]
+   },
+   {
+    "file": "3.CALLOUT.ipynb",
+    "line": 604,
+    "text": "\"Requirement already satisfied: Faker>=17 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (37.4.2)\\r\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: torch>=2.2.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from ctgan>=0.11.0->sdv) (2.7.1)\\r\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.3.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (1.7.0)\\r\\n\",",
+     "      \"Requirement already satisfied: Faker>=17 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (37.4.2)\\r\\n\",",
+     "      \"Requirement already satisfied: narwhals>=1.15.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (1.47.0)\\r\\n\",",
+     "      \"Requirement already satisfied: packaging in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (25.0)\\r\\n\",",
+     "      \"Requirement already satisfied: six>=1.5 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from python-dateutil<3.0.0,>=2.1->botocore<2.0.0,>=1.31->sdv) (1.17.0)\\r\\n\",",
+     "      \"Requirement already satisfied: joblib>=1.2.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from scikit-learn>=1.3.1->rdt>=1.17.0->sdv) (1.5.1)\\r\\n\","
+    ]
+   },
+   {
+    "file": "26. D_ICD_DIAGNOSES.ipynb",
+    "line": 381,
+    "text": "\"Requirement already satisfied: scikit-learn>=1.3.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (1.7.0)\\r\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: scipy>=1.12.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (1.16.0)\\r\\n\",",
+     "      \"Requirement already satisfied: torch>=2.2.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from ctgan>=0.11.0->sdv) (2.7.1)\\r\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.3.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (1.7.0)\\r\\n\",",
+     "      \"Requirement already satisfied: Faker>=17 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (37.4.2)\\r\\n\",",
+     "      \"Requirement already satisfied: narwhals>=1.15.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (1.47.0)\\r\\n\",",
+     "      \"Requirement already satisfied: packaging in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (25.0)\\r\\n\",",
+     "      \"Requirement already satisfied: six>=1.5 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from python-dateutil<3.0.0,>=2.1->botocore<2.0.0,>=1.31->sdv) (1.17.0)\\r\\n\","
+    ]
+   },
+   {
+    "file": "26. D_ICD_DIAGNOSES.ipynb",
+    "line": 382,
+    "text": "\"Requirement already satisfied: Faker>=17 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (37.4.2)\\r\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: torch>=2.2.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from ctgan>=0.11.0->sdv) (2.7.1)\\r\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.3.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (1.7.0)\\r\\n\",",
+     "      \"Requirement already satisfied: Faker>=17 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (37.4.2)\\r\\n\",",
+     "      \"Requirement already satisfied: narwhals>=1.15.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (1.47.0)\\r\\n\",",
+     "      \"Requirement already satisfied: packaging in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (25.0)\\r\\n\",",
+     "      \"Requirement already satisfied: six>=1.5 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from python-dateutil<3.0.0,>=2.1->botocore<2.0.0,>=1.31->sdv) (1.17.0)\\r\\n\",",
+     "      \"Requirement already satisfied: joblib>=1.2.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from scikit-learn>=1.3.1->rdt>=1.17.0->sdv) (1.5.1)\\r\\n\","
+    ]
+   },
+   {
+    "file": "1. Admissions.ipynb",
+    "line": 1416,
+    "text": "\"Requirement already satisfied: scikit-learn>=1.3.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (1.7.0)\\r\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: scipy>=1.12.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (1.16.0)\\r\\n\",",
+     "      \"Requirement already satisfied: torch>=2.2.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from ctgan>=0.11.0->sdv) (2.7.1)\\r\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.3.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (1.7.0)\\r\\n\",",
+     "      \"Requirement already satisfied: Faker>=17 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (37.4.2)\\r\\n\",",
+     "      \"Requirement already satisfied: narwhals>=1.15.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (1.47.0)\\r\\n\",",
+     "      \"Requirement already satisfied: packaging in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (25.0)\\r\\n\",",
+     "      \"Requirement already satisfied: six>=1.5 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from python-dateutil<3.0.0,>=2.1->botocore<2.0.0,>=1.31->sdv) (1.17.0)\\r\\n\","
+    ]
+   },
+   {
+    "file": "1. Admissions.ipynb",
+    "line": 1417,
+    "text": "\"Requirement already satisfied: Faker>=17 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (37.4.2)\\r\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: torch>=2.2.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from ctgan>=0.11.0->sdv) (2.7.1)\\r\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.3.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (1.7.0)\\r\\n\",",
+     "      \"Requirement already satisfied: Faker>=17 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (37.4.2)\\r\\n\",",
+     "      \"Requirement already satisfied: narwhals>=1.15.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (1.47.0)\\r\\n\",",
+     "      \"Requirement already satisfied: packaging in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (25.0)\\r\\n\",",
+     "      \"Requirement already satisfied: six>=1.5 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from python-dateutil<3.0.0,>=2.1->botocore<2.0.0,>=1.31->sdv) (1.17.0)\\r\\n\",",
+     "      \"Requirement already satisfied: joblib>=1.2.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from scikit-learn>=1.3.1->rdt>=1.17.0->sdv) (1.5.1)\\r\\n\","
+    ]
+   },
+   {
+    "file": "27.DRG_CODES.ipynb",
+    "line": 1453,
+    "text": "\"from rdt.transformers import LabelEncoder\\n\",",
+    "context": [
+     "    \"# Imports\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from rdt.transformers import LabelEncoder\\n\",",
+     "    \"from rdt.hyper_transformer import HyperTransformer\\n\",",
+     "    \"from joblib import parallel_backend\\n\",",
+     "    \"\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "27.DRG_CODES.ipynb",
+    "line": 1454,
+    "text": "\"from rdt.hyper_transformer import HyperTransformer\\n\",",
+    "context": [
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from rdt.transformers import LabelEncoder\\n\",",
+     "    \"from rdt.hyper_transformer import HyperTransformer\\n\",",
+     "    \"from joblib import parallel_backend\\n\",",
+     "    \"\\n\",",
+     "    \"\\n\",",
+     "    \"# Load dataset\\n\","
+    ]
+   }
+  ],
+  "copulas": [
+   {
+    "file": "22. PRESCRIPTIONS.ipynb",
+    "line": 642,
+    "text": "\"Requirement already satisfied: plotly>=5.10.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (6.2.0)\\r\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: jmespath<2.0.0,>=0.7.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from boto3<2.0.0,>=1.28->sdv) (1.0.1)\\r\\n\",",
+     "      \"Requirement already satisfied: s3transfer<0.14.0,>=0.13.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from boto3<2.0.0,>=1.28->sdv) (0.13.0)\\r\\n\",",
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\r\\n\",",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\r\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (6.2.0)\\r\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.12.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (1.16.0)\\r\\n\",",
+     "      \"Requirement already satisfied: torch>=2.2.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from ctgan>=0.11.0->sdv) (2.7.1)\\r\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\","
+    ]
+   },
+   {
+    "file": "22. PRESCRIPTIONS.ipynb",
+    "line": 643,
+    "text": "\"Requirement already satisfied: scipy>=1.12.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (1.16.0)\\r\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: s3transfer<0.14.0,>=0.13.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from boto3<2.0.0,>=1.28->sdv) (0.13.0)\\r\\n\",",
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\r\\n\",",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\r\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (6.2.0)\\r\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.12.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (1.16.0)\\r\\n\",",
+     "      \"Requirement already satisfied: torch>=2.2.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from ctgan>=0.11.0->sdv) (2.7.1)\\r\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.3.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (1.7.0)\\r\\n\","
+    ]
+   },
+   {
+    "file": "23. PROCEDUREEVENTS_MV.ipynb",
+    "line": 625,
+    "text": "\"Requirement already satisfied: plotly>=5.10.0 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from copulas>=0.12.1->sdv) (6.0.1)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: jmespath<2.0.0,>=0.7.1 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from boto3<2.0.0,>=1.28->sdv) (0.10.0)\\n\",",
+     "      \"Requirement already satisfied: s3transfer<0.12.0,>=0.11.0 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from boto3<2.0.0,>=1.28->sdv) (0.11.4)\\n\",",
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.8.2)\\n\",",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from botocore<2.0.0,>=1.31->sdv) (1.26.16)\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from copulas>=0.12.1->sdv) (6.0.1)\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.9.2 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from copulas>=0.12.1->sdv) (1.10.1)\\n\",",
+     "      \"Requirement already satisfied: torch>=2.0.0 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from ctgan>=0.11.0->sdv) (2.6.0)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from pandas>=1.5.0->sdv) (2023.3.post1)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.1.3 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from rdt>=1.14.0->sdv) (1.5.0)\\n\","
+    ]
+   },
+   {
+    "file": "23. PROCEDUREEVENTS_MV.ipynb",
+    "line": 626,
+    "text": "\"Requirement already satisfied: scipy>=1.9.2 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from copulas>=0.12.1->sdv) (1.10.1)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: s3transfer<0.12.0,>=0.11.0 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from boto3<2.0.0,>=1.28->sdv) (0.11.4)\\n\",",
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.8.2)\\n\",",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from botocore<2.0.0,>=1.31->sdv) (1.26.16)\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from copulas>=0.12.1->sdv) (6.0.1)\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.9.2 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from copulas>=0.12.1->sdv) (1.10.1)\\n\",",
+     "      \"Requirement already satisfied: torch>=2.0.0 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from ctgan>=0.11.0->sdv) (2.6.0)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from pandas>=1.5.0->sdv) (2023.3.post1)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.1.3 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from rdt>=1.14.0->sdv) (1.5.0)\\n\",",
+     "      \"Requirement already satisfied: Faker>=17 in /Users/anupama/anaconda3/lib/python3.11/site-packages (from rdt>=1.14.0->sdv) (37.1.0)\\n\","
+    ]
+   },
+   {
+    "file": "3.CALLOUT.ipynb",
+    "line": 598,
+    "text": "\"Requirement already satisfied: plotly>=5.10.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (6.2.0)\\r\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: jmespath<2.0.0,>=0.7.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from boto3<2.0.0,>=1.28->sdv) (1.0.1)\\r\\n\",",
+     "      \"Requirement already satisfied: s3transfer<0.14.0,>=0.13.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from boto3<2.0.0,>=1.28->sdv) (0.13.0)\\r\\n\",",
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\r\\n\",",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\r\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (6.2.0)\\r\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.12.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (1.16.0)\\r\\n\",",
+     "      \"Requirement already satisfied: torch>=2.2.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from ctgan>=0.11.0->sdv) (2.7.1)\\r\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\","
+    ]
+   },
+   {
+    "file": "3.CALLOUT.ipynb",
+    "line": 599,
+    "text": "\"Requirement already satisfied: scipy>=1.12.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (1.16.0)\\r\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: s3transfer<0.14.0,>=0.13.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from boto3<2.0.0,>=1.28->sdv) (0.13.0)\\r\\n\",",
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\r\\n\",",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\r\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (6.2.0)\\r\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.12.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (1.16.0)\\r\\n\",",
+     "      \"Requirement already satisfied: torch>=2.2.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from ctgan>=0.11.0->sdv) (2.7.1)\\r\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.3.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (1.7.0)\\r\\n\","
+    ]
+   },
+   {
+    "file": "26. D_ICD_DIAGNOSES.ipynb",
+    "line": 376,
+    "text": "\"Requirement already satisfied: plotly>=5.10.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (6.2.0)\\r\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: jmespath<2.0.0,>=0.7.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from boto3<2.0.0,>=1.28->sdv) (1.0.1)\\r\\n\",",
+     "      \"Requirement already satisfied: s3transfer<0.14.0,>=0.13.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from boto3<2.0.0,>=1.28->sdv) (0.13.0)\\r\\n\",",
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\r\\n\",",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\r\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (6.2.0)\\r\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.12.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (1.16.0)\\r\\n\",",
+     "      \"Requirement already satisfied: torch>=2.2.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from ctgan>=0.11.0->sdv) (2.7.1)\\r\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\","
+    ]
+   },
+   {
+    "file": "26. D_ICD_DIAGNOSES.ipynb",
+    "line": 377,
+    "text": "\"Requirement already satisfied: scipy>=1.12.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (1.16.0)\\r\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: s3transfer<0.14.0,>=0.13.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from boto3<2.0.0,>=1.28->sdv) (0.13.0)\\r\\n\",",
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\r\\n\",",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\r\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (6.2.0)\\r\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.12.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (1.16.0)\\r\\n\",",
+     "      \"Requirement already satisfied: torch>=2.2.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from ctgan>=0.11.0->sdv) (2.7.1)\\r\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.3.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (1.7.0)\\r\\n\","
+    ]
+   },
+   {
+    "file": "1. Admissions.ipynb",
+    "line": 1411,
+    "text": "\"Requirement already satisfied: plotly>=5.10.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (6.2.0)\\r\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: jmespath<2.0.0,>=0.7.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from boto3<2.0.0,>=1.28->sdv) (1.0.1)\\r\\n\",",
+     "      \"Requirement already satisfied: s3transfer<0.14.0,>=0.13.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from boto3<2.0.0,>=1.28->sdv) (0.13.0)\\r\\n\",",
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\r\\n\",",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\r\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (6.2.0)\\r\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.12.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (1.16.0)\\r\\n\",",
+     "      \"Requirement already satisfied: torch>=2.2.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from ctgan>=0.11.0->sdv) (2.7.1)\\r\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\","
+    ]
+   },
+   {
+    "file": "1. Admissions.ipynb",
+    "line": 1412,
+    "text": "\"Requirement already satisfied: scipy>=1.12.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (1.16.0)\\r\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: s3transfer<0.14.0,>=0.13.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from boto3<2.0.0,>=1.28->sdv) (0.13.0)\\r\\n\",",
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\r\\n\",",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\r\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (6.2.0)\\r\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.12.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (1.16.0)\\r\\n\",",
+     "      \"Requirement already satisfied: torch>=2.2.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from ctgan>=0.11.0->sdv) (2.7.1)\\r\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.3.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (1.7.0)\\r\\n\","
+    ]
+   },
+   {
+    "file": "18.LABEVENTS.ipynb",
+    "line": 424,
+    "text": "\"Requirement already satisfied: plotly>=5.10.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (6.2.0)\\r\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: jmespath<2.0.0,>=0.7.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from boto3<2.0.0,>=1.28->sdv) (1.0.1)\\r\\n\",",
+     "      \"Requirement already satisfied: s3transfer<0.14.0,>=0.13.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from boto3<2.0.0,>=1.28->sdv) (0.13.0)\\r\\n\",",
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\r\\n\",",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\r\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (6.2.0)\\r\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.12.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (1.16.0)\\r\\n\",",
+     "      \"Requirement already satisfied: torch>=2.2.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from ctgan>=0.11.0->sdv) (2.7.1)\\r\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\","
+    ]
+   },
+   {
+    "file": "18.LABEVENTS.ipynb",
+    "line": 425,
+    "text": "\"Requirement already satisfied: scipy>=1.12.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (1.16.0)\\r\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: s3transfer<0.14.0,>=0.13.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from boto3<2.0.0,>=1.28->sdv) (0.13.0)\\r\\n\",",
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\r\\n\",",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\r\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (6.2.0)\\r\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.12.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from copulas>=0.12.1->sdv) (1.16.0)\\r\\n\",",
+     "      \"Requirement already satisfied: torch>=2.2.0 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from ctgan>=0.11.0->sdv) (2.7.1)\\r\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from pandas>=2.1.1->sdv) (2025.2)\\r\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.3.1 in /home/ehr/Desktop/anupama/.venv/lib/python3.12/site-packages (from rdt>=1.17.0->sdv) (1.7.0)\\r\\n\","
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "copulas",
+  "ct",
+  "ctgan_mod",
+  "md",
+  "rdt",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

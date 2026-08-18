@@ -1,0 +1,15 @@
+{
+ "repo": "wassimameur6/projet_integration",
+ "disk_kb": 76,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Base de Données GISCOP84\n\nProjet universitaire - Intégration et qualité des données\n\n## Description\n\nBase de données relationnelle pour l'étude des cancers d'origine professionnelle (GISCOP 84).\n\nDeux bases de données:\n- **GISCOP84**: Patients, parcours professionnels, expositions\n- **PESTIMAT**: Matrice pesticides-cultures\n\n## Installation\n\n### Créer les bases\n\n```bash\n# GISCOP84 database\nmysql -u root < sql/giscop84/01_reference_tables.sql\nmysql -u root < sql/giscop84/02_core_tables.sql\nmysql -u root < sql/giscop84/06_export_views.sql\n\n# PESTIMAT database\nmysql -u root < sql/pestimat/01_pestimat_schema.sql\nmysql -u root < sql/pestimat/03_pestimat_export_views.sql\n\n# Croisement view (GISCOP84 x PESTIMAT)\nmysql -u root < sql/07_requetes_croisement.sql\n```\n\n### Insérer les données\n\n```bash\nmysql -u root < data/01_giscop84_reference_data.sql\nmysql -u root < data/02_pestimat_reference_data.sql\nmysql -u root < data/05_pestimat_official_data.sql\nmysql -u root < data/04_synthetic_patients.sql\n```\n\n## Requêtes\n\n### Expositions (format export GISCOP)\n\n```sql\nSELECT * FROM vw_export_expositions WHERE `parcours_pro::NUM` = 'la150210';\n```\n\n### Croisement GISCOP x PESTIMAT\n\n```sql\n-- Voir tous les croisements pour un patient\nSELECT * FROM giscop84.vw_croisement_giscop_pestimat WHERE Patient = 'la150210';\n\n-- Voir uniquement les concordances (expositions confirmées par PESTIMAT)\nSELECT * FROM giscop84.vw_croisement_giscop_pestimat\nWHERE Patient = 'la150210' AND Statut = 'CONCORDANCE';\n\n-- Voir les expositions supplémentaires suggérées par PESTIMAT\nSELECT * FROM giscop84.vw_croisement_giscop_pestimat\nWHERE Patient = 'la150210' AND Statut = 'EXPOSITION SUPPLÉMENTAIRE PESTIMAT';\n```\n\n## Structure\n\n**GISCOP84** (11 tables + 3 vues)\n- Tables: Patients, Employment, Position, Exposure, Disease, Carcinogen, NAF_Code, Exposure_Frequency, Exposure_Intensity, Exposure_Probability, Diagnosis\n- Vues: vw_export_complet, vw_export_expositions, vw_croisement_giscop_pestimat\n\n**PESTIMAT** (5 tables + 1 vue)\n- Tables: Pesticide, Crop_Type, Crop_Pesticide_Usage, NAF_Crop_Mapping, Authorization_Period\n- Vue: vw_export_pestimat_format\n\n## Données\n\n**GISCOP84:**\n- 100 patients\n- 221 emplois\n- 326 postes\n- 629 expositions\n- 22 cancérigènes\n- 18 codes NAF\n- 3 maladies\n\n**PESTIMAT:**\n- 25 pesticides\n- 7 types de cultures\n- 22 usages pesticide-culture\n- 6 mappings NAF-Culture\n\n**Croisement:**\n- 11,255 associations patient-emploi-exposition-pesticide\n\n## Génération de données\n\n```bash\npip install -r requirements.txt\npython generate_synthetic_data.py\n```\n",
+ "hits": {},
+ "hit_codes": [],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "# sdv>=1.0.0"
+  ]
+ }
+}

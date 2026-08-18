@@ -1,0 +1,654 @@
+{
+ "repo": "dolorsy/ELTE-DSLab1",
+ "disk_kb": 2493,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# DSLAB Project: Clusters Purity and CTGAN Generated Data\n\n## Overview\n\nThis project processes a large, imbalanced financial transactions dataset to prepare it for machine learning experiments. The workflow consists of several main steps:\n\n1. **Data Preprocessing** (`data/pre_processing.ipynb`)\n2. **Dual Undersampling** (`data/DUAL_undersampling.ipynb`)\n3. **Clustering (Pure Clusters Generation)** (`clusters/clusters_generations.ipynb`)\n4. **Cluster Merging (Hybrid Clusters Generation)** (`clusters/clusters_mergeing.ipynb`)\n5. **Synthetic Data Generation (CTGAN)** (`ctgan/data_generator_training.ipynb`)\n6. **Evaluation and Analysis** (see below)\n\n---\n\n## 1. Data Preprocessing\n\n**Notebook:** `data/pre_processing.ipynb`\n\n### What it does\n\n- Loads the raw dataset from `dataset/dataset.csv`.\n- Encodes categorical columns and drops unnecessary columns.\n- Splits the data into majority (non-fraud) and minority (fraud) classes.\n- Saves the split datasets as:\n  - `dataset/majority.csv` (majority class)\n  - `dataset/minority.csv` (minority class)\n\n### How to run\n\nOpen the notebook and run all cells:\n\n```bash\njupyter notebook data/pre_processing.ipynb\n```\n\nOr, from the command line:\n\n```bash\njupyter nbconvert --to notebook --execute data/pre_processing.ipynb\n```\n\n**Input required:**\n\n- `dataset/dataset.csv` (should be present in the `dataset/` folder)\n\n**Output:**\n\n- `dataset/majority.csv`\n- `dataset/minority.csv`\n\n---\n\n## 2. Dual Undersampling\n\n**Notebook:** `data/DUAL_undersampling.ipynb`\n\n### What it does\n\n- Loads the preprocessed `majority.csv` and `minority.csv` files.\n- Uses active learning (uncertainty sampling) to select the most informative majority class samples.\n- Produces a balanced dataset for downstream tasks.\n- Saves the selected majority samples as:\n  - `dataset/majority_informative.csv`\n\n### How to run\n\nOpen the notebook and run all cells:\n\n```bash\njupyter notebook data/DUAL_undersampling.ipynb\n```\n\nOr, from the command line:\n\n```bash\njupyter nbconvert --to notebook --execute data/DUAL_undersampling.ipynb\n```\n\n**Input required:**\n\n- `dataset/majority.csv`\n- `dataset/minority.csv`\n\n**Output:**\n\n- `dataset/majority_informative.csv`\n\n---\n\n## 3. Clustering (Pure Clusters Generation)\n\n**Notebook:** `clusters/clusters_generations.ipynb`\n\n### What it does\n\n- Loads the balanced datasets (e.g., `minority.csv`, `majority_informative.csv`).\n- Applies clustering algorithms to generate pure clusters for both minority and majority classes.\n- Saves the resulting clusters as separate CSV files, such as:\n  - `dataset/min_0.csv`, `dataset/min_1.csv`, `dataset/min_2.csv` (minority clusters)\n  - `dataset/informative_cluster_0.csv`, `dataset/informative_cluster_1.csv` (majority clusters)\n\n### How to run\n\nOpen the notebook and run all cells:\n\n```bash\njupyter notebook clusters/clusters_generations.ipynb\n```\n\nOr, from the command line:\n\n```bash\njupyter nbconvert --to notebook --execute clusters/clusters_generations.ipynb\n```\n\n**Input required:**\n\n- `dataset/minority.csv`\n- `dataset/majority_informative.csv`\n\n**Output:**\n\n- `dataset/min_0.csv`, `dataset/min_1.csv`, `dataset/min_2.csv`\n- `dataset/informative_cluster_0.csv`, `dataset/informative_cluster_1.csv`\n\n---\n\n## 4. Cluster Merging (Hybrid Clusters Generation)\n\n**Notebook:** `clusters/clusters_mergeing.ipynb`\n\n### What it does\n\n- Loads the pure cluster files generated in the previous step.\n- Merges clusters in various combinations to create hybrid (mixed) clusters for further experiments.\n- Saves the merged clusters as new CSV files, such as:\n  - `dataset/min_0_informative_cluster_0.csv`, `dataset/min_1_informative_cluster_1.csv`, etc.\n  - `dataset/min_0_min_1_informative_cluster_0_informative_cluster_1.csv` (for multi-cluster merges)\n\n### How to run\n\nOpen the notebook and run all cells:\n\n```bash\njupyter notebook clusters/clusters_mergeing.ipynb\n```\n\nOr, from the command line:\n\n```bash\njupyter nbconvert --to notebook --execute clusters/clusters_mergeing.ipynb\n```\n\n**Input required:**\n\n- `dataset/min_0.csv`, `dataset/min_1.csv`, `dataset/min_2.csv`\n- `dataset/informative_cluster_0.csv`, `dataset/informative_cluster_1.csv`\n\n**Output:**\n\n- Various merged cluster files in the `dataset/` directory (see file names above)\n\n---\n\n## 5. Synthetic Data Generation (CTGAN)\n\n**Notebook:** `ctgan/data_generator_training.ipynb`\n\n### What it does\n\n- Loads the merged and pure cluster datasets generated in the previous steps.\n- Trains a CTGAN model for each dataset to generate synthetic (fake) data.\n- Saves the generated synthetic datasets as CSV files prefixed with `fake_`, such as:\n  - `dataset/fake_df_min.csv`, `dataset/fake_df_majority.csv`\n  - `dataset/fake_min_0_informative_cluster_0.csv`, `dataset/fake_min_1_informative_cluster_1.csv`, etc.\n  - `dataset/fake_min_0_min_1_informative_cluster_0_informative_cluster_1.csv` (for multi-cluster merges)\n\n### How to run\n\nOpen the notebook and run all cells:\n\n```bash\njupyter notebook ctgan/data_generator_training.ipynb\n```\n\nOr, from the command line:\n\n```bash\njupyter nbconvert --to notebook --execute ctgan/data_generator_training.ipynb\n```\n\n**Input required:**\n\n- Cluster and merged cluster CSV files from the previous steps (see `dataset/` directory)\n\n**Output:**\n\n- Synthetic datasets in the `dataset/` directory, prefixed with `fake_`\n\n---\n\n## 6. Evaluation and Analysis\n\n**Notebooks:**\n\n- `eval/pure_fake_vs_all_fake.ipynb`\n- `eval/coorelations.ipynb`\n- `eval/majority_vs_minority.ipynb`\n- `eval/mixed_clusters.ipynb`\n- `eval/everything_mixed.ipynb`\n- `eval/highest_purity.ipynb`\n- `clusters/clusters_similarity.ipynb`\n\n### What it does\n\n- Evaluates, visualizes, and compares the real and synthetic datasets, cluster quality, and model performance using a variety of metrics and plots.\n- Each notebook focuses on a different aspect of the analysis (e.g., cluster similarity, purity, correlations, classification performance).\n\n### How to run\n\nOpen each notebook and run all cells, one by one, to perform the full evaluation:\n\n```bash\njupyter notebook eval/pure_fake_vs_all_fake.ipynb\njupyter notebook eval/coorelations.ipynb\njupyter notebook eval/majority_vs_minority.ipynb\njupyter notebook eval/mixed_clusters.ipynb\njupyter notebook eval/everything_mixed.ipynb\njupyter notebook eval/highest_purity.ipynb\njupyter notebook clusters/clusters_similarity.ipynb\n```\n\nOr, from the command line:\n\n```bash\njupyter nbconvert --to notebook --execute eval/pure_fake_vs_all_fake.ipynb\njupyter nbconvert --to notebook --execute eval/coorelations.ipynb\njupyter nbconvert --to notebook --execute eval/majority_vs_minority.ipynb\njupyter nbconvert --to notebook --execute eval/mixed_clusters.ipynb\njupyter nbconvert --to notebook --execute eval/everything_mixed.ipynb\njupyter nbconvert --to notebook --execute eval/highest_purity.ipynb\njupyter nbconvert --to notebook --execute clusters/clusters_similarity.ipynb\n```\n\n**Note:**\n\n- Run the evaluation notebooks in any order, but for a comprehensive analysis, it is recommended to run all of them.\n- Outputs include plots, tables, and metrics for comparison and reporting.\n\n---\n\n## Dependencies\n\nInstall the following Python packages (preferably in a virtual environment):\n\n```\npandas\nnumpy\nscikit-learn\nmodAL\ntorch\nmatplotlib\nseaborn\nkagglehub\njupyter\nsdv\n```\n\nYou can install them with:\n\n```bash\npip install pandas numpy scikit-learn modAL torch matplotlib seaborn kagglehub jupyter sdv\n```\n\n---\n\n## Notes\n\n- The raw dataset is large (~322MB). Ensure you have enough memory to process it.\n- The output files will be saved in the `dataset/` directory.\n- For any issues, check the notebook outputs for error messages or missing dependencies.\n",
+ "hits": {
+  "st": [
+   {
+    "file": "ctgan/data_generator_training.ipynb",
+    "line": 275,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    }",
+     "   },",
+     "   \"cell_type\": \"code\",",
+     "   \"source\": [",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"metadata = Metadata.detect_from_dataframe(df)\\n\",",
+     "    \"synthesizer = CTGANSynthesizer(metadata)\\n\",",
+     "    \"synthesizer.add_constraints([TransactionBalanceLogic()])\\n\","
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "ctgan/data_generator_training.ipynb",
+    "line": 276,
+    "text": "\"from sdv.metadata import Metadata\\n\",",
+    "context": [
+     "   },",
+     "   \"cell_type\": \"code\",",
+     "   \"source\": [",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"metadata = Metadata.detect_from_dataframe(df)\\n\",",
+     "    \"synthesizer = CTGANSynthesizer(metadata)\\n\",",
+     "    \"synthesizer.add_constraints([TransactionBalanceLogic()])\\n\",",
+     "    \"synthesizer.fit(df)\""
+    ]
+   },
+   {
+    "file": "eval/mixed_clusters.ipynb",
+    "line": 14,
+    "text": "\"from sdv.metadata import Metadata\\n\",",
+    "context": [
+     "     \"start_time\": \"2025-06-13T16:47:38.788260Z\"",
+     "    }",
+     "   },",
+     "   \"source\": [",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"import numpy as np\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\"",
+     "   ],"
+    ]
+   },
+   {
+    "file": "eval/mixed_clusters.ipynb",
+    "line": 640,
+    "text": "\"from sdv.metadata import Metadata\\n\",",
+    "context": [
+     "   },",
+     "   \"cell_type\": \"code\",",
+     "   \"source\": [",
+     "    \"from sdmetrics.single_table import DCRBaselineProtection\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"\\n\",",
+     "    \"correlation_similarities = []\\n\",",
+     "    \"for file in files:\\n\",",
+     "    \"    df_org = pd.read_csv(\\\"../dataset/\\\" + file + \\\".csv\\\")\\n\","
+    ]
+   },
+   {
+    "file": "eval/mixed_clusters.ipynb",
+    "line": 725,
+    "text": "\"from sdv.metadata import Metadata\\n\",",
+    "context": [
+     "   },",
+     "   \"cell_type\": \"code\",",
+     "   \"source\": [",
+     "    \"from sdmetrics.single_table import DisclosureProtection\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"\\n\",",
+     "    \"correlation_similarities = []\\n\",",
+     "    \"for file in files:\\n\",",
+     "    \"    df_org = pd.read_csv(\\\"../dataset/\\\" + file + \\\".csv\\\")\\n\","
+    ]
+   },
+   {
+    "file": "eval/highest_purity.ipynb",
+    "line": 14,
+    "text": "\"from sdv.metadata import Metadata\\n\",",
+    "context": [
+     "     \"start_time\": \"2025-06-13T06:44:24.429170Z\"",
+     "    }",
+     "   },",
+     "   \"source\": [",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"import numpy as np\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\"",
+     "   ],"
+    ]
+   },
+   {
+    "file": "eval/highest_purity.ipynb",
+    "line": 607,
+    "text": "\"from sdv.metadata import Metadata\\n\",",
+    "context": [
+     "   },",
+     "   \"cell_type\": \"code\",",
+     "   \"source\": [",
+     "    \"from sdmetrics.single_table import DCRBaselineProtection\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"\\n\",",
+     "    \"correlation_similarities = []\\n\",",
+     "    \"for file in files:\\n\",",
+     "    \"    df_org = pd.read_csv(\\\"../dataset/\\\" + file + \\\".csv\\\")\\n\","
+    ]
+   },
+   {
+    "file": "eval/highest_purity.ipynb",
+    "line": 678,
+    "text": "\"from sdv.metadata import Metadata\\n\",",
+    "context": [
+     "   },",
+     "   \"cell_type\": \"code\",",
+     "   \"source\": [",
+     "    \"from sdmetrics.single_table import DisclosureProtection\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"\\n\",",
+     "    \"correlation_similarities = []\\n\",",
+     "    \"for file in files:\\n\",",
+     "    \"    df_org = pd.read_csv(\\\"../dataset/\\\" + file + \\\".csv\\\")\\n\","
+    ]
+   },
+   {
+    "file": "eval/everything_mixed.ipynb",
+    "line": 573,
+    "text": "\"from sdv.metadata import Metadata\\n\",",
+    "context": [
+     "   },",
+     "   \"cell_type\": \"code\",",
+     "   \"source\": [",
+     "    \"from sdmetrics.single_table import DCRBaselineProtection\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"\\n\",",
+     "    \"correlation_similarities = []\\n\",",
+     "    \"for file in files:\\n\",",
+     "    \"    df_org = pd.read_csv(\\\"../dataset/\\\" + file + \\\".csv\\\")\\n\","
+    ]
+   },
+   {
+    "file": "eval/everything_mixed.ipynb",
+    "line": 632,
+    "text": "\"from sdv.metadata import Metadata\\n\",",
+    "context": [
+     "   },",
+     "   \"cell_type\": \"code\",",
+     "   \"source\": [",
+     "    \"from sdmetrics.single_table import DisclosureProtection\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"\\n\",",
+     "    \"correlation_similarities = []\\n\",",
+     "    \"for file in files:\\n\",",
+     "    \"    df_org = pd.read_csv(\\\"../dataset/\\\" + file + \\\".csv\\\")\\n\","
+    ]
+   },
+   {
+    "file": "eval/everything_mixed.ipynb",
+    "line": 688,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "   \"cell_type\": \"code\",",
+     "   \"source\": [",
+     "    \"from sdmetrics.single_table import DisclosureProtection\\n\",",
+     "    \"from sdmetrics.single_table.data_augmentation import BinaryClassifierRecallEfficacy\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sklearn.model_selection import train_test_split\\n\",",
+     "    \"\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "eval/everything_mixed.ipynb",
+    "line": 748,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "   \"cell_type\": \"code\",",
+     "   \"source\": [",
+     "    \"from sdmetrics.single_table import DisclosureProtection\\n\",",
+     "    \"from sdmetrics.single_table.data_augmentation import BinaryClassifierPrecisionEfficacy\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sklearn.model_selection import train_test_split\\n\",",
+     "    \"\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "eval/majority_vs_minority.ipynb",
+    "line": 14,
+    "text": "\"from sdv.metadata import Metadata\\n\",",
+    "context": [
+     "     \"start_time\": \"2025-06-13T14:25:17.560202Z\"",
+     "    }",
+     "   },",
+     "   \"source\": [",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"import numpy as np\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\"",
+     "   ],"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "ctgan/data_generator_training.ipynb",
+    "line": 237,
+    "text": "\"from sdv.cag import SingleTableProgrammableConstraint\\n\",",
+    "context": [
+     "    }",
+     "   },",
+     "   \"cell_type\": \"code\",",
+     "   \"source\": [",
+     "    \"from sdv.cag import SingleTableProgrammableConstraint\\n\",",
+     "    \"\\n\",",
+     "    \"class TransactionBalanceLogic(SingleTableProgrammableConstraint):\\n\",",
+     "    \"    def is_valid(self, row):\\n\",",
+     "    \"        print(row)\\n\","
+    ]
+   },
+   {
+    "file": "ctgan/data_generator_training.ipynb",
+    "line": 275,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    }",
+     "   },",
+     "   \"cell_type\": \"code\",",
+     "   \"source\": [",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"metadata = Metadata.detect_from_dataframe(df)\\n\",",
+     "    \"synthesizer = CTGANSynthesizer(metadata)\\n\",",
+     "    \"synthesizer.add_constraints([TransactionBalanceLogic()])\\n\","
+    ]
+   },
+   {
+    "file": "ctgan/data_generator_training.ipynb",
+    "line": 276,
+    "text": "\"from sdv.metadata import Metadata\\n\",",
+    "context": [
+     "   },",
+     "   \"cell_type\": \"code\",",
+     "   \"source\": [",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"metadata = Metadata.detect_from_dataframe(df)\\n\",",
+     "    \"synthesizer = CTGANSynthesizer(metadata)\\n\",",
+     "    \"synthesizer.add_constraints([TransactionBalanceLogic()])\\n\",",
+     "    \"synthesizer.fit(df)\""
+    ]
+   },
+   {
+    "file": "eval/mixed_clusters.ipynb",
+    "line": 14,
+    "text": "\"from sdv.metadata import Metadata\\n\",",
+    "context": [
+     "     \"start_time\": \"2025-06-13T16:47:38.788260Z\"",
+     "    }",
+     "   },",
+     "   \"source\": [",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"import numpy as np\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\"",
+     "   ],"
+    ]
+   },
+   {
+    "file": "eval/mixed_clusters.ipynb",
+    "line": 640,
+    "text": "\"from sdv.metadata import Metadata\\n\",",
+    "context": [
+     "   },",
+     "   \"cell_type\": \"code\",",
+     "   \"source\": [",
+     "    \"from sdmetrics.single_table import DCRBaselineProtection\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"\\n\",",
+     "    \"correlation_similarities = []\\n\",",
+     "    \"for file in files:\\n\",",
+     "    \"    df_org = pd.read_csv(\\\"../dataset/\\\" + file + \\\".csv\\\")\\n\","
+    ]
+   },
+   {
+    "file": "eval/mixed_clusters.ipynb",
+    "line": 725,
+    "text": "\"from sdv.metadata import Metadata\\n\",",
+    "context": [
+     "   },",
+     "   \"cell_type\": \"code\",",
+     "   \"source\": [",
+     "    \"from sdmetrics.single_table import DisclosureProtection\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"\\n\",",
+     "    \"correlation_similarities = []\\n\",",
+     "    \"for file in files:\\n\",",
+     "    \"    df_org = pd.read_csv(\\\"../dataset/\\\" + file + \\\".csv\\\")\\n\","
+    ]
+   },
+   {
+    "file": "eval/highest_purity.ipynb",
+    "line": 14,
+    "text": "\"from sdv.metadata import Metadata\\n\",",
+    "context": [
+     "     \"start_time\": \"2025-06-13T06:44:24.429170Z\"",
+     "    }",
+     "   },",
+     "   \"source\": [",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"import numpy as np\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\"",
+     "   ],"
+    ]
+   },
+   {
+    "file": "eval/highest_purity.ipynb",
+    "line": 607,
+    "text": "\"from sdv.metadata import Metadata\\n\",",
+    "context": [
+     "   },",
+     "   \"cell_type\": \"code\",",
+     "   \"source\": [",
+     "    \"from sdmetrics.single_table import DCRBaselineProtection\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"\\n\",",
+     "    \"correlation_similarities = []\\n\",",
+     "    \"for file in files:\\n\",",
+     "    \"    df_org = pd.read_csv(\\\"../dataset/\\\" + file + \\\".csv\\\")\\n\","
+    ]
+   },
+   {
+    "file": "eval/highest_purity.ipynb",
+    "line": 678,
+    "text": "\"from sdv.metadata import Metadata\\n\",",
+    "context": [
+     "   },",
+     "   \"cell_type\": \"code\",",
+     "   \"source\": [",
+     "    \"from sdmetrics.single_table import DisclosureProtection\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"\\n\",",
+     "    \"correlation_similarities = []\\n\",",
+     "    \"for file in files:\\n\",",
+     "    \"    df_org = pd.read_csv(\\\"../dataset/\\\" + file + \\\".csv\\\")\\n\","
+    ]
+   },
+   {
+    "file": "eval/everything_mixed.ipynb",
+    "line": 573,
+    "text": "\"from sdv.metadata import Metadata\\n\",",
+    "context": [
+     "   },",
+     "   \"cell_type\": \"code\",",
+     "   \"source\": [",
+     "    \"from sdmetrics.single_table import DCRBaselineProtection\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"\\n\",",
+     "    \"correlation_similarities = []\\n\",",
+     "    \"for file in files:\\n\",",
+     "    \"    df_org = pd.read_csv(\\\"../dataset/\\\" + file + \\\".csv\\\")\\n\","
+    ]
+   },
+   {
+    "file": "eval/everything_mixed.ipynb",
+    "line": 632,
+    "text": "\"from sdv.metadata import Metadata\\n\",",
+    "context": [
+     "   },",
+     "   \"cell_type\": \"code\",",
+     "   \"source\": [",
+     "    \"from sdmetrics.single_table import DisclosureProtection\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"\\n\",",
+     "    \"correlation_similarities = []\\n\",",
+     "    \"for file in files:\\n\",",
+     "    \"    df_org = pd.read_csv(\\\"../dataset/\\\" + file + \\\".csv\\\")\\n\","
+    ]
+   },
+   {
+    "file": "eval/everything_mixed.ipynb",
+    "line": 688,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "   \"cell_type\": \"code\",",
+     "   \"source\": [",
+     "    \"from sdmetrics.single_table import DisclosureProtection\\n\",",
+     "    \"from sdmetrics.single_table.data_augmentation import BinaryClassifierRecallEfficacy\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sklearn.model_selection import train_test_split\\n\",",
+     "    \"\\n\",",
+     "    \"\\n\","
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "ctgan/data_generator_training.ipynb",
+    "line": 275,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    }",
+     "   },",
+     "   \"cell_type\": \"code\",",
+     "   \"source\": [",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"metadata = Metadata.detect_from_dataframe(df)\\n\",",
+     "    \"synthesizer = CTGANSynthesizer(metadata)\\n\",",
+     "    \"synthesizer.add_constraints([TransactionBalanceLogic()])\\n\","
+    ]
+   },
+   {
+    "file": "ctgan/data_generator_training.ipynb",
+    "line": 278,
+    "text": "\"synthesizer = CTGANSynthesizer(metadata)\\n\",",
+    "context": [
+     "   \"source\": [",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"metadata = Metadata.detect_from_dataframe(df)\\n\",",
+     "    \"synthesizer = CTGANSynthesizer(metadata)\\n\",",
+     "    \"synthesizer.add_constraints([TransactionBalanceLogic()])\\n\",",
+     "    \"synthesizer.fit(df)\"",
+     "   ],",
+     "   \"id\": \"4c458d8cf0dfc36e\","
+    ]
+   }
+  ],
+  "sm": [
+   {
+    "file": "eval/mixed_clusters.ipynb",
+    "line": 302,
+    "text": "\"from sdmetrics.column_pairs import CorrelationSimilarity\\n\",",
+    "context": [
+     "    }",
+     "   },",
+     "   \"cell_type\": \"code\",",
+     "   \"source\": [",
+     "    \"from sdmetrics.column_pairs import CorrelationSimilarity\\n\",",
+     "    \"correlation_similarities = []\\n\",",
+     "    \"for file in files:\\n\",",
+     "    \"    df_org = pd.read_csv(\\\"../dataset/\\\" + file + \\\".csv\\\")\\n\",",
+     "    \"    if \\\"Unnamed: 0\\\" in df_org.columns:\\n\","
+    ]
+   },
+   {
+    "file": "eval/mixed_clusters.ipynb",
+    "line": 372,
+    "text": "\"from sdmetrics.single_column import KSComplement\\n\",",
+    "context": [
+     "    }",
+     "   },",
+     "   \"cell_type\": \"code\",",
+     "   \"source\": [",
+     "    \"from sdmetrics.single_column import KSComplement\\n\",",
+     "    \"correlation_similarities = []\\n\",",
+     "    \"column_scores = []\\n\",",
+     "    \"for file in files:\\n\",",
+     "    \"    df_org = pd.read_csv(\\\"../dataset/\\\" + file + \\\".csv\\\")\\n\","
+    ]
+   },
+   {
+    "file": "eval/mixed_clusters.ipynb",
+    "line": 455,
+    "text": "\"from sdmetrics.single_column import StatisticSimilarity\\n\",",
+    "context": [
+     "   },",
+     "   \"cell_type\": \"code\",",
+     "   \"source\": [",
+     "    \"import math\\n\",",
+     "    \"from sdmetrics.single_column import StatisticSimilarity\\n\",",
+     "    \"correlation_similarities = []\\n\",",
+     "    \"column_scores = []\\n\",",
+     "    \"for file in files:\\n\",",
+     "    \"    df_org = pd.read_csv(\\\"../dataset/\\\" + file + \\\".csv\\\")\\n\","
+    ]
+   },
+   {
+    "file": "eval/mixed_clusters.ipynb",
+    "line": 544,
+    "text": "\"from sdmetrics.single_column import TVComplement\\n\",",
+    "context": [
+     "    }",
+     "   },",
+     "   \"cell_type\": \"code\",",
+     "   \"source\": [",
+     "    \"from sdmetrics.single_column import TVComplement\\n\",",
+     "    \"correlation_similarities = []\\n\",",
+     "    \"for file in files:\\n\",",
+     "    \"    df_org = pd.read_csv(\\\"../dataset/\\\" + file + \\\".csv\\\")\\n\",",
+     "    \"    if \\\"Unnamed: 0\\\" in df_org.columns:\\n\","
+    ]
+   },
+   {
+    "file": "eval/mixed_clusters.ipynb",
+    "line": 639,
+    "text": "\"from sdmetrics.single_table import DCRBaselineProtection\\n\",",
+    "context": [
+     "    }",
+     "   },",
+     "   \"cell_type\": \"code\",",
+     "   \"source\": [",
+     "    \"from sdmetrics.single_table import DCRBaselineProtection\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"\\n\",",
+     "    \"correlation_similarities = []\\n\",",
+     "    \"for file in files:\\n\","
+    ]
+   },
+   {
+    "file": "eval/mixed_clusters.ipynb",
+    "line": 724,
+    "text": "\"from sdmetrics.single_table import DisclosureProtection\\n\",",
+    "context": [
+     "    }",
+     "   },",
+     "   \"cell_type\": \"code\",",
+     "   \"source\": [",
+     "    \"from sdmetrics.single_table import DisclosureProtection\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"\\n\",",
+     "    \"correlation_similarities = []\\n\",",
+     "    \"for file in files:\\n\","
+    ]
+   },
+   {
+    "file": "eval/mixed_clusters.ipynb",
+    "line": 876,
+    "text": "\"from sdmetrics.reports.single_table import QualityReport\\n\",",
+    "context": [
+     "    }",
+     "   },",
+     "   \"cell_type\": \"code\",",
+     "   \"source\": [",
+     "    \"from sdmetrics.reports.single_table import QualityReport\\n\",",
+     "    \"\\n\",",
+     "    \"report = QualityReport()\\n\",",
+     "    \"\\n\",",
+     "    \"for file in files:\\n\","
+    ]
+   },
+   {
+    "file": "eval/highest_purity.ipynb",
+    "line": 296,
+    "text": "\"from sdmetrics.column_pairs import CorrelationSimilarity\\n\",",
+    "context": [
+     "    }",
+     "   },",
+     "   \"cell_type\": \"code\",",
+     "   \"source\": [",
+     "    \"from sdmetrics.column_pairs import CorrelationSimilarity\\n\",",
+     "    \"correlation_similarities = []\\n\",",
+     "    \"temp_files = [df_0, df_1,df_m_0]\\n\",",
+     "    \"for file in files:\\n\",",
+     "    \"    df_org = pd.read_csv(\\\"../dataset/\\\" + file + \\\".csv\\\")\\n\","
+    ]
+   },
+   {
+    "file": "eval/highest_purity.ipynb",
+    "line": 372,
+    "text": "\"from sdmetrics.single_column import KSComplement\\n\",",
+    "context": [
+     "    }",
+     "   },",
+     "   \"cell_type\": \"code\",",
+     "   \"source\": [",
+     "    \"from sdmetrics.single_column import KSComplement\\n\",",
+     "    \"correlation_similarities = []\\n\",",
+     "    \"column_scores = []\\n\",",
+     "    \"for file in files:\\n\",",
+     "    \"    df_org = pd.read_csv(\\\"../dataset/\\\" + file + \\\".csv\\\")\\n\","
+    ]
+   },
+   {
+    "file": "eval/highest_purity.ipynb",
+    "line": 441,
+    "text": "\"from sdmetrics.single_column import StatisticSimilarity\\n\",",
+    "context": [
+     "   },",
+     "   \"cell_type\": \"code\",",
+     "   \"source\": [",
+     "    \"import math\\n\",",
+     "    \"from sdmetrics.single_column import StatisticSimilarity\\n\",",
+     "    \"correlation_similarities = []\\n\",",
+     "    \"column_scores = []\\n\",",
+     "    \"for file in files:\\n\",",
+     "    \"    df_org = pd.read_csv(\\\"../dataset/\\\" + file + \\\".csv\\\")\\n\","
+    ]
+   },
+   {
+    "file": "eval/highest_purity.ipynb",
+    "line": 530,
+    "text": "\"from sdmetrics.single_column import TVComplement\\n\",",
+    "context": [
+     "    }",
+     "   },",
+     "   \"cell_type\": \"code\",",
+     "   \"source\": [",
+     "    \"from sdmetrics.single_column import TVComplement\\n\",",
+     "    \"correlation_similarities = []\\n\",",
+     "    \"for file in files:\\n\",",
+     "    \"    df_org = pd.read_csv(\\\"../dataset/\\\" + file + \\\".csv\\\")\\n\",",
+     "    \"    df_org = df_org.drop(columns=[\\\"Unnamed: 0\\\"])\\n\","
+    ]
+   },
+   {
+    "file": "eval/highest_purity.ipynb",
+    "line": 606,
+    "text": "\"from sdmetrics.single_table import DCRBaselineProtection\\n\",",
+    "context": [
+     "    }",
+     "   },",
+     "   \"cell_type\": \"code\",",
+     "   \"source\": [",
+     "    \"from sdmetrics.single_table import DCRBaselineProtection\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"\\n\",",
+     "    \"correlation_similarities = []\\n\",",
+     "    \"for file in files:\\n\","
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "sm",
+  "st"
+ ],
+ "vendored_dirs": [
+  "ctgan"
+ ],
+ "dependencies": {}
+}

@@ -1,0 +1,223 @@
+{
+ "repo": "Stevemeg/Synthetic-Data",
+ "disk_kb": 42931,
+ "method": "partial_clone",
+ "tree_files": 48,
+ "status": "ok",
+ "readme": "<div align=\"center\">\n\n# Synthetic Medical Data Generation Suite\n\n**A full-stack generative-AI platform that produces privacy-safe synthetic medical data across four modalities — imaging, clinical tabular, genomic, and time-series — with a React console, a Flask API, and quantitative fidelity evaluation for every output.**\n\n[![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)\n[![PyTorch](https://img.shields.io/badge/DL-PyTorch-EE4C2C.svg)](https://pytorch.org/)\n[![Flask](https://img.shields.io/badge/API-Flask-000000.svg)](https://flask.palletsprojects.com/)\n[![React](https://img.shields.io/badge/UI-React%2019%20%2B%20MUI-61DAFB.svg)](https://react.dev/)\n[![SDV](https://img.shields.io/badge/eval-SDV%20Quality%20Reports-orange.svg)](https://sdv.dev/)\n[![Privacy](https://img.shields.io/badge/patient%20data-zero%20real%20records-brightgreen.svg)](#-the-problem)\n\n[Features](#-features) · [Architecture](#-architecture) · [User Interface](#-user-interface) · [Installation](#-installation) · [Results](#-results)\n\n</div>\n\n---\n\n## Table of Contents\n\n- [The Problem](#-the-problem)\n- [The Solution](#-the-solution)\n- [Features](#-features)\n- [Models & Why They Were Chosen](#-models--why-they-were-chosen)\n- [Design Principles](#-design-principles)\n- [Architecture](#-architecture)\n- [User Interface](#-user-interface)\n- [API Reference](#-api-reference)\n- [Installation](#-installation)\n- [Running the Project](#-running-the-project)\n- [Datasets](#-datasets)\n- [Evaluation Methodology](#-evaluation-methodology)\n- [Results](#-results)\n- [Project Structure](#-project-structure)\n- [Technologies](#-technologies)\n- [Roadmap](#-roadmap)\n- [Contact](#-contact)\n\n---\n\n## The Problem\n\nMedical AI is bottlenecked by **data scarcity and privacy restriction**. Hospitals cannot share patient records across institutions under HIPAA/GDPR, most public medical datasets are far too small to train robust models, and the datasets that do exist are frequently class-imbalanced in exactly the ways that matter clinically.\n\nThe result is a deadlock: the models that would most benefit from more data are the ones legally least able to get it.\n\n## The Solution\n\nA generation platform that learns the *statistical structure* of real medical data and then produces unlimited synthetic records that preserve that structure while containing **zero real patient information** — delivered not as a pile of research scripts, but as a service with an API and a UI that a non-ML researcher can actually operate.\n\n```\nReal dataset → Preprocessing → Train generator → Sample synthetic data → Fidelity evaluation → Export\n```\n\n## Features\n\n**Four Generation Modalities**\n\n| Modality | What's Generated | Models |\n|---|---|---|\n| **Medical Imaging** | Brain MRI, Chest X-ray, skin-lesion images | DCGAN, cGAN |\n| **Clinical Tabular** | Patient records — diabetes, heart disease, stroke, sepsis | TabDDPM, CopulaGAN |\n| **Genomic** | Gene-expression profiles (breast cancer) | TVAE |\n| **Time-Series** | Sequential clinical measurement data | Pipeline-driven generation |\n\n**Service Layer**\n- **Flask REST API** wrapping all four pipelines behind one service, with CORS enabled for browser clients\n- **Request-scoped job isolation** — every generation request gets a UUID-namespaced output file, so concurrent requests never collide\n- **Bring-your-own-data** — each endpoint accepts an optional uploaded source file via multipart form, falling back to bundled pretrained models when none is supplied\n- Generated artifacts served back over a dedicated download route\n\n**Generation Console (React)**\n- Four-tab Material UI workspace — one tab per modality, each with its own configuration form\n- File upload, live generation status, and direct download of results\n- Built on React 19 + TypeScript + Vite\n\n**Evaluation**\n- **SSIM** for image fidelity, **SDV Quality & Diagnostic Reports** for tabular/genomic distribution fidelity\n- Feature-correlation matrix comparison (real vs. synthetic)\n- Downstream utility testing — train a model on synthetic data, measure against one trained on real\n\n## Models & Why They Were Chosen\n\n**DCGAN** — Medical imaging. Convolutional generator/discriminator learn spatial structure (tissue texture, lesion morphology) that a dense network cannot. Batch normalization stabilizes an otherwise fragile adversarial training loop.\n\n**Conditional GAN (cGAN)** — Imaging with control. Conditions generation on class label, so you can request *\"pneumonia X-ray\"* rather than *\"an X-ray\"* — essential when the whole point is correcting class imbalance.\n\n**TabDDPM** — Clinical tabular data. A diffusion model that learns to reverse a noising process. Empirically better at matching marginal distributions on structured data than GAN-family alternatives, which tend to mode-collapse on mixed categorical/continuous columns.\n\n**CopulaGAN** — Clinical tabular data with dependency structure. Models inter-feature correlation explicitly via copula functions — the right choice when age, BMI, and blood pressure are *not* independent and a generator that treats them as such produces clinically nonsensical records.\n\n**TVAE** — Genomic profiles. Encodes very high-dimensional gene expression into a compact latent space and decodes new samples from it. Handles the dimensionality regime where GANs become unstable.\n\n## Design Principles\n\n1. **Zero real patient data in any output.** Generators learn distributions; they do not memorize and replay records.\n2. **Fidelity must be measured, not asserted.** Every modality has a quantitative evaluation path (SSIM / SDV reports), not just visual inspection.\n3. **Usable by non-ML researchers.** The people who need synthetic medical data are frequently clinicians and domain researchers, not PyTorch users — hence the API and UI rather than notebooks.\n4. **Job isolation by default.** Concurrent requests write to UUID-scoped paths; no shared mutable output directory.\n\n## Architecture\n\n<img src=\"assests/architecture/Screenshot%202026-02-20%20185139.png\" alt=\"System architecture\" width=\"100%\">\n\n<details>\n<summary><b>Detailed system view (Mermaid)</b></summary>\n\n```mermaid\nflowchart TB\n    subgraph Client[\"React Console — Vite + MUI\"]\n        T1[\"Tabular Generator\"]\n        T2[\"Imaging Generator\"]\n        T3[\"Genomic Generator\"]\n        T4[\"Time-Series Generator\"]\n    end\n\n    subgraph API[\"Flask REST API — CORS enabled\"]\n        R1[\"POST /api/generate/tabular\"]\n        R2[\"POST /api/generate/imaging\"]\n        R3[\"POST /api/generate/genomic\"]\n        R4[\"POST /api/generate/timeseries\"]\n        DL[\"GET /generated/&lt;filename&gt;\"]\n        HELPER[\"get_config_and_file()<br/>config JSON + optional upload<br/>→ UUID-scoped paths\"]\n    end\n\n    subgraph Engines[\"Generation Engines — PyTorch / SDV\"]\n        G1[\"generate_tabular.py<br/>TabDDPM · CopulaGAN\"]\n        G2[\"generate_images.py<br/>DCGAN · cGAN\"]\n        G3[\"generate_genomic.py<br/>TVAE\"]\n        G4[\"run_pipeline.py<br/>time-series pipeline\"]\n    end\n\n    subgraph Storage\n        UP[(\"uploads/<br/>user source files\")]\n        MD[(\"models/<br/>trained generators\")]\n        GD[(\"generated_data/<br/>synthetic output\")]\n    end\n\n    subgraph Eval[\"Evaluation\"]\n        E1[\"evaluate_visuals.py<br/>SSIM · sample grids\"]\n        E2[\"evaluate_ml.py<br/>SDV Quality/Diagnostic<br/>downstream utility\"]\n    end\n\n    T1 --> R1\n    T2 --> R2\n    T3 --> R3\n    T4 --> R4\n\n    R1 & R2 & R3 & R4 --> HELPER\n    HELPER --> UP\n\n    R1 --> G1\n    R2 --> G2\n    R3 --> G3\n    R4 --> G4\n\n    MD -.pretrained weights.-> G1 & G2 & G3\n    G1 & G2 & G3 & G4 --> GD\n    GD --> DL\n    DL --> Client\n\n    GD --> E1 & E2\n```\n\n</details>\n\n**Request lifecycle:** the UI posts a config JSON plus an optional source file → `get_config_and_file()` parses the config and persists any upload under a UUID-prefixed name → the matching generation script runs as a subprocess against that config → output lands in `generated_data/` under its own UUID filename → the UI receives the path and offers it for download. No two requests can overwrite each other's artifacts.\n\n## User Interface\n\nThe React console exposes all four generators as tabs in a single workspace — pick a modality, configure it, optionally upload your own source data, generate, download.\n\n| Generation console | Generated samples |\n|---|---|\n| ![Console](assests/samples/Screenshot%202026-02-20%20185347.png) | ![Samples](assests/samples/Screenshot%202026-02-20%20185400.png) |\n\n| Output preview | Evaluation report |\n|---|---|\n| ![Output](assests/samples/Screenshot%202026-02-20%20185414.png) | ![Evaluation](assests/evaluation/Screenshot%202025-06-18%20104410.png) |\n\n**Interface layout**\n\n```\n┌─────────────────────────────────────────────────────────────┐\n│  Synthetic Medical Data Generator                           │\n├─────────────────────────────────────────────────────────────┤\n│  [ Tabular Data ] [ Medical Imaging ] [ Genomic ] [ Series ] │\n├─────────────────────────────────────────────────────────────┤\n│                                                             │\n│   Model:        [ TabDDPM  ▾ ]                              │\n│   Rows:         [ 1000     ]                                │\n│   Source file:  [ Choose file… ]  (optional)                │\n│                                                             │\n│              [  Generate Synthetic Data  ]                  │\n│                                                             │\n│   ──────────────────────────────────────────────────────    │\n│   Status: complete · tabular_output_a4f2c1.csv  [Download]   │\n└─────────────────────────────────────────────────────────────┘\n```\n\n## API Reference\n\nAll generation endpoints accept `multipart/form-data` with a `config` field (JSON string) and an optional `sourceFile`.\n\n| Method | Endpoint | Purpose |\n|---|---|---|\n| `GET` | `/` | Health check |\n| `POST` | `/api/generate/tabular` | Generate clinical tabular records (TabDDPM / CopulaGAN) |\n| `POST` | `/api/generate/imaging` | Generate medical images (DCGAN / cGAN) |\n| `POST` | `/api/generate/genomic` | Generate gene-expression profiles (TVAE) |\n| `POST` | `/api/generate/timeseries` | Generate sequential clinical data |\n| `GET` | `/generated/<filename>` | Download a generated artifact |\n\n**Example**\n\n```bash\ncurl -X POST http://localhost:5000/api/generate/tabular \\\n  -F 'config={\"model\":\"tabddpm\",\"num_rows\":1000}' \\\n  -F 'sourceFile=@my_clinical_data.csv'\n```\n\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"Data generated.\",\n  \"fileUrl\": \"/generated/tabular_output_a4f2c1e9.csv\"\n}\n```\n\nErrors return `{\"status\": \"error\", \"message\": \"...\"}` with a `500`, including the\nsubprocess `stderr` when a generation script itself fails.\n\n## Installation\n\n**Requirements:** Python 3.10+ · Node.js ≥ 18\n\n```bash\ngit clone https://github.com/Stevemeg/Synthetic-Data.git\ncd Synthetic-Data\n\n# Backend\npython -m venv venv\n# Windows: .\\venv\\Scripts\\Activate.ps1  |  Linux/macOS: source venv/bin/activate\npip install -r requirements.txt\n\n# Frontend\ncd frontend && npm install && cd ..\n```\n\n## Running the Project\n\n```bash\n# Terminal 1 — Flask API (http://localhost:5000)\ncd backend\npython app.py\n\n# Terminal 2 — React console (http://localhost:5173)\ncd frontend\nnpm run dev\n```\n\n**CLI-only usage** (no UI, direct generation):\n\n```bash\ncd backend\npython train_tabular_model.py        # train a tabular generator\npython generate_tabular.py           # sample from it\npython generate_images.py            # DCGAN / cGAN imaging\npython generate_genomic.py           # TVAE genomic profiles\npython run_pipeline.py               # end-to-end pipeline\n\npython evaluate_visuals.py           # SSIM + visual sample grids\npython evaluate_ml.py                # SDV reports + downstream utility\n```\n\n## Datasets\n\n**Imaging** — Brain MRI Dataset · Chest X-ray Pneumonia (Kaggle) · Skin Cancer HAM10000\n\n**Clinical Tabular** — Diabetes 130-US Hospitals · Heart Disease UCI · Stroke Prediction · Sepsis Survival\n\n**Genomic** — TCGA-BRCA Gene Expression · Microarray Gene Expression (GSE45827)\n\n**9 source datasets total.** Every model is trained on public, de-identified research data; no private patient records are used at any stage.\n\n## Evaluation Methodology\n\nDifferent modalities demand different fidelity measures — a single metric across all of them would be meaningless.\n\n**Images (DCGAN / cGAN)**\n- **SSIM** — perceptual structural similarity against real samples\n- Visual inspection of generated grids\n- Class-distribution matching (are conditional labels actually balanced?)\n\n**Tabular & Genomic (TabDDPM / CopulaGAN / TVAE)**\n- **SDV Quality Report** — column-shape and column-pair-trend scoring\n- **SDV Diagnostic Report** — structural validity checks (ranges, categories, missing-value patterns)\n- Per-feature distribution comparison (mean, std, skew)\n- **Feature-correlation matrix comparison** — the check that catches generators producing statistically plausible but clinically impossible records\n\n**All modalities**\n- **Downstream utility** — train a classifier on synthetic data, evaluate on real held-out data, compare against a classifier trained on real. This is the test that actually matters: does the synthetic data *work* as a training substitute?\n\n## Results\n\n| Outcome | Result |\n|---|---|\n| Source datasets covered | **9**, across 3 data families |\n| Generation modalities served | **4** (imaging, tabular, genomic, time-series) |\n| Image fidelity | Generated samples visually consistent with real distributions, validated via **SSIM** |\n| Tabular fidelity | Real-vs-synthetic distributions matched across features per **SDV Quality Report** |\n| Genomic fidelity | Gene-gene correlation structure preserved in generated profiles |\n| **Downstream utility** | Models trained on synthetic data performed **comparably** to models trained on real data |\n| Real patient records in output | **Zero** |\n\n![Evaluation output](assests/evaluation/Screenshot%202025-06-17%20194938.png)\n\n## Project Structure\n\n```\nSynthetic-Data/\n│\n├── backend/\n│   ├── app.py                     # Flask REST API — 4 generation endpoints + download route\n│   ├── run_pipeline.py            # End-to-end pipeline (also serves time-series endpoint)\n│   ├── train_tabular_model.py     # Tabular generator training (TabDDPM / CopulaGAN)\n│   ├── generate_tabular.py        # Clinical tabular sampling\n│   ├── generate_images.py         # DCGAN / cGAN image sampling\n│   ├── generate_genomic.py        # TVAE genomic sampling\n│   ├── evaluate_visuals.py        # SSIM + visual sample grids\n│   ├── evaluate_ml.py             # SDV Quality/Diagnostic + downstream utility\n│   ├── uploads/                   # User-supplied source files (UUID-scoped)\n│   ├── models/                    # Trained generator checkpoints\n│   └── generated_data/            # Synthetic output artifacts (UUID-scoped)\n│\n├── frontend/                      # React 19 + TypeScript + Vite + MUI\n│   ├── src/\n│   │   ├── App.tsx                # Tabbed workspace shell + theme\n│   │   └── components/\n│   │       ├── TabularGenerator.tsx\n│   │       ├── ImageGenerator.tsx\n│   │       ├── GenomicGenerator.tsx\n│   │       └── TimeSeriesGenerator.tsx\n│   ├── package.json\n│   └── vite.config.ts\n│\n├── assests/\n│   ├── architecture/              # Architecture diagrams\n│   ├── samples/                   # Generated-sample screenshots\n│   └── evaluation/                # Evaluation report screenshots\n│\n└── requirements.txt\n```\n\n## Technologies\n\n**Generation** — PyTorch · SDV (TabDDPM, CopulaGAN, TVAE) · ydata-synthetic · torchvision\n**Data & Evaluation** — NumPy · Pandas · scikit-learn · SciPy · OpenCV · Matplotlib · Seaborn\n**Service** — Flask · flask-cors\n**Frontend** — React 19 · TypeScript · Vite · Material UI 7 · Axios\n\n## Roadmap\n\n| Status | Milestone |\n|---|---|\n| ✅ | Four-modality generation (imaging · tabular · genomic · time-series) · Flask REST API · React/MUI console · UUID job isolation · user file upload · SSIM + SDV evaluation · downstream utility validation |\n| ☐ | Formal differential-privacy guarantees with reported ε budgets |\n| ☐ | Containerized deployment (Docker Compose for API + UI) |\n| ☐ | Async job queue with progress streaming for long generation runs |\n| ☐ | Automated evaluation report generation per job, returned with the artifact |\n| ☐ | Cloud deployment (AWS / GCP) with authenticated multi-user access |\n\n## Why This Matters\n\nSynthetic data is one of the few mechanisms that lets healthcare institutions collaborate on AI without moving patient records across legal boundaries. This project treats that as an engineering problem rather than a research demo: multiple modalities behind one service, fidelity measured rather than claimed, and an interface a domain researcher can use without writing PyTorch.\n\n## Contact\n\n**Kona Bharath Vamshidhar Reddy**\nB.E. Artificial Intelligence & Machine Learning · Acharya Institute of Technology\n[konabharath2004@gmail.com](mailto:konabharath2004@gmail.com) · [LinkedIn](https://www.linkedin.com/in/kona-bharath-vamshidhar-reddy/) · [GitHub](https://github.com/Stevemeg)\n\n---\n\n<div align=\"center\"><sub>Privacy-safe by construction — the data is real enough to train on, and real to no one.</sub></div>\n",
+ "hits": {
+  "st": [
+   {
+    "file": "backend/generate_genomic.py",
+    "line": 8,
+    "text": "# TODO: Make sure to import your synthesizer, e.g., from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "from sklearn.preprocessing import StandardScaler",
+     "import traceback",
+     "import os # <-- FIX #1: IMPORT THE 'os' MODULE",
+     "",
+     "# TODO: Make sure to import your synthesizer, e.g., from sdv.single_table import TVAESynthesizer",
+     "",
+     "def generate_genomic_data(input_file, output_file, num_sequences):",
+     "    \"\"\"",
+     "    Loads, preprocesses, and generates synthetic genomic data."
+    ]
+   },
+   {
+    "file": "backend/train_tabular_model.py",
+    "line": 5,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import argparse",
+     "import pandas as pd",
+     "import os",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "",
+     "def train_and_save_model(input_path, model_output_path):",
+     "    \"\"\"",
+     "    Loads a dataset, trains a TVAE synthesizer, and saves the model."
+    ]
+   },
+   {
+    "file": "backend/generate_tabular.py",
+    "line": 9,
+    "text": "# TODO: Make sure to import your synthesizer, e.g., from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import traceback",
+     "import os",
+     "import sys",
+     "",
+     "# TODO: Make sure to import your synthesizer, e.g., from sdv.single_table import TVAESynthesizer",
+     "",
+     "def generate_tabular_data(input_file, output_file, num_rows):",
+     "    \"\"\"",
+     "    Loads, preprocesses, trains a model, and generates synthetic tabular data."
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "backend/generate_genomic.py",
+    "line": 8,
+    "text": "# TODO: Make sure to import your synthesizer, e.g., from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "from sklearn.preprocessing import StandardScaler",
+     "import traceback",
+     "import os # <-- FIX #1: IMPORT THE 'os' MODULE",
+     "",
+     "# TODO: Make sure to import your synthesizer, e.g., from sdv.single_table import TVAESynthesizer",
+     "",
+     "def generate_genomic_data(input_file, output_file, num_sequences):",
+     "    \"\"\"",
+     "    Loads, preprocesses, and generates synthetic genomic data."
+    ]
+   },
+   {
+    "file": "backend/train_tabular_model.py",
+    "line": 4,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import argparse",
+     "import pandas as pd",
+     "import os",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "",
+     "def train_and_save_model(input_path, model_output_path):",
+     "    \"\"\""
+    ]
+   },
+   {
+    "file": "backend/train_tabular_model.py",
+    "line": 5,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import argparse",
+     "import pandas as pd",
+     "import os",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "",
+     "def train_and_save_model(input_path, model_output_path):",
+     "    \"\"\"",
+     "    Loads a dataset, trains a TVAE synthesizer, and saves the model."
+    ]
+   },
+   {
+    "file": "backend/generate_tabular.py",
+    "line": 9,
+    "text": "# TODO: Make sure to import your synthesizer, e.g., from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import traceback",
+     "import os",
+     "import sys",
+     "",
+     "# TODO: Make sure to import your synthesizer, e.g., from sdv.single_table import TVAESynthesizer",
+     "",
+     "def generate_tabular_data(input_file, output_file, num_rows):",
+     "    \"\"\"",
+     "    Loads, preprocesses, trains a model, and generates synthetic tabular data."
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "backend/generate_genomic.py",
+    "line": 8,
+    "text": "# TODO: Make sure to import your synthesizer, e.g., from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "from sklearn.preprocessing import StandardScaler",
+     "import traceback",
+     "import os # <-- FIX #1: IMPORT THE 'os' MODULE",
+     "",
+     "# TODO: Make sure to import your synthesizer, e.g., from sdv.single_table import TVAESynthesizer",
+     "",
+     "def generate_genomic_data(input_file, output_file, num_sequences):",
+     "    \"\"\"",
+     "    Loads, preprocesses, and generates synthetic genomic data."
+    ]
+   },
+   {
+    "file": "backend/train_tabular_model.py",
+    "line": 5,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import argparse",
+     "import pandas as pd",
+     "import os",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "",
+     "def train_and_save_model(input_path, model_output_path):",
+     "    \"\"\"",
+     "    Loads a dataset, trains a TVAE synthesizer, and saves the model."
+    ]
+   },
+   {
+    "file": "backend/train_tabular_model.py",
+    "line": 28,
+    "text": "synthesizer = TVAESynthesizer(metadata)",
+    "context": [
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(data=data)",
+     "",
+     "    # --- Train the Synthesizer ---",
+     "    synthesizer = TVAESynthesizer(metadata)",
+     "    print(\"Training TVAE model... (This may take a few minutes)\")",
+     "    synthesizer.fit(data)",
+     "",
+     "    # --- Save the Trained Model ---"
+    ]
+   },
+   {
+    "file": "backend/generate_tabular.py",
+    "line": 9,
+    "text": "# TODO: Make sure to import your synthesizer, e.g., from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import traceback",
+     "import os",
+     "import sys",
+     "",
+     "# TODO: Make sure to import your synthesizer, e.g., from sdv.single_table import TVAESynthesizer",
+     "",
+     "def generate_tabular_data(input_file, output_file, num_rows):",
+     "    \"\"\"",
+     "    Loads, preprocesses, trains a model, and generates synthetic tabular data."
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "backend/train_tabular_model.py",
+    "line": 4,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import argparse",
+     "import pandas as pd",
+     "import os",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "",
+     "def train_and_save_model(input_path, model_output_path):",
+     "    \"\"\""
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv>=1.0.0"
+  ],
+  "backend/requirements.txt": [
+   "sdv"
+  ]
+ }
+}

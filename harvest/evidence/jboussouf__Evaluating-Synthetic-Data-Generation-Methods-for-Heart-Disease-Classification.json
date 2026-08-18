@@ -1,0 +1,811 @@
+{
+ "repo": "jboussouf/Evaluating-Synthetic-Data-Generation-Methods-for-Heart-Disease-Classification",
+ "disk_kb": 6109,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Evaluating Synthetic Data Generation Methods for Heart Disease Classification\n\n## 1. Introduction\nThis project investigates the impact of various synthetic data generation techniques on the performance of machine-learning classifiers for heart disease prediction. Starting from a real dataset of **1,025** patient records, we generated additional data using seven different methods and re-trained the same set of classifiers to compare their performance when evaluated on synthetic data.\n\n## 2. Dataset\n- **Original data**: 1,025 rows, each with clinical and demographic features and a binary heart disease label.\n- **Train/Test split**: 75% train (≈768 samples), 25% test (≈257 samples).  \n- **Synthetic data**: Generated to 75% of the original training set size (≈576 samples).\n\n## 3. Synthetic Data Generation Methods\n1. **Bootstrapping**  \n   Resample with replacement from the original training data to create bootstrapped datasets.  \n2. **Data Swapping/Shuffling**  \n   Independently shuffle each feature column, preserving marginals but breaking joint distributions.  \n3. **SMOTE** (Synthetic Minority Over-sampling Technique)  \n   Interpolates new minority-class examples in feature space.  \n4. **GaussianCopulaSynthesizer**  \n   Fits a Gaussian copula to the multivariate distribution and samples from it.  \n5. **CTGAN** (Conditional Tabular GAN)  \n   Uses conditional vector embeddings to generate realistic mixed-type tabular data.  \n6. **TVAESynthesizer**  \n   Employs a tabular variational autoencoder optimized for mixed data types.  \n7. **CopulaGANSynthesizer**  \n   Combines copula fitting with GAN training for improved fidelity.\n\n## 4. Experimental Setup\n- **Classifiers evaluated**:  \n  - Decision Tree  \n  - Random Forest  \n  - Extra Trees  \n  - Logistic Regression  \n  - Support Vector Machine (SVM)  \n  - Quadratic Discriminant Analysis (QDA)  \n  - Multi-Layer Perceptron (MLP)  \n- **Procedure**:  \n  1. Train each classifier on the original training set.  \n  2. Evaluate on the held-out real test set → _Baseline real performance_.  \n  3. Generate synthetic training data (≈576 samples).  \n  4. Retrain each classifier on synthetic data only.  \n  5. Evaluate on a held-out **synthetic** test set (75% of synthetic data) → _Synthetic-only performance_.\n\n## 5. Results\n\n| Model                 | Real-Train → Real-Test Accuracy | Synth-Train → Synthetic-Test Accuracy |\n|-----------------------|---------------------------------|---------------------------------------|\n| Decision Tree         | 98.83 %                         | 90.00 %                               |\n| Random Forest         | 98.83 %                         | 96.66 %                               |\n| Extra Trees           | 98.83 %                         | 95.33 %                               |\n| Logistic Regression   | 82.49 %                         | 95.33 %                               |\n| SVM                   | 70.03 %                         | 94.66 %                               |\n| QDA                   | 85.99 %                         | 78.66 %                               |\n| MLP                   | 82.87 %                         | 96.00 %                               |\n\n## 6. Discussion\n- **Baseline vs. synthetic**: Classifiers trained on **real data** achieved near-perfect accuracy on real test data, whereas training on **synthetic data** and testing on synthetic test sets yielded lower but still high scores—suggesting synthetic samples capture many patterns but may overfit to their own distribution.  \n- **Method comparison**:  \n  - **Bootstrapping** and **SMOTE** produced the most stable synthetic-synthetic performance (90 % and 95.33 %, respectively).  \n  - **GAN/VAE-based methods** (CTGAN, TVAE, CopulaGAN) generally matched Bootstrapping but required more tuning to avoid mode collapse or oversmoothing.  \n  - **QDA** struggled most on synthetic data (78.66 %), indicating difficulties modeling complex feature distributions from generated samples.  \n- **Implications**: High synthetic-synthetic accuracy does not guarantee real-world generalization. Overfitting to synthetic artifacts can inflate performance when evaluated on synthetic holdouts.\n\n## 7. Conclusion\nSynthetic data can help augment limited healthcare datasets, but:\n- **Bootstrapping** and **SMOTE** remain the most reliable generators under default settings.\n- **Deep generative models** (CTGAN, TVAESynthesizer, GaussianCopula) require careful hyperparameter tuning and possibly hybrid approaches to close the gap with real-data performance.\n\n---\n\n## 8. Datasets\n[https://www.kaggle.com/datasets/johnsmith88/heart-disease-dataset](https://www.kaggle.com/datasets/johnsmith88/heart-disease-dataset)\n",
+ "hits": {
+  "gc": [
+   {
+    "file": "README.md",
+    "line": 18,
+    "text": "4. **GaussianCopulaSynthesizer**",
+    "context": [
+     "2. **Data Swapping/Shuffling**  ",
+     "   Independently shuffle each feature column, preserving marginals but breaking joint distributions.  ",
+     "3. **SMOTE** (Synthetic Minority Over-sampling Technique)  ",
+     "   Interpolates new minority-class examples in feature space.  ",
+     "4. **GaussianCopulaSynthesizer**  ",
+     "   Fits a Gaussian copula to the multivariate distribution and samples from it.  ",
+     "5. **CTGAN** (Conditional Tabular GAN)  ",
+     "   Uses conditional vector embeddings to generate realistic mixed-type tabular data.  ",
+     "6. **TVAESynthesizer**  "
+    ]
+   },
+   {
+    "file": "heart_disease.ipynb",
+    "line": 8225,
+    "text": "\"### GaussianCopulaSynthesizer\"",
+    "context": [
+     "    },",
+     "    {",
+     "      \"cell_type\": \"markdown\",",
+     "      \"source\": [",
+     "        \"### GaussianCopulaSynthesizer\"",
+     "      ],",
+     "      \"metadata\": {",
+     "        \"id\": \"XfUOPx9G3ue5\"",
+     "      }"
+    ]
+   },
+   {
+    "file": "heart_disease.ipynb",
+    "line": 8234,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "    },",
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "        \"\\n\",",
+     "        \"synthesizer = GaussianCopulaSynthesizer(metadata)\\n\",",
+     "        \"synthesizer.fit(df)\\n\",",
+     "        \"\\n\","
+    ]
+   },
+   {
+    "file": "heart_disease.ipynb",
+    "line": 8236,
+    "text": "\"synthesizer = GaussianCopulaSynthesizer(metadata)\\n\",",
+    "context": [
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "        \"\\n\",",
+     "        \"synthesizer = GaussianCopulaSynthesizer(metadata)\\n\",",
+     "        \"synthesizer.fit(df)\\n\",",
+     "        \"\\n\",",
+     "        \"synthetic_data_GCS = synthesizer.sample(num_rows=1000)\"",
+     "      ],"
+    ]
+   },
+   {
+    "file": "heart_disease.ipynb",
+    "line": 9580,
+    "text": "\"plt.title('2D t-SNE Visualization of Synthatic Data (GaussianCopulaSynthesizer)', fontsize=12)\\n\",",
+    "context": [
+     "        \"tsne_df['target'] = y\\n\",",
+     "        \"\\n\",",
+     "        \"plt.figure(figsize=(10, 6))\\n\",",
+     "        \"sns.scatterplot(data=tsne_df, x='TSNE-1', y='TSNE-2', hue='target', palette='viridis', s=60, alpha=0.7)\\n\",",
+     "        \"plt.title('2D t-SNE Visualization of Synthatic Data (GaussianCopulaSynthesizer)', fontsize=12)\\n\",",
+     "        \"plt.xlabel('TSNE-1', fontsize=14)\\n\",",
+     "        \"plt.ylabel('TSNE-2', fontsize=14)\\n\",",
+     "        \"plt.legend(title='Target', loc='best')\\n\",",
+     "        \"plt.show()\""
+    ]
+   },
+   {
+    "file": "heart_disease.ipynb",
+    "line": 9641,
+    "text": "\"ax.set_title('3D t-SNE Visualization of Synthatic data (GaussianCopulaSynthesizer)', fontsize=12)\\n\",",
+    "context": [
+     "        \"\\n\",",
+     "        \"cbar = plt.colorbar(scatter, ax=ax, pad=0.1)\\n\",",
+     "        \"cbar.set_label('Target')\\n\",",
+     "        \"\\n\",",
+     "        \"ax.set_title('3D t-SNE Visualization of Synthatic data (GaussianCopulaSynthesizer)', fontsize=12)\\n\",",
+     "        \"ax.set_xlabel('TSNE-1', fontsize=12)\\n\",",
+     "        \"ax.set_ylabel('TSNE-2', fontsize=12)\\n\",",
+     "        \"ax.set_zlabel('TSNE-3', fontsize=12)\\n\",",
+     "        \"\\n\","
+    ]
+   },
+   {
+    "file": "heart_disease.ipynb",
+    "line": 9745,
+    "text": "\"ax.set_title('3D PCA Visualization with 3 Components of Synthatic data (GaussianCopulaSynthesizer)', fontsize=12)\\n\",",
+    "context": [
+     "        \"\\n\",",
+     "        \"cbar = plt.colorbar(scatter, ax=ax, pad=0.1)\\n\",",
+     "        \"cbar.set_label('Target')\\n\",",
+     "        \"\\n\",",
+     "        \"ax.set_title('3D PCA Visualization with 3 Components of Synthatic data (GaussianCopulaSynthesizer)', fontsize=12)\\n\",",
+     "        \"ax.set_xlabel('PCA-1', fontsize=12)\\n\",",
+     "        \"ax.set_ylabel('PCA-2', fontsize=12)\\n\",",
+     "        \"ax.set_zlabel('PCA-3', fontsize=12)\\n\",",
+     "        \"\\n\","
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "README.md",
+    "line": 22,
+    "text": "6. **TVAESynthesizer**",
+    "context": [
+     "4. **GaussianCopulaSynthesizer**  ",
+     "   Fits a Gaussian copula to the multivariate distribution and samples from it.  ",
+     "5. **CTGAN** (Conditional Tabular GAN)  ",
+     "   Uses conditional vector embeddings to generate realistic mixed-type tabular data.  ",
+     "6. **TVAESynthesizer**  ",
+     "   Employs a tabular variational autoencoder optimized for mixed data types.  ",
+     "7. **CopulaGANSynthesizer**  ",
+     "   Combines copula fitting with GAN training for improved fidelity.",
+     ""
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 66,
+    "text": "- **Deep generative models** (CTGAN, TVAESynthesizer, GaussianCopula) require careful hyperparameter tuning and possibly hybrid approaches to close the gap with real-data performance.",
+    "context": [
+     "",
+     "## 7. Conclusion",
+     "Synthetic data can help augment limited healthcare datasets, but:",
+     "- **Bootstrapping** and **SMOTE** remain the most reliable generators under default settings.",
+     "- **Deep generative models** (CTGAN, TVAESynthesizer, GaussianCopula) require careful hyperparameter tuning and possibly hybrid approaches to close the gap with real-data performance.",
+     "",
+     "---",
+     "",
+     "## 8. Datasets"
+    ]
+   },
+   {
+    "file": "heart_disease.ipynb",
+    "line": 11860,
+    "text": "\"### TVAESynthesizer\"",
+    "context": [
+     "    },",
+     "    {",
+     "      \"cell_type\": \"markdown\",",
+     "      \"source\": [",
+     "        \"### TVAESynthesizer\"",
+     "      ],",
+     "      \"metadata\": {",
+     "        \"id\": \"DFsg58kG6DQW\"",
+     "      }"
+    ]
+   },
+   {
+    "file": "heart_disease.ipynb",
+    "line": 11869,
+    "text": "\"from sdv.single_table import TVAESynthesizer\\n\",",
+    "context": [
+     "    },",
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "        \"\\n\",",
+     "        \"synthesizer = TVAESynthesizer(metadata)\\n\",",
+     "        \"synthesizer.fit(df)\"",
+     "      ],"
+    ]
+   },
+   {
+    "file": "heart_disease.ipynb",
+    "line": 11871,
+    "text": "\"synthesizer = TVAESynthesizer(metadata)\\n\",",
+    "context": [
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "        \"\\n\",",
+     "        \"synthesizer = TVAESynthesizer(metadata)\\n\",",
+     "        \"synthesizer.fit(df)\"",
+     "      ],",
+     "      \"metadata\": {",
+     "        \"id\": \"xzZv-O3r5vIU\""
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "heart_disease.ipynb",
+    "line": 8234,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "    },",
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "        \"\\n\",",
+     "        \"synthesizer = GaussianCopulaSynthesizer(metadata)\\n\",",
+     "        \"synthesizer.fit(df)\\n\",",
+     "        \"\\n\","
+    ]
+   },
+   {
+    "file": "heart_disease.ipynb",
+    "line": 10035,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    },",
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "        \"\\n\",",
+     "        \"synthesizer = CTGANSynthesizer(metadata)\\n\",",
+     "        \"synthesizer.fit(df)\"",
+     "      ],"
+    ]
+   },
+   {
+    "file": "heart_disease.ipynb",
+    "line": 11869,
+    "text": "\"from sdv.single_table import TVAESynthesizer\\n\",",
+    "context": [
+     "    },",
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "        \"\\n\",",
+     "        \"synthesizer = TVAESynthesizer(metadata)\\n\",",
+     "        \"synthesizer.fit(df)\"",
+     "      ],"
+    ]
+   },
+   {
+    "file": "heart_disease.ipynb",
+    "line": 13719,
+    "text": "\"from sdv.single_table import CopulaGANSynthesizer\\n\",",
+    "context": [
+     "    },",
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"from sdv.single_table import CopulaGANSynthesizer\\n\",",
+     "        \"\\n\",",
+     "        \"synthesizer = CopulaGANSynthesizer(metadata)\\n\",",
+     "        \"synthesizer.fit(df)\"",
+     "      ],"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "heart_disease.ipynb",
+    "line": 3650,
+    "text": "\"from sdv.metadata import Metadata\\n\",",
+    "context": [
+     "    },",
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"from sdv.metadata import Metadata\\n\",",
+     "        \"\\n\",",
+     "        \"metadata = Metadata.detect_from_dataframe(\\n\",",
+     "        \"    data=df,\\n\",",
+     "        \"    table_name='heart_data'\\n\","
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "heart_disease.ipynb",
+    "line": 3667,
+    "text": "\"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+    "context": [
+     "    },",
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+     "        \"\\n\",",
+     "        \"diagnostic_report = run_diagnostic(\\n\",",
+     "        \"    real_data=df,\\n\",",
+     "        \"    synthetic_data=df_synthetic,\\n\","
+    ]
+   },
+   {
+    "file": "heart_disease.ipynb",
+    "line": 3719,
+    "text": "\"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+    "context": [
+     "    },",
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "        \"\\n\",",
+     "        \"quality_report = evaluate_quality(\\n\",",
+     "        \"    real_data=df,\\n\",",
+     "        \"    synthetic_data=df_synthetic,\\n\","
+    ]
+   },
+   {
+    "file": "heart_disease.ipynb",
+    "line": 3756,
+    "text": "\"from sdv.evaluation.single_table import get_column_plot\\n\",",
+    "context": [
+     "    },",
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"from sdv.evaluation.single_table import get_column_plot\\n\",",
+     "        \"\\n\",",
+     "        \"fig = get_column_plot(\\n\",",
+     "        \"    real_data=df,\\n\",",
+     "        \"    synthetic_data=df_synthetic,\\n\","
+    ]
+   },
+   {
+    "file": "heart_disease.ipynb",
+    "line": 3821,
+    "text": "\"from sdv.evaluation.single_table import get_column_plot\\n\",",
+    "context": [
+     "    },",
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"from sdv.evaluation.single_table import get_column_plot\\n\",",
+     "        \"\\n\",",
+     "        \"fig = get_column_plot(\\n\",",
+     "        \"    real_data=df,\\n\",",
+     "        \"    synthetic_data=df_synthetic,\\n\","
+    ]
+   },
+   {
+    "file": "heart_disease.ipynb",
+    "line": 5534,
+    "text": "\"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+    "context": [
+     "    },",
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+     "        \"\\n\",",
+     "        \"diagnostic_report = run_diagnostic(\\n\",",
+     "        \"    real_data=df,\\n\",",
+     "        \"    synthetic_data=df_synthetic,\\n\","
+    ]
+   },
+   {
+    "file": "heart_disease.ipynb",
+    "line": 5571,
+    "text": "\"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+    "context": [
+     "    },",
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "        \"\\n\",",
+     "        \"quality_report = evaluate_quality(\\n\",",
+     "        \"    real_data=df,\\n\",",
+     "        \"    synthetic_data=df_synthetic,\\n\","
+    ]
+   },
+   {
+    "file": "heart_disease.ipynb",
+    "line": 5608,
+    "text": "\"from sdv.evaluation.single_table import get_column_plot\\n\",",
+    "context": [
+     "    },",
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"from sdv.evaluation.single_table import get_column_plot\\n\",",
+     "        \"\\n\",",
+     "        \"fig = get_column_plot(\\n\",",
+     "        \"    real_data=df,\\n\",",
+     "        \"    synthetic_data=df_synthetic,\\n\","
+    ]
+   },
+   {
+    "file": "heart_disease.ipynb",
+    "line": 5673,
+    "text": "\"from sdv.evaluation.single_table import get_column_plot\\n\",",
+    "context": [
+     "    },",
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"from sdv.evaluation.single_table import get_column_plot\\n\",",
+     "        \"\\n\",",
+     "        \"fig = get_column_plot(\\n\",",
+     "        \"    real_data=df,\\n\",",
+     "        \"    synthetic_data=df_synthetic,\\n\","
+    ]
+   },
+   {
+    "file": "heart_disease.ipynb",
+    "line": 7421,
+    "text": "\"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+    "context": [
+     "    },",
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+     "        \"\\n\",",
+     "        \"diagnostic_report = run_diagnostic(\\n\",",
+     "        \"    real_data=df,\\n\",",
+     "        \"    synthetic_data=df_synthetic,\\n\","
+    ]
+   },
+   {
+    "file": "heart_disease.ipynb",
+    "line": 7458,
+    "text": "\"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+    "context": [
+     "    },",
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "        \"\\n\",",
+     "        \"quality_report = evaluate_quality(\\n\",",
+     "        \"    real_data=df,\\n\",",
+     "        \"    synthetic_data=df_synthetic,\\n\","
+    ]
+   },
+   {
+    "file": "heart_disease.ipynb",
+    "line": 7495,
+    "text": "\"from sdv.evaluation.single_table import get_column_plot\\n\",",
+    "context": [
+     "    },",
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"from sdv.evaluation.single_table import get_column_plot\\n\",",
+     "        \"\\n\",",
+     "        \"fig = get_column_plot(\\n\",",
+     "        \"    real_data=df,\\n\",",
+     "        \"    synthetic_data=df_synthetic,\\n\","
+    ]
+   },
+   {
+    "file": "heart_disease.ipynb",
+    "line": 7560,
+    "text": "\"from sdv.evaluation.single_table import get_column_plot\\n\",",
+    "context": [
+     "    },",
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"from sdv.evaluation.single_table import get_column_plot\\n\",",
+     "        \"\\n\",",
+     "        \"fig = get_column_plot(\\n\",",
+     "        \"    real_data=df,\\n\",",
+     "        \"    synthetic_data=df_synthetic,\\n\","
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "heart_disease.ipynb",
+    "line": 45,
+    "text": "\"Requirement already satisfied: boto3<2.0.0,>=1.28 in /usr/local/lib/python3.11/dist-packages (from sdv) (1.38.36)\\n\",",
+    "context": [
+     "          \"output_type\": \"stream\",",
+     "          \"name\": \"stdout\",",
+     "          \"text\": [",
+     "            \"Requirement already satisfied: sdv in /usr/local/lib/python3.11/dist-packages (1.22.1)\\n\",",
+     "            \"Requirement already satisfied: boto3<2.0.0,>=1.28 in /usr/local/lib/python3.11/dist-packages (from sdv) (1.38.36)\\n\",",
+     "            \"Requirement already satisfied: botocore<2.0.0,>=1.31 in /usr/local/lib/python3.11/dist-packages (from sdv) (1.38.36)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (3.1.1)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.11/dist-packages (from sdv) (0.20.3)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.24.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (1.26.4)\\n\","
+    ]
+   },
+   {
+    "file": "heart_disease.ipynb",
+    "line": 46,
+    "text": "\"Requirement already satisfied: botocore<2.0.0,>=1.31 in /usr/local/lib/python3.11/dist-packages (from sdv) (1.38.36)\\n\",",
+    "context": [
+     "          \"name\": \"stdout\",",
+     "          \"text\": [",
+     "            \"Requirement already satisfied: sdv in /usr/local/lib/python3.11/dist-packages (1.22.1)\\n\",",
+     "            \"Requirement already satisfied: boto3<2.0.0,>=1.28 in /usr/local/lib/python3.11/dist-packages (from sdv) (1.38.36)\\n\",",
+     "            \"Requirement already satisfied: botocore<2.0.0,>=1.31 in /usr/local/lib/python3.11/dist-packages (from sdv) (1.38.36)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (3.1.1)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.11/dist-packages (from sdv) (0.20.3)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.24.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (1.26.4)\\n\",",
+     "            \"Requirement already satisfied: pandas>=1.5.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (2.2.2)\\n\","
+    ]
+   },
+   {
+    "file": "heart_disease.ipynb",
+    "line": 47,
+    "text": "\"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (3.1.1)\\n\",",
+    "context": [
+     "          \"text\": [",
+     "            \"Requirement already satisfied: sdv in /usr/local/lib/python3.11/dist-packages (1.22.1)\\n\",",
+     "            \"Requirement already satisfied: boto3<2.0.0,>=1.28 in /usr/local/lib/python3.11/dist-packages (from sdv) (1.38.36)\\n\",",
+     "            \"Requirement already satisfied: botocore<2.0.0,>=1.31 in /usr/local/lib/python3.11/dist-packages (from sdv) (1.38.36)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (3.1.1)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.11/dist-packages (from sdv) (0.20.3)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.24.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (1.26.4)\\n\",",
+     "            \"Requirement already satisfied: pandas>=1.5.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (2.2.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.11/dist-packages (from sdv) (4.67.1)\\n\","
+    ]
+   },
+   {
+    "file": "heart_disease.ipynb",
+    "line": 48,
+    "text": "\"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.11/dist-packages (from sdv) (0.20.3)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: sdv in /usr/local/lib/python3.11/dist-packages (1.22.1)\\n\",",
+     "            \"Requirement already satisfied: boto3<2.0.0,>=1.28 in /usr/local/lib/python3.11/dist-packages (from sdv) (1.38.36)\\n\",",
+     "            \"Requirement already satisfied: botocore<2.0.0,>=1.31 in /usr/local/lib/python3.11/dist-packages (from sdv) (1.38.36)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (3.1.1)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.11/dist-packages (from sdv) (0.20.3)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.24.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (1.26.4)\\n\",",
+     "            \"Requirement already satisfied: pandas>=1.5.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (2.2.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.11/dist-packages (from sdv) (4.67.1)\\n\",",
+     "            \"Requirement already satisfied: copulas>=0.12.1 in /usr/local/lib/python3.11/dist-packages (from sdv) (0.12.2)\\n\","
+    ]
+   },
+   {
+    "file": "heart_disease.ipynb",
+    "line": 49,
+    "text": "\"Requirement already satisfied: numpy>=1.24.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (1.26.4)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: boto3<2.0.0,>=1.28 in /usr/local/lib/python3.11/dist-packages (from sdv) (1.38.36)\\n\",",
+     "            \"Requirement already satisfied: botocore<2.0.0,>=1.31 in /usr/local/lib/python3.11/dist-packages (from sdv) (1.38.36)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (3.1.1)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.11/dist-packages (from sdv) (0.20.3)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.24.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (1.26.4)\\n\",",
+     "            \"Requirement already satisfied: pandas>=1.5.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (2.2.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.11/dist-packages (from sdv) (4.67.1)\\n\",",
+     "            \"Requirement already satisfied: copulas>=0.12.1 in /usr/local/lib/python3.11/dist-packages (from sdv) (0.12.2)\\n\",",
+     "            \"Requirement already satisfied: ctgan>=0.11.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (0.11.0)\\n\","
+    ]
+   },
+   {
+    "file": "heart_disease.ipynb",
+    "line": 50,
+    "text": "\"Requirement already satisfied: pandas>=1.5.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (2.2.2)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: botocore<2.0.0,>=1.31 in /usr/local/lib/python3.11/dist-packages (from sdv) (1.38.36)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (3.1.1)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.11/dist-packages (from sdv) (0.20.3)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.24.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (1.26.4)\\n\",",
+     "            \"Requirement already satisfied: pandas>=1.5.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (2.2.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.11/dist-packages (from sdv) (4.67.1)\\n\",",
+     "            \"Requirement already satisfied: copulas>=0.12.1 in /usr/local/lib/python3.11/dist-packages (from sdv) (0.12.2)\\n\",",
+     "            \"Requirement already satisfied: ctgan>=0.11.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (0.11.0)\\n\",",
+     "            \"Requirement already satisfied: deepecho>=0.7.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (0.7.0)\\n\","
+    ]
+   },
+   {
+    "file": "heart_disease.ipynb",
+    "line": 51,
+    "text": "\"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.11/dist-packages (from sdv) (4.67.1)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (3.1.1)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.11/dist-packages (from sdv) (0.20.3)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.24.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (1.26.4)\\n\",",
+     "            \"Requirement already satisfied: pandas>=1.5.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (2.2.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.11/dist-packages (from sdv) (4.67.1)\\n\",",
+     "            \"Requirement already satisfied: copulas>=0.12.1 in /usr/local/lib/python3.11/dist-packages (from sdv) (0.12.2)\\n\",",
+     "            \"Requirement already satisfied: ctgan>=0.11.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (0.11.0)\\n\",",
+     "            \"Requirement already satisfied: deepecho>=0.7.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (0.7.0)\\n\",",
+     "            \"Requirement already satisfied: rdt>=1.17.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (1.17.0)\\n\","
+    ]
+   },
+   {
+    "file": "heart_disease.ipynb",
+    "line": 52,
+    "text": "\"Requirement already satisfied: copulas>=0.12.1 in /usr/local/lib/python3.11/dist-packages (from sdv) (0.12.2)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.11/dist-packages (from sdv) (0.20.3)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.24.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (1.26.4)\\n\",",
+     "            \"Requirement already satisfied: pandas>=1.5.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (2.2.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.11/dist-packages (from sdv) (4.67.1)\\n\",",
+     "            \"Requirement already satisfied: copulas>=0.12.1 in /usr/local/lib/python3.11/dist-packages (from sdv) (0.12.2)\\n\",",
+     "            \"Requirement already satisfied: ctgan>=0.11.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (0.11.0)\\n\",",
+     "            \"Requirement already satisfied: deepecho>=0.7.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (0.7.0)\\n\",",
+     "            \"Requirement already satisfied: rdt>=1.17.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (1.17.0)\\n\",",
+     "            \"Requirement already satisfied: sdmetrics>=0.21.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (0.21.0)\\n\","
+    ]
+   },
+   {
+    "file": "heart_disease.ipynb",
+    "line": 53,
+    "text": "\"Requirement already satisfied: ctgan>=0.11.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (0.11.0)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: numpy>=1.24.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (1.26.4)\\n\",",
+     "            \"Requirement already satisfied: pandas>=1.5.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (2.2.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.11/dist-packages (from sdv) (4.67.1)\\n\",",
+     "            \"Requirement already satisfied: copulas>=0.12.1 in /usr/local/lib/python3.11/dist-packages (from sdv) (0.12.2)\\n\",",
+     "            \"Requirement already satisfied: ctgan>=0.11.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (0.11.0)\\n\",",
+     "            \"Requirement already satisfied: deepecho>=0.7.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (0.7.0)\\n\",",
+     "            \"Requirement already satisfied: rdt>=1.17.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (1.17.0)\\n\",",
+     "            \"Requirement already satisfied: sdmetrics>=0.21.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (0.21.0)\\n\",",
+     "            \"Requirement already satisfied: platformdirs>=4.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (4.3.6)\\n\","
+    ]
+   },
+   {
+    "file": "heart_disease.ipynb",
+    "line": 54,
+    "text": "\"Requirement already satisfied: deepecho>=0.7.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (0.7.0)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: pandas>=1.5.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (2.2.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.11/dist-packages (from sdv) (4.67.1)\\n\",",
+     "            \"Requirement already satisfied: copulas>=0.12.1 in /usr/local/lib/python3.11/dist-packages (from sdv) (0.12.2)\\n\",",
+     "            \"Requirement already satisfied: ctgan>=0.11.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (0.11.0)\\n\",",
+     "            \"Requirement already satisfied: deepecho>=0.7.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (0.7.0)\\n\",",
+     "            \"Requirement already satisfied: rdt>=1.17.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (1.17.0)\\n\",",
+     "            \"Requirement already satisfied: sdmetrics>=0.21.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (0.21.0)\\n\",",
+     "            \"Requirement already satisfied: platformdirs>=4.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (4.3.6)\\n\",",
+     "            \"Requirement already satisfied: pyyaml>=6.0.1 in /usr/local/lib/python3.11/dist-packages (from sdv) (6.0.2)\\n\","
+    ]
+   },
+   {
+    "file": "heart_disease.ipynb",
+    "line": 55,
+    "text": "\"Requirement already satisfied: rdt>=1.17.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (1.17.0)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.11/dist-packages (from sdv) (4.67.1)\\n\",",
+     "            \"Requirement already satisfied: copulas>=0.12.1 in /usr/local/lib/python3.11/dist-packages (from sdv) (0.12.2)\\n\",",
+     "            \"Requirement already satisfied: ctgan>=0.11.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (0.11.0)\\n\",",
+     "            \"Requirement already satisfied: deepecho>=0.7.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (0.7.0)\\n\",",
+     "            \"Requirement already satisfied: rdt>=1.17.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (1.17.0)\\n\",",
+     "            \"Requirement already satisfied: sdmetrics>=0.21.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (0.21.0)\\n\",",
+     "            \"Requirement already satisfied: platformdirs>=4.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (4.3.6)\\n\",",
+     "            \"Requirement already satisfied: pyyaml>=6.0.1 in /usr/local/lib/python3.11/dist-packages (from sdv) (6.0.2)\\n\",",
+     "            \"Requirement already satisfied: jmespath<2.0.0,>=0.7.1 in /usr/local/lib/python3.11/dist-packages (from boto3<2.0.0,>=1.28->sdv) (1.0.1)\\n\","
+    ]
+   },
+   {
+    "file": "heart_disease.ipynb",
+    "line": 56,
+    "text": "\"Requirement already satisfied: sdmetrics>=0.21.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (0.21.0)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: copulas>=0.12.1 in /usr/local/lib/python3.11/dist-packages (from sdv) (0.12.2)\\n\",",
+     "            \"Requirement already satisfied: ctgan>=0.11.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (0.11.0)\\n\",",
+     "            \"Requirement already satisfied: deepecho>=0.7.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (0.7.0)\\n\",",
+     "            \"Requirement already satisfied: rdt>=1.17.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (1.17.0)\\n\",",
+     "            \"Requirement already satisfied: sdmetrics>=0.21.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (0.21.0)\\n\",",
+     "            \"Requirement already satisfied: platformdirs>=4.0 in /usr/local/lib/python3.11/dist-packages (from sdv) (4.3.6)\\n\",",
+     "            \"Requirement already satisfied: pyyaml>=6.0.1 in /usr/local/lib/python3.11/dist-packages (from sdv) (6.0.2)\\n\",",
+     "            \"Requirement already satisfied: jmespath<2.0.0,>=0.7.1 in /usr/local/lib/python3.11/dist-packages (from boto3<2.0.0,>=1.28->sdv) (1.0.1)\\n\",",
+     "            \"Requirement already satisfied: s3transfer<0.14.0,>=0.13.0 in /usr/local/lib/python3.11/dist-packages (from boto3<2.0.0,>=1.28->sdv) (0.13.0)\\n\","
+    ]
+   }
+  ],
+  "ctgan_mod": [
+   {
+    "file": "heart_disease.ipynb",
+    "line": 65,
+    "text": "\"Requirement already satisfied: torch>=2.0.0 in /usr/local/lib/python3.11/dist-packages (from ctgan>=0.11.0->sdv) (2.5.1+cu124)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /usr/local/lib/python3.11/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\n\",",
+     "            \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /usr/local/lib/python3.11/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.3.0)\\n\",",
+     "            \"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.11/dist-packages (from copulas>=0.12.1->sdv) (5.24.1)\\n\",",
+     "            \"Requirement already satisfied: scipy>=1.9.2 in /usr/local/lib/python3.11/dist-packages (from copulas>=0.12.1->sdv) (1.13.1)\\n\",",
+     "            \"Requirement already satisfied: torch>=2.0.0 in /usr/local/lib/python3.11/dist-packages (from ctgan>=0.11.0->sdv) (2.5.1+cu124)\\n\",",
+     "            \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.11/dist-packages (from pandas>=1.5.0->sdv) (2025.1)\\n\",",
+     "            \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.11/dist-packages (from pandas>=1.5.0->sdv) (2025.1)\\n\",",
+     "            \"Requirement already satisfied: scikit-learn>=1.1.3 in /usr/local/lib/python3.11/dist-packages (from rdt>=1.17.0->sdv) (1.6.1)\\n\",",
+     "            \"Requirement already satisfied: Faker>=17 in /usr/local/lib/python3.11/dist-packages (from rdt>=1.17.0->sdv) (37.4.0)\\n\","
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "heart_disease.ipynb",
+    "line": 10035,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    },",
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "        \"\\n\",",
+     "        \"synthesizer = CTGANSynthesizer(metadata)\\n\",",
+     "        \"synthesizer.fit(df)\"",
+     "      ],"
+    ]
+   },
+   {
+    "file": "heart_disease.ipynb",
+    "line": 10037,
+    "text": "\"synthesizer = CTGANSynthesizer(metadata)\\n\",",
+    "context": [
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "        \"\\n\",",
+     "        \"synthesizer = CTGANSynthesizer(metadata)\\n\",",
+     "        \"synthesizer.fit(df)\"",
+     "      ],",
+     "      \"metadata\": {",
+     "        \"id\": \"V6RAxHog3XnS\""
+    ]
+   }
+  ],
+  "rdt": [
+   {
+    "file": "heart_disease.ipynb",
+    "line": 68,
+    "text": "\"Requirement already satisfied: scikit-learn>=1.1.3 in /usr/local/lib/python3.11/dist-packages (from rdt>=1.17.0->sdv) (1.6.1)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: scipy>=1.9.2 in /usr/local/lib/python3.11/dist-packages (from copulas>=0.12.1->sdv) (1.13.1)\\n\",",
+     "            \"Requirement already satisfied: torch>=2.0.0 in /usr/local/lib/python3.11/dist-packages (from ctgan>=0.11.0->sdv) (2.5.1+cu124)\\n\",",
+     "            \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.11/dist-packages (from pandas>=1.5.0->sdv) (2025.1)\\n\",",
+     "            \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.11/dist-packages (from pandas>=1.5.0->sdv) (2025.1)\\n\",",
+     "            \"Requirement already satisfied: scikit-learn>=1.1.3 in /usr/local/lib/python3.11/dist-packages (from rdt>=1.17.0->sdv) (1.6.1)\\n\",",
+     "            \"Requirement already satisfied: Faker>=17 in /usr/local/lib/python3.11/dist-packages (from rdt>=1.17.0->sdv) (37.4.0)\\n\",",
+     "            \"Requirement already satisfied: tenacity>=6.2.0 in /usr/local/lib/python3.11/dist-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (9.0.0)\\n\",",
+     "            \"Requirement already satisfied: packaging in /usr/local/lib/python3.11/dist-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (24.2)\\n\",",
+     "            \"Requirement already satisfied: six>=1.5 in /usr/local/lib/python3.11/dist-packages (from python-dateutil<3.0.0,>=2.1->botocore<2.0.0,>=1.31->sdv) (1.17.0)\\n\","
+    ]
+   },
+   {
+    "file": "heart_disease.ipynb",
+    "line": 69,
+    "text": "\"Requirement already satisfied: Faker>=17 in /usr/local/lib/python3.11/dist-packages (from rdt>=1.17.0->sdv) (37.4.0)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: torch>=2.0.0 in /usr/local/lib/python3.11/dist-packages (from ctgan>=0.11.0->sdv) (2.5.1+cu124)\\n\",",
+     "            \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.11/dist-packages (from pandas>=1.5.0->sdv) (2025.1)\\n\",",
+     "            \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.11/dist-packages (from pandas>=1.5.0->sdv) (2025.1)\\n\",",
+     "            \"Requirement already satisfied: scikit-learn>=1.1.3 in /usr/local/lib/python3.11/dist-packages (from rdt>=1.17.0->sdv) (1.6.1)\\n\",",
+     "            \"Requirement already satisfied: Faker>=17 in /usr/local/lib/python3.11/dist-packages (from rdt>=1.17.0->sdv) (37.4.0)\\n\",",
+     "            \"Requirement already satisfied: tenacity>=6.2.0 in /usr/local/lib/python3.11/dist-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (9.0.0)\\n\",",
+     "            \"Requirement already satisfied: packaging in /usr/local/lib/python3.11/dist-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (24.2)\\n\",",
+     "            \"Requirement already satisfied: six>=1.5 in /usr/local/lib/python3.11/dist-packages (from python-dateutil<3.0.0,>=2.1->botocore<2.0.0,>=1.31->sdv) (1.17.0)\\n\",",
+     "            \"Requirement already satisfied: joblib>=1.2.0 in /usr/local/lib/python3.11/dist-packages (from scikit-learn>=1.1.3->rdt>=1.17.0->sdv) (1.4.2)\\n\","
+    ]
+   }
+  ],
+  "copulas": [
+   {
+    "file": "heart_disease.ipynb",
+    "line": 63,
+    "text": "\"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.11/dist-packages (from copulas>=0.12.1->sdv) (5.24.1)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: jmespath<2.0.0,>=0.7.1 in /usr/local/lib/python3.11/dist-packages (from boto3<2.0.0,>=1.28->sdv) (1.0.1)\\n\",",
+     "            \"Requirement already satisfied: s3transfer<0.14.0,>=0.13.0 in /usr/local/lib/python3.11/dist-packages (from boto3<2.0.0,>=1.28->sdv) (0.13.0)\\n\",",
+     "            \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /usr/local/lib/python3.11/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\n\",",
+     "            \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /usr/local/lib/python3.11/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.3.0)\\n\",",
+     "            \"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.11/dist-packages (from copulas>=0.12.1->sdv) (5.24.1)\\n\",",
+     "            \"Requirement already satisfied: scipy>=1.9.2 in /usr/local/lib/python3.11/dist-packages (from copulas>=0.12.1->sdv) (1.13.1)\\n\",",
+     "            \"Requirement already satisfied: torch>=2.0.0 in /usr/local/lib/python3.11/dist-packages (from ctgan>=0.11.0->sdv) (2.5.1+cu124)\\n\",",
+     "            \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.11/dist-packages (from pandas>=1.5.0->sdv) (2025.1)\\n\",",
+     "            \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.11/dist-packages (from pandas>=1.5.0->sdv) (2025.1)\\n\","
+    ]
+   },
+   {
+    "file": "heart_disease.ipynb",
+    "line": 64,
+    "text": "\"Requirement already satisfied: scipy>=1.9.2 in /usr/local/lib/python3.11/dist-packages (from copulas>=0.12.1->sdv) (1.13.1)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: s3transfer<0.14.0,>=0.13.0 in /usr/local/lib/python3.11/dist-packages (from boto3<2.0.0,>=1.28->sdv) (0.13.0)\\n\",",
+     "            \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /usr/local/lib/python3.11/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\n\",",
+     "            \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /usr/local/lib/python3.11/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.3.0)\\n\",",
+     "            \"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.11/dist-packages (from copulas>=0.12.1->sdv) (5.24.1)\\n\",",
+     "            \"Requirement already satisfied: scipy>=1.9.2 in /usr/local/lib/python3.11/dist-packages (from copulas>=0.12.1->sdv) (1.13.1)\\n\",",
+     "            \"Requirement already satisfied: torch>=2.0.0 in /usr/local/lib/python3.11/dist-packages (from ctgan>=0.11.0->sdv) (2.5.1+cu124)\\n\",",
+     "            \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.11/dist-packages (from pandas>=1.5.0->sdv) (2025.1)\\n\",",
+     "            \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.11/dist-packages (from pandas>=1.5.0->sdv) (2025.1)\\n\",",
+     "            \"Requirement already satisfied: scikit-learn>=1.1.3 in /usr/local/lib/python3.11/dist-packages (from rdt>=1.17.0->sdv) (1.6.1)\\n\","
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "copulas",
+  "ct",
+  "ctgan_mod",
+  "ev",
+  "gc",
+  "md",
+  "rdt",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

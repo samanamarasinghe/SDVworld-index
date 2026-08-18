@@ -1,0 +1,320 @@
+{
+ "repo": "jona-aup/Bachelorarbeit_Codebase",
+ "disk_kb": 213562,
+ "method": "partial_clone",
+ "tree_files": 1557,
+ "status": "ok",
+ "readme": "# Automated Agentic Validation of Synthetic Tabular Data\nThis prototype demonstrates the feasibility of an automated validation of synthetic tabular data by using an agentic approach. This readme file gives a quick overview over the main elements of this codebase.\n## Quickstart Guide\n1. Create a new virtual environment and activate it\n2. Install the packages in the `requirements.txt`\n3. Create a `.env` from the `.env.template` and include an access token of a llm provider and adjust the model name accordingly. Some models might require the installation of further libraries. If you choose models other than from OpenRouter, the variable name to safe the key under will differ. To see all providers that are supported by LangChain, check [LangChain Providers](https://docs.langchain.com/oss/python/integrations/chat).\n4. If you want to apply the whole pipeline, run the *main.py*. To add the ValidationFunctions you want to include in the validation, you can either import them one by one from the `function.py` file from the according folder in `b_validation_modules`, or you can apply the funcion `get_all_validation_function_classes` from `b_validation_modules.registry`. You can adjust the registry to your needs. The validation function classes are passed as a list to the validation manager. The datasets you want to validate can be imported from the `data` folder. Adjust the `data.py`, if you want to integrate custom datasets.\n\n## Structure\n### Validation Modules\nThe main steps performed to validate the data are represented by *Validation Modules*. The following gives an overview over all of them.\n#### Information Extraction\nThe folder `a_information_extraction` containts code that is used to extract the most important information of the tabular data and compress it into a `data_summary` by invoking an agent. It contains the according instructions of the agent and the definition of the agent itself.\n#### Validation Module\nThe main logic of all validation metrics (`ValidationFunction`s) is stored in the folder `b_validation_modules`. It additionally contains all necessary instructions, meaning instructions that regard all validation functions, instructions that regard only the functions of a corresponding category (e.g. *privacy*), as well as the individual instructions that contain information about the function itself (e.g. for the metric *DiSCO*), which are integrated in each individual `function.py` file. This file also contains the individual agent that is responsible for calling the corresponding Validation-Tool that wraps the `run` function of the individual `ValidationFunction` class.\n#### Summary Agent\nThe folder `c_summary` contains the instructions as well as the agent itself that is responsible for generating a final textual rating of the synthetic data.\n#### Human Based Validation Agent\nThe folder `d_human_based_validation` contains the instructions as well as the agent itself that can be used for validating synthetic data by prompting custom requests to the agent. He will respond with information gained by calling the relevant validation tools.\n\n### The `data` Folder \nThis folder contains everything that is related to data as well as the abstract `ValidationFunction` class.\n#### `datasets`\nThis folder contains exemplary data that can be used for testing all parts of this prototype. The file `data.py` serves as registry that centrally loads this exemplary data.\n#### `Validation`\nThis folder contains the definition of the abstract class `ValidationFunction` that incorporates the general logic of all the validation tools. This includes applying the corresponding validation function on all provided *baseline datasets*. It also contains the main logic of calculating the relative scores and total scores per validation function.\n\nThe folder also cotains the `ValidationRecord` data class that is used to hold all relevant validation results.\n\n#### `DataManager` and `Dataset`\nThe data class `Dataset` is the custom data class of this project which contains the title of the data additionally to its content in the form of a `pd.DataFrame`. The `DataManager` is the class that is used to hold all the relevant data of one validation run, including all baseline data. It is also the central point that automatically creates the necessary baseline data.\n### `main` and `validation_manager`\nThe `ValidationManager` is the central manager of the validation that runs all the relevant functions associated with it, including the whole validation pipeline and the human based agent. It holds the central `DataManager` object and all `ValidationFunction` instances and with that all validation results. It also calculates the total score.\nThe `main` is used to start the validation by importing the wanted functions and initializing the `ValidationManager`.\n### The `evaluation` Folder\nThis folder contains the data and code related to the evaluation of this prototype. \n#### `experiments`\nThis file contains a script that was used to generate all the validation artefacts for both of the applied evaluations. It includes error handling that automatically restarts some of the validations, since the overall validation took long and couldn't been manually observed the whole time.\n#### Notebooks\nThe notebook `dataset_preparation` has been used to create the datasets stored in the folder `data\\datasets\\small`. These files have later been used for the evaluation.\nThe notebook `apply_tstr` has been used to generate the artefacts of the *ML-Downstream-Performance* by applying the *TabPFN* model. Since one of its results was quite unexpected, another notebook named `apply_tstr_flaml` has been created to validate the observed results by applying the alternative AutoML model `FLAML`.\n#### `tstr`\nThis file contains the logic for applying the '**T**rain on **S**ynthetic Data, **T**est on **R**eal Data' evaluation, featuring two different approaches of generating the *ML-Downstream-Performance* (TabPFN and FLAML).\n#### `artefacts`\nThis folder contains all the generated validation artefacts that been used for the evaluation. It also contains one *Excel* sheet that summarizes all the numeric findings.\n\n### The `log` Folder\nThis folder contains all the logged messages and artefacts that are created during the validation runs. Besides all relevant *error* messages and warnings, it contains all the numeric and textual valiadtion artefacts, per function and summarized, in the folder `runs`. This folder can be considered as the main **output folder**.\n\n### The `preprocessing` Folder\nThis folder contains the logic for generating the baselines that can be used to compare the results of the synthetic data to.\nWhile the *Min* and the *Max* baselines are created by the use of simple sampling functions, the *Gaussian Copula Baseline* is created by applying the Gaussian Copula Synthesizer. \n#### LLM baseline data\nThe folder `llm_baseline_agent` contains an agent, as well as its instructions, that is used to generate synthetic data. The main function to do so is the function `generate_llm_baseline_data_row_by_row`, since the column-based generation was very limited to the size of the maximum output tokens of a LLM.\n### The `utils` Folder\nThis folder contains additional logic that is used by different parts of the prototype.\n### Other Files\nThe project contains further files in the basefolder:\n- **.env.template**: Used to create the .env that is necessary for running the project\n- **requirements.txt**: Contains the necessary libraries for running the project\n- **global_instruction_context.md**: Contains the global context of the project that is provided to all agents.",
+ "hits": {
+  "sm": [
+   {
+    "file": "b_validation_modules/statistical/kolmogorov_smirnov/function.py",
+    "line": 2,
+    "text": "from sdmetrics.single_column import KSComplement",
+    "context": [
+     "from data.Validation.ValidationFunction import ValidationFunction",
+     "from sdmetrics.single_column import KSComplement",
+     "from data.DataManager import DataManager",
+     "from jinja2 import Template",
+     "from utils.files import read_file",
+     "class Kolmogorov_Smirnov(ValidationFunction):"
+    ]
+   },
+   {
+    "file": "b_validation_modules/statistical/pearson/function.py",
+    "line": 1,
+    "text": "from sdmetrics.column_pairs import CorrelationSimilarity",
+    "context": [
+     "from sdmetrics.column_pairs import CorrelationSimilarity",
+     "from data.Validation.ValidationFunction import ValidationFunction",
+     "from data.DataManager import DataManager",
+     "from jinja2 import Template",
+     "from utils.files import read_file"
+    ]
+   },
+   {
+    "file": "b_validation_modules/statistical/mean/function.py",
+    "line": 1,
+    "text": "from sdmetrics.single_column import StatisticSimilarity",
+    "context": [
+     "from sdmetrics.single_column import StatisticSimilarity",
+     "from data.Validation.ValidationFunction import ValidationFunction",
+     "from data.DataManager import DataManager",
+     "from jinja2 import Template",
+     "from utils.files import read_file"
+    ]
+   },
+   {
+    "file": "b_validation_modules/statistical/median/function.py",
+    "line": 1,
+    "text": "from sdmetrics.single_column import StatisticSimilarity",
+    "context": [
+     "from sdmetrics.single_column import StatisticSimilarity",
+     "from data.Validation.ValidationFunction import ValidationFunction",
+     "from data.DataManager import DataManager",
+     "from jinja2 import Template",
+     "from utils.files import read_file"
+    ]
+   },
+   {
+    "file": "b_validation_modules/statistical/spearman/function.py",
+    "line": 2,
+    "text": "from sdmetrics.column_pairs import CorrelationSimilarity",
+    "context": [
+     "from data.Validation.ValidationFunction import ValidationFunction",
+     "from sdmetrics.column_pairs import CorrelationSimilarity",
+     "from data.DataManager import DataManager",
+     "from jinja2 import Template",
+     "from utils.files import read_file",
+     "class Spearman(ValidationFunction):"
+    ]
+   },
+   {
+    "file": "b_validation_modules/statistical/total_variation/function.py",
+    "line": 1,
+    "text": "from sdmetrics.single_column import TVComplement",
+    "context": [
+     "from sdmetrics.single_column import TVComplement",
+     "from data.Validation.ValidationFunction import ValidationFunction",
+     "from data.DataManager import DataManager",
+     "from jinja2 import Template",
+     "from utils.files import read_file"
+    ]
+   },
+   {
+    "file": "b_validation_modules/statistical/contingency_similarity/function.py",
+    "line": 1,
+    "text": "from sdmetrics.column_pairs import ContingencySimilarity",
+    "context": [
+     "from sdmetrics.column_pairs import ContingencySimilarity",
+     "from data.Validation.ValidationFunction import ValidationFunction",
+     "from data.DataManager import DataManager",
+     "from jinja2 import Template",
+     "from utils.files import read_file"
+    ]
+   },
+   {
+    "file": "b_validation_modules/statistical/standard_deviation/function.py",
+    "line": 1,
+    "text": "from sdmetrics.single_column import StatisticSimilarity",
+    "context": [
+     "from sdmetrics.single_column import StatisticSimilarity",
+     "from data.Validation.ValidationFunction import ValidationFunction",
+     "from data.DataManager import DataManager",
+     "from jinja2 import Template",
+     "from utils.files import read_file"
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "evaluation/dataset_preparation.ipynb",
+    "line": 30,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "    \"    os.chdir(\\\"..\\\")\\n\",",
+     "    \"from data.datasets.data import get_libra_bank_orig_dataset, get_nypd_orig_dataset, get_imb_anti_money_laundry_orig_dataset, get_libra_bank_llm_syn, get_nypd_llm_syn, get_ibm_anti_money_laundry_ll",
+     "    \"from data.Dataset import Dataset\\n\",",
+     "    \"from data.DataManager import DataManager\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"from preprocessing.baselines.llm_baseline_agent.agent import LLM_Baseline_Agent\\n\",",
+     "    \"from a_information_extraction.InformationExtractionAgent import InformationExtractionAgent\\n\",",
+     "    \"import pandas as pd\""
+    ]
+   },
+   {
+    "file": "preprocessing/baselines/synthesizers/gaussian_copula.py",
+    "line": 1,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import Metadata",
+     "import pandas as pd",
+     "",
+     "class GaussianCopulaBaselineGenerator:"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "evaluation/dataset_preparation.ipynb",
+    "line": 31,
+    "text": "\"from sdv.metadata import Metadata\\n\",",
+    "context": [
+     "    \"from data.datasets.data import get_libra_bank_orig_dataset, get_nypd_orig_dataset, get_imb_anti_money_laundry_orig_dataset, get_libra_bank_llm_syn, get_nypd_llm_syn, get_ibm_anti_money_laundry_ll",
+     "    \"from data.Dataset import Dataset\\n\",",
+     "    \"from data.DataManager import DataManager\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"from preprocessing.baselines.llm_baseline_agent.agent import LLM_Baseline_Agent\\n\",",
+     "    \"from a_information_extraction.InformationExtractionAgent import InformationExtractionAgent\\n\",",
+     "    \"import pandas as pd\"",
+     "   ]"
+    ]
+   },
+   {
+    "file": "preprocessing/baselines/synthesizers/gaussian_copula.py",
+    "line": 2,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import Metadata",
+     "import pandas as pd",
+     "",
+     "class GaussianCopulaBaselineGenerator:",
+     "    original_data:pd.DataFrame"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "evaluation/dataset_preparation.ipynb",
+    "line": 30,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "    \"    os.chdir(\\\"..\\\")\\n\",",
+     "    \"from data.datasets.data import get_libra_bank_orig_dataset, get_nypd_orig_dataset, get_imb_anti_money_laundry_orig_dataset, get_libra_bank_llm_syn, get_nypd_llm_syn, get_ibm_anti_money_laundry_ll",
+     "    \"from data.Dataset import Dataset\\n\",",
+     "    \"from data.DataManager import DataManager\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"from preprocessing.baselines.llm_baseline_agent.agent import LLM_Baseline_Agent\\n\",",
+     "    \"from a_information_extraction.InformationExtractionAgent import InformationExtractionAgent\\n\",",
+     "    \"import pandas as pd\""
+    ]
+   },
+   {
+    "file": "evaluation/dataset_preparation.ipynb",
+    "line": 31,
+    "text": "\"from sdv.metadata import Metadata\\n\",",
+    "context": [
+     "    \"from data.datasets.data import get_libra_bank_orig_dataset, get_nypd_orig_dataset, get_imb_anti_money_laundry_orig_dataset, get_libra_bank_llm_syn, get_nypd_llm_syn, get_ibm_anti_money_laundry_ll",
+     "    \"from data.Dataset import Dataset\\n\",",
+     "    \"from data.DataManager import DataManager\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"from preprocessing.baselines.llm_baseline_agent.agent import LLM_Baseline_Agent\\n\",",
+     "    \"from a_information_extraction.InformationExtractionAgent import InformationExtractionAgent\\n\",",
+     "    \"import pandas as pd\"",
+     "   ]"
+    ]
+   },
+   {
+    "file": "preprocessing/baselines/synthesizers/gaussian_copula.py",
+    "line": 1,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import Metadata",
+     "import pandas as pd",
+     "",
+     "class GaussianCopulaBaselineGenerator:"
+    ]
+   },
+   {
+    "file": "preprocessing/baselines/synthesizers/gaussian_copula.py",
+    "line": 2,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import Metadata",
+     "import pandas as pd",
+     "",
+     "class GaussianCopulaBaselineGenerator:",
+     "    original_data:pd.DataFrame"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "evaluation/dataset_preparation.ipynb",
+    "line": 30,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "    \"    os.chdir(\\\"..\\\")\\n\",",
+     "    \"from data.datasets.data import get_libra_bank_orig_dataset, get_nypd_orig_dataset, get_imb_anti_money_laundry_orig_dataset, get_libra_bank_llm_syn, get_nypd_llm_syn, get_ibm_anti_money_laundry_ll",
+     "    \"from data.Dataset import Dataset\\n\",",
+     "    \"from data.DataManager import DataManager\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"from preprocessing.baselines.llm_baseline_agent.agent import LLM_Baseline_Agent\\n\",",
+     "    \"from a_information_extraction.InformationExtractionAgent import InformationExtractionAgent\\n\",",
+     "    \"import pandas as pd\""
+    ]
+   },
+   {
+    "file": "evaluation/dataset_preparation.ipynb",
+    "line": 79,
+    "text": "\"    gc_synthesizer = GaussianCopulaSynthesizer(metadata)\\n\",",
+    "context": [
+     "    \"        data=reduced_orig_df,\\n\",",
+     "    \"        table_name=data.title\\n\",",
+     "    \"    )\\n\",",
+     "    \"\\n\",",
+     "    \"    gc_synthesizer = GaussianCopulaSynthesizer(metadata)\\n\",",
+     "    \"    gc_synthesizer.fit(data=reduced_orig_df)\\n\",",
+     "    \"\\n\",",
+     "    \"    syn_df = gc_synthesizer.sample(10000)\\n\",",
+     "    \"    return Dataset(reduced_orig_df, data.title), Dataset(pre_syn_split_df, f\\\"{data.title} Pre Synth-Generation Split\\\"), Dataset(syn_df, f\\\"{data.title} Synthetic\\\")\""
+    ]
+   },
+   {
+    "file": "evaluation/dataset_preparation.ipynb",
+    "line": 129,
+    "text": "\"gc_synthesizer = GaussianCopulaSynthesizer(metadata)\\n\",",
+    "context": [
+     "    \"        data=orig_df,\\n\",",
+     "    \"        table_name=\\\"Medical Costs\\\"\\n\",",
+     "    \"    )\\n\",",
+     "    \"\\n\",",
+     "    \"gc_synthesizer = GaussianCopulaSynthesizer(metadata)\\n\",",
+     "    \"gc_synthesizer.fit(data=orig_df)\\n\",",
+     "    \"syn_df = gc_synthesizer.sample(4000)\"",
+     "   ]",
+     "  },"
+    ]
+   },
+   {
+    "file": "preprocessing/baselines/synthesizers/gaussian_copula.py",
+    "line": 1,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import Metadata",
+     "import pandas as pd",
+     "",
+     "class GaussianCopulaBaselineGenerator:"
+    ]
+   },
+   {
+    "file": "preprocessing/baselines/synthesizers/gaussian_copula.py",
+    "line": 15,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "        metadata = Metadata.detect_from_dataframe(",
+     "            data=self.original_data,",
+     "            table_name=\"Original Data\"",
+     "        )",
+     "        synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "        synthesizer.fit(self.original_data)",
+     "        return synthesizer.sample(num_samples)"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "gc",
+  "md",
+  "sdv_any",
+  "sm",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdmetrics",
+   "sdv"
+  ]
+ }
+}

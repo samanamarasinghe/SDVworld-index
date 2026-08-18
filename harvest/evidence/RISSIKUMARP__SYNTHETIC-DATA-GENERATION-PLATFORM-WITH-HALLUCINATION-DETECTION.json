@@ -1,0 +1,429 @@
+{
+ "repo": "RISSIKUMARP/SYNTHETIC-DATA-GENERATION-PLATFORM-WITH-HALLUCINATION-DETECTION",
+ "disk_kb": 1351,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Synthetic Data Generation Platform with AI Hallucination Detection\n\nA privacy-preserving system that generates realistic synthetic banking transactions using CTGAN and validates them through a multi-agent AI pipeline with hierarchical hallucination detection — catching bad outputs from both the generative model and the LLM validator itself.\n\nBuilt on the [Kaggle Credit Card Fraud Detection](https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud) dataset (284,807 transactions, 0.17% fraud rate). Generates 100K synthetic transactions that are statistically identical to real data with zero PII leakage.\n\n---\n\n## Why This Exists\n\nReal transaction data is sensitive, regulated, and hard to share. Synthetic data solves this — but only if it's actually good. Bad synthetic data (hallucinations) can look plausible while being statistically impossible.\n\nThis project tackles both problems: generate high-fidelity fake data, then deploy an autonomous AI system to catch anything the generator got wrong.\n\n---\n\n## Architecture\n\n```\n┌─────────────────────────────────────────────────────────┐\n│                   ORCHESTRATOR AGENT                     │\n│         Pipeline manager · Pass/fail decisions           │\n│         Auto-triggers CTGAN re-generation if needed      │\n├─────────────────────────────────────────────────────────┤\n│                                                          │\n│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │\n│  │  CTGAN        │  │  Privacy     │  │  Quality     │  │\n│  │  Generator    │──│  Layer       │──│  Report      │  │\n│  │  (100K rows)  │  │  (k-anon,   │  │  (PDF)       │  │\n│  │              │  │  diff priv)  │  │              │  │\n│  └──────────────┘  └──────────────┘  └──────────────┘  │\n│                                                          │\n│  ┌────────────────── VALIDATION AGENTS ────────────────┐ │\n│  │                                                      │ │\n│  │  Agent 1: Rule Validator                             │ │\n│  │  Business logic + LLM-generated rule discovery       │ │\n│  │                                                      │ │\n│  │  Agent 2: Statistical Validator                      │ │\n│  │  KS tests, correlations, autonomous failure drill-   │ │\n│  │  down and diagnosis                                  │ │\n│  │                                                      │ │\n│  │  Agent 3: LLM Semantic Validator (GPT-4o-mini)       │ │\n│  │  Natural language reasoning on flagged records        │ │\n│  │  Can request context from Agent 2                    │ │\n│  │                                                      │ │\n│  │  Agent 4: RAG Similarity Validator (Pinecone)        │ │\n│  │  Embedding search for nearest real neighbors         │ │\n│  │  Escalates to Agent 3 when no close match found      │ │\n│  │                                                      │ │\n│  └──────────────────────────────────────────────────────┘ │\n│                                                          │\n│  ┌──────────────────────────────────────────────────────┐ │\n│  │  META-VALIDATION: LLM Hallucination Check            │ │\n│  │  Verifies GPT-4o-mini's own reasoning is grounded    │ │\n│  │  in actual data (catches validator hallucinations)    │ │\n│  └──────────────────────────────────────────────────────┘ │\n└─────────────────────────────────────────────────────────┘\n```\n\n**Two-level hallucination detection:**\n- **Level 1** — CTGAN output: catches impossible synthetic transactions\n- **Level 2** — LLM validator: catches when GPT-4o-mini hallucinates during its own validation reasoning (e.g., claims \"Amount is negative\" when it's actually 50.00)\n\n---\n\n## Tech Stack\n\n| Category | Tools |\n|---|---|\n| **Generation** | Python, SDV/CTGAN, PyTorch |\n| **GenAI/LLM** | OpenAI API (GPT-4o-mini), text-embedding-3-small |\n| **RAG** | Pinecone vector database |\n| **Validation** | SciPy (KS tests), Scikit-learn (outlier detection) |\n| **API** | FastAPI, Uvicorn |\n| **Dashboard** | Streamlit |\n| **Deployment** | Docker, Docker Compose |\n\n---\n\n## Project Structure\n\n```\nsynthetic-data-project/\n├── data/\n│   ├── raw/                  # Kaggle dataset (not committed)\n│   └── synthetic/            # Generated synthetic data\n├── scripts/\n│   ├── verify_setup.py       # Environment verification\n│   └── eda_baseline.py       # EDA + baseline statistics\n├── src/\n│   ├── generation/           # CTGAN pipeline\n│   ├── validation/           # Agentic validation system\n│   │   ├── orchestrator.py\n│   │   ├── rule_agent.py\n│   │   ├── statistical_agent.py\n│   │   ├── llm_agent.py\n│   │   └── rag_agent.py\n│   ├── privacy/              # Differential privacy + k-anonymity\n│   ├── api/                  # FastAPI endpoints\n│   └── dashboard/            # Streamlit UI\n├── reports/\n│   ├── eda/                  # EDA visualizations + baseline JSON\n│   └── quality/              # Validation reports\n├── tests/\n├── docker-compose.yml\n├── Dockerfile\n├── requirements.txt\n├── .env.template\n└── README.md\n```\n\n---\n\n## Getting Started\n\n### Prerequisites\n\n- Python 3.10+\n- pip\n- ~2 GB disk space (PyTorch + SDV are large)\n\n### Setup\n\n```bash\n# Clone the repo\ngit clone https://github.com/YOUR_USERNAME/synthetic-data-project.git\ncd synthetic-data-project\n\n# Create virtual environment\npython -m venv venv\n\n# Activate it\n# Mac/Linux:\nsource venv/bin/activate\n# Windows PowerShell:\n.\\venv\\Scripts\\Activate.ps1\n\n# Install dependencies\npip install -r requirements.txt\n```\n\n### Download the Dataset\n\n1. Go to [Kaggle Credit Card Fraud Detection](https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud)\n2. Download `creditcard.csv`\n3. Place it in `data/raw/creditcard.csv`\n\n### Verify Installation\n\n```bash\npython scripts/verify_setup.py\n```\n\nAll checks should pass, including a CTGAN smoke test that trains on 500 rows and generates 5 synthetic records.\n\n### API Keys (needed for validation agents)\n\nCopy `.env.template` to `.env` and add your keys:\n\n```bash\ncp .env.template .env\n```\n\n```\nOPENAI_API_KEY=your-key-here\nPINECONE_API_KEY=your-key-here\nPINECONE_ENVIRONMENT=your-environment\n```\n\n---\n\n## Dataset\n\n**Kaggle Credit Card Fraud Detection** — 284,807 European credit card transactions from September 2013.\n\n| Column | Description |\n|---|---|\n| `Time` | Seconds elapsed from first transaction |\n| `V1`–`V28` | PCA-transformed features (anonymized) |\n| `Amount` | Transaction amount |\n| `Class` | 0 = legitimate, 1 = fraud (0.17% fraud rate) |\n\nThe extreme class imbalance (492 fraud out of 284,807) is a key challenge — synthetic generation must preserve this ratio, and the validation system must catch drift.\n\n---\n\n## How It Works\n\n### 1. Generate\nCTGAN learns the joint distribution of all 31 features from real data and generates 100K synthetic transactions. The privacy layer applies differential privacy and ensures k-anonymity (k=100).\n\n### 2. Validate\nFour autonomous agents, coordinated by an orchestrator:\n\n- **Rule Agent** — enforces business constraints (amount ranges, feature bounds) and discovers new rules by prompting GPT-4o-mini to analyze the real dataset\n- **Statistical Agent** — runs Kolmogorov-Smirnov tests, correlation comparisons, and distribution matching. Autonomously drills into failures to diagnose root causes\n- **LLM Agent** — GPT-4o-mini reads flagged transactions and reasons about whether they make business sense. Can pull additional context from the Statistical Agent\n- **RAG Agent** — embeds synthetic records using `text-embedding-3-small`, searches Pinecone for nearest real neighbors. No close match → escalates to LLM Agent\n\nAgents communicate with each other. The orchestrator can loop, retry, and trigger re-generation without human intervention.\n\n### 3. Meta-Validate\nA separate check verifies that GPT-4o-mini's own validation reasoning is grounded in actual data — catching cases where the LLM hallucinates facts about the records it's reviewing.\n\n| Method | Endpoint | Description |\n|---|---|---|\n| `POST` | `/generate` | Generate synthetic records |\n| `GET` | `/validate/{batch_id}` | Run validation on a batch |\n| `GET` | `/report/{batch_id}` | Get quality report |\n| `GET` | `/health` | Health check |\n",
+ "hits": {
+  "st": [
+   {
+    "file": "scripts/verify_setup.py",
+    "line": 76,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "    # ---- Step 3: CTGAN specifically ----",
+     "    print(\"\\n🔧 Checking CTGAN (the GAN model we'll use)...\")",
+     "    try:",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "        print(\"  ✅ CTGANSynthesizer imported successfully\")",
+     "    except ImportError as e:",
+     "        print(f\"  ❌ CTGANSynthesizer import failed: {e}\")",
+     "        all_ok = False"
+    ]
+   },
+   {
+    "file": "scripts/verify_setup.py",
+    "line": 119,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "    if dataset_found:",
+     "        print(\"\\n🧪 Quick GAN Smoke Test (generating 5 rows)...\")",
+     "        try:",
+     "            import pandas as pd",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "            from sdv.metadata import SingleTableMetadata",
+     "",
+     "            # Load a tiny sample",
+     "            df_sample = pd.read_csv(path).head(500)"
+    ]
+   },
+   {
+    "file": "notebooks/01_ctgan_first_pass.ipynb",
+    "line": 44,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"import os \\n\",",
+     "    \"\\n\",",
+     "    \"import json\\n\",",
+     "    \"from pathlib import Path\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from scipy.stats import ks_2samp\\n\",",
+     "    \"import warnings\\n\",",
+     "    \"warnings.filterwarnings('ignore')\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/02_ctgan_production_500epochs.ipynb",
+    "line": 56,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"import time\\n\",",
+     "    \"from datetime import datetime, timedelta\\n\",",
+     "    \"\\n\",",
+     "    \"# CTGAN\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"# Visualization settings\\n\",",
+     "    \"plt.style.use('seaborn-v0_8-darkgrid')\\n\","
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "scripts/verify_setup.py",
+    "line": 120,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "        print(\"\\n🧪 Quick GAN Smoke Test (generating 5 rows)...\")",
+     "        try:",
+     "            import pandas as pd",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "            from sdv.metadata import SingleTableMetadata",
+     "",
+     "            # Load a tiny sample",
+     "            df_sample = pd.read_csv(path).head(500)",
+     ""
+    ]
+   },
+   {
+    "file": "notebooks/01_ctgan_first_pass.ipynb",
+    "line": 45,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"\\n\",",
+     "    \"import json\\n\",",
+     "    \"from pathlib import Path\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from scipy.stats import ks_2samp\\n\",",
+     "    \"import warnings\\n\",",
+     "    \"warnings.filterwarnings('ignore')\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/02_ctgan_production_500epochs.ipynb",
+    "line": 57,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"from datetime import datetime, timedelta\\n\",",
+     "    \"\\n\",",
+     "    \"# CTGAN\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"# Visualization settings\\n\",",
+     "    \"plt.style.use('seaborn-v0_8-darkgrid')\\n\",",
+     "    \"sns.set_palette(\\\"husl\\\")\\n\","
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "scripts/verify_setup.py",
+    "line": 76,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "    # ---- Step 3: CTGAN specifically ----",
+     "    print(\"\\n🔧 Checking CTGAN (the GAN model we'll use)...\")",
+     "    try:",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "        print(\"  ✅ CTGANSynthesizer imported successfully\")",
+     "    except ImportError as e:",
+     "        print(f\"  ❌ CTGANSynthesizer import failed: {e}\")",
+     "        all_ok = False"
+    ]
+   },
+   {
+    "file": "scripts/verify_setup.py",
+    "line": 119,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "    if dataset_found:",
+     "        print(\"\\n🧪 Quick GAN Smoke Test (generating 5 rows)...\")",
+     "        try:",
+     "            import pandas as pd",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "            from sdv.metadata import SingleTableMetadata",
+     "",
+     "            # Load a tiny sample",
+     "            df_sample = pd.read_csv(path).head(500)"
+    ]
+   },
+   {
+    "file": "scripts/verify_setup.py",
+    "line": 120,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "        print(\"\\n🧪 Quick GAN Smoke Test (generating 5 rows)...\")",
+     "        try:",
+     "            import pandas as pd",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "            from sdv.metadata import SingleTableMetadata",
+     "",
+     "            # Load a tiny sample",
+     "            df_sample = pd.read_csv(path).head(500)",
+     ""
+    ]
+   },
+   {
+    "file": "notebooks/01_ctgan_first_pass.ipynb",
+    "line": 44,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"import os \\n\",",
+     "    \"\\n\",",
+     "    \"import json\\n\",",
+     "    \"from pathlib import Path\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from scipy.stats import ks_2samp\\n\",",
+     "    \"import warnings\\n\",",
+     "    \"warnings.filterwarnings('ignore')\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/01_ctgan_first_pass.ipynb",
+    "line": 45,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"\\n\",",
+     "    \"import json\\n\",",
+     "    \"from pathlib import Path\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from scipy.stats import ks_2samp\\n\",",
+     "    \"import warnings\\n\",",
+     "    \"warnings.filterwarnings('ignore')\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/02_ctgan_production_500epochs.ipynb",
+    "line": 56,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"import time\\n\",",
+     "    \"from datetime import datetime, timedelta\\n\",",
+     "    \"\\n\",",
+     "    \"# CTGAN\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"# Visualization settings\\n\",",
+     "    \"plt.style.use('seaborn-v0_8-darkgrid')\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/02_ctgan_production_500epochs.ipynb",
+    "line": 57,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"from datetime import datetime, timedelta\\n\",",
+     "    \"\\n\",",
+     "    \"# CTGAN\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"# Visualization settings\\n\",",
+     "    \"plt.style.use('seaborn-v0_8-darkgrid')\\n\",",
+     "    \"sns.set_palette(\\\"husl\\\")\\n\","
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "scripts/verify_setup.py",
+    "line": 76,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "    # ---- Step 3: CTGAN specifically ----",
+     "    print(\"\\n🔧 Checking CTGAN (the GAN model we'll use)...\")",
+     "    try:",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "        print(\"  ✅ CTGANSynthesizer imported successfully\")",
+     "    except ImportError as e:",
+     "        print(f\"  ❌ CTGANSynthesizer import failed: {e}\")",
+     "        all_ok = False"
+    ]
+   },
+   {
+    "file": "scripts/verify_setup.py",
+    "line": 77,
+    "text": "print(\"  ✅ CTGANSynthesizer imported successfully\")",
+    "context": [
+     "    # ---- Step 3: CTGAN specifically ----",
+     "    print(\"\\n🔧 Checking CTGAN (the GAN model we'll use)...\")",
+     "    try:",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "        print(\"  ✅ CTGANSynthesizer imported successfully\")",
+     "    except ImportError as e:",
+     "        print(f\"  ❌ CTGANSynthesizer import failed: {e}\")",
+     "        all_ok = False",
+     ""
+    ]
+   },
+   {
+    "file": "scripts/verify_setup.py",
+    "line": 79,
+    "text": "print(f\"  ❌ CTGANSynthesizer import failed: {e}\")",
+    "context": [
+     "    try:",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "        print(\"  ✅ CTGANSynthesizer imported successfully\")",
+     "    except ImportError as e:",
+     "        print(f\"  ❌ CTGANSynthesizer import failed: {e}\")",
+     "        all_ok = False",
+     "",
+     "    # ---- Step 4: Dataset check ----",
+     "    print(\"\\n📊 Checking Kaggle Dataset...\")"
+    ]
+   },
+   {
+    "file": "scripts/verify_setup.py",
+    "line": 119,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "    if dataset_found:",
+     "        print(\"\\n🧪 Quick GAN Smoke Test (generating 5 rows)...\")",
+     "        try:",
+     "            import pandas as pd",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "            from sdv.metadata import SingleTableMetadata",
+     "",
+     "            # Load a tiny sample",
+     "            df_sample = pd.read_csv(path).head(500)"
+    ]
+   },
+   {
+    "file": "scripts/verify_setup.py",
+    "line": 131,
+    "text": "synth = CTGANSynthesizer(",
+    "context": [
+     "            metadata.detect_from_dataframe(df_sample)",
+     "",
+     "            # Create a tiny CTGAN (1 epoch just to test it runs)",
+     "            print(\"  ⏳ Training CTGAN on 500 rows, 1 epoch (just a test)...\")",
+     "            synth = CTGANSynthesizer(",
+     "                metadata,",
+     "                epochs=1,",
+     "                verbose=False",
+     "            )"
+    ]
+   },
+   {
+    "file": "notebooks/01_ctgan_first_pass.ipynb",
+    "line": 44,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"import os \\n\",",
+     "    \"\\n\",",
+     "    \"import json\\n\",",
+     "    \"from pathlib import Path\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from scipy.stats import ks_2samp\\n\",",
+     "    \"import warnings\\n\",",
+     "    \"warnings.filterwarnings('ignore')\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/01_ctgan_first_pass.ipynb",
+    "line": 344,
+    "text": "\"synthesizer = CTGANSynthesizer(\\n\",",
+    "context": [
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"# Initialize CTGAN synthesizer with improved settings for Day 4\\n\",",
+     "    \"synthesizer = CTGANSynthesizer(\\n\",",
+     "    \"    metadata=metadata,\\n\",",
+     "    \"    epochs=150,  # Increased from 50\\n\",",
+     "    \"    verbose=True,\\n\",",
+     "    \"    enforce_min_max_values=True,  # Prevent impossible values\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/02_ctgan_production_500epochs.ipynb",
+    "line": 56,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"import time\\n\",",
+     "    \"from datetime import datetime, timedelta\\n\",",
+     "    \"\\n\",",
+     "    \"# CTGAN\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"# Visualization settings\\n\",",
+     "    \"plt.style.use('seaborn-v0_8-darkgrid')\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/02_ctgan_production_500epochs.ipynb",
+    "line": 245,
+    "text": "\"synthesizer = CTGANSynthesizer(\\n\",",
+    "context": [
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"# Initialize CTGAN synthesizer\\n\",",
+     "    \"synthesizer = CTGANSynthesizer(\\n\",",
+     "    \"    metadata,\\n\",",
+     "    \"    epochs=500,              # PRODUCTION: 3.3x more than Day 4\\n\",",
+     "    \"    batch_size=500,          # Default (worked well in Week 1)\\n\",",
+     "    \"    enforce_min_max_values=True,  # Prevent out-of-range values\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/02_ctgan_production_500epochs.ipynb",
+    "line": 797,
+    "text": "\"print(f\\\"\\\\nTo load later: synthesizer = CTGANSynthesizer.load('{model_path}')\\\")\"",
+    "context": [
+     "    \"synthesizer.save(model_path)\\n\",",
+     "    \"\\n\",",
+     "    \"print(f\\\" Model saved: {model_path}\\\")\\n\",",
+     "    \"print(f\\\"   File size: {Path(model_path).stat().st_size / 1024**2:.1f} MB\\\")\\n\",",
+     "    \"print(f\\\"\\\\nTo load later: synthesizer = CTGANSynthesizer.load('{model_path}')\\\")\"",
+     "   ]",
+     "  },",
+     "  {",
+     "   \"cell_type\": \"markdown\","
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "# --- Optional: Synthetic Data Generation (CTGAN) ---",
+   "# Uncomment if you want to train CTGAN models locally.",
+   "# sdv>=1.10.0"
+  ],
+  "scripts/verify_setup.py": [
+   "        (\"sdv\", \"sdv\"),",
+   "    # ---- Step 3: CTGAN specifically ----",
+   "    print(\"\\n🔧 Checking CTGAN (the GAN model we'll use)...\")",
+   "        from sdv.single_table import CTGANSynthesizer",
+   "        print(\"  ✅ CTGANSynthesizer imported successfully\")",
+   "        print(f\"  ❌ CTGANSynthesizer import failed: {e}\")",
+   "            from sdv.single_table import CTGANSynthesizer",
+   "            from sdv.metadata import SingleTableMetadata",
+   "            # SDV needs metadata about the table",
+   "            # Create a tiny CTGAN (1 epoch just to test it runs)",
+   "            print(\"  ⏳ Training CTGAN on 500 rows, 1 epoch (just a test)...\")",
+   "            synth = CTGANSynthesizer("
+  ]
+ }
+}

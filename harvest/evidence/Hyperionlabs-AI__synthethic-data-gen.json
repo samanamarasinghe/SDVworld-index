@@ -1,0 +1,328 @@
+{
+ "repo": "Hyperionlabs-AI/synthethic-data-gen",
+ "disk_kb": 151,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# ⬡ SynthForge — Enterprise Synthetic Data Platform\n\n> Generate high-fidelity synthetic datasets that mirror your real data's statistical properties — without exposing any PII.\n\n![Python](https://img.shields.io/badge/Python-3.11+-3776ab?style=flat-square&logo=python&logoColor=white)\n![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688?style=flat-square&logo=fastapi&logoColor=white)\n![React](https://img.shields.io/badge/React-18-61dafb?style=flat-square&logo=react&logoColor=black)\n![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-06b6d4?style=flat-square&logo=tailwindcss&logoColor=white)\n![Docker](https://img.shields.io/badge/Docker-Compose-2496ed?style=flat-square&logo=docker&logoColor=white)\n![License](https://img.shields.io/badge/License-MIT-a78bfa?style=flat-square)\n\n---\n\n## Overview\n\nSynthForge is a full-stack synthetic data generation platform built for enterprise use. It trains machine learning models on your real data and produces statistically equivalent synthetic datasets — preserving distributions, correlations, and categorical relationships, while generating zero real records.\n\n**Use cases:**\n- Share data across teams without exposing customer PII\n- Augment training datasets for downstream ML models\n- Test pipelines with realistic data in non-production environments\n- Satisfy data residency and compliance requirements\n\n---\n\n## Features\n\n| Feature | Description |\n|---|---|\n| **Structured Data — CTGAN** | Conditional Tabular GAN — handles mixed numeric + categorical columns |\n| **Structured Data — TVAE** | Tabular Variational Autoencoder — faster, great for numeric-heavy datasets |\n| **Unstructured Text — GPT-2** | Fine-tunes GPT-2 on your corpus, generates text matching vocabulary and style |\n| **Statistical Quality Metrics** | KS test, KL divergence, JS divergence, correlation Frobenius norm per column |\n| **Interactive Results Dashboard** | Distribution overlays, quality gauge, JS divergence chart, side-by-side data previews |\n| **Job Monitor** | Real-time progress, live training logs, download results, delete jobs |\n| **REST API** | FastAPI backend with async job management — integrates with any client |\n| **Docker Compose** | One-command full-stack deployment |\n\n---\n\n## Architecture\n\n```\n┌─────────────────────────────────────────────────────────────┐\n│                        Browser                              │\n│                 React + Tailwind SPA  :3000                 │\n│   Home · Structured Data · Text Generator · Job Monitor    │\n└────────────────────────┬────────────────────────────────────┘\n                         │  REST  (fetch)\n                         ▼\n┌─────────────────────────────────────────────────────────────┐\n│                   FastAPI Backend  :8000                    │\n│                                                             │\n│  POST /upload              store training file             │\n│  POST /jobs/structured     start CTGAN / TVAE job          │\n│  POST /jobs/unstructured   start GPT-2 fine-tune job       │\n│  GET  /jobs/{id}           poll status + progress          │\n│  GET  /jobs/{id}/download  stream synthetic output         │\n│  DELETE /jobs/{id}         remove job + artefacts          │\n└──────────┬──────────────────────────┬───────────────────────┘\n           │                          │\n           ▼                          ▼\n┌─────────────────────┐   ┌───────────────────────────────────┐\n│   Structured Models │   │       Unstructured Models         │\n│                     │   │                                   │\n│  CTGAN  (SDV 1.x)  │   │  GPT-2 / GPT-2-Medium            │\n│  TVAE   (SDV 1.x)  │   │  (HuggingFace Transformers 4.x)  │\n└─────────────────────┘   └───────────────────────────────────┘\n           │                          │\n           └──────────┬───────────────┘\n                      ▼\n            ┌─────────────────┐\n            │  data_store/    │\n            │  uploads/       │\n            │  outputs/       │\n            └─────────────────┘\n```\n\n---\n\n## Tech Stack\n\n### Backend\n\n| Library | Version | Purpose |\n|---|---|---|\n| **FastAPI** | ≥ 0.110 | Async REST API, background job management |\n| **SDV** | ≥ 1.0 | CTGAN and TVAE synthesizers |\n| **HuggingFace Transformers** | ≥ 4.30 | GPT-2 fine-tuning and generation |\n| **PyTorch** | ≥ 2.0 | Model training backend |\n| **Pandas / NumPy / SciPy** | latest | Data manipulation and statistical metrics |\n| **Uvicorn** | ≥ 0.27 | ASGI server |\n\n### Frontend\n\n| Library | Version | Purpose |\n|---|---|---|\n| **React** | 18 | Component-based UI |\n| **React Router** | v6 | Client-side SPA routing |\n| **Tailwind CSS** | 3.4 | Utility-first dark-theme styling |\n| **Recharts** | v3 | Distribution, divergence, and vocabulary charts |\n| **Vite** | 5 | Dev server and production build |\n| **PapaParse** | 5 | In-browser CSV parsing for data preview |\n\n### Infrastructure\n\n| Tool | Purpose |\n|---|---|\n| **Docker Compose** | Orchestrate API + React frontend |\n| **nginx Alpine** | Serve React build + reverse proxy to API |\n| **Node 20** | React build stage |\n| **Python 3.11-slim** | API container base image |\n\n---\n\n## Project Structure\n\n```\nsynthetic-data-generator/\n│\n├── frontend/                        # React + Tailwind SPA\n│   ├── src/\n│   │   ├── api/\n│   │   │   └── client.js            # All API calls (fetch wrappers)\n│   │   ├── components/\n│   │   │   ├── Layout.jsx           # Sidebar + main layout\n│   │   │   ├── MetricCard.jsx       # KPI cards with accent bar\n│   │   │   ├── StatusBadge.jsx      # Coloured job-status pill\n│   │   │   ├── DropZone.jsx         # Drag-and-drop file upload\n│   │   │   ├── DataTable.jsx        # Generic styled data table\n│   │   │   ├── ColumnCards.jsx      # Auto-detect column types\n│   │   │   ├── ModelCard.jsx        # CTGAN / TVAE selector card\n│   │   │   ├── LogBox.jsx           # Auto-scrolling training log\n│   │   │   └── charts/\n│   │   │       ├── HistogramChart.jsx    # Real vs synthetic overlay\n│   │   │       ├── QualityGauge.jsx      # SVG semicircle gauge\n│   │   │       └── JsDivChart.jsx        # Per-column divergence bars\n│   │   └── pages/\n│   │       ├── Home.jsx             # Landing + recent jobs\n│   │       ├── StructuredData.jsx   # Upload → train → results\n│   │       ├── UnstructuredData.jsx # Text generation workflow\n│   │       └── JobMonitor.jsx       # Live job table + detail panel\n│   ├── tailwind.config.js           # Custom dark-theme colour tokens\n│   ├── vite.config.js\n│   └── package.json\n│\n├── synth_data_gen/                  # Python package\n│   ├── api/\n│   │   ├── server.py                # FastAPI app + all endpoints\n│   │   └── job_manager.py           # Thread-based async job runner\n│   ├── models/\n│   │   ├── structured/\n│   │   │   ├── ctgan_model.py       # CTGAN wrapper (SDV)\n│   │   │   └── tvae_model.py        # TVAE wrapper (SDV)\n│   │   └── unstructured/\n│   │       └── llm_model.py         # GPT-2 fine-tune + generation\n│   ├── evaluation/\n│   │   └── metrics.py               # KS, KL, JS divergence, Frobenius\n│   ├── data/\n│   │   └── loaders.py               # Open-source dataset loaders\n│   └── main.py                      # CLI entry point\n│\n├── tests/\n│   ├── test_structured.py           # 14 unit tests\n│   └── test_unstructured.py         # 11 unit tests\n│\n├── docker/\n│   ├── Dockerfile.api               # Python 3.11-slim + ML deps\n│   ├── Dockerfile.frontend          # Node 20 build → nginx Alpine\n│   └── nginx.conf                   # SPA routing + /api proxy\n│\n├── docker-compose.yml               # api + frontend services\n├── requirements.txt                 # Core ML dependencies\n├── requirements.api.txt             # API deps (+ FastAPI, Uvicorn)\n├── setup.py                         # pip-installable package\n└── PLAN.md                          # Architecture and design decisions\n```\n\n---\n\n## Quick Start — Local Development\n\n### Prerequisites\n\n- Python 3.11+\n- Node.js 18+\n- Git\n\n### 1. Clone the repo\n\n```bash\ngit clone https://github.com/deltaalphasigma/synthetic-data-generator.git\ncd synthetic-data-generator\n```\n\n### 2. Set up Python environment\n\n```bash\n# Windows\npy -m venv .venv\n.venv\\Scripts\\pip install -e \".[dev]\"\n\n# macOS / Linux\npython3 -m venv .venv && source .venv/bin/activate\npip install -e \".[dev]\"\n```\n\n### 3. Start the API server\n\n```bash\n# Windows\n.venv\\Scripts\\uvicorn synth_data_gen.api.server:app --reload --port 8000\n\n# macOS / Linux\nuvicorn synth_data_gen.api.server:app --reload --port 8000\n```\n\nAPI is live at **http://localhost:8000** · Swagger docs at **http://localhost:8000/docs**\n\n### 4. Start the React frontend\n\n```bash\ncd frontend\nnpm install\nnpm run dev\n```\n\nOpen **http://localhost:3000**\n\n---\n\n## Docker Deployment\n\nRequires [Docker Desktop](https://www.docker.com/products/docker-desktop/).\n\n```bash\ndocker compose up --build\n```\n\n| Service | URL |\n|---|---|\n| React frontend | http://localhost:3000 |\n| FastAPI backend | http://localhost:8000 |\n| Swagger UI | http://localhost:8000/docs |\n\n```bash\n# Stop all services\ndocker compose down\n```\n\n---\n\n## API Reference\n\n### Health check\n```\nGET /health\n→ { \"status\": \"ok\" }\n```\n\n### Upload a file\n```\nPOST /upload\nContent-Type: multipart/form-data\nBody: file=<CSV | Excel | TXT>\n\n→ { \"file_id\": \"uuid\", \"filename\": \"...\", \"rows\": 1000, \"columns\": 5 }\n```\n\n### Start a structured job\n```\nPOST /jobs/structured\n{\n  \"file_id\":     \"uuid\",\n  \"filename\":    \"customers.csv\",\n  \"model\":       \"ctgan\",      // \"ctgan\" | \"tvae\"\n  \"epochs\":      100,\n  \"num_samples\": 1000\n}\n→ 201 { \"job_id\": \"uuid\" }\n```\n\n### Start an unstructured job\n```\nPOST /jobs/unstructured\n{\n  \"file_id\":        \"uuid\",\n  \"filename\":       \"corpus.txt\",\n  \"base_model\":     \"gpt2\",    // \"gpt2\" | \"gpt2-medium\"\n  \"epochs\":         3,\n  \"num_samples\":    10,\n  \"max_new_tokens\": 100\n}\n→ 201 { \"job_id\": \"uuid\" }\n```\n\n### Poll job status\n```\nGET /jobs/{job_id}\n→ {\n    \"job_id\":            \"uuid\",\n    \"status\":            \"running\",   // queued | running | completed | failed\n    \"progress\":          42,\n    \"log\":               [\"epoch 1/100...\", \"...\"],\n    \"real_sample\":       [...],       // first 500 rows of input\n    \"synthetic_sample\":  [...],       // first 500 rows of output\n    \"metrics\":           { ... },\n    \"duration_seconds\":  87.4\n  }\n```\n\n### Download result\n```\nGET /jobs/{job_id}/download  →  streams CSV (structured) or TXT (unstructured)\n```\n\n### List and delete\n```\nGET    /jobs              →  array of all jobs\nDELETE /jobs/{job_id}     →  204 No Content\n```\n\n---\n\n## Quality Metrics\n\n### Structured Data (per column)\n\n| Metric | Applies To | Description |\n|---|---|---|\n| **KS Statistic** | Numeric | Kolmogorov-Smirnov test statistic — lower = closer distributions |\n| **KL Divergence** | Numeric | Kullback-Leibler divergence — lower = better |\n| **JS Divergence** | Both | Jensen-Shannon divergence — **target ≤ 0.10** |\n| **Mean Difference** | Numeric | Absolute difference in column means |\n| **Frobenius Norm** | Dataset | Distance between real and synthetic correlation matrices |\n\n### Unstructured Text\n\n| Metric | Description |\n|---|---|\n| **Vocabulary Jaccard** | Token set overlap between real and synthetic corpora |\n| **Bigram JS Divergence** | Bigram distribution similarity — target ≤ 0.30 |\n| **Trigram JS Divergence** | Trigram distribution similarity |\n| **Avg Word / Char Count** | Text length comparison between corpora |\n\n---\n\n## UI Pages\n\n### Home\nLanding page showing platform capabilities, how-it-works steps, and a live recent-jobs table pulled from the API.\n\n### Structured Data Generator\nFull end-to-end workflow in a single page:\n1. **Drag-and-drop upload** — CSV or Excel, parsed in-browser for instant preview\n2. **Column analysis** — auto-detects numeric, categorical, and date columns\n3. **Model selection** — interactive CTGAN vs TVAE cards with descriptions\n4. **Parameter sliders** — epochs (10–500) and output row count (100–10,000)\n5. **Live progress** — animated gradient progress bar with streaming training log\n6. **Results dashboard:**\n   - 4 KPI metric cards (rows, columns, quality score, training time)\n   - Per-column distribution histogram overlay (real = blue, synthetic = orange)\n   - SVG quality score gauge with sub-score progress bars\n   - JS divergence bar chart with 0.10 threshold line\n   - Full statistical metrics table with pass/fail badges\n   - Side-by-side real vs synthetic data previews\n   - One-click CSV download\n\n### Text Generator\n1. Upload `.txt` corpus (one sentence or document per line)\n2. Configure GPT-2 model, fine-tune epochs, generation count, max tokens\n3. Animated progress with live training log\n4. Side-by-side real vs synthetic text cards\n5. Vocabulary size and n-gram JS divergence charts\n6. One-click TXT download\n\n### Job Monitor\n- Live sortable table of all jobs with status badges and mini progress bars\n- Click any row to open a detail panel showing: full job ID, parameters grid, animated progress bar, expandable logs, error display\n- Download button (completed jobs) and delete button\n\n---\n\n## Running Tests\n\n```bash\n# Activate venv first, then from project root:\npytest tests/ -v\n```\n\nTest coverage includes:\n- CTGAN and TVAE fit + sample on small synthetic data\n- KS test, KL divergence, JS divergence correctness\n- Edge cases: non-overlapping distributions, category dtype inputs\n- LLM text generator fit + generate\n- Vocabulary overlap and n-gram metrics\n\n---\n\n## Environment Variables\n\n| Variable | Default | Description |\n|---|---|---|\n| `VITE_API_URL` | `http://localhost:8000` | API base URL used by the React app |\n| `UPLOAD_DIR` | `./data_store/uploads` | Directory for uploaded training files |\n| `OUTPUT_DIR` | `./data_store/outputs` | Directory for generated output files |\n\nSet `VITE_API_URL` at build time when deploying to a remote server:\n```bash\nVITE_API_URL=https://api.yourcompany.com docker compose up --build\n```\n\n---\n\n## Roadmap\n\n- [x] Phase 1 — Local full-stack app with Docker\n- [ ] Phase 2 — AWS cloud deployment (EKS, RDS, S3, ElastiCache)\n- [ ] Phase 3 — CI/CD pipeline (GitHub Actions → ECR → EKS)\n- [ ] Phase 4 — Multi-tenancy and auth (Cognito, per-org isolation)\n- [ ] Phase 5 — Enterprise hardening (rate limiting, audit logs, RBAC)\n- [ ] Phase 6 — Observability (Prometheus, Grafana, distributed tracing)\n- [ ] Phase 7 — GA billing and usage metering\n\n---\n\n## License\n\nMIT © 2025 Dastgeer Shaikh\n",
+ "hits": {
+  "sdv_any": [
+   {
+    "file": "FEATURE_REQUIREMENTS.md",
+    "line": 82,
+    "text": "from sdv.sampling import Condition",
+    "context": [
+     "",
+     "`synth_data_gen/api/job_manager.py` — `_run_structured`",
+     "- After training, check `req.conditions`. If set and model is CTGAN:",
+     "  ```python",
+     "  from sdv.sampling import Condition",
+     "  cond_list = [",
+     "      Condition(num_rows=req.num_samples, column_values=req.conditions)",
+     "  ]",
+     "  synthetic = model.synthesizer.sample_from_conditions(cond_list)"
+    ]
+   },
+   {
+    "file": "synth_data_gen/models/structured/tvae_model.py",
+    "line": 2,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "",
+     "class TVAEModel:"
+    ]
+   },
+   {
+    "file": "synth_data_gen/models/structured/tvae_model.py",
+    "line": 3,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "",
+     "class TVAEModel:",
+     "    \"\"\"TVAE-based synthesizer for structured/tabular data.\"\"\""
+    ]
+   },
+   {
+    "file": "synth_data_gen/models/structured/ctgan_model.py",
+    "line": 2,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "",
+     "class CTGANModel:"
+    ]
+   },
+   {
+    "file": "synth_data_gen/models/structured/ctgan_model.py",
+    "line": 3,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "",
+     "class CTGANModel:",
+     "    \"\"\"CTGAN-based synthesizer for structured/tabular data.\"\"\""
+    ]
+   },
+   {
+    "file": "synth_data_gen/api/job_manager.py",
+    "line": 172,
+    "text": "from sdv.sampling import Condition",
+    "context": [
+     "            conditions = getattr(req, \"conditions\", None)",
+     "            if conditions:",
+     "                if req.model == \"ctgan\":",
+     "                    try:",
+     "                        from sdv.sampling import Condition",
+     "                        cond_obj = Condition(num_rows=req.num_samples, column_values=conditions)",
+     "                        self._log(job_id, f\"Applying conditions: {conditions}\")",
+     "                        synthetic = model.synthesizer.sample_from_conditions([cond_obj])",
+     "                    except Exception as exc:"
+    ]
+   }
+  ],
+  "hma": [
+   {
+    "file": "FEATURE_REQUIREMENTS.md",
+    "line": 322,
+    "text": "by foreign keys. SDV's `HMASynthesizer` handles this natively. This feature lets users",
+    "context": [
+     "### FEAT-07: Multi-Table Relational Synthesis",
+     "",
+     "**What & Why**  ",
+     "CTGAN and TVAE handle single tables. Real-world databases have multiple tables joined",
+     "by foreign keys. SDV's `HMASynthesizer` handles this natively. This feature lets users",
+     "upload multiple CSVs, define their relationships, and generate a full relational synthetic",
+     "schema.",
+     "",
+     "**New Files to Create**"
+    ]
+   },
+   {
+    "file": "FEATURE_REQUIREMENTS.md",
+    "line": 332,
+    "text": "- Uses `sdv.multi_table.HMASynthesizer`.",
+    "context": [
+     "`synth_data_gen/models/structured/relational_model.py`",
+     "- `class RelationalModel`:",
+     "  - `fit(self, tables: Dict[str, pd.DataFrame], relationships: List[dict]) -> None`  ",
+     "    Relationships format: `[{\"parent\": \"orders\", \"child\": \"items\", \"parent_key\": \"order_id\", \"child_key\": \"order_id\"}]`",
+     "  - Uses `sdv.multi_table.HMASynthesizer`.",
+     "  - `generate(self, scale: float = 1.0) -> Dict[str, pd.DataFrame]`",
+     "",
+     "`synth_data_gen/ui/pages/5_Relational_Data.py`",
+     "- Step 1: Upload multiple CSV files (use `st.file_uploader(accept_multiple_files=True)`)."
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "synth_data_gen/models/structured/tvae_model.py",
+    "line": 2,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "",
+     "class TVAEModel:"
+    ]
+   },
+   {
+    "file": "synth_data_gen/models/structured/ctgan_model.py",
+    "line": 2,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "",
+     "class CTGANModel:"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "synth_data_gen/models/structured/tvae_model.py",
+    "line": 3,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "",
+     "class TVAEModel:",
+     "    \"\"\"TVAE-based synthesizer for structured/tabular data.\"\"\""
+    ]
+   },
+   {
+    "file": "synth_data_gen/models/structured/ctgan_model.py",
+    "line": 3,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "",
+     "class CTGANModel:",
+     "    \"\"\"CTGAN-based synthesizer for structured/tabular data.\"\"\""
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "synth_data_gen/models/structured/tvae_model.py",
+    "line": 2,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "",
+     "class TVAEModel:"
+    ]
+   },
+   {
+    "file": "synth_data_gen/models/structured/tvae_model.py",
+    "line": 12,
+    "text": "self.synthesizer: TVAESynthesizer | None = None",
+    "context": [
+     "",
+     "    def __init__(self, epochs: int = 300, batch_size: int = 500):",
+     "        self.epochs = epochs",
+     "        self.batch_size = batch_size",
+     "        self.synthesizer: TVAESynthesizer | None = None",
+     "        self.metadata: SingleTableMetadata | None = None",
+     "",
+     "    def fit(self, data: pd.DataFrame) -> \"TVAEModel\":",
+     "        # SDV rejects pandas category dtype — normalise to object first"
+    ]
+   },
+   {
+    "file": "synth_data_gen/models/structured/tvae_model.py",
+    "line": 24,
+    "text": "self.synthesizer = TVAESynthesizer(",
+    "context": [
+     "",
+     "        self.metadata = SingleTableMetadata()",
+     "        self.metadata.detect_from_dataframe(data)",
+     "",
+     "        self.synthesizer = TVAESynthesizer(",
+     "            self.metadata,",
+     "            epochs=self.epochs,",
+     "            batch_size=self.batch_size,",
+     "        )"
+    ]
+   },
+   {
+    "file": "synth_data_gen/models/structured/tvae_model.py",
+    "line": 45,
+    "text": "obj.synthesizer = TVAESynthesizer.load(path)",
+    "context": [
+     "",
+     "    @classmethod",
+     "    def load(cls, path: str) -> \"TVAEModel\":",
+     "        obj = cls()",
+     "        obj.synthesizer = TVAESynthesizer.load(path)",
+     "        return obj"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "synth_data_gen/models/structured/ctgan_model.py",
+    "line": 2,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "",
+     "class CTGANModel:"
+    ]
+   },
+   {
+    "file": "synth_data_gen/models/structured/ctgan_model.py",
+    "line": 13,
+    "text": "self.synthesizer: CTGANSynthesizer | None = None",
+    "context": [
+     "    def __init__(self, epochs: int = 300, batch_size: int = 500, verbose: bool = True):",
+     "        self.epochs = epochs",
+     "        self.batch_size = batch_size",
+     "        self.verbose = verbose",
+     "        self.synthesizer: CTGANSynthesizer | None = None",
+     "        self.metadata: SingleTableMetadata | None = None",
+     "",
+     "    def fit(self, data: pd.DataFrame) -> \"CTGANModel\":",
+     "        # SDV rejects pandas category dtype — normalise to object first"
+    ]
+   },
+   {
+    "file": "synth_data_gen/models/structured/ctgan_model.py",
+    "line": 25,
+    "text": "self.synthesizer = CTGANSynthesizer(",
+    "context": [
+     "",
+     "        self.metadata = SingleTableMetadata()",
+     "        self.metadata.detect_from_dataframe(data)",
+     "",
+     "        self.synthesizer = CTGANSynthesizer(",
+     "            self.metadata,",
+     "            epochs=self.epochs,",
+     "            batch_size=self.batch_size,",
+     "            verbose=self.verbose,"
+    ]
+   },
+   {
+    "file": "synth_data_gen/models/structured/ctgan_model.py",
+    "line": 47,
+    "text": "obj.synthesizer = CTGANSynthesizer.load(path)",
+    "context": [
+     "",
+     "    @classmethod",
+     "    def load(cls, path: str) -> \"CTGANModel\":",
+     "        obj = cls()",
+     "        obj.synthesizer = CTGANSynthesizer.load(path)",
+     "        return obj"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "hma",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv>=1.0.0",
+   "ctgan>=0.7.0"
+  ],
+  "setup.py": [
+   "        \"sdv>=1.0.0\",",
+   "        \"ctgan>=0.7.0\","
+  ]
+ }
+}

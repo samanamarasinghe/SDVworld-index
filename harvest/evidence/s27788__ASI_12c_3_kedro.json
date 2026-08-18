@@ -1,0 +1,288 @@
+{
+ "repo": "s27788/ASI_12c_3_kedro",
+ "disk_kb": 669,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "Projekt realizowany w ramach przedmiotu **Architektury rozwiązań i metodyki wdrożeń SI**.\n\n## Zespół\n\n- s27788 — Lidia Kongiel\n- s27841 — Maria Góral\n- s26786 — Michał Sobieski\n- s24602 — Mateusz Brański\n- s25698 — Bartłomiej Kąkol\n\n---\n\n## Cel projektu\n\nCelem projektu jest stworzenie **end-to-end systemu ML w podejściu MLOps**, obejmującego:\n\n- przetwarzanie danych\n- pipeline ML\n- trening modelu\n- ewaluację\n- dalszą rozbudowę o API i dashboard\n\n---\n\n## Problem ML\n\n**Klasyfikacja satysfakcji pasażerów linii lotniczych**\n\n- typ: klasyfikacja binarna\n- target: `Satisfaction`\n- wartości:\n    - `1` → satisfied\n    - `0` → neutral or dissatisfied\n\n---\n\n## Dane\n\n- źródło: Kaggle\n- dataset: Airline Passenger Satisfaction\n- https://www.kaggle.com/datasets/mysarahmadbhat/airline-passenger-satisfaction\n\nDane są przechowywane w **SQLite** i ładowane przez Kedro Data Catalog.\n\n---\n\n## Sprint 2 — Kedro pipeline\n\nZrealizowane:\n\n- ✔ Projekt Kedro (`kedro new`)\n- ✔ Pipeline `data_processing`\n- ✔ Node: `preprocess_data`\n- ✔ Dane ładowane przez `SQLTableDataset` (SQLite)\n- ✔ Zapis wyników do `ParquetDataset`\n\n---\n\n## Preprocessing\n\nW pipeline wykonujemy:\n\n- usunięcie duplikatów\n- usunięcie kolumny `ID`\n- konwersję targetu `Satisfaction` → `0/1`\n- usunięcie 14 kolumn powodujących **data leakage**\n- uzupełnienie braków w `Arrival Delay`\n- log-transform dla:\n    - `Arrival Delay`\n    - `Departure Delay`\n\nFinalny dataset:\n- shape: `(129880, 9)`\n\n---\n\n## Uruchomienie projektu\n\n### 1. Stwórz środowisko\n\n```bash\nconda create -n asi python=3.10\nconda activate asi\n```\n\n### 2. Zainstaluj zależności\n\n```bash\npip install -r requirements.txt\npip install kedro==0.19.9 kedro-datasets pyarrow\n```\n\n### 3. Uruchom pipeline\n\n```bash\nkedro run\n```\n\n---\n\n## Sprint 4: AutoML (AutoGluon)\n\n### Konfiguracja lokalna\n\n**1. Credentials Kedro** — utwórz `conf/local/credentials.yml` (nie commituj):\n\n```yaml\ndb_credentials:\n  con: sqlite:///data/01_raw/dataset.db\n```\n\n**2. Plik `.env`** — skopiuj z `.env.example` i uzupełnij:\n\n```bash\ncp .env.example .env\n```\n\nWymagane zmienne: `WANDB_API_KEY`, `WANDB_PROJECT`, `WANDB_ENTITY`.\n\n**3. Baza danych** — umieść `dataset.db` w `data/01_raw/` (tabela `airline_data`).\n\n### Uruchomienie\n\n```bash\nkedro run --pipeline=full\n```\n\n### Eksperymenty AutoGluon\n\nW `conf/base/parameters.yml` zmieniamy tylko sekcję `automl` (`presets`, `time_limit`), potem:\n\n```bash\nkedro run --pipeline=automl\n```\n\nPrzykładowe 3 eksperymenty:\n\n| # | presets | time_limit |\n|---|---------|------------|\n| 1 | `medium_quality` | 120 |\n| 2 | `medium_quality` | 300 |\n| 3 | `good_quality` | 300 |\n\nParametr `automl.clean_path: true` **automatycznie usuwa** katalog `data/06_models/autogluon/` przed treningiem każdy eksperyment startuje od czystego stanu.\n\n### W&B — gdzie szukać wyników\n\n- **Baseline:** run `baseline-random-forest` (metryki `accuracy`, `f1`)\n- **AutoGluon:** run `automl-<preset>-<time>s` (metryka `f1`)\n- **Leaderboard:** otwórz run AutoGluon → zakładka **Tables** → `leaderboard` (nie Charts)\n\n---\n## Wyniki baseline\n\nModel:\n\n- `RandomForestClassifier`\n\nWyniki:\nAccuracy 0.8068\nF1 Score 0.7820\n\nRun zapisany w W&B:\n\n```text\n\nbaseline-random-forest\n\n```\n\n## Wyniki AutoML\n\n### Porównanie eksperymentów\n\n| Eksperyment | presets | time_limit | Najlepszy model | F1 |\n|---|---|---:|---|---:|\n| 1 | `medium_quality` | 120 | `ExtraTreesGini` | 0.7729 |\n| 2 | `medium_quality` | 300 | `WeightedEnsemble_L2` | 0.7740 |\n| 3 | `good_quality` | 300 | `RandomForestGini_BAG_L1` | 0.7766 |\n\n---\n\n## Wnioski z eksperymentów\n\n- zwiększenie `time_limit` z `120s` do `300s` nie przyniosło dużej poprawy jakości modelu\n- preset `good_quality` osiągnął najlepszy wynik spośród eksperymentów AutoML\n- najlepszy wynik AutoML: F1 = 0.7766\n- najlepszy model AutoML to RandomForestGini_BAG_L1\n- Baseline `RandomForestClassifier` nadal osiągnął nieco lepszy wynik (`F1 ≈ 0.782`)\n- eksperymenty pokazały wpływ parametrów `presets` oraz `time_limit` na jakość modeli\n\n## Screenshots\n\nScreenshoty z eksperymentów i dashboardów W&B znajdują się w:\n\n```text\n\ndocs/screenshots_sprint04/\n\n```\n\nZawierają:\n\n- terminale z uruchomienia pipeline’ów\n\n- dashboardy W&B\n\n- leaderboardy modeli AutoGluon\n\n- porównanie eksperymentów AutoML (`wandb_experiments_overview.png`)\n\n## Sprint 5: FastAPI\n\n### Cel\n\nPrzygotowanie REST API umożliwiającego wykonywanie predykcji przy użyciu wytrenowanego modelu AutoGluon.  \nAPI działa niezależnie od pipeline'ów Kedro i wykorzystuje model zapisany na dysku.\n\n### Wymagania\n\nPrzed uruchomieniem API model musi zostać wcześniej wytrenowany i zapisany w katalogu:\n\n```text\ndata/06_models/autogluon/\n```\n\nJeżeli model nie istnieje, należy uruchomić:\n\n```bash\nkedro run --pipeline=full\n```\n\nlub:\n\n```bash\nkedro run --pipeline=automl\n```\n\n### Uruchomienie\n\n```bash\nconda activate asi\nuvicorn api.main:app --reload\n```\n\nDokumentacja Swagger:\n\n```text\nhttp://127.0.0.1:8000/docs\n```\n\n### Zrealizowane\n\n- utworzenie aplikacji FastAPI\n- ladowanie modelu AutoGluon przy starcie aplikacji\n- endpoint GET /health\n- endpoint GET /model-info\n- endpoint POST /predict\n- walidacja danych wejściowych przy użyciu Pydantic\n- obsługa błędów HTTP (422, 500, 503)\n- automatyczna dokumentacja Swagger\n\n### Endpointy\n\n| Metoda | Endpoint | Opis |\n|---------|---------|---------|\n| GET | /health | Status API oraz informacja o załadowanym modelu |\n| GET | /model-info | Informacje o aktualnie załadowanym modelu |\n| POST | /predict | Wykonanie predykcji |\n\n### Dane wejściowe\n\nModel wykorzystuje cechy:\n\n- Gender\n- Age\n- Customer Type\n- Type of Travel\n- Class\n- Flight Distance\n- arrival_delay_log\n- departure_delay_log\n\npola arrival_delay_log oraz departure_delay_log zawierają wartości po transformacji log1p()  \nwykonanej podczas preprocessingu danych.\n\nPrzykłady:\n\n- brak opóźnienia -> 0.0\n- 1 minuta opóźnienia -> ~0.69\n\n### Przykladowe wywolanie\n\n```bash\ncurl -X POST \"http://127.0.0.1:8000/predict\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"Gender\": \"Female\",\n    \"Age\": 35,\n    \"Customer Type\": \"Returning\",\n    \"Type of Travel\": \"Business\",\n    \"Class\": \"Business\",\n    \"Flight Distance\": 1200,\n    \"arrival_delay_log\": 0.69,\n    \"departure_delay_log\": 1.10\n  }'\n```\n\n\n## Sprint 6: Integracja Systemu (Streamlit, FastAPI & SDV)\n\n### Cel\n\nZintegrowanie wszystkich elementów systemu w architekturze end-to-end.\nDodanie potoku generowania danych syntetycznych przy użyciu SDV wraz z logowaniem metryk do Weights & Biases oraz stworzenie interaktywnego dashboardu w Streamlit komunikującego się z API FastAPI.\n\n### Wymagania\n\nPrzed uruchomieniem systemu należy:\n\n* posiadać wytrenowany model (pipeline `full` lub `automl`)\n* skonfigurować zmienne środowiskowe i sekrety\n\nWymagany plik:\n\n```text\n.streamlit/secrets.toml\n```\n\nZawartość:\n\n```toml\nAPI_URL = \"http://127.0.0.1:8000\"\n```\n\n### Uruchomienie\n\n#### Pipeline danych syntetycznych\n\n```bash\nkedro run --pipeline=synthetic\n```\n\nWynik zapisywany jest w:\n\n```text\ndata/03_primary/synthetic_data.csv\ndata/08_reporting/synthetic_scores.json\n```\n\n#### Uruchomienie pełnego systemu\n\nBackend (FastAPI):\n\n```bash\nuvicorn api.main:app --reload\n```\n\nFrontend (Streamlit):\n\n```bash\nstreamlit run app/streamlit_app.py\n```\n\n### Zrealizowane\n\n* integracja FastAPI ze Streamlit (komunikacja HTTP)\n* stworzenie pipeline `synthetic` w Kedro\n* generowanie danych syntetycznych przy użyciu SDV\n* logowanie metryk `diagnostic_score` oraz `quality_score` do Weights & Biases\n* cache’owanie danych w Streamlit (`@st.cache_data`, `@st.cache_resource`)\n* obsługa błędów sieciowych i timeoutów w komunikacji z API\n* interaktywny dashboard użytkownika\n\n### Moduły aplikacji (Streamlit)\n\n#### Predykcja Satysfakcji\n\n* formularz wejściowy (slidery, selectboxy)\n* wysyłanie zapytań POST do API (`/predict`)\n* obsługa błędów i timeoutów\n* prezentacja wyniku predykcji\n\n#### Dane\n\n* odczyt z SQLite (`airline_data`)\n* cache’owanie (`@st.cache_data`)\n* podgląd próbek i statystyki opisowe\n* wykres rozkładu wybranej kolumny\n\n#### Dane syntetyczne\n\n* `GaussianCopulaSynthesizer` z cache (`@st.cache_resource`)\n* generowanie rekordów z zapisem w `st.session_state`\n* porównanie statystyk oryginału i danych syntetycznych\n* podgląd pliku z pipeline Kedro\n\n### Przepływ systemu\n\n1. Użytkownik wprowadza dane w aplikacji Streamlit\n2. Aplikacja wysyła zapytanie do API FastAPI\n3. API wykorzystuje model AutoGluon do predykcji\n4. Wynik zwracany jest do frontend i prezentowany użytkownikowi\n5. Niezależnie pipeline `synthetic` generuje i ocenia dane syntetyczne\n",
+ "hits": {
+  "gc": [
+   {
+    "file": "README.md",
+    "line": 393,
+    "text": "* `GaussianCopulaSynthesizer` z cache (`@st.cache_resource`)",
+    "context": [
+     "* wykres rozkładu wybranej kolumny",
+     "",
+     "#### Dane syntetyczne",
+     "",
+     "* `GaussianCopulaSynthesizer` z cache (`@st.cache_resource`)",
+     "* generowanie rekordów z zapisem w `st.session_state`",
+     "* porównanie statystyk oryginału i danych syntetycznych",
+     "* podgląd pliku z pipeline Kedro",
+     ""
+    ]
+   },
+   {
+    "file": "app/streamlit_app.py",
+    "line": 9,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import requests",
+     "import streamlit as st",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "APP_DIR = Path(__file__).resolve().parent",
+     "BASE_DIR = APP_DIR.parent",
+     "DB_PATH = BASE_DIR / \"data\" / \"01_raw\" / \"dataset.db\""
+    ]
+   },
+   {
+    "file": "app/streamlit_app.py",
+    "line": 39,
+    "text": "def fit_synthesizer(real_data: pd.DataFrame) -> GaussianCopulaSynthesizer:",
+    "context": [
+     "        return pd.read_sql(\"SELECT * FROM airline_data\", conn)",
+     "",
+     "",
+     "@st.cache_resource",
+     "def fit_synthesizer(real_data: pd.DataFrame) -> GaussianCopulaSynthesizer:",
+     "    metadata = Metadata.detect_from_dataframe(data=real_data)",
+     "    synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "    synthesizer.fit(real_data)",
+     "    return synthesizer"
+    ]
+   },
+   {
+    "file": "app/streamlit_app.py",
+    "line": 41,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "",
+     "@st.cache_resource",
+     "def fit_synthesizer(real_data: pd.DataFrame) -> GaussianCopulaSynthesizer:",
+     "    metadata = Metadata.detect_from_dataframe(data=real_data)",
+     "    synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "    synthesizer.fit(real_data)",
+     "    return synthesizer",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "src/asi_kedro/pipelines/synthetic/nodes.py",
+    "line": 7,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import wandb",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "logger = logging.getLogger(__name__)",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "src/asi_kedro/pipelines/synthetic/nodes.py",
+    "line": 23,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "    Returns:",
+     "        Wygenerowany zbiór syntetyczny.",
+     "    \"\"\"",
+     "    metadata = Metadata.detect_from_dataframe(data=real_data)",
+     "    synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "    synthesizer.fit(real_data)",
+     "",
+     "    num_rows = parameters.get(\"synthetic_rows\", 100)",
+     "    synthetic_data = synthesizer.sample(num_rows=num_rows)"
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "app/streamlit_app.py",
+    "line": 9,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import requests",
+     "import streamlit as st",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "APP_DIR = Path(__file__).resolve().parent",
+     "BASE_DIR = APP_DIR.parent",
+     "DB_PATH = BASE_DIR / \"data\" / \"01_raw\" / \"dataset.db\""
+    ]
+   },
+   {
+    "file": "src/asi_kedro/pipelines/synthetic/nodes.py",
+    "line": 7,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import wandb",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "logger = logging.getLogger(__name__)",
+     "",
+     ""
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "app/streamlit_app.py",
+    "line": 8,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "import pandas as pd",
+     "import requests",
+     "import streamlit as st",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "APP_DIR = Path(__file__).resolve().parent",
+     "BASE_DIR = APP_DIR.parent"
+    ]
+   },
+   {
+    "file": "src/asi_kedro/pipelines/synthetic/nodes.py",
+    "line": 6,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "import pandas as pd",
+     "import wandb",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "logger = logging.getLogger(__name__)",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "app/streamlit_app.py",
+    "line": 8,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "import pandas as pd",
+     "import requests",
+     "import streamlit as st",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "APP_DIR = Path(__file__).resolve().parent",
+     "BASE_DIR = APP_DIR.parent"
+    ]
+   },
+   {
+    "file": "app/streamlit_app.py",
+    "line": 9,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import requests",
+     "import streamlit as st",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "APP_DIR = Path(__file__).resolve().parent",
+     "BASE_DIR = APP_DIR.parent",
+     "DB_PATH = BASE_DIR / \"data\" / \"01_raw\" / \"dataset.db\""
+    ]
+   },
+   {
+    "file": "src/asi_kedro/pipelines/synthetic/nodes.py",
+    "line": 5,
+    "text": "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+    "context": [
+     "import logging",
+     "",
+     "import pandas as pd",
+     "import wandb",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "logger = logging.getLogger(__name__)"
+    ]
+   },
+   {
+    "file": "src/asi_kedro/pipelines/synthetic/nodes.py",
+    "line": 6,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "import pandas as pd",
+     "import wandb",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "logger = logging.getLogger(__name__)",
+     ""
+    ]
+   },
+   {
+    "file": "src/asi_kedro/pipelines/synthetic/nodes.py",
+    "line": 7,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import wandb",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "logger = logging.getLogger(__name__)",
+     "",
+     ""
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "src/asi_kedro/pipelines/synthetic/nodes.py",
+    "line": 5,
+    "text": "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+    "context": [
+     "import logging",
+     "",
+     "import pandas as pd",
+     "import wandb",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "logger = logging.getLogger(__name__)"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ev",
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv"
+  ]
+ }
+}

@@ -1,0 +1,201 @@
+{
+ "repo": "nytrixis/multigan",
+ "disk_kb": 1955,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Medical GAN Project: Multi-Disease Detection with GANs\n\nA complete, production-ready medical imaging system using Generative Adversarial Networks (GANs) for data augmentation and disease detection. This project implements three different GAN architectures optimized for NVIDIA RTX 3050 (4GB VRAM).\n\n## Overview\n\nThis system tackles three medical imaging challenges:\n1. **Pneumonia Detection** from chest X-rays (grayscale, 256×256) using **DCGAN**\n2. **Diabetic Retinopathy Classification** from fundus images (RGB, 224×224) using **WGAN-GP**\n3. **Melanoma Classification** from dermatoscopic images (RGB, 224×224) using **AC-GAN**\n\n### Key Features\n\n- **Production-Ready**: Complete, runnable code with proper error handling\n- **Hardware Optimized**: Designed for NVIDIA RTX 3050 (4GB VRAM)\n- **Reproducible**: Fixed random seeds, detailed documentation\n- **Three GAN Architectures**: DCGAN, WGAN-GP, and AC-GAN\n- **Three Classifier Architectures**: ResNet-50, DenseNet-121, Custom CNN + Ensemble\n- **Complete Pipeline**: Data download → preprocessing → training → evaluation\n- **Comprehensive Evaluation**: FID score, Inception Score, classification metrics\n\n## Project Structure\n\n```\nmedical-gan-project/\n├── data/\n│   ├── raw/                    # Raw downloaded datasets\n│   │   ├── diabetic_retinopathy/\n│   │   ├── melanoma/\n│   │   └── pneumonia/\n│   ├── processed/              # Preprocessed, split data\n│   └── synthetic/              # GAN-generated synthetic data\n├── src/\n│   ├── data/\n│   │   ├── download_datasets.py    # Dataset download utilities\n│   │   ├── preprocess.py           # Data preprocessing\n│   │   └── dataset_loaders.py      # PyTorch Dataset classes\n│   ├── models/\n│   │   ├── dcgan.py                # DCGAN implementation\n│   │   ├── wgan_gp.py              # WGAN-GP implementation\n│   │   └── acgan.py                # AC-GAN implementation\n│   └── training/\n│       └── utils.py                # Training utilities\n├── configs/\n│   ├── config_pneumonia.yaml       # Pneumonia/DCGAN config\n│   ├── config_dr.yaml              # Diabetic Retinopathy/WGAN-GP config\n│   └── config_melanoma.yaml        # Melanoma/AC-GAN config\n├── outputs/\n│   ├── logs/                   # TensorBoard logs\n│   ├── checkpoints/            # Model checkpoints\n│   └── figures/                # Generated visualizations\n├── requirements.txt\n├── setup.py\n└── README.md\n```\n\n## Quick Start\n\n### 1. Installation\n\n```bash\n# Clone the repository\ngit clone https://github.com/yourusername/medical-gan.git\ncd medical-gan-project\n\n# Create virtual environment (recommended)\npython -m venv venv\nsource venv/bin/activate  # On Windows: venv\\Scripts\\activate\n\n# Install dependencies\npip install -r requirements.txt\n\n# Or install as package\npip install -e .\n```\n\n### 2. Dataset Setup\n\n#### Configure Kaggle API (Required)\n\n1. Go to https://www.kaggle.com/account\n2. Click \"Create New API Token\"\n3. Place `kaggle.json` in `~/.kaggle/` (Linux/Mac) or `C:\\Users\\<username>\\.kaggle\\` (Windows)\n\n#### Download Datasets\n\n```bash\n# Download all datasets (WARNING: ~94GB total)\npython src/data/download_datasets.py --all\n\n# Or download individual datasets\npython src/data/download_datasets.py --dataset pneumonia\npython src/data/download_datasets.py --dataset melanoma\npython src/data/download_datasets.py --dataset diabetic_retinopathy\n\n# For testing: use sample data (much smaller)\npython src/data/download_datasets.py --all --sample\n```\n\n#### Preprocess Data\n\n```bash\n# Preprocess all datasets\npython src/data/preprocess.py --all\n\n# Or preprocess individually\npython src/data/preprocess.py --dataset pneumonia\npython src/data/preprocess.py --dataset melanoma\npython src/data/preprocess.py --dataset diabetic_retinopathy\n```\n\n### 3. Test Installations\n\n```bash\n# Test DCGAN\npython src/models/dcgan.py\n\n# Test WGAN-GP\npython src/models/wgan_gp.py\n\n# Test AC-GAN\npython src/models/acgan.py\n\n# Test data loaders\npython src/data/dataset_loaders.py\n```\n\n## Datasets\n\n### 1. Pneumonia (Chest X-Ray)\n\n- **Source**: Mendeley Data / Kaggle\n- **Size**: ~1.15 GB (5,856 images)\n- **Classes**: 3 (Normal, Bacterial Pneumonia, Viral Pneumonia)\n- **Format**: Grayscale, 256×256\n- **GAN**: DCGAN\n- **Batch Size**: 24 (optimized for 4GB VRAM)\n\n### 2. Diabetic Retinopathy\n\n- **Source**: Kaggle Competition\n- **Size**: ~88 GB (35,126 images)\n- **Classes**: 5 (No DR, Mild, Moderate, Severe, Proliferative)\n- **Format**: RGB, 224×224\n- **GAN**: WGAN-GP\n- **Batch Size**: 16 (optimized for 4GB VRAM)\n\n### 3. Melanoma (HAM10000)\n\n- **Source**: Harvard Dataverse\n- **Size**: ~5 GB (10,015 images)\n- **Classes**: 7 (akiec, bcc, bkl, df, mel, nv, vasc)\n- **Format**: RGB, 224×224\n- **GAN**: AC-GAN\n- **Batch Size**: 16 (optimized for 4GB VRAM)\n\n## GAN Architectures\n\n### DCGAN (Deep Convolutional GAN)\n\n**Use Case**: Pneumonia X-ray generation (grayscale images)\n\n**Architecture**:\n- Generator: 100-dim latent → 256×256 grayscale\n- Discriminator: Binary classifier (real/fake)\n- Loss: Binary Cross-Entropy\n\n**Hyperparameters**:\n- Learning Rate: 0.0002\n- Optimizer: Adam (β1=0.5, β2=0.999)\n- Batch Size: 24\n- Epochs: 5,000\n\n**Key Features**:\n- BatchNorm for stable training\n- LeakyReLU activations\n- Dropout for regularization\n\n### WGAN-GP (Wasserstein GAN with Gradient Penalty)\n\n**Use Case**: Diabetic Retinopathy fundus images (RGB)\n\n**Architecture**:\n- Generator: 100-dim latent → 224×224 RGB\n- Critic: Wasserstein distance estimator\n- Loss: Wasserstein distance + Gradient Penalty (λ=10)\n\n**Hyperparameters**:\n- Learning Rate: 0.0001\n- Optimizer: Adam (β1=0.0, β2=0.9)\n- Batch Size: 16\n- Critic Updates: 5 per generator update\n- Epochs: 10,000\n\n**Key Features**:\n- LayerNorm instead of BatchNorm\n- No sigmoid activation in critic\n- More stable training than DCGAN\n\n### AC-GAN (Auxiliary Classifier GAN)\n\n**Use Case**: Melanoma skin lesion images (RGB, class-conditional)\n\n**Architecture**:\n- Generator: 100-dim latent + class label → 224×224 RGB\n- Discriminator: Two outputs (real/fake + class prediction)\n- Loss: Adversarial loss + Auxiliary classification loss\n\n**Hyperparameters**:\n- Learning Rate: 0.0002\n- Optimizer: Adam (β1=0.5, β2=0.999)\n- Batch Size: 16\n- Epochs: 8,000\n\n**Key Features**:\n- Class-conditional generation\n- Auxiliary classifier improves quality\n- Generates specific disease types\n\n## Training\n\n### Basic Training Example\n\n```python\nimport torch\nfrom src.models.dcgan import DCGAN\nfrom src.data.dataset_loaders import PneumoniaDataModule\n\n# Setup\ndevice = torch.device('cuda' if torch.cuda.is_available() else 'cpu')\ngan = DCGAN(latent_dim=100, img_channels=1, img_size=256, device=device)\n\n# Load data\ndm = PneumoniaDataModule(batch_size=24)\ntrain_loader = dm.train_dataloader()\n\n# Create optimizers\ng_optimizer = torch.optim.Adam(gan.generator.parameters(), lr=0.0002, betas=(0.5, 0.999))\nd_optimizer = torch.optim.Adam(gan.discriminator.parameters(), lr=0.0002, betas=(0.5, 0.999))\n\n# Loss function\ncriterion = torch.nn.BCELoss()\n\n# Training loop (simplified)\nfor epoch in range(num_epochs):\n    for real_images, _ in train_loader:\n        real_images = real_images.to(device)\n        batch_size = real_images.size(0)\n\n        # Train Discriminator\n        z = torch.randn(batch_size, 100, device=device)\n        fake_images = gan.generator(z)\n\n        real_labels = torch.ones(batch_size, 1, device=device)\n        fake_labels = torch.zeros(batch_size, 1, device=device)\n\n        d_real = gan.discriminator(real_images)\n        d_fake = gan.discriminator(fake_images.detach())\n\n        d_loss = criterion(d_real, real_labels) + criterion(d_fake, fake_labels)\n\n        d_optimizer.zero_grad()\n        d_loss.backward()\n        d_optimizer.step()\n\n        # Train Generator\n        z = torch.randn(batch_size, 100, device=device)\n        fake_images = gan.generator(z)\n        d_fake = gan.discriminator(fake_images)\n\n        g_loss = criterion(d_fake, real_labels)\n\n        g_optimizer.zero_grad()\n        g_loss.backward()\n        g_optimizer.step()\n```\n\n### Using Configuration Files\n\n```bash\n# The project includes YAML configuration files for each dataset\n# See configs/ directory for hyperparameters\n```\n\n## Evaluation\n\n### GAN Quality Metrics\n\n1. **FID Score (Fréchet Inception Distance)**\n   - Measures similarity between real and generated distributions\n   - Lower is better (target: FID < 50)\n\n2. **Inception Score**\n   - Measures quality and diversity\n   - Higher is better (target: IS > 4)\n\n3. **Visual Quality Assessment**\n   - Generate sample grids\n   - Compare with real images\n\n### Example: Computing FID\n\n```python\nfrom pytorch_fid import fid_score\n\n# Compute FID between real and generated images\nfid_value = fid_score.calculate_fid_given_paths(\n    [real_images_path, generated_images_path],\n    batch_size=50,\n    device='cuda',\n    dims=2048\n)\nprint(f\"FID Score: {fid_value:.2f}\")\n```\n\n## Hardware Requirements\n\n### Minimum Requirements\n- **GPU**: NVIDIA RTX 3050 (4GB VRAM) or equivalent\n- **RAM**: 16 GB\n- **Storage**: 100 GB free space\n- **CUDA**: 12.1 or later\n\n### Recommended\n- **GPU**: NVIDIA RTX 3060 (12GB VRAM) or better\n- **RAM**: 32 GB\n- **Storage**: 200 GB SSD\n\n### Memory Optimization Tips\n\nIf you encounter out-of-memory errors:\n\n1. **Reduce Batch Size**:\n   ```yaml\n   # In config file\n   training:\n     batch_size: 8  # Reduce from 16\n   ```\n\n2. **Enable Mixed Precision**:\n   ```python\n   from torch.cuda.amp import autocast, GradScaler\n   scaler = GradScaler()\n   ```\n\n3. **Gradient Accumulation**:\n   ```python\n   # Accumulate gradients over N steps\n   accumulation_steps = 4\n   for i, batch in enumerate(dataloader):\n       loss = train_step(batch)\n       loss = loss / accumulation_steps\n       loss.backward()\n\n       if (i + 1) % accumulation_steps == 0:\n           optimizer.step()\n           optimizer.zero_grad()\n   ```\n\n## Troubleshooting\n\n### Common Issues\n\n**1. Kaggle API Authentication Error**\n```\nSolution: Ensure kaggle.json is in the correct location with proper permissions\nchmod 600 ~/.kaggle/kaggle.json  # Linux/Mac\n```\n\n**2. CUDA Out of Memory**\n```\nSolution: Reduce batch size in config files or enable gradient accumulation\n```\n\n**3. Slow Training**\n```\nSolution:\n- Ensure CUDA is properly installed\n- Use mixed precision training\n- Increase num_workers in DataLoader (but not too high)\n```\n\n**4. Dataset Download Fails**\n```\nSolution:\n- Check internet connection\n- Verify Kaggle competition rules have been accepted\n- Try manual download from dataset URLs\n```\n\n## Performance Benchmarks\n\n### Expected Training Times (RTX 3050)\n\n| Dataset | GAN Type | Epochs | Time per Epoch | Total Time |\n|---------|----------|--------|----------------|------------|\n| Pneumonia | DCGAN | 5,000 | ~2 min | ~7 days |\n| Diabetic Retinopathy | WGAN-GP | 10,000 | ~5 min | ~35 days |\n| Melanoma | AC-GAN | 8,000 | ~4 min | ~22 days |\n\n*Note: Times are approximate and depend on dataset size and hardware*\n\n### Expected Results\n\n| Metric | Pneumonia | Diabetic Retinopathy | Melanoma |\n|--------|-----------|---------------------|----------|\n| FID Score | < 50 | < 60 | < 55 |\n| Inception Score | > 4 | > 5 | > 5 |\n| Classification Accuracy (with GAN) | > 90% | > 75% | > 85% |\n\n## Contributing\n\nContributions are welcome! Please follow these guidelines:\n\n1. Fork the repository\n2. Create a feature branch (`git checkout -b feature/amazing-feature`)\n3. Commit your changes (`git commit -m 'Add amazing feature'`)\n4. Push to the branch (`git push origin feature/amazing-feature`)\n5. Open a Pull Request\n\n## Citation\n\nIf you use this code in your research, please cite:\n\n```bibtex\n@software{medical_gan_2024,\n  title={Medical GAN: Multi-Disease Detection with GANs},\n  author={Medical GAN Project Team},\n  year={2024},\n  url={https://github.com/yourusername/medical-gan}\n}\n```\n\n## References\n\n1. Radford et al., \"Unsupervised Representation Learning with Deep Convolutional GANs\", ICLR 2016\n2. Gulrajani et al., \"Improved Training of Wasserstein GANs\", NeurIPS 2017\n3. Odena et al., \"Conditional Image Synthesis with Auxiliary Classifier GANs\", ICML 2017\n\n## License\n\nThis project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.\n\n## Acknowledgments\n\n- Kaggle for hosting the Diabetic Retinopathy dataset\n- Harvard Dataverse for the HAM10000 dataset\n- Mendeley Data for the Chest X-Ray Pneumonia dataset\n\n## Contact\n\nFor questions, issues, or collaborations:\n- GitHub Issues: [https://github.com/yourusername/medical-gan/issues](https://github.com/yourusername/medical-gan/issues)\n- Email: contact@medical-gan.com\n\n---\n\n**⚠️ Medical Disclaimer**: This software is for research and educational purposes only. It is not intended for clinical diagnosis or treatment. Always consult with qualified healthcare professionals for medical decisions.\n",
+ "hits": {
+  "st": [
+   {
+    "file": "COMPLETE_USAGE_GUIDE.md",
+    "line": 256,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "### Generate Specific Class (Minority Class Augmentation)",
+     "",
+     "```python",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "# Load trained model",
+     "synthesizer = CTGANSynthesizer.load('outputs/models/diabetes/ctgan_model.pkl')",
+     ""
+    ]
+   },
+   {
+    "file": "src/training/train_ctgan.py",
+    "line": 26,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from pathlib import Path",
+     "from typing import Dict, Any, Tuple",
+     "",
+     "# SDV Library for CTGAN",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# Import our utilities",
+     "sys.path.append(str(Path(__file__).parent.parent.parent))"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "COMPLETE_USAGE_GUIDE.md",
+    "line": 256,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "### Generate Specific Class (Minority Class Augmentation)",
+     "",
+     "```python",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "# Load trained model",
+     "synthesizer = CTGANSynthesizer.load('outputs/models/diabetes/ctgan_model.pkl')",
+     ""
+    ]
+   },
+   {
+    "file": "src/training/train_ctgan.py",
+    "line": 26,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from pathlib import Path",
+     "from typing import Dict, Any, Tuple",
+     "",
+     "# SDV Library for CTGAN",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# Import our utilities",
+     "sys.path.append(str(Path(__file__).parent.parent.parent))"
+    ]
+   },
+   {
+    "file": "src/training/train_ctgan.py",
+    "line": 27,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from typing import Dict, Any, Tuple",
+     "",
+     "# SDV Library for CTGAN",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# Import our utilities",
+     "sys.path.append(str(Path(__file__).parent.parent.parent))",
+     "from src.data.tabular_utils import ("
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "COMPLETE_USAGE_GUIDE.md",
+    "line": 256,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "### Generate Specific Class (Minority Class Augmentation)",
+     "",
+     "```python",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "# Load trained model",
+     "synthesizer = CTGANSynthesizer.load('outputs/models/diabetes/ctgan_model.pkl')",
+     ""
+    ]
+   },
+   {
+    "file": "COMPLETE_USAGE_GUIDE.md",
+    "line": 259,
+    "text": "synthesizer = CTGANSynthesizer.load('outputs/models/diabetes/ctgan_model.pkl')",
+    "context": [
+     "```python",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "# Load trained model",
+     "synthesizer = CTGANSynthesizer.load('outputs/models/diabetes/ctgan_model.pkl')",
+     "",
+     "# Generate 1000 diabetic patients (minority class)",
+     "synthetic_diabetic = synthesizer.sample(",
+     "    num_rows=1000,"
+    ]
+   },
+   {
+    "file": "src/training/train_ctgan.py",
+    "line": 26,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from pathlib import Path",
+     "from typing import Dict, Any, Tuple",
+     "",
+     "# SDV Library for CTGAN",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# Import our utilities",
+     "sys.path.append(str(Path(__file__).parent.parent.parent))"
+    ]
+   },
+   {
+    "file": "src/training/train_ctgan.py",
+    "line": 94,
+    "text": ") -> Tuple[CTGANSynthesizer, pd.DataFrame, Dict]:",
+    "context": [
+     "def train_ctgan(",
+     "    dataset: str,",
+     "    config: Dict[str, Any],",
+     "    verbose: bool = True",
+     ") -> Tuple[CTGANSynthesizer, pd.DataFrame, Dict]:",
+     "    \"\"\"",
+     "    Train CTGAN model on tabular dataset.",
+     "",
+     "    Args:"
+    ]
+   },
+   {
+    "file": "src/training/train_ctgan.py",
+    "line": 143,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "        print(f\"   - Batch size: {config['model']['batch_size']}\")",
+     "        print(f\"   - Generator dim: {config['model']['generator_dim']}\")",
+     "        print(f\"   - Discriminator dim: {config['model']['discriminator_dim']}\")",
+     "",
+     "    synthesizer = CTGANSynthesizer(",
+     "        metadata=metadata,",
+     "        epochs=config['model']['epochs'],",
+     "        batch_size=config['model']['batch_size'],",
+     "        generator_dim=tuple(config['model']['generator_dim']),"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "src/training/train_ctgan.py",
+    "line": 27,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from typing import Dict, Any, Tuple",
+     "",
+     "# SDV Library for CTGAN",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# Import our utilities",
+     "sys.path.append(str(Path(__file__).parent.parent.parent))",
+     "from src.data.tabular_utils import ("
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

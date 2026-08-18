@@ -1,0 +1,140 @@
+{
+ "repo": "MohammadSharafi/few-shot-treatment-feasibility-thesis",
+ "disk_kb": 15400,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Few-Shot Treatment Feasibility Prediction\n\nIntelligent prediction of treatment feasibility with Symptom Tokens from aggregated clinical data (MIMIC-IV).\n\n**Official Persian title:** فیوشات درمانی: پیش‌بینی هوشمند قابلیت درمان با توکن‌های علائم از داده‌های تجمیع‌شده\n\nIn this project, **treatment feasibility** is an operational research label derived from early ICU signals and discharge/readmission outcomes. It is not autonomous treatment recommendation, automated prescription, or a replacement for physician judgment.\n\n**Author:** Mohammad Sharafi  \n**Supervisor:** Dr. Alimohammadzadeh  \n**Institution:** Islamic Azad University, Tehran North Branch  \n\n## Thesis: review & high-value experiments\n\n- **What to improve, what data to add, which models to run:** see [`docs/THESIS_REVIEW_AND_NEXT_STEPS.md`](docs/THESIS_REVIEW_AND_NEXT_STEPS.md).\n- **Conflicting numbers?** Treat [`results/KEY_FINDINGS.md`](results/KEY_FINDINGS.md) + [`results/tables/`](results/tables/) as canonical; [`results/improvement_log.md`](results/improvement_log.md) is historical context only (see banner there).\n- **Before submission:** [`docs/THESIS_SUBMISSION_CHECKLIST.md`](docs/THESIS_SUBMISSION_CHECKLIST.md) + frozen env [`requirements-frozen.txt`](requirements-frozen.txt).\n- **Ordered run (ceiling → hybrid → core → diagnostics → best few-shot):**\n  ```bash\n  python scripts/run_value_experiments.py --figures\n  python scripts/run_value_experiments.py --quick --figures   # faster few-shot; also skips slow ETHOS block in diagnostics\n  # CPU-friendly full pass (skip long exp1_main + SOTA tuning):\n  python scripts/run_value_experiments.py --quick --figures --skip-sota --skip-exp1\n  # Full Exp1 (hours on CPU; log: results/exp1_full_run.log):\n  PYTHONUNBUFFERED=1 python -u experiments/exp1_main.py\n  ```\n\n## Quick Start\n\n```bash\n# 1. Install dependencies\npip install -r requirements.txt\n\n# 2. Extract data (requires MIMIC-IV credentials; place v3.1 under data/3.1/)\npython extraction/01_cohort.py\npython extraction/02_symptoms.py\npython extraction/03_labels.py\npython extraction/04_tokenize.py\npython extraction/05_federated_split.py\n\n# 3. Run core experiments (or use the orchestrator)\npython experiments/run_all.py --skip-extraction   # if processed data exists\n\n# 4. Generate all thesis figures + tables (always safe to re-run)\npython scripts/build_thesis_assets.py\n\n# 5. Validate thesis readiness (figures, paths)\npython results/validate_thesis_readiness.py\n```\n\n### Orchestrator options\n\n| Command | Purpose |\n|--------|---------|\n| `python experiments/run_all.py` | Extraction + core experiments + figure build |\n| `python experiments/run_all.py --skip-extraction` | Skip 01–05; run experiments + figures |\n| `python experiments/run_all.py --figures-only` | Only `build_thesis_assets.py` |\n| `python experiments/run_all.py --with-fewshot` | Also run `exp_fewshot*.py` (long) |\n\n## Reproducibility\n\n- **Random seed:** 42 (fixed in `config.yaml`)\n- **Data splits:** 64% train, 16% validation, 20% test (stratified)\n- **Environment:** Python 3.10+, PyTorch 2.x, scikit-learn 1.3+\n\nSee `thesis/chapters/appendix_i.tex` for the full reproducibility checklist.\n\n## Thesis\n\n- **English (pdfLaTeX):** `thesis/thesis.tex` — compile from `thesis/` with `pdflatex` + `bibtex`; ensure `results/figures/` exists (`scripts/build_thesis_assets.py`).\n- **Persian (XeLaTeX):** `thesis/thesis_fa.tex` — use **XeLaTeX only**; see `thesis/README_COMPILE_FA.md` or `./thesis/build_thesis_fa.sh`.\n- Defense slides: `thesis/defense_slides.tex`\n- Q&A: `thesis/DEFENSE_QA.md`\n- Persian defense playbook: `docs/DEFENSE_PLAYBOOK_FA.md`\n- Persian code-running guide: `docs/CODE_RUNNING_GUIDE_FA.md`\n- Final Persian quality audit: `docs/FINAL_QUALITY_AUDIT_FA.md`\n- Defense walkthrough notebook: `notebooks/thesis_defense_walkthrough.ipynb`\n- One-command defense demo: `python scripts/defense_demo.py`\n- Final 10/10 thesis review: `docs/FINAL_10_OUT_OF_10_THESIS_REVIEW.md`\n\nFinal acceptance sequence from project root:\n\n```bash\nmake clean-temp\nmake thesis-fa\nmake validate\nmake defense\n```\n\n## Key Results (frozen submission metrics, 2k cohort)\n\n> **Canonical source:** [`results/CANONICAL_METRICS.json`](results/CANONICAL_METRICS.json) is the single source of truth for every headline number below. The defense demo (`scripts/defense_demo.py`) and the validator (`scripts/validate_results.py`) both read this file.\n\n\n| Model | AUROC | Notes |\n|-------|-------|--------|\n| **Tabular SOTA** (dedicated pipeline) | **0.748** | Ceiling for frozen thesis tables |\n| **Stacked BEST** (`exp_fewshot_best`) | **0.746** [0.699, 0.797] | Few-shot + classical fusion |\n| **Few-shot BEST** (GFA + cross-attention) | **0.670** [0.612, 0.726] | Without stacking |\n| **Exp1** `Proposed_FewShot` vs RF (same split) | **0.611** vs **0.762** | Script comparison |\n| V-campaign (e.g. RF tuned, Stacked V4, V5 best seed) | 0.760 / 0.732 / 0.737 | Historical table in thesis |\n| Federated vs centralized (reported experiment) | **~0.005** AUROC gap (centralized 0.552 → federated 0.547) | Small cost in simulation |\n| Ablation paradox (`no_symptom_tokens`) | 0.724 vs full_model 0.583 | Documented in `docs/PROJECT_AUDIT_REPORT.md` §13 — tabular features dominate over episodic embeddings; motivates the hybrid pipeline |\n\nProtocol note: Exp1 RandomForest `0.762` and Tabular SOTA `0.748` are protocol-specific results from different scripts. They should not be read as a contradiction.\n\nFull progression (V1→V6) and appendices are in the thesis PDF; cite primary tables first.\n\n## Project layout\n\n- `extraction/` — MIMIC-IV cohort and features  \n- `experiments/` — baselines, federated, few-shot variants  \n- `models/` — ETHOS encoder, federated, few-shot heads  \n- `results/figures/` — thesis figures (generated, not committed required)  \n- `scripts/build_thesis_assets.py` — one-shot figure + table regeneration  \n",
+ "hits": {
+  "st": [
+   {
+    "file": "experiments/exp_tabular_sota.py",
+    "line": 324,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "        X_syn = np.clip(X_syn, 0, 1)",
+     "        return np.vstack([X_train, X_syn]), np.concatenate([y_train, y_syn])",
+     "    except Exception:",
+     "        try:",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "            from sdv.metadata import SingleTableMetadata",
+     "            df = pd.DataFrame(X_train, columns=[f\"f{i}\" for i in range(X_train.shape[1])])",
+     "            df[\"target\"] = y_train",
+     "            metadata = SingleTableMetadata()"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "experiments/exp_tabular_sota.py",
+    "line": 325,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "        return np.vstack([X_train, X_syn]), np.concatenate([y_train, y_syn])",
+     "    except Exception:",
+     "        try:",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "            from sdv.metadata import SingleTableMetadata",
+     "            df = pd.DataFrame(X_train, columns=[f\"f{i}\" for i in range(X_train.shape[1])])",
+     "            df[\"target\"] = y_train",
+     "            metadata = SingleTableMetadata()",
+     "            metadata.detect_from_dataframe(df)"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "experiments/exp_tabular_sota.py",
+    "line": 324,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "        X_syn = np.clip(X_syn, 0, 1)",
+     "        return np.vstack([X_train, X_syn]), np.concatenate([y_train, y_syn])",
+     "    except Exception:",
+     "        try:",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "            from sdv.metadata import SingleTableMetadata",
+     "            df = pd.DataFrame(X_train, columns=[f\"f{i}\" for i in range(X_train.shape[1])])",
+     "            df[\"target\"] = y_train",
+     "            metadata = SingleTableMetadata()"
+    ]
+   },
+   {
+    "file": "experiments/exp_tabular_sota.py",
+    "line": 325,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "        return np.vstack([X_train, X_syn]), np.concatenate([y_train, y_syn])",
+     "    except Exception:",
+     "        try:",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "            from sdv.metadata import SingleTableMetadata",
+     "            df = pd.DataFrame(X_train, columns=[f\"f{i}\" for i in range(X_train.shape[1])])",
+     "            df[\"target\"] = y_train",
+     "            metadata = SingleTableMetadata()",
+     "            metadata.detect_from_dataframe(df)"
+    ]
+   }
+  ],
+  "ctgan_mod": [
+   {
+    "file": "experiments/exp_tabular_sota.py",
+    "line": 312,
+    "text": "from ctgan import CTGAN",
+    "context": [
+     "",
+     "def augment_ctgan(X_train, y_train, n_synthetic=500, seed=42):",
+     "    \"\"\"CTGAN if sdv/ctgan available; else None.\"\"\"",
+     "    try:",
+     "        from ctgan import CTGAN",
+     "        df = pd.DataFrame(X_train, columns=[f\"f{i}\" for i in range(X_train.shape[1])])",
+     "        df[\"target\"] = y_train",
+     "        synth = CTGAN(epochs=100, verbose=False, cuda=False)",
+     "        synth.fit(df, [\"target\"])"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "experiments/exp_tabular_sota.py",
+    "line": 324,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "        X_syn = np.clip(X_syn, 0, 1)",
+     "        return np.vstack([X_train, X_syn]), np.concatenate([y_train, y_syn])",
+     "    except Exception:",
+     "        try:",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "            from sdv.metadata import SingleTableMetadata",
+     "            df = pd.DataFrame(X_train, columns=[f\"f{i}\" for i in range(X_train.shape[1])])",
+     "            df[\"target\"] = y_train",
+     "            metadata = SingleTableMetadata()"
+    ]
+   },
+   {
+    "file": "experiments/exp_tabular_sota.py",
+    "line": 330,
+    "text": "synth = CTGANSynthesizer(metadata, epochs=100, verbose=False)",
+    "context": [
+     "            df = pd.DataFrame(X_train, columns=[f\"f{i}\" for i in range(X_train.shape[1])])",
+     "            df[\"target\"] = y_train",
+     "            metadata = SingleTableMetadata()",
+     "            metadata.detect_from_dataframe(df)",
+     "            synth = CTGANSynthesizer(metadata, epochs=100, verbose=False)",
+     "            synth.fit(df)",
+     "            syn_df = synth.sample(num_rows=n_synthetic)",
+     "            X_syn = syn_df[[f\"f{i}\" for i in range(X_train.shape[1])]].values.astype(np.float32)",
+     "            y_syn = syn_df[\"target\"].values.astype(int)"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ctgan_mod",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

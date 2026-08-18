@@ -1,0 +1,256 @@
+{
+ "repo": "AhnafAbdullah/Adaptive-Synthetic-Data-Augmentation-Toolkit",
+ "disk_kb": 1505,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# 🧬 Adaptive Synthetic Data Augmentation Toolkit\n\nA closed-loop ML engine that **detects the exact cohorts your model fails on**,\ngenerates **targeted** synthetic data to fix them, and proves the gain on a\nheld-out test set — benchmarked against SMOTE.\n\n## 🚀 What it does\n1. Splits your data **three ways** (train / validation / test) with stratification.\n2. Trains a baseline classifier, tunes its decision threshold on validation, and\n   finds the subpopulations whose recall is **genuinely below** the model's\n   overall recall (ranked by recoverable false negatives) — not merely where\n   false negatives concentrate.\n3. Fits per-cohort `GaussianCopula` / `TVAE` / `CTGAN` synthesizers (via SDV) on\n   the **real** rows of each weak cohort — **once**; later iterations only draw\n   fresh samples (fitting dominates runtime, sampling is cheap).\n4. Runs an adaptive loop: generate → quality-gate → augment → retrain → evaluate,\n   **re-detecting weak cohorts whenever the model improves** so each iteration\n   targets the *current* model's failure modes.\n5. Derives extra **candidate models** each iteration from the same augmented\n   data: a probability-**calibrated** model (synthetic rows shift the\n   probability scale; calibration restores it) and **baseline⊕augmented\n   ensembles** at several blend weights (the baseline keeps global ranking, the\n   augmented model brings cohort recall). The best candidate wins on validation.\n6. Selects the best iteration on **weak-cohort recall** (validation), guarded so\n   global F1 can't silently degrade beyond a tolerance you set. Global metrics\n   (PR-AUC / ROC-AUC / F1) are available as alternative selection objectives —\n   with the ensemble candidates, global-metric selection can beat the baseline\n   on *every* test metric at once.\n\n   **Two recommended modes** (set via *Selection metric* + *Threshold policy*):\n   - **Max cohort repair** — `cohort_recall` + `max_f1`: biggest weak-cohort\n     recall lift; global precision dips a little by design (the F1-optimal\n     threshold spends the model's gains on recall).\n   - **Nothing falls** — `pr_auc` + `match_baseline_precision`: candidate\n     thresholds maximise recall *while holding the baseline's precision*, so\n     precision, F1, PR-AUC and ROC-AUC are all held or improved and the weak\n     cohorts still gain. Use this when stakeholders watch global metrics.\n7. Reports the final lift **once** on the untouched **test set** — including a\n   per-cohort recall table (baseline vs best) — next to no-augmentation,\n   random-oversampling, and **SMOTE** baselines.\n\n## 🧪 Try it in 30 seconds\n`testing.csv` ships with the repo: a 1,600-row synthetic churn dataset with a\nplanted weak cohort (positives in `region = West` are deliberately borderline,\nbaseline recall ≈ 0.08–0.39 there). Upload it, pick target `churn`, train the\nbaseline, run the loop — and watch the West cohort's test recall multiply while\nglobal metrics hold.\n\n## ✨ Why it's trustworthy\n- **No data leakage.** Cohort detection and model selection use validation only;\n  the test set is evaluated a single time for the final number.\n- **No model collapse.** Generators are always re-fit on *real* cohort data, so\n  the loop never learns from its own synthetic output.\n- **Honest labels.** Synthetic rows are drawn from real rows of the *intended\n  class*, not relabeled after the fact.\n- **Quality-gated.** Each synthetic batch is scored (KS / total-variation\n  fidelity) and low-quality batches are rejected.\n- **The right objective.** Targeted augmentation lifts recall *inside* weak\n  cohorts but rarely moves global AUC — selecting on a global metric hides the\n  real effect. The default objective is mean weak-cohort recall with an\n  explicit global-F1 guardrail, so trade-offs are chosen, not accidental.\n- **Fair thresholds.** Every model (baseline, SMOTE references, and each\n  iteration) gets its decision threshold tuned on validation the same way.\n- **Benchmarked.** Every run shows whether adaptive augmentation actually beats\n  plain SMOTE on the same held-out test set.\n\n## ⚙️ Installation\n```bash\npip install -r requirements.txt\n```\n\n## 🎮 Run the dashboard\n```bash\nstreamlit run app.py\n```\nOpen `http://localhost:8501`, upload a CSV, pick a **binary** target column, set\nyour generator/loop parameters, then **Initialize & Train Baseline** → **Run\nOptimization Loop**. Export the augmented dataset, the best model, and a\nMarkdown run report from the results panel.\n\n## 🧪 Tests\n```bash\npytest -q\n```\nThe suite covers target encoding, the 3-way split, cohort sampling/labeling,\nquality scoring, and a full leakage-free end-to-end loop.\n\n## 📦 Project layout\n| File | Responsibility |\n|---|---|\n| `data_utils.py` | Ingestion, cleaning, target encoding, 3-way split, preprocessing |\n| `models_utils.py` | Model factory + binary metrics (incl. PR-AUC) |\n| `generator_utils.py` | Per-cohort SDV synthesis + fidelity scoring/gating |\n| `loop_engine.py` | Streaming adaptive loop + SMOTE/oversampling references |\n| `app.py` | Streamlit dashboard |\n| `tests/` | pytest suite |\n\n> Note: SDV caps generator fitting at 5,000 rows per cohort for speed; very large\n> CSVs are loaded fully into memory, so size your inputs accordingly.\n",
+ "hits": {
+  "md": [
+   {
+    "file": "generator_utils.py",
+    "line": 42,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    return getattr(st, _GENERATORS[generator_type])(metadata, **params)",
+     "",
+     "",
+     "def _detect_metadata(data: pd.DataFrame):",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(data)",
+     "    return metadata",
+     ""
+    ]
+   },
+   {
+    "file": "03_Static_Synthetic_Generation.ipynb",
+    "line": 386,
+    "text": "\"        from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"    n = max(5, int(len(cohort_data) * 0.30))\\n\",",
+     "    \"    print(f\\\"  Cohort '{cohort['name']}': {len(cohort_data)} real → generating {n} synthetic\\\")\\n\",",
+     "    \"\\n\",",
+     "    \"    try:\\n\",",
+     "    \"        from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"        from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"        meta = SingleTableMetadata()\\n\",",
+     "    \"        meta.detect_from_dataframe(cohort_data)\\n\",",
+     "    \"        synth = GaussianCopulaSynthesizer(meta)\\n\","
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "generator_utils.py",
+    "line": 29,
+    "text": "import sdv.single_table as st",
+    "context": [
+     "}",
+     "",
+     "",
+     "def _make_synthesizer(metadata, generator_type: str, generator_params: dict | None = None):",
+     "    import sdv.single_table as st",
+     "    if generator_type not in _GENERATORS:",
+     "        raise ValueError(f\"Unknown generator_type '{generator_type}'. \"",
+     "                         f\"Choose from {list(_GENERATORS)}.\")",
+     "    params = dict(generator_params or {})"
+    ]
+   },
+   {
+    "file": "generator_utils.py",
+    "line": 42,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    return getattr(st, _GENERATORS[generator_type])(metadata, **params)",
+     "",
+     "",
+     "def _detect_metadata(data: pd.DataFrame):",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(data)",
+     "    return metadata",
+     ""
+    ]
+   },
+   {
+    "file": "generator_utils.py",
+    "line": 237,
+    "text": "import sdv.single_table as st",
+    "context": [
+     "    synthesizer.save(path)",
+     "",
+     "",
+     "def load_generator(path: str, generator_type: str = \"copula\"):",
+     "    import sdv.single_table as st",
+     "    return getattr(st, _GENERATORS[generator_type]).load(path)"
+    ]
+   },
+   {
+    "file": "03_Static_Synthetic_Generation.ipynb",
+    "line": 386,
+    "text": "\"        from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"    n = max(5, int(len(cohort_data) * 0.30))\\n\",",
+     "    \"    print(f\\\"  Cohort '{cohort['name']}': {len(cohort_data)} real → generating {n} synthetic\\\")\\n\",",
+     "    \"\\n\",",
+     "    \"    try:\\n\",",
+     "    \"        from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"        from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"        meta = SingleTableMetadata()\\n\",",
+     "    \"        meta.detect_from_dataframe(cohort_data)\\n\",",
+     "    \"        synth = GaussianCopulaSynthesizer(meta)\\n\","
+    ]
+   },
+   {
+    "file": "03_Static_Synthetic_Generation.ipynb",
+    "line": 387,
+    "text": "\"        from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "    \"    print(f\\\"  Cohort '{cohort['name']}': {len(cohort_data)} real → generating {n} synthetic\\\")\\n\",",
+     "    \"\\n\",",
+     "    \"    try:\\n\",",
+     "    \"        from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"        from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"        meta = SingleTableMetadata()\\n\",",
+     "    \"        meta.detect_from_dataframe(cohort_data)\\n\",",
+     "    \"        synth = GaussianCopulaSynthesizer(meta)\\n\",",
+     "    \"        synth.fit(cohort_data)\\n\","
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "generator_utils.py",
+    "line": 24,
+    "text": "\"ctgan\": \"CTGANSynthesizer\",",
+    "context": [
+     "# Generator label -> (module attribute) lazily imported in _make_synthesizer",
+     "_GENERATORS = {",
+     "    \"copula\": \"GaussianCopulaSynthesizer\",",
+     "    \"tvae\": \"TVAESynthesizer\",",
+     "    \"ctgan\": \"CTGANSynthesizer\",",
+     "}",
+     "",
+     "",
+     "def _make_synthesizer(metadata, generator_type: str, generator_params: dict | None = None):"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "generator_utils.py",
+    "line": 22,
+    "text": "\"copula\": \"GaussianCopulaSynthesizer\",",
+    "context": [
+     "logger = logging.getLogger(\"toolkit.generator\")",
+     "",
+     "# Generator label -> (module attribute) lazily imported in _make_synthesizer",
+     "_GENERATORS = {",
+     "    \"copula\": \"GaussianCopulaSynthesizer\",",
+     "    \"tvae\": \"TVAESynthesizer\",",
+     "    \"ctgan\": \"CTGANSynthesizer\",",
+     "}",
+     ""
+    ]
+   },
+   {
+    "file": "03_Static_Synthetic_Generation.ipynb",
+    "line": 12,
+    "text": "\"- Trains a **GaussianCopulaSynthesizer** (SDV) on the full training data\\n\",",
+    "context": [
+     "    \"# Notebook 03 — Static Synthetic Data Generation\\n\",",
+     "    \"\\n\",",
+     "    \"This notebook:\\n\",",
+     "    \"- Loads the `target_cohorts.json` produced by Notebook 02\\n\",",
+     "    \"- Trains a **GaussianCopulaSynthesizer** (SDV) on the full training data\\n\",",
+     "    \"- Generates targeted synthetic samples oversampling the identified weak cohorts\\n\",",
+     "    \"- Evaluates generation quality (KS statistics, distribution plots)\\n\",",
+     "    \"- Saves the synthesizer and `synthetic_samples.csv`\"",
+     "   ]"
+    ]
+   },
+   {
+    "file": "03_Static_Synthetic_Generation.ipynb",
+    "line": 387,
+    "text": "\"        from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "    \"    print(f\\\"  Cohort '{cohort['name']}': {len(cohort_data)} real → generating {n} synthetic\\\")\\n\",",
+     "    \"\\n\",",
+     "    \"    try:\\n\",",
+     "    \"        from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"        from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"        meta = SingleTableMetadata()\\n\",",
+     "    \"        meta.detect_from_dataframe(cohort_data)\\n\",",
+     "    \"        synth = GaussianCopulaSynthesizer(meta)\\n\",",
+     "    \"        synth.fit(cohort_data)\\n\","
+    ]
+   },
+   {
+    "file": "03_Static_Synthetic_Generation.ipynb",
+    "line": 390,
+    "text": "\"        synth = GaussianCopulaSynthesizer(meta)\\n\",",
+    "context": [
+     "    \"        from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"        from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"        meta = SingleTableMetadata()\\n\",",
+     "    \"        meta.detect_from_dataframe(cohort_data)\\n\",",
+     "    \"        synth = GaussianCopulaSynthesizer(meta)\\n\",",
+     "    \"        synth.fit(cohort_data)\\n\",",
+     "    \"        samples = synth.sample(num_rows=n)\\n\",",
+     "    \"        samples[target_col_name] = cohort['label']\\n\",",
+     "    \"        all_synthetic_parts.append(samples)\\n\","
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "generator_utils.py",
+    "line": 23,
+    "text": "\"tvae\": \"TVAESynthesizer\",",
+    "context": [
+     "",
+     "# Generator label -> (module attribute) lazily imported in _make_synthesizer",
+     "_GENERATORS = {",
+     "    \"copula\": \"GaussianCopulaSynthesizer\",",
+     "    \"tvae\": \"TVAESynthesizer\",",
+     "    \"ctgan\": \"CTGANSynthesizer\",",
+     "}",
+     "",
+     ""
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "03_Static_Synthetic_Generation.ipynb",
+    "line": 387,
+    "text": "\"        from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "    \"    print(f\\\"  Cohort '{cohort['name']}': {len(cohort_data)} real → generating {n} synthetic\\\")\\n\",",
+     "    \"\\n\",",
+     "    \"    try:\\n\",",
+     "    \"        from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"        from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"        meta = SingleTableMetadata()\\n\",",
+     "    \"        meta.detect_from_dataframe(cohort_data)\\n\",",
+     "    \"        synth = GaussianCopulaSynthesizer(meta)\\n\",",
+     "    \"        synth.fit(cohort_data)\\n\","
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "gc",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv>=1.9.0"
+  ]
+ }
+}

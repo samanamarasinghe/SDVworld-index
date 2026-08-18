@@ -1,0 +1,503 @@
+{
+ "repo": "lMaxTl/SAS-Stealing",
+ "disk_kb": 10542,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Data-Free Model Stealing with Semantic-Aware Queries\n\n[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)\n[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/release/python-380/)\n\nThis repository contains the official source code and experimental pipeline for the paper, \"Synthesize, Adapt, Steal: A Few-Shot Domain Adaptive Model Stealing Attack for Tabular Data\".\n\nThe project investigates and compares different strategies for generating synthetic data to perform a data-free model stealing attack on a Multi-Layer Perceptron (MLP) trained on Industrial Control System (ICS) network traffic from the ERENO dataset. We demonstrate the effectiveness of using a semantic-aware query strategy, including advanced data patching with a Relational Attention Corrector (RAC), against traditional GAN-based and naive statistical data generation methods.\n\nAdditionally this repository inculdes the Jupyter Notebooks for the Adult Income Dataset and Diabetes Dataset experiments.\nThe experiments regarding the AdultIncome Dataset are located in adultIncome.ipynb and the experiments for the Diabetes Dataset are contained in diabetes.ipynb\n\n## Key Features\n\n*   **End-to-End Pipeline**: A fully scriptable pipeline from data preprocessing to model evaluation.\n*   **Modular Codebase**: Logic is separated into modules for data loading, models, synthetic data generation, attack execution, and evaluation.\n*   **Reproducibility**: All experiments are controlled via a single configuration file (`config.yaml`) and use fixed random seeds to ensure results can be reproduced.\n*   **Two Synthetic Data Methods**:\n    1.  **Statistical Generation**: A rule-based method using global statistics and hand-crafted semantic constraints.\n    2.  **CTGAN Generation**: A GAN-based approach for learning and sampling from the data distribution.\n*   **Advanced Attack Strategy**: Implements a data-free model stealing attack using active learning and semantic-aware adversarial probes.\n\n## Project Structure\n\n```\ndata-free-attack/\n├── .gitignore\n├── LICENSE\n├── README.md\n├── requirements.txt\n├── config.yaml\n├── data/\n│   └── ereno/\n│       ├── train.arff\n│       └── test.arff\n├── notebooks/\n│   └── analysis.ipynb\n├── saved_models/\n│   ├── ereno_target_mlp.pth\n│   └── ctgan_synthesizer.pkl\n└── src/\n    ├── __init__.py\n    ├── data_loader.py\n    ├── models.py\n    ├── synthetic_data_gen.py\n    ├── attack.py\n    ├── patching.py\n    ├── evaluation.py\n    └── main.py\n```\n\n## Setup and Installation\n\n### 1. Clone the Repository\n```bash\ngit clone <repo-url>\ncd data-free-attack\n```\n\n### 2. Create a Virtual Environment (Recommended)\n```bash\npython -m venv venv\nsource venv/bin/activate  # On Windows, use `venv\\Scripts\\activate`\n```\n\n### 3. Install Dependencies\nAll required Python libraries are listed in `requirements.txt`.\n```bash\npip install -r requirements.txt\n```\n\n### 4. Place Data and Pre-trained Models\n*   **Dataset**: Download the ERENO dataset from its [source](https://www.kaggle.com/datasets/sequincozes/ereno-iec61850-ids) and place the `train.arff` and `test.arff` files inside the `data/ereno/` directory.\n\n*   **Pre-trained Models**: This repository is designed to use pre-trained models for the target classifier, the CTGAN synthesizer, and the RAC corrector. Place these files in the `saved_models/` directory as specified in `config.yaml`.\n\n    **If you do not have the pre-trained models**, you can generate them by running the pipeline. Open `config.yaml` and set the following flags to `true`:\n    *   `ctgan_params.force_retrain: true`\n    *   `rac_params.force_retrain: true`\n    \n    The first time you run `python src/main.py`, the script will automatically train these models and save them to the `saved_models/` directory for future use. Note that training these models, especially the CTGAN, can be time-consuming.\n\n## Running the Experiment\n\nThe entire experimental pipeline can be executed by running the `main.py` script. All parameters for the experiment are controlled via the `config.yaml` file.\n\n### Configuration\nThe `config.yaml` file allows you to control all aspects of the experiment, including file paths, model hyperparameters, and attack parameters.\n\n**Example `config.yaml` snippet:**\n```yaml\nseed: 42\n\npaths:\n  train_data: \"data/ereno/train.arff\"\n  test_data: \"data/ereno/test.arff\"\n  target_model: \"saved_models/ereno_target_mlp.pth\"\n  ctgan_model: \"saved_models/ctgan_synthesizer.pkl\"\n  output_dir: \"results/\"\n\nattack_params:\n  num_rounds: 8\n  queries_per_round: 500\n  seed_size: 50\n  lr_substitute: 0.001\n  epochs_substitute: 10\n```\n### Execute the Pipeline\nTo run the full experiment as defined in the configuration file, execute the following command from the root directory:\n```bash\npython main.py\n```\nThe script will log its progress to the console and save the final evaluation metrics to `results/final_evaluation_results.json`.\n\n## Evaluation and Reproducing Figures\n\nThe `main.py` script runs the attack and performs a final evaluation, saving the numerical results.\n\nTo reproduce the plots and figures from the paper (e.g., PCA visualizations), you can use the `notebooks/analysis.ipynb` Jupyter notebook. This notebook is designed to load the saved JSON results and other artifacts to generate the final visualizations.\n\n## Meeting AAAI Reproducibility Standards\n\nThis repository is structured to meet the AAAI standards for computational experiments.\n\n*   **Hyperparameter Specification**: All hyperparameters are explicitly defined and managed in `config.yaml`. The process for selecting them is detailed in the paper's appendix.\n*   **Data Pre-processing**: All code required for loading and pre-processing the ARFF data is located in `src/data_loader.py`.\n*   **Source Code and License**: All source code is included and released under the MIT License, which allows for free usage for research purposes.\n*   **Code Documentation**: Core methods in the source code include comments and docstrings referencing the relevant sections of our paper.\n*   **Randomness and Seeding**: The `seed` parameter in `config.yaml` is used by the `set_seed` function in `main.py` to ensure all random operations are deterministic and reproducible.\n*   **Computing Infrastructure**: Experiments were run on the following infrastructure:\n    *   **CPU**: AMD Ryzen 9 3900X (12 cores)\n    *   **GPU**: NVIDIA RTX 4060 (8GB VRAM)\n    *   **Memory**: 32GB RAM\n    *   **OS**: Windows 11\n    *   **Software**: Python 3.12.7, PyTorch, CUDA 11.8\n*   **Evaluation Metrics**: All evaluation metrics (Accuracy, F1-Score, Fidelity, KL/JS Divergence) are formally described in the paper and implemented in `src/evaluation.py`.\n*   **Statistical Significance**: To perform multiple runs for statistical analysis, you can wrap the core logic in `main.py` in a loop and increment the seed for each run. The collected JSON results can then be analyzed using statistical tests (e.g., Wilcoxon signed-rank test) in the `analysis.ipynb` notebook.\n\n\n## License\n\nThis project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.\n",
+ "hits": {
+  "st": [
+   {
+    "file": "diabetes.ipynb",
+    "line": 395,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"from sklearn.preprocessing import StandardScaler, MinMaxScaler\\n\",",
+     "    \"from sklearn.model_selection import train_test_split\\n\",",
+     "    \"from sklearn.metrics import f1_score, accuracy_score, classification_report\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"import warnings\\n\",",
+     "    \"warnings.filterwarnings('ignore')\\n\","
+    ]
+   },
+   {
+    "file": "adultIncome.ipynb",
+    "line": 295,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"from sklearn.metrics import accuracy_score, classification_report, f1_score\\n\",",
+     "    \"\\n\",",
+     "    \"from datasets import load_dataset\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"import warnings\\n\",",
+     "    \"warnings.filterwarnings('ignore')\\n\","
+    ]
+   },
+   {
+    "file": "src/synthetic_data_gen.py",
+    "line": 11,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from pathlib import Path",
+     "from typing import Dict, List, Any, Optional, Tuple",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "# Configure a logger for this module",
+     "logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')",
+     "logger = logging.getLogger(__name__)"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "diabetes.ipynb",
+    "line": 396,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"from sklearn.model_selection import train_test_split\\n\",",
+     "    \"from sklearn.metrics import f1_score, accuracy_score, classification_report\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"import warnings\\n\",",
+     "    \"warnings.filterwarnings('ignore')\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "adultIncome.ipynb",
+    "line": 296,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"\\n\",",
+     "    \"from datasets import load_dataset\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"import warnings\\n\",",
+     "    \"warnings.filterwarnings('ignore')\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "src/synthetic_data_gen.py",
+    "line": 10,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import random",
+     "from pathlib import Path",
+     "from typing import Dict, List, Any, Optional, Tuple",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "# Configure a logger for this module",
+     "logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "diabetes.ipynb",
+    "line": 36,
+    "text": "\"Collecting boto3<2.0.0,>=1.28 (from sdv)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: tzdata>=2022.7 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from pandas) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.8.0 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from scikit-learn) (1.16.3)\\n\",",
+     "      \"Requirement already satisfied: joblib>=1.2.0 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from scikit-learn) (1.5.2)\\n\",",
+     "      \"Requirement already satisfied: threadpoolctl>=3.1.0 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from scikit-learn) (3.6.0)\\n\",",
+     "      \"Collecting boto3<2.0.0,>=1.28 (from sdv)\\n\",",
+     "      \"  Using cached boto3-1.41.3-py3-none-any.whl.metadata (6.8 kB)\\n\",",
+     "      \"Collecting botocore<2.0.0,>=1.31 (from sdv)\\n\",",
+     "      \"  Using cached botocore-1.41.3-py3-none-any.whl.metadata (5.9 kB)\\n\",",
+     "      \"Requirement already satisfied: cloudpickle>=2.1.0 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from sdv) (3.1.2)\\n\","
+    ]
+   },
+   {
+    "file": "diabetes.ipynb",
+    "line": 38,
+    "text": "\"Collecting botocore<2.0.0,>=1.31 (from sdv)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: joblib>=1.2.0 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from scikit-learn) (1.5.2)\\n\",",
+     "      \"Requirement already satisfied: threadpoolctl>=3.1.0 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from scikit-learn) (3.6.0)\\n\",",
+     "      \"Collecting boto3<2.0.0,>=1.28 (from sdv)\\n\",",
+     "      \"  Using cached boto3-1.41.3-py3-none-any.whl.metadata (6.8 kB)\\n\",",
+     "      \"Collecting botocore<2.0.0,>=1.31 (from sdv)\\n\",",
+     "      \"  Using cached botocore-1.41.3-py3-none-any.whl.metadata (5.9 kB)\\n\",",
+     "      \"Requirement already satisfied: cloudpickle>=2.1.0 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from sdv) (3.1.2)\\n\",",
+     "      \"Requirement already satisfied: graphviz>=0.13.2 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from sdv) (0.21)\\n\",",
+     "      \"Requirement already satisfied: tqdm>=4.29 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from sdv) (4.67.1)\\n\","
+    ]
+   },
+   {
+    "file": "diabetes.ipynb",
+    "line": 40,
+    "text": "\"Requirement already satisfied: cloudpickle>=2.1.0 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from sdv) (3.1.2)\\n\",",
+    "context": [
+     "      \"Collecting boto3<2.0.0,>=1.28 (from sdv)\\n\",",
+     "      \"  Using cached boto3-1.41.3-py3-none-any.whl.metadata (6.8 kB)\\n\",",
+     "      \"Collecting botocore<2.0.0,>=1.31 (from sdv)\\n\",",
+     "      \"  Using cached botocore-1.41.3-py3-none-any.whl.metadata (5.9 kB)\\n\",",
+     "      \"Requirement already satisfied: cloudpickle>=2.1.0 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from sdv) (3.1.2)\\n\",",
+     "      \"Requirement already satisfied: graphviz>=0.13.2 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from sdv) (0.21)\\n\",",
+     "      \"Requirement already satisfied: tqdm>=4.29 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from sdv) (4.67.1)\\n\",",
+     "      \"Collecting copulas>=0.12.1 (from sdv)\\n\",",
+     "      \"  Using cached copulas-0.12.3-py3-none-any.whl.metadata (9.5 kB)\\n\","
+    ]
+   },
+   {
+    "file": "diabetes.ipynb",
+    "line": 41,
+    "text": "\"Requirement already satisfied: graphviz>=0.13.2 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from sdv) (0.21)\\n\",",
+    "context": [
+     "      \"  Using cached boto3-1.41.3-py3-none-any.whl.metadata (6.8 kB)\\n\",",
+     "      \"Collecting botocore<2.0.0,>=1.31 (from sdv)\\n\",",
+     "      \"  Using cached botocore-1.41.3-py3-none-any.whl.metadata (5.9 kB)\\n\",",
+     "      \"Requirement already satisfied: cloudpickle>=2.1.0 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from sdv) (3.1.2)\\n\",",
+     "      \"Requirement already satisfied: graphviz>=0.13.2 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from sdv) (0.21)\\n\",",
+     "      \"Requirement already satisfied: tqdm>=4.29 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from sdv) (4.67.1)\\n\",",
+     "      \"Collecting copulas>=0.12.1 (from sdv)\\n\",",
+     "      \"  Using cached copulas-0.12.3-py3-none-any.whl.metadata (9.5 kB)\\n\",",
+     "      \"Collecting ctgan>=0.11.0 (from sdv)\\n\","
+    ]
+   },
+   {
+    "file": "diabetes.ipynb",
+    "line": 42,
+    "text": "\"Requirement already satisfied: tqdm>=4.29 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from sdv) (4.67.1)\\n\",",
+    "context": [
+     "      \"Collecting botocore<2.0.0,>=1.31 (from sdv)\\n\",",
+     "      \"  Using cached botocore-1.41.3-py3-none-any.whl.metadata (5.9 kB)\\n\",",
+     "      \"Requirement already satisfied: cloudpickle>=2.1.0 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from sdv) (3.1.2)\\n\",",
+     "      \"Requirement already satisfied: graphviz>=0.13.2 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from sdv) (0.21)\\n\",",
+     "      \"Requirement already satisfied: tqdm>=4.29 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from sdv) (4.67.1)\\n\",",
+     "      \"Collecting copulas>=0.12.1 (from sdv)\\n\",",
+     "      \"  Using cached copulas-0.12.3-py3-none-any.whl.metadata (9.5 kB)\\n\",",
+     "      \"Collecting ctgan>=0.11.0 (from sdv)\\n\",",
+     "      \"  Using cached ctgan-0.11.1-py3-none-any.whl.metadata (10 kB)\\n\","
+    ]
+   },
+   {
+    "file": "diabetes.ipynb",
+    "line": 43,
+    "text": "\"Collecting copulas>=0.12.1 (from sdv)\\n\",",
+    "context": [
+     "      \"  Using cached botocore-1.41.3-py3-none-any.whl.metadata (5.9 kB)\\n\",",
+     "      \"Requirement already satisfied: cloudpickle>=2.1.0 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from sdv) (3.1.2)\\n\",",
+     "      \"Requirement already satisfied: graphviz>=0.13.2 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from sdv) (0.21)\\n\",",
+     "      \"Requirement already satisfied: tqdm>=4.29 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from sdv) (4.67.1)\\n\",",
+     "      \"Collecting copulas>=0.12.1 (from sdv)\\n\",",
+     "      \"  Using cached copulas-0.12.3-py3-none-any.whl.metadata (9.5 kB)\\n\",",
+     "      \"Collecting ctgan>=0.11.0 (from sdv)\\n\",",
+     "      \"  Using cached ctgan-0.11.1-py3-none-any.whl.metadata (10 kB)\\n\",",
+     "      \"Collecting deepecho>=0.7.0 (from sdv)\\n\","
+    ]
+   },
+   {
+    "file": "diabetes.ipynb",
+    "line": 45,
+    "text": "\"Collecting ctgan>=0.11.0 (from sdv)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: graphviz>=0.13.2 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from sdv) (0.21)\\n\",",
+     "      \"Requirement already satisfied: tqdm>=4.29 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from sdv) (4.67.1)\\n\",",
+     "      \"Collecting copulas>=0.12.1 (from sdv)\\n\",",
+     "      \"  Using cached copulas-0.12.3-py3-none-any.whl.metadata (9.5 kB)\\n\",",
+     "      \"Collecting ctgan>=0.11.0 (from sdv)\\n\",",
+     "      \"  Using cached ctgan-0.11.1-py3-none-any.whl.metadata (10 kB)\\n\",",
+     "      \"Collecting deepecho>=0.7.0 (from sdv)\\n\",",
+     "      \"  Using cached deepecho-0.7.0-py3-none-any.whl.metadata (10 kB)\\n\",",
+     "      \"Collecting rdt>=1.18.2 (from sdv)\\n\","
+    ]
+   },
+   {
+    "file": "diabetes.ipynb",
+    "line": 47,
+    "text": "\"Collecting deepecho>=0.7.0 (from sdv)\\n\",",
+    "context": [
+     "      \"Collecting copulas>=0.12.1 (from sdv)\\n\",",
+     "      \"  Using cached copulas-0.12.3-py3-none-any.whl.metadata (9.5 kB)\\n\",",
+     "      \"Collecting ctgan>=0.11.0 (from sdv)\\n\",",
+     "      \"  Using cached ctgan-0.11.1-py3-none-any.whl.metadata (10 kB)\\n\",",
+     "      \"Collecting deepecho>=0.7.0 (from sdv)\\n\",",
+     "      \"  Using cached deepecho-0.7.0-py3-none-any.whl.metadata (10 kB)\\n\",",
+     "      \"Collecting rdt>=1.18.2 (from sdv)\\n\",",
+     "      \"  Using cached rdt-1.18.2-py3-none-any.whl.metadata (10 kB)\\n\",",
+     "      \"Collecting sdmetrics>=0.21.0 (from sdv)\\n\","
+    ]
+   },
+   {
+    "file": "diabetes.ipynb",
+    "line": 49,
+    "text": "\"Collecting rdt>=1.18.2 (from sdv)\\n\",",
+    "context": [
+     "      \"Collecting ctgan>=0.11.0 (from sdv)\\n\",",
+     "      \"  Using cached ctgan-0.11.1-py3-none-any.whl.metadata (10 kB)\\n\",",
+     "      \"Collecting deepecho>=0.7.0 (from sdv)\\n\",",
+     "      \"  Using cached deepecho-0.7.0-py3-none-any.whl.metadata (10 kB)\\n\",",
+     "      \"Collecting rdt>=1.18.2 (from sdv)\\n\",",
+     "      \"  Using cached rdt-1.18.2-py3-none-any.whl.metadata (10 kB)\\n\",",
+     "      \"Collecting sdmetrics>=0.21.0 (from sdv)\\n\",",
+     "      \"  Using cached sdmetrics-0.24.0-py3-none-any.whl.metadata (9.3 kB)\\n\",",
+     "      \"Requirement already satisfied: platformdirs>=4.0 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from sdv) (4.5.0)\\n\","
+    ]
+   },
+   {
+    "file": "diabetes.ipynb",
+    "line": 51,
+    "text": "\"Collecting sdmetrics>=0.21.0 (from sdv)\\n\",",
+    "context": [
+     "      \"Collecting deepecho>=0.7.0 (from sdv)\\n\",",
+     "      \"  Using cached deepecho-0.7.0-py3-none-any.whl.metadata (10 kB)\\n\",",
+     "      \"Collecting rdt>=1.18.2 (from sdv)\\n\",",
+     "      \"  Using cached rdt-1.18.2-py3-none-any.whl.metadata (10 kB)\\n\",",
+     "      \"Collecting sdmetrics>=0.21.0 (from sdv)\\n\",",
+     "      \"  Using cached sdmetrics-0.24.0-py3-none-any.whl.metadata (9.3 kB)\\n\",",
+     "      \"Requirement already satisfied: platformdirs>=4.0 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from sdv) (4.5.0)\\n\",",
+     "      \"Requirement already satisfied: pyyaml>=6.0.1 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from sdv) (6.0.3)\\n\",",
+     "      \"Requirement already satisfied: jmespath<2.0.0,>=0.7.1 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from boto3<2.0.0,>=1.28->sdv) (1.0.1)\\n\","
+    ]
+   },
+   {
+    "file": "diabetes.ipynb",
+    "line": 53,
+    "text": "\"Requirement already satisfied: platformdirs>=4.0 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from sdv) (4.5.0)\\n\",",
+    "context": [
+     "      \"Collecting rdt>=1.18.2 (from sdv)\\n\",",
+     "      \"  Using cached rdt-1.18.2-py3-none-any.whl.metadata (10 kB)\\n\",",
+     "      \"Collecting sdmetrics>=0.21.0 (from sdv)\\n\",",
+     "      \"  Using cached sdmetrics-0.24.0-py3-none-any.whl.metadata (9.3 kB)\\n\",",
+     "      \"Requirement already satisfied: platformdirs>=4.0 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from sdv) (4.5.0)\\n\",",
+     "      \"Requirement already satisfied: pyyaml>=6.0.1 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from sdv) (6.0.3)\\n\",",
+     "      \"Requirement already satisfied: jmespath<2.0.0,>=0.7.1 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from boto3<2.0.0,>=1.28->sdv) (1.0.1)\\n\",",
+     "      \"Collecting s3transfer<0.16.0,>=0.15.0 (from boto3<2.0.0,>=1.28->sdv)\\n\",",
+     "      \"  Using cached s3transfer-0.15.0-py3-none-any.whl.metadata (1.7 kB)\\n\","
+    ]
+   },
+   {
+    "file": "diabetes.ipynb",
+    "line": 54,
+    "text": "\"Requirement already satisfied: pyyaml>=6.0.1 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from sdv) (6.0.3)\\n\",",
+    "context": [
+     "      \"  Using cached rdt-1.18.2-py3-none-any.whl.metadata (10 kB)\\n\",",
+     "      \"Collecting sdmetrics>=0.21.0 (from sdv)\\n\",",
+     "      \"  Using cached sdmetrics-0.24.0-py3-none-any.whl.metadata (9.3 kB)\\n\",",
+     "      \"Requirement already satisfied: platformdirs>=4.0 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from sdv) (4.5.0)\\n\",",
+     "      \"Requirement already satisfied: pyyaml>=6.0.1 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from sdv) (6.0.3)\\n\",",
+     "      \"Requirement already satisfied: jmespath<2.0.0,>=0.7.1 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from boto3<2.0.0,>=1.28->sdv) (1.0.1)\\n\",",
+     "      \"Collecting s3transfer<0.16.0,>=0.15.0 (from boto3<2.0.0,>=1.28->sdv)\\n\",",
+     "      \"  Using cached s3transfer-0.15.0-py3-none-any.whl.metadata (1.7 kB)\\n\",",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\n\","
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "diabetes.ipynb",
+    "line": 395,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"from sklearn.preprocessing import StandardScaler, MinMaxScaler\\n\",",
+     "    \"from sklearn.model_selection import train_test_split\\n\",",
+     "    \"from sklearn.metrics import f1_score, accuracy_score, classification_report\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"import warnings\\n\",",
+     "    \"warnings.filterwarnings('ignore')\\n\","
+    ]
+   },
+   {
+    "file": "diabetes.ipynb",
+    "line": 603,
+    "text": "\"synthesizer = CTGANSynthesizer(metadata, epochs=150, verbose=False)\\n\",",
+    "context": [
+     "    \"metadata = SingleTableMetadata()\\n\",",
+     "    \"metadata.detect_from_dataframe(df_public_adapted)\\n\",",
+     "    \"\\n\",",
+     "    \"print(\\\"\\\\nTraining CTGAN on D_public (Adapted CDC)...\\\")\\n\",",
+     "    \"synthesizer = CTGANSynthesizer(metadata, epochs=150, verbose=False)\\n\",",
+     "    \"synthesizer.fit(df_public_adapted)\\n\",",
+     "    \"\\n\",",
+     "    \"sample = synthesizer.sample(5)\\n\",",
+     "    \"print(\\\"Synthetic Sample (learned from CDC):\\\")\\n\","
+    ]
+   },
+   {
+    "file": "adultIncome.ipynb",
+    "line": 295,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"from sklearn.metrics import accuracy_score, classification_report, f1_score\\n\",",
+     "    \"\\n\",",
+     "    \"from datasets import load_dataset\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"import warnings\\n\",",
+     "    \"warnings.filterwarnings('ignore')\\n\","
+    ]
+   },
+   {
+    "file": "adultIncome.ipynb",
+    "line": 625,
+    "text": "\"synthesizer = CTGANSynthesizer(metadata, epochs=50, verbose=False)\\n\",",
+    "context": [
+     "    \"metadata.detect_from_dataframe(df_public_adapted)\\n\",",
+     "    \"\\n\",",
+     "    \"print(\\\"Training CTGAN on D_public (Adapted Folktables)...\\\")\\n\",",
+     "    \"# epochs=50 for demo speed (Paper uses more for higher fidelity)\\n\",",
+     "    \"synthesizer = CTGANSynthesizer(metadata, epochs=50, verbose=False)\\n\",",
+     "    \"synthesizer.fit(df_public_adapted)\\n\",",
+     "    \"\\n\",",
+     "    \"# Generate a Test Sample\\n\",",
+     "    \"sample = synthesizer.sample(5)\\n\","
+    ]
+   },
+   {
+    "file": "src/synthetic_data_gen.py",
+    "line": 11,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from pathlib import Path",
+     "from typing import Dict, List, Any, Optional, Tuple",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "# Configure a logger for this module",
+     "logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')",
+     "logger = logging.getLogger(__name__)"
+    ]
+   },
+   {
+    "file": "src/synthetic_data_gen.py",
+    "line": 262,
+    "text": "synthesizer = CTGANSynthesizer.load(filepath=synthesizer_path)",
+    "context": [
+     "",
+     "    if not force_retrain and synthesizer_path.exists():",
+     "        logger.info(f\"Loading pre-trained CTGAN synthesizer from {synthesizer_path}...\")",
+     "        try:",
+     "            synthesizer = CTGANSynthesizer.load(filepath=synthesizer_path)",
+     "        except Exception as e:",
+     "            logger.error(f\"Failed to load synthesizer: {e}. Retraining is required.\")",
+     "            force_retrain = True",
+     "    else:"
+    ]
+   },
+   {
+    "file": "src/synthetic_data_gen.py",
+    "line": 278,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "",
+     "        metadata = SingleTableMetadata()",
+     "        metadata.detect_from_dataframe(data=real_data_sample)",
+     "        ",
+     "        synthesizer = CTGANSynthesizer(",
+     "            metadata,",
+     "            enforce_rounding=False,",
+     "            epochs=epochs,",
+     "            verbose=True"
+    ]
+   }
+  ],
+  "rdt": [
+   {
+    "file": "diabetes.ipynb",
+    "line": 70,
+    "text": "\"Requirement already satisfied: Faker!=37.11.0,>=17 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from rdt>=1.18.2->sdv) (38.2.0)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: pyparsing>=3 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from matplotlib) (3.2.5)\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from copulas>=0.12.1->sdv) (6.5.0)\\n\",",
+     "      \"Requirement already satisfied: colorama in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from tqdm>=4.29->sdv) (0.4.6)\\n\",",
+     "      \"Requirement already satisfied: narwhals>=1.15.1 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (2.12.0)\\n\",",
+     "      \"Requirement already satisfied: Faker!=37.11.0,>=17 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from rdt>=1.18.2->sdv) (38.2.0)\\n\",",
+     "      \"Requirement already satisfied: mpmath<1.4,>=1.1.0 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from sympy>=1.13.3->torch) (1.3.0)\\n\",",
+     "      \"Requirement already satisfied: MarkupSafe>=2.0 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from jinja2->torch) (3.0.3)\\n\",",
+     "      \"Using cached torch-2.9.1-cp311-cp311-win_amd64.whl (111.0 MB)\\n\",",
+     "      \"Using cached sdv-1.29.1-py3-none-any.whl (197 kB)\\n\","
+    ]
+   },
+   {
+    "file": "adultIncome.ipynb",
+    "line": 98,
+    "text": "\"Requirement already satisfied: Faker!=37.11.0,>=17 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from rdt>=1.18.2->sdv) (38.2.0)\\n\",",
+    "context": [
+     "      \"  Downloading yarl-1.22.0-cp311-cp311-win_amd64.whl.metadata (77 kB)\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from copulas>=0.12.1->sdv) (6.5.0)\\n\",",
+     "      \"Requirement already satisfied: colorama in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from tqdm>=4.29->sdv) (0.4.6)\\n\",",
+     "      \"Requirement already satisfied: narwhals>=1.15.1 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (2.12.0)\\n\",",
+     "      \"Requirement already satisfied: Faker!=37.11.0,>=17 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from rdt>=1.18.2->sdv) (38.2.0)\\n\",",
+     "      \"Collecting charset_normalizer<4,>=2 (from requests>=2.32.2->datasets)\\n\",",
+     "      \"  Downloading charset_normalizer-3.4.4-cp311-cp311-win_amd64.whl.metadata (38 kB)\\n\",",
+     "      \"Requirement already satisfied: mpmath<1.4,>=1.1.0 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from sympy>=1.13.3->torch) (1.3.0)\\n\",",
+     "      \"Collecting sniffio>=1.1 (from anyio->httpx<1.0.0->datasets)\\n\","
+    ]
+   }
+  ],
+  "copulas": [
+   {
+    "file": "diabetes.ipynb",
+    "line": 67,
+    "text": "\"Requirement already satisfied: plotly>=5.10.0 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from copulas>=0.12.1->sdv) (6.5.0)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: kiwisolver>=1.3.1 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from matplotlib) (1.4.9)\\n\",",
+     "      \"Requirement already satisfied: packaging>=20.0 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from matplotlib) (25.0)\\n\",",
+     "      \"Requirement already satisfied: pillow>=8 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from matplotlib) (12.0.0)\\n\",",
+     "      \"Requirement already satisfied: pyparsing>=3 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from matplotlib) (3.2.5)\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from copulas>=0.12.1->sdv) (6.5.0)\\n\",",
+     "      \"Requirement already satisfied: colorama in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from tqdm>=4.29->sdv) (0.4.6)\\n\",",
+     "      \"Requirement already satisfied: narwhals>=1.15.1 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (2.12.0)\\n\",",
+     "      \"Requirement already satisfied: Faker!=37.11.0,>=17 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from rdt>=1.18.2->sdv) (38.2.0)\\n\",",
+     "      \"Requirement already satisfied: mpmath<1.4,>=1.1.0 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from sympy>=1.13.3->torch) (1.3.0)\\n\","
+    ]
+   },
+   {
+    "file": "adultIncome.ipynb",
+    "line": 95,
+    "text": "\"Requirement already satisfied: plotly>=5.10.0 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from copulas>=0.12.1->sdv) (6.5.0)\\n\",",
+    "context": [
+     "      \"Collecting propcache>=0.2.0 (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2025.10.0,>=2023.1.0->datasets)\\n\",",
+     "      \"  Downloading propcache-0.4.1-cp311-cp311-win_amd64.whl.metadata (14 kB)\\n\",",
+     "      \"Collecting yarl<2.0,>=1.17.0 (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2025.10.0,>=2023.1.0->datasets)\\n\",",
+     "      \"  Downloading yarl-1.22.0-cp311-cp311-win_amd64.whl.metadata (77 kB)\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from copulas>=0.12.1->sdv) (6.5.0)\\n\",",
+     "      \"Requirement already satisfied: colorama in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from tqdm>=4.29->sdv) (0.4.6)\\n\",",
+     "      \"Requirement already satisfied: narwhals>=1.15.1 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (2.12.0)\\n\",",
+     "      \"Requirement already satisfied: Faker!=37.11.0,>=17 in d:\\\\programmier projekte\\\\master\\\\paper-modelstealing\\\\.venv\\\\lib\\\\site-packages (from rdt>=1.18.2->sdv) (38.2.0)\\n\",",
+     "      \"Collecting charset_normalizer<4,>=2 (from requests>=2.32.2->datasets)\\n\","
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "copulas",
+  "ct",
+  "md",
+  "rdt",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "copulas==0.12.3",
+   "ctgan==0.11.0",
+   "rdt==1.17.1",
+   "sdmetrics==0.21.0",
+   "sdv==1.24.1"
+  ]
+ }
+}

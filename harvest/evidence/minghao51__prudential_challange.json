@@ -1,0 +1,415 @@
+{
+ "repo": "minghao51/prudential_challange",
+ "disk_kb": 5013,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# AI Use Cases\n> 2. Implement a product recommendation model for either cross or upselling from customer behaviors\n\n- The implementation details for the various steps can be found in the notebooks\n- The Input and Output reside in the data folder\n\n# Enviroment\n\nIdeally, with conda/mamba, via local environment\n\n`mamba env create -n py312syndata --file env.yml`\n\nWhereby, all the notebooks will be executed using the created environment.\nAlternatively, you can create an environment with the relevant libraries as well (refer to the libraries section or use notebook kernel + pip install)\n\n# Notebooks\n\n## 1. **L0_DataScope**\n**Hybrid Data Generation**\n1. Rules and stats-based generation\n    - Single wide table with Customer/policies/payment etc\n2. DataLLM - MostlyAI augmentation\n    - Augmentation with prompts\n    - Required API KEY, [MostlyAI](https://data.mostly.ai/docs/routes#authentication), and save it to .env as\n3. Manually Clean Up\n    - Date casting\n    - Issue/Termination Date\n    - Fraction(termination Date) to None\n\n## 2. **L1_DataGeneration**\n**Generating cross-sell & upsell data with SVD**\n- Select customers of certain profiles - high value (premium/income) / dependencies/ recency, and use rules/assumptions to appoint them to purchase additional policies\n    1. GaussianCopulaSynthesizer\n    2. Constraint\n    3. Conditional Generation\n    4. Additional into Tables\n- Aim to get like 20% of the customers with either upsell/sell\n\n## 3. **L2_MLApproach**\n**ML-based Approach**\n- Feature Eng\n    - Event Base Feature Engineering\n    - Capture only Cross-sell/Upsell Policy Purchase Events\n        - Single Purchase events are discarded in this modeling, although it is possible to make use of them to extract demography favorable for certain policies at times.\n- ML Training\n        - Premodel processing\n        - Casting/Train Val Separation\n    - LightGBM Model\n        - Required API KEY for [wandb](https://wandb.ai/home), although, the relevant codes can be disabled as it is just there for logging purpose\n        - However, since wandb logging is embeded within the logics, it is best to grab/register an account and insert the API key via the jupyter interface\n\n## 4. **L3_Validation**\n**Evaluate the models**\n- Performance metrics\n    - WandB Logging - Metrics, Artifacts (Table, Model.pkl, plots)\n    - Multi-Classification Metrics Logging\n    - SHAP for the encoded class to investigate the customer purchase behavior\n- AI ethics\n    - FairLearn\n\n\n\n# Libraries Used\n- python=3.12\n- SDV\n- datallm (pip install)\n- pandas\n- numpy\n- polars\n- seaborn\n- scikit-learn\n- lightgbm\n- fairlearn\n\n\n# .env file\nThe API keys necessary for accessing DataLLM and Weights & Biases (wandb) are, by default, retrieved from a .env file, which is not committed to the version control system and requires manual creation. The .env file follows a specific format, which is\n\n```\nDataLLM=<your_api_key_here>\nWANDB=<your_api_key_here>\n```\n\n# Clean up/Uninstall Env\nOnce you are done, the environment can be removed via\n\n`mamba env remove -n py312syndata`",
+ "hits": {
+  "st": [
+   {
+    "file": "L1_DataGeneration.ipynb",
+    "line": 183,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "     ]",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"synthesizer = GaussianCopulaSynthesizer(metadata)\"",
+     "   ]",
+     "  },"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "L1_DataGeneration.ipynb",
+    "line": 116,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "   \"execution_count\": 4,",
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"metadata = SingleTableMetadata()\\n\",",
+     "    \"metadata.detect_from_dataframe(data)\"",
+     "   ]"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "L1_DataGeneration.ipynb",
+    "line": 116,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "   \"execution_count\": 4,",
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"metadata = SingleTableMetadata()\\n\",",
+     "    \"metadata.detect_from_dataframe(data)\"",
+     "   ]"
+    ]
+   },
+   {
+    "file": "L1_DataGeneration.ipynb",
+    "line": 183,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "     ]",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"synthesizer = GaussianCopulaSynthesizer(metadata)\"",
+     "   ]",
+     "  },"
+    ]
+   },
+   {
+    "file": "L1_DataGeneration.ipynb",
+    "line": 390,
+    "text": "\"from sdv.sampling import Condition\\n\",",
+    "context": [
+     "   \"execution_count\": 13,",
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"from sdv.sampling import Condition\\n\",",
+     "    \"\\n\",",
+     "    \"# Setings Conditions\\n\",",
+     "    \"high_income = Condition(num_rows=250, column_values={\\\"high_income\\\": True})\\n\",",
+     "    \"under_insured = Condition(num_rows=250, column_values={\\\"under_insured\\\": True})\\n\","
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "L1_DataGeneration.ipynb",
+    "line": 10,
+    "text": "\"    1. GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "   \"source\": [",
+     "    \"# Data Generation\\n\",",
+     "    \"## Generating cross-sell & upsell data with SVD\\n\",",
+     "    \"- Select customers of certain profiles - high value (premium/income) / dependencies/ recency, and use rules/assumptions to appoint them to purchase additional policies\\n\",",
+     "    \"    1. GaussianCopulaSynthesizer\\n\",",
+     "    \"    2. Constraint\\n\",",
+     "    \"    3. Conditional Generation\\n\",",
+     "    \"    4. Additional into Tables\\n\",",
+     "    \"- Aim to get like 20% of the customers with either upsell/sell\""
+    ]
+   },
+   {
+    "file": "L1_DataGeneration.ipynb",
+    "line": 183,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "     ]",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"synthesizer = GaussianCopulaSynthesizer(metadata)\"",
+     "   ]",
+     "  },"
+    ]
+   },
+   {
+    "file": "L1_DataGeneration.ipynb",
+    "line": 185,
+    "text": "\"synthesizer = GaussianCopulaSynthesizer(metadata)\"",
+    "context": [
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"synthesizer = GaussianCopulaSynthesizer(metadata)\"",
+     "   ]",
+     "  },",
+     "  {",
+     "   \"cell_type\": \"markdown\","
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 33,
+    "text": "1. GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "## 2. **L1_DataGeneration**",
+     "**Generating cross-sell & upsell data with SVD**",
+     "- Select customers of certain profiles - high value (premium/income) / dependencies/ recency, and use rules/assumptions to appoint them to purchase additional policies",
+     "    1. GaussianCopulaSynthesizer",
+     "    2. Constraint",
+     "    3. Conditional Generation",
+     "    4. Additional into Tables",
+     "- Aim to get like 20% of the customers with either upsell/sell"
+    ]
+   }
+  ],
+  "rdt": [
+   {
+    "file": "L1_DataGeneration.ipynb",
+    "line": 307,
+    "text": "\"from rdt.transformers import AnonymizedFaker, PseudoAnonymizedFaker\\n\",",
+    "context": [
+     "   \"execution_count\": 10,",
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"from rdt.transformers import AnonymizedFaker, PseudoAnonymizedFaker\\n\",",
+     "    \"from rdt.transformers import UniformEncoder\\n\",",
+     "    \"\\n\",",
+     "    \"\\n\",",
+     "    \"synthesizer.update_transformers(\\n\","
+    ]
+   },
+   {
+    "file": "L1_DataGeneration.ipynb",
+    "line": 308,
+    "text": "\"from rdt.transformers import UniformEncoder\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"from rdt.transformers import AnonymizedFaker, PseudoAnonymizedFaker\\n\",",
+     "    \"from rdt.transformers import UniformEncoder\\n\",",
+     "    \"\\n\",",
+     "    \"\\n\",",
+     "    \"synthesizer.update_transformers(\\n\",",
+     "    \"    column_name_to_transformer={\\n\","
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "gc",
+  "md",
+  "rdt",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "copulas @ file:///home/conda/feedstock_root/build_artifacts/copulas_1712795015950/work",
+   "ctgan @ file:///home/conda/feedstock_root/build_artifacts/ctgan_1715700730432/work",
+   "rdt @ file:///home/conda/feedstock_root/build_artifacts/rdt_1720622838305/work",
+   "sdmetrics @ file:///home/conda/feedstock_root/build_artifacts/sdmetrics_1721072434545/work",
+   "sdv @ file:///home/conda/feedstock_root/build_artifacts/sdv_1720755898936/work"
+  ],
+  "wandb/run-20240722_022544-5ffjyau6/files/requirements.txt": [
+   "copulas==0.11.0",
+   "ctgan==0.10.1",
+   "rdt==1.12.2",
+   "sdmetrics==0.15.0",
+   "sdv==1.15.0"
+  ],
+  "wandb/run-20240722_023012-hmhh2k1v/files/requirements.txt": [
+   "copulas==0.11.0",
+   "ctgan==0.10.1",
+   "rdt==1.12.2",
+   "sdmetrics==0.15.0",
+   "sdv==1.15.0"
+  ],
+  "wandb/run-20240722_004656-fp9fn5ml/files/requirements.txt": [
+   "copulas==0.11.0",
+   "ctgan==0.10.1",
+   "rdt==1.12.2",
+   "sdmetrics==0.15.0",
+   "sdv==1.15.0"
+  ],
+  "wandb/run-20240722_022626-4xm2e5k4/files/requirements.txt": [
+   "copulas==0.11.0",
+   "ctgan==0.10.1",
+   "rdt==1.12.2",
+   "sdmetrics==0.15.0",
+   "sdv==1.15.0"
+  ],
+  "wandb/run-20240722_021206-ty0ap4ow/files/requirements.txt": [
+   "copulas==0.11.0",
+   "ctgan==0.10.1",
+   "rdt==1.12.2",
+   "sdmetrics==0.15.0",
+   "sdv==1.15.0"
+  ],
+  "wandb/run-20240722_025550-e4akkuwp/files/requirements.txt": [
+   "copulas==0.11.0",
+   "ctgan==0.10.1",
+   "rdt==1.12.2",
+   "sdmetrics==0.15.0",
+   "sdv==1.15.0"
+  ],
+  "wandb/run-20240722_023415-cfda3tf7/files/requirements.txt": [
+   "copulas==0.11.0",
+   "ctgan==0.10.1",
+   "rdt==1.12.2",
+   "sdmetrics==0.15.0",
+   "sdv==1.15.0"
+  ],
+  "wandb/run-20240722_024729-8tgo5a65/files/requirements.txt": [
+   "copulas==0.11.0",
+   "ctgan==0.10.1",
+   "rdt==1.12.2",
+   "sdmetrics==0.15.0",
+   "sdv==1.15.0"
+  ],
+  "wandb/run-20240722_030019-203kinnk/files/requirements.txt": [
+   "copulas==0.11.0",
+   "ctgan==0.10.1",
+   "rdt==1.12.2",
+   "sdmetrics==0.15.0",
+   "sdv==1.15.0"
+  ],
+  "wandb/run-20240722_023955-hv9v3d76/files/requirements.txt": [
+   "copulas==0.11.0",
+   "ctgan==0.10.1",
+   "rdt==1.12.2",
+   "sdmetrics==0.15.0",
+   "sdv==1.15.0"
+  ],
+  "wandb/run-20240722_025353-r3jxhwo6/files/requirements.txt": [
+   "copulas==0.11.0",
+   "ctgan==0.10.1",
+   "rdt==1.12.2",
+   "sdmetrics==0.15.0",
+   "sdv==1.15.0"
+  ],
+  "wandb/run-20240722_015256-ioa76p1x/files/requirements.txt": [
+   "copulas==0.11.0",
+   "ctgan==0.10.1",
+   "rdt==1.12.2",
+   "sdmetrics==0.15.0",
+   "sdv==1.15.0"
+  ],
+  "wandb/run-20240722_023605-b9rk0pn3/files/requirements.txt": [
+   "copulas==0.11.0",
+   "ctgan==0.10.1",
+   "rdt==1.12.2",
+   "sdmetrics==0.15.0",
+   "sdv==1.15.0"
+  ],
+  "wandb/run-20240722_023316-65phtjho/files/requirements.txt": [
+   "copulas==0.11.0",
+   "ctgan==0.10.1",
+   "rdt==1.12.2",
+   "sdmetrics==0.15.0",
+   "sdv==1.15.0"
+  ],
+  "wandb/run-20240721_234816-0akdrkv7/files/requirements.txt": [
+   "copulas==0.11.0",
+   "ctgan==0.10.1",
+   "rdt==1.12.2",
+   "sdmetrics==0.15.0",
+   "sdv==1.15.0"
+  ],
+  "wandb/run-20240722_015107-ta0kuywg/files/requirements.txt": [
+   "copulas==0.11.0",
+   "ctgan==0.10.1",
+   "rdt==1.12.2",
+   "sdmetrics==0.15.0",
+   "sdv==1.15.0"
+  ],
+  "wandb/run-20240722_003108-8uv64ap8/files/requirements.txt": [
+   "copulas==0.11.0",
+   "ctgan==0.10.1",
+   "rdt==1.12.2",
+   "sdmetrics==0.15.0",
+   "sdv==1.15.0"
+  ],
+  "wandb/run-20240722_024033-9igqx977/files/requirements.txt": [
+   "copulas==0.11.0",
+   "ctgan==0.10.1",
+   "rdt==1.12.2",
+   "sdmetrics==0.15.0",
+   "sdv==1.15.0"
+  ],
+  "wandb/run-20240722_030141-5n4ftp11/files/requirements.txt": [
+   "copulas==0.11.0",
+   "ctgan==0.10.1",
+   "rdt==1.12.2",
+   "sdmetrics==0.15.0",
+   "sdv==1.15.0"
+  ],
+  "wandb/run-20240722_023818-t4sfgye9/files/requirements.txt": [
+   "copulas==0.11.0",
+   "ctgan==0.10.1",
+   "rdt==1.12.2",
+   "sdmetrics==0.15.0",
+   "sdv==1.15.0"
+  ],
+  "wandb/run-20240722_022816-yh814hb1/files/requirements.txt": [
+   "copulas==0.11.0",
+   "ctgan==0.10.1",
+   "rdt==1.12.2",
+   "sdmetrics==0.15.0",
+   "sdv==1.15.0"
+  ],
+  "wandb/run-20240722_024105-8mhg0fqf/files/requirements.txt": [
+   "copulas==0.11.0",
+   "ctgan==0.10.1",
+   "rdt==1.12.2",
+   "sdmetrics==0.15.0",
+   "sdv==1.15.0"
+  ],
+  "wandb/run-20240722_015851-yiywvtx8/files/requirements.txt": [
+   "copulas==0.11.0",
+   "ctgan==0.10.1",
+   "rdt==1.12.2",
+   "sdmetrics==0.15.0",
+   "sdv==1.15.0"
+  ],
+  "wandb/run-20240722_025739-7elvbxx3/files/requirements.txt": [
+   "copulas==0.11.0",
+   "ctgan==0.10.1",
+   "rdt==1.12.2",
+   "sdmetrics==0.15.0",
+   "sdv==1.15.0"
+  ],
+  "wandb/run-20240722_015415-kaie2ocj/files/requirements.txt": [
+   "copulas==0.11.0",
+   "ctgan==0.10.1",
+   "rdt==1.12.2",
+   "sdmetrics==0.15.0",
+   "sdv==1.15.0"
+  ],
+  "wandb/run-20240722_024715-kqewlln8/files/requirements.txt": [
+   "copulas==0.11.0",
+   "ctgan==0.10.1",
+   "rdt==1.12.2",
+   "sdmetrics==0.15.0",
+   "sdv==1.15.0"
+  ],
+  "wandb/run-20240722_021007-up9ddqh6/files/requirements.txt": [
+   "copulas==0.11.0",
+   "ctgan==0.10.1",
+   "rdt==1.12.2",
+   "sdmetrics==0.15.0",
+   "sdv==1.15.0"
+  ],
+  "wandb/run-20240722_030116-o1qzvhbu/files/requirements.txt": [
+   "copulas==0.11.0",
+   "ctgan==0.10.1",
+   "rdt==1.12.2",
+   "sdmetrics==0.15.0",
+   "sdv==1.15.0"
+  ],
+  "wandb/run-20240722_024639-41bdjcp7/files/requirements.txt": [
+   "copulas==0.11.0",
+   "ctgan==0.10.1",
+   "rdt==1.12.2",
+   "sdmetrics==0.15.0",
+   "sdv==1.15.0"
+  ]
+ }
+}

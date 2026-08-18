@@ -1,0 +1,500 @@
+{
+ "repo": "marquito3012/TFM",
+ "disk_kb": 110979,
+ "method": "partial_clone",
+ "tree_files": 114,
+ "status": "ok",
+ "readme": "# 🎓 TFM: Generación de Datos Sintéticos para Sectores Sensibles\n\n<p align=\"left\">\n  <img src=\"https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white\" alt=\"Python\" />\n  <img src=\"https://img.shields.io/badge/PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white\" alt=\"PyTorch\" />\n  <img src=\"https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white\" alt=\"Docker\" />\n  <img src=\"https://img.shields.io/badge/Jupyter-F37626.svg?&style=for-the-badge&logo=Jupyter&logoColor=white\" alt=\"Jupyter Notebook\" />\n</p>\n\n## 🎯 Objetivo del Proyecto\nEl objetivo principal de este Trabajo de Fin de Máster es desarrollar y evaluar un framework de IA Generativa capaz de producir datos tabulares sintéticos. La meta es demostrar matemáticamente que los datos sintéticos cruzan la frontera legal para convertirse en **datos anónimos**, evadiendo así las restricciones del **GDPR**, mientras mantienen una alta utilidad estadística para el entrenamiento de modelos de Machine Learning en sectores críticos (Finanzas/Salud).\n\n## 📊 Dataset y Pre-procesamiento\nPara este proyecto se utiliza el dataset público **[Diabetes 130-US Hospitals for Years 1999-2008](https://archive.ics.uci.edu/dataset/296/diabetes+130-us+hospitals+for+years+1999-2008)**. \n\nSe ha realizado una exhaustiva ingeniería de datos que incluye:\n- Depuración de variables con nulos extremos (ej. `weight`, `max_glu_serum`).\n- Exclusión de pacientes fallecidos/hospice para modelos de readmisión.\n- Consolidación de diagnósticos en 9 categorías clínicas (Agrupación ICD-9).\n- Creación de variables sintéticas y normalización del dataset.\n\n## 🧠 Arquitecturas Generativas Analizadas\nEl núcleo del proyecto evalúa y compara tres enfoques punteros en la generación de datos tabulares:\n\n| Característica | CTGAN | TVAE | Tabular Diffusion (TabDDPM) |\n| :--- | :--- | :--- | :--- |\n| **Arquitectura Base** | GAN (Redes Adversarias) | VAE (Autoencoder Variacional) | Modelo de Difusión Probabilística |\n| **Mecanismo Clave** | Generador Condicional | Espacio Latente Probabilístico | Difusión Reversa (Denoising) |\n| **Estabilidad** | Baja (propenso a colapso de modo) | Alta (convergencia rápida) | Muy Alta (proceso iterativo robusto) |\n| **Velocidad de Entrenamiento** | Media | **Muy Rápida** | Lenta |\n| **Calidad Estadística** | Buena | Media (tiende a \"suavizar\" bordes) | **Excelente (Estado del arte)** |\n| **Manejo de Categorías** | Excelente (vía muestreo condicional) | Bueno (vía Softmax/Cross-entropy) | Excelente (vía Cadenas de Markov) |\n\n## 🛡️ Privacidad y Cumplimiento Normativo (GDPR)\nPara garantizar que los datos sintéticos no exponen información de los sujetos originales, el modelo se somete a rigurosas validaciones:\n1. **Riesgo de Re-identificación (DCR):** Uso de la métrica *Distance to Closest Record* para demostrar que el modelo no memoriza datos y no genera copias exactas.\n2. **Riesgo de Inferencia (MIA):** Simulación de Ataques de Inferencia de Membresía para asegurar que un atacante no pueda deducir si un individuo pertenecía al dataset original de entrenamiento.\n3. **Minimización de Datos:** Mejora del \"Time-to-Data\" empresarial, permitiendo a los equipos de MLOps innovar sin interactuar con datos PII.\n\n---\n\n## 🚀 Instalación y Uso (Entorno Docker)\n\nEl proyecto está dockerizado para garantizar la reproducibilidad del entorno y aprovechar la aceleración por hardware.\n\n1. **Construir y levantar el contenedor:**\n   ```bash\n   docker compose up --build -d\n   ```\n2. **Comprobar la detección de la GPU:**\n   ```bash\n    docker compose exec tfm python3 -c \"import torch; print(f'¿GPU detectada?: {torch.cuda.is_available()}'); print(f'Dispositivo: {torch.cuda.get_device_name(0) if torch.cuda.is_available() else \\\"Ninguno\\\"}')\" \n   ```\n3. **Acceder a la consola del contenedor (opcional):**\n   ```bash\n   docker compose exec tfm /bin/bash\n   ```\n4. **Abrir Jupyter Lab:**\n   Acceder desde tu navegador a: `http://localhost:8888`\n\n# Roadmap del Proyecto\n\n## 🟦 Fase 1: Investigación y Configuración (Semanas 1-2)\n- [x] **Selección del Dataset:** Identificar y descargar un dataset público de alta sensibilidad (Finanzas o Salud). **Decidí elegir el conjunto de datos [Diabetes 130-US Hospitals for Years 1999-2008](https://archive.ics.uci.edu/dataset/296/diabetes+130-us+hospitals+for+years+1999-2008)\n- [x] **Revisión Bibliográfica:**\n    - [x] **Lectura profunda de los papers de la propuesta**\n    - [x] **Estudio de las arquitecturas**: CTGAN, TVAE y Tabular Diffusion.\n     \n      * **CTGAN (Conditional Tabular GAN):** Se basa en un juego de suma cero entre un generador y un discriminador. Su innovación es el **entrenamiento condicional**, que permite balancear clases minoritarias al \"forzar\" al modelo a generar ejemplos de categorías poco comunes.\n      * **TVAE (Tabular Variational Autoencoder):** Utiliza un codificador para comprimir los datos en un espacio latente y un decodificador para reconstruirlos. Es mucho más estable y rápido de entrenar que las GAN, siendo ideal para datasets masivos donde la eficiencia es clave.\n      * **Tabular Diffusion (TabDDPM):** Representa el estado del arte actual. Aprende a revertir un proceso de degradación de datos (ruido). Aunque es computacionalmente costoso, captura correlaciones complejas y distribuciones multimodales con una precisión que supera a los modelos anteriores.\n\n        | Característica | CTGAN | TVAE | Tabular Diffusion (TabDDPM) |\n        | :--- | :--- | :--- | :--- |\n        | **Arquitectura Base** | GAN (Redes Adversarias) | VAE (Autoencoder Variacional) | Modelo de Difusión Probabilística |\n        | **Mecanismo Clave** | Generador Condicional | Espacio Latente Probabilístico | Difusión Reversa (Denoising) |\n        | **Estabilidad** | Baja (propenso a colapso de modo) | Alta (convergencia rápida) | Muy Alta (proceso iterativo robusto) |\n        | **Velocidad de Entrenamiento** | Media | **Muy Rápida** | Lenta |\n        | **Calidad Estadística** | Buena | Media (tiende a \"suavizar\" bordes) | **Excelente (Estado del arte)** |\n        | **Manejo de Categorías** | Excelente (vía muestreo condicional) | Bueno (vía Softmax/Cross-entropy) | Excelente (vía Cadenas de Markov) |\n        | **Complejidad de Uso** | Media (ajuste de hiperparámetros) | Baja | Alta (requiere más recursos de GPU) |\n\n        **Usa CTGAN si:** Tienes un dataset con un desequilibrio de clases muy marcado (ej. detección de fraudes).\n        **Usa TVAE si:** Necesitas generar datos rápidamente o tienes recursos computacionales limitados.\n        **Usa Tabular Diffusion si:** La fidelidad de los datos es crítica y no te importa el tiempo de cómputo (ej. investigación médica o financiera).\n- [x] **Análisis de Privacidad:** Definir los límites de la normativa GDPR aplicados al proyecto.\n  Diferencia entre Datos Personales y Datos Anónimos:\n    - Datos personales: se refiere a cualquier información relacionada con una persona física identificada o identificable. Aquí el GDPR aplica con toda su dureza.\n    - Datos anónimos: información que no se refiere a una persona identificable. El GDPR estipula explícitamente que no se aplica a los datos anónimos.\n\n  El objetivo legal del TFM es demostrar matemáticamente que los datos sintéticos cruzan esa frontera y se convierten en datos anónimos, evadiendo así las restricciones del GDPR.\n\n  Se pueden establecer 3 límites legales para que los datos sintéticos estén fuera del alcance del GDPR:\n\n  1. Riesgo de Re-identificación: ¿Puede un atacante aislar un registro sintético y vincularlo a una persona real? **Solución** -> Utilizar la métrica Distance to Closest Record (DCR). Con ella, se demuestra que el modelo no ha memorizado los datos de entrenamiento y que ningún registro sintético es una copia exacta de uno real.\n  2. Riesgo de Inferencia: ¿Puede alguien deducir información sensible cruzando el dataset sintético con otras bases de datos públicas? **Solución** -> La simulación de Ataques de Inferencia de Membresía (MIA). Se evalúa si un atacante externo podría llegar a determinar si un individuo específico formó parte del dataset original usado para entrenar. Esto garantiza un nivel robusto ante auditorías.\n  3. Minimización de Datos y Propósito: Las empresas no pueden dar acceso a datos sensibles (PII) indiscriminadamente para hacer pruebas. **Solución** -> El análisis de viabilidad empresarial. Se demostrará que la solución permite a los equipos de MLOps innovar sin tocar datos PII, mejorando drásticamente el \"Time-to-Data\".\n- [x] **Entorno de Desarrollo:** Configurar el entorno virtual con **PyTorch** y dependencias necesarias.\n\n## 🟨 Fase 2: Ingeniería de Datos y Pre-procesamiento (Semanas 3-4)\n- [x] **Análisis exploratorio de los Datos:** Finalizado. Se ha generado un informe detallado con los siguientes hallazgos:\n    - **Calidad de Datos:** Variables con alta tasa de nulos (`weight` 97%, `max_glu_serum` 95%, `A1Cresult` 83%).\n    - **Criterio de Exclusión:** Identificación de 2,306 registros correspondientes a fallecimientos/hospice que deben filtrarse para el modelo de readmisión.\n    - **Distribución de Clases:** La clase menoritaria `<30` (11.1%) confirma la necesidad de SMOTE o modelos generativos balanceados.\n    - **Medicación:** Análisis de prevalencia de Insulina y Metformina como ejes del tratamiento.\n- [x] **Limpieza de Datos:** Eliminación de 2,423 registros (fallecidos/hospice) y depuración de columnas irrelevantes o con nulos extremos.\n- [x] **Agrupación ICD-9:** Consolidación de diagnósticos en 9 categorías clínicas para optimizar el aprendizaje del motor generativo.\n- [x] **Ingeniería de Variables:** Creación de variables sintéticas como `prior_visits` y normalización visual del dataset.\n\n## 🟩 Fase 3: Implementación del Motor Generativo (Semanas 5-7) ✅ COMPLETADA\n- [x] **Desarrollo del Modelo:** Programación de las arquitecturas (CTGAN, TVAE y Tabular Diffusion) en PyTorch.\n- [x] **Entrenamiento:** Configuración del bucle de entrenamiento y funciones de pérdida completado.\n- [x] **Optimización:** Ajuste de hiperparámetros para evitar *mode collapse* y *overfitting*.\n- [x] **Espacio Latente:** Validación de la transformación de datos brutos al espacio latente.\n- [x] **Modelos Entrenados y Guardados:**\n  - `compartida/models/ctgan_model.pkl` — Modelo CTGAN entrenado\n  - `compartida/models/tvae_model.pkl` — Modelo TVAE entrenado\n  - `compartida/models/tabddpm_model.pt` — Modelo TabDDPM entrenado (PyTorch)\n- [x] **Datos Sintéticos Generados:**\n  - `compartida/outputs/synthetic_ctgan.csv` — Datos sintéticos de CTGAN\n  - `compartida/outputs/synthetic_tvae.csv` — Datos sintéticos de TVAE\n  - `compartida/outputs/synthetic_tabddpm.csv` — Datos sintéticos de TabDDPM\n  - `compartida/outputs/tabddpm_loss_curve.csv` — Curva de pérdida de TabDDPM\n\n## 🟧 Fase 4: Evaluación de Calidad y Utilidad (Semanas 8-9) ✅ COMPLETADA\n- [x] **Fidelidad Estadística:** Cálculo de distancias de Wasserstein y matrices de correlación completado. **TabDDPM** muestra la mayor fidelidad (WD: 0.39, Corr Diff: 0.01).\n- [x] **Validación TSTR:** Entrenamiento de XGBoost con datos sintéticos y testeo en reales finalizado.\n- [x] **Métricas de Éxito:** **TabDDPM** logró una brecha de F1-Score del **-0.27%** respecto al baseline real, superando el objetivo del < 5%.\n\n## 🟥 Fase 5: Protocolo de Privacidad y Ataques (Semana 10) ✅ COMPLETADA\n- [x] **Métricas DCR:** Pruebas de *Distance to Closest Record* finalizadas. Ningún modelo generó copias exactas. **TabDDPM** es el más seguro con Min DCR de 0.39.\n- [x] **Simulación MIA:** Ataques de Inferencia de Membresía ejecutados. Todos los modelos muestran un AUC ~0.50, indicando inmunidad ante re-identificación de miembros.\n- [x] **Informe de Riesgos:** Documentada formalmente la resiliencia y el cumplimiento del GDPR en `privacy_audit_report.md`.\n\n## 🟪 Fase 6: Impacto Empresarial y Memoria Final (Semanas 11-12) 🚧 EN CURSO\n- [x] **Análisis Time-to-Data:** Cuantificación del ahorro burocrático finalizada. Reducción del **98.4%** en el tiempo de acceso (de meses a < 24h).\n- [x] **Escalabilidad:** Evaluación de MLOps completada. Framework listo para producción vía Docker y APIs asíncronas con soporte GPU.\n- [x] **Redacción de Memoria:** Completar los capítulos de la carpeta Memoria/chapters en LaTex.\n- [x] **Bibliografía:** Asegurar que todas las referencias (El Emam, Stadler, Xu, etc.) estén correctamente citadas.\n\nPara construir la imágen de docker, usamos (`--build` fuerza a Docker a leer la `Dockerfile` e instalar todas las dependencias del `requirements.txt`):\n```\ndocker compose up --build -d\n```\nPara comprobar si se detecta la tarjeta gráfica (En mi caso RX9070), ejecutar:\n```\ndocker compose exec tfm python3 -c \"import torch; print(f'¿GPU detectada?: {torch.cuda.is_available()}'); print(f'Dispositivo: {torch.cuda.get_device_name(0) if torch.cuda.is_available() else \\\"Ninguno\\\"}')\"\n```\nPara ejecutar el contenedor\n```\ndocker compose exec tfm /bin/bash\n```\nPara entrar a Jupyter Lab, entrar en un buscado a:\n```\nhttp://localhost:8888\n```\n",
+ "hits": {
+  "st": [
+   {
+    "file": "compartida/scripts/train_ctgan.py",
+    "line": 91,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "                sdtype=props[\"sdtype\"]",
+     "            )",
+     "",
+     "    # 4. Instanciar CTGAN",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "",
+     "    model = CTGANSynthesizer(",
+     "        metadata=metadata,",
+     "        epochs=args.epochs,"
+    ]
+   },
+   {
+    "file": "compartida/scripts/train_ctgan.py",
+    "line": 141,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "    \"\"\"",
+     "    Carga un modelo CTGAN guardado previamente y genera n_samples filas.",
+     "    Útil para re-generar sin volver a entrenar.",
+     "    \"\"\"",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "",
+     "    model_path = os.path.join(MODELS_DIR, \"ctgan_model.pkl\")",
+     "    if not os.path.exists(model_path):",
+     "        raise FileNotFoundError(f\"Modelo no encontrado en {model_path}. Entrena primero.\")"
+    ]
+   },
+   {
+    "file": "compartida/scripts/tvae_ablation.py",
+    "line": 157,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "          f\"épocas={variant['epochs']}\")",
+     "    print(f\"{'='*65}\")",
+     "",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import TVAESynthesizer",
+     "",
+     "    # Metadatos SDV",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(df)"
+    ]
+   },
+   {
+    "file": "compartida/scripts/train_tvae.py",
+    "line": 84,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "        if col in df.columns:",
+     "            metadata.update_column(column_name=col, sdtype=props[\"sdtype\"])",
+     "",
+     "    # 4. Instanciar TVAE",
+     "    from sdv.single_table import TVAESynthesizer",
+     "",
+     "    model = TVAESynthesizer(",
+     "        metadata=metadata,",
+     "        epochs=args.epochs,"
+    ]
+   },
+   {
+    "file": "compartida/scripts/train_tvae.py",
+    "line": 139,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "        # Accedemos al encoder interno de SDV/TVAE",
+     "        encoder = model._model.encoder",
+     "        device  = next(encoder.parameters()).device",
+     "",
+     "        from sdv.single_table import TVAESynthesizer",
+     "        # Transformamos una muestra del dataset real al espacio latente",
+     "        transformer = model._data_processor",
+     "        transformed = transformer.transform(df.sample(2000, random_state=42))",
+     "        data_tensor = torch.FloatTensor(transformed.values).to(device)"
+    ]
+   },
+   {
+    "file": "compartida/scripts/train_tvae.py",
+    "line": 163,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "# CARGAR MODELO Y GENERAR",
+     "# ---------------------------------------------------------------------------",
+     "",
+     "def load_and_sample(n_samples: int = N_SYNTHETIC_SAMPLES, output: str = SYNTH_TVAE_PATH):",
+     "    from sdv.single_table import TVAESynthesizer",
+     "",
+     "    model_path = os.path.join(MODELS_DIR, \"tvae_model.pkl\")",
+     "    if not os.path.exists(model_path):",
+     "        raise FileNotFoundError(f\"Modelo no encontrado en {model_path}. Entrena primero.\")"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "compartida/scripts/train_ctgan.py",
+    "line": 76,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    else:",
+     "        print(\"[CPU] No se detectó GPU o se desactivó con --no_cuda. Entrenando en CPU.\")",
+     "",
+     "    # 3. Construir metadatos SDV",
+     "    from sdv.metadata import SingleTableMetadata",
+     "",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(df)",
+     ""
+    ]
+   },
+   {
+    "file": "compartida/scripts/tvae_ablation.py",
+    "line": 156,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "          f\"embedding_dim={variant['embedding_dim']}  \"",
+     "          f\"épocas={variant['epochs']}\")",
+     "    print(f\"{'='*65}\")",
+     "",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import TVAESynthesizer",
+     "",
+     "    # Metadatos SDV",
+     "    metadata = SingleTableMetadata()"
+    ]
+   },
+   {
+    "file": "compartida/scripts/train_tvae.py",
+    "line": 73,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    else:",
+     "        print(\"[CPU] Entrenando en CPU.\")",
+     "",
+     "    # 3. Metadatos SDV",
+     "    from sdv.metadata import SingleTableMetadata",
+     "",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(df)",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "compartida/scripts/train_ctgan.py",
+    "line": 76,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    else:",
+     "        print(\"[CPU] No se detectó GPU o se desactivó con --no_cuda. Entrenando en CPU.\")",
+     "",
+     "    # 3. Construir metadatos SDV",
+     "    from sdv.metadata import SingleTableMetadata",
+     "",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(df)",
+     ""
+    ]
+   },
+   {
+    "file": "compartida/scripts/train_ctgan.py",
+    "line": 91,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "                sdtype=props[\"sdtype\"]",
+     "            )",
+     "",
+     "    # 4. Instanciar CTGAN",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "",
+     "    model = CTGANSynthesizer(",
+     "        metadata=metadata,",
+     "        epochs=args.epochs,"
+    ]
+   },
+   {
+    "file": "compartida/scripts/train_ctgan.py",
+    "line": 141,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "    \"\"\"",
+     "    Carga un modelo CTGAN guardado previamente y genera n_samples filas.",
+     "    Útil para re-generar sin volver a entrenar.",
+     "    \"\"\"",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "",
+     "    model_path = os.path.join(MODELS_DIR, \"ctgan_model.pkl\")",
+     "    if not os.path.exists(model_path):",
+     "        raise FileNotFoundError(f\"Modelo no encontrado en {model_path}. Entrena primero.\")"
+    ]
+   },
+   {
+    "file": "compartida/scripts/tvae_ablation.py",
+    "line": 156,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "          f\"embedding_dim={variant['embedding_dim']}  \"",
+     "          f\"épocas={variant['epochs']}\")",
+     "    print(f\"{'='*65}\")",
+     "",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import TVAESynthesizer",
+     "",
+     "    # Metadatos SDV",
+     "    metadata = SingleTableMetadata()"
+    ]
+   },
+   {
+    "file": "compartida/scripts/tvae_ablation.py",
+    "line": 157,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "          f\"épocas={variant['epochs']}\")",
+     "    print(f\"{'='*65}\")",
+     "",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import TVAESynthesizer",
+     "",
+     "    # Metadatos SDV",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(df)"
+    ]
+   },
+   {
+    "file": "compartida/scripts/train_tvae.py",
+    "line": 73,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    else:",
+     "        print(\"[CPU] Entrenando en CPU.\")",
+     "",
+     "    # 3. Metadatos SDV",
+     "    from sdv.metadata import SingleTableMetadata",
+     "",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(df)",
+     ""
+    ]
+   },
+   {
+    "file": "compartida/scripts/train_tvae.py",
+    "line": 84,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "        if col in df.columns:",
+     "            metadata.update_column(column_name=col, sdtype=props[\"sdtype\"])",
+     "",
+     "    # 4. Instanciar TVAE",
+     "    from sdv.single_table import TVAESynthesizer",
+     "",
+     "    model = TVAESynthesizer(",
+     "        metadata=metadata,",
+     "        epochs=args.epochs,"
+    ]
+   },
+   {
+    "file": "compartida/scripts/train_tvae.py",
+    "line": 139,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "        # Accedemos al encoder interno de SDV/TVAE",
+     "        encoder = model._model.encoder",
+     "        device  = next(encoder.parameters()).device",
+     "",
+     "        from sdv.single_table import TVAESynthesizer",
+     "        # Transformamos una muestra del dataset real al espacio latente",
+     "        transformer = model._data_processor",
+     "        transformed = transformer.transform(df.sample(2000, random_state=42))",
+     "        data_tensor = torch.FloatTensor(transformed.values).to(device)"
+    ]
+   },
+   {
+    "file": "compartida/scripts/train_tvae.py",
+    "line": 163,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "# CARGAR MODELO Y GENERAR",
+     "# ---------------------------------------------------------------------------",
+     "",
+     "def load_and_sample(n_samples: int = N_SYNTHETIC_SAMPLES, output: str = SYNTH_TVAE_PATH):",
+     "    from sdv.single_table import TVAESynthesizer",
+     "",
+     "    model_path = os.path.join(MODELS_DIR, \"tvae_model.pkl\")",
+     "    if not os.path.exists(model_path):",
+     "        raise FileNotFoundError(f\"Modelo no encontrado en {model_path}. Entrena primero.\")"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "compartida/scripts/train_ctgan.py",
+    "line": 91,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "                sdtype=props[\"sdtype\"]",
+     "            )",
+     "",
+     "    # 4. Instanciar CTGAN",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "",
+     "    model = CTGANSynthesizer(",
+     "        metadata=metadata,",
+     "        epochs=args.epochs,"
+    ]
+   },
+   {
+    "file": "compartida/scripts/train_ctgan.py",
+    "line": 93,
+    "text": "model = CTGANSynthesizer(",
+    "context": [
+     "",
+     "    # 4. Instanciar CTGAN",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "",
+     "    model = CTGANSynthesizer(",
+     "        metadata=metadata,",
+     "        epochs=args.epochs,",
+     "        batch_size=args.batch_size,",
+     "        generator_dim=CTGAN_CONFIG[\"generator_dim\"],"
+    ]
+   },
+   {
+    "file": "compartida/scripts/train_ctgan.py",
+    "line": 141,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "    \"\"\"",
+     "    Carga un modelo CTGAN guardado previamente y genera n_samples filas.",
+     "    Útil para re-generar sin volver a entrenar.",
+     "    \"\"\"",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "",
+     "    model_path = os.path.join(MODELS_DIR, \"ctgan_model.pkl\")",
+     "    if not os.path.exists(model_path):",
+     "        raise FileNotFoundError(f\"Modelo no encontrado en {model_path}. Entrena primero.\")"
+    ]
+   },
+   {
+    "file": "compartida/scripts/train_ctgan.py",
+    "line": 147,
+    "text": "model = CTGANSynthesizer.load(model_path)",
+    "context": [
+     "    model_path = os.path.join(MODELS_DIR, \"ctgan_model.pkl\")",
+     "    if not os.path.exists(model_path):",
+     "        raise FileNotFoundError(f\"Modelo no encontrado en {model_path}. Entrena primero.\")",
+     "",
+     "    model = CTGANSynthesizer.load(model_path)",
+     "    print(f\"[Cargado] Modelo CTGAN desde: {model_path}\")",
+     "",
+     "    synthetic_df = model.sample(num_rows=n_samples)",
+     "    synthetic_df.to_csv(output, index=False)"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "compartida/scripts/tvae_ablation.py",
+    "line": 157,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "          f\"épocas={variant['epochs']}\")",
+     "    print(f\"{'='*65}\")",
+     "",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import TVAESynthesizer",
+     "",
+     "    # Metadatos SDV",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(df)"
+    ]
+   },
+   {
+    "file": "compartida/scripts/tvae_ablation.py",
+    "line": 167,
+    "text": "model = TVAESynthesizer(",
+    "context": [
+     "    for col, props in sdv_meta[\"columns\"].items():",
+     "        if col in df.columns:",
+     "            metadata.update_column(column_name=col, sdtype=props[\"sdtype\"])",
+     "",
+     "    model = TVAESynthesizer(",
+     "        metadata=metadata,",
+     "        epochs=variant[\"epochs\"],",
+     "        batch_size=variant[\"batch_size\"],",
+     "        compress_dims=variant[\"compress_dims\"],"
+    ]
+   },
+   {
+    "file": "compartida/scripts/train_tvae.py",
+    "line": 84,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "        if col in df.columns:",
+     "            metadata.update_column(column_name=col, sdtype=props[\"sdtype\"])",
+     "",
+     "    # 4. Instanciar TVAE",
+     "    from sdv.single_table import TVAESynthesizer",
+     "",
+     "    model = TVAESynthesizer(",
+     "        metadata=metadata,",
+     "        epochs=args.epochs,"
+    ]
+   },
+   {
+    "file": "compartida/scripts/train_tvae.py",
+    "line": 86,
+    "text": "model = TVAESynthesizer(",
+    "context": [
+     "",
+     "    # 4. Instanciar TVAE",
+     "    from sdv.single_table import TVAESynthesizer",
+     "",
+     "    model = TVAESynthesizer(",
+     "        metadata=metadata,",
+     "        epochs=args.epochs,",
+     "        batch_size=args.batch_size,",
+     "        compress_dims=TVAE_CONFIG[\"compress_dims\"],"
+    ]
+   },
+   {
+    "file": "compartida/scripts/train_tvae.py",
+    "line": 139,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "        # Accedemos al encoder interno de SDV/TVAE",
+     "        encoder = model._model.encoder",
+     "        device  = next(encoder.parameters()).device",
+     "",
+     "        from sdv.single_table import TVAESynthesizer",
+     "        # Transformamos una muestra del dataset real al espacio latente",
+     "        transformer = model._data_processor",
+     "        transformed = transformer.transform(df.sample(2000, random_state=42))",
+     "        data_tensor = torch.FloatTensor(transformed.values).to(device)"
+    ]
+   },
+   {
+    "file": "compartida/scripts/train_tvae.py",
+    "line": 163,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "# CARGAR MODELO Y GENERAR",
+     "# ---------------------------------------------------------------------------",
+     "",
+     "def load_and_sample(n_samples: int = N_SYNTHETIC_SAMPLES, output: str = SYNTH_TVAE_PATH):",
+     "    from sdv.single_table import TVAESynthesizer",
+     "",
+     "    model_path = os.path.join(MODELS_DIR, \"tvae_model.pkl\")",
+     "    if not os.path.exists(model_path):",
+     "        raise FileNotFoundError(f\"Modelo no encontrado en {model_path}. Entrena primero.\")"
+    ]
+   },
+   {
+    "file": "compartida/scripts/train_tvae.py",
+    "line": 169,
+    "text": "model = TVAESynthesizer.load(model_path)",
+    "context": [
+     "    model_path = os.path.join(MODELS_DIR, \"tvae_model.pkl\")",
+     "    if not os.path.exists(model_path):",
+     "        raise FileNotFoundError(f\"Modelo no encontrado en {model_path}. Entrena primero.\")",
+     "",
+     "    model = TVAESynthesizer.load(model_path)",
+     "    print(f\"[Cargado] Modelo TVAE desde: {model_path}\")",
+     "",
+     "    synthetic_df = model.sample(num_rows=n_samples)",
+     "    synthetic_df.to_csv(output, index=False)"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "# IA Generativa y SDV (Específicos de tu TFM)",
+   "sdv",
+   "ctgan",
+   "rdt"
+  ]
+ }
+}

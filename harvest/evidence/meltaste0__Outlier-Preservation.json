@@ -1,0 +1,491 @@
+{
+ "repo": "meltaste0/Outlier-Preservation",
+ "disk_kb": 613450,
+ "method": "partial_clone",
+ "tree_files": 798,
+ "status": "ok",
+ "readme": "# BA-Thesis\n\n## Environment Quick Start\n\n### Tabsyn\n1. `cd models\\tabsyn-main`\n2. `conda activate tabsyn`\n\n### TabDiff\n1. `cd models\\TabDiff-main`\n2. `conda activate tabdiff`\n\n### CTGAN\n1. `cd models\\CTGAN`\n2. `conda activate ctgan`\n\n### CTAB-GAN-Plus\n1. `conda activate ctabganplus`\n2. Verify Python version is `3.8.x`:\n\t- `python --version`\n3. Install dependencies from project folder:\n\t- `cd models\\CTAB-GAN-Plus`\n\t- `python -m pip install -r requirements.txt`\n\n## Notes\n#THE DIFFUSION MODELS WERE TOO BIG, SO GO TO END OF README AND CLONE MAIN FROM TABSYN AND TABDIFF AND ADD TO models/\n\n- Use `-r` when installing from `requirements.txt`.\n- The CTAB-GAN-Plus environment must use Python 3.8 for pinned dependency compatibility.\n- In `models/CTAB-GAN-Plus/requirements.txt`, use `scikit-learn==0.24.1` (not `sklearn==0.24.1`).\n\n### CTAB-GAN-Plus tail penalty\n\nThe Heart Disease CTAB-GAN+ run in this repository uses a tail-penalty regularizer inside the generator loss. The goal is not to change the model architecture, but to add an extra training signal that checks whether each generated continuous feature stays inside a plausible range learned from the real training data.\n\nThe implementation works in four steps:\n\n1. After the real dataset is transformed, the synthesizer computes two reference quantiles for every continuous column. By default, these are the 5th and 95th percentiles. Those values define a soft band for the feature.\n2. For every continuous feature, the code reconstructs the generated value back into the original feature scale. The reconstruction depends on how the feature was encoded:\n\t- General continuous columns are mapped from the generator output `u` back to the original scale with a linear rescaling from `[-1, 1]` into `[min, max]`.\n\t- Gaussian-mixture-style continuous columns use the generator output `u` together with the mixture component probabilities, component means, and standard deviations to reconstruct a value in the original scale.\n3. The reconstructed value is compared against the quantile band. The penalty for one feature is `max(0, lower - x_hat) + max(0, x_hat - upper)`, so values inside the band contribute zero and values outside the band are penalized linearly by their distance from the nearest boundary.\n4. The final tail penalty is the mean of these per-feature penalties across all continuous features. During generator training, it is multiplied by `tail_penalty_lambda` and added to the adversarial generator objective.\n\nIn other words, the generator is rewarded for producing continuous values that remain consistent with the central support of the real data, while still being trained normally by the adversarial and conditional objectives. The penalty is a soft constraint: it does not hard-clamp outputs, and it can be turned off by setting `tail_penalty_lambda` to `0`.\n\nIn the current Heart Disease script, the default `tail_penalty_lambda` is `0.1` and the quantile band is `(0.05, 0.95)`. That makes the penalty strong enough to influence training, but not so strong that it replaces the GAN objective.\n\n### TabDiff Usage\n\nTrain a model:\n\n```powershell\ncd models\\TabDiff-main\npython main.py --dataname heart_disease --mode train --no_wandb\n```\n\nSample from the latest trained checkpoint:\n\n```powershell\npython main.py --dataname heart_disease --mode test --no_wandb\n```\n\n## COMPARISON_PLAN_BASED.PY\nMeasures:\n1. Class distribution – absolute difference in class proportions between real and synthetic data.\n\n2. Tail behaviour – for each continuous feature, the 1st, 5th, 95th and 99th percentiles are compared; the average absolute quantile difference quantifies tail fidelity.\n\n3. Univariate outliers – outliers are defined as values outside [Q1−1.5 x IQR,Q3+1.5 x IQR]; the per‑feature outlier rate difference is reported.\n\n4. Multivariate relationships – Spearman rank correlation matrices are compared via the mean absolute difference of the upper triangle entries.\n\n5. Data validity – counts of synthetic values below the real minimum or above the real maximum, plus violations of binary constraints.\n\n6. Resemblance (domain classifier) – Propensity Mean Squared Error (pMSE) and AUROC of a classifier trained to distinguish real from synthetic data.\n\n7. Usability (TSTR) – logistic regression trained on synthetic data and tested on real data, reporting accuracy, F1, and AUROC.\n\n8. Outlier‑specific utility – an Isolation Forest trained on synthetic data is used to detect anomalies in real data; recall, AUPRC, and improvement over a reference detector are measured.\n\n### Summary table helper\n\nUse `summary_metrics_table.py` to turn any `summary_metrics.csv` under `comparison_outputs` into a readable table:\n\n```powershell\npython summary_metrics_table.py \"comparison_outputs/heart_disease/CTABGAN+_Tail_Penalty/100 epochs/0.1/summary_metrics.csv\"\n```\n\nYou can also pass a directory that contains `summary_metrics.csv`, or add `--output report.md` to save the table as Markdown.\n ",
+ "hits": {
+  "st": [
+   {
+    "file": "models/CTGAN/thyroidTest.py",
+    "line": 7,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "\"\"\"",
+     "",
+     "from pathlib import Path",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "",
+     "",
+     "def main():"
+    ]
+   },
+   {
+    "file": "models/CTGAN/arrhythmia.py",
+    "line": 2,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "",
+     "data = pd.read_csv('Arrhythmia/arrhythmia.data', sep=r',', header=None, na_values=['?'])",
+     ""
+    ]
+   },
+   {
+    "file": "models/CTGAN/heart_disease.py",
+    "line": 9,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "\"\"\"",
+     "",
+     "from pathlib import Path",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "",
+     "",
+     "# Categorical columns (as per your cleaned CSV)"
+    ]
+   },
+   {
+    "file": "models/CTGAN/breast_cancer.py",
+    "line": 9,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "\"\"\"",
+     "",
+     "from pathlib import Path",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "",
+     "",
+     "COLUMN_NAMES = ["
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "models/CTGAN/thyroidTest.py",
+    "line": 8,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "from pathlib import Path",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "",
+     "",
+     "def main():",
+     "    # Locate dataset"
+    ]
+   },
+   {
+    "file": "models/CTGAN/arrhythmia.py",
+    "line": 3,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "",
+     "data = pd.read_csv('Arrhythmia/arrhythmia.data', sep=r',', header=None, na_values=['?'])",
+     "",
+     "# This dataset has 279 features plus 1 target class (280 columns total)"
+    ]
+   },
+   {
+    "file": "models/CTGAN/heart_disease.py",
+    "line": 10,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "from pathlib import Path",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "",
+     "",
+     "# Categorical columns (as per your cleaned CSV)",
+     "CATEGORICAL_COLS = ["
+    ]
+   },
+   {
+    "file": "models/CTGAN/breast_cancer.py",
+    "line": 10,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "from pathlib import Path",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "",
+     "",
+     "COLUMN_NAMES = [",
+     "    \"Age\","
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "models/CTGAN/thyroidTest.py",
+    "line": 7,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "\"\"\"",
+     "",
+     "from pathlib import Path",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "",
+     "",
+     "def main():"
+    ]
+   },
+   {
+    "file": "models/CTGAN/thyroidTest.py",
+    "line": 8,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "from pathlib import Path",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "",
+     "",
+     "def main():",
+     "    # Locate dataset"
+    ]
+   },
+   {
+    "file": "models/CTGAN/arrhythmia.py",
+    "line": 2,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "",
+     "data = pd.read_csv('Arrhythmia/arrhythmia.data', sep=r',', header=None, na_values=['?'])",
+     ""
+    ]
+   },
+   {
+    "file": "models/CTGAN/arrhythmia.py",
+    "line": 3,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "",
+     "data = pd.read_csv('Arrhythmia/arrhythmia.data', sep=r',', header=None, na_values=['?'])",
+     "",
+     "# This dataset has 279 features plus 1 target class (280 columns total)"
+    ]
+   },
+   {
+    "file": "models/CTGAN/heart_disease.py",
+    "line": 9,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "\"\"\"",
+     "",
+     "from pathlib import Path",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "",
+     "",
+     "# Categorical columns (as per your cleaned CSV)"
+    ]
+   },
+   {
+    "file": "models/CTGAN/heart_disease.py",
+    "line": 10,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "from pathlib import Path",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "",
+     "",
+     "# Categorical columns (as per your cleaned CSV)",
+     "CATEGORICAL_COLS = ["
+    ]
+   },
+   {
+    "file": "models/CTGAN/breast_cancer.py",
+    "line": 9,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "\"\"\"",
+     "",
+     "from pathlib import Path",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "",
+     "",
+     "COLUMN_NAMES = ["
+    ]
+   },
+   {
+    "file": "models/CTGAN/breast_cancer.py",
+    "line": 10,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "from pathlib import Path",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "",
+     "",
+     "COLUMN_NAMES = [",
+     "    \"Age\","
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "models/CTGAN/thyroidTest.py",
+    "line": 7,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "\"\"\"",
+     "",
+     "from pathlib import Path",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "",
+     "",
+     "def main():"
+    ]
+   },
+   {
+    "file": "models/CTGAN/thyroidTest.py",
+    "line": 36,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "    metadata = Metadata.detect_from_dataframe(data)",
+     "    ",
+     "   ",
+     "    print(\"\\nTraining CTGAN...\")",
+     "    synthesizer = CTGANSynthesizer(",
+     "        metadata,",
+     "        epochs=100,",
+     "        batch_size=500,",
+     "        verbose=True,"
+    ]
+   },
+   {
+    "file": "models/CTGAN/arrhythmia.py",
+    "line": 2,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "",
+     "data = pd.read_csv('Arrhythmia/arrhythmia.data', sep=r',', header=None, na_values=['?'])",
+     ""
+    ]
+   },
+   {
+    "file": "models/CTGAN/arrhythmia.py",
+    "line": 13,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "data['Class'] = data['Class'].astype(str)",
+     "",
+     "metadata = Metadata.detect_from_dataframe(data)",
+     "",
+     "synthesizer = CTGANSynthesizer(",
+     "     metadata,",
+     "     epochs=50,",
+     "     enforce_rounding=True,",
+     "     verbose=True,"
+    ]
+   },
+   {
+    "file": "models/CTGAN/heart_disease.py",
+    "line": 9,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "\"\"\"",
+     "",
+     "from pathlib import Path",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "",
+     "",
+     "# Categorical columns (as per your cleaned CSV)"
+    ]
+   },
+   {
+    "file": "models/CTGAN/heart_disease.py",
+    "line": 64,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "    metadata = Metadata.detect_from_dataframe(data)",
+     "    ",
+     "    # Train CTGAN",
+     "    print(\"\\nTraining CTGAN...\")",
+     "    synthesizer = CTGANSynthesizer(",
+     "        metadata,",
+     "        epochs=100,",
+     "        batch_size=500,",
+     "        verbose=True,"
+    ]
+   },
+   {
+    "file": "models/CTGAN/breast_cancer.py",
+    "line": 9,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "\"\"\"",
+     "",
+     "from pathlib import Path",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "",
+     "",
+     "COLUMN_NAMES = ["
+    ]
+   },
+   {
+    "file": "models/CTGAN/breast_cancer.py",
+    "line": 89,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "    ",
+     "    metadata = Metadata.detect_from_dataframe(data)",
+     "    ",
+     "    print(\"\\nTraining CTGAN...\")",
+     "    synthesizer = CTGANSynthesizer(",
+     "        metadata,",
+     "        epochs=100,",
+     "        batch_size=500,",
+     "        verbose=True,"
+    ]
+   }
+  ],
+  "sm": [
+   {
+    "file": "models/tabsyn-main/eval/eval_density.py",
+    "line": 8,
+    "text": "from sdmetrics.reports.single_table import QualityReport, DiagnosticReport",
+    "context": [
+     "",
+     "import json",
+     "",
+     "# Metrics",
+     "from sdmetrics.reports.single_table import QualityReport, DiagnosticReport",
+     "",
+     "",
+     "import argparse",
+     ""
+    ]
+   },
+   {
+    "file": "models/tabsyn-main/eval/eval_detection.py",
+    "line": 11,
+    "text": "from sdmetrics import load_demo",
+    "context": [
+     "import json",
+     "import pickle",
+     "",
+     "# Metrics",
+     "from sdmetrics import load_demo",
+     "from sdmetrics.single_table import LogisticDetection",
+     "",
+     "from matplotlib import pyplot as plt",
+     ""
+    ]
+   },
+   {
+    "file": "models/tabsyn-main/eval/eval_detection.py",
+    "line": 12,
+    "text": "from sdmetrics.single_table import LogisticDetection",
+    "context": [
+     "import pickle",
+     "",
+     "# Metrics",
+     "from sdmetrics import load_demo",
+     "from sdmetrics.single_table import LogisticDetection",
+     "",
+     "from matplotlib import pyplot as plt",
+     "",
+     "import argparse"
+    ]
+   },
+   {
+    "file": "models/TabDiff-main/tabdiff/metrics.py",
+    "line": 8,
+    "text": "from sdmetrics.reports.single_table import QualityReport, DiagnosticReport",
+    "context": [
+     "import pandas as pd",
+     "# Metrics",
+     "from eval.mle.mle import get_evaluator",
+     "from eval.visualize_density import plot_density",
+     "from sdmetrics.reports.single_table import QualityReport, DiagnosticReport",
+     "from sdmetrics.single_table import LogisticDetection",
+     "from sklearn.preprocessing import OneHotEncoder",
+     "",
+     "from tqdm import tqdm"
+    ]
+   },
+   {
+    "file": "models/TabDiff-main/tabdiff/metrics.py",
+    "line": 9,
+    "text": "from sdmetrics.single_table import LogisticDetection",
+    "context": [
+     "# Metrics",
+     "from eval.mle.mle import get_evaluator",
+     "from eval.visualize_density import plot_density",
+     "from sdmetrics.reports.single_table import QualityReport, DiagnosticReport",
+     "from sdmetrics.single_table import LogisticDetection",
+     "from sklearn.preprocessing import OneHotEncoder",
+     "",
+     "from tqdm import tqdm",
+     ""
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "sm",
+  "st"
+ ],
+ "vendored_dirs": [
+  "comparison_outputs/arrhythmia/CTGAN",
+  "comparison_outputs/breast_cancer/CTGAN",
+  "comparison_outputs/heart_disease/CTGAN",
+  "comparison_outputs/thyroid/CTGAN",
+  "models/CTGAN"
+ ],
+ "dependencies": {
+  "models/tabsyn-main/requirements.txt": [
+   "sdmetrics==0.11.1",
+   "rdt"
+  ]
+ }
+}

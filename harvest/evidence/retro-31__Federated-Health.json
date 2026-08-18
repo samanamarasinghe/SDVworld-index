@@ -1,0 +1,44 @@
+{
+ "repo": "retro-31/Federated-Health",
+ "disk_kb": 6198,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Fed-Health: Federated Learning & Causal Analysis on Diabetes Readmission\n\n> **Author**: Sakthe Balan, Akshay V  \n> **Goal**: Predict and understand patient readmission using federated learning, causal inference, GAN-based data augmentation, and active learning strategies across distributed hospitals.\n\n---\n\n## Project Overview\n\nThis project simulates a realistic healthcare scenario with sensitive patient data distributed across **5 hospitals**.  \nWe explore multiple stages of machine learning and AI to improve readmission prediction while preserving privacy and reducing labeling cost.\n\n---\n\n## Folder Structure\n\n```\nFed-Health/\n├── data/\n│   └── raw/              # Original diabetic_data.csv\n│   └── split/            # Preprocessed hospital-specific datasets\n├── federated/            # Flower-based federated learning code\n├── causal_inference/     # EconML-based ATE/CATE estimation\n├── gan_module/           # CTGAN for synthetic augmentation\n├── active_learning/      # Manual active learning implementation\n└── results/              # Plots, logs, evaluation CSVs\n```\n\n---\n\n## Phases & Results\n\n### Phase 1: Federated Learning (Logistic Regression)\n- Simulated 5 clients using Flower\n- Accuracy plateaued at: **91.4%**\n- Privacy preserved: no raw data sharing\n\n### Phase 2: Causal Inference\n- Estimated **Average Treatment Effect (ATE)** using `EconML`\n- Best ATE ≈ **+0.0414** (binary treatment: insulin vs no insulin)\n- Saved **CATE results** to CSV for personalization\n\n### Phase 3: GAN-based Augmentation\n- Trained **CTGAN** on hospital_C data\n- Synthetic samples improved F1-Score from **0.0078 → 0.0112**\n- Augmented data helped slightly improve rare class recall\n\n### Phase 4: Active Learning\n- Manually implemented **uncertainty sampling** (no `modAL`)\n- Selected top-150 uncertain samples for labeling\n- Accuracy improved from **88.1% → 91.3%**\n- Precision on rare class jumped to **46%**\n\n---\n\n## Tech Stack\n\n- **Python** 3.12 (venv)\n- `scikit-learn`, `pandas`, `flwr`, `econml`, `sdv`, `matplotlib`\n- Modular scripts, reproducible outputs\n- Synthetic data: `CTGAN`, `rdt`\n- Manual active learning via `uncertainty = |0.5 - p|`\n\n---\n\n## How to Run\n\n### 1. Preprocess & split data\n\n```bash\npython scripts/preprocess_and_split.py\n```\n\n### 2. Run Federated Learning\n\nTerminal 1:\n```bash\npython federated/server.py\n```\n\nTerminals 2–6:\n```bash\npython federated/client_template.py 0  # repeat for clients 1–4\n```\n\n### 3. Run Causal Inference\n\n```bash\npython causal_inference/prepare_data.py\npython causal_inference/estimate_ate.py\n```\n\n### 4. Train CTGAN & Augment\n\n```bash\npython gan_module/train_ctgan.py\npython gan_module/augment_and_evaluate.py\n```\n\n### 5. Active Learning\n\n```bash\npython active_learning/active_learn_and_evaluate.py\n```\n\n---\n\n## Key Takeaways\n\n-  Protected patient privacy via federated learning\n-  Quantified treatment effects for interpretability\n-  Boosted generalization with synthetic GAN samples\n-  Reduced human labeling effort with active learning\n\n---\n\n## Author Note\n\nThis is part of a resume-worthy DS project to demonstrate real-world federated AI pipelines, causal reasoning, and data-efficient learning strategies — designed for both **impact** and **explainability**.\n\n",
+ "hits": {
+  "ctgan_mod": [
+   {
+    "file": "gan_module/train_ctgan.py",
+    "line": 1,
+    "text": "from ctgan import CTGAN",
+    "context": [
+     "from ctgan import CTGAN",
+     "import pandas as pd",
+     "import os",
+     "import pickle",
+     ""
+    ]
+   },
+   {
+    "file": "gan_module/generate_synthetic.py",
+    "line": 1,
+    "text": "from ctgan import CTGAN",
+    "context": [
+     "from ctgan import CTGAN",
+     "import pandas as pd",
+     "import pickle",
+     "import os",
+     ""
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ctgan_mod"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv"
+  ]
+ }
+}

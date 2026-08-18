@@ -1,0 +1,153 @@
+{
+ "repo": "sriharshaanp/CTGAN-GNN-TCN-Pipeline",
+ "disk_kb": 24,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# CTGAN–GNN–TCN Fraud Detection (Reproducible Repo Scaffold)\n\nThis repository implements a **leakage-safe** fraud detection pipeline inspired by a **CTGAN → structure-aware assignment → GNN + TCN** workflow.\n\nIt is designed to be:\n- **Reproducible** (single config file, seeded runs, deterministic splits)\n- **Leakage-safe** by default (time-based split; graph edges for *train only* during training)\n- **Extensible** (ablation switches for: no augmentation, tabular-only augmentation, structure-aligned augmentation)\n\n> Dataset: **IEEE-CIS Fraud Detection** (Kaggle). You must download it yourself due to license terms.\n\n---\n\n## 1) Quickstart\n\n### A) Create environment\nPython 3.10+ recommended.\n\n```bash\npython -m venv .venv\nsource .venv/bin/activate   # Windows: .venv\\Scripts\\activate\npip install -r requirements.txt\n```\n\n> **PyTorch Geometric** installation is platform-specific. Follow the official guide:\n> https://pytorch-geometric.readthedocs.io/en/latest/install/installation.html\n\n### B) Put the dataset in the expected location\nDownload from Kaggle (IEEE-CIS Fraud Detection) and place:\n```\ndata/raw/train_transaction.csv\ndata/raw/train_identity.csv\ndata/raw/test_transaction.csv\ndata/raw/test_identity.csv\n```\n\n### C) Preprocess + split\n```bash\npython main.py preprocess --config configs/default.yaml\n```\n\n### D) Train CTGAN on training split only\n```bash\npython main.py train-ctgan --config configs/default.yaml\n```\n\n### E) Generate + filter + structure-align synthetic fraud for training\n```bash\npython main.py augment --config configs/default.yaml\n```\n\n### F) Train model (two-stage by default: GNN then TCN on frozen GNN embeddings)\n```bash\npython main.py train --config configs/default.yaml\n```\n\n### G) Evaluate + stress tests\n```bash\npython main.py eval --config configs/default.yaml\npython main.py stress --config configs/default.yaml\n```\n\n---\n\n## 2) What’s implemented\n\n### Data & splits\n- Time-based split using `TransactionDT` (train/val/test windows)\n- Leakage-safe graph building (train graph only during training)\n- Feature handling:\n  - numeric: robust scaling + missing indicators\n  - categorical: frequency-based encoding (with OOV bucket) + one-hot option\n\n### CTGAN augmentation\n- Train CTGAN on training split only\n- Generate minority (fraud) samples with *operational context conditioning*\n- Validity filters:\n  - domain constraints (ranges, non-negativity)\n  - category membership (OOV control)\n  - motif plausibility (co-occurrence thresholds on key identifiers)\n- Structure-aligned assignment:\n  - assign synthetic rows to plausible entities (e.g., `card1`) and timestamps using empirical inter-arrival distributions\n  - update **training sequences** and **training graph edges only**\n\n### Models\n- Heterogeneous GNN (HeteroGraphSAGE) over:\n  - transaction nodes + identifier nodes (card/email/device/addr/etc.)\n- Temporal Convolutional Network (TCN) over per-entity sequences (default: per `card1`)\n- Calibration + low-FPR metrics:\n  - AUPRC, AUROC\n  - Recall@{0.1%,0.5%,1%}FPR\n  - ECE, Brier Score\n- Stress tests:\n  - feature masking, additive noise, edge dropout\n\n---\n\n## 3) Reproducibility notes\nAll run parameters live in `configs/default.yaml`. Every command:\n- logs config snapshot\n- sets `seed`\n- writes artifacts to `artifacts/<run_id>/`\n\n---\n\n## 4) Citation\nIf you use this code scaffold in a paper/project, cite:\n- IEEE-CIS dataset page (Kaggle)\n- SDV/CTGAN (if used)\n- PyTorch Geometric (if used)\n\n---\n\n## 5) License\nMIT (see `LICENSE`).\n",
+ "hits": {
+  "st": [
+   {
+    "file": "src/synth/ctgan_train.py",
+    "line": 5,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from __future__ import annotations",
+     "from pathlib import Path",
+     "from typing import Dict, List",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "def train_ctgan(",
+     "    df_train: pd.DataFrame,"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "src/synth/ctgan_train.py",
+    "line": 6,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from pathlib import Path",
+     "from typing import Dict, List",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "def train_ctgan(",
+     "    df_train: pd.DataFrame,",
+     "    discrete_cols: List[str],"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "src/synth/ctgan_train.py",
+    "line": 5,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from __future__ import annotations",
+     "from pathlib import Path",
+     "from typing import Dict, List",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "def train_ctgan(",
+     "    df_train: pd.DataFrame,"
+    ]
+   },
+   {
+    "file": "src/synth/ctgan_train.py",
+    "line": 6,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from pathlib import Path",
+     "from typing import Dict, List",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "def train_ctgan(",
+     "    df_train: pd.DataFrame,",
+     "    discrete_cols: List[str],"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "src/synth/ctgan_train.py",
+    "line": 5,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from __future__ import annotations",
+     "from pathlib import Path",
+     "from typing import Dict, List",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "def train_ctgan(",
+     "    df_train: pd.DataFrame,"
+    ]
+   },
+   {
+    "file": "src/synth/ctgan_train.py",
+    "line": 27,
+    "text": "synth = CTGANSynthesizer(",
+    "context": [
+     "    for c in discrete_cols:",
+     "        if c in df_train.columns:",
+     "            metadata.update_column(column_name=c, sdtype=\"categorical\")",
+     "",
+     "    synth = CTGANSynthesizer(",
+     "        metadata,",
+     "        epochs=epochs,",
+     "        batch_size=batch_size,",
+     "        embedding_dim=embedding_dim,"
+    ]
+   },
+   {
+    "file": "src/synth/ctgan_train.py",
+    "line": 42,
+    "text": "def load_ctgan(model_path: str | Path) -> CTGANSynthesizer:",
+    "context": [
+     "    model_path = Path(model_path)",
+     "    model_path.parent.mkdir(parents=True, exist_ok=True)",
+     "    synth.save(str(model_path))",
+     "",
+     "def load_ctgan(model_path: str | Path) -> CTGANSynthesizer:",
+     "    synth = CTGANSynthesizer.load(str(model_path))",
+     "    return synth"
+    ]
+   },
+   {
+    "file": "src/synth/ctgan_train.py",
+    "line": 43,
+    "text": "synth = CTGANSynthesizer.load(str(model_path))",
+    "context": [
+     "    model_path.parent.mkdir(parents=True, exist_ok=True)",
+     "    synth.save(str(model_path))",
+     "",
+     "def load_ctgan(model_path: str | Path) -> CTGANSynthesizer:",
+     "    synth = CTGANSynthesizer.load(str(model_path))",
+     "    return synth"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "# CTGAN (SDV)",
+   "sdv>=1.12"
+  ]
+ }
+}

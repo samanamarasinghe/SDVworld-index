@@ -1,0 +1,1972 @@
+{
+ "repo": "gopibattineni/SYNTH_BENCHMARK",
+ "disk_kb": 577530,
+ "method": "partial_clone",
+ "tree_files": 2506,
+ "status": "ok",
+ "readme": "# SYNTH Benchmark\n\n**A reproducible benchmark for tabular synthetic data** — comparing **8 generators** across **15 datasets** on **utility**, **fidelity**, and **privacy**, with publication-ready analysis and figures.\n\n[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)\n[![License: Research](https://img.shields.io/badge/license-research-lightgrey.svg)](Materials/)\n[![GitHub Pages](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://gopibattineni.github.io/SYNTH_BENCHMARK/)\n[![Datasets](https://img.shields.io/badge/datasets-15-green.svg)](#datasets)\n[![Generators](https://img.shields.io/badge/generators-8-orange.svg)](#generators)\n\n> **TL;DR** — Fit generators on real training data only → evaluate synthetic data with TRTR/TSTR utility, distributional fidelity, and privacy attacks → rank generators with statistical tests and Pareto trade-off analysis.\n\n---\n\n## Table of contents\n\n- [Why this benchmark?](#why-this-benchmark)\n- [Benchmark at a glance](#benchmark-at-a-glance)\n- [Quick start](#quick-start)\n- [Analysis pipelines](#analysis-pipelines)\n- [Results & figures](#results--figures)\n- [Repository layout](#repository-layout)\n- [Experimental protocol](#experimental-protocol)\n- [Datasets](#datasets)\n- [Generators](#generators)\n- [Dashboard](#dashboard)\n- [Citation](#citation)\n- [Changelog](#changelog)\n- [Contributing](#contributing)\n\n---\n\n## Why this benchmark?\n\nSynthetic tabular data is used for privacy-preserving sharing and ML augmentation — but **no single metric tells the full story**. SYNTH evaluates every generator on three complementary axes:\n\n| Pillar | Question | Key metrics |\n|--------|----------|-------------|\n| **Utility** | Does synthetic data train useful models? | TRTR vs TSTR — Accuracy, F1, R², RMSE (10 seeds × 10 downstream models) |\n| **Fidelity** | Does synthetic data look like the real distribution? | KS, JS, Wasserstein, MMD, SDV Quality Score, t-SNE |\n| **Privacy** | Can an attacker infer training membership? | MIA AUC, Mahalanobis distance, NNDR, Hungarian matching |\n\n```mermaid\nflowchart LR\n  A[Real data] --> B[8 Generators]\n  B --> C[Synthetic data]\n  C --> D[Utility TRTR/TSTR]\n  C --> E[Fidelity metrics]\n  C --> F[Privacy metrics]\n  D --> G[Rankings & trade-offs]\n  E --> G\n  F --> G\n```\n\n---\n\n## Benchmark at a glance\n\n| | |\n|---|---|\n| **Datasets** | 15 UCI-style tabular datasets (9 classification + 6 regression) |\n| **Generators** | CTGAN, CopulaGAN, TVAE, GaussianCopula, CTABGAN, WGAN-GP, TabDDPM, ForestDiffusion |\n| **Seeds** | 10 random seeds (`42`–`51`) — reported as mean ± SD |\n| **Leakage protocol** | Generators fit on **train only**; TSTR tested on held-out **real test** set |\n| **Outputs** | Excel workbooks, paper-ready figures (300 DPI), LaTeX tables, statistical tests |\n\n**Current overall ranking** (composite score: 40% utility / 30% fidelity / 30% privacy):\n\n| Rank | Generator | Composite |\n|------|-----------|-----------|\n| 1 | ForestDiffusion | 0.66 |\n| 2 | TVAE | 0.61 |\n| 3 | GaussianCopula | 0.59 |\n\n*See [`Results/Processed_Data/generator_ranking.csv`](Results/Processed_Data/generator_ranking.csv) for full rankings.*\n\n---\n\n## Quick start\n\n### 1. Clone & install\n\n```bash\ngit clone https://github.com/gopibattineni/SYNTH_BENCHMARK.git\ncd SYNTH_BENCHMARK\npip install -r requirements-analysis.txt\n```\n\n### 2. Run the full analysis pipeline (~3 min)\n\nAuto-discovers all Excel files, merges metrics, runs Friedman/Nemenyi tests, and generates **60+ publication figures**:\n\n```bash\npython run_analysis.py\n```\n\nOutputs land in [`Results/`](Results/).\n\n### 3. Run the Cancer & Mushroom case study (~3 min)\n\nFocused two-dataset assessment with comparative figures and tables:\n\n```bash\npython run_two_datasets_assessment.py\n```\n\nOutputs land in [`Results/Two_Datasets_Assessment/`](Results/Two_Datasets_Assessment/).\n\n### 4. Correlation trade-off analysis (Cancer & Mushroom)\n\nPublication figures relating **Utility × Fidelity × Privacy** (primary: one point per generator; supplementary: seed-level):\n\n```bash\npython run_correlation_tradeoff_analysis.py\n```\n\nOutputs: [`Results/Correlation_Tradeoff_Analysis/`](Results/Correlation_Tradeoff_Analysis/)  \n(also mirrored under `Results/Two_Datasets_Assessment/Correlation_Tradeoff_Analysis/`).\n\n### 5. Utility drop & representative trade-off (optional)\n\n```bash\npython run_utility_drop_analysis.py          # → Results/Utility_Drop_Analysis/\npython run_representative_tradeoff.py        # → Results/Representative_Metrics_Tradeoff/\n```\n\n### 6. Extract paper-ready workbooks (optional)\n\n```bash\npython scripts/extract_paper_results.py\n```\n\nCreates per-dataset `TRTR_TSTR_results_*.xlsx` and `fidelity_privacy_metrics.xlsx` under [`paper results/`](paper%20results/).\n\n---\n\n## Analysis pipelines\n\nAutomated pipelines turn raw experiment Excel files into journal-ready outputs. **No filenames are hardcoded** — new results are picked up automatically on the next run.\n\n### Full benchmark (`run_analysis.py`)\n\n| Step | What it does |\n|------|----------------|\n| Merge | Discovers all `.xlsx` files under `Generators/` |\n| Score | Normalized Utility / Fidelity / Privacy scores (0–1) per dataset × generator |\n| Statistics | Friedman, Nemenyi, Wilcoxon, Cohen's d, Cliff's delta |\n| Benchmarking | Pareto frontiers, composite rankings, CD diagrams, seed stability |\n| Figures | 14 core paper figures + supplementary plots (PNG/PDF/SVG/EPS @ 300 DPI) |\n\n```bash\npython run_analysis.py --utility-weight 0.4 --privacy-weight 0.3 --fidelity-weight 0.3\n```\n\n### Two-dataset case study (`run_two_datasets_assessment.py`)\n\nDedicated module for **Wisconsin Breast Cancer** and **Secondary Mushroom** — side-by-side comparison, rankings, and trade-off figures.\n\n```bash\npython run_two_datasets_assessment.py\n```\n\n### Correlation trade-off (`run_correlation_tradeoff_analysis.py`)\n\nInvestigates relationships between Utility, Fidelity, and Privacy on Cancer & Mushroom:\n\n| Figure set | Points | Metrics |\n|-----------|--------|---------|\n| **Primary** | 8 generators (mean over datasets × classifiers × seeds) | Accuracy/F1 × Quality Score × MIA or NNDR |\n| **Supplementary** | Generator × Seed × Dataset | Same axes; Cancer = ○, Mushroom = □ |\n\nEach scatter reports Pearson *r*, Spearman *ρ*, R², *p*, OLS fit, and 95% CI.\n\n```bash\npython run_correlation_tradeoff_analysis.py\n```\n\n### Utility drop (`run_utility_drop_analysis.py`)\n\nGenerator/classifier utility under data leakage (Cancer & Mushroom focus), heatmaps, CD diagrams, and robustness tables → `Results/Utility_Drop_Analysis/`.\n\n### Representative metrics trade-off (`run_representative_tradeoff.py`)\n\nF1 / NNDR / Quality Score dual trade-offs (classifier-independent and best-classifier views) → `Results/Representative_Metrics_Tradeoff/`.\n\n### Key modules\n\n| Path | Purpose |\n|------|---------|\n| [`analysis/`](analysis/) | Core pipeline — data loading, scoring, statistics, figures |\n| [`analysis/two_datasets/`](analysis/two_datasets/) | Cancer & Mushroom case study |\n| [`analysis/correlation_tradeoff/`](analysis/correlation_tradeoff/) | Utility–Fidelity–Privacy correlation figures |\n| [`analysis/utility_drop/`](analysis/utility_drop/) | Utility drop / leakage analysis |\n| [`analysis/representative_tradeoff/`](analysis/representative_tradeoff/) | Representative-metric trade-offs |\n| [`scripts/extract_paper_results.py`](scripts/extract_paper_results.py) | Notebook → paper Excel workbooks |\n| [`dashboard/`](dashboard/) | Static GitHub Pages dashboard builder |\n\n---\n\n## Results & figures\n\nAfter running the pipelines:\n\n```\nResults/\n├── Master_Data/                     # Merged long-format CSV (utility, fidelity, privacy)\n├── Processed_Data/                  # Cumulative scores & generator rankings\n├── Figures/                         # Full-benchmark publication figures\n├── Tables/                          # CSV, XLSX, LaTeX\n├── Supplementary/                   # Statistical test outputs, correlations\n├── Correlation_Tradeoff_Analysis/   # Primary + seed-level U/F/P scatters\n├── Utility_Drop_Analysis/           # Leakage / utility-drop study\n├── Representative_Metrics_Tradeoff/ # F1–NNDR–Quality trade-offs\n└── Two_Datasets_Assessment/         # Cancer & Mushroom case study\n    ├── Cancer/\n    ├── Mushroom/\n    ├── Figures/                     # Comparative Figures 1–8\n    └── Comparison/\n```\n\n**Preview — correlation trade-off (primary):**\n\n<p align=\"center\">\n  <img src=\"Results/Correlation_Tradeoff_Analysis/Figures/Primary/Accuracy_NNDR_Figure01_fidelity_vs_utility_Accuracy.png\" alt=\"Fidelity vs Utility (Accuracy)\" width=\"700\"/>\n</p>\n\n---\n\n## Repository layout\n\n```\nSYNTH_BENCHMARK/\n├── Generators/\n│   ├── SDV models/                    # CTGAN, CopulaGAN, TVAE, GaussianCopula — full audit\n│   ├── Other GANS/                    # CTABGAN, WGAN-GP — full audit\n│   ├── Diffusion GANs/                # TabDDPM, ForestDiffusion — full audit\n│   └── Experiment with utility data leak/\n│       ├── utility results/           # TRTR/TSTR Excel (primary utility source)\n│       └── diffusion_dataleak/        # Diffusion + SDV utility variant\n├── analysis/                          # Automated publication pipeline\n├── Results/                           # Generated analysis outputs\n├── paper results/                     # Per-dataset paper workbooks\n├── scripts/                           # Extraction & utility scripts\n├── dashboard/                         # GitHub Pages dashboard\n├── docs/                              # Built static site (GitHub Pages)\n├── Datasets/                          # Cached dataset CSVs\n├── Materials/                         # Paper notes & supplementary docs\n└── figures/                           # Workflow diagram generators\n```\n\n---\n\n## Experimental protocol\n\nEvery dataset notebook follows the same leak-safe design:\n\n1. **Preprocess** — drop IDs, dates, session columns; handle missing values\n2. **Subsample** to N = 1,000 rows (`seed = 42`)\n3. **Split** — stratified 80% train / 20% test\n4. **Generate** — each generator fits on `train_real` only → 1,000 synthetic rows\n5. **Evaluate fidelity** — KS, JS, Wasserstein, MMD, SDV quality, t-SNE\n6. **Evaluate utility** — 10 downstream models × 10 seeds; TRTR baseline vs TSTR\n7. **Evaluate privacy** — MIA, Mahalanobis matching, nearest-neighbour distance\n8. **Export** — Excel workbooks with mean ± SD and utility gaps\n\n**TRTR** = Train on Real, Test on Real (baseline)  \n**TSTR** = Train on Synthetic, Test on Real (utility of synthetic data)  \n**Utility gap** = TRTR − TSTR (smaller = better synthetic utility)\n\n---\n\n## Datasets\n\n| # | Name | Task | # | Name | Task |\n|---|------|------|---|------|------|\n| 1 | Wisconsin Breast Cancer | Classification | 9 | MAGIC Gamma Telescope | Classification |\n| 2 | Alzheimer's | Classification | 10 | Metro Interstate Traffic | Regression |\n| 3 | Adult Census | Classification | 11 | Online Shopping | Regression |\n| 4 | Forest Cover | Classification | 12 | Air Quality | Regression |\n| 5 | Bank Marketing | Classification | 13 | Concrete Strength | Regression |\n| 6 | Wine Quality | Classification | 14 | Energy Efficiency | Regression |\n| 7 | CDC Diabetes | Classification | 15 | Real Estate Valuation | Regression |\n| 8 | Secondary Mushroom | Classification | | | |\n\nMetadata: [`Generators/Experiment with utility data leak/python_scripts/hive/datasets.json`](Generators/Experiment%20with%20utility%20data%20leak/python_scripts/hive/datasets.json)\n\n---\n\n## Generators\n\n| Generator | Family | Folder |\n|-----------|--------|--------|\n| CTGAN | GAN (SDV) | `SDV models/` |\n| CopulaGAN | GAN (SDV) | `SDV models/` |\n| TVAE | VAE (SDV) | `SDV models/` |\n| GaussianCopula | Statistical (SDV) | `SDV models/` |\n| CTABGAN | GAN | `Other GANS/` |\n| WGAN-GP | GAN | `Other GANS/` |\n| TabDDPM | Diffusion | `Diffusion GANs/` |\n| ForestDiffusion | Diffusion | `Diffusion GANs/` |\n\n### Extra setup for diffusion generators\n\n```bash\ngit clone https://github.com/yandex-research/tab-ddpm _vendor/tab-ddpm\npip install ForestDiffusion xgboost category-encoders imbalanced-learn\npip install \"libzero==0.0.8\" \"rtdl==0.0.13\" --no-deps   # torch 2.x compatible\n```\n\n---\n\n## Dashboard\n\nInteractive Plotly dashboard (utility, fidelity, privacy, trade-offs, rankings, **statistics**):\n\n**[https://gopibattineni.github.io/SYNTH_BENCHMARK/](https://gopibattineni.github.io/SYNTH_BENCHMARK/)**\n\n| Tab | Contents |\n|-----|----------|\n| Overview | Utility-gap heatmap + generator coverage |\n| Utility | TRTR vs TSTR by task/metric/dataset |\n| Fidelity | Quality, KS, Gower, Wasserstein, … by dataset |\n| Privacy | MIA, NNDR, Mahalanobis, matching distances |\n| Trade-offs | Privacy–utility scatter / 3D |\n| Rankings | Weighted score + Borda |\n| Statistics | PCA mean/median/std error % (8 gens × 15 datasets) + Wilcoxon heatmaps |\n\nIf you see a **404**, enable Pages once: **Settings → Pages → Source → Deploy from branch → `main` → `/docs`**.  \nSee [dashboard/README.md](dashboard/README.md) for full deployment steps.\n\nRebuild locally:\n\n```bash\npython dashboard/build_pages.py\npython -m http.server 8080 --directory docs   # preview at http://localhost:8080\n```\n\n---\n\n## Citation\n\nIf you use this benchmark in your research, please cite:\n\n```bibtex\n@misc{battineni2026synth,\n  title  = {SYNTH Benchmark: A Reproducible Evaluation of Tabular Synthetic Data Generators},\n  author = {Battineni, Gopi},\n  year   = {2026},\n  url    = {https://github.com/gopibattineni/SYNTH_BENCHMARK}\n}\n```\n\nWhen reporting results, always state: dataset, generator, downstream model, **mean ± SD over 10 seeds**, TRTR baseline, TSTR score, and that generators were trained on training data only.\n\n---\n\n## Changelog\n\nSee [**CHANGELOG.md**](CHANGELOG.md) for release history and recent updates.\n\n---\n\n## Contributing\n\nContributions are welcome! See [**CONTRIBUTING.md**](CONTRIBUTING.md) for guidelines on running pipelines, adding datasets, and submitting pull requests.\n\n---\n\n<p align=\"center\">\n  <sub>Associated with LERO / BDS research on synthetic data auditing · Built for reproducible, publication-ready benchmarking</sub>\n</p>\n",
+ "hits": {
+  "st": [
+   {
+    "file": "TSNE,_UMAP,_K_Means_cluster_regresison_Eshop.ipynb",
+    "line": 418,
+    "text": "\"from sdv.single_table import CTGANSynthesizer, CopulaGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "        \"import numpy as np\\n\",",
+     "        \"import pandas as pd\\n\",",
+     "        \"import sdv\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"from sdv.single_table import CTGANSynthesizer, CopulaGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer\\n\",",
+     "        \"from sdv.evaluation.single_table import evaluate_quality, run_diagnostic\\n\",",
+     "        \"\\n\",",
+     "        \"data.columns = data.columns.str.strip().str.lower()\\n\",",
+     "        \"target_col = 'price'\\n\","
+    ]
+   },
+   {
+    "file": "setup_alzhimers_single_run.py",
+    "line": 52,
+    "text": "from sdv.single_table import (",
+    "context": [
+     "from sklearn.preprocessing import StandardScaler, LabelEncoder",
+     "from sklearn.model_selection import train_test_split",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    CopulaGANSynthesizer,",
+     "    TVAESynthesizer,",
+     "    GaussianCopulaSynthesizer,"
+    ]
+   },
+   {
+    "file": "webapp/app/generators/runner.py",
+    "line": 203,
+    "text": "from sdv.single_table import (",
+    "context": [
+     "",
+     "",
+     "def generate_sdv(df: pd.DataFrame, info: DatasetInfo, n_samples: int, seed: int, model_name: str) -> pd.DataFrame:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import (",
+     "        CTGANSynthesizer,",
+     "        CopulaGANSynthesizer,",
+     "        GaussianCopulaSynthesizer,",
+     "        TVAESynthesizer,"
+    ]
+   },
+   {
+    "file": "scripts/strip_sdv_cancer_notebook.py",
+    "line": 15,
+    "text": "SDV_IMPORT_BLOCK = \"\"\"from sdv.single_table import (",
+    "context": [
+     "    / \"1. Cancer\"",
+     "    / \"cancer.ipynb\"",
+     ")",
+     "",
+     "SDV_IMPORT_BLOCK = \"\"\"from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    CopulaGANSynthesizer,",
+     "    TVAESynthesizer,",
+     "    GaussianCopulaSynthesizer"
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/6. Wine dataset/Wine.ipynb",
+    "line": 506,
+    "text": "\"from sdv.single_table import (\\n\",",
+    "context": [
+     "   ],",
+     "   \"source\": [",
+     "    \"# SDV MODELS\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.single_table import (\\n\",",
+     "    \"    CTGANSynthesizer,\\n\",",
+     "    \"    CopulaGANSynthesizer,\\n\",",
+     "    \"    TVAESynthesizer,\\n\",",
+     "    \"    GaussianCopulaSynthesizer\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/12. Air Quality/air_quality.ipynb",
+    "line": 742,
+    "text": "\"from sdv.single_table import (\\n\",",
+    "context": [
+     "      ],",
+     "      \"source\": [",
+     "        \"# SDV MODELS\\n\",",
+     "        \"\\n\",",
+     "        \"from sdv.single_table import (\\n\",",
+     "        \"    CTGANSynthesizer,\\n\",",
+     "        \"    CopulaGANSynthesizer,\\n\",",
+     "        \"    TVAESynthesizer,\\n\",",
+     "        \"    GaussianCopulaSynthesizer\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/5. Bank Markting/Bank_marketing.ipynb",
+    "line": 164,
+    "text": "\"from sdv.single_table import (\\n\",",
+    "context": [
+     "    \"from sklearn.preprocessing import StandardScaler, LabelEncoder\\n\",",
+     "    \"from sklearn.model_selection import train_test_split\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import (\\n\",",
+     "    \"    CTGANSynthesizer,\\n\",",
+     "    \"    CopulaGANSynthesizer,\\n\",",
+     "    \"    TVAESynthesizer,\\n\",",
+     "    \"    GaussianCopulaSynthesizer\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/4. Forest cover dataset/forest_cover.ipynb",
+    "line": 165,
+    "text": "\"from sdv.single_table import (\\n\",",
+    "context": [
+     "    \"from sklearn.preprocessing import LabelEncoder\\n\",",
+     "    \"from sklearn.model_selection import train_test_split\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import (\\n\",",
+     "    \"    CTGANSynthesizer,\\n\",",
+     "    \"    CopulaGANSynthesizer,\\n\",",
+     "    \"    TVAESynthesizer,\\n\",",
+     "    \"    GaussianCopulaSynthesizer\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/3. Adult/adult.ipynb",
+    "line": 164,
+    "text": "\"from sdv.single_table import (\\n\",",
+    "context": [
+     "    \"from sklearn.preprocessing import StandardScaler, LabelEncoder\\n\",",
+     "    \"from sklearn.model_selection import train_test_split\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import (\\n\",",
+     "    \"    CTGANSynthesizer,\\n\",",
+     "    \"    CopulaGANSynthesizer,\\n\",",
+     "    \"    TVAESynthesizer,\\n\",",
+     "    \"    GaussianCopulaSynthesizer\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/14. Energy Efficiency/energy_efficiency.ipynb",
+    "line": 522,
+    "text": "\"from sdv.single_table import (\\n\",",
+    "context": [
+     "      ],",
+     "      \"source\": [",
+     "        \"# SDV MODELS\\n\",",
+     "        \"\\n\",",
+     "        \"from sdv.single_table import (\\n\",",
+     "        \"    CTGANSynthesizer,\\n\",",
+     "        \"    CopulaGANSynthesizer,\\n\",",
+     "        \"    TVAESynthesizer,\\n\",",
+     "        \"    GaussianCopulaSynthesizer\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/15. Real Estate Valuation/real_estate.ipynb",
+    "line": 534,
+    "text": "\"from sdv.single_table import (\\n\",",
+    "context": [
+     "      ],",
+     "      \"source\": [",
+     "        \"# SDV MODELS\\n\",",
+     "        \"\\n\",",
+     "        \"from sdv.single_table import (\\n\",",
+     "        \"    CTGANSynthesizer,\\n\",",
+     "        \"    CopulaGANSynthesizer,\\n\",",
+     "        \"    TVAESynthesizer,\\n\",",
+     "        \"    GaussianCopulaSynthesizer\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/python_scripts/1. Cancer/cancer.py",
+    "line": 124,
+    "text": "from sdv.single_table import (",
+    "context": [
+     "from sklearn.preprocessing import StandardScaler, LabelEncoder",
+     "from sklearn.model_selection import train_test_split",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    CopulaGANSynthesizer,",
+     "    TVAESynthesizer,",
+     "    GaussianCopulaSynthesizer"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "TSNE,_UMAP,_K_Means_cluster_regresison_Eshop.ipynb",
+    "line": 417,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "        \"warnings.filterwarnings('ignore')\\n\",",
+     "        \"import numpy as np\\n\",",
+     "        \"import pandas as pd\\n\",",
+     "        \"import sdv\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"from sdv.single_table import CTGANSynthesizer, CopulaGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer\\n\",",
+     "        \"from sdv.evaluation.single_table import evaluate_quality, run_diagnostic\\n\",",
+     "        \"\\n\",",
+     "        \"data.columns = data.columns.str.strip().str.lower()\\n\","
+    ]
+   },
+   {
+    "file": "add_regression_datasets.py",
+    "line": 144,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "def _single_run_data_cell(cfg: dict) -> str:",
+     "    return f'''from ucimlrepo import fetch_ucirepo",
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "import torch",
+     "import random",
+     "",
+     "{cfg[\"load_block\"].strip()}"
+    ]
+   },
+   {
+    "file": "setup_alzhimers_single_run.py",
+    "line": 51,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "from sklearn.preprocessing import StandardScaler, LabelEncoder",
+     "from sklearn.model_selection import train_test_split",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    CopulaGANSynthesizer,",
+     "    TVAESynthesizer,"
+    ]
+   },
+   {
+    "file": "webapp/app/jobs.py",
+    "line": 13,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from typing import Any",
+     "",
+     "import pandas as pd",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from app.config import SESSIONS_DIR",
+     "from app.data_loader import load_training_data",
+     "from app.generators.runner import generate_synthetic"
+    ]
+   },
+   {
+    "file": "webapp/app/generators/runner.py",
+    "line": 202,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    return result[df.columns]",
+     "",
+     "",
+     "def generate_sdv(df: pd.DataFrame, info: DatasetInfo, n_samples: int, seed: int, model_name: str) -> pd.DataFrame:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import (",
+     "        CTGANSynthesizer,",
+     "        CopulaGANSynthesizer,",
+     "        GaussianCopulaSynthesizer,"
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/6. Wine dataset/Wine.ipynb",
+    "line": 44,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "   \"source\": [",
+     "    \"from ucimlrepo import fetch_ucirepo\\n\",",
+     "    \"import numpy as np\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"import torch\\n\",",
+     "    \"import random\\n\",",
+     "    \"\\n\",",
+     "    \"wine_quality = fetch_ucirepo(id=186)\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/12. Air Quality/air_quality.ipynb",
+    "line": 271,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "      \"source\": [",
+     "        \"from ucimlrepo import fetch_ucirepo\\n\",",
+     "        \"import numpy as np\\n\",",
+     "        \"import pandas as pd\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"import torch\\n\",",
+     "        \"import random\\n\",",
+     "        \"\\n\",",
+     "        \"air_quality = fetch_ucirepo(id=360)\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/5. Bank Markting/Bank_marketing.ipynb",
+    "line": 163,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"\\n\",",
+     "    \"from sklearn.preprocessing import StandardScaler, LabelEncoder\\n\",",
+     "    \"from sklearn.model_selection import train_test_split\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import (\\n\",",
+     "    \"    CTGANSynthesizer,\\n\",",
+     "    \"    CopulaGANSynthesizer,\\n\",",
+     "    \"    TVAESynthesizer,\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/4. Forest cover dataset/forest_cover.ipynb",
+    "line": 164,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"\\n\",",
+     "    \"from sklearn.preprocessing import LabelEncoder\\n\",",
+     "    \"from sklearn.model_selection import train_test_split\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import (\\n\",",
+     "    \"    CTGANSynthesizer,\\n\",",
+     "    \"    CopulaGANSynthesizer,\\n\",",
+     "    \"    TVAESynthesizer,\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/3. Adult/adult.ipynb",
+    "line": 163,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"\\n\",",
+     "    \"from sklearn.preprocessing import StandardScaler, LabelEncoder\\n\",",
+     "    \"from sklearn.model_selection import train_test_split\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import (\\n\",",
+     "    \"    CTGANSynthesizer,\\n\",",
+     "    \"    CopulaGANSynthesizer,\\n\",",
+     "    \"    TVAESynthesizer,\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/14. Energy Efficiency/energy_efficiency.ipynb",
+    "line": 75,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "      \"source\": [",
+     "        \"from ucimlrepo import fetch_ucirepo\\n\",",
+     "        \"import numpy as np\\n\",",
+     "        \"import pandas as pd\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"import torch\\n\",",
+     "        \"import random\\n\",",
+     "        \"\\n\",",
+     "        \"energy_efficiency = fetch_ucirepo(id=242)\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/15. Real Estate Valuation/real_estate.ipynb",
+    "line": 81,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "      \"source\": [",
+     "        \"from ucimlrepo import fetch_ucirepo\\n\",",
+     "        \"import numpy as np\\n\",",
+     "        \"import pandas as pd\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"import torch\\n\",",
+     "        \"import random\\n\",",
+     "        \"\\n\",",
+     "        \"real_estate = fetch_ucirepo(id=477)\\n\","
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "TSNE,_UMAP,_K_Means_cluster_regresison_Eshop.ipynb",
+    "line": 419,
+    "text": "\"from sdv.evaluation.single_table import evaluate_quality, run_diagnostic\\n\",",
+    "context": [
+     "        \"import pandas as pd\\n\",",
+     "        \"import sdv\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"from sdv.single_table import CTGANSynthesizer, CopulaGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer\\n\",",
+     "        \"from sdv.evaluation.single_table import evaluate_quality, run_diagnostic\\n\",",
+     "        \"\\n\",",
+     "        \"data.columns = data.columns.str.strip().str.lower()\\n\",",
+     "        \"target_col = 'price'\\n\",",
+     "        \"\\n\","
+    ]
+   },
+   {
+    "file": "setup_alzhimers_single_run.py",
+    "line": 59,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "    TVAESynthesizer,",
+     "    GaussianCopulaSynthesizer,",
+     ")",
+     "",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "from model.ctabgan import CTABGAN",
+     "",
+     "# ----------------------------------------------------"
+    ]
+   },
+   {
+    "file": "webapp/app/jobs.py",
+    "line": 12,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "from pathlib import Path",
+     "from typing import Any",
+     "",
+     "import pandas as pd",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from app.config import SESSIONS_DIR",
+     "from app.data_loader import load_training_data"
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/6. Wine dataset/Wine.ipynb",
+    "line": 129,
+    "text": "\"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+    "context": [
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from sklearn.model_selection import train_test_split\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"\\n\",",
+     "    \"seed = SEED\\n\",",
+     "    \"\\n\",",
+     "    \"print(\\\"\\\\n================ SINGLE RUN ================\\\")\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/6. Wine dataset/Wine.ipynb",
+    "line": 513,
+    "text": "\"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+    "context": [
+     "    \"    TVAESynthesizer,\\n\",",
+     "    \"    GaussianCopulaSynthesizer\\n\",",
+     "    \")\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"\\n\",",
+     "    \"sdv_models = {\\n\",",
+     "    \"    \\\"CTGAN\\\": CTGANSynthesizer(metadata=train_metadata),\\n\",",
+     "    \"    \\\"CopulaGAN\\\": CopulaGANSynthesizer(metadata=train_metadata),\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/12. Air Quality/air_quality.ipynb",
+    "line": 371,
+    "text": "\"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+    "context": [
+     "        }",
+     "      ],",
+     "      \"source\": [",
+     "        \"from sklearn.model_selection import train_test_split\\n\",",
+     "        \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "        \"\\n\",",
+     "        \"seed = SEED\\n\",",
+     "        \"\\n\",",
+     "        \"print(\\\"\\\\n================ SINGLE RUN ================\\\")\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/12. Air Quality/air_quality.ipynb",
+    "line": 749,
+    "text": "\"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+    "context": [
+     "        \"    TVAESynthesizer,\\n\",",
+     "        \"    GaussianCopulaSynthesizer\\n\",",
+     "        \")\\n\",",
+     "        \"\\n\",",
+     "        \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "        \"\\n\",",
+     "        \"sdv_models = {\\n\",",
+     "        \"    \\\"CTGAN\\\": CTGANSynthesizer(metadata=train_metadata),\\n\",",
+     "        \"    \\\"CopulaGAN\\\": CopulaGANSynthesizer(metadata=train_metadata),\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/5. Bank Markting/Bank_marketing.ipynb",
+    "line": 171,
+    "text": "\"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+    "context": [
+     "    \"    TVAESynthesizer,\\n\",",
+     "    \"    GaussianCopulaSynthesizer\\n\",",
+     "    \")\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"\\n\",",
+     "    \"from model.ctabgan import CTABGAN\\n\",",
+     "    \"\\n\",",
+     "    \"bank_marketing = fetch_ucirepo(id=222)\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/4. Forest cover dataset/forest_cover.ipynb",
+    "line": 172,
+    "text": "\"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+    "context": [
+     "    \"    TVAESynthesizer,\\n\",",
+     "    \"    GaussianCopulaSynthesizer\\n\",",
+     "    \")\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"\\n\",",
+     "    \"from model.ctabgan import CTABGAN\\n\",",
+     "    \"\\n\",",
+     "    \"# ----------------------------------------------------\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/3. Adult/adult.ipynb",
+    "line": 171,
+    "text": "\"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+    "context": [
+     "    \"    TVAESynthesizer,\\n\",",
+     "    \"    GaussianCopulaSynthesizer\\n\",",
+     "    \")\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"\\n\",",
+     "    \"from model.ctabgan import CTABGAN\\n\",",
+     "    \"\\n\",",
+     "    \"# Load Adult dataset\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/14. Energy Efficiency/energy_efficiency.ipynb",
+    "line": 163,
+    "text": "\"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+    "context": [
+     "        }",
+     "      ],",
+     "      \"source\": [",
+     "        \"from sklearn.model_selection import train_test_split\\n\",",
+     "        \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "        \"\\n\",",
+     "        \"seed = SEED\\n\",",
+     "        \"\\n\",",
+     "        \"print(\\\"\\\\n================ SINGLE RUN ================\\\")\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/14. Energy Efficiency/energy_efficiency.ipynb",
+    "line": 269,
+    "text": "\"    from sdv.evaluation.single_table import evaluate_quality\\n\",",
+    "context": [
+     "        \"    import traceback\\n\",",
+     "        \"    from sklearn.preprocessing import StandardScaler\\n\",",
+     "        \"    import torch.nn as nn\\n\",",
+     "        \"    import torch.optim as optim\\n\",",
+     "        \"    from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "        \"\\n\",",
+     "        \"    data_wgan = train_real.copy()\\n\",",
+     "        \"\\n\",",
+     "        \"    scaler = StandardScaler()\\n\","
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "TSNE,_UMAP,_K_Means_cluster_regresison_Eshop.ipynb",
+    "line": 335,
+    "text": "\"Collecting boto3<2.0.0,>=1.28 (from sdv)\\n\",",
+    "context": [
+     "          \"name\": \"stdout\",",
+     "          \"text\": [",
+     "            \"Collecting sdv\\n\",",
+     "            \"  Downloading sdv-1.36.1-py3-none-any.whl.metadata (14 kB)\\n\",",
+     "            \"Collecting boto3<2.0.0,>=1.28 (from sdv)\\n\",",
+     "            \"  Downloading boto3-1.42.97-py3-none-any.whl.metadata (6.7 kB)\\n\",",
+     "            \"Collecting botocore<2.0.0,>=1.31 (from sdv)\\n\",",
+     "            \"  Downloading botocore-1.42.97-py3-none-any.whl.metadata (5.9 kB)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (3.1.2)\\n\","
+    ]
+   },
+   {
+    "file": "TSNE,_UMAP,_K_Means_cluster_regresison_Eshop.ipynb",
+    "line": 337,
+    "text": "\"Collecting botocore<2.0.0,>=1.31 (from sdv)\\n\",",
+    "context": [
+     "            \"Collecting sdv\\n\",",
+     "            \"  Downloading sdv-1.36.1-py3-none-any.whl.metadata (14 kB)\\n\",",
+     "            \"Collecting boto3<2.0.0,>=1.28 (from sdv)\\n\",",
+     "            \"  Downloading boto3-1.42.97-py3-none-any.whl.metadata (6.7 kB)\\n\",",
+     "            \"Collecting botocore<2.0.0,>=1.31 (from sdv)\\n\",",
+     "            \"  Downloading botocore-1.42.97-py3-none-any.whl.metadata (5.9 kB)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (3.1.2)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.21)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.0.2)\\n\","
+    ]
+   },
+   {
+    "file": "TSNE,_UMAP,_K_Means_cluster_regresison_Eshop.ipynb",
+    "line": 339,
+    "text": "\"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (3.1.2)\\n\",",
+    "context": [
+     "            \"Collecting boto3<2.0.0,>=1.28 (from sdv)\\n\",",
+     "            \"  Downloading boto3-1.42.97-py3-none-any.whl.metadata (6.7 kB)\\n\",",
+     "            \"Collecting botocore<2.0.0,>=1.31 (from sdv)\\n\",",
+     "            \"  Downloading botocore-1.42.97-py3-none-any.whl.metadata (5.9 kB)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (3.1.2)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.21)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.0.2)\\n\",",
+     "            \"Requirement already satisfied: pandas<3,>=2.1.1 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.2.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv) (4.67.3)\\n\","
+    ]
+   },
+   {
+    "file": "TSNE,_UMAP,_K_Means_cluster_regresison_Eshop.ipynb",
+    "line": 340,
+    "text": "\"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.21)\\n\",",
+    "context": [
+     "            \"  Downloading boto3-1.42.97-py3-none-any.whl.metadata (6.7 kB)\\n\",",
+     "            \"Collecting botocore<2.0.0,>=1.31 (from sdv)\\n\",",
+     "            \"  Downloading botocore-1.42.97-py3-none-any.whl.metadata (5.9 kB)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (3.1.2)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.21)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.0.2)\\n\",",
+     "            \"Requirement already satisfied: pandas<3,>=2.1.1 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.2.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv) (4.67.3)\\n\",",
+     "            \"Collecting copulas>=0.12.1 (from sdv)\\n\","
+    ]
+   },
+   {
+    "file": "TSNE,_UMAP,_K_Means_cluster_regresison_Eshop.ipynb",
+    "line": 341,
+    "text": "\"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.0.2)\\n\",",
+    "context": [
+     "            \"Collecting botocore<2.0.0,>=1.31 (from sdv)\\n\",",
+     "            \"  Downloading botocore-1.42.97-py3-none-any.whl.metadata (5.9 kB)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (3.1.2)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.21)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.0.2)\\n\",",
+     "            \"Requirement already satisfied: pandas<3,>=2.1.1 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.2.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv) (4.67.3)\\n\",",
+     "            \"Collecting copulas>=0.12.1 (from sdv)\\n\",",
+     "            \"  Downloading copulas-0.14.1-py3-none-any.whl.metadata (9.7 kB)\\n\","
+    ]
+   },
+   {
+    "file": "TSNE,_UMAP,_K_Means_cluster_regresison_Eshop.ipynb",
+    "line": 342,
+    "text": "\"Requirement already satisfied: pandas<3,>=2.1.1 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.2.2)\\n\",",
+    "context": [
+     "            \"  Downloading botocore-1.42.97-py3-none-any.whl.metadata (5.9 kB)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (3.1.2)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.21)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.0.2)\\n\",",
+     "            \"Requirement already satisfied: pandas<3,>=2.1.1 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.2.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv) (4.67.3)\\n\",",
+     "            \"Collecting copulas>=0.12.1 (from sdv)\\n\",",
+     "            \"  Downloading copulas-0.14.1-py3-none-any.whl.metadata (9.7 kB)\\n\",",
+     "            \"Collecting ctgan>=0.11.1 (from sdv)\\n\","
+    ]
+   },
+   {
+    "file": "TSNE,_UMAP,_K_Means_cluster_regresison_Eshop.ipynb",
+    "line": 343,
+    "text": "\"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv) (4.67.3)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (3.1.2)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.21)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.0.2)\\n\",",
+     "            \"Requirement already satisfied: pandas<3,>=2.1.1 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.2.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv) (4.67.3)\\n\",",
+     "            \"Collecting copulas>=0.12.1 (from sdv)\\n\",",
+     "            \"  Downloading copulas-0.14.1-py3-none-any.whl.metadata (9.7 kB)\\n\",",
+     "            \"Collecting ctgan>=0.11.1 (from sdv)\\n\",",
+     "            \"  Downloading ctgan-0.12.1-py3-none-any.whl.metadata (10 kB)\\n\","
+    ]
+   },
+   {
+    "file": "TSNE,_UMAP,_K_Means_cluster_regresison_Eshop.ipynb",
+    "line": 344,
+    "text": "\"Collecting copulas>=0.12.1 (from sdv)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.21)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.0.2)\\n\",",
+     "            \"Requirement already satisfied: pandas<3,>=2.1.1 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.2.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv) (4.67.3)\\n\",",
+     "            \"Collecting copulas>=0.12.1 (from sdv)\\n\",",
+     "            \"  Downloading copulas-0.14.1-py3-none-any.whl.metadata (9.7 kB)\\n\",",
+     "            \"Collecting ctgan>=0.11.1 (from sdv)\\n\",",
+     "            \"  Downloading ctgan-0.12.1-py3-none-any.whl.metadata (10 kB)\\n\",",
+     "            \"Collecting deepecho>=0.7.0 (from sdv)\\n\","
+    ]
+   },
+   {
+    "file": "TSNE,_UMAP,_K_Means_cluster_regresison_Eshop.ipynb",
+    "line": 346,
+    "text": "\"Collecting ctgan>=0.11.1 (from sdv)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: pandas<3,>=2.1.1 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.2.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv) (4.67.3)\\n\",",
+     "            \"Collecting copulas>=0.12.1 (from sdv)\\n\",",
+     "            \"  Downloading copulas-0.14.1-py3-none-any.whl.metadata (9.7 kB)\\n\",",
+     "            \"Collecting ctgan>=0.11.1 (from sdv)\\n\",",
+     "            \"  Downloading ctgan-0.12.1-py3-none-any.whl.metadata (10 kB)\\n\",",
+     "            \"Collecting deepecho>=0.7.0 (from sdv)\\n\",",
+     "            \"  Downloading deepecho-0.8.1-py3-none-any.whl.metadata (11 kB)\\n\",",
+     "            \"Collecting rdt>=1.18.2 (from sdv)\\n\","
+    ]
+   },
+   {
+    "file": "TSNE,_UMAP,_K_Means_cluster_regresison_Eshop.ipynb",
+    "line": 348,
+    "text": "\"Collecting deepecho>=0.7.0 (from sdv)\\n\",",
+    "context": [
+     "            \"Collecting copulas>=0.12.1 (from sdv)\\n\",",
+     "            \"  Downloading copulas-0.14.1-py3-none-any.whl.metadata (9.7 kB)\\n\",",
+     "            \"Collecting ctgan>=0.11.1 (from sdv)\\n\",",
+     "            \"  Downloading ctgan-0.12.1-py3-none-any.whl.metadata (10 kB)\\n\",",
+     "            \"Collecting deepecho>=0.7.0 (from sdv)\\n\",",
+     "            \"  Downloading deepecho-0.8.1-py3-none-any.whl.metadata (11 kB)\\n\",",
+     "            \"Collecting rdt>=1.18.2 (from sdv)\\n\",",
+     "            \"  Downloading rdt-1.21.0-py3-none-any.whl.metadata (11 kB)\\n\",",
+     "            \"Collecting sdmetrics>=0.28.0 (from sdv)\\n\","
+    ]
+   },
+   {
+    "file": "TSNE,_UMAP,_K_Means_cluster_regresison_Eshop.ipynb",
+    "line": 350,
+    "text": "\"Collecting rdt>=1.18.2 (from sdv)\\n\",",
+    "context": [
+     "            \"Collecting ctgan>=0.11.1 (from sdv)\\n\",",
+     "            \"  Downloading ctgan-0.12.1-py3-none-any.whl.metadata (10 kB)\\n\",",
+     "            \"Collecting deepecho>=0.7.0 (from sdv)\\n\",",
+     "            \"  Downloading deepecho-0.8.1-py3-none-any.whl.metadata (11 kB)\\n\",",
+     "            \"Collecting rdt>=1.18.2 (from sdv)\\n\",",
+     "            \"  Downloading rdt-1.21.0-py3-none-any.whl.metadata (11 kB)\\n\",",
+     "            \"Collecting sdmetrics>=0.28.0 (from sdv)\\n\",",
+     "            \"  Downloading sdmetrics-0.28.0-py3-none-any.whl.metadata (9.9 kB)\\n\",",
+     "            \"Requirement already satisfied: platformdirs>=4.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (4.9.6)\\n\","
+    ]
+   },
+   {
+    "file": "TSNE,_UMAP,_K_Means_cluster_regresison_Eshop.ipynb",
+    "line": 352,
+    "text": "\"Collecting sdmetrics>=0.28.0 (from sdv)\\n\",",
+    "context": [
+     "            \"Collecting deepecho>=0.7.0 (from sdv)\\n\",",
+     "            \"  Downloading deepecho-0.8.1-py3-none-any.whl.metadata (11 kB)\\n\",",
+     "            \"Collecting rdt>=1.18.2 (from sdv)\\n\",",
+     "            \"  Downloading rdt-1.21.0-py3-none-any.whl.metadata (11 kB)\\n\",",
+     "            \"Collecting sdmetrics>=0.28.0 (from sdv)\\n\",",
+     "            \"  Downloading sdmetrics-0.28.0-py3-none-any.whl.metadata (9.9 kB)\\n\",",
+     "            \"Requirement already satisfied: platformdirs>=4.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (4.9.6)\\n\",",
+     "            \"Requirement already satisfied: pyyaml>=6.0.1 in /usr/local/lib/python3.12/dist-packages (from sdv) (6.0.3)\\n\",",
+     "            \"Collecting jmespath<2.0.0,>=0.7.1 (from boto3<2.0.0,>=1.28->sdv)\\n\","
+    ]
+   }
+  ],
+  "ctgan_mod": [
+   {
+    "file": "TSNE,_UMAP,_K_Means_cluster_regresison_Eshop.ipynb",
+    "line": 364,
+    "text": "\"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.10.0+cpu)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\n\",",
+     "            \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\n\",",
+     "            \"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (5.24.1)\\n\",",
+     "            \"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (1.16.3)\\n\",",
+     "            \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.10.0+cpu)\\n\",",
+     "            \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2025.2)\\n\",",
+     "            \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2026.1)\\n\",",
+     "            \"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (1.6.1)\\n\",",
+     "            \"Collecting Faker!=37.11.0,>=17 (from rdt>=1.18.2->sdv)\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/12. Air Quality/air_quality.ipynb",
+    "line": 121,
+    "text": "\"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.11.0+cu128)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\n\",",
+     "            \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\n\",",
+     "            \"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (5.24.1)\\n\",",
+     "            \"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (1.16.3)\\n\",",
+     "            \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.11.0+cu128)\\n\",",
+     "            \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2025.2)\\n\",",
+     "            \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2026.2)\\n\",",
+     "            \"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (1.6.1)\\n\",",
+     "            \"Collecting Faker!=37.11.0,>=17 (from rdt>=1.18.2->sdv)\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/5. Bank Markting/Bank_marketing.ipynb",
+    "line": 70,
+    "text": "\"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.11.0+cu128)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\n\",",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (5.24.1)\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (1.16.3)\\n\",",
+     "      \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.11.0+cu128)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2026.2)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (1.6.1)\\n\",",
+     "      \"Requirement already satisfied: Faker!=37.11.0,>=17 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (40.22.0)\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/3. Adult/adult.ipynb",
+    "line": 70,
+    "text": "\"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.11.0+cu128)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\n\",",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (5.24.1)\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (1.16.3)\\n\",",
+     "      \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.11.0+cu128)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2026.2)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (1.6.1)\\n\",",
+     "      \"Requirement already satisfied: Faker!=37.11.0,>=17 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (40.21.0)\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/7. CDC diabetes dataset/cdc_diabetes.ipynb",
+    "line": 83,
+    "text": "\"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.11.0+cu128)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\n\",",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (5.24.1)\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (1.16.3)\\n\",",
+     "      \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.11.0+cu128)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2026.2)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (1.6.1)\\n\",",
+     "      \"Collecting Faker!=37.11.0,>=17 (from rdt>=1.18.2->sdv)\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/9. MAGIC Gamma Telescope/MAGIC_Gamma_Telescope.ipynb",
+    "line": 134,
+    "text": "\"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.11.0+cu128)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\n\",",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (5.24.1)\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (1.16.3)\\n\",",
+     "      \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.11.0+cu128)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2026.2)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (1.6.1)\\n\",",
+     "      \"Collecting Faker!=37.11.0,>=17 (from rdt>=1.18.2->sdv)\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/13. Concrete Compressive Strength/concrete.ipynb",
+    "line": 133,
+    "text": "\"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.11.0+cu128)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\n\",",
+     "            \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\n\",",
+     "            \"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (5.24.1)\\n\",",
+     "            \"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (1.16.3)\\n\",",
+     "            \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.11.0+cu128)\\n\",",
+     "            \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2025.2)\\n\",",
+     "            \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2026.2)\\n\",",
+     "            \"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (1.6.1)\\n\",",
+     "            \"Collecting Faker!=37.11.0,>=17 (from rdt>=1.18.2->sdv)\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Other GANS/14. Energy Efficiency_other GAN.ipynb",
+    "line": 380,
+    "text": "\"Requirement already satisfied: torch>=2.3.0 in c:\\\\users\\\\gopi.battineni\\\\appdata\\\\local\\\\programs\\\\python\\\\python312\\\\lib\\\\site-packages (from ctgan>=0.11.1->sdv) (2.12.1)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in c:\\\\users\\\\gopi.battineni\\\\appdata\\\\local\\\\programs\\\\python\\\\python312\\\\lib\\\\site-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in c:\\\\users\\\\gopi.battineni\\\\appdata\\\\local\\\\programs\\\\python\\\\python312\\\\lib\\\\site-packages (from botocore<2.0.0,>=1.31->sdv) (2.7.0)",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in c:\\\\users\\\\gopi.battineni\\\\appdata\\\\local\\\\programs\\\\python\\\\python312\\\\lib\\\\site-packages (from copulas>=0.12.1->sdv) (6.8.0)\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.12.0 in c:\\\\users\\\\gopi.battineni\\\\appdata\\\\local\\\\programs\\\\python\\\\python312\\\\lib\\\\site-packages (from copulas>=0.12.1->sdv) (1.17.1)\\n\",",
+     "      \"Requirement already satisfied: torch>=2.3.0 in c:\\\\users\\\\gopi.battineni\\\\appdata\\\\local\\\\programs\\\\python\\\\python312\\\\lib\\\\site-packages (from ctgan>=0.11.1->sdv) (2.12.1)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in c:\\\\users\\\\gopi.battineni\\\\appdata\\\\local\\\\programs\\\\python\\\\python312\\\\lib\\\\site-packages (from pandas<3,>=2.1.1->sdv) (2026.2)\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in c:\\\\users\\\\gopi.battineni\\\\appdata\\\\local\\\\programs\\\\python\\\\python312\\\\lib\\\\site-packages (from pandas<3,>=2.1.1->sdv) (2026.2)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.3.1 in c:\\\\users\\\\gopi.battineni\\\\appdata\\\\local\\\\programs\\\\python\\\\python312\\\\lib\\\\site-packages (from rdt>=1.18.2->sdv) (1.9.0)\\n\",",
+     "      \"Requirement already satisfied: Faker!=37.11.0,>=17 in c:\\\\users\\\\gopi.battineni\\\\appdata\\\\local\\\\programs\\\\python\\\\python312\\\\lib\\\\site-packages (from rdt>=1.18.2->sdv) (40.23.0)\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Other GANS/9. MAGIC Gamma Telescope_other GAN.ipynb",
+    "line": 449,
+    "text": "\"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.11.0+cu128)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\n\",",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (5.24.1)\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (1.16.3)\\n\",",
+     "      \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.11.0+cu128)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2026.2)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (1.6.1)\\n\",",
+     "      \"Collecting Faker!=37.11.0,>=17 (from rdt>=1.18.2->sdv)\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Other GANS/7_CDC_diabetes_other_GAN.ipynb",
+    "line": 403,
+    "text": "\"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.10.0+cu128)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\n\",",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (5.24.1)\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (1.16.3)\\n\",",
+     "      \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.10.0+cu128)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2026.1)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (1.6.1)\\n\",",
+     "      \"Collecting Faker!=37.11.0,>=17 (from rdt>=1.18.2->sdv)\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Other GANS/5. Bank marketing_other GAN.ipynb",
+    "line": 405,
+    "text": "\"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.10.0+cpu)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\n\",",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (5.24.1)\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (1.16.3)\\n\",",
+     "      \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.10.0+cpu)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2026.1)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (1.6.1)\\n\",",
+     "      \"Collecting Faker!=37.11.0,>=17 (from rdt>=1.18.2->sdv)\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Other GANS/12. Air Quality_other GAN.ipynb",
+    "line": 415,
+    "text": "\"Collecting torch>=2.3.0 (from ctgan>=0.11.1->sdv)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in c:\\\\users\\\\gopi.battineni\\\\appdata\\\\local\\\\programs\\\\python\\\\python312\\\\lib\\\\site-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in c:\\\\users\\\\gopi.battineni\\\\appdata\\\\local\\\\programs\\\\python\\\\python312\\\\lib\\\\site-packages (from botocore<2.0.0,>=1.31->sdv) (2.7.0)",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in c:\\\\users\\\\gopi.battineni\\\\appdata\\\\local\\\\programs\\\\python\\\\python312\\\\lib\\\\site-packages (from copulas>=0.12.1->sdv) (6.8.0)\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.12.0 in c:\\\\users\\\\gopi.battineni\\\\appdata\\\\local\\\\programs\\\\python\\\\python312\\\\lib\\\\site-packages (from copulas>=0.12.1->sdv) (1.17.1)\\n\",",
+     "      \"Collecting torch>=2.3.0 (from ctgan>=0.11.1->sdv)\\n\",",
+     "      \"  Using cached torch-2.12.1-cp312-cp312-win_amd64.whl.metadata (31 kB)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in c:\\\\users\\\\gopi.battineni\\\\appdata\\\\local\\\\programs\\\\python\\\\python312\\\\lib\\\\site-packages (from pandas<3,>=2.1.1->sdv) (2026.2)\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in c:\\\\users\\\\gopi.battineni\\\\appdata\\\\local\\\\programs\\\\python\\\\python312\\\\lib\\\\site-packages (from pandas<3,>=2.1.1->sdv) (2026.2)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.3.1 in c:\\\\users\\\\gopi.battineni\\\\appdata\\\\local\\\\programs\\\\python\\\\python312\\\\lib\\\\site-packages (from rdt>=1.18.2->sdv) (1.9.0)\\n\","
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "TSNE,_UMAP,_K_Means_cluster_regresison_Eshop.ipynb",
+    "line": 418,
+    "text": "\"from sdv.single_table import CTGANSynthesizer, CopulaGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "        \"import numpy as np\\n\",",
+     "        \"import pandas as pd\\n\",",
+     "        \"import sdv\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"from sdv.single_table import CTGANSynthesizer, CopulaGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer\\n\",",
+     "        \"from sdv.evaluation.single_table import evaluate_quality, run_diagnostic\\n\",",
+     "        \"\\n\",",
+     "        \"data.columns = data.columns.str.strip().str.lower()\\n\",",
+     "        \"target_col = 'price'\\n\","
+    ]
+   },
+   {
+    "file": "TSNE,_UMAP,_K_Means_cluster_regresison_Eshop.ipynb",
+    "line": 439,
+    "text": "\"    \\\"CTGAN\\\": CTGANSynthesizer(metadata=metadata, epochs=50, verbose=False),\\n\",",
+    "context": [
+     "        \"\\n\",",
+     "        \"n_samples = len(data)\\n\",",
+     "        \"\\n\",",
+     "        \"models = {\\n\",",
+     "        \"    \\\"CTGAN\\\": CTGANSynthesizer(metadata=metadata, epochs=50, verbose=False),\\n\",",
+     "        \"    \\\"CopulaGAN\\\": CopulaGANSynthesizer(metadata=metadata, epochs=50, verbose=False),\\n\",",
+     "        \"    \\\"TVAE\\\": TVAESynthesizer(metadata=metadata, epochs=50, verbose=False),\\n\",",
+     "        \"    \\\"GaussianCopula\\\": GaussianCopulaSynthesizer(metadata=metadata)\\n\",",
+     "        \"}\\n\","
+    ]
+   },
+   {
+    "file": "setup_alzhimers_single_run.py",
+    "line": 53,
+    "text": "CTGANSynthesizer,",
+    "context": [
+     "from sklearn.model_selection import train_test_split",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    CopulaGANSynthesizer,",
+     "    TVAESynthesizer,",
+     "    GaussianCopulaSynthesizer,",
+     ")"
+    ]
+   },
+   {
+    "file": "webapp/app/generators/runner.py",
+    "line": 204,
+    "text": "CTGANSynthesizer,",
+    "context": [
+     "",
+     "def generate_sdv(df: pd.DataFrame, info: DatasetInfo, n_samples: int, seed: int, model_name: str) -> pd.DataFrame:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import (",
+     "        CTGANSynthesizer,",
+     "        CopulaGANSynthesizer,",
+     "        GaussianCopulaSynthesizer,",
+     "        TVAESynthesizer,",
+     "    )"
+    ]
+   },
+   {
+    "file": "webapp/app/generators/runner.py",
+    "line": 215,
+    "text": "\"ctgan\": CTGANSynthesizer,",
+    "context": [
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(df)",
+     "",
+     "    model_map = {",
+     "        \"ctgan\": CTGANSynthesizer,",
+     "        \"copulagan\": CopulaGANSynthesizer,",
+     "        \"tvae\": TVAESynthesizer,",
+     "        \"gaussian_copula\": GaussianCopulaSynthesizer,",
+     "    }"
+    ]
+   },
+   {
+    "file": "scripts/strip_sdv_diffusion_notebook.py",
+    "line": 25,
+    "text": "r\"CTGANSynthesizer,\\s*\"",
+    "context": [
+     "TRTR_DUPLICATE_MARKER = \"--- Starting TRTR Evaluation (Train Real, Test Real) ---\"",
+     "",
+     "SDV_IMPORT_RE = re.compile(",
+     "    r\"from sdv\\.single_table import \\(\\s*\"",
+     "    r\"CTGANSynthesizer,\\s*\"",
+     "    r\"CopulaGANSynthesizer,\\s*\"",
+     "    r\"TVAESynthesizer,\\s*\"",
+     "    r\"GaussianCopulaSynthesizer,?\\s*\"",
+     "    r\"\\)\\s*\\n\","
+    ]
+   },
+   {
+    "file": "scripts/strip_sdv_cancer_notebook.py",
+    "line": 16,
+    "text": "CTGANSynthesizer,",
+    "context": [
+     "    / \"cancer.ipynb\"",
+     ")",
+     "",
+     "SDV_IMPORT_BLOCK = \"\"\"from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    CopulaGANSynthesizer,",
+     "    TVAESynthesizer,",
+     "    GaussianCopulaSynthesizer",
+     ")"
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/6. Wine dataset/Wine.ipynb",
+    "line": 507,
+    "text": "\"    CTGANSynthesizer,\\n\",",
+    "context": [
+     "   \"source\": [",
+     "    \"# SDV MODELS\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.single_table import (\\n\",",
+     "    \"    CTGANSynthesizer,\\n\",",
+     "    \"    CopulaGANSynthesizer,\\n\",",
+     "    \"    TVAESynthesizer,\\n\",",
+     "    \"    GaussianCopulaSynthesizer\\n\",",
+     "    \")\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/6. Wine dataset/Wine.ipynb",
+    "line": 516,
+    "text": "\"    \\\"CTGAN\\\": CTGANSynthesizer(metadata=train_metadata),\\n\",",
+    "context": [
+     "    \"\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"\\n\",",
+     "    \"sdv_models = {\\n\",",
+     "    \"    \\\"CTGAN\\\": CTGANSynthesizer(metadata=train_metadata),\\n\",",
+     "    \"    \\\"CopulaGAN\\\": CopulaGANSynthesizer(metadata=train_metadata),\\n\",",
+     "    \"    \\\"TVAE\\\": TVAESynthesizer(metadata=train_metadata),\\n\",",
+     "    \"    \\\"GaussianCopula\\\": GaussianCopulaSynthesizer(metadata=train_metadata)\\n\",",
+     "    \"}\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/12. Air Quality/air_quality.ipynb",
+    "line": 743,
+    "text": "\"    CTGANSynthesizer,\\n\",",
+    "context": [
+     "      \"source\": [",
+     "        \"# SDV MODELS\\n\",",
+     "        \"\\n\",",
+     "        \"from sdv.single_table import (\\n\",",
+     "        \"    CTGANSynthesizer,\\n\",",
+     "        \"    CopulaGANSynthesizer,\\n\",",
+     "        \"    TVAESynthesizer,\\n\",",
+     "        \"    GaussianCopulaSynthesizer\\n\",",
+     "        \")\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/12. Air Quality/air_quality.ipynb",
+    "line": 752,
+    "text": "\"    \\\"CTGAN\\\": CTGANSynthesizer(metadata=train_metadata),\\n\",",
+    "context": [
+     "        \"\\n\",",
+     "        \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "        \"\\n\",",
+     "        \"sdv_models = {\\n\",",
+     "        \"    \\\"CTGAN\\\": CTGANSynthesizer(metadata=train_metadata),\\n\",",
+     "        \"    \\\"CopulaGAN\\\": CopulaGANSynthesizer(metadata=train_metadata),\\n\",",
+     "        \"    \\\"TVAE\\\": TVAESynthesizer(metadata=train_metadata),\\n\",",
+     "        \"    \\\"GaussianCopula\\\": GaussianCopulaSynthesizer(metadata=train_metadata)\\n\",",
+     "        \"}\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/5. Bank Markting/Bank_marketing.ipynb",
+    "line": 165,
+    "text": "\"    CTGANSynthesizer,\\n\",",
+    "context": [
+     "    \"from sklearn.model_selection import train_test_split\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import (\\n\",",
+     "    \"    CTGANSynthesizer,\\n\",",
+     "    \"    CopulaGANSynthesizer,\\n\",",
+     "    \"    TVAESynthesizer,\\n\",",
+     "    \"    GaussianCopulaSynthesizer\\n\",",
+     "    \")\\n\","
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "TSNE,_UMAP,_K_Means_cluster_regresison_Eshop.ipynb",
+    "line": 418,
+    "text": "\"from sdv.single_table import CTGANSynthesizer, CopulaGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "        \"import numpy as np\\n\",",
+     "        \"import pandas as pd\\n\",",
+     "        \"import sdv\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"from sdv.single_table import CTGANSynthesizer, CopulaGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer\\n\",",
+     "        \"from sdv.evaluation.single_table import evaluate_quality, run_diagnostic\\n\",",
+     "        \"\\n\",",
+     "        \"data.columns = data.columns.str.strip().str.lower()\\n\",",
+     "        \"target_col = 'price'\\n\","
+    ]
+   },
+   {
+    "file": "TSNE,_UMAP,_K_Means_cluster_regresison_Eshop.ipynb",
+    "line": 442,
+    "text": "\"    \\\"GaussianCopula\\\": GaussianCopulaSynthesizer(metadata=metadata)\\n\",",
+    "context": [
+     "        \"models = {\\n\",",
+     "        \"    \\\"CTGAN\\\": CTGANSynthesizer(metadata=metadata, epochs=50, verbose=False),\\n\",",
+     "        \"    \\\"CopulaGAN\\\": CopulaGANSynthesizer(metadata=metadata, epochs=50, verbose=False),\\n\",",
+     "        \"    \\\"TVAE\\\": TVAESynthesizer(metadata=metadata, epochs=50, verbose=False),\\n\",",
+     "        \"    \\\"GaussianCopula\\\": GaussianCopulaSynthesizer(metadata=metadata)\\n\",",
+     "        \"}\\n\",",
+     "        \"\\n\",",
+     "        \"synthetic_datasets = {}\\n\",",
+     "        \"diagnostic_reports = {}\\n\","
+    ]
+   },
+   {
+    "file": "setup_alzhimers_single_run.py",
+    "line": 56,
+    "text": "GaussianCopulaSynthesizer,",
+    "context": [
+     "from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    CopulaGANSynthesizer,",
+     "    TVAESynthesizer,",
+     "    GaussianCopulaSynthesizer,",
+     ")",
+     "",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     ""
+    ]
+   },
+   {
+    "file": "webapp/app/generators/runner.py",
+    "line": 206,
+    "text": "GaussianCopulaSynthesizer,",
+    "context": [
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import (",
+     "        CTGANSynthesizer,",
+     "        CopulaGANSynthesizer,",
+     "        GaussianCopulaSynthesizer,",
+     "        TVAESynthesizer,",
+     "    )",
+     "",
+     "    _set_seeds(seed)"
+    ]
+   },
+   {
+    "file": "webapp/app/generators/runner.py",
+    "line": 218,
+    "text": "\"gaussian_copula\": GaussianCopulaSynthesizer,",
+    "context": [
+     "    model_map = {",
+     "        \"ctgan\": CTGANSynthesizer,",
+     "        \"copulagan\": CopulaGANSynthesizer,",
+     "        \"tvae\": TVAESynthesizer,",
+     "        \"gaussian_copula\": GaussianCopulaSynthesizer,",
+     "    }",
+     "    synthesizer = model_map[model_name](metadata=metadata)",
+     "    synthesizer.fit(df)",
+     "    return synthesizer.sample(n_samples)"
+    ]
+   },
+   {
+    "file": "scripts/strip_sdv_diffusion_notebook.py",
+    "line": 28,
+    "text": "r\"GaussianCopulaSynthesizer,?\\s*\"",
+    "context": [
+     "    r\"from sdv\\.single_table import \\(\\s*\"",
+     "    r\"CTGANSynthesizer,\\s*\"",
+     "    r\"CopulaGANSynthesizer,\\s*\"",
+     "    r\"TVAESynthesizer,\\s*\"",
+     "    r\"GaussianCopulaSynthesizer,?\\s*\"",
+     "    r\"\\)\\s*\\n\",",
+     "    re.MULTILINE,",
+     ")",
+     ""
+    ]
+   },
+   {
+    "file": "scripts/strip_sdv_cancer_notebook.py",
+    "line": 19,
+    "text": "GaussianCopulaSynthesizer",
+    "context": [
+     "SDV_IMPORT_BLOCK = \"\"\"from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    CopulaGANSynthesizer,",
+     "    TVAESynthesizer,",
+     "    GaussianCopulaSynthesizer",
+     ")",
+     "",
+     "\"\"\"",
+     ""
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/6. Wine dataset/Wine.ipynb",
+    "line": 510,
+    "text": "\"    GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "    \"from sdv.single_table import (\\n\",",
+     "    \"    CTGANSynthesizer,\\n\",",
+     "    \"    CopulaGANSynthesizer,\\n\",",
+     "    \"    TVAESynthesizer,\\n\",",
+     "    \"    GaussianCopulaSynthesizer\\n\",",
+     "    \")\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/6. Wine dataset/Wine.ipynb",
+    "line": 519,
+    "text": "\"    \\\"GaussianCopula\\\": GaussianCopulaSynthesizer(metadata=train_metadata)\\n\",",
+    "context": [
+     "    \"sdv_models = {\\n\",",
+     "    \"    \\\"CTGAN\\\": CTGANSynthesizer(metadata=train_metadata),\\n\",",
+     "    \"    \\\"CopulaGAN\\\": CopulaGANSynthesizer(metadata=train_metadata),\\n\",",
+     "    \"    \\\"TVAE\\\": TVAESynthesizer(metadata=train_metadata),\\n\",",
+     "    \"    \\\"GaussianCopula\\\": GaussianCopulaSynthesizer(metadata=train_metadata)\\n\",",
+     "    \"}\\n\",",
+     "    \"\\n\",",
+     "    \"for model_name, model in sdv_models.items():\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/12. Air Quality/air_quality.ipynb",
+    "line": 746,
+    "text": "\"    GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "        \"from sdv.single_table import (\\n\",",
+     "        \"    CTGANSynthesizer,\\n\",",
+     "        \"    CopulaGANSynthesizer,\\n\",",
+     "        \"    TVAESynthesizer,\\n\",",
+     "        \"    GaussianCopulaSynthesizer\\n\",",
+     "        \")\\n\",",
+     "        \"\\n\",",
+     "        \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "        \"\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/12. Air Quality/air_quality.ipynb",
+    "line": 755,
+    "text": "\"    \\\"GaussianCopula\\\": GaussianCopulaSynthesizer(metadata=train_metadata)\\n\",",
+    "context": [
+     "        \"sdv_models = {\\n\",",
+     "        \"    \\\"CTGAN\\\": CTGANSynthesizer(metadata=train_metadata),\\n\",",
+     "        \"    \\\"CopulaGAN\\\": CopulaGANSynthesizer(metadata=train_metadata),\\n\",",
+     "        \"    \\\"TVAE\\\": TVAESynthesizer(metadata=train_metadata),\\n\",",
+     "        \"    \\\"GaussianCopula\\\": GaussianCopulaSynthesizer(metadata=train_metadata)\\n\",",
+     "        \"}\\n\",",
+     "        \"\\n\",",
+     "        \"for model_name, model in sdv_models.items():\\n\",",
+     "        \"\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/5. Bank Markting/Bank_marketing.ipynb",
+    "line": 168,
+    "text": "\"    GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "    \"from sdv.single_table import (\\n\",",
+     "    \"    CTGANSynthesizer,\\n\",",
+     "    \"    CopulaGANSynthesizer,\\n\",",
+     "    \"    TVAESynthesizer,\\n\",",
+     "    \"    GaussianCopulaSynthesizer\\n\",",
+     "    \")\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"\\n\","
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "TSNE,_UMAP,_K_Means_cluster_regresison_Eshop.ipynb",
+    "line": 418,
+    "text": "\"from sdv.single_table import CTGANSynthesizer, CopulaGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "        \"import numpy as np\\n\",",
+     "        \"import pandas as pd\\n\",",
+     "        \"import sdv\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"from sdv.single_table import CTGANSynthesizer, CopulaGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer\\n\",",
+     "        \"from sdv.evaluation.single_table import evaluate_quality, run_diagnostic\\n\",",
+     "        \"\\n\",",
+     "        \"data.columns = data.columns.str.strip().str.lower()\\n\",",
+     "        \"target_col = 'price'\\n\","
+    ]
+   },
+   {
+    "file": "TSNE,_UMAP,_K_Means_cluster_regresison_Eshop.ipynb",
+    "line": 441,
+    "text": "\"    \\\"TVAE\\\": TVAESynthesizer(metadata=metadata, epochs=50, verbose=False),\\n\",",
+    "context": [
+     "        \"\\n\",",
+     "        \"models = {\\n\",",
+     "        \"    \\\"CTGAN\\\": CTGANSynthesizer(metadata=metadata, epochs=50, verbose=False),\\n\",",
+     "        \"    \\\"CopulaGAN\\\": CopulaGANSynthesizer(metadata=metadata, epochs=50, verbose=False),\\n\",",
+     "        \"    \\\"TVAE\\\": TVAESynthesizer(metadata=metadata, epochs=50, verbose=False),\\n\",",
+     "        \"    \\\"GaussianCopula\\\": GaussianCopulaSynthesizer(metadata=metadata)\\n\",",
+     "        \"}\\n\",",
+     "        \"\\n\",",
+     "        \"synthetic_datasets = {}\\n\","
+    ]
+   },
+   {
+    "file": "setup_alzhimers_single_run.py",
+    "line": 55,
+    "text": "TVAESynthesizer,",
+    "context": [
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    CopulaGANSynthesizer,",
+     "    TVAESynthesizer,",
+     "    GaussianCopulaSynthesizer,",
+     ")",
+     "",
+     "from sdv.evaluation.single_table import evaluate_quality"
+    ]
+   },
+   {
+    "file": "webapp/app/generators/runner.py",
+    "line": 207,
+    "text": "TVAESynthesizer,",
+    "context": [
+     "    from sdv.single_table import (",
+     "        CTGANSynthesizer,",
+     "        CopulaGANSynthesizer,",
+     "        GaussianCopulaSynthesizer,",
+     "        TVAESynthesizer,",
+     "    )",
+     "",
+     "    _set_seeds(seed)",
+     "    metadata = SingleTableMetadata()"
+    ]
+   },
+   {
+    "file": "webapp/app/generators/runner.py",
+    "line": 217,
+    "text": "\"tvae\": TVAESynthesizer,",
+    "context": [
+     "",
+     "    model_map = {",
+     "        \"ctgan\": CTGANSynthesizer,",
+     "        \"copulagan\": CopulaGANSynthesizer,",
+     "        \"tvae\": TVAESynthesizer,",
+     "        \"gaussian_copula\": GaussianCopulaSynthesizer,",
+     "    }",
+     "    synthesizer = model_map[model_name](metadata=metadata)",
+     "    synthesizer.fit(df)"
+    ]
+   },
+   {
+    "file": "scripts/strip_sdv_diffusion_notebook.py",
+    "line": 27,
+    "text": "r\"TVAESynthesizer,\\s*\"",
+    "context": [
+     "SDV_IMPORT_RE = re.compile(",
+     "    r\"from sdv\\.single_table import \\(\\s*\"",
+     "    r\"CTGANSynthesizer,\\s*\"",
+     "    r\"CopulaGANSynthesizer,\\s*\"",
+     "    r\"TVAESynthesizer,\\s*\"",
+     "    r\"GaussianCopulaSynthesizer,?\\s*\"",
+     "    r\"\\)\\s*\\n\",",
+     "    re.MULTILINE,",
+     ")"
+    ]
+   },
+   {
+    "file": "scripts/strip_sdv_cancer_notebook.py",
+    "line": 18,
+    "text": "TVAESynthesizer,",
+    "context": [
+     "",
+     "SDV_IMPORT_BLOCK = \"\"\"from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    CopulaGANSynthesizer,",
+     "    TVAESynthesizer,",
+     "    GaussianCopulaSynthesizer",
+     ")",
+     "",
+     "\"\"\""
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/6. Wine dataset/Wine.ipynb",
+    "line": 509,
+    "text": "\"    TVAESynthesizer,\\n\",",
+    "context": [
+     "    \"\\n\",",
+     "    \"from sdv.single_table import (\\n\",",
+     "    \"    CTGANSynthesizer,\\n\",",
+     "    \"    CopulaGANSynthesizer,\\n\",",
+     "    \"    TVAESynthesizer,\\n\",",
+     "    \"    GaussianCopulaSynthesizer\\n\",",
+     "    \")\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/6. Wine dataset/Wine.ipynb",
+    "line": 518,
+    "text": "\"    \\\"TVAE\\\": TVAESynthesizer(metadata=train_metadata),\\n\",",
+    "context": [
+     "    \"\\n\",",
+     "    \"sdv_models = {\\n\",",
+     "    \"    \\\"CTGAN\\\": CTGANSynthesizer(metadata=train_metadata),\\n\",",
+     "    \"    \\\"CopulaGAN\\\": CopulaGANSynthesizer(metadata=train_metadata),\\n\",",
+     "    \"    \\\"TVAE\\\": TVAESynthesizer(metadata=train_metadata),\\n\",",
+     "    \"    \\\"GaussianCopula\\\": GaussianCopulaSynthesizer(metadata=train_metadata)\\n\",",
+     "    \"}\\n\",",
+     "    \"\\n\",",
+     "    \"for model_name, model in sdv_models.items():\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/12. Air Quality/air_quality.ipynb",
+    "line": 745,
+    "text": "\"    TVAESynthesizer,\\n\",",
+    "context": [
+     "        \"\\n\",",
+     "        \"from sdv.single_table import (\\n\",",
+     "        \"    CTGANSynthesizer,\\n\",",
+     "        \"    CopulaGANSynthesizer,\\n\",",
+     "        \"    TVAESynthesizer,\\n\",",
+     "        \"    GaussianCopulaSynthesizer\\n\",",
+     "        \")\\n\",",
+     "        \"\\n\",",
+     "        \"from sdv.evaluation.single_table import evaluate_quality\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/12. Air Quality/air_quality.ipynb",
+    "line": 754,
+    "text": "\"    \\\"TVAE\\\": TVAESynthesizer(metadata=train_metadata),\\n\",",
+    "context": [
+     "        \"\\n\",",
+     "        \"sdv_models = {\\n\",",
+     "        \"    \\\"CTGAN\\\": CTGANSynthesizer(metadata=train_metadata),\\n\",",
+     "        \"    \\\"CopulaGAN\\\": CopulaGANSynthesizer(metadata=train_metadata),\\n\",",
+     "        \"    \\\"TVAE\\\": TVAESynthesizer(metadata=train_metadata),\\n\",",
+     "        \"    \\\"GaussianCopula\\\": GaussianCopulaSynthesizer(metadata=train_metadata)\\n\",",
+     "        \"}\\n\",",
+     "        \"\\n\",",
+     "        \"for model_name, model in sdv_models.items():\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/5. Bank Markting/Bank_marketing.ipynb",
+    "line": 167,
+    "text": "\"    TVAESynthesizer,\\n\",",
+    "context": [
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import (\\n\",",
+     "    \"    CTGANSynthesizer,\\n\",",
+     "    \"    CopulaGANSynthesizer,\\n\",",
+     "    \"    TVAESynthesizer,\\n\",",
+     "    \"    GaussianCopulaSynthesizer\\n\",",
+     "    \")\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\","
+    ]
+   }
+  ],
+  "rdt": [
+   {
+    "file": "TSNE,_UMAP,_K_Means_cluster_regresison_Eshop.ipynb",
+    "line": 367,
+    "text": "\"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (1.6.1)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (1.16.3)\\n\",",
+     "            \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.10.0+cpu)\\n\",",
+     "            \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2025.2)\\n\",",
+     "            \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2026.1)\\n\",",
+     "            \"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (1.6.1)\\n\",",
+     "            \"Collecting Faker!=37.11.0,>=17 (from rdt>=1.18.2->sdv)\\n\",",
+     "            \"  Downloading faker-40.15.0-py3-none-any.whl.metadata (16 kB)\\n\",",
+     "            \"Requirement already satisfied: tenacity>=6.2.0 in /usr/local/lib/python3.12/dist-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (9.1.4)\\n\",",
+     "            \"Requirement already satisfied: packaging in /usr/local/lib/python3.12/dist-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (26.1)\\n\","
+    ]
+   },
+   {
+    "file": "TSNE,_UMAP,_K_Means_cluster_regresison_Eshop.ipynb",
+    "line": 368,
+    "text": "\"Collecting Faker!=37.11.0,>=17 (from rdt>=1.18.2->sdv)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.10.0+cpu)\\n\",",
+     "            \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2025.2)\\n\",",
+     "            \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2026.1)\\n\",",
+     "            \"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (1.6.1)\\n\",",
+     "            \"Collecting Faker!=37.11.0,>=17 (from rdt>=1.18.2->sdv)\\n\",",
+     "            \"  Downloading faker-40.15.0-py3-none-any.whl.metadata (16 kB)\\n\",",
+     "            \"Requirement already satisfied: tenacity>=6.2.0 in /usr/local/lib/python3.12/dist-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (9.1.4)\\n\",",
+     "            \"Requirement already satisfied: packaging in /usr/local/lib/python3.12/dist-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (26.1)\\n\",",
+     "            \"Requirement already satisfied: six>=1.5 in /usr/local/lib/python3.12/dist-packages (from python-dateutil<3.0.0,>=2.1->botocore<2.0.0,>=1.31->sdv) (1.17.0)\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/12. Air Quality/air_quality.ipynb",
+    "line": 124,
+    "text": "\"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (1.6.1)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (1.16.3)\\n\",",
+     "            \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.11.0+cu128)\\n\",",
+     "            \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2025.2)\\n\",",
+     "            \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2026.2)\\n\",",
+     "            \"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (1.6.1)\\n\",",
+     "            \"Collecting Faker!=37.11.0,>=17 (from rdt>=1.18.2->sdv)\\n\",",
+     "            \"  Downloading faker-40.28.1-py3-none-any.whl.metadata (16 kB)\\n\",",
+     "            \"Requirement already satisfied: tenacity>=6.2.0 in /usr/local/lib/python3.12/dist-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (9.1.4)\\n\",",
+     "            \"Requirement already satisfied: packaging in /usr/local/lib/python3.12/dist-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (26.2)\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/12. Air Quality/air_quality.ipynb",
+    "line": 125,
+    "text": "\"Collecting Faker!=37.11.0,>=17 (from rdt>=1.18.2->sdv)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.11.0+cu128)\\n\",",
+     "            \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2025.2)\\n\",",
+     "            \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2026.2)\\n\",",
+     "            \"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (1.6.1)\\n\",",
+     "            \"Collecting Faker!=37.11.0,>=17 (from rdt>=1.18.2->sdv)\\n\",",
+     "            \"  Downloading faker-40.28.1-py3-none-any.whl.metadata (16 kB)\\n\",",
+     "            \"Requirement already satisfied: tenacity>=6.2.0 in /usr/local/lib/python3.12/dist-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (9.1.4)\\n\",",
+     "            \"Requirement already satisfied: packaging in /usr/local/lib/python3.12/dist-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (26.2)\\n\",",
+     "            \"Requirement already satisfied: six>=1.5 in /usr/local/lib/python3.12/dist-packages (from python-dateutil<3.0.0,>=2.1->botocore<2.0.0,>=1.31->sdv) (1.17.0)\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/5. Bank Markting/Bank_marketing.ipynb",
+    "line": 73,
+    "text": "\"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (1.6.1)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (1.16.3)\\n\",",
+     "      \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.11.0+cu128)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2026.2)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (1.6.1)\\n\",",
+     "      \"Requirement already satisfied: Faker!=37.11.0,>=17 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (40.22.0)\\n\",",
+     "      \"Requirement already satisfied: tenacity>=6.2.0 in /usr/local/lib/python3.12/dist-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (9.1.4)\\n\",",
+     "      \"Requirement already satisfied: packaging in /usr/local/lib/python3.12/dist-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (26.2)\\n\",",
+     "      \"Requirement already satisfied: six>=1.5 in /usr/local/lib/python3.12/dist-packages (from python-dateutil<3.0.0,>=2.1->botocore<2.0.0,>=1.31->sdv) (1.17.0)\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/5. Bank Markting/Bank_marketing.ipynb",
+    "line": 74,
+    "text": "\"Requirement already satisfied: Faker!=37.11.0,>=17 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (40.22.0)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.11.0+cu128)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2026.2)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (1.6.1)\\n\",",
+     "      \"Requirement already satisfied: Faker!=37.11.0,>=17 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (40.22.0)\\n\",",
+     "      \"Requirement already satisfied: tenacity>=6.2.0 in /usr/local/lib/python3.12/dist-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (9.1.4)\\n\",",
+     "      \"Requirement already satisfied: packaging in /usr/local/lib/python3.12/dist-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (26.2)\\n\",",
+     "      \"Requirement already satisfied: six>=1.5 in /usr/local/lib/python3.12/dist-packages (from python-dateutil<3.0.0,>=2.1->botocore<2.0.0,>=1.31->sdv) (1.17.0)\\n\",",
+     "      \"Requirement already satisfied: joblib>=1.2.0 in /usr/local/lib/python3.12/dist-packages (from scikit-learn>=1.3.1->rdt>=1.18.2->sdv) (1.5.3)\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/3. Adult/adult.ipynb",
+    "line": 73,
+    "text": "\"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (1.6.1)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (1.16.3)\\n\",",
+     "      \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.11.0+cu128)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2026.2)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (1.6.1)\\n\",",
+     "      \"Requirement already satisfied: Faker!=37.11.0,>=17 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (40.21.0)\\n\",",
+     "      \"Requirement already satisfied: tenacity>=6.2.0 in /usr/local/lib/python3.12/dist-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (9.1.4)\\n\",",
+     "      \"Requirement already satisfied: packaging in /usr/local/lib/python3.12/dist-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (26.2)\\n\",",
+     "      \"Requirement already satisfied: six>=1.5 in /usr/local/lib/python3.12/dist-packages (from python-dateutil<3.0.0,>=2.1->botocore<2.0.0,>=1.31->sdv) (1.17.0)\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/3. Adult/adult.ipynb",
+    "line": 74,
+    "text": "\"Requirement already satisfied: Faker!=37.11.0,>=17 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (40.21.0)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.11.0+cu128)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2026.2)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (1.6.1)\\n\",",
+     "      \"Requirement already satisfied: Faker!=37.11.0,>=17 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (40.21.0)\\n\",",
+     "      \"Requirement already satisfied: tenacity>=6.2.0 in /usr/local/lib/python3.12/dist-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (9.1.4)\\n\",",
+     "      \"Requirement already satisfied: packaging in /usr/local/lib/python3.12/dist-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (26.2)\\n\",",
+     "      \"Requirement already satisfied: six>=1.5 in /usr/local/lib/python3.12/dist-packages (from python-dateutil<3.0.0,>=2.1->botocore<2.0.0,>=1.31->sdv) (1.17.0)\\n\",",
+     "      \"Requirement already satisfied: joblib>=1.2.0 in /usr/local/lib/python3.12/dist-packages (from scikit-learn>=1.3.1->rdt>=1.18.2->sdv) (1.5.3)\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/7. CDC diabetes dataset/cdc_diabetes.ipynb",
+    "line": 86,
+    "text": "\"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (1.6.1)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (1.16.3)\\n\",",
+     "      \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.11.0+cu128)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2026.2)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (1.6.1)\\n\",",
+     "      \"Collecting Faker!=37.11.0,>=17 (from rdt>=1.18.2->sdv)\\n\",",
+     "      \"  Downloading faker-40.23.0-py3-none-any.whl.metadata (16 kB)\\n\",",
+     "      \"Requirement already satisfied: tenacity>=6.2.0 in /usr/local/lib/python3.12/dist-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (9.1.4)\\n\",",
+     "      \"Requirement already satisfied: packaging in /usr/local/lib/python3.12/dist-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (26.2)\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/7. CDC diabetes dataset/cdc_diabetes.ipynb",
+    "line": 87,
+    "text": "\"Collecting Faker!=37.11.0,>=17 (from rdt>=1.18.2->sdv)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.11.0+cu128)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2026.2)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (1.6.1)\\n\",",
+     "      \"Collecting Faker!=37.11.0,>=17 (from rdt>=1.18.2->sdv)\\n\",",
+     "      \"  Downloading faker-40.23.0-py3-none-any.whl.metadata (16 kB)\\n\",",
+     "      \"Requirement already satisfied: tenacity>=6.2.0 in /usr/local/lib/python3.12/dist-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (9.1.4)\\n\",",
+     "      \"Requirement already satisfied: packaging in /usr/local/lib/python3.12/dist-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (26.2)\\n\",",
+     "      \"Requirement already satisfied: six>=1.5 in /usr/local/lib/python3.12/dist-packages (from python-dateutil<3.0.0,>=2.1->botocore<2.0.0,>=1.31->sdv) (1.17.0)\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/9. MAGIC Gamma Telescope/MAGIC_Gamma_Telescope.ipynb",
+    "line": 137,
+    "text": "\"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (1.6.1)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (1.16.3)\\n\",",
+     "      \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.11.0+cu128)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2026.2)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (1.6.1)\\n\",",
+     "      \"Collecting Faker!=37.11.0,>=17 (from rdt>=1.18.2->sdv)\\n\",",
+     "      \"  Downloading faker-40.21.0-py3-none-any.whl.metadata (16 kB)\\n\",",
+     "      \"Requirement already satisfied: tenacity>=6.2.0 in /usr/local/lib/python3.12/dist-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (9.1.4)\\n\",",
+     "      \"Requirement already satisfied: packaging in /usr/local/lib/python3.12/dist-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (26.2)\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/9. MAGIC Gamma Telescope/MAGIC_Gamma_Telescope.ipynb",
+    "line": 138,
+    "text": "\"Collecting Faker!=37.11.0,>=17 (from rdt>=1.18.2->sdv)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.11.0+cu128)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2026.2)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (1.6.1)\\n\",",
+     "      \"Collecting Faker!=37.11.0,>=17 (from rdt>=1.18.2->sdv)\\n\",",
+     "      \"  Downloading faker-40.21.0-py3-none-any.whl.metadata (16 kB)\\n\",",
+     "      \"Requirement already satisfied: tenacity>=6.2.0 in /usr/local/lib/python3.12/dist-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (9.1.4)\\n\",",
+     "      \"Requirement already satisfied: packaging in /usr/local/lib/python3.12/dist-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (26.2)\\n\",",
+     "      \"Requirement already satisfied: six>=1.5 in /usr/local/lib/python3.12/dist-packages (from python-dateutil<3.0.0,>=2.1->botocore<2.0.0,>=1.31->sdv) (1.17.0)\\n\","
+    ]
+   }
+  ],
+  "copulas": [
+   {
+    "file": "TSNE,_UMAP,_K_Means_cluster_regresison_Eshop.ipynb",
+    "line": 362,
+    "text": "\"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (5.24.1)\\n\",",
+    "context": [
+     "            \"Collecting s3transfer<0.17.0,>=0.16.0 (from boto3<2.0.0,>=1.28->sdv)\\n\",",
+     "            \"  Downloading s3transfer-0.16.1-py3-none-any.whl.metadata (1.7 kB)\\n\",",
+     "            \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\n\",",
+     "            \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\n\",",
+     "            \"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (5.24.1)\\n\",",
+     "            \"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (1.16.3)\\n\",",
+     "            \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.10.0+cpu)\\n\",",
+     "            \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2025.2)\\n\",",
+     "            \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2026.1)\\n\","
+    ]
+   },
+   {
+    "file": "TSNE,_UMAP,_K_Means_cluster_regresison_Eshop.ipynb",
+    "line": 363,
+    "text": "\"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (1.16.3)\\n\",",
+    "context": [
+     "            \"  Downloading s3transfer-0.16.1-py3-none-any.whl.metadata (1.7 kB)\\n\",",
+     "            \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\n\",",
+     "            \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\n\",",
+     "            \"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (5.24.1)\\n\",",
+     "            \"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (1.16.3)\\n\",",
+     "            \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.10.0+cpu)\\n\",",
+     "            \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2025.2)\\n\",",
+     "            \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2026.1)\\n\",",
+     "            \"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (1.6.1)\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/12. Air Quality/air_quality.ipynb",
+    "line": 119,
+    "text": "\"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (5.24.1)\\n\",",
+    "context": [
+     "            \"Collecting s3transfer<0.20.0,>=0.19.0 (from boto3<2.0.0,>=1.28->sdv)\\n\",",
+     "            \"  Downloading s3transfer-0.19.0-py3-none-any.whl.metadata (1.7 kB)\\n\",",
+     "            \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\n\",",
+     "            \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\n\",",
+     "            \"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (5.24.1)\\n\",",
+     "            \"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (1.16.3)\\n\",",
+     "            \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.11.0+cu128)\\n\",",
+     "            \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2025.2)\\n\",",
+     "            \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2026.2)\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/12. Air Quality/air_quality.ipynb",
+    "line": 120,
+    "text": "\"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (1.16.3)\\n\",",
+    "context": [
+     "            \"  Downloading s3transfer-0.19.0-py3-none-any.whl.metadata (1.7 kB)\\n\",",
+     "            \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\n\",",
+     "            \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\n\",",
+     "            \"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (5.24.1)\\n\",",
+     "            \"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (1.16.3)\\n\",",
+     "            \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.11.0+cu128)\\n\",",
+     "            \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2025.2)\\n\",",
+     "            \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2026.2)\\n\",",
+     "            \"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (1.6.1)\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/5. Bank Markting/Bank_marketing.ipynb",
+    "line": 68,
+    "text": "\"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (5.24.1)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: jmespath<2.0.0,>=0.7.1 in /usr/local/lib/python3.12/dist-packages (from boto3<2.0.0,>=1.28->sdv) (1.1.0)\\n\",",
+     "      \"Requirement already satisfied: s3transfer<0.19.0,>=0.18.0 in /usr/local/lib/python3.12/dist-packages (from boto3<2.0.0,>=1.28->sdv) (0.18.0)\\n\",",
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\n\",",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (5.24.1)\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (1.16.3)\\n\",",
+     "      \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.11.0+cu128)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2026.2)\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/5. Bank Markting/Bank_marketing.ipynb",
+    "line": 69,
+    "text": "\"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (1.16.3)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: s3transfer<0.19.0,>=0.18.0 in /usr/local/lib/python3.12/dist-packages (from boto3<2.0.0,>=1.28->sdv) (0.18.0)\\n\",",
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\n\",",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (5.24.1)\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (1.16.3)\\n\",",
+     "      \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.11.0+cu128)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2026.2)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (1.6.1)\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/3. Adult/adult.ipynb",
+    "line": 68,
+    "text": "\"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (5.24.1)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: jmespath<2.0.0,>=0.7.1 in /usr/local/lib/python3.12/dist-packages (from boto3<2.0.0,>=1.28->sdv) (1.1.0)\\n\",",
+     "      \"Requirement already satisfied: s3transfer<0.19.0,>=0.18.0 in /usr/local/lib/python3.12/dist-packages (from boto3<2.0.0,>=1.28->sdv) (0.18.0)\\n\",",
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\n\",",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (5.24.1)\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (1.16.3)\\n\",",
+     "      \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.11.0+cu128)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2026.2)\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/3. Adult/adult.ipynb",
+    "line": 69,
+    "text": "\"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (1.16.3)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: s3transfer<0.19.0,>=0.18.0 in /usr/local/lib/python3.12/dist-packages (from boto3<2.0.0,>=1.28->sdv) (0.18.0)\\n\",",
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\n\",",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (5.24.1)\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (1.16.3)\\n\",",
+     "      \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.11.0+cu128)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2026.2)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (1.6.1)\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/7. CDC diabetes dataset/cdc_diabetes.ipynb",
+    "line": 81,
+    "text": "\"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (5.24.1)\\n\",",
+    "context": [
+     "      \"Collecting s3transfer<0.19.0,>=0.18.0 (from boto3<2.0.0,>=1.28->sdv)\\n\",",
+     "      \"  Downloading s3transfer-0.18.0-py3-none-any.whl.metadata (1.7 kB)\\n\",",
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\n\",",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (5.24.1)\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (1.16.3)\\n\",",
+     "      \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.11.0+cu128)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2026.2)\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/7. CDC diabetes dataset/cdc_diabetes.ipynb",
+    "line": 82,
+    "text": "\"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (1.16.3)\\n\",",
+    "context": [
+     "      \"  Downloading s3transfer-0.18.0-py3-none-any.whl.metadata (1.7 kB)\\n\",",
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\n\",",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (5.24.1)\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (1.16.3)\\n\",",
+     "      \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.11.0+cu128)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2026.2)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (1.6.1)\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/9. MAGIC Gamma Telescope/MAGIC_Gamma_Telescope.ipynb",
+    "line": 132,
+    "text": "\"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (5.24.1)\\n\",",
+    "context": [
+     "      \"Collecting s3transfer<0.19.0,>=0.18.0 (from boto3<2.0.0,>=1.28->sdv)\\n\",",
+     "      \"  Downloading s3transfer-0.18.0-py3-none-any.whl.metadata (1.7 kB)\\n\",",
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\n\",",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (5.24.1)\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (1.16.3)\\n\",",
+     "      \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.11.0+cu128)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2026.2)\\n\","
+    ]
+   },
+   {
+    "file": "Generators/Experiment with utility data leak/9. MAGIC Gamma Telescope/MAGIC_Gamma_Telescope.ipynb",
+    "line": 133,
+    "text": "\"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (1.16.3)\\n\",",
+    "context": [
+     "      \"  Downloading s3transfer-0.18.0-py3-none-any.whl.metadata (1.7 kB)\\n\",",
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\n\",",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (5.24.1)\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (1.16.3)\\n\",",
+     "      \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.11.0+cu128)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2026.2)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (1.6.1)\\n\","
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "copulas",
+  "ct",
+  "ctgan_mod",
+  "ev",
+  "gc",
+  "md",
+  "rdt",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "# --- Synthetic data generators (SDV) ---",
+   "sdv>=1.17"
+  ],
+  "webapp/requirements.txt": [
+   "sdv>=1.17"
+  ]
+ }
+}

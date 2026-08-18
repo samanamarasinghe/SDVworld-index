@@ -1,0 +1,190 @@
+{
+ "repo": "ibraahim16/tabular_synthetic_data_benchmark",
+ "disk_kb": 245,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Üretken Ağlar ile Tabular Sentetik Veri Üretimi\n\nKlasik yeniden örnekleme yöntemleri, GAN temelli üretken modeller ve difüzyon temelli modellerin tabular sentetik veri üretimindeki başarımını; dengeli (**Adult**) ve yüksek derecede dengesiz (**Credit Card Fraud**) iki veri kümesi üzerinde, çok boyutlu bir değerlendirme çerçevesiyle karşılaştıran bitirme projesi.\n\nSonuçların incelenmesi için **Streamlit tabanlı interaktif bir dashboard** ve gerçek/sentetik ayrımı yapan **dedektör modelleri** içerir.\n\n## İçindekiler\n\n- [Genel Bakış](#genel-bakış)\n- [Karşılaştırılan Modeller](#karşılaştırılan-modeller)\n- [Veri Setleri](#veri-setleri)\n- [Değerlendirme Metrikleri](#değerlendirme-metrikleri)\n- [Öne Çıkan Bulgular](#öne-çıkan-bulgular)\n- [Proje Yapısı](#proje-yapısı)\n- [Kurulum](#kurulum)\n- [Çalıştırma (Pipeline)](#çalıştırma-pipeline)\n- [Dashboard](#dashboard)\n- [Yapılandırma](#yapılandırma)\n- [Çıktılar](#çıktılar)\n\n## Genel Bakış\n\nTabular verilerin sürekli, kategorik ve ayrık değişkenleri bir arada barındıran karma yapısı, sentetik veri üretimini zorlaştırır. Bu çalışma üç yaklaşım ailesini aynı deneysel koşullar altında karşılaştırır:\n\n1. **Klasik yeniden örnekleme** — SMOTE türevleri\n2. **GAN temelli modeller** — CGAN, CTGAN, CopulaGAN, CTAB-GAN+\n3. **Difüzyon temelli modeller** — TabSyn, ForestDiffusion\n\nÜretilen veriler hem istatistiksel sadakat (fidelity) hem de aşağı akış makine öğrenmesi faydalılığı (utility) açısından değerlendirilir. Metrik sonuçları birleştirilerek **genel sıralama skoru** hesaplanır; tüm bulgular dashboard üzerinden görselleştirilir.\n\n## Karşılaştırılan Modeller\n\n`src/config.py` içindeki model listesi:\n\n| Aile | Model anahtarı | Uygulama |\n|------|----------------|----------|\n| Yeniden örnekleme | `smote`, `borderline_smote`, `smote_tomek` | `imbalanced-learn` |\n| GAN | `cgan` | PyTorch (özel) |\n| GAN | `ctgan`, `copulagan` | `sdv` |\n| GAN | `ctabgan_plus` | Vendored `CTAB-GAN-Plus/` |\n| Difüzyon | `tabsyn` | Vendored `tabsyn/` (VAE + latent difüzyon) |\n| Difüzyon | `forest_diffusion` | `ForestDiffusion` |\n\n## Veri Setleri\n\n| Veri seti | Sınıflandırma hedefi | Regresyon hedefi | Özellik |\n|-----------|----------------------|------------------|---------|\n| **Adult** (UCI) | `income` | `age` | Karma tipli, dengeliye yakın |\n| **Credit Card Fraud** (OpenML) | `Class` | `Amount` | PCA dönüşümlü, ~%0,17 azınlık sınıf |\n\nVeri setleri `prepare_data.py` tarafından otomatik indirilir; her birinden sabit tohumla **20.000** satırlık benchmark alt kümesi oluşturulur ve %80/%20 eğitim/test ayrımı yapılır.\n\n## Değerlendirme Metrikleri\n\n**İstatistiksel benzerlik** (`evaluate/statistical_tests.py`): KS testi, Wasserstein uzaklığı, Jensen-Shannon ıraksaması, Ki-Kare testi, korelasyon analizi, PCA ve t-SNE temelli manifold analizi.\n\n**Ayırt edilebilirlik** (`evaluate/detection_metric.py`): Detection Metric (DM) — gerçek/sentetik ayrımı. Düşük skor, sentetik verinin gerçeğe daha yakın olduğunu gösterir.\n\n**Faydalılık** (`evaluate/efficacy_metric.py`): Efficacy Metric (EM), TSTR yaklaşımı. Sınıflandırmada Accuracy/Precision/Recall/F1, regresyonda RMSE/R². Kullanılan modeller: Logistic/Linear Regression, Random Forest, XGBoost, CatBoost, AdaBoost ve AutoGluon (AutoML).\n\n**Genel skor** (`evaluate/general_score.py`): İstatistiksel, DM ve EM metriklerini normalize ederek birleştirir. Ağırlıklar: istatistik %40, ayırt edilebilirlik %30, faydalılık %30.\n\n## Öne Çıkan Bulgular\n\n- **TabSyn**, üretken modeller arasında DM, EM, istatistiksel benzerlik ve korelasyon korunumunda en tutarlı ve en yüksek başarıyı gösterdi.\n- **SMOTE temelli yöntemler**, KS/Wasserstein ve faydalılık görevlerinde öngörülenden güçlü, çoğu durumda TabSyn ile yarışan sonuçlar verdi.\n- **ForestDiffusion** veri setine bağlı değişkenlik gösterdi (Credit'te güçlü, Adult DM'de zayıf).\n- **CTGAN, CopulaGAN, CTAB-GAN+** orta düzeyde rekabetçi kaldı.\n- **CGAN** tüm boyutlarda en düşük başarımı gösterdi (mode collapse).\n\n> Hiçbir model tüm ölçütlerde mutlak üstünlük sağlamadı; yöntem seçimi veri yapısına ve uygulama önceliğine (sadakat mi, faydalılık mı) göre yapılmalıdır.\n\n## Proje Yapısı\n\nDepo kökü (`PythonProject/`) üç ana bileşenden oluşur: ana tez projesi, vendored CTAB-GAN+ ve vendored TabSyn.\n\n```\ntabular_synthetic_data_benchmark/\n├── CTAB-GAN-Plus/                # Vendored CTAB-GAN+ implementasyonu\n├── tabsyn/                       # Vendored TabSyn implementasyonu\n└── synthetic_thesis/             # Ana proje\n    ├── README.md\n    ├── requirements.txt\n    ├── train_detectors.py        # Dashboard demo arayüzü için dedektör eğitimi\n    ├── data/\n    │   ├── raw/                  # İndirilen ham veri\n    │   ├── benchmark/            # adult_20k.csv, credit_20k.csv\n    │   ├── split/                # *_train.csv, *_test.csv\n    │   └── synthetic/            # adult/, credit/ → her model için .csv\n    ├── models/\n    │   ├── adult/                # Eğitilmiş üretken model ağırlıkları\n    │   ├── credit/\n    │   └── detectors/            # Gerçek/sentetik sınıflandırıcılar (.pkl)\n    ├── outputs/\n    │   ├── stats/                # İstatistiksel benzerlik çıktıları\n    │   ├── dm/                   # Detection Metric sonuçları\n    │   ├── em/                   # Efficacy Metric sonuçları\n    │   ├── plots/                # stats/, dm/, em/ alt grafikleri\n    │   ├── logs/\n    │   ├── adult_general_ranking.csv\n    │   └── credit_general_ranking.csv\n    ├── dashboard/                # Streamlit değerlendirme arayüzü\n    │   ├── app.py\n    │   ├── config.py\n    │   ├── components/\n    │   ├── views/\n    │   └── assets/\n    └── src/\n        ├── config.py             # Yollar, hedef sütunlar, hiperparametreler\n        ├── prepare_data.py       # İndirme + benchmark + train/test ayrımı\n        ├── data_quality_check.py\n        ├── train/\n        │   ├── train_statistical_models.py\n        │   ├── train_cgan.py\n        │   ├── train_ctgan.py\n        │   ├── train_copulagan.py\n        │   ├── train_ctabgan_plus.py\n        │   ├── train_tabsyn.py\n        │   └── train_forest_diffusion.py\n        └── evaluate/\n            ├── statistical_tests.py\n            ├── detection_metric.py\n            ├── efficacy_metric.py\n            └── general_score.py\n```\n\n## Kurulum\n\nDepo kökünden sanal ortam oluşturun:\n\n```bash\npython -m venv venv\n# Linux/macOS:\nsource venv/bin/activate\n# Windows:\nvenv\\Scripts\\activate\n\n# Ana proje bağımlılıkları\npip install -r synthetic_thesis/requirements.txt\n```\n\nModellere ve dashboard'a göre ek bağımlılıklar gerekir:\n\n```bash\npip install imbalanced-learn      # SMOTE, Borderline-SMOTE, SMOTE-Tomek\npip install sdv                   # CTGAN, CopulaGAN\npip install torch                 # CGAN, TabSyn\npip install catboost autogluon    # Detection / Efficacy metrikleri\npip install ForestDiffusion       # ForestDiffusion\npip install streamlit             # Dashboard\n\n# Vendored implementasyonlar\npip install -r CTAB-GAN-Plus/requirements_ctabgan.txt\npip install -r tabsyn/requirements.txt\n```\n\n## Çalıştırma (Pipeline)\n\nBetikler `synthetic_thesis/src` dizininden çalıştırılır ve her biri tüm veri setleri ile tüm modeller üzerinde otomatik döner (komut satırı argümanı gerektirmez).\n\n```bash\ncd synthetic_thesis/src\n\n# 1) Veri indirme, benchmark örnekleme, train/test ayrımı\npython prepare_data.py\n\n# 2) Sentetik veri üretimi\npython train/train_statistical_models.py\npython train/train_cgan.py\npython train/train_ctgan.py\npython train/train_copulagan.py\npython train/train_ctabgan_plus.py\npython train/train_tabsyn.py\npython train/train_forest_diffusion.py\n\n# 3) (İsteğe bağlı) üretilen verilerin sağlık kontrolü\npython data_quality_check.py\n\n# 4) Değerlendirme\npython evaluate/statistical_tests.py\npython evaluate/detection_metric.py\npython evaluate/efficacy_metric.py\npython evaluate/general_score.py\n```\n\nDashboard demo arayüzü için dedektör modelleri ayrıca eğitilir (`synthetic_thesis/` kökünden):\n\n```bash\ncd synthetic_thesis\npython train_detectors.py\n```\n\n> Pipeline tamamlanmadan dashboard açılabilir; ancak metrik sayfaları ve demo arayüzü ilgili CSV/PKL çıktılarının mevcut olmasını bekler.\n\n## Dashboard\n\nStreamlit tabanlı arayüz, pipeline çıktılarını interaktif olarak sunar:\n\n```bash\ncd synthetic_thesis/dashboard\nstreamlit run app.py\n```\n\n| Sayfa | İçerik |\n|-------|--------|\n| Ana Sayfa | Proje amacı, yöntemler ve metrik özeti |\n| Ayırt Edilebilirlik Analizi | DM sonuçları ve grafikler |\n| Kullanılabilirlik Analizi | EM (sınıflandırma + regresyon) sonuçları |\n| İstatistiksel Benzerlik Analizi | KS, Wasserstein, JS, Ki-Kare, korelasyon |\n| Görsel Benzerlik Analizi | PCA / t-SNE karşılaştırmaları |\n| Uygulama ve Tahmin Arayüzü | Kullanıcı girdisiyle gerçek/sentetik tahmin (dedektör modelleri) |\n| Genel Değerlendirme ve Sonuçlar | Veri seti bazlı sıralama ve bulgular |\n\n## Yapılandırma\n\nTüm temel ayarlar `src/config.py` içindedir:\n\n| Ayar | Değer |\n|------|-------|\n| `RANDOM_STATE` | 42 |\n| `BENCHMARK_ROWS` | 20.000 |\n| `EPOCHS` | 500 |\n| `BATCH_SIZE` | 512 |\n| `TRAIN_RATIO` / `TEST_RATIO` | 0.80 / 0.20 |\n\nHedef sütunlar: Adult → `income` (sınıflandırma), `age` (regresyon); Credit → `Class` (sınıflandırma), `Amount` (regresyon).\n\nDashboard başlık ve sayfa listesi `dashboard/config.py` dosyasındadır.\n\n## Çıktılar\n\n| Konum | Açıklama |\n|-------|----------|\n| `data/synthetic/<dataset>/<model>.csv` | Üretilen sentetik veriler |\n| `models/<dataset>/` | Eğitilmiş üretken model dosyaları |\n| `models/detectors/` | Demo arayüzü için gerçek/sentetik sınıflandırıcılar |\n| `outputs/stats/<dataset>/` | İstatistiksel benzerlik özet ve korelasyon/PCA çıktıları |\n| `outputs/dm/<dataset>/` | Detection Metric sonuçları ve AutoGluon leaderboard'ları |\n| `outputs/em/<dataset>/` | Efficacy Metric (sınıflandırma + regresyon) sonuçları |\n| `outputs/plots/<dataset>/` | Değerlendirme grafikleri (`stats/`, `dm/`, `em/` alt dizinleri) |\n| `outputs/<dataset>_general_ranking.csv` | Birleşik genel sıralama skoru |\n",
+ "hits": {
+  "st": [
+   {
+    "file": "synthetic_thesis/src/train/train_ctgan.py",
+    "line": 11,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "    sys.path.insert(0, str(SRC_DIR))",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "from config import DATASETS, EPOCHS, BATCH_SIZE",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "synthetic_thesis/src/train/train_copulagan.py",
+    "line": 13,
+    "text": "from sdv.single_table import CopulaGANSynthesizer",
+    "context": [
+     "    sys.path.insert(0, str(SRC_DIR))",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CopulaGANSynthesizer",
+     "",
+     "from config import DATASETS, EPOCHS, BATCH_SIZE",
+     "",
+     ""
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "synthetic_thesis/src/train/train_ctgan.py",
+    "line": 10,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "if str(SRC_DIR) not in sys.path:",
+     "    sys.path.insert(0, str(SRC_DIR))",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "from config import DATASETS, EPOCHS, BATCH_SIZE",
+     ""
+    ]
+   },
+   {
+    "file": "synthetic_thesis/src/train/train_copulagan.py",
+    "line": 12,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "if str(SRC_DIR) not in sys.path:",
+     "    sys.path.insert(0, str(SRC_DIR))",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CopulaGANSynthesizer",
+     "",
+     "from config import DATASETS, EPOCHS, BATCH_SIZE",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "synthetic_thesis/src/train/train_ctgan.py",
+    "line": 10,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "if str(SRC_DIR) not in sys.path:",
+     "    sys.path.insert(0, str(SRC_DIR))",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "from config import DATASETS, EPOCHS, BATCH_SIZE",
+     ""
+    ]
+   },
+   {
+    "file": "synthetic_thesis/src/train/train_ctgan.py",
+    "line": 11,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "    sys.path.insert(0, str(SRC_DIR))",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "from config import DATASETS, EPOCHS, BATCH_SIZE",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "synthetic_thesis/src/train/train_copulagan.py",
+    "line": 12,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "if str(SRC_DIR) not in sys.path:",
+     "    sys.path.insert(0, str(SRC_DIR))",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CopulaGANSynthesizer",
+     "",
+     "from config import DATASETS, EPOCHS, BATCH_SIZE",
+     ""
+    ]
+   },
+   {
+    "file": "synthetic_thesis/src/train/train_copulagan.py",
+    "line": 13,
+    "text": "from sdv.single_table import CopulaGANSynthesizer",
+    "context": [
+     "    sys.path.insert(0, str(SRC_DIR))",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CopulaGANSynthesizer",
+     "",
+     "from config import DATASETS, EPOCHS, BATCH_SIZE",
+     "",
+     ""
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "synthetic_thesis/src/train/train_ctgan.py",
+    "line": 11,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "    sys.path.insert(0, str(SRC_DIR))",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "from config import DATASETS, EPOCHS, BATCH_SIZE",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "synthetic_thesis/src/train/train_ctgan.py",
+    "line": 45,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "        metadata_path.unlink()",
+     "    metadata.save_to_json(filepath=str(metadata_path))",
+     "    print(f\"Metadata kaydedildi: {metadata_path}\")",
+     "",
+     "    synthesizer = CTGANSynthesizer(",
+     "        metadata=metadata,",
+     "        epochs=EPOCHS,",
+     "        pac=8,",
+     "        batch_size=BATCH_SIZE,"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "tabsyn/requirements.txt": [
+   "sdmetrics==0.11.1",
+   "rdt"
+  ]
+ }
+}

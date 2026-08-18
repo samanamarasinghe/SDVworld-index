@@ -1,0 +1,355 @@
+{
+ "repo": "vatsalpjain/AarogyaSeva",
+ "disk_kb": 22322,
+ "method": "partial_clone",
+ "tree_files": 231,
+ "status": "ok",
+ "readme": "# AarogyaSeva — Rural Healthcare Intelligence Mesh\n### AIRAVAT 3.0 · Hackathon Edition\n\n> **Offline-first, AI-powered clinical decision support for Community Health Workers (CHWs) in rural India.**\n> Runs entirely on-device — no cloud dependency, no internet required.\n\n---\n\n## Table of Contents\n\n1. [Project Overview](#1-project-overview)\n2. [Architecture](#2-architecture)\n3. [Tech Stack](#3-tech-stack)\n4. [Repository Structure](#4-repository-structure)\n5. [Backend — Setup & Run](#5-backend--setup--run)\n6. [Frontend — Setup & Run](#6-frontend--setup--run)\n7. [Database](#7-database)\n8. [API Reference](#8-api-reference)\n9. [ML Pillars (9 Agents)](#9-ml-pillars-9-agents)\n10. [Frontend Pages & Components](#10-frontend-pages--components)\n11. [Design System](#11-design-system)\n12. [Key Files](#12-key-files)\n\n---\n\n## 1. Project Overview\n\nAarogyaSeva is a clinical intelligence platform built for Community Health Workers (CHWs) operating in rural India — areas with unreliable connectivity, low-spec devices, and high patient loads. The system:\n\n- **Runs fully offline** — all ML inference is on-device (ONNX, TFLite, scikit-learn)\n- **Coordinates across CHW devices** via a P2P gossip mesh (no central server required)\n- **Provides explainable AI predictions** — every ML output includes plain-language reasoning, confidence bands, and SHAP-derived feature signals\n- **Supports 5 clinical domains** — hemorrhage, TB adherence, pesticide poisoning, diabetic foot ulcers, surgical site infections\n- **Speaks local languages** — voice transcription + translation for Hindi, Marathi, Gujarati, Tamil, Telugu, Kannada, Bengali\n\nThe CHW interacts through a modern web UI (installable as a PWA) that is patient-centric, navigation-first, and designed for low-literacy, high-stress use.\n\n---\n\n## 2. Architecture\n\n```\n┌─────────────────────────────────────────────────────────┐\n│                    FRONTEND (Next.js PWA)                │\n│  /dashboard → /patient/[id] → /patient/[id]/agents       │\n│  React 19 · Tailwind CSS v4 · Zustand · Three.js         │\n└────────────────────┬────────────────────────────────────┘\n                     │ HTTP REST (localhost:8000/api/v1)\n                     │ Offline fallback: mockData.ts\n                     ▼\n┌─────────────────────────────────────────────────────────┐\n│               BACKEND (FastAPI + Python 3.13)            │\n│                                                          │\n│  ┌──────────┐  ┌──────────┐  ┌──────────┐               │\n│  │ Pillar 1 │  │ Pillar 2 │  │ Pillar 3 │  ...          │\n│  │  PPH     │  │    TB    │  │ Pesticide│               │\n│  └──────────┘  └──────────┘  └──────────┘               │\n│                                                          │\n│  EventBus (pub/sub) · Explainability · FL Training       │\n│                                                          │\n│  ┌──────────────────────────────────────────────────┐   │\n│  │         SQLite (mesh.db) via SQLAlchemy Async     │   │\n│  │   WAL mode · FK enforcement · 64MB page cache     │   │\n│  └──────────────────────────────────────────────────┘   │\n└─────────────────────────────────────────────────────────┘\n                     │\n          ◄──────────┴──────────►\n     P2P Gossip Mesh (BLE / WiFi-Direct / 2G)\n     CHW Device ↔ CHW Device (CRDT sync)\n```\n\n---\n\n## 3. Tech Stack\n\n### Backend\n| Layer | Technology |\n|---|---|\n| Web Framework | FastAPI 0.111+ |\n| Language | Python 3.13 |\n| Database | SQLite (`mesh.db`) via SQLAlchemy 2.0 async + aiosqlite |\n| Migrations | Alembic |\n| ML Inference | ONNX Runtime 1.20+, scikit-learn, joblib |\n| Image Inference | ONNX Runtime (converted from TFLite via tf2onnx) |\n| Explainability | SHAP (tabular), GradCAM (image) |\n| LLM | Gemma-4 E2B Instruct Q4_K_M via llama-cpp-python (on-device) |\n| Voice / ASR | Vosk (offline), Whisper (tiny) |\n| Translation | AI4Bharat IndicTrans2 (Indic ↔ English) |\n| Synthetic Data | CTGAN (SDV) |\n| Federated Learning | Gossip-based FedAvg (no central server) |\n| Task Queue | APScheduler (background sync jobs) |\n| Package Manager | uv |\n\n### Frontend\n| Layer | Technology |\n|---|---|\n| Framework | Next.js 16.2 (App Router) |\n| Language | TypeScript 5, React 19 |\n| Styling | Tailwind CSS v4 |\n| State | Zustand 5 |\n| 3D Graphics | Three.js + @react-three/fiber + @react-three/drei |\n| Animation | Framer Motion |\n| Icons | Lucide React |\n| Offline DB | Dexie (IndexedDB wrapper) |\n| PWA | @ducanh2912/next-pwa |\n\n---\n\n## 4. Repository Structure\n\n```\nAarogyaSeva/\n├── backend/                        # FastAPI Python backend\n│   ├── main.py                     # App entrypoint, router mounts\n│   ├── database.py                 # SQLAlchemy engine, Base, init_db()\n│   ├── config.py                   # Pydantic settings (DB URL, model paths, thresholds)\n│   ├── event_bus.py                # Pub/sub EventBus for decentralised agent coordination\n│   ├── dependencies.py             # Shared FastAPI Depends() utilities\n│   ├── seed_db.py                  # ⭐ DB seeder — creates all tables + inserts mock patients\n│   ├── mesh.db                     # SQLite database file (created by seed_db.py)\n│   ├── requirements.txt            # Full dependency list\n│   ├── pyproject.toml              # uv project config\n│   ├── alembic/                    # Database migrations\n│   ├── core/                       # Shared explainability engine\n│   ├── medical_models/             # ONNX / TFLite / joblib model files\n│   ├── pillar1_pph/                # Postpartum Hemorrhage agent\n│   ├── pillar2_tb/                 # TB DOTS Adherence agent\n│   ├── pillar3_pesticide/          # Pesticide Poisoning agent\n│   ├── pillar4_dfu/                # Diabetic Foot Ulcer agent\n│   ├── pillar5_ssi/                # Surgical Site Infection agent\n│   ├── pillar6_voice/              # Voice NLU + ASR + Translation\n│   ├── pillar7_chw/                # CHW Companion — patients, alerts, checklist, sync\n│   ├── pillar8_explain/            # Explainability audit + heatmaps\n│   └── pillar9_synthetic/          # Synthetic data generation + Federated Learning\n│\n└── frontend/my-app/                # Next.js frontend\n    ├── src/\n    │   ├── app/\n    │   │   ├── dashboard/\n    │   │   │   └── page.tsx        # CHW Dashboard — patient registry, KPIs, alerts\n    │   │   └── patient/[id]/\n    │   │       ├── page.tsx        # Patient detail — vitals, ML predictions, timeline\n    │   │       └── agents/\n    │   │           └── page.tsx    # ⭐ Agent Mesh — 5 AI agent cards + input forms\n    │   ├── components/\n    │   │   ├── DashboardLayout.tsx # Sidebar nav, top bar, route-aware Agent Mesh link\n    │   │   ├── ExplanationCard.tsx # ⭐ Reusable ML result card (ExplainedOutput)\n    │   │   ├── StethoscopeBackdrop.tsx  # 3D Three.js rotating stethoscope\n    │   │   ├── NewPatientModal.tsx # Add patient modal\n    │   │   └── NotificationPanel.tsx\n    │   ├── lib/\n    │   │   ├── api.ts              # ⭐ Typed API client for all 9 backend pillars\n    │   │   ├── types.ts            # All TypeScript interfaces (Patient, ExplainedOutput, etc.)\n    │   │   └── mockData.ts         # Fallback mock data (used when backend is offline)\n    │   ├── store/\n    │   │   └── useAppStore.ts      # Zustand global store\n    │   └── styles/\n    │       ├── fonts.css           # Newsreader (serif) + Inter (sans) font config\n    │       └── theme.css           # CSS custom properties\n    └── package.json\n```\n\n---\n\n## 5. Backend — Setup & Run\n\n### Prerequisites\n- Python 3.11+ (project targets 3.13; 3.11 also works)\n- [`uv`](https://github.com/astral-sh/uv) package manager\n\n### Install dependencies\n\n```bash\ncd AarogyaSeva/backend\n\n# Option A: using uv (recommended)\nuv pip install -r requirements.txt --python .venv/bin/python\n\n# Option B: using pip\npip install -r requirements.txt\n```\n\n### Initialise & seed the database\n\nThis creates `mesh.db` with all 17 tables and populates it with 10 realistic mock patients, 6 active clinical alerts, and 30 days of TB dose logs:\n\n```bash\n# From the backend directory\n.venv/bin/python seed_db.py\n```\n\nThe script is **fully idempotent** — safe to re-run, skips existing records.\n\nExpected output:\n```\n[1/4] Initialising database schema (all 17 tables)...  ✓ Schema ready\n[2/4] Seeding patients (10 records)...                 ✓ 10 patient(s) inserted\n[3/4] Seeding active alerts (6 records)...             ✓ 6 alert(s) inserted\n[4/4] Seeding TB dose logs (30 days × 2 patients)...   ✓ 60 dose log(s) inserted\n```\n\n### Run the server\n\n```bash\nuvicorn main:app --reload --host 0.0.0.0 --port 8000\n```\n\nThe API will be available at:\n- **Base URL**: `http://localhost:8000/api/v1`\n- **Swagger UI**: `http://localhost:8000/docs`\n- **Health Check**: `http://localhost:8000/health`\n\n---\n\n## 6. Frontend — Setup & Run\n\n### Prerequisites\n- Node.js 18+\n- npm or pnpm\n\n### Install & run\n\n```bash\ncd AarogyaSeva/frontend/my-app\n\nnpm install\nnpm run dev\n```\n\nThe app will be available at `http://localhost:3000`.\n\n### Environment Variables (optional)\n\nCreate `frontend/my-app/.env.local` to override the API base URL:\n\n```env\nNEXT_PUBLIC_API_URL=http://localhost:8000/api/v1\n```\n\nIf not set, defaults to `http://localhost:8000/api/v1`.\n\n> **Offline mode**: If the backend is unreachable, the frontend automatically falls back to `src/lib/mockData.ts` — the UI remains fully functional with mock patients.\n\n### Build for production\n\n```bash\nnpm run build\nnpm run start\n```\n\n---\n\n## 7. Database\n\nThe database is a **single SQLite file** (`backend/mesh.db`) managed by SQLAlchemy async ORM with aiosqlite.\n\n### SQLite Configuration (set on every connection)\n| Pragma | Value | Purpose |\n|---|---|---|\n| `journal_mode` | WAL | Concurrent readers + one writer |\n| `foreign_keys` | ON | FK constraint enforcement |\n| `synchronous` | NORMAL | Durability vs. write speed balance |\n| `cache_size` | -65536 (64MB) | Reduced disk I/O on slow storage |\n| `busy_timeout` | 5000ms | Prevent \"database is locked\" errors |\n\n### Tables (17 total)\n\n| Pillar | Table(s) |\n|---|---|\n| P1 PPH | `pph_assessments` |\n| P2 TB | `dose_logs`, `adherence_records` |\n| P3 Pesticide | `pesticide_assessments` |\n| P4 DFU | `dfu_assessments`, `wound_images` |\n| P5 SSI | `ssi_assessments`, `postop_records` |\n| P6 Voice | `transcription_logs` |\n| P7 CHW | `patients`, `alerts`, `checklist_completions`, `sync_logs` |\n| P8 Explainability | `explanation_audit_log` |\n| P9 Synthetic | `synthetic_data_jobs`, `fl_rounds`, `model_versions` |\n\n### Seeded Mock Data\n\n| Table | Records |\n|---|---|\n| `patients` | 10 (p-001 → p-010, all under `CHW-7834-IND`) |\n| `alerts` | 6 active unresolved (3 critical, 3 medium) |\n| `dose_logs` | 60 (30 days × 2 TB patients: Ramesh Kumar, Mohan Lal) |\n| `adherence_records` | 2 (one per TB patient, 28/30 compliance, 2 consecutive misses) |\n\n---\n\n## 8. API Reference\n\nBase URL: `http://localhost:8000/api/v1`\n\nAll ML endpoints return a standard **`ExplainedOutput`** envelope:\n\n```json\n{\n  \"prediction\": \"HIGH\",\n  \"probability\": 0.82,\n  \"confidence_band\": \"HIGH\",\n  \"top_signals\": [\n    { \"feature\": \"systolic_bp\", \"weight\": 0.41, \"direction\": \"increases_risk\" }\n  ],\n  \"plain_language_explanation\": \"Blood pressure consistently above 140/90...\",\n  \"recommended_action\": \"Immediate obstetric evaluation required.\",\n  \"escalate\": true,\n  \"missing_data\": [],\n  \"limitations\": [],\n  \"raw_metadata\": {}\n}\n```\n\n### Pillar 1 — PPH (Postpartum Hemorrhage)\n| Method | Endpoint | Description |\n|---|---|---|\n| `POST` | `/pph/score` | Score PPH risk from vitals |\n| `GET` | `/pph/history/{patient_id}` | Get all past PPH assessments |\n\n### Pillar 2 — TB Adherence\n| Method | Endpoint | Description |\n|---|---|---|\n| `POST` | `/tb/log_dose` | Log a DOTS dose (taken/missed) |\n| `GET` | `/tb/adherence/{patient_id}` | Get 30-day adherence summary |\n| `POST` | `/tb/risk_score` | Score TB relapse risk |\n\n### Pillar 3 — Pesticide Poisoning\n| Method | Endpoint | Description |\n|---|---|---|\n| `POST` | `/pesticide/predict` | Predict toxidrome class + severity |\n\n### Pillar 4 — Diabetic Foot Ulcer\n| Method | Endpoint | Description |\n|---|---|---|\n| `POST` | `/dfu/classify` | Classify wound image (multipart upload) |\n| `POST` | `/dfu/track_progression` | Track wound progression over time |\n\n### Pillar 5 — Surgical Site Infection\n| Method | Endpoint | Description |\n|---|---|---|\n| `POST` | `/ssi/assess` | CDC SSI classification from clinical signs |\n\n### Pillar 6 — Voice NLU\n| Method | Endpoint | Description |\n|---|---|---|\n| `POST` | `/voice/transcribe` | ASR: audio → text (Vosk/Whisper) |\n| `POST` | `/voice/translate` | Translate Indic language → English |\n| `POST` | `/voice/tts` | Text-to-speech (local language) |\n| `POST` | `/voice/nlu` | Intent + entity extraction from text |\n\n### Pillar 7 — CHW Companion\n| Method | Endpoint | Description |\n|---|---|---|\n| `GET` | `/chw/dashboard/{chw_id}` | Full dashboard: patients + alerts |\n| `POST` | `/chw/patients` | Create a new patient |\n| `GET` | `/chw/patients/{patient_id}` | Get single patient record |\n| `GET` | `/chw/patients/{patient_id}/alerts` | Get active alerts for patient |\n| `GET` | `/chw/patients/{patient_id}/checklist/{condition}` | Clinical checklist |\n| `POST` | `/chw/ask` | Ask LLM question about a patient |\n| `POST` | `/chw/sync/push` | Push CRDT sync delta to peers |\n| `GET` | `/chw/sync/pull/{chw_id}` | Pull sync deltas since timestamp |\n\n### Pillar 8 — Explainability\n| Method | Endpoint | Description |\n|---|---|---|\n| `POST` | `/explain/image-explain` | GradCAM heatmap for DFU images |\n| `GET` | `/explain/audit-log/{agent}` | Full audit log for an agent |\n\n### Pillar 9 — Synthetic Data & Federated Learning\n| Method | Endpoint | Description |\n|---|---|---|\n| `POST` | `/synthetic/generate` | Start CTGAN data generation job |\n| `GET` | `/synthetic/generate/{job_id}` | Poll generation job status |\n| `POST` | `/synthetic/fl/train` | Trigger local FL training round |\n| `GET` | `/synthetic/fl/status` | Get FL model version history |\n\n---\n\n## 9. ML Pillars (9 Agents)\n\n### P1 — Postpartum Hemorrhage (ONNX)\nScores hemorrhage risk from: systolic/diastolic BP, pulse, blood loss (mL), uterine tone, pallor, parity, gestational age, PPH history. Missing values are mean-imputed and flagged. Output: `LOW / MEDIUM / HIGH` with SHAP-derived signals.\n\n### P2 — TB DOTS Adherence (ONNX + Rule Engine)\nTracks daily dose intake. Computes 7-day and 30-day adherence windows. Scores relapse risk based on consecutive misses, adherence %, and symptom flags. Integrates with the EventBus to auto-alert CHW on 2+ consecutive misses.\n\n### P3 — Pesticide Poisoning (scikit-learn / joblib)\nClassifies toxidrome type (organophosphate, carbamate, pyrethroid, unknown) from 8 cholinergic symptom flags + occupational context. Provides severity triage (MILD/MODERATE/SEVERE) and first-response action list.\n\n### P4 — Diabetic Foot Ulcer (TFLite → ONNX)\nAccepts wound photograph, runs image quality gate (blur/brightness), then classifies Wagner grade (0–5) and detects active infection. Tracks progression across visits. GradCAM heatmap shows which wound regions drove the prediction.\n\n### P5 — Surgical Site Infection (CDC Rule Engine)\nCDC-criteria SSI classification (superficial / deep / organ space / no_ssi) from days post-op, temperature, and 8 clinical sign checkboxes. Calibrated probability with confidence bands.\n\n### P6 — Voice NLU\nMulti-stage pipeline: Vosk/Whisper ASR → IndicTrans2 translation → intent/entity extraction → EventBus routing. Supports 8 Indic languages. Enables voice-driven DOTS logging, patient lookup, and CHW queries.\n\n### P7 — CHW Companion\nMaster patient registry. Aggregates real-time risk scores from all other agents per patient. Provides prioritised dashboard, condition-specific clinical checklists, on-device LLM (Gemma-4 E2B) answers, and CRDT-based P2P sync.\n\n### P8 — Explainability & Audit\nEvery `ExplainedOutput` from every agent is persisted in `explanation_audit_log`. Provides plain-language explanations, SHAP feature attribution, confidence bands, and GradCAM heatmaps. Audit trail is the primary training signal for federated learning.\n\n### P9 — Synthetic Data & Federated Learning\nCTGAN-based synthetic patient data generation for model training on low-data conditions. Gossip-based FedAvg federated learning: CHW devices exchange model weight deltas over P2P mesh without sharing raw patient data.\n\n---\n\n## 10. Frontend Pages & Components\n\n### Pages\n\n| Route | Description |\n|---|---|\n| `/dashboard` | CHW home screen — KPI cards, live patient registry, alert feed, AI pillar status, mesh node map |\n| `/patient/[id]` | Patient detail — large serif header, vitals grid, ML prediction cards, clinical timeline, care plan |\n| `/patient/[id]/agents` | **Agent Mesh** — 5 AI agent cards; clicking any card reveals a full input form for that agent, submits to backend, displays `ExplanationCard` result |\n\n### Key Components\n\n**`DashboardLayout`** — Persistent sidebar with route-aware navigation. The \"Agent Mesh\" link is patient-scoped: when inside a patient page, it links to `/patient/[id]/agents`; from the dashboard, it links to the mesh overview.\n\n**`ExplanationCard`** — Reusable component for rendering any `ExplainedOutput`:\n- Colour-coded confidence bands (HIGH=rose, MEDIUM=amber, LOW=stone)\n- Animated progress bar\n- Pulsing escalation badge for critical predictions\n- Expandable SHAP signals panel with feature weights and directions\n- Missing data and limitations disclosure\n\n**`StethoscopeBackdrop`** — Three.js 3D rotating stethoscope rendered inline in the dashboard hero section using `@react-three/fiber`. Dynamically imported with `ssr: false`.\n\n**`NewPatientModal`** — Form modal for adding patients directly from the dashboard. New patients are optimistically added to local state.\n\n### Agent Mesh Input Forms\n\nEach of the 5 agents has a purpose-built form:\n\n| Agent | Key Inputs |\n|---|---|\n| PPH | Systolic/diastolic BP, pulse, blood loss mL, parity, gestational age, uterine tone, pallor, history |\n| TB | One-click (pulls 30-day dose history from DB automatically) |\n| Pesticide | 8 cholinergic symptom toggles, crop season, chemical class |\n| DFU | Image file upload with preview (uses device camera on mobile) |\n| SSI | Days post-op, temperature, 8 clinical sign checkboxes |\n\n---\n\n## 11. Design System\n\nThe frontend follows the **\"Digital Hearth\"** design philosophy — a clinical-grade editorial aesthetic emphasising trust, clarity, and warmth.\n\n### Typography\n- **Headlines**: Newsreader (serif) — signals trust, medical authority\n- **Body / UI**: Inter (sans-serif) — legibility at small sizes\n\n### Colour Tokens\n| Token | Use |\n|---|---|\n| `surface` / `background` | Warm off-white (`#f8f8f4`) |\n| `primary` | Deep teal-charcoal (`#2d3435`) |\n| `secondary` | Muted slate (`#5e5e5e`) |\n| Accent green | `emerald-*` for healthy/stable states |\n| Accent red | `rose-*` / `red-*` for critical/high risk |\n| Accent amber | `amber-*` for medium risk / warnings |\n\n### Key Design Rules\n- **No divider lines** — boundaries created by tonal background shifts and negative space\n- **Glass & gradient CTAs** — primary actions use `bg-gradient-to-r` with `backdrop-blur`\n- **Tonal layering** — elevation expressed via background colour depth, not shadows\n- **Asymmetric layouts** — intentional imbalance creates editorial rhythm\n- **Intelligence Mesh gradient** — `from-emerald-50 via-teal-50 to-stone-100` used in hero and agent sections\n\n---\n\n## 12. Key Files\n\n| File | Purpose |\n|---|---|\n| `backend/seed_db.py` | Creates all 17 DB tables + seeds mock patients, alerts, TB dose logs |\n| `backend/database.py` | SQLAlchemy engine config, WAL pragmas, `init_db()`, `get_db()` |\n| `backend/event_bus.py` | In-process pub/sub for inter-pillar event coordination |\n| `backend/pillar7_chw/patient_service.py` | Core patient CRUD + dashboard aggregation + risk score updates |\n| `backend/pillar7_chw/schemas.py` | Pydantic request/response schemas (PatientResponse, DashboardResponse) |\n| `frontend/src/lib/api.ts` | Full typed API ",
+ "hits": {
+  "st": [
+   {
+    "file": "backend/BACKEND_GUIDE.md",
+    "line": 3265,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "```python",
+     "import pandas as pd",
+     "import numpy as np",
+     "import uuid, asyncio",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from fastapi import BackgroundTasks",
+     "",
+     "from .schema_registry import SCHEMA_REGISTRY"
+    ]
+   },
+   {
+    "file": "backend/pillar9_synthetic/synthetic/ctgan_trainer.py",
+    "line": 59,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "        \"\"\"Background task: train CTGAN, generate synthetic data, save to CSV.\"\"\"",
+     "        logger.info(f\"[P9] Starting CTGAN training: condition={self.condition}, job={job_id}\")",
+     "",
+     "        try:",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "            from sdv.metadata import SingleTableMetadata",
+     "",
+     "            # Generate seed data",
+     "            seed_data = self._generate_seed_data(n_rows=500)"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "backend/BACKEND_GUIDE.md",
+    "line": 3266,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "import uuid, asyncio",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from fastapi import BackgroundTasks",
+     "",
+     "from .schema_registry import SCHEMA_REGISTRY",
+     "from config import settings"
+    ]
+   },
+   {
+    "file": "backend/BACKEND_GUIDE.md",
+    "line": 3654,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "        synthetic_df = pd.read_csv(files[-1])",
+     "        trainer = CTGANTrainer(condition)",
+     "        real_df = trainer._generate_seed_data(n_rows=500)",
+     "",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        metadata = SingleTableMetadata()",
+     "        metadata.detect_from_dataframe(real_df)",
+     "",
+     "        report = QualityReport()"
+    ]
+   },
+   {
+    "file": "backend/pillar9_synthetic/synthetic/ctgan_trainer.py",
+    "line": 60,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "        logger.info(f\"[P9] Starting CTGAN training: condition={self.condition}, job={job_id}\")",
+     "",
+     "        try:",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "            from sdv.metadata import SingleTableMetadata",
+     "",
+     "            # Generate seed data",
+     "            seed_data = self._generate_seed_data(n_rows=500)",
+     ""
+    ]
+   },
+   {
+    "file": "backend/pillar9_synthetic/synthetic/quality_evaluator.py",
+    "line": 15,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    try:",
+     "        from sdmetrics.reports.single_table import QualityReport",
+     "        from .schema_registry import SCHEMA_REGISTRY",
+     "        from .ctgan_trainer import CTGANTrainer",
+     "        from sdv.metadata import SingleTableMetadata",
+     "",
+     "        synthetic_dir = settings.SYNTHETIC_DATA_DIR",
+     "        files = sorted(synthetic_dir.glob(f\"{condition}_*.csv\"), key=lambda p: p.stat().st_mtime)",
+     "        if not files:"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "backend/BACKEND_GUIDE.md",
+    "line": 3265,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "```python",
+     "import pandas as pd",
+     "import numpy as np",
+     "import uuid, asyncio",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from fastapi import BackgroundTasks",
+     "",
+     "from .schema_registry import SCHEMA_REGISTRY"
+    ]
+   },
+   {
+    "file": "backend/BACKEND_GUIDE.md",
+    "line": 3266,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "import uuid, asyncio",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from fastapi import BackgroundTasks",
+     "",
+     "from .schema_registry import SCHEMA_REGISTRY",
+     "from config import settings"
+    ]
+   },
+   {
+    "file": "backend/BACKEND_GUIDE.md",
+    "line": 3654,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "        synthetic_df = pd.read_csv(files[-1])",
+     "        trainer = CTGANTrainer(condition)",
+     "        real_df = trainer._generate_seed_data(n_rows=500)",
+     "",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        metadata = SingleTableMetadata()",
+     "        metadata.detect_from_dataframe(real_df)",
+     "",
+     "        report = QualityReport()"
+    ]
+   },
+   {
+    "file": "backend/pillar9_synthetic/synthetic/ctgan_trainer.py",
+    "line": 59,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "        \"\"\"Background task: train CTGAN, generate synthetic data, save to CSV.\"\"\"",
+     "        logger.info(f\"[P9] Starting CTGAN training: condition={self.condition}, job={job_id}\")",
+     "",
+     "        try:",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "            from sdv.metadata import SingleTableMetadata",
+     "",
+     "            # Generate seed data",
+     "            seed_data = self._generate_seed_data(n_rows=500)"
+    ]
+   },
+   {
+    "file": "backend/pillar9_synthetic/synthetic/ctgan_trainer.py",
+    "line": 60,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "        logger.info(f\"[P9] Starting CTGAN training: condition={self.condition}, job={job_id}\")",
+     "",
+     "        try:",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "            from sdv.metadata import SingleTableMetadata",
+     "",
+     "            # Generate seed data",
+     "            seed_data = self._generate_seed_data(n_rows=500)",
+     ""
+    ]
+   },
+   {
+    "file": "backend/pillar9_synthetic/synthetic/quality_evaluator.py",
+    "line": 15,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    try:",
+     "        from sdmetrics.reports.single_table import QualityReport",
+     "        from .schema_registry import SCHEMA_REGISTRY",
+     "        from .ctgan_trainer import CTGANTrainer",
+     "        from sdv.metadata import SingleTableMetadata",
+     "",
+     "        synthetic_dir = settings.SYNTHETIC_DATA_DIR",
+     "        files = sorted(synthetic_dir.glob(f\"{condition}_*.csv\"), key=lambda p: p.stat().st_mtime)",
+     "        if not files:"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "backend/BACKEND_GUIDE.md",
+    "line": 79,
+    "text": "| `SDV` CTGANSynthesizer | Best open-source conditional tabular GAN; handles missing values and mixed types |",
+    "context": [
+     "",
+     "### Synthetic Data — Pillar 9",
+     "| Tool | Why |",
+     "|---|---|",
+     "| `SDV` CTGANSynthesizer | Best open-source conditional tabular GAN; handles missing values and mixed types |",
+     "| `sdmetrics` | Quality/privacy evaluation of synthetic vs real distributions |",
+     "",
+     "---",
+     ""
+    ]
+   },
+   {
+    "file": "backend/BACKEND_GUIDE.md",
+    "line": 3085,
+    "text": "| Synthetic tabular data | `sdv` (CTGANSynthesizer) + `sdmetrics` |",
+    "context": [
+     "",
+     "### Tech Stack",
+     "| Component | Library |",
+     "|-----------|---------|",
+     "| Synthetic tabular data | `sdv` (CTGANSynthesizer) + `sdmetrics` |",
+     "| Data quality evaluation | `sdmetrics` (QualityReport, DiagnosticReport) |",
+     "| Federated learning | `flwr` (Flower framework) |",
+     "| FL model serialisation | `numpy` (weight arrays as bytes) |",
+     "| Background tasks | FastAPI BackgroundTasks + APScheduler |"
+    ]
+   },
+   {
+    "file": "backend/BACKEND_GUIDE.md",
+    "line": 3265,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "```python",
+     "import pandas as pd",
+     "import numpy as np",
+     "import uuid, asyncio",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from fastapi import BackgroundTasks",
+     "",
+     "from .schema_registry import SCHEMA_REGISTRY"
+    ]
+   },
+   {
+    "file": "backend/BACKEND_GUIDE.md",
+    "line": 3335,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "                elif feat.dtype == \"binary\":",
+     "                    metadata.update_column(feat.name, sdtype=\"categorical\")",
+     "            ",
+     "            # Train CTGAN",
+     "            synthesizer = CTGANSynthesizer(",
+     "                metadata,",
+     "                epochs=epochs,",
+     "                batch_size=settings.SYNTHETIC_BATCH_SIZE,",
+     "                verbose=False,"
+    ]
+   },
+   {
+    "file": "backend/pillar9_synthetic/synthetic/ctgan_trainer.py",
+    "line": 59,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "        \"\"\"Background task: train CTGAN, generate synthetic data, save to CSV.\"\"\"",
+     "        logger.info(f\"[P9] Starting CTGAN training: condition={self.condition}, job={job_id}\")",
+     "",
+     "        try:",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "            from sdv.metadata import SingleTableMetadata",
+     "",
+     "            # Generate seed data",
+     "            seed_data = self._generate_seed_data(n_rows=500)"
+    ]
+   },
+   {
+    "file": "backend/pillar9_synthetic/synthetic/ctgan_trainer.py",
+    "line": 75,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "                if feat.dtype in (\"categorical\", \"binary\"):",
+     "                    metadata.update_column(feat.name, sdtype=\"categorical\")",
+     "",
+     "            # Train CTGAN",
+     "            synthesizer = CTGANSynthesizer(",
+     "                metadata,",
+     "                epochs=epochs,",
+     "                batch_size=settings.SYNTHETIC_BATCH_SIZE,",
+     "                verbose=False,"
+    ]
+   }
+  ],
+  "sm": [
+   {
+    "file": "backend/BACKEND_GUIDE.md",
+    "line": 3641,
+    "text": "from sdmetrics.reports.single_table import QualityReport",
+    "context": [
+     "",
+     "async def evaluate_quality(condition: str) -> dict:",
+     "    \"\"\"SDMetrics QualityReport comparing synthetic data against seed distributions.\"\"\"",
+     "    try:",
+     "        from sdmetrics.reports.single_table import QualityReport",
+     "        from .schema_registry import SCHEMA_REGISTRY",
+     "        from .ctgan_trainer import CTGANTrainer",
+     "",
+     "        synthetic_dir = settings.SYNTHETIC_DATA_DIR"
+    ]
+   },
+   {
+    "file": "backend/pillar9_synthetic/synthetic/quality_evaluator.py",
+    "line": 12,
+    "text": "from sdmetrics.reports.single_table import QualityReport",
+    "context": [
+     "",
+     "async def evaluate_quality(condition: str) -> dict:",
+     "    \"\"\"SDMetrics QualityReport comparing synthetic data against seed distributions.\"\"\"",
+     "    try:",
+     "        from sdmetrics.reports.single_table import QualityReport",
+     "        from .schema_registry import SCHEMA_REGISTRY",
+     "        from .ctgan_trainer import CTGANTrainer",
+     "        from sdv.metadata import SingleTableMetadata",
+     ""
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "sm",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "backend/requirements.txt": [
+   "sdv>=1.14.0",
+   "ctgan>=0.10.0",
+   "sdmetrics>=0.15.0"
+  ]
+ }
+}

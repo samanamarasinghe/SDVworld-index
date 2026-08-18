@@ -1,0 +1,179 @@
+{
+ "repo": "Teo03/vezilka-synthetic-data",
+ "disk_kb": 13,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# vezilka-synthetic-data\n\nАлатка за генерирање на македонски синтетички податоци со Knowledge Graph, LLM вербализација и SDV синтеза.\n\n## Опис\n\nГенерира разновидни синтетички податоци на македонски јазик:\n\n- **Knowledge Graph** - RDF граф со македонски ентитети (градови, компании, универзитети, историски личности, настани, локации, храна)\n- **Табуларни податоци** - Dataset со лица, демографија, вработување, образование\n- **SDV синтеза** - Синтетички записи со Gaussian Copula\n- **LLM вербализација** - Природни реченици од KG тројки\n- **NER текстови** - Реченици за тренирање на NER модели\n- **QA парови** - Прашања и одговори за македонски теми\n\n## Инсталација\n\n```bash\n# Креирај виртуелна околина\npython -m venv .venv\nsource .venv/bin/activate  # Linux/Mac\n# или: .venv\\Scripts\\activate  # Windows\n\n# Инсталирај зависности\npip install pandas numpy networkx rdflib sdv openai\n```\n\n## Употреба\n\n### Основно извршување\n\n```bash\npython vezilka.py\n```\n\n### Со параметри\n\n```bash\n# Различен модел и број на примероци\npython vezilka.py --model mistral-7b --samples 1000\n\n# Брз тест со минимални податоци\npython vezilka.py -m llama-3-8b -n 100 -s 50 -k 20 -q 5 -e 3\n\n# Целосно генерирање\npython vezilka.py -m openai/gpt-4 -n 2000 -s 500 -k 100 -q 30 -e 15\n```\n\n## Параметри\n\n| Аргумент | Кратко | Default | Опис |\n|----------|--------|---------|------|\n| `--model` | `-m` | `openai/gpt-oss-20b` | ID на LLM моделот |\n| `--samples` | `-n` | `500` | Број на записи во табуларен dataset |\n| `--synthetic-samples` | `-s` | `200` | Број на SDV синтетички записи |\n| `--kg-persons` | `-k` | `50` | Број на лица во Knowledge Graph |\n| `--verbalize-samples` | `-v` | `30` | Број на примероци за вербализација |\n| `--qa-pairs` | `-q` | `15` | Број на QA парови |\n| `--ner-per-category` | `-e` | `8` | NER реченици по категорија |\n| `--base-url` | `-u` | `http://127.0.0.1:1234/v1` | LLM API URL (OpenAI-компатибилен) |\n\n## Што генерира секој параметар\n\n| Параметар | Излезен фајл | Намена |\n|-----------|--------------|--------|\n| `-n` | `original_data.csv` | Табуларни податоци (seed за SDV) |\n| `-s` | `synthetic_gc.csv` | SDV синтетички табуларни податоци |\n| `-e` | `ner_training_texts.txt` | **NER/RE тренирање на модел** |\n| `-q` | `qa_pairs.json` | QA тренирање на модел |\n| `-v` | `kg_verbalized.txt` | KG вербализација (примери) |\n| `-k` | `enhanced_kg.ttl` | Knowledge Graph (RDF) |\n\n### Пример: 1000 NER тренинг текстови\n\n```bash\npython vezilka.py -m openai/gpt-oss-20b -e 200\n```\n\nОва генерира 200 реченици × 5 категории = 1000 NER текстови.\n\n## Излезни фајлови\n\nСекое извршување креира директориум во `runs/` со формат:\n```\nrun_{model}_{samples}_{timestamp}/\n├── config.json          # Конфигурација на извршувањето\n├── enhanced_kg.ttl      # Knowledge Graph (Turtle формат)\n├── original_data.csv    # Оригинален табуларен dataset\n├── synthetic_gc.csv     # SDV синтетички податоци\n├── kg_verbalized.txt    # Вербализирани реченици од KG\n├── ner_training_texts.txt   # Текстови за NER тренирање\n└── qa_pairs.json        # QA парови (JSON)\n```\n\n## Структура на проектот\n\n```\nvezilka-synthetic-data/\n├── vezilka.py      # Главна скрипта\n├── data.py         # Влезни податоци (имиња, градови, компании...)\n├── README.md\n└── runs/           # Излезни директориуми (gitignored)\n```\n\n## Предуслови\n\n- Python 3.8+\n- OpenAI-компатибилен API на `localhost:1234` (или друг URL преку `--base-url`)\n\n## Категории на податоци\n\nДефинирани во `data.py`:\n\n- 15 градови со региони и демографија\n- 15 компании со индустрии\n- 5 универзитети\n- 8 историски личности\n- 10 културни настани/фестивали\n- 12 туристички локации\n- 12 традиционални јадења/пијалоци\n- 30 машки + 27 женски имиња\n- 25 презимиња\n- 25 занимања\n",
+ "hits": {
+  "st": [
+   {
+    "file": "vezilka.py",
+    "line": 21,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "import numpy as np",
+     "import networkx as nx",
+     "from rdflib import Graph, Namespace, Literal, URIRef",
+     "from rdflib.namespace import RDF, RDFS, XSD, OWL",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from openai import OpenAI",
+     "import json",
+     "import random"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "vezilka.py",
+    "line": 22,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import networkx as nx",
+     "from rdflib import Graph, Namespace, Literal, URIRef",
+     "from rdflib.namespace import RDF, RDFS, XSD, OWL",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from openai import OpenAI",
+     "import json",
+     "import random",
+     "import time"
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "vezilka.py",
+    "line": 488,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "print(f\"✓ Генерирани {len(synthetic_df)} синтетички записи\")",
+     "synthetic_df.to_csv(f\"{OUTPUT_DIR}/synthetic_gc.csv\", index=False, encoding=\"utf-8\")",
+     "",
+     "# Евалуација",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "quality = evaluate_quality(original_df, synthetic_df, metadata)",
+     "print(f\"✓ Квалитет: {quality.get_score():.2%}\")",
+     "run_timing[\"phases\"][\"3_tabular_sdv\"] = round(time.time() - phase3_start, 2)",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "vezilka.py",
+    "line": 21,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "import numpy as np",
+     "import networkx as nx",
+     "from rdflib import Graph, Namespace, Literal, URIRef",
+     "from rdflib.namespace import RDF, RDFS, XSD, OWL",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from openai import OpenAI",
+     "import json",
+     "import random"
+    ]
+   },
+   {
+    "file": "vezilka.py",
+    "line": 22,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import networkx as nx",
+     "from rdflib import Graph, Namespace, Literal, URIRef",
+     "from rdflib.namespace import RDF, RDFS, XSD, OWL",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from openai import OpenAI",
+     "import json",
+     "import random",
+     "import time"
+    ]
+   },
+   {
+    "file": "vezilka.py",
+    "line": 488,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "print(f\"✓ Генерирани {len(synthetic_df)} синтетички записи\")",
+     "synthetic_df.to_csv(f\"{OUTPUT_DIR}/synthetic_gc.csv\", index=False, encoding=\"utf-8\")",
+     "",
+     "# Евалуација",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "quality = evaluate_quality(original_df, synthetic_df, metadata)",
+     "print(f\"✓ Квалитет: {quality.get_score():.2%}\")",
+     "run_timing[\"phases\"][\"3_tabular_sdv\"] = round(time.time() - phase3_start, 2)",
+     ""
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "vezilka.py",
+    "line": 21,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "import numpy as np",
+     "import networkx as nx",
+     "from rdflib import Graph, Namespace, Literal, URIRef",
+     "from rdflib.namespace import RDF, RDFS, XSD, OWL",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from openai import OpenAI",
+     "import json",
+     "import random"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "vezilka.py",
+    "line": 21,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "import numpy as np",
+     "import networkx as nx",
+     "from rdflib import Graph, Namespace, Literal, URIRef",
+     "from rdflib.namespace import RDF, RDFS, XSD, OWL",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from openai import OpenAI",
+     "import json",
+     "import random"
+    ]
+   },
+   {
+    "file": "vezilka.py",
+    "line": 480,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "            \"индустрија\", \"образование\", \"универзитет\", \"компанија\"]:",
+     "    metadata.update_column(column_name=col, sdtype=\"categorical\")",
+     "metadata.update_column(column_name=\"активен\", sdtype=\"boolean\")",
+     "",
+     "synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "synthesizer.fit(original_df)",
+     "synthetic_df = synthesizer.sample(num_rows=args.synthetic_samples)",
+     "",
+     "print(f\"✓ Генерирани {len(synthetic_df)} синтетички записи\")"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ev",
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv==1.32.1"
+  ]
+ }
+}

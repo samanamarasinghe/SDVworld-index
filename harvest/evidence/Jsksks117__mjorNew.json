@@ -1,0 +1,83 @@
+{
+ "repo": "Jsksks117/mjorNew",
+ "disk_kb": 324,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Graph-Coordinated Differentially Private Multi-Relational Data Synthesis\n\nThis project is a proof of concept for generating synthetic multi-table relational datasets under differential privacy. It combines schema inference, privacy-budget allocation on a dependency graph, table-by-table DP synthesis, relational reconstruction, serialization, and evaluation.\n\nThe implementation is organized as a modular pipeline and is designed to work with:\n\n- uploaded CSV tables through a Streamlit UI\n- prepared demo relational datasets\n- benchmark scripts for quality and privacy evaluation\n- optional dataset adapters such as the Berka financial dataset loader\n\n## What this project does\n\nGiven two or more related tables, the pipeline:\n\n1. infers primary keys and foreign-key-like relationships\n2. builds a directed acyclic graph of table dependencies\n3. allocates a global privacy budget across tables\n4. trains a DP-CTGAN model per table\n5. reconstructs foreign-key links in the synthetic output\n6. exports the synthetic tables as CSV or ZIP\n7. evaluates fidelity, relational integrity, utility, and privacy\n\n## Core idea\n\nThe project treats the relational schema as a graph.\n\n- parent tables are generated before child tables\n- tables with more downstream impact receive more budget\n- a priority table can be boosted when downstream utility matters more, such as for TSTR evaluation\n\nThis gives the system a graph-coordinated approach to differential privacy rather than a flat per-table split.\n\n## Main components\n\n### 1. Schema parsing\n\nFile: modules/module1_schema_parser.py\n\nThis module inspects the input tables and infers:\n\n- primary keys\n- candidate foreign-key relationships\n- a DAG-based generation order\n- a schema definition mapping each table to its parent tables\n\n### 2. Privacy allocation\n\nFile: modules/module2_privacy_allocator.py\n\nThis module wraps the graph-based allocator in schema_budget_allocator.py and distributes the global epsilon budget across tables using downstream fan-out and optional priority weighting.\n\n### 3. Synthetic data generation\n\nFile: modules/module3_synthesis_engine.py\n\nThis is the main synthesis engine. It:\n\n- builds column encodings for DP-CTGAN\n- trains a differentially private model per table\n- adapts training settings based on the assigned epsilon\n- generates synthetic rows\n- decodes tensors back into pandas DataFrames\n- restores foreign keys after per-table generation\n\n### 4. Output serialization\n\nFile: modules/module4_output_serializer.py\n\nThis module exports synthetic tables as a ZIP archive of CSV files.\n\n### 5. Evaluation\n\nFile: modules/module5_evaluation_engine.py\n\nThis module evaluates synthetic quality using:\n\n- marginal fidelity metrics\n- relational integrity checks\n- Train-on-Synthetic, Test-on-Real evaluation\n- a privacy-oriented audit based on nearest-neighbor distances and a baseline membership inference style check\n\n## User-facing app\n\nFile: app.py\n\nThe Streamlit app provides an interactive interface to:\n\n- upload relational CSV tables\n- set the global privacy budget\n- choose the number of rows to generate\n- run the full PoC pipeline\n- inspect inferred schema, budget allocation, synthetic output, and evaluation results\n\n## Benchmark and research scripts\n\nThe repository also includes scripts for repeatable experiments:\n\n- scripts/run_full_priority_benchmark.py — runs epsilon sweeps and compares allocators\n- scripts/run_single_priority.py — single-run benchmark for a chosen configuration\n- scripts/diagnostic_priority_alloc.py — helper for inspecting allocation behavior\n- modules/repro_benchmark.py — reusable benchmarking entry point\n- research_benchmark_master.py — broader benchmark driver\n- research_mia_validation.py — membership inference validation workflow\n- research_duckdb_scalability.py — scalability experiments around evaluation\n\n## Dataset preparation\n\n### Demo dataset preparation\n\nFile: prepare_relational_demo_dataset.py\n\nThis script downloads or copies an SDV demo relational dataset, normalizes it, parses the schema, and writes a schema summary JSON file.\n\n### Artificial relational benchmark dataset\n\nFile: generate_artificial_relational_dataset.py\n\nThis script creates a six-table synthetic benchmark dataset under a fixed schema for testing and evaluation.\n\n### Berka dataset adapter\n\nFile: berka_adapter.py\n\nThis loader is intended to map the Czech Bank Berka dataset into the project’s synthesis format. It is useful for high-sensitivity financial relational data.\n\n## Repository structure\n\n- app.py — Streamlit PoC interface\n- dp_ctgan.py — DP-CTGAN training utilities and privacy accounting\n- dp_evaluator.py — quality, relational, utility, and privacy metrics\n- schema_budget_allocator.py — graph-based epsilon allocation\n- multi_relational_pipeline.py — earlier orchestration prototype\n- modules/ — modular implementation used by the app and benchmarks\n- data/ — bundled example datasets and schema summaries\n- research_results/ — benchmark outputs\n- scripts/ — benchmark and diagnostic entry points\n\n## Dependencies\n\nThe project uses the following major packages:\n\n- pandas\n- numpy\n- torch\n- sdv\n- opacus\n- dp-accounting\n- networkx\n- duckdb\n- scikit-learn\n- scipy\n- streamlit\n- matplotlib\n- seaborn\n- sqlalchemy\n\n## Installation\n\nCreate a Python environment and install the required packages.\n\nTypical setup:\n\n1. Create and activate a virtual environment\n2. Install the packages listed above\n3. Run the app or one of the benchmark scripts\n\nIf you are using the SDV stack, make sure compatible versions of torch, opacus, and sdv are installed together.\n\n## Running the Streamlit app\n\nLaunch the UI from the project root and upload at least two CSV files representing related tables.\n\nIn the app you can:\n\n- select the privacy budget\n- choose output row counts\n- run the schema parser\n- allocate privacy on the DAG\n- synthesize tables\n- export and evaluate results\n\n## Running the benchmark scripts\n\nThe scripts in scripts/ are intended for reproducible experiments over the bundled datasets. They compare privacy allocators, runtime, fidelity, and downstream task performance.\n\n## Evaluation metrics\n\nThe project reports the following metrics:\n\n- average KS score for continuous features\n- Jensen-Shannon divergence for categorical features\n- foreign-key violation rate\n- cardinality ratio error\n- TSTR accuracy and AUC\n- privacy audit statistics such as distance-to-closest-record\n\n## Example workflow\n\n1. Prepare or upload a relational dataset\n2. Parse the schema and infer table dependencies\n3. Allocate epsilon across the schema graph\n4. Train a DP-CTGAN per table\n5. Rebuild foreign-key links in the synthetic data\n6. Evaluate fidelity and privacy\n7. Export the final synthetic tables\n\n## Notes\n\n- The project is a proof of concept and is optimized for clarity and experimentation rather than production deployment.\n- Some scripts and adapters are exploratory and may require local path adjustment depending on your dataset layout.\n- The schema parser uses heuristics, so relationship inference may need review on unfamiliar datasets.\n\n## Suggested next steps\n\n- replace heuristic schema inference with explicit metadata when available\n- improve categorical handling and joint relational consistency\n- add automated tests for allocator and evaluator behavior\n- document dataset-specific adapters and benchmark configurations\n\n## License\n\nNo license file is included in the repository. Add one if you intend to distribute or publish the project.",
+ "hits": {
+  "sdv_any": [
+   {
+    "file": "prepare_relational_demo_dataset.py",
+    "line": 11,
+    "text": "from sdv.datasets.demo import download_demo, get_available_demos",
+    "context": [
+     "from pathlib import Path",
+     "",
+     "import pandas as pd",
+     "",
+     "from sdv.datasets.demo import download_demo, get_available_demos",
+     "from sdv.datasets.local import load_csvs",
+     "",
+     "from modules.module1_schema_parser import parse_schema",
+     ""
+    ]
+   },
+   {
+    "file": "prepare_relational_demo_dataset.py",
+    "line": 12,
+    "text": "from sdv.datasets.local import load_csvs",
+    "context": [
+     "",
+     "import pandas as pd",
+     "",
+     "from sdv.datasets.demo import download_demo, get_available_demos",
+     "from sdv.datasets.local import load_csvs",
+     "",
+     "from modules.module1_schema_parser import parse_schema",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "modules/module3_synthesis_engine.py",
+    "line": 10,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "import torch",
+     "from pandas.api.types import is_integer_dtype, is_numeric_dtype",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sklearn.ensemble import RandomForestClassifier",
+     "",
+     "from dp_ctgan import train_dp_ctgan",
+     ""
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "modules/module3_synthesis_engine.py",
+    "line": 10,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "import torch",
+     "from pandas.api.types import is_integer_dtype, is_numeric_dtype",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sklearn.ensemble import RandomForestClassifier",
+     "",
+     "from dp_ctgan import train_dp_ctgan",
+     ""
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "md",
+  "sdv_any"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

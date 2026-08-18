@@ -1,0 +1,171 @@
+{
+ "repo": "Darri916/dataforge-ai",
+ "disk_kb": 101,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# DataForge AI\n\nGenerate realistic synthetic datasets from your real data — with quality scoring, privacy risk analysis, and one-click PDF export.\n\n---\n## Live Demo\n\n**Frontend:** https://dataforge-ai-gold.vercel.app  \n**Backend API:** https://dataforge-ai-backend-ezxl.onrender.com/docs\n\n> **Note:** The live demo runs on Render's free tier (512MB RAM). Only **Gaussian Copula** is available in the deployed version. CTGAN and TVAE require significantly more memory due to their PyTorch dependency and are available when running locally.\n>\n> The free tier also spins down after inactivity — the first request may take 30–60 seconds to wake up.\n\n---\n\n## Architecture\n\n```mermaid\ngraph TD\n    U([User]) --> FE[React Frontend\\nVercel]\n\n    FE -->|POST /api/upload| BE[FastAPI Backend\\nRender]\n    FE -->|POST /api/generate| BE\n    FE -->|GET /api/quality/:id| BE\n    FE -->|GET /api/privacy/:id| BE\n    FE -->|GET /api/export/:id/csv\\nGET /api/export/:id/report| BE\n\n    BE --> SDV[SDV Synthesizer\\nGaussian Copula · CTGAN · TVAE]\n    BE --> UP[(uploads/\\nCSV storage)]\n    BE --> OUT[(outputs/\\nPDF storage)]\n```\n\n---\n\n## Features\n\n- **Dataset health scoring** — missing values, duplicates, outliers, and class imbalance scored out of 100\n- **Three synthesizers** — Gaussian Copula (fast, numerical), CTGAN (mixed types), TVAE (large complex datasets)\n- **Auto-recommendation** — synthesizer selected automatically based on dataset size and column types\n- **Quality metrics** — Jensen-Shannon divergence, KS test, mean/std comparison, and correlation matrix similarity per column\n- **Privacy metrics** — duplicate rate, nearest-neighbour distance, attribute disclosure risk, and re-identification score\n- **PDF report export** — full summary report with metrics and column distribution charts\n\n---\n\n## Tech Stack\n\n| Layer | Technology |\n|---|---|\n| Frontend | React 19, Vite, Tailwind CSS v4, Recharts, Axios |\n| Backend | Python, FastAPI, Uvicorn, Pydantic v2 |\n| ML / Synthesis | SDV (GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer), scikit-learn, SciPy |\n| Export | fpdf2, Matplotlib |\n\n---\n\n## Project Structure\n\n```\ndataforge-ai/\n├── backend/\n│   ├── app/\n│   │   ├── main.py\n│   │   ├── config.py\n│   │   ├── models/\n│   │   ├── routers/\n│   │   ├── services/\n│   │   └── utils/\n│   ├── tests/\n│   ├── requirements.txt\n│   └── render.yaml\n└── frontend/\n    ├── src/\n    │   ├── pages/\n    │   └── services/\n    ├── vercel.json\n    └── package.json\n```\n\n---\n\n## Running Locally\n\n### Backend\n\n```bash\ncd backend\npython -m venv venv\nsource venv/bin/activate        # Windows: venv\\Scripts\\activate\npip install -r requirements.txt\nuvicorn app.main:app --reload\n```\n\nBackend runs at `http://localhost:8000`. Swagger docs at `http://localhost:8000/docs`.\n\n### Frontend\n\n```bash\ncd frontend\nnpm install\nnpm run dev\n```\n\nFrontend runs at `http://localhost:5173`. Create a `.env` file in `frontend/`:\n\n```\nVITE_API_URL=http://localhost:8000\n```\n\n---\n\n## API Endpoints\n\n| Method | Path | Description |\n|---|---|---|\n| `GET` | `/` | Health check |\n| `POST` | `/api/upload/` | Upload a CSV — returns file ID, column types, health score, and synthesizer recommendation |\n| `POST` | `/api/generate/` | Fit a synthesizer on the uploaded data and generate synthetic rows |\n| `GET` | `/api/quality/{file_id}` | Compute quality metrics comparing real vs synthetic distributions |\n| `GET` | `/api/privacy/{file_id}` | Compute privacy risk metrics for the synthetic dataset |\n| `GET` | `/api/export/{file_id}/csv` | Download the synthetic dataset as a CSV file |\n| `GET` | `/api/export/{file_id}/report` | Generate and download a full PDF summary report |\n\n---\n\n## Known Limitations\n\n- **No session persistence** — uploaded files are identified by a UUID that lives only as long as the server process. A Render restart clears all uploads and outputs.\n- **No authentication** — any client that knows a `file_id` can access, generate from, or export that file. Do not upload sensitive data in production without adding auth.\n- **NN distance underestimates privacy risk on large datasets** — when training data is large, synthetic rows are statistically close to real ones by nature, which compresses the normalized distance score toward 0 regardless of actual privacy.\n- **SDV `SingleTableMetadata` deprecation warning** — current SDV versions emit a warning recommending migration to the `Metadata` class. This is non-breaking and will be addressed in a future version.\n- **CTGAN / TVAE unreliable on very small datasets** — fewer than ~100 rows provides insufficient training signal; generated values may be outside realistic ranges.\n- **No file cleanup** — `uploads/` and `outputs/` grow indefinitely. Add a scheduled cleanup job or use object storage (e.g. S3) for production use.\n- **Generation time scales with data size and synthesizer** — TVAE on 10,000+ rows can take 2–3 minutes. Expect timeouts on Render's free tier for large jobs.\n- **CTGAN and TVAE unavailable on free tier** — both synthesizers depend on PyTorch (~1.5GB RAM on load), which exceeds Render's free tier limit of 512MB. The deployed demo uses Gaussian Copula only. Run locally to access all three synthesizers.\n\n---\n\n## Deployment\n\n### Backend — Render\n\n1. Connect your repo to [Render](https://render.com) and create a new **Web Service**.\n2. Set **Root Directory** to `backend`.\n3. Set **Build Command** to `pip install -r requirements.txt`.\n4. Set **Start Command** to `uvicorn app.main:app --host 0.0.0.0 --port 8000`.\n5. Add the following environment variables in the Render dashboard:\n\n| Key | Value |\n|---|---|\n| `UPLOAD_DIR` | `uploads` |\n| `REPORT_DIR` | `outputs` |\n| `MAX_UPLOAD_SIZE_MB` | `50` |\n| `DEFAULT_SYNTHESIZER` | `auto` |\n| `RANDOM_SEED` | `42` |\n\n### Frontend — Vercel\n\n1. Connect your repo to [Vercel](https://vercel.com) and import the project.\n2. Set **Root Directory** to `frontend`.\n3. Add the following environment variable in the Vercel dashboard:\n\n| Key | Value |\n|---|---|\n| `VITE_API_URL` | `https://your-service-name.onrender.com` |\n\nThe `vercel.json` at `frontend/vercel.json` handles SPA routing and proxies `/api/*` requests to the Render backend automatically.\n",
+ "hits": {
+  "ct": [
+   {
+    "file": "README.md",
+    "line": 53,
+    "text": "| ML / Synthesis | SDV (GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer), scikit-learn, SciPy |",
+    "context": [
+     "| Layer | Technology |",
+     "|---|---|",
+     "| Frontend | React 19, Vite, Tailwind CSS v4, Recharts, Axios |",
+     "| Backend | Python, FastAPI, Uvicorn, Pydantic v2 |",
+     "| ML / Synthesis | SDV (GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer), scikit-learn, SciPy |",
+     "| Export | fpdf2, Matplotlib |",
+     "",
+     "---",
+     ""
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "README.md",
+    "line": 53,
+    "text": "| ML / Synthesis | SDV (GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer), scikit-learn, SciPy |",
+    "context": [
+     "| Layer | Technology |",
+     "|---|---|",
+     "| Frontend | React 19, Vite, Tailwind CSS v4, Recharts, Axios |",
+     "| Backend | Python, FastAPI, Uvicorn, Pydantic v2 |",
+     "| ML / Synthesis | SDV (GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer), scikit-learn, SciPy |",
+     "| Export | fpdf2, Matplotlib |",
+     "",
+     "---",
+     ""
+    ]
+   },
+   {
+    "file": "backend/app/services/generator.py",
+    "line": 3,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from app.config import settings",
+     "from app.utils.logger import get_logger",
+     ""
+    ]
+   },
+   {
+    "file": "backend/app/services/generator.py",
+    "line": 23,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     ") -> tuple[pd.DataFrame, str]:",
+     "    logger.info(f\"Requested: {synthesizer_name} → using gaussian_copula (free tier)\")",
+     "    metadata = build_metadata(df)",
+     "    np.random.seed(settings.RANDOM_SEED)",
+     "    synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "    synthesizer.fit(df)",
+     "    logger.info(f\"Sampling {num_rows} synthetic rows...\")",
+     "    synthetic_df = synthesizer.sample(num_rows=num_rows)",
+     "    return synthetic_df, \"gaussian_copula\""
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "README.md",
+    "line": 53,
+    "text": "| ML / Synthesis | SDV (GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer), scikit-learn, SciPy |",
+    "context": [
+     "| Layer | Technology |",
+     "|---|---|",
+     "| Frontend | React 19, Vite, Tailwind CSS v4, Recharts, Axios |",
+     "| Backend | Python, FastAPI, Uvicorn, Pydantic v2 |",
+     "| ML / Synthesis | SDV (GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer), scikit-learn, SciPy |",
+     "| Export | fpdf2, Matplotlib |",
+     "",
+     "---",
+     ""
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "backend/app/services/generator.py",
+    "line": 3,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from app.config import settings",
+     "from app.utils.logger import get_logger",
+     ""
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "backend/app/services/generator.py",
+    "line": 4,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from app.config import settings",
+     "from app.utils.logger import get_logger",
+     "",
+     "logger = get_logger(__name__)"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "backend/app/services/generator.py",
+    "line": 3,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from app.config import settings",
+     "from app.utils.logger import get_logger",
+     ""
+    ]
+   },
+   {
+    "file": "backend/app/services/generator.py",
+    "line": 4,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from app.config import settings",
+     "from app.utils.logger import get_logger",
+     "",
+     "logger = get_logger(__name__)"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "gc",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "backend/requirements.txt": [
+   "sdv"
+  ]
+ }
+}

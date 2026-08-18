@@ -1,0 +1,253 @@
+{
+ "repo": "shreyank98/Vanet-project",
+ "disk_kb": 4978,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# AI-based Intrusion Detection System for VANET\n\n## Project Overview\n\nThis project implements a **Deep Learning-based Intrusion Detection System (IDS)** for **Vehicular Ad-hoc Networks (VANET)** with a focus on detecting three critical attack types:\n- **DoS (Denial of Service) Attacks**\n- **Sybil Attacks**\n- **Wormhole Attacks**\n\nThe system uses state-of-the-art deep learning models including CNN-LSTM hybrid networks and Autoencoders for real-time attack detection and classification.\n\n---\n\n## 🎯 Key Features\n\n- **Multi-Model Architecture**: CNN-LSTM hybrid for classification + Autoencoder for anomaly detection\n- **Real-time Detection**: Fast inference for real-time VANET security\n- **Synthetic Attack Generation**: Generate synthetic VANET attack scenarios using statistical methods\n- **Comprehensive Evaluation**: Detailed metrics including precision, recall, F1-score, and confusion matrices\n- **Attack-Specific Detectors**: Specialized modules for DoS, Sybil, and Wormhole attacks\n- **Extensible Design**: Easy to add new attack types and models\n\n---\n\n## 📊 Dataset Information\n\n### Primary Dataset: CICIDS2017\n- **Source**: Canadian Institute for Cybersecurity\n- **Contains**: DoS, DDoS, Port Scan, and other network attacks\n- **Size**: ~2.5GB (DoS/DDoS subset)\n- **Download**: [CICIDS2017 Dataset](https://www.unb.ca/cic/datasets/ids-2017.html)\n\n### Secondary Dataset: Network Dataset (Included)\n- **File**: `network_dataset_labeled.csv`\n- **Records**: 1,002 samples\n- **Features**: 19 (throughput, congestion, packet_loss, latency, jitter, etc.)\n- **Labels**: Binary anomaly labels\n\n### Synthetic Data Generation\nThe project includes a synthetic data generator that creates realistic VANET attack scenarios based on known attack characteristics.\n\n---\n\n## 🏗️ Project Structure\n\n```\nVanet-project/\n├── data/                          # Data directory\n│   ├── raw/                       # Raw datasets\n│   ├── processed/                 # Preprocessed data\n│   └── synthetic/                 # Synthetic attack data\n│\n├── models/                        # Deep learning models\n│   ├── cnn_lstm_ids.py           # CNN-LSTM hybrid model\n│   ├── autoencoder_ids.py        # Autoencoder for anomaly detection\n│   └── __init__.py\n│\n├── detection/                     # Attack-specific detectors\n│   ├── dos_detector.py           # DoS attack detector\n│   ├── sybil_detector.py         # Sybil attack detector\n│   ├── wormhole_detector.py      # Wormhole attack detector\n│   └── __init__.py\n│\n├── preprocessing/                 # Data preprocessing\n│   ├── data_loader.py            # Dataset loading and preprocessing\n│   ├── synthetic_generator.py    # Synthetic attack generation\n│   └── __init__.py\n│\n├── evaluation/                    # Evaluation metrics\n│   ├── metrics.py                # Performance metrics\n│   └── __init__.py\n│\n├── utils/                         # Utilities\n│   ├── config.py                 # Configuration management\n│   ├── logger.py                 # Logging utilities\n│   └── __init__.py\n│\n├── saved_models/                  # Trained model checkpoints\n├── results/                       # Evaluation results\n├── logs/                          # Training logs\n│\n├── train_model.py                # Main training script\n├── requirements.txt              # Python dependencies\n├── README.md                     # This file\n├── PROJECT_PLAN.md               # Detailed project plan\n└── .gitignore                    # Git ignore file\n```\n\n---\n\n## 🚀 Installation\n\n### Prerequisites\n- Python 3.8 or higher\n- CUDA-compatible GPU (recommended for training)\n- 8GB+ RAM\n\n### Setup\n\n1. **Clone the repository**\n```bash\ngit clone https://github.com/shreyank98/Vanet-project.git\ncd Vanet-project\n```\n\n2. **Install dependencies**\n```bash\npip install -r requirements.txt\n```\n\n3. **Create data directories**\n```bash\nmkdir -p data/raw data/processed data/synthetic saved_models results logs\n```\n\n4. **Place datasets**\n- Copy `network_dataset_labeled.csv` to `data/raw/`\n- (Optional) Download CICIDS2017 to `data/raw/CICIDS2017/`\n\n---\n\n## 📖 Usage\n\n### Quick Start: Train with Synthetic Data\n\nThe easiest way to get started is to train on synthetic data:\n\n```bash\npython train_model.py --generate_synthetic --samples_per_class 1000 --model both\n```\n\nThis will:\n- Generate 4,000 synthetic samples (1,000 per class: NORMAL, DOS, SYBIL, WORMHOLE)\n- Train both CNN-LSTM and Autoencoder models\n- Evaluate and save the models\n\n### Training Options\n\n#### Train CNN-LSTM model only\n```bash\npython train_model.py --model cnn_lstm --generate_synthetic\n```\n\n#### Train Autoencoder only\n```bash\npython train_model.py --model autoencoder --generate_synthetic\n```\n\n#### Custom training parameters\n```bash\npython train_model.py \\\n    --generate_synthetic \\\n    --samples_per_class 2000 \\\n    --epochs 50 \\\n    --batch_size 32 \\\n    --sequence_length 10 \\\n    --model both\n```\n\n#### Train with CICIDS2017 (if downloaded)\n```bash\npython train_model.py --use_cicids --model cnn_lstm\n```\n\n### Command Line Arguments\n\n| Argument | Type | Default | Description |\n|----------|------|---------|-------------|\n| `--model` | str | 'cnn_lstm' | Model to train: 'cnn_lstm', 'autoencoder', or 'both' |\n| `--use_cicids` | flag | False | Use CICIDS2017 dataset |\n| `--generate_synthetic` | flag | False | Generate synthetic attack data |\n| `--samples_per_class` | int | 1000 | Number of synthetic samples per class |\n| `--epochs` | int | 100 | Number of training epochs |\n| `--batch_size` | int | 64 | Batch size for training |\n| `--sequence_length` | int | 10 | Sequence length for LSTM |\n\n---\n\n## 🔬 Model Architectures\n\n### 1. CNN-LSTM Hybrid Model\n\n**Purpose**: Multi-class attack classification\n\n**Architecture**:\n- **CNN Layers**: 3 layers (64, 128, 256 filters) for spatial feature extraction\n- **LSTM Layers**: 2 layers (128, 64 units) for temporal pattern recognition\n- **Dense Layers**: 2 layers (128, 64 units) for classification\n- **Output**: Softmax (4 classes: NORMAL, DOS, SYBIL, WORMHOLE)\n\n**Input Shape**: (sequence_length, num_features)\n**Output**: Class probabilities\n\n### 2. Autoencoder Model\n\n**Purpose**: Anomaly detection\n\n**Architecture**:\n- **Encoder**: [input_dim → 128 → 64 → 32]\n- **Decoder**: [32 → 64 → 128 → input_dim]\n- **Latent Dimension**: 32\n- **Loss**: Mean Squared Error (MSE)\n\n**Training**: Trained only on normal traffic\n**Detection**: Reconstruction error threshold-based\n\n---\n\n## 📈 Performance Metrics\n\nThe system evaluates performance using:\n\n- **Accuracy**: Overall correctness\n- **Precision**: True positives / (True positives + False positives)\n- **Recall**: True positives / (True positives + False negatives)\n- **F1-Score**: Harmonic mean of precision and recall\n- **Confusion Matrix**: Detailed classification breakdown\n- **ROC-AUC**: Area under ROC curve\n- **Detection Rate**: Per-attack detection success rate\n- **False Positive Rate**: Critical for IDS systems\n\n---\n\n## 🎯 Attack Detection\n\n### DoS Attack Detection\n\n**Indicators**:\n- High packet loss (>50%)\n- Extreme latency (>1000ms)\n- High congestion (>0.8)\n- Low throughput (<1.5)\n\n**Module**: `detection/dos_detector.py`\n\n### Sybil Attack Detection\n\n**Indicators**:\n- Abnormally high router count (>5)\n- Multiple identities from single source\n- Rapid identity changes\n- Normal traffic with suspicious identity patterns\n\n**Module**: `detection/sybil_detector.py`\n\n### Wormhole Attack Detection\n\n**Indicators**:\n- Artificially low latency (<50ms)\n- Low router count (<3)\n- High throughput with low latency\n- Route anomalies (planned vs actual)\n\n**Module**: `detection/wormhole_detector.py`\n\n---\n\n## 📊 Example Results\n\nExample output from training:\n\n```\nVANET IDS PERFORMANCE SUMMARY\n============================================================\nOverall Performance:\n  Accuracy:        0.9524\n  Precision (avg): 0.9531\n  Recall (avg):    0.9524\n  F1-Score (avg):  0.9525\n\nPer-Attack Performance:\n  NORMAL       - Precision: 0.9800, Recall: 0.9600, F1: 0.9699\n  DOS          - Precision: 0.9500, Recall: 0.9700, F1: 0.9599\n  SYBIL        - Precision: 0.9300, Recall: 0.9200, F1: 0.9250\n  WORMHOLE     - Precision: 0.9400, Recall: 0.9600, F1: 0.9499\n============================================================\n```\n\n---\n\n## 🔧 Configuration\n\nModify `utils/config.py` to customize:\n\n- Model hyperparameters (filters, units, dropout)\n- Training parameters (epochs, batch size, learning rate)\n- Data paths and directories\n- Attack type definitions\n- Detection thresholds\n\n---\n\n## 📝 Synthetic Data Generation\n\nGenerate synthetic VANET attack data:\n\n```python\nfrom preprocessing.synthetic_generator import VANETAttackGenerator\n\ngenerator = VANETAttackGenerator()\n\n# Generate balanced dataset\ndataset = generator.generate_balanced_dataset(samples_per_class=1000)\n\n# Generate specific attack types\ndos_data = generator.generate_dos_attack(n_samples=500)\nsybil_data = generator.generate_sybil_attack(n_samples=500)\nwormhole_data = generator.generate_wormhole_attack(n_samples=500)\n\n# Save to file\ngenerator.save_synthetic_data(dataset, 'my_dataset.csv')\n```\n\n---\n\n## 🧪 Testing and Evaluation\n\nAfter training, models are automatically evaluated on the test set. To manually evaluate:\n\n```python\nfrom models.cnn_lstm_ids import CNNLSTM_IDS\nfrom evaluation.metrics import IDSMetrics\n\n# Load trained model\nmodel = CNNLSTM_IDS(input_shape=(10, 17), num_classes=4)\nmodel.load_model()\n\n# Make predictions\ny_pred = model.predict_classes(X_test)\n\n# Calculate metrics\nmetrics = IDSMetrics()\nresults = metrics.calculate_all_metrics(y_test, y_pred)\nmetrics.summarize_performance(results)\n```\n\n---\n\n## 🤝 Contributing\n\nContributions are welcome! Areas for improvement:\n- Additional attack types (Blackhole, Greyhole, etc.)\n- Real VANET dataset integration\n- Model optimization and compression\n- Real-time detection interface\n- Visualization dashboard\n\n---\n\n## 📚 References\n\n### Datasets\n1. **CICIDS2017**: [Canadian Institute for Cybersecurity IDS Dataset](https://www.unb.ca/cic/datasets/ids-2017.html)\n2. **CY0P5_ML_Datasets**: [Comprehensive ML Security Datasets](https://github.com/ctinnil/CY0P5_ML_Datasets)\n\n### Research Papers\n1. Hasrouny et al. (2017). \"VANET security challenges and solutions: A survey\"\n2. Sedjelmaci et al. (2018). \"An accurate and efficient collaborative intrusion detection framework for VANET\"\n3. Bangui et al. (2019). \"Recent advances in machine-learning driven intrusion detection in VANET\"\n\n### Technologies\n- **TensorFlow/Keras**: Deep learning framework\n- **scikit-learn**: Machine learning utilities\n- **pandas/numpy**: Data processing\n- **SDV**: Synthetic data generation\n\n---\n\n## 📄 License\n\nThis project is open-source and available under the MIT License.\n\n---\n\n## 👤 Author\n\n**Project**: VANET Security - AI-based Intrusion Detection System  \n**Topic**: Security, Privacy, and Trust Management  \n**Focus**: Deep Learning for DoS, Sybil, and Wormhole Attack Detection\n\n---\n\n## 🐛 Troubleshooting\n\n### Common Issues\n\n**Issue**: TensorFlow/CUDA errors\n```bash\n# Use CPU version if GPU unavailable\npip install tensorflow-cpu\n```\n\n**Issue**: Out of memory during training\n```bash\n# Reduce batch size\npython train_model.py --batch_size 16\n```\n\n**Issue**: Slow training\n```bash\n# Reduce epochs or use smaller dataset\npython train_model.py --epochs 20 --samples_per_class 500\n```\n\n---\n\n## 📞 Contact & Support\n\nFor questions, issues, or contributions:\n- Open an issue on GitHub\n- Check PROJECT_PLAN.md for detailed methodology\n- Review existing issues for solutions\n\n---\n\n## 🎓 Academic Use\n\nIf you use this project in your research, please consider citing:\n\n```\n@misc{vanet_ids_2024,\n  title={AI-based Intrusion Detection System for VANET},\n  author={VANET Project Team},\n  year={2024},\n  publisher={GitHub},\n  howpublished={\\url{https://github.com/shreyank98/Vanet-project}}\n}\n```\n\n---\n\n**Last Updated**: November 2024  \n**Version**: 1.0  \n**Status**: Active Development\n",
+ "hits": {
+  "st": [
+   {
+    "file": "CTGAN.py",
+    "line": 39,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "# In[6]:",
+     "",
+     "",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "",
+     "# In[7]:",
+     ""
+    ]
+   },
+   {
+    "file": "CTGAN.py",
+    "line": 63,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "# In[8]:",
+     "",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "import pandas as pd",
+     "",
+     "class DataSynthesizer:",
+     "    def __init__(self, data: pd.DataFrame, epcohs: int = 1000):"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "CTGAN.py",
+    "line": 33,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "# In[5]:",
+     "",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "",
+     "# In[6]:",
+     ""
+    ]
+   },
+   {
+    "file": "CTGAN.py",
+    "line": 62,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "# In[8]:",
+     "",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "import pandas as pd",
+     "",
+     "class DataSynthesizer:"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "CTGAN.py",
+    "line": 7,
+    "text": "import sdv",
+    "context": [
+     "",
+     "# In[1]:",
+     "",
+     "",
+     "import sdv",
+     "",
+     "",
+     "# In[2]:",
+     ""
+    ]
+   },
+   {
+    "file": "CTGAN.py",
+    "line": 33,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "# In[5]:",
+     "",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "",
+     "# In[6]:",
+     ""
+    ]
+   },
+   {
+    "file": "CTGAN.py",
+    "line": 39,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "# In[6]:",
+     "",
+     "",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "",
+     "# In[7]:",
+     ""
+    ]
+   },
+   {
+    "file": "CTGAN.py",
+    "line": 62,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "# In[8]:",
+     "",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "import pandas as pd",
+     "",
+     "class DataSynthesizer:"
+    ]
+   },
+   {
+    "file": "CTGAN.py",
+    "line": 63,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "# In[8]:",
+     "",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "import pandas as pd",
+     "",
+     "class DataSynthesizer:",
+     "    def __init__(self, data: pd.DataFrame, epcohs: int = 1000):"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "CTGAN.py",
+    "line": 39,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "# In[6]:",
+     "",
+     "",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "",
+     "# In[7]:",
+     ""
+    ]
+   },
+   {
+    "file": "CTGAN.py",
+    "line": 49,
+    "text": "model = CTGANSynthesizer(metadata)",
+    "context": [
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(data=df1)",
+     "",
+     "# Initialize the synthesizer with metadata",
+     "model = CTGANSynthesizer(metadata)",
+     "",
+     "# Fit the model to your data",
+     "model.fit(df1)",
+     ""
+    ]
+   },
+   {
+    "file": "CTGAN.py",
+    "line": 63,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "# In[8]:",
+     "",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "import pandas as pd",
+     "",
+     "class DataSynthesizer:",
+     "    def __init__(self, data: pd.DataFrame, epcohs: int = 1000):"
+    ]
+   },
+   {
+    "file": "CTGAN.py",
+    "line": 80,
+    "text": "self.model = CTGANSynthesizer(metadata=self.metadata)",
+    "context": [
+     "        self.metadata = SingleTableMetadata()",
+     "        self.metadata.detect_from_dataframe(data=self.data)",
+     "    ",
+     "    def _initialize_model(self):",
+     "        self.model = CTGANSynthesizer(metadata=self.metadata)",
+     "    ",
+     "    def fit(self):",
+     "        if self.model is None:",
+     "            self._initialize_metadata()"
+    ]
+   },
+   {
+    "file": "README.txt",
+    "line": 15,
+    "text": "- Generates realistic synthetic data using **SDV**’s CTGANSynthesizer.",
+    "context": [
+     "- Visualizes reconstruction errors and highlights anomalies.",
+     "- Detects anomalies by setting a configurable percentile-based threshold.",
+     "",
+     "### 2. **Synthetic Data Generation Using SDV and CTGAN**",
+     "- Generates realistic synthetic data using **SDV**’s CTGANSynthesizer.",
+     "- Produces both general synthetic data and anomaly-specific synthetic data.",
+     "- Combines original and synthetic data for extended datasets.",
+     "",
+     "### 3. **TimeGAN for Time-Series Data**"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv>=1.0.0"
+  ]
+ }
+}

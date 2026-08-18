@@ -1,0 +1,155 @@
+{
+ "repo": "Hosseinglm/SocialMedia_SentimentAnalysis",
+ "disk_kb": 21770,
+ "method": "partial_clone",
+ "tree_files": 222,
+ "status": "ok",
+ "readme": "# Twitter Sentiment Analytics & Synthetic Boost\n\nA complete, reproducible sentiment analysis pipeline for Twitter data with synthetic data augmentation capabilities. This project implements a comprehensive machine learning pipeline that processes Twitter data, trains multiple classifiers, and uses advanced synthetic data generation techniques to address class imbalance.\n\n## Project Overview\n\nThis pipeline replicates and adapts the architecture from \"Web & Social Media Sentiment Analytics\" for Twitter data, featuring:\n\n- **Data Processing**: Clean and preprocess Twitter text data\n- **Feature Engineering**: Create BoW, TF-IDF, and optional embedding features  \n- **Model Training**: Train and compare Multinomial NB, Random Forest, and XGBoost classifiers\n- **Synthetic Data**: Generate synthetic samples using SMOTE and TVAE techniques\n- **Evaluation**: Comprehensive model evaluation with confusion matrices and performance metrics\n\n## Quick Start\n\n### Prerequisites\n\n- Python 3.12+\n- Required packages (see `requirements.txt`)\n\n### Installation\n\n1. Clone or download the project:\n```bash\ncd Web-SocialM-Sentiment-Analytics\n```\n\n2. Install dependencies:\n```bash\npip install -r requirements.txt\n```\n\n3. Run the complete pipeline:\n```bash\npython run_pipeline.py\n```\n\n### Quick Test Mode\n\nFor rapid testing on a subset of data (completes in <3 minutes):\n```bash\npython run_pipeline.py --quick-test\n```\n\n## Project Structure\n\n```\nWeb-SocialM-Sentiment-Analytics/\n├── datasets/                          # Data files\n│   ├── twitter_training.csv          # Original training data\n│   ├── twitter_validation.csv        # Original validation data\n│   ├── raw_tweets.csv                # Unified raw data\n│   ├── clean_tweets.csv              # Processed clean data\n│   └── synthetic_tvae_data.csv       # Generated synthetic data\n├── features/                          # Feature matrices\n│   ├── bow.npz                       # Bag-of-Words features\n│   ├── tfidf.npz                     # TF-IDF features\n│   ├── bow_vocab.pkl                 # BoW vocabulary\n│   └── tfidf_vocab.pkl               # TF-IDF vocabulary\n├── models/                           # Trained models\n│   ├── best_model_*.pkl              # Best performing model\n│   └── model_card.json               # Model metadata\n├── reports/                          # Analysis results\n│   ├── eda/                          # Exploratory data analysis\n│   │   ├── overview_analysis.png     # Dataset overview plots\n│   │   └── sentiment_wordclouds.png  # Word clouds by sentiment\n│   └── evaluation/                   # Model evaluation\n│       ├── confusion_matrices.png    # Confusion matrices\n│       └── deep_learning_training.png # DL training curves\n├── src/                              # Source code modules\n│   ├── data_loader.py                # Data loading and unification\n│   ├── preprocessor.py               # Text cleaning and preprocessing\n│   ├── feature_engineer.py           # Feature engineering\n│   ├── model_trainer.py              # Model training and evaluation\n│   ├── synthetic_generator.py        # Synthetic data generation\n│   └── evaluator.py                  # Model evaluation utilities\n├── tests/                            # Test suite\n│   ├── main.ipynb                    # Main demonstration notebook\n│   └── test_pipeline.py              # Automated tests\n├── run_pipeline.py                   # Main execution script\n├── requirements.txt                  # Python dependencies\n└── README.md                         # This file\n```\n\n## Pipeline Components\n\n### 1. Data Loading & Unification\n- Loads training and validation CSV files\n- Unifies schema with columns: `tweet_id`, `author`, `date`, `tweet_text`, `sentiment_label`\n- Saves immutable raw dataset\n\n### 2. Text Preprocessing\n- **Cleaning**: Lowercase, remove URLs, @handles, hashtags (keep words), expand contractions\n- **Feature extraction**: Tweet length, number of hashtags, number of mentions\n- **Lemmatization**: WordNet lemmatizer with stopword removal\n- **Output**: Clean dataset with processed text\n\n### 3. Feature Engineering\n- **Bag-of-Words**: Binary matrix with 5000 max features\n- **TF-IDF**: Term frequency-inverse document frequency with bigrams\n- **Train-Test Split**: 80-20 stratified split for cross-model comparison\n- **Storage**: Compressed matrices (.npz) and vocabularies (.pkl)\n\n### 4. Model Training\nMultiple classifiers trained and evaluated:\n\n| Model | Features | Evaluation Method |\n|-------|----------|------------------|\n| Multinomial Naive Bayes | BoW, TF-IDF | Accuracy, F1-macro |\n| Random Forest | BoW, TF-IDF | 10-fold CV, Accuracy, F1-macro |\n| XGBoost | BoW, TF-IDF | Early stopping, Accuracy, F1-macro |\n\n### 5. Synthetic Data Generation\n- **SMOTE**: Oversampling for immediate class balance\n- **TVAE**: Generate 2000+ synthetic samples matching full schema\n- **Quality Validation**: Kolmogorov-Smirnov tests and correlation analysis\n- **Augmentation**: Retrain best model on augmented dataset\n\n### 6. Deep Learning (Optional)\n- Simple Keras Sequential MLP on TF-IDF features\n- Monitor validation accuracy for 20 epochs\n- Visualization of training curves\n\n## Model Performance\n\nThe pipeline automatically selects the best performing model based on F1-macro score and provides:\n\n- **Confusion matrices** for each model/feature combination\n- **Classification reports** with per-class precision, recall, F1-score\n- **Cross-validation results** for Random Forest models\n- **Improvement tracking** after synthetic data augmentation\n\n### Acceptance Criteria\n- **Target**: ≥3 percentage point accuracy improvement OR clear class imbalance reduction  \n- **Quick Test**: Complete pipeline execution on 1000 samples in <3 minutes  \n- **Testing**: All tests in `pytest tests/` pass\n\n## Testing\n\nRun the automated test suite:\n```bash\npytest tests/ -v\n```\n\nTest individual components:\n```bash\npython -m pytest tests/test_pipeline.py::TestDataLoader -v\n```\n\n## Data Schema\n\n### Input Data Format\nThe pipeline expects CSV files with columns:\n- `tweet_id`: Unique identifier\n- `brand/topic`: Brand or topic category  \n- `sentiment_label`: Sentiment class (Positive, Negative, Neutral, etc.)\n- `tweet_text`: Raw tweet content\n\n### Output Data Schema\nProcessed data includes additional features:\n- `author`: Author/brand information\n- `date`: Synthetic date for temporal analysis\n- `clean_tweet`: Processed and lemmatized text\n- `tweet_len`: Original tweet character length\n- `num_hashtags`: Number of hashtags in original tweet\n- `num_mentions`: Number of @mentions in original tweet\n\n## Configuration\n\n### Model Parameters\n- **BoW/TF-IDF**: 5000 max features, min_df=2, max_df=0.95\n- **Random Forest**: 100 estimators, 5-fold CV\n- **XGBoost**: Early stopping, mlogloss evaluation\n- **SMOTE**: k_neighbors=5 (auto-adjusted for small classes)\n\n### Synthetic Data Parameters\n- **TVAE**: 50 epochs, tabular synthesis\n- **Quality Threshold**: Kolmogorov-Smirnov p-value analysis\n- **Sample Size**: Up to 2000 synthetic samples per run\n\n## Troubleshooting\n\n### Common Issues\n\n1. **Memory Issues**: Reduce max_features in feature engineering\n2. **SMOTE Fails**: Check for classes with <5 samples\n3. **TVAE Installation**: Use `pip install sdv>=1.0.0`\n4. **NLTK Data**: Run `python -c \"import nltk; nltk.download('all')\"`\n\n### Performance Optimization\n\n- Use `--quick-test` for rapid iteration\n- Reduce `max_features` for faster processing\n- Skip TVAE generation in quick test mode\n- Use `n_jobs=-1` for parallel processing where available\n\n## Dependencies\n\nCore libraries:\n- **Data**: pandas, numpy\n- **ML**: scikit-learn, xgboost, imbalanced-learn\n- **NLP**: nltk, wordcloud\n- **Visualization**: matplotlib, seaborn\n- **Synthetic Data**: sdv (TVAE)\n- **Optional**: tensorflow (deep learning)\n\nSee `requirements.txt` for complete dependency list with versions.\n\n## Usage Examples\n\n### Basic Pipeline Execution\n```bash\n# Full pipeline\npython run_pipeline.py\n\n# Quick test with 500 samples\npython run_pipeline.py --quick-test --max-samples 500\n```\n\n### Jupyter Notebook Analysis\n```bash\njupyter notebook tests/main.ipynb\n```\n\n### Custom Data Analysis\n```python\nfrom src import DataLoader, TextPreprocessor, ModelTrainer\n\n# Load your own data\nloader = DataLoader()\ndata = loader.load_and_unify_data('your_train.csv', 'your_val.csv')\n\n# Process and train\npreprocessor = TextPreprocessor()\nclean_data = preprocessor.clean_dataset(data)\n# ... continue with pipeline\n```\n\n## Data and Model Files\n\n**Note**: To keep the repository size manageable, datasets, trained models, and generated features are not included in Git. These files will be generated when you run the pipeline.\n\n### Regenerating Data and Models\n\n1. **Place your training data** in the `datasets/` directory:\n   - `twitter_training.csv` - Training dataset\n   - `twitter_validation.csv` - Validation dataset\n\n2. **Run the pipeline** to generate all files:\n   ```bash\n   python run_pipeline.py\n   ```\n\n3. **Generated files** will be created in:\n   - `datasets/` - Cleaned and processed data\n   - `features/` - Feature matrices (BoW, TF-IDF)\n   - `models/` - Trained model files and metadata\n   - `reports/` - Visualizations and evaluation plots\n\n### File Size Note\n\nTrained models can be very large (100MB+). If you need to share models:\n- Use Git LFS for large files\n- Or upload models to cloud storage\n- Or retrain models from the pipeline\n\n## License\n\nThis project is provided for educational and research purposes. Please ensure compliance with data usage policies for any Twitter data used.\n\n## Contributing\n\n1. Fork the repository\n2. Create a feature branch (`git checkout -b feature/amazing-feature`)\n3. Commit changes (`git commit -m 'Add amazing feature'`)\n4. Push to branch (`git push origin feature/amazing-feature`)\n5. Open a Pull Request\n\n## Support\n\nFor issues or questions:\n1. Check the troubleshooting section above\n2. Run tests to verify setup: `pytest tests/ -v`\n3. Use quick test mode for debugging: `python run_pipeline.py --quick-test`\n\n---\n\nThis pipeline provides a robust foundation for Twitter sentiment analysis with state-of-the-art synthetic data augmentation techniques.\n",
+ "hits": {
+  "st": [
+   {
+    "file": "main.ipynb",
+    "line": 63,
+    "text": "\"from sdv.single_table import TVAESynthesizer\\n\",",
+    "context": [
+     "    \"# Imbalanced learning\\n\",",
+     "    \"from imblearn.over_sampling import SMOTE\\n\",",
+     "    \"\\n\",",
+     "    \"# Synthetic data generation\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"# XGBoost\\n\",",
+     "    \"import xgboost as xgb\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "src/synthetic_generator.py",
+    "line": 99,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "        \"\"\"",
+     "        print(f\"   Generating {n_samples} synthetic samples with TVAE...\")",
+     "        ",
+     "        try:",
+     "            from sdv.single_table import TVAESynthesizer",
+     "            ",
+     "            # Prepare data for TVAE",
+     "            tvae_columns = ['sentiment_label', 'tweet_len', 'num_hashtags', 'num_mentions', 'brand']",
+     "            tvae_data = df[tvae_columns].copy()"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "main.ipynb",
+    "line": 63,
+    "text": "\"from sdv.single_table import TVAESynthesizer\\n\",",
+    "context": [
+     "    \"# Imbalanced learning\\n\",",
+     "    \"from imblearn.over_sampling import SMOTE\\n\",",
+     "    \"\\n\",",
+     "    \"# Synthetic data generation\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"# XGBoost\\n\",",
+     "    \"import xgboost as xgb\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "src/synthetic_generator.py",
+    "line": 99,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "        \"\"\"",
+     "        print(f\"   Generating {n_samples} synthetic samples with TVAE...\")",
+     "        ",
+     "        try:",
+     "            from sdv.single_table import TVAESynthesizer",
+     "            ",
+     "            # Prepare data for TVAE",
+     "            tvae_columns = ['sentiment_label', 'tweet_len', 'num_hashtags', 'num_mentions', 'brand']",
+     "            tvae_data = df[tvae_columns].copy()"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "main.ipynb",
+    "line": 63,
+    "text": "\"from sdv.single_table import TVAESynthesizer\\n\",",
+    "context": [
+     "    \"# Imbalanced learning\\n\",",
+     "    \"from imblearn.over_sampling import SMOTE\\n\",",
+     "    \"\\n\",",
+     "    \"# Synthetic data generation\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"# XGBoost\\n\",",
+     "    \"import xgboost as xgb\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "main.ipynb",
+    "line": 1135,
+    "text": "\"    synthesizer = TVAESynthesizer(epochs=50, verbose=False)\\n\",",
+    "context": [
+     "    \"    tvae_columns = ['sentiment_label', 'tweet_len', 'num_hashtags', 'num_mentions', 'brand']\\n\",",
+     "    \"    tvae_data = train_data_for_tvae[tvae_columns].copy()\\n\",",
+     "    \"    \\n\",",
+     "    \"    # Initialize and train TVAE\\n\",",
+     "    \"    synthesizer = TVAESynthesizer(epochs=50, verbose=False)\\n\",",
+     "    \"    synthesizer.fit(tvae_data)\\n\",",
+     "    \"    \\n\",",
+     "    \"    # Generate synthetic samples\\n\",",
+     "    \"    n_synthetic = min(2000, len(train_data_for_tvae))  # Generate up to 2000 samples\\n\","
+    ]
+   },
+   {
+    "file": "src/synthetic_generator.py",
+    "line": 99,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "        \"\"\"",
+     "        print(f\"   Generating {n_samples} synthetic samples with TVAE...\")",
+     "        ",
+     "        try:",
+     "            from sdv.single_table import TVAESynthesizer",
+     "            ",
+     "            # Prepare data for TVAE",
+     "            tvae_columns = ['sentiment_label', 'tweet_len', 'num_hashtags', 'num_mentions', 'brand']",
+     "            tvae_data = df[tvae_columns].copy()"
+    ]
+   },
+   {
+    "file": "src/synthetic_generator.py",
+    "line": 106,
+    "text": "synthesizer = TVAESynthesizer(epochs=50, verbose=False)",
+    "context": [
+     "            tvae_columns = ['sentiment_label', 'tweet_len', 'num_hashtags', 'num_mentions', 'brand']",
+     "            tvae_data = df[tvae_columns].copy()",
+     "            ",
+     "            # Initialize and train TVAE",
+     "            synthesizer = TVAESynthesizer(epochs=50, verbose=False)",
+     "            synthesizer.fit(tvae_data)",
+     "            ",
+     "            # Generate synthetic samples",
+     "            synthetic_data = synthesizer.sample(num_rows=n_samples)"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv>=1.0.0"
+  ]
+ }
+}

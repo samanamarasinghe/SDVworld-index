@@ -1,0 +1,141 @@
+{
+ "repo": "caeher/factores-de-riesgos-sintetizado",
+ "disk_kb": 28,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# FRS — Síntesis de datos SLV2013\n\nPipeline Python para generar **datos sintéticos** de la encuesta de factores de riesgo Salvador 2013 (`SLV2013_Public_Use.csv`), preservando distribuciones, patrones de missing y coherencia entre variables Q, QN e indicadores derivados.\n\n## Requisitos\n\n- Python 3.11–3.13\n- `pip`\n\n## Instalación\n\n```powershell\ncd C:\\Users\\echoe\\Desktop\\frs\n\npython -m venv .venv\n.\\.venv\\Scripts\\Activate.ps1\npip install -r requirements.txt\n```\n\n## Dataset de entrada\n\nColoca el archivo real en `data/input/SLV2013_Public_Use.csv`.\n\n| Grupo | Columnas | Descripción |\n|-------|----------|-------------|\n| Q1–Q58 | 49 cols | Preguntas originales (edad, sexo, altura, peso, alimentación, etc.) |\n| QN6–QN58 | 53 cols | Recodificaciones numéricas de Q6–Q58 |\n| Derivadas | 8 cols | `qnowtg`, `qnobeseg`, `qnunwtg`, `qnfrvgg`, `qnpa7g`, `qnpe5g`, `qnc1g`, `qnc2g` |\n| Diseño | 3 cols | `weight`, `stratum`, `psu` |\n\n**Missing SPSS/Stata:** el valor `1.79769313486232e+308` (máximo float64) representa nulo. El pipeline lo convierte a `NaN` en memoria y lo restaura al exportar.\n\n## Uso\n\n### 1. Generar perfil de columnas (opcional)\n\n```powershell\npython main.py profile --input data/input/SLV2013_Public_Use.csv\n```\n\nEscribe [`config/schema.yaml`](config/schema.yaml) con tipos, rangos y % missing por columna.\n\n### 2. Sintetizar datos\n\n```powershell\npython main.py synthesize `\n  --input data/input/SLV2013_Public_Use.csv `\n  --output data/output/synthetic_SLV2013.csv `\n  -n 20000 `\n  --seed 42 `\n  --validate\n```\n\n\n| Flag | Descripción |\n|------|-------------|\n| `-n` / `--rows` | Número de filas sintéticas (obligatorio) |\n| `--input` | CSV fuente (default: `data/input/SLV2013_Public_Use.csv`) |\n| `--output` | CSV de salida (default: `data/output/synthetic_{timestamp}.csv`) |\n| `--seed` | Semilla para reproducibilidad |\n| `--schema` | Ruta al schema YAML |\n| `--validate` | Genera reporte JSON/MD de fidelidad |\n\n## Arquitectura\n\n```\nCSV real → preproceso (sentinel → NaN)\n         → SDV GaussianCopula (Q1–Q58 + weight/stratum/psu)\n         → patrones de missing por estrato\n         → recodificación Q→QN (determinística)\n         → indicadores derivados (IMC + reglas condicionales)\n         → export CSV con sentinel SPSS\n```\n\n- **No se sintetizan** QN ni derivadas directamente; se calculan desde las Q para mantener coherencia.\n- Combinaciones `(stratum, psu)` inválidas se reemplazan por pares observados en el dato real.\n\n## Estructura del proyecto\n\n```\nfrs/\n├── config/schema.yaml      # Metadatos de columnas\n├── data/input/             # Datos reales (gitignored)\n├── data/output/            # Sintéticos y reportes (gitignored)\n├── frs/\n│   ├── constants.py        # Sentinel SPSS, grupos de columnas\n│   ├── io.py               # Carga/exportación CSV\n│   ├── preprocess.py       # Perfilado y missing patterns\n│   ├── metadata.py         # Metadatos SDV\n│   ├── mappings.py         # Tablas Q→QN\n│   ├── derive.py           # Indicadores globales\n│   ├── synthesizer.py      # Motor principal\n│   └── validate.py         # Métricas de fidelidad\n├── main.py                 # CLI\n└── requirements.txt\n```\n\n## Validación\n\nCon `--validate` se genera un reporte junto al CSV (`*.validation.json` y `*.validation.md`) con:\n\n- Test KS para variables continuas (`Q4`, `Q5`, `weight`)\n- Distancia de variación total (TVD) en categóricas\n- Diferencia de % missing por columna\n- Coherencia Q↔QN e indicadores derivados\n\n> Con pocos registros sintéticos (p. ej. n=100) las métricas marginales pueden variar mucho. Use n ≥ 1.915 para comparaciones más estables.\n\n## Privacidad\n\nLos datos sintéticos reducen exposición de registros reales, pero **no garantizan anonimato**. Evalúe riesgo de re-identificación antes de publicar o compartir.\n\n## Licencia\n\nMIT — ver [LICENSE](LICENSE).\n",
+ "hits": {
+  "md": [
+   {
+    "file": "frs/metadata.py",
+    "line": 8,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "from typing import Any",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from frs.constants import CONTINUOUS_COLUMNS, DESIGN_COLUMNS, SYNTH_COLUMNS",
+     "",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "frs/metadata.py",
+    "line": 8,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "from typing import Any",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from frs.constants import CONTINUOUS_COLUMNS, DESIGN_COLUMNS, SYNTH_COLUMNS",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "frs/synthesizer.py",
+    "line": 10,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "from typing import Any",
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "from frs.constants import ALL_COLUMNS, SYNTH_COLUMNS",
+     "from frs.derive import DerivedRules, apply_global_indicators, learn_derived_rules",
+     "from frs.io import load_schema, load_survey, save_survey"
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "frs/synthesizer.py",
+    "line": 10,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "from typing import Any",
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "from frs.constants import ALL_COLUMNS, SYNTH_COLUMNS",
+     "from frs.derive import DerivedRules, apply_global_indicators, learn_derived_rules",
+     "from frs.io import load_schema, load_survey, save_survey"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "frs/synthesizer.py",
+    "line": 10,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "from typing import Any",
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "from frs.constants import ALL_COLUMNS, SYNTH_COLUMNS",
+     "from frs.derive import DerivedRules, apply_global_indicators, learn_derived_rules",
+     "from frs.io import load_schema, load_survey, save_survey"
+    ]
+   },
+   {
+    "file": "frs/synthesizer.py",
+    "line": 38,
+    "text": "self._synthesizer: GaussianCopulaSynthesizer | None = None",
+    "context": [
+     "    def __init__(self, schema_path: str | Path = \"config/schema.yaml\") -> None:",
+     "        self.schema_path = Path(schema_path)",
+     "        self.schema: dict[str, Any] = load_schema(self.schema_path)",
+     "        self._source_df: pd.DataFrame | None = None",
+     "        self._synthesizer: GaussianCopulaSynthesizer | None = None",
+     "        self._qn_mappings: dict[str, dict[str, Any]] = {}",
+     "        self._derived_rules: DerivedRules = DerivedRules()",
+     "        self._missing_patterns: MissingPatterns = MissingPatterns()",
+     "        self._valid_combos: set[tuple[str, str]] = set()"
+    ]
+   },
+   {
+    "file": "frs/synthesizer.py",
+    "line": 54,
+    "text": "self._synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "        self._valid_combos = get_valid_design_combos(df)",
+     "",
+     "        fit_df = prepare_fit_dataframe(df)",
+     "        metadata = build_sdv_metadata(df, self.schema)",
+     "        self._synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "        self._synthesizer.fit(fit_df)",
+     "",
+     "    def sample(self, n: int, seed: int | None = None) -> pd.DataFrame:",
+     "        \"\"\"Genera n filas sintéticas con derivaciones y missing SPSS-ready.\"\"\""
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv>=1.17.0"
+  ]
+ }
+}

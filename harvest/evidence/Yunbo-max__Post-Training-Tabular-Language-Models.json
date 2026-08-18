@@ -1,0 +1,252 @@
+{
+ "repo": "Yunbo-max/Post-Training-Tabular-Language-Models",
+ "disk_kb": 138,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Post-Training for Tabular Language Models\n\nReference implementation of an iterative **reward-guided post-training**\nframework for tabular language-model generators (**TabGRAA** — Tabular\nGroup-Relative Advantage Alignment).\n\nStarting from a supervised fine-tuned tabular language model (default\nbackbone: GReaT / DistilGPT-2), the loop repeatedly samples synthetic rows,\nscores them with a task-specified reward, partitions them into high- and\nlow-reward groups, and updates the generator with a group-relative\npolicy/reference objective. The same iterative pipeline also runs adapted\n**DPO**, **NPO**, and **KTO** baselines and supports KL / gradient-difference\nretain-set regularizers.\n\n\n## Highlights\n\n- **Iterative reward-guided alignment** — sample → score → group → update,\n  repeated for $T$ rounds with a fixed SFT reference.\n- **Group-relative advantage objective** — mean over reward strata *before*\n  the log-sigmoid, an inductive bias for distributional alignment.\n- **Reward programmability** — swap in classifier, DCR, held-out, structural,\n  or constraint-style (forget-region) rewards without retraining.\n- **Deployment-style studies** — target-distribution adaptation and\n  forget-region suppression.\n- **Full evaluation suite** — fidelity (CDE/PCC/α/β), utility (MLE),\n  detection (C2ST, DA), and privacy-oriented indistinguishability (MIA).\n\n\n## Repository layout\n\n```\n.\n├── iterative_dpo_trainer.py            # Main iterative post-training loop\n├── loss.py                             # Loss helpers\n├── dataset.py                          # Dataset wrappers\n├── reward_scorers.py                   # Pluggable reward scorers\n├── utils.py                            # Shared utilities\n│\n├── generate_dpo_synthetic.py           # Default classifier-reward generation\n├── generate_dpo_synthetic_dcr.py       # DCR (classifier-free) reward\n├── generate_dpo_synthetic_holdout.py   # Held-out classifier reward\n├── generate_dpo_synthetic_random_*.py  # Random-scoring / random-group ablations\n├── generate_dpo_synthetic_structure.py # Structural-fidelity reward\n├── generate_dpo_synthetic_unlearn.py   # Forget-region suppression reward\n│\n├── baselines/\n│   └── great/                          # GReaT backbone (DistilGPT-2 tabular LM)\n│       ├── main.py / sample.py / utils.py / post_process.py\n│       └── models/\n│\n├── eval/                               # Full evaluation suite\n│   ├── eval_quality.py                 # CDE / PCC / α / β\n│   ├── eval_density.py                 # Marginal / joint density\n│   ├── eval_detection.py               # C2ST / DA AUC\n│   ├── eval_mle.py                     # Downstream ML utility\n│   ├── eval_dcr.py                     # Distance to Closest Record\n│   ├── eval_privacy.py                 # Aggregate privacy metrics\n│   ├── eval_mia_proper.py              # MIA AUC\n│   ├── eval_holdout_classifier.py\n│   ├── eval_statistical_distances.py\n│   ├── eval_structural_fidelity.py\n│   └── {density,mle,quality,statistical}/   # per-dataset configs\n│\n├── privacy/                            # Standalone privacy attack scripts\n│   ├── privacy_attack.py\n│   └── privacy_mia_standalone.py\n│\n├── data_tools/                         # Dataset download / process / clean\n│   ├── download_dataset.py\n│   ├── process_dataset.py\n│   ├── clean_dataset.py\n│   └── alpaca_template.py\n│\n├── scripts/                            # Reproducibility shell scripts\n│   ├── run_full_pipeline.sh\n│   ├── run_loss_variants.sh\n│   ├── run_reward_dcr.sh\n│   └── run_reward_holdout.sh\n│\n├── data/Info/                          # Dataset schema definitions\n│\n├── docs/                               # Extended documentation\n├── README.md  ·  LICENSE  ·  requirements.txt  ·  .gitignore\n```\n\n\n## Installation\n\n```bash\ngit clone <this-repo>\ncd Post-Training-Tabular-Language-Models\npip install -r requirements.txt\n```\n\nTested with Python 3.9–3.11, PyTorch ≥ 2.0, Transformers ≥ 4.30.\n\n\n## Datasets\n\nThe default benchmarks are five mixed-type tabular datasets: **Adult**,\n**Default**, **Magic**, **Shoppers**, and **Beijing**. Schema definitions are\nprovided in `data/Info/*.json`.\n\n```bash\n# Download raw CSV\npython data_tools/download_dataset.py --dataset adult\n\n# Pre-process into the expected layout\npython data_tools/process_dataset.py  --dataset adult\n```\n\n\n## Quick start\n\n### 1. Supervised fine-tune the GReaT backbone\n\n```bash\npython baselines/great/main.py \\\n    --dataname adult \\\n    --epochs 100 \\\n    --batch_size 16\n```\n\n### 2. Iterative TabGRAA post-training\n\n```bash\npython iterative_dpo_trainer.py \\\n    --dataname adult \\\n    --loss_type tabgraa \\\n    --epochs 5 \\\n    --batch_size 4 \\\n    --learning_rate 5e-7 \\\n    --beta 1.0 \\\n    --top_percent 100 \\\n    --n_samples_per_iter 10\n```\n\n### 3. Evaluate\n\n```bash\npython eval/eval_quality.py            --dataname adult --syn_path <synthetic.csv>\npython eval/eval_density.py            --dataname adult --syn_path <synthetic.csv>\npython eval/eval_detection.py          --dataname adult --syn_path <synthetic.csv>\npython eval/eval_mle.py                --dataname adult --syn_path <synthetic.csv>\npython eval/eval_statistical_distances.py --dataname adult --syn_path <synthetic.csv>\npython eval/eval_mia_proper.py         --dataname adult --syn_path <synthetic.csv>\n```\n\n\n## Supported objectives (`--loss_type`)\n\n| `--loss_type`                       | Method                                                  |\n|-------------------------------------|---------------------------------------------------------|\n| `tabgraa`                           | **TabGRAA base** (sigmoid form, default)                |\n| `tabgraa_logsigmoid`                | TabGRAA log-sigmoid form                                |\n| `tabgraa_logsigmoid_grad_diff`      | TabGRAA log-sigmoid + retain-anchor gradient diff       |\n| `dpo`                               | TabDPO baseline                                         |\n| `dpo_kl`                            | TabDPO + retain-anchor KL                               |\n| `dpo_grad_diff`                     | TabDPO + retain-anchor gradient diff                    |\n| `npo`                               | TabNPO baseline                                         |\n| `npo_kl`                            | TabNPO + retain-anchor KL                               |\n| `npo_grad_diff`                     | TabNPO + retain-anchor gradient diff                    |\n| `kto`                               | TabKTO baseline                                         |\n\nFor variants with `_kl` / `_grad_diff` / `tabgraa_logsigmoid_grad_diff`, the\ntrainer auto-builds a retain (anchor) batch from the first 100 rows of the\nreal training CSV — see the appendix in the paper for details.\n\n\n## Reward-substitution variants\n\n```bash\n# DCR-based reward (classifier-free)\npython generate_dpo_synthetic_dcr.py     --dataname adult --loss_type tabgraa\n\n# Held-out classifier reward (scorer never sees the rows it evaluates)\npython generate_dpo_synthetic_holdout.py --dataname adult --loss_type tabgraa\n\n# Structural-fidelity reward (joint-distribution preservation)\npython generate_dpo_synthetic_structure.py --dataname adult --loss_type tabgraa\n\n# Forget-region suppression\npython generate_dpo_synthetic_unlearn.py --dataname adult --loss_type tabgraa \\\n    --forget_cond \"age >= 65\"\n```\n\nRandom-control ablations:\n\n```bash\npython generate_dpo_synthetic_random_scoring.py  --dataname adult --loss_type tabgraa\npython generate_dpo_synthetic_random_group.py    --dataname adult --loss_type tabgraa\n```\n\n\n## Reproducing the paper results\n\nEnd-to-end sweeps with the provided shell scripts:\n\n```bash\n# Table: loss-variant comparison, averaged across 5 benchmarks\nfor ds in adult default magic shoppers beijing; do\n    bash scripts/run_loss_variants.sh --dataname \"$ds\"\ndone\n\n# Reward-substitution: DCR / held-out\nbash scripts/run_reward_dcr.sh     --dataname adult\nbash scripts/run_reward_holdout.sh --dataname adult\n```\n\nSynthetic outputs are written under `synthetic/<dataset>/` and consumed by\nthe evaluation scripts above.\n\n\n## Privacy attacks (optional)\n\n```bash\npython privacy/privacy_attack.py        --dataname adult --syn_path <synthetic.csv>\npython privacy/privacy_mia_standalone.py --dataname adult --syn_path <synthetic.csv>\n```\n\n\n## Citation\n\n```bibtex\n@article{tabgraa2026,\n  title  = {Self-Improving Tabular Language Models via\n            Iterative Reward-Guided Alignment},\n  author = {Anonymous},\n  year   = {2026},\n  note   = {Under review}\n}\n```\n\n\n## License\n\nReleased under the MIT License — see [LICENSE](LICENSE).\n",
+ "hits": {
+  "rdt": [
+   {
+    "file": "generate_dpo_synthetic_random_group.py",
+    "line": 9,
+    "text": "from rdt import HyperTransformer",
+    "context": [
+     "import matplotlib.pyplot as plt",
+     "import seaborn as sns",
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.ensemble import RandomForestClassifier",
+     "from rdt import HyperTransformer",
+     "from rdt.transformers import OneHotEncoder, GaussianNormalizer",
+     "from xgboost import XGBClassifier",
+     "# Add these imports at the TOP",
+     "import pickle"
+    ]
+   },
+   {
+    "file": "generate_dpo_synthetic_random_group.py",
+    "line": 10,
+    "text": "from rdt.transformers import OneHotEncoder, GaussianNormalizer",
+    "context": [
+     "import seaborn as sns",
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.ensemble import RandomForestClassifier",
+     "from rdt import HyperTransformer",
+     "from rdt.transformers import OneHotEncoder, GaussianNormalizer",
+     "from xgboost import XGBClassifier",
+     "# Add these imports at the TOP",
+     "import pickle",
+     "import re"
+    ]
+   },
+   {
+    "file": "generate_dpo_synthetic_holdout.py",
+    "line": 25,
+    "text": "from rdt import HyperTransformer",
+    "context": [
+     "import matplotlib.pyplot as plt",
+     "import seaborn as sns",
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.ensemble import RandomForestClassifier",
+     "from rdt import HyperTransformer",
+     "from rdt.transformers import OneHotEncoder, GaussianNormalizer",
+     "from xgboost import XGBClassifier",
+     "import pickle",
+     "import re"
+    ]
+   },
+   {
+    "file": "generate_dpo_synthetic_holdout.py",
+    "line": 26,
+    "text": "from rdt.transformers import OneHotEncoder, GaussianNormalizer",
+    "context": [
+     "import seaborn as sns",
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.ensemble import RandomForestClassifier",
+     "from rdt import HyperTransformer",
+     "from rdt.transformers import OneHotEncoder, GaussianNormalizer",
+     "from xgboost import XGBClassifier",
+     "import pickle",
+     "import re",
+     ""
+    ]
+   },
+   {
+    "file": "generate_dpo_synthetic_random_scoring.py",
+    "line": 9,
+    "text": "from rdt import HyperTransformer",
+    "context": [
+     "import matplotlib.pyplot as plt",
+     "import seaborn as sns",
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.ensemble import RandomForestClassifier",
+     "from rdt import HyperTransformer",
+     "from rdt.transformers import OneHotEncoder, GaussianNormalizer",
+     "from xgboost import XGBClassifier",
+     "# Add these imports at the TOP",
+     "import pickle"
+    ]
+   },
+   {
+    "file": "generate_dpo_synthetic_random_scoring.py",
+    "line": 10,
+    "text": "from rdt.transformers import OneHotEncoder, GaussianNormalizer",
+    "context": [
+     "import seaborn as sns",
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.ensemble import RandomForestClassifier",
+     "from rdt import HyperTransformer",
+     "from rdt.transformers import OneHotEncoder, GaussianNormalizer",
+     "from xgboost import XGBClassifier",
+     "# Add these imports at the TOP",
+     "import pickle",
+     "import re"
+    ]
+   },
+   {
+    "file": "generate_dpo_synthetic.py",
+    "line": 9,
+    "text": "from rdt import HyperTransformer",
+    "context": [
+     "import matplotlib.pyplot as plt",
+     "import seaborn as sns",
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.ensemble import RandomForestClassifier",
+     "from rdt import HyperTransformer",
+     "from rdt.transformers import OneHotEncoder, GaussianNormalizer",
+     "from xgboost import XGBClassifier",
+     "# Add these imports at the TOP",
+     "import pickle"
+    ]
+   },
+   {
+    "file": "generate_dpo_synthetic.py",
+    "line": 10,
+    "text": "from rdt.transformers import OneHotEncoder, GaussianNormalizer",
+    "context": [
+     "import seaborn as sns",
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.ensemble import RandomForestClassifier",
+     "from rdt import HyperTransformer",
+     "from rdt.transformers import OneHotEncoder, GaussianNormalizer",
+     "from xgboost import XGBClassifier",
+     "# Add these imports at the TOP",
+     "import pickle",
+     "import re"
+    ]
+   },
+   {
+    "file": "privacy/privacy_attack.py",
+    "line": 1,
+    "text": "from rdt import HyperTransformer",
+    "context": [
+     "from rdt import HyperTransformer",
+     "from rdt.transformers import OneHotEncoder, GaussianNormalizer",
+     "import pandas as pd",
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.ensemble import RandomForestClassifier"
+    ]
+   },
+   {
+    "file": "privacy/privacy_attack.py",
+    "line": 2,
+    "text": "from rdt.transformers import OneHotEncoder, GaussianNormalizer",
+    "context": [
+     "from rdt import HyperTransformer",
+     "from rdt.transformers import OneHotEncoder, GaussianNormalizer",
+     "import pandas as pd",
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.ensemble import RandomForestClassifier",
+     "from sklearn.metrics import roc_auc_score"
+    ]
+   },
+   {
+    "file": "eval/eval_holdout_classifier.py",
+    "line": 36,
+    "text": "from rdt import HyperTransformer",
+    "context": [
+     "from sklearn.metrics import accuracy_score, roc_auc_score, classification_report",
+     "from xgboost import XGBClassifier",
+     "from sklearn.neural_network import MLPClassifier",
+     "from sklearn.ensemble import RandomForestClassifier",
+     "from rdt import HyperTransformer",
+     "from rdt.transformers import OneHotEncoder, GaussianNormalizer",
+     "",
+     "",
+     "def update_config(config):"
+    ]
+   },
+   {
+    "file": "eval/eval_holdout_classifier.py",
+    "line": 37,
+    "text": "from rdt.transformers import OneHotEncoder, GaussianNormalizer",
+    "context": [
+     "from xgboost import XGBClassifier",
+     "from sklearn.neural_network import MLPClassifier",
+     "from sklearn.ensemble import RandomForestClassifier",
+     "from rdt import HyperTransformer",
+     "from rdt.transformers import OneHotEncoder, GaussianNormalizer",
+     "",
+     "",
+     "def update_config(config):",
+     "    \"\"\"Update HyperTransformer config.\"\"\""
+    ]
+   }
+  ],
+  "sm": [
+   {
+    "file": "eval/eval_density.py",
+    "line": 8,
+    "text": "from sdmetrics.reports.single_table import QualityReport",
+    "context": [
+     "",
+     "import json",
+     "",
+     "# Metrics",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "",
+     "",
+     "import argparse",
+     ""
+    ]
+   },
+   {
+    "file": "eval/eval_detection.py",
+    "line": 10,
+    "text": "from sdmetrics import load_demo",
+    "context": [
+     "import json",
+     "import pickle",
+     "",
+     "# Metrics",
+     "from sdmetrics import load_demo",
+     "from sdmetrics.single_table import LogisticDetection",
+     "from sklearn.preprocessing import OneHotEncoder",
+     "",
+     "from matplotlib import pyplot as plt"
+    ]
+   },
+   {
+    "file": "eval/eval_detection.py",
+    "line": 11,
+    "text": "from sdmetrics.single_table import LogisticDetection",
+    "context": [
+     "import pickle",
+     "",
+     "# Metrics",
+     "from sdmetrics import load_demo",
+     "from sdmetrics.single_table import LogisticDetection",
+     "from sklearn.preprocessing import OneHotEncoder",
+     "",
+     "from matplotlib import pyplot as plt",
+     ""
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "rdt",
+  "sm"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

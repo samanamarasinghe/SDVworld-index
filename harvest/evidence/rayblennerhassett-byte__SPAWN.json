@@ -1,0 +1,418 @@
+{
+ "repo": "rayblennerhassett-byte/SPAWN",
+ "disk_kb": 9640,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Spawner Skills\n\n> **[spawner.vibeship.co](https://spawner.vibeship.co)** | **[Browse All Skills](https://spawner.vibeship.co/skills)**\n\n**462 production-grade skills** for Claude. Zero cost, works offline. Full MCP integration.\n\n## Why Spawner Skills?\n\nMost \"AI prompts\" are just text files. Spawner Skills are **production-grade knowledge systems** with 4 specialized files per skill:\n\n```\nmaker/micro-saas-launcher/\n├── skill.yaml           # Identity, patterns, anti-patterns, handoffs\n├── sharp-edges.yaml     # Gotchas with detection patterns\n├── validations.yaml     # Automated code quality checks\n└── collaboration.yaml   # How skills work together\n```\n\n### What Makes Our Skills Different\n\n| Feature | Regular Prompts | Spawner Skills |\n|---------|-----------------|----------------|\n| **Patterns** | Generic advice | Battle-tested implementation code |\n| **Anti-patterns** | None | \"Don't do this because...\" with alternatives |\n| **Sharp Edges** | None | Gotchas with automatic detection |\n| **Validations** | None | Regex patterns that catch mistakes |\n| **Collaboration** | None | Skills delegate to each other |\n| **Severity Levels** | None | Critical, high, medium, low |\n\n---\n\n## Quick Start\n\n```bash\n# Full setup: Skills + MCP server (recommended)\nnpx github:vibeforge1111/vibeship-spawner-skills install --mcp\n```\n\nThis one command:\n- Installs 462 skills to `~/.spawner/skills/`\n- Configures the Spawner MCP server for Claude Desktop & Claude Code\n- Enables project memory, code validation, sharp edge detection\n\n### Other Commands\n\n```bash\n# Just install skills (no MCP)\nnpx github:vibeforge1111/vibeship-spawner-skills install\n\n# Add MCP to existing installation\nnpx github:vibeforge1111/vibeship-spawner-skills setup-mcp\n\n# Update skills to latest\nnpx github:vibeforge1111/vibeship-spawner-skills update\n\n# Check status\nnpx github:vibeforge1111/vibeship-spawner-skills status\n```\n\n### Manual Clone (Alternative)\n\n```bash\ngit clone https://github.com/vibeforge1111/vibeship-spawner-skills ~/.spawner/skills\n```\n\n---\n\n## The 4-File Skill System\n\n### 1. `skill.yaml` - Identity & Patterns\n\nDefines who the skill is and how it works:\n\n```yaml\nid: micro-saas-launcher\nname: Micro-SaaS Launcher\nidentity:\n  role: SaaS Launch Architect\n  personality: |\n    You've launched 12 micro-SaaS products. You know the difference\n    between \"building\" and \"shipping.\" You push for MVP ruthlessly.\n\npatterns:\n  - name: 2-Week MVP\n    when_to_use: Starting any new SaaS\n    implementation: |\n      Week 1: Core feature + auth + payments\n      Week 2: Landing page + launch\n\nanti_patterns:\n  - name: Feature Creep Before Launch\n    why_bad: You'll never ship. Users don't want features, they want solutions.\n    what_to_do_instead: Launch with ONE core feature. Add more based on feedback.\n\nhandoffs:\n  - trigger: \"landing page|sales page\"\n    to: landing-page-design\n    context: \"SaaS landing page needed\"\n```\n\n### 2. `sharp-edges.yaml` - Gotchas & Warnings\n\nThings that bite you in production:\n\n```yaml\nsharp_edges:\n  - id: no-distribution-plan\n    summary: Building without knowing how to reach customers\n    severity: critical\n    situation: You're building but have no idea where customers will come from\n    why: |\n      Distribution is harder than building.\n      \"If you build it, they will come\" is a lie.\n      Most failed startups had good products, bad distribution.\n    solution: |\n      ## Before Writing Code, Answer:\n\n      | Question | Your Answer |\n      |----------|-------------|\n      | Where do your customers hang out? | _________ |\n      | Can you reach 100 of them this week? | _________ |\n      | What's your unfair distribution advantage? | _________ |\n\n      If you can't answer these, STOP BUILDING.\n    symptoms:\n      - \"I'll figure out marketing later\"\n      - \"The product will sell itself\"\n      - Building for 3+ months with no users\n    detection_pattern: \"marketing later|users will come|viral\"\n```\n\n### 3. `validations.yaml` - Automated Code Checks\n\nCatch mistakes before they ship:\n\n```yaml\nvalidations:\n  - id: no-payment-integration\n    name: No Payment Integration\n    severity: critical\n    type: conceptual\n    check: \"SaaS should have payment integration\"\n    indicators:\n      - \"No Stripe/payment code\"\n      - \"Free tier only\"\n      - \"Payment coming soon\"\n    message: \"No payment integration - you're building a hobby, not a business.\"\n    fix_action: \"Add Stripe checkout before launch. No exceptions.\"\n\n  - id: api-key-exposed\n    name: API Key in Frontend Code\n    severity: critical\n    type: regex\n    pattern: '(sk_live_|sk_test_)[a-zA-Z0-9]{20,}'\n    file_patterns:\n      - \"*.js\"\n      - \"*.ts\"\n      - \"*.tsx\"\n    message: \"Stripe secret key exposed in frontend code!\"\n    fix_action: \"Move to environment variables on backend\"\n```\n\n### 4. `collaboration.yaml` - Skill Teamwork\n\nHow skills work together:\n\n```yaml\nreceives_from:\n  - skill: landing-page-design\n    context: \"SaaS landing page\"\n    receives:\n      - \"Conversion-optimized design\"\n      - \"Hero section structure\"\n    provides: \"Complete SaaS product launch\"\n\ndelegation_triggers:\n  - trigger: \"landing page|sales page\"\n    delegate_to: landing-page-design\n    pattern: sequential\n    context: \"Need landing page for SaaS\"\n\n  - trigger: \"SEO|organic traffic\"\n    delegate_to: seo\n    pattern: parallel\n    context: \"SEO for SaaS content\"\n\ncommon_combinations:\n  - name: Full SaaS Launch\n    skills:\n      - micro-saas-launcher\n      - landing-page-design\n      - stripe\n      - seo\n    workflow: |\n      1. Validate idea (micro-saas-launcher)\n      2. Build MVP with payments (micro-saas-launcher + stripe)\n      3. Create landing page (landing-page-design)\n      4. Launch and iterate\n      5. Add SEO for organic growth (seo)\n```\n\n---\n\n## What You Get\n\n### Local Skills (462)\nClaude reads YAML files directly from `~/.spawner/skills/`:\n- Patterns, anti-patterns, best practices\n- Sharp edges (gotchas) for each technology\n- Works offline, zero API cost\n\n### MCP Server Tools\nWhen you use `--mcp`, these tools become available:\n\n| Tool | What It Does |\n|------|--------------|\n| `spawner_orchestrate` | Auto-routes your request to the right workflow |\n| `spawner_validate` | Runs guardrail checks on your code |\n| `spawner_remember` | Saves decisions for future sessions |\n| `spawner_watch_out` | Surfaces relevant sharp edges |\n| `spawner_unstick` | Helps when you're going in circles |\n| `spawner_skills` | Searches and loads skills by context |\n\n---\n\n## Skill Categories (35)\n\n| Category | Count | Description |\n|----------|-------|-------------|\n| game-dev | 51 | Unity, Godot, Phaser, multiplayer, game design |\n| marketing | 36 | AI video, copywriting, SEO, content, viral |\n| integrations | 25 | AWS, GCP, Stripe, Discord, Slack, Twilio |\n| ai | 24 | LLM architect, embeddings, fine-tuning, NLP |\n| strategy | 24 | Product strategy, growth, competitive intel |\n| ai-agents | 23 | Autonomous agents, browser automation, voice |\n| creative | 23 | Memes, easter eggs, gamification, viral hooks |\n| devops | 22 | CI/CD, Docker, K8s, observability, SRE |\n| backend | 21 | APIs, microservices, queues, caching |\n| blockchain | 20 | Smart contracts, DeFi, NFTs, Solana |\n| security | 13 | Auth, OWASP, compliance, privacy |\n| ai-tools | 12 | Code generation, image editing, multimodal |\n| design | 12 | UI, UX, branding, landing pages |\n| frameworks | 12 | Next.js, React, Svelte, Supabase, Tailwind |\n| community | 11 | Discord, Telegram, DevRel, ambassador programs |\n| data | 11 | Postgres, Redis, vectors, graphs, temporal |\n| maker | 11 | Viral tools, bots, extensions, SaaS, templates |\n| mind | 10 | Debugging, decision-making, system design |\n| development | 9 | General development utilities |\n| frontend | 8 | React, mobile, state management |\n| testing | 8 | QA, test architecture, code review |\n| education | 7 | Course creation, AI tutoring, learning design |\n| product | 7 | A/B testing, analytics, PM |\n| biotech | 6 | Genomics, drug discovery, lab automation |\n| enterprise | 6 | Compliance, governance, architecture |\n| finance | 6 | Algo trading, DeFi, derivatives |\n| hardware | 6 | Embedded, FPGA, robotics, sensors |\n| trading | 6 | Execution algorithms, quant research |\n| climate | 5 | Carbon, energy, sustainability |\n| communications | 5 | Dev comms, crisis, stakeholder |\n| legal | 5 | Contracts, GDPR, patents, SOX |\n| simulation | 5 | Monte Carlo, digital twin, physics |\n| space | 5 | Orbital mechanics, mission planning |\n| science | 4 | Experimental design, statistics |\n| startup | 3 | YC playbook, founder mode |\n\n**[Browse all 462 skills](https://spawner.vibeship.co/skills)**\n\n---\n\n## Skill Packs\n\n| Pack | Description |\n|------|-------------|\n| `essentials` | Core skills for building apps (auto-installed) |\n| `agents` | Autonomous agents and automation |\n| `community` | Community building and management |\n| `education` | Course creation and online learning |\n| `maker` | Viral tools, bots, extensions, SaaS |\n| `enterprise` | Compliance and governance |\n| `finance` | Trading and fintech |\n| `mind` | Debugging and decision-making |\n| `specialized` | Biotech, space, climate, hardware |\n| `complete` | All 462 skills |\n\n---\n\n## Documentation\n\n- **[Skills Directory](SKILLS_DIRECTORY.md)** - Complete list of all 462 skills\n- **[Getting Started Guide](GETTING_STARTED.md)** - How to use skills effectively\n- **[Contributing](CONTRIBUTING.md)** - How to add or improve skills\n\n---\n\n## How It Works\n\n1. Install skills with `npx github:vibeforge1111/vibeship-spawner-skills install`\n2. Tell Claude to read a skill: `Read: ~/.spawner/skills/maker/micro-saas-launcher/skill.yaml`\n3. Claude now has specialist knowledge - ask it to build something!\n\n---\n\n## License\n\nApache 2.0\n",
+ "hits": {
+  "st": [
+   {
+    "file": "ai/synthetic-data/collaboration.yaml",
+    "line": 463,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "            // Python script",
+     "            const script = `",
+     "import json",
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "with open('${inputPath}', 'r') as f:",
+     "    data = json.load(f)"
+    ]
+   },
+   {
+    "file": "ai/synthetic-data/skill.yaml",
+    "line": 169,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "        // Python script for SDV",
+     "        const pythonScript = `",
+     "import json",
+     "import sys",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import pandas as pd",
+     "",
+     "# Load data"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "ai/synthetic-data/collaboration.yaml",
+    "line": 464,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "            const script = `",
+     "import json",
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "with open('${inputPath}', 'r') as f:",
+     "    data = json.load(f)",
+     ""
+    ]
+   },
+   {
+    "file": "ai/synthetic-data/skill.yaml",
+    "line": 170,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "        const pythonScript = `",
+     "import json",
+     "import sys",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import pandas as pd",
+     "",
+     "# Load data",
+     "with open('${inputPath}', 'r') as f:"
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "ai/synthetic-data/collaboration.yaml",
+    "line": 519,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "",
+     "            const script = `",
+     "import json",
+     "import pandas as pd",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "real_df = pd.DataFrame(json.load(open('${realPath}')))",
+     "synth_df = pd.DataFrame(json.load(open('${synthPath}')))",
+     ""
+    ]
+   },
+   {
+    "file": "ai/synthetic-data/skill.yaml",
+    "line": 228,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "        synthetic: unknown[]",
+     "      ): Promise<QualityMetrics> {",
+     "        const pythonScript = `",
+     "import json",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "import pandas as pd",
+     "",
+     "real_df = pd.DataFrame(${JSON.stringify(real)})",
+     "synthetic_df = pd.DataFrame(${JSON.stringify(synthetic)})"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "ai/synthetic-data/collaboration.yaml",
+    "line": 463,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "            // Python script",
+     "            const script = `",
+     "import json",
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "with open('${inputPath}', 'r') as f:",
+     "    data = json.load(f)"
+    ]
+   },
+   {
+    "file": "ai/synthetic-data/collaboration.yaml",
+    "line": 464,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "            const script = `",
+     "import json",
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "with open('${inputPath}', 'r') as f:",
+     "    data = json.load(f)",
+     ""
+    ]
+   },
+   {
+    "file": "ai/synthetic-data/collaboration.yaml",
+    "line": 519,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "",
+     "            const script = `",
+     "import json",
+     "import pandas as pd",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "real_df = pd.DataFrame(json.load(open('${realPath}')))",
+     "synth_df = pd.DataFrame(json.load(open('${synthPath}')))",
+     ""
+    ]
+   },
+   {
+    "file": "ai/synthetic-data/skill.yaml",
+    "line": 169,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "        // Python script for SDV",
+     "        const pythonScript = `",
+     "import json",
+     "import sys",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import pandas as pd",
+     "",
+     "# Load data"
+    ]
+   },
+   {
+    "file": "ai/synthetic-data/skill.yaml",
+    "line": 170,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "        const pythonScript = `",
+     "import json",
+     "import sys",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import pandas as pd",
+     "",
+     "# Load data",
+     "with open('${inputPath}', 'r') as f:"
+    ]
+   },
+   {
+    "file": "ai/synthetic-data/skill.yaml",
+    "line": 228,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "        synthetic: unknown[]",
+     "      ): Promise<QualityMetrics> {",
+     "        const pythonScript = `",
+     "import json",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "import pandas as pd",
+     "",
+     "real_df = pd.DataFrame(${JSON.stringify(real)})",
+     "synthetic_df = pd.DataFrame(${JSON.stringify(synthetic)})"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "ai/synthetic-data/collaboration.yaml",
+    "line": 463,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "            // Python script",
+     "            const script = `",
+     "import json",
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "with open('${inputPath}', 'r') as f:",
+     "    data = json.load(f)"
+    ]
+   },
+   {
+    "file": "ai/synthetic-data/collaboration.yaml",
+    "line": 475,
+    "text": "'ctgan': CTGANSynthesizer,",
+    "context": [
+     "metadata.detect_from_dataframe(df)",
+     "",
+     "synthesizers = {",
+     "    'gaussian_copula': GaussianCopulaSynthesizer,",
+     "    'ctgan': CTGANSynthesizer,",
+     "    'tvae': TVAESynthesizer,",
+     "}",
+     "",
+     "Synthesizer = synthesizers['${config.synthesizer}']"
+    ]
+   },
+   {
+    "file": "ai/synthetic-data/skill.yaml",
+    "line": 169,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "        // Python script for SDV",
+     "        const pythonScript = `",
+     "import json",
+     "import sys",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import pandas as pd",
+     "",
+     "# Load data"
+    ]
+   },
+   {
+    "file": "ai/synthetic-data/skill.yaml",
+    "line": 186,
+    "text": "'ctgan': CTGANSynthesizer,",
+    "context": [
+     "",
+     "# Choose synthesizer",
+     "synthesizer_map = {",
+     "    'gaussian_copula': GaussianCopulaSynthesizer,",
+     "    'ctgan': CTGANSynthesizer,",
+     "    'tvae': TVAESynthesizer,",
+     "}",
+     "",
+     "Synthesizer = synthesizer_map['${config.synthesizer}']"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "ai/synthetic-data/collaboration.yaml",
+    "line": 463,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "            // Python script",
+     "            const script = `",
+     "import json",
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "with open('${inputPath}', 'r') as f:",
+     "    data = json.load(f)"
+    ]
+   },
+   {
+    "file": "ai/synthetic-data/collaboration.yaml",
+    "line": 474,
+    "text": "'gaussian_copula': GaussianCopulaSynthesizer,",
+    "context": [
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(df)",
+     "",
+     "synthesizers = {",
+     "    'gaussian_copula': GaussianCopulaSynthesizer,",
+     "    'ctgan': CTGANSynthesizer,",
+     "    'tvae': TVAESynthesizer,",
+     "}",
+     ""
+    ]
+   },
+   {
+    "file": "ai/synthetic-data/skill.yaml",
+    "line": 169,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "        // Python script for SDV",
+     "        const pythonScript = `",
+     "import json",
+     "import sys",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import pandas as pd",
+     "",
+     "# Load data"
+    ]
+   },
+   {
+    "file": "ai/synthetic-data/skill.yaml",
+    "line": 185,
+    "text": "'gaussian_copula': GaussianCopulaSynthesizer,",
+    "context": [
+     "metadata.detect_from_dataframe(df)",
+     "",
+     "# Choose synthesizer",
+     "synthesizer_map = {",
+     "    'gaussian_copula': GaussianCopulaSynthesizer,",
+     "    'ctgan': CTGANSynthesizer,",
+     "    'tvae': TVAESynthesizer,",
+     "}",
+     ""
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "ai/synthetic-data/collaboration.yaml",
+    "line": 463,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "            // Python script",
+     "            const script = `",
+     "import json",
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "with open('${inputPath}', 'r') as f:",
+     "    data = json.load(f)"
+    ]
+   },
+   {
+    "file": "ai/synthetic-data/collaboration.yaml",
+    "line": 476,
+    "text": "'tvae': TVAESynthesizer,",
+    "context": [
+     "",
+     "synthesizers = {",
+     "    'gaussian_copula': GaussianCopulaSynthesizer,",
+     "    'ctgan': CTGANSynthesizer,",
+     "    'tvae': TVAESynthesizer,",
+     "}",
+     "",
+     "Synthesizer = synthesizers['${config.synthesizer}']",
+     "synth = Synthesizer(metadata)"
+    ]
+   },
+   {
+    "file": "ai/synthetic-data/skill.yaml",
+    "line": 169,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "        // Python script for SDV",
+     "        const pythonScript = `",
+     "import json",
+     "import sys",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import pandas as pd",
+     "",
+     "# Load data"
+    ]
+   },
+   {
+    "file": "ai/synthetic-data/skill.yaml",
+    "line": 187,
+    "text": "'tvae': TVAESynthesizer,",
+    "context": [
+     "# Choose synthesizer",
+     "synthesizer_map = {",
+     "    'gaussian_copula': GaussianCopulaSynthesizer,",
+     "    'ctgan': CTGANSynthesizer,",
+     "    'tvae': TVAESynthesizer,",
+     "}",
+     "",
+     "Synthesizer = synthesizer_map['${config.synthesizer}']",
+     "synthesizer = Synthesizer(metadata)"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ev",
+  "gc",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

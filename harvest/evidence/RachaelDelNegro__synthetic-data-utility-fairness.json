@@ -1,0 +1,129 @@
+{
+ "repo": "RachaelDelNegro/synthetic-data-utility-fairness",
+ "disk_kb": 1528,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Synthetic Tabular Data Evaluation\nSynthetic data is useful when real data cannot be shared or controlled, but it introduces **measurable tradeoffs in utility and fairness** that must be evaluated. This project evaluates whether synthetic data preserves fairness properties present in real datasets. Specifically, it compares **selection rate, true positive rate (TPR), false positive rate (FPR), and accuracy** across demographic groups for real vs. synthetic data, and visualizes where synthetic data introduces distortion.\n\n## Motivation\nSynthetic data is increasingly used to:\n- enable data sharing without exposing sensitive information\n- augment limited datasets\n- reduce privacy risks in ML pipelines\n\nHowever, synthetic data can silently alter group-level statistics, especially fairness-related metrics. Even small shifts in selection rate or error rates can have downstream consequences in high-stakes domains (e.g., hiring, lending, healthcare).\n\nThis project asks:\n> Does synthetic data preserve fairness metrics observed in the real data and where does it deviate most?\n\n## Dataset\n- **Base dataset:** [Adult Income dataset (UCI)](https://archive.ics.uci.edu/dataset/2/adult )\n  - Dropped `fnlwgt` to ensure fairness\n- **Protected attributes analyzed:**\n  - Sex\n  - Race\n- **Target variable:** Income > $50K\n- **Sythetic data:** Generated using a separate synthetic data pipeline (not trained on labels during evaluation)\n\n## Metrics Evaluated\n\n| Metric         | Description                           |\n| :------------: | :-----------------------------------: | \n| Selection Rate | Fraction of samples predicted positive|\n| TPR            | True Positive Rate (sensitivity)      |\n| FPR            | False Positive Rate                   |\n| Accuracy       | Overall prediction accuracy           |\n\nRates are reported **per group**, not aggregated, to surface disparities\n\n## Visualization Details\n\n### 1. Paired Bar Charts\n- Groups are sorted by real-data values\n- Shows whether synthetic data preserves relative group ordering\n- Helps anchor interpretation in real-world distributions\n### 2. Delta Charts\n- Centered at zero\n- Sorted by absolute deviation\n- Highlights where synthetic data diverges most, regardless of direction\nThis dual-view approach separates:\n- _baseline fairness disparities_ from\n- _synthetic-induced distortion_\n\n## Results Snapshot\n\nThese plots compare **Real vs Synthetic** group metrics and highlight where synthetic data deviates.\n\n### Race — Selection Rate\n\n<p float=\"left\">\n  <img src=\"results/figures/race_selection_rate.png\" width=\"48%\" />\n  <img src=\"results/figures/race_delta_selection_rate.png\" width=\"48%\" />\n</p>\n\n> **Real vs Synthetic:** In the real data, selection rates vary widely by race (≈ 25.5% for Asian-Pac-Islander vs ≈ 4.1% for Amer-Indian-Eskimo). Synthetic data substantially compresses these rates, reducing selection across all groups and narrowing observed disparities.\n\n> **Delta (Synthetic − Real):** Synthetic data under-selects every racial group, with the largest absolute distortions occurring in groups that are most highly selected in the real data (−21.5% for Asian-Pac-Islander, −15.8% for White). This suggests synthetic generation fails to preserve real-world selection rate magnitudes.\n\n### Sex — True Positive Rate (TPR)\n\n<p float=\"left\">\n  <img src=\"results/figures/sex_TPR.png\" width=\"48%\" />\n  <img src=\"results/figures/sex_delta_TPR.png\" width=\"48%\" />\n</p>\n\n> **Real vs Synthetic:** Real data shows moderately high and relatively balanced TPRs across sexes (≈ 62.6% for males, ≈ 56.7% for females). In contrast, synthetic data exhibits sharply reduced sensitivity for both groups, particularly for females (≈ 12.2%).\n\n> **Delta (Synthetic − Real):** Both sexes experience large TPR declines in synthetic data, with a slightly greater reduction for females (−44.5%) than males (−40.9%). This indicates that synthetic data disproportionately degrades model sensitivity for female instances.\n\n\n\n## Key Findings\nAcross both race and sex groupings:\n- Synthetic data generally **preserves overall performance trends**, but\n- Group-level fairness metrics show **non-trivial drift**\n- Some groups experience:\n    - inflated selection rates,\n    - reduced TPR,\n    - or asymmetric FPR changes\n \nImportantly, the largest deltas do not always occur in the largest groups, suggesting synthetic generation may disproportionately affect minority populations.\n\nThese findings reinforce the need for fairness auditing on synthetic data, not just real data.\n\n\n## How to Run\n\n~~~\npip install -r requirements.txt\njupyter notebook\n~~~\nRun notebooks in numeric order.\n\n## Future Work\n- Evaluate multiple synthetic generation techniques\n- Add intersectional group analysis\n- Compare pre- vs post-mitigation fairness\n- Incorporate confidence intervals via bootstrapping\n- Extend to regression and ranking tasks\n\n",
+ "hits": {
+  "st": [
+   {
+    "file": "notebooks/04_fit_gaussian_copula.ipynb",
+    "line": 74,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\"",
+    "context": [
+     "  {",
+     "   \"cell_type\": \"code\",",
+     "   \"source\": [",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\"",
+     "   ],",
+     "   \"metadata\": {",
+     "    \"collapsed\": false,",
+     "    \"ExecuteTime\": {"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "notebooks/04_fit_gaussian_copula.ipynb",
+    "line": 73,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "  },",
+     "  {",
+     "   \"cell_type\": \"code\",",
+     "   \"source\": [",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\"",
+     "   ],",
+     "   \"metadata\": {",
+     "    \"collapsed\": false,"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "notebooks/04_fit_gaussian_copula.ipynb",
+    "line": 73,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "  },",
+     "  {",
+     "   \"cell_type\": \"code\",",
+     "   \"source\": [",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\"",
+     "   ],",
+     "   \"metadata\": {",
+     "    \"collapsed\": false,"
+    ]
+   },
+   {
+    "file": "notebooks/04_fit_gaussian_copula.ipynb",
+    "line": 74,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\"",
+    "context": [
+     "  {",
+     "   \"cell_type\": \"code\",",
+     "   \"source\": [",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\"",
+     "   ],",
+     "   \"metadata\": {",
+     "    \"collapsed\": false,",
+     "    \"ExecuteTime\": {"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "notebooks/04_fit_gaussian_copula.ipynb",
+    "line": 74,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\"",
+    "context": [
+     "  {",
+     "   \"cell_type\": \"code\",",
+     "   \"source\": [",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\"",
+     "   ],",
+     "   \"metadata\": {",
+     "    \"collapsed\": false,",
+     "    \"ExecuteTime\": {"
+    ]
+   },
+   {
+    "file": "notebooks/04_fit_gaussian_copula.ipynb",
+    "line": 193,
+    "text": "\"synth = GaussianCopulaSynthesizer(metadata)\\n\",",
+    "context": [
+     "  },",
+     "  {",
+     "   \"cell_type\": \"code\",",
+     "   \"source\": [",
+     "    \"synth = GaussianCopulaSynthesizer(metadata)\\n\",",
+     "    \"synth.fit(train_df)\"",
+     "   ],",
+     "   \"metadata\": {",
+     "    \"collapsed\": false,"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "copulas==0.12.3",
+   "ctgan==0.11.0",
+   "rdt==1.18.2",
+   "sdmetrics==0.23.0",
+   "sdv==1.28.0"
+  ]
+ }
+}

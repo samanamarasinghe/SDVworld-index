@@ -1,0 +1,543 @@
+{
+ "repo": "prajval-4982/ctgan-studio",
+ "disk_kb": 772,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# 🛡️ Privacy-Preserving Synthetic Data Generation using DP-CTGAN\n\n## 📖 About the Project\nIn the modern era of machine learning, organizations face a critical dilemma: the need for massive amounts of data to train AI models versus stringent data privacy laws (such as India's DPDPA or Europe's GDPR). Sharing raw, real-world data—especially in healthcare or finance—exposes individuals to severe privacy risks. \n\nThis research project aims to solve this **Privacy-Utility Trade-off** by developing a robust framework for generating highly realistic synthetic tabular data using Deep Learning. Instead of just replicating statistical correlations, this project guarantees privacy by integrating **Differential Privacy (DP-CTGAN)**. This restricts the framework such that the generated data cannot be reverse-engineered by malicious adversaries to identify the original humans in the dataset.\n\nThis repository serves as a fully functional and end-to-end framework capable of:\n1. Sourcing and encoding raw datasets.\n2. Generating privacy-preserving rows with mathematical $\\varepsilon$ constraints.\n3. Stress-testing the output data using state-of-the-art **Membership Inference Attacks (MIA)**.\n4. Producing a composite compliance score known as the **Privacy-Utility Score (PU-Score)**.\n\n---\n\n## 🎓 Academic Context\n- **Project Title:** Synthetic Data Generation and Evaluation Using CTGAN\n- **Developer:** Prajval T Rathod (1MS24MC074)\n- **Institution:** MSRIT, Department of MCA\n- **Academic Year:** 2025-26\n\n---\n\n## 🚀 Key Research Configurations\n\n### 1. The Core Architecture: DP-CTGAN\n- **CTGAN (Conditional Tabular GAN):** The base synthesizer, optimized for capturing complex modal relationships between categorical and continuous columns.\n- **DP-SGD (Differentially Private Stochastic Gradient Descent):** Injected directly into the CTGAN's **Discriminator** using Meta's `opacus` library. It clips dataset gradients and injects Gaussian noise to blind the Discriminator from memorizing records.\n\n### 2. Adversarial Privacy Audit (MIA)\n- Employs a zero-knowledge \"Black-Box\" shadow model.\n- Evaluates if a Random Forest classifier can guess whether an external record was used during training by measuring latent Euclidean distances stringing across generated records.\n- **Goal**: Push the attacker's accuracy strictly down to exactly random guessing ($\\approx$ 50-60%).\n\n### 3. The Privacy-Utility Score (PU-Score)\nTo effectively measure the success of DP-CTGAN against regular models, we use a novel unified metric:\n- Combines Downstream ML F1-Score ($U$) with Advesarial Resistance ($R$). \n- Uses the *harmonic mean* to heavily punish models if they either utterly fail to generate useful patterns or fail to protect users.\n\n---\n\n## 📂 Project Structure\n```text\n├── app.py                # Main Flask Application\n├── results/              # Final benchmark outputs\n├── src/                  \n│   ├── prepare_and_run.py    # Master runner (handles all pipelines)\n│   └── run_experiments.py    # Backup runner\n├── modules/              \n│   ├── dp_ctgan_trainer.py   # The complex Opacus & PyTorch DP-CTGAN Training Loop\n│   └── mia_evaluator.py      # The black-box Membership Inference logic\n└── datasets/             # Directory to download and store local real datasets\n```\n\n---\n\n## 🚦 Usage Instructions\n\n### 1. Activate Virtual Environment (Windows PowerShell)\nBefore installing dependencies or running the project, you must activate the isolated environment:\n```powershell\n.\\venv\\Scripts\\Activate.ps1\n```\n*(You will know it worked when `(venv)` appears to the left of your typing prompt).*\n\n### 2. Install Dependencies\nEnsure you are using Python 3.10+ (Tested in Python 3.11).\n```bash\npip install -r requirements.txt\n```\n\n### 2. Start the Server (Web App)\nIf you want to use the visual, browser-based UI to generate data and view statistics:\n```bash\npython app.py\n```\n*Then open `http://127.0.0.1:5000` in your web browser.*\n\n### 3. Run the Backend Benchmark (CLI)\nIf you wish to re-create the numerical results or run terminal experiments for the Adult, ILPD, and Pima datasets:\n```bash\npython src/prepare_and_run.py\n```\n*Note: Depending on CPU availability, running the multiple $\\varepsilon$ tiers for all datasets via terminal takes approximately 5–8 minutes.*\n\n\n\n## 📜 License\nThis project is developed for educational and research purposes as part of the MCA curriculum at MSRIT.\n",
+ "hits": {
+  "st": [
+   {
+    "file": "modules/ctgan_trainer.py",
+    "line": 11,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "",
+     "import os",
+     "import warnings",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import Metadata",
+     "",
+     "# Silence specific library warnings for a cleaner console",
+     "warnings.filterwarnings(\"ignore\", category=FutureWarning, module=\"ctgan\")"
+    ]
+   },
+   {
+    "file": "modules/dp_ctgan_trainer.py",
+    "line": 58,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "    OPACUS_AVAILABLE = True",
+     "except ImportError:",
+     "    OPACUS_AVAILABLE = False",
+     "",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "from sklearn.preprocessing import LabelEncoder, StandardScaler",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "src/prepare_and_run.py",
+    "line": 227,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "# 4. Synthesizer builders",
+     "# =========================================================================",
+     "",
+     "def build_vanilla_ctgan(train_df, epochs):",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import Metadata",
+     "    md = Metadata.detect_from_dataframe(data=train_df)",
+     "    s = CTGANSynthesizer(md, epochs=epochs, verbose=False)",
+     "    s.fit(train_df)"
+    ]
+   },
+   {
+    "file": "src/run_experiments.py",
+    "line": 196,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "# ==========================================================================",
+     "",
+     "def _build_vanilla_ctgan(train_df: pd.DataFrame, epochs: int):",
+     "    \"\"\"Train standard CTGAN via SDV.\"\"\"",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import Metadata",
+     "    metadata = Metadata.detect_from_dataframe(data=train_df)",
+     "    synth = CTGANSynthesizer(metadata, epochs=epochs, verbose=False)",
+     "    synth.fit(train_df)"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "modules/ctgan_trainer.py",
+    "line": 12,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import os",
+     "import warnings",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import Metadata",
+     "",
+     "# Silence specific library warnings for a cleaner console",
+     "warnings.filterwarnings(\"ignore\", category=FutureWarning, module=\"ctgan\")",
+     "warnings.filterwarnings(\"ignore\", category=UserWarning, module=\"sdv\")"
+    ]
+   },
+   {
+    "file": "modules/dp_ctgan_trainer.py",
+    "line": 59,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "except ImportError:",
+     "    OPACUS_AVAILABLE = False",
+     "",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "from sklearn.preprocessing import LabelEncoder, StandardScaler",
+     "",
+     "",
+     "# ---------------------------------------------------------------------------"
+    ]
+   },
+   {
+    "file": "src/prepare_and_run.py",
+    "line": 228,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "# =========================================================================",
+     "",
+     "def build_vanilla_ctgan(train_df, epochs):",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import Metadata",
+     "    md = Metadata.detect_from_dataframe(data=train_df)",
+     "    s = CTGANSynthesizer(md, epochs=epochs, verbose=False)",
+     "    s.fit(train_df)",
+     "    return s"
+    ]
+   },
+   {
+    "file": "src/run_experiments.py",
+    "line": 197,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "def _build_vanilla_ctgan(train_df: pd.DataFrame, epochs: int):",
+     "    \"\"\"Train standard CTGAN via SDV.\"\"\"",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import Metadata",
+     "    metadata = Metadata.detect_from_dataframe(data=train_df)",
+     "    synth = CTGANSynthesizer(metadata, epochs=epochs, verbose=False)",
+     "    synth.fit(train_df)",
+     "    return synth"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "modules/ctgan_trainer.py",
+    "line": 11,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "",
+     "import os",
+     "import warnings",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import Metadata",
+     "",
+     "# Silence specific library warnings for a cleaner console",
+     "warnings.filterwarnings(\"ignore\", category=FutureWarning, module=\"ctgan\")"
+    ]
+   },
+   {
+    "file": "modules/ctgan_trainer.py",
+    "line": 12,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import os",
+     "import warnings",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import Metadata",
+     "",
+     "# Silence specific library warnings for a cleaner console",
+     "warnings.filterwarnings(\"ignore\", category=FutureWarning, module=\"ctgan\")",
+     "warnings.filterwarnings(\"ignore\", category=UserWarning, module=\"sdv\")"
+    ]
+   },
+   {
+    "file": "modules/dp_ctgan_trainer.py",
+    "line": 58,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "    OPACUS_AVAILABLE = True",
+     "except ImportError:",
+     "    OPACUS_AVAILABLE = False",
+     "",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "from sklearn.preprocessing import LabelEncoder, StandardScaler",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "modules/dp_ctgan_trainer.py",
+    "line": 59,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "except ImportError:",
+     "    OPACUS_AVAILABLE = False",
+     "",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "from sklearn.preprocessing import LabelEncoder, StandardScaler",
+     "",
+     "",
+     "# ---------------------------------------------------------------------------"
+    ]
+   },
+   {
+    "file": "src/prepare_and_run.py",
+    "line": 227,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "# 4. Synthesizer builders",
+     "# =========================================================================",
+     "",
+     "def build_vanilla_ctgan(train_df, epochs):",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import Metadata",
+     "    md = Metadata.detect_from_dataframe(data=train_df)",
+     "    s = CTGANSynthesizer(md, epochs=epochs, verbose=False)",
+     "    s.fit(train_df)"
+    ]
+   },
+   {
+    "file": "src/prepare_and_run.py",
+    "line": 228,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "# =========================================================================",
+     "",
+     "def build_vanilla_ctgan(train_df, epochs):",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import Metadata",
+     "    md = Metadata.detect_from_dataframe(data=train_df)",
+     "    s = CTGANSynthesizer(md, epochs=epochs, verbose=False)",
+     "    s.fit(train_df)",
+     "    return s"
+    ]
+   },
+   {
+    "file": "src/run_experiments.py",
+    "line": 196,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "# ==========================================================================",
+     "",
+     "def _build_vanilla_ctgan(train_df: pd.DataFrame, epochs: int):",
+     "    \"\"\"Train standard CTGAN via SDV.\"\"\"",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import Metadata",
+     "    metadata = Metadata.detect_from_dataframe(data=train_df)",
+     "    synth = CTGANSynthesizer(metadata, epochs=epochs, verbose=False)",
+     "    synth.fit(train_df)"
+    ]
+   },
+   {
+    "file": "src/run_experiments.py",
+    "line": 197,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "def _build_vanilla_ctgan(train_df: pd.DataFrame, epochs: int):",
+     "    \"\"\"Train standard CTGAN via SDV.\"\"\"",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import Metadata",
+     "    metadata = Metadata.detect_from_dataframe(data=train_df)",
+     "    synth = CTGANSynthesizer(metadata, epochs=epochs, verbose=False)",
+     "    synth.fit(train_df)",
+     "    return synth"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "modules/ctgan_trainer.py",
+    "line": 11,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "",
+     "import os",
+     "import warnings",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import Metadata",
+     "",
+     "# Silence specific library warnings for a cleaner console",
+     "warnings.filterwarnings(\"ignore\", category=FutureWarning, module=\"ctgan\")"
+    ]
+   },
+   {
+    "file": "modules/ctgan_trainer.py",
+    "line": 41,
+    "text": "A fitted synthesizer instance (CTGANSynthesizer or TVAESynthesizer).",
+    "context": [
+     "        epochs:     Number of training epochs (default 300).",
+     "        verbose:    If True, print training progress.",
+     "",
+     "    Returns:",
+     "        A fitted synthesizer instance (CTGANSynthesizer or TVAESynthesizer).",
+     "    \"\"\"",
+     "    model_type = model_type.upper().strip()",
+     "    if model_type not in SUPPORTED_MODELS:",
+     "        raise ValueError(f\"Unsupported model type '{model_type}'. Choose from: {SUPPORTED_MODELS}\")"
+    ]
+   },
+   {
+    "file": "modules/ctgan_trainer.py",
+    "line": 66,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "            epochs=epochs,",
+     "            verbose=verbose,",
+     "        )",
+     "    else:",
+     "        synthesizer = CTGANSynthesizer(",
+     "            metadata,",
+     "            epochs=epochs,",
+     "            verbose=verbose,",
+     "        )"
+    ]
+   },
+   {
+    "file": "modules/ctgan_trainer.py",
+    "line": 120,
+    "text": "model = CTGANSynthesizer.load(path)",
+    "context": [
+     "        raise FileNotFoundError(f\"No saved model found at: {path}\")",
+     "",
+     "    # Try CTGAN first, fallback to TVAE",
+     "    try:",
+     "        model = CTGANSynthesizer.load(path)",
+     "    except Exception:",
+     "        model = TVAESynthesizer.load(path)",
+     "",
+     "    print(f\"[Model] Loaded ← {path}\")"
+    ]
+   },
+   {
+    "file": "modules/synthetic_generator.py",
+    "line": 18,
+    "text": "model:    A fitted CTGANSynthesizer.",
+    "context": [
+     "    \"\"\"",
+     "    Sample synthetic rows from a trained CTGAN model.",
+     "",
+     "    Args:",
+     "        model:    A fitted CTGANSynthesizer.",
+     "        num_rows: Number of synthetic records to generate.",
+     "",
+     "    Returns:",
+     "        A pandas DataFrame of synthetic data."
+    ]
+   },
+   {
+    "file": "modules/mia_evaluator.py",
+    "line": 97,
+    "text": "Can be CTGANSynthesizer, _DPSynthesizer, or any compatible object.",
+    "context": [
+     "    real_test : pd.DataFrame",
+     "        Records held out from training. \"Non-member\" ground-truth.",
+     "    synthesizer : object",
+     "        A fitted synthesizer with a `.sample(n: int) -> pd.DataFrame` method.",
+     "        Can be CTGANSynthesizer, _DPSynthesizer, or any compatible object.",
+     "    n_shadow : int",
+     "        Number of shadow synthesizers to train (default 4 as in paper).",
+     "        Note: shadow models here share the same synthesizer and generate",
+     "        separate independent samples (avoids re-training overhead)."
+    ]
+   },
+   {
+    "file": "modules/dp_ctgan_trainer.py",
+    "line": 58,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "    OPACUS_AVAILABLE = True",
+     "except ImportError:",
+     "    OPACUS_AVAILABLE = False",
+     "",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "from sklearn.preprocessing import LabelEncoder, StandardScaler",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "modules/dp_ctgan_trainer.py",
+    "line": 330,
+    "text": "# 6. Wrap generator in a sampler interface matching CTGANSynthesizer",
+    "context": [
+     "        print(f\"[DP-CTGAN] Training complete. \"",
+     "              f\"Achieved e = {achieved_epsilon:.4f} (target {epsilon})\")",
+     "",
+     "    # ------------------------------------------------------------------",
+     "    # 6. Wrap generator in a sampler interface matching CTGANSynthesizer",
+     "    # ------------------------------------------------------------------",
+     "    G.eval()",
+     "",
+     "    class _DPSynthesizer:"
+    ]
+   },
+   {
+    "file": "modules/dp_ctgan_trainer.py",
+    "line": 380,
+    "text": "synth = CTGANSynthesizer(metadata, epochs=epochs, verbose=verbose)",
+    "context": [
+     "    verbose: bool,",
+     ") -> dict:",
+     "    \"\"\"Train standard CTGAN and wrap to match DP result dict structure.\"\"\"",
+     "    metadata = Metadata.detect_from_dataframe(data=data)",
+     "    synth = CTGANSynthesizer(metadata, epochs=epochs, verbose=verbose)",
+     "    synth.fit(data)",
+     "    return {",
+     "        \"synthesizer\": synth,",
+     "        \"achieved_epsilon\": float(\"inf\"),   # No privacy guarantee"
+    ]
+   },
+   {
+    "file": "src/prepare_and_run.py",
+    "line": 227,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "# 4. Synthesizer builders",
+     "# =========================================================================",
+     "",
+     "def build_vanilla_ctgan(train_df, epochs):",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import Metadata",
+     "    md = Metadata.detect_from_dataframe(data=train_df)",
+     "    s = CTGANSynthesizer(md, epochs=epochs, verbose=False)",
+     "    s.fit(train_df)"
+    ]
+   },
+   {
+    "file": "src/prepare_and_run.py",
+    "line": 230,
+    "text": "s = CTGANSynthesizer(md, epochs=epochs, verbose=False)",
+    "context": [
+     "def build_vanilla_ctgan(train_df, epochs):",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import Metadata",
+     "    md = Metadata.detect_from_dataframe(data=train_df)",
+     "    s = CTGANSynthesizer(md, epochs=epochs, verbose=False)",
+     "    s.fit(train_df)",
+     "    return s",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "src/run_experiments.py",
+    "line": 196,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "# ==========================================================================",
+     "",
+     "def _build_vanilla_ctgan(train_df: pd.DataFrame, epochs: int):",
+     "    \"\"\"Train standard CTGAN via SDV.\"\"\"",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import Metadata",
+     "    metadata = Metadata.detect_from_dataframe(data=train_df)",
+     "    synth = CTGANSynthesizer(metadata, epochs=epochs, verbose=False)",
+     "    synth.fit(train_df)"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "modules/ctgan_trainer.py",
+    "line": 11,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "",
+     "import os",
+     "import warnings",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import Metadata",
+     "",
+     "# Silence specific library warnings for a cleaner console",
+     "warnings.filterwarnings(\"ignore\", category=FutureWarning, module=\"ctgan\")"
+    ]
+   },
+   {
+    "file": "modules/ctgan_trainer.py",
+    "line": 41,
+    "text": "A fitted synthesizer instance (CTGANSynthesizer or TVAESynthesizer).",
+    "context": [
+     "        epochs:     Number of training epochs (default 300).",
+     "        verbose:    If True, print training progress.",
+     "",
+     "    Returns:",
+     "        A fitted synthesizer instance (CTGANSynthesizer or TVAESynthesizer).",
+     "    \"\"\"",
+     "    model_type = model_type.upper().strip()",
+     "    if model_type not in SUPPORTED_MODELS:",
+     "        raise ValueError(f\"Unsupported model type '{model_type}'. Choose from: {SUPPORTED_MODELS}\")"
+    ]
+   },
+   {
+    "file": "modules/ctgan_trainer.py",
+    "line": 60,
+    "text": "synthesizer = TVAESynthesizer(",
+    "context": [
+     "    print(f\"[{model_type}] Metadata saved → {metadata_path}\")",
+     "",
+     "    # Build the synthesizer",
+     "    if model_type == \"TVAE\":",
+     "        synthesizer = TVAESynthesizer(",
+     "            metadata,",
+     "            epochs=epochs,",
+     "            verbose=verbose,",
+     "        )"
+    ]
+   },
+   {
+    "file": "modules/ctgan_trainer.py",
+    "line": 122,
+    "text": "model = TVAESynthesizer.load(path)",
+    "context": [
+     "    # Try CTGAN first, fallback to TVAE",
+     "    try:",
+     "        model = CTGANSynthesizer.load(path)",
+     "    except Exception:",
+     "        model = TVAESynthesizer.load(path)",
+     "",
+     "    print(f\"[Model] Loaded ← {path}\")",
+     "    return model"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv==1.17.3"
+  ]
+ }
+}

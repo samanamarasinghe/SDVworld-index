@@ -1,0 +1,579 @@
+{
+ "repo": "jamespclifton/synthetic-data-app",
+ "disk_kb": 15,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Synthetic Data Generator and Evaluator\n\nThis application allows you to generate and evaluate high-quality synthetic data from real datasets using the Synthetic Data Vault (SDV) library.\n\n## Features\n\n- Generate synthetic data using multiple methods (GaussianCopula and CTGAN)\n- Automatically handle data preprocessing\n- Comprehensive evaluation of synthetic data quality\n- Detailed statistical comparisons between real and synthetic data\n- Visual reports with charts and metrics\n- Command-line interface for easy integration into workflows\n\n## Installation\n\n### Requirements\n\n- Python 3.8 or higher\n- SDV library (v1.0.0 or higher)\n- pandas, numpy, matplotlib, seaborn\n- scikit-learn\n\n### Setup\n\n1. Clone this repository:\n   ```\n   git clone <repository-url>\n   cd synthetic-data-app\n   ```\n\n2. Install dependencies:\n   ```\n   pip install -r requirements.txt\n   ```\n   \n   Or install manually:\n   ```\n   pip install sdv pandas numpy matplotlib seaborn scikit-learn\n   ```\n\n## Usage\n\n### Basic Usage\n\nRun the application with a real dataset:\n\n```\npython app.py --input your_data.csv\n```\n\nThis will:\n1. Load and preprocess your data\n2. Generate synthetic data using both GaussianCopula and CTGAN methods\n3. Evaluate the quality of each synthetic dataset\n4. Save all outputs to a timestamped directory\n\n### Command Line Arguments\n\n```\npython app.py --help\n```\n\n```\nusage: app.py [-h] --input INPUT [--output-dir OUTPUT_DIR] [--rows ROWS]\n              [--method {gaussian,ctgan,both}] [--epochs EPOCHS]\n              [--id-column ID_COLUMN] [--clean-column-names] [--handle-blanks]\n              [--skip-eval]\n\nGenerate and evaluate synthetic data.\n\noptional arguments:\n  -h, --help            show this help message and exit\n  --input INPUT, -i INPUT\n                        Path to the input CSV file containing real data\n  --output-dir OUTPUT_DIR, -o OUTPUT_DIR\n                        Directory to save output files (default: output)\n  --rows ROWS, -r ROWS  Number of synthetic rows to generate (default: same as input)\n  --method {gaussian,ctgan,both}, -m {gaussian,ctgan,both}\n                        Synthetic data generation method (default: both)\n  --epochs EPOCHS, -e EPOCHS\n                        Number of training epochs for CTGAN (default: 300)\n  --id-column ID_COLUMN\n                        Column name to be treated as ID (if any)\n  --clean-column-names  Clean column names (lowercase, replace spaces with underscores)\n  --handle-blanks       Convert blank strings to NaN values\n  --skip-eval           Skip evaluation step\n```\n\n### Examples\n\n1. Generate 1000 rows using only the CTGAN method:\n   ```\n   python app.py --input your_data.csv --rows 1000 --method ctgan\n   ```\n\n2. Specify an ID column and increase CTGAN training epochs:\n   ```\n   python app.py --input your_data.csv --id-column user_id --epochs 500\n   ```\n\n3. Generate data without evaluation (faster):\n   ```\n   python app.py --input your_data.csv --skip-eval\n   ```\n\n## Evaluation Metrics\n\nThe evaluation process includes:\n\n### 1. Overall Quality Score\nA comprehensive score that indicates how similar the synthetic data is to the real data.\n\n### 2. Column Distribution Analysis\nCompares the distributions of individual columns between real and synthetic data.\n\n### 3. Correlation Structure Analysis\nMeasures how well the synthetic data preserves the relationships between variables.\n\n### 4. PCA Visualization\nShows how well the synthetic data captures the overall structure of the real data.\n\n### 5. Privacy Assessment\nEvaluates how easily a machine learning model can distinguish between real and synthetic data.\n\n## Output Files\n\nAll outputs are saved in a timestamped directory under the specified output directory:\n\n- `preprocessed_data.csv`: The preprocessed real data\n- `synthetic_data_gaussian.csv`: Synthetic data generated using GaussianCopula\n- `synthetic_data_ctgan.csv`: Synthetic data generated using CTGAN\n- `parameters.json`: Configuration parameters used for generation\n- `evaluation_gaussian/`: Evaluation results for GaussianCopula method\n  - `human_readable_report.md`: Text report summarizing evaluation results\n  - `summary_report.json`: Detailed evaluation metrics in JSON format\n  - Various charts and visualizations\n- `evaluation_ctgan/`: Evaluation results for CTGAN method\n  - Same structure as above\n\n## Working with ID Columns\n\nWhen generating synthetic data, you can specify an ID column using the `--id-column` parameter:\n\n- If specified, this column will be treated as an identifier in the data generation process.\n- For synthetic data, new sequential UIDs (e.g., UID1, UID2, ...) will be generated to ensure uniqueness.\n- If no ID column is specified, the application will still work as expected.\n\n## Tips for Better Results\n\n1. **Data Preparation**:\n   - Clean your data before input for better results\n   - Remove outliers if they're not essential\n   - Handle missing values appropriately\n\n2. **CTGAN Settings**:\n   - Increase epochs for better quality (default: 300)\n   - For large or complex datasets, try 500-1000 epochs\n\n3. **Evaluation**:\n   - Check column distribution scores to identify specific issues\n   - Review correlation matrices to ensure relationships are preserved\n   - Use PCA visualization to understand overall data structure\n\n## Troubleshooting\n\n- **Memory Issues**: For large datasets, try reducing the number of epochs or generate fewer rows\n- **CUDA Errors**: If using GPU and encountering errors, try using CPU by setting environment variable: `export CUDA_VISIBLE_DEVICES=\"\"`\n- **Missing Dependencies**: If you encounter import errors, make sure all dependencies are installed\n\n## Contributing\n\nContributions are welcome! Please feel free to submit a Pull Request.\n\n## License\n\nThis project is licensed under the MIT License - see the LICENSE file for details.\n",
+ "hits": {
+  "st": [
+   {
+    "file": "generator.py",
+    "line": 41,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "        logger.info(f\"Successfully imported 'sdv'. Location: {sdv.__file__}\")",
+     "        logger.info(f\"SDV Version: {sdv.__version__}\")",
+     "        ",
+     "        try:",
+     "            from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "            logger.info(\"Successfully imported GaussianCopulaSynthesizer and CTGANSynthesizer from sdv.single_table\")",
+     "        except ImportError as e:",
+     "            logger.error(f\"Failed to import synthesizers from sdv.single_table: {e}\")",
+     "            raise"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "generator.py",
+    "line": 48,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "            logger.error(f\"Failed to import synthesizers from sdv.single_table: {e}\")",
+     "            raise",
+     "        ",
+     "        try:",
+     "            from sdv.metadata import SingleTableMetadata",
+     "            logger.info(\"Successfully imported SingleTableMetadata from sdv.metadata\")",
+     "        except ImportError as e:",
+     "            logger.error(f\"Failed to import SingleTableMetadata from sdv.metadata: {e}\")",
+     "            raise"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "generator.py",
+    "line": 36,
+    "text": "import sdv",
+    "context": [
+     "    \"\"\"Import SDV modules and check their availability.\"\"\"",
+     "    logger.info(\"Attempting to import SDV modules...\\n\")",
+     "    ",
+     "    try:",
+     "        import sdv",
+     "        logger.info(f\"Successfully imported 'sdv'. Location: {sdv.__file__}\")",
+     "        logger.info(f\"SDV Version: {sdv.__version__}\")",
+     "        ",
+     "        try:"
+    ]
+   },
+   {
+    "file": "generator.py",
+    "line": 41,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "        logger.info(f\"Successfully imported 'sdv'. Location: {sdv.__file__}\")",
+     "        logger.info(f\"SDV Version: {sdv.__version__}\")",
+     "        ",
+     "        try:",
+     "            from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "            logger.info(\"Successfully imported GaussianCopulaSynthesizer and CTGANSynthesizer from sdv.single_table\")",
+     "        except ImportError as e:",
+     "            logger.error(f\"Failed to import synthesizers from sdv.single_table: {e}\")",
+     "            raise"
+    ]
+   },
+   {
+    "file": "generator.py",
+    "line": 42,
+    "text": "logger.info(\"Successfully imported GaussianCopulaSynthesizer and CTGANSynthesizer from sdv.single_table\")",
+    "context": [
+     "        logger.info(f\"SDV Version: {sdv.__version__}\")",
+     "        ",
+     "        try:",
+     "            from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "            logger.info(\"Successfully imported GaussianCopulaSynthesizer and CTGANSynthesizer from sdv.single_table\")",
+     "        except ImportError as e:",
+     "            logger.error(f\"Failed to import synthesizers from sdv.single_table: {e}\")",
+     "            raise",
+     "        "
+    ]
+   },
+   {
+    "file": "generator.py",
+    "line": 44,
+    "text": "logger.error(f\"Failed to import synthesizers from sdv.single_table: {e}\")",
+    "context": [
+     "        try:",
+     "            from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "            logger.info(\"Successfully imported GaussianCopulaSynthesizer and CTGANSynthesizer from sdv.single_table\")",
+     "        except ImportError as e:",
+     "            logger.error(f\"Failed to import synthesizers from sdv.single_table: {e}\")",
+     "            raise",
+     "        ",
+     "        try:",
+     "            from sdv.metadata import SingleTableMetadata"
+    ]
+   },
+   {
+    "file": "generator.py",
+    "line": 48,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "            logger.error(f\"Failed to import synthesizers from sdv.single_table: {e}\")",
+     "            raise",
+     "        ",
+     "        try:",
+     "            from sdv.metadata import SingleTableMetadata",
+     "            logger.info(\"Successfully imported SingleTableMetadata from sdv.metadata\")",
+     "        except ImportError as e:",
+     "            logger.error(f\"Failed to import SingleTableMetadata from sdv.metadata: {e}\")",
+     "            raise"
+    ]
+   },
+   {
+    "file": "generator.py",
+    "line": 49,
+    "text": "logger.info(\"Successfully imported SingleTableMetadata from sdv.metadata\")",
+    "context": [
+     "            raise",
+     "        ",
+     "        try:",
+     "            from sdv.metadata import SingleTableMetadata",
+     "            logger.info(\"Successfully imported SingleTableMetadata from sdv.metadata\")",
+     "        except ImportError as e:",
+     "            logger.error(f\"Failed to import SingleTableMetadata from sdv.metadata: {e}\")",
+     "            raise",
+     "        "
+    ]
+   },
+   {
+    "file": "generator.py",
+    "line": 51,
+    "text": "logger.error(f\"Failed to import SingleTableMetadata from sdv.metadata: {e}\")",
+    "context": [
+     "        try:",
+     "            from sdv.metadata import SingleTableMetadata",
+     "            logger.info(\"Successfully imported SingleTableMetadata from sdv.metadata\")",
+     "        except ImportError as e:",
+     "            logger.error(f\"Failed to import SingleTableMetadata from sdv.metadata: {e}\")",
+     "            raise",
+     "        ",
+     "        return sdv, GaussianCopulaSynthesizer, CTGANSynthesizer, SingleTableMetadata",
+     "    "
+    ]
+   },
+   {
+    "file": "generator.py",
+    "line": 57,
+    "text": "logger.error(f\"Failed to import sdv: {e}\")",
+    "context": [
+     "        ",
+     "        return sdv, GaussianCopulaSynthesizer, CTGANSynthesizer, SingleTableMetadata",
+     "    ",
+     "    except ImportError as e:",
+     "        logger.error(f\"Failed to import sdv: {e}\")",
+     "        logger.error(\"Please install SDV using: pip install sdv\")",
+     "        raise",
+     "",
+     "# Data preprocessing function"
+    ]
+   },
+   {
+    "file": "evaluator.py",
+    "line": 12,
+    "text": "from sdv.evaluation import evaluate",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "import matplotlib.pyplot as plt",
+     "import seaborn as sns",
+     "from sdv.evaluation import evaluate",
+     "from sdv.metrics import get_column_plot, get_column_pair_plot",
+     "from sdv.metrics.tabular import KSTest, CSTest, LogisticDetection",
+     "from sklearn.decomposition import PCA",
+     "import os"
+    ]
+   },
+   {
+    "file": "evaluator.py",
+    "line": 13,
+    "text": "from sdv.metrics import get_column_plot, get_column_pair_plot",
+    "context": [
+     "import numpy as np",
+     "import matplotlib.pyplot as plt",
+     "import seaborn as sns",
+     "from sdv.evaluation import evaluate",
+     "from sdv.metrics import get_column_plot, get_column_pair_plot",
+     "from sdv.metrics.tabular import KSTest, CSTest, LogisticDetection",
+     "from sklearn.decomposition import PCA",
+     "import os",
+     "import json"
+    ]
+   },
+   {
+    "file": "evaluator.py",
+    "line": 14,
+    "text": "from sdv.metrics.tabular import KSTest, CSTest, LogisticDetection",
+    "context": [
+     "import matplotlib.pyplot as plt",
+     "import seaborn as sns",
+     "from sdv.evaluation import evaluate",
+     "from sdv.metrics import get_column_plot, get_column_pair_plot",
+     "from sdv.metrics.tabular import KSTest, CSTest, LogisticDetection",
+     "from sklearn.decomposition import PCA",
+     "import os",
+     "import json",
+     "from typing import Dict, Tuple, List, Union, Optional"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "generator.py",
+    "line": 41,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "        logger.info(f\"Successfully imported 'sdv'. Location: {sdv.__file__}\")",
+     "        logger.info(f\"SDV Version: {sdv.__version__}\")",
+     "        ",
+     "        try:",
+     "            from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "            logger.info(\"Successfully imported GaussianCopulaSynthesizer and CTGANSynthesizer from sdv.single_table\")",
+     "        except ImportError as e:",
+     "            logger.error(f\"Failed to import synthesizers from sdv.single_table: {e}\")",
+     "            raise"
+    ]
+   },
+   {
+    "file": "generator.py",
+    "line": 42,
+    "text": "logger.info(\"Successfully imported GaussianCopulaSynthesizer and CTGANSynthesizer from sdv.single_table\")",
+    "context": [
+     "        logger.info(f\"SDV Version: {sdv.__version__}\")",
+     "        ",
+     "        try:",
+     "            from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "            logger.info(\"Successfully imported GaussianCopulaSynthesizer and CTGANSynthesizer from sdv.single_table\")",
+     "        except ImportError as e:",
+     "            logger.error(f\"Failed to import synthesizers from sdv.single_table: {e}\")",
+     "            raise",
+     "        "
+    ]
+   },
+   {
+    "file": "generator.py",
+    "line": 54,
+    "text": "return sdv, GaussianCopulaSynthesizer, CTGANSynthesizer, SingleTableMetadata",
+    "context": [
+     "        except ImportError as e:",
+     "            logger.error(f\"Failed to import SingleTableMetadata from sdv.metadata: {e}\")",
+     "            raise",
+     "        ",
+     "        return sdv, GaussianCopulaSynthesizer, CTGANSynthesizer, SingleTableMetadata",
+     "    ",
+     "    except ImportError as e:",
+     "        logger.error(f\"Failed to import sdv: {e}\")",
+     "        logger.error(\"Please install SDV using: pip install sdv\")"
+    ]
+   },
+   {
+    "file": "generator.py",
+    "line": 128,
+    "text": "sdv, GaussianCopulaSynthesizer, CTGANSynthesizer, SingleTableMetadata = import_sdv_modules()",
+    "context": [
+     "    Returns:",
+     "        pandas DataFrame containing synthetic data",
+     "    \"\"\"",
+     "    # Import SDV modules",
+     "    sdv, GaussianCopulaSynthesizer, CTGANSynthesizer, SingleTableMetadata = import_sdv_modules()",
+     "    ",
+     "    # Determine number of rows to generate",
+     "    if num_rows is None:",
+     "        num_rows = len(data)"
+    ]
+   },
+   {
+    "file": "generator.py",
+    "line": 155,
+    "text": "synthesizer = CTGANSynthesizer(metadata, epochs=epochs)",
+    "context": [
+     "    if synthesizer_type.lower() == 'gaussian':",
+     "        synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "        logger.info(\"Fitting GaussianCopulaSynthesizer to data...\")",
+     "    elif synthesizer_type.lower() == 'ctgan':",
+     "        synthesizer = CTGANSynthesizer(metadata, epochs=epochs)",
+     "        logger.info(f\"Fitting CTGANSynthesizer to data (epochs: {epochs})...\")",
+     "    else:",
+     "        raise ValueError(f\"Unsupported synthesizer type: {synthesizer_type}\")",
+     "    "
+    ]
+   },
+   {
+    "file": "generator.py",
+    "line": 156,
+    "text": "logger.info(f\"Fitting CTGANSynthesizer to data (epochs: {epochs})...\")",
+    "context": [
+     "        synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "        logger.info(\"Fitting GaussianCopulaSynthesizer to data...\")",
+     "    elif synthesizer_type.lower() == 'ctgan':",
+     "        synthesizer = CTGANSynthesizer(metadata, epochs=epochs)",
+     "        logger.info(f\"Fitting CTGANSynthesizer to data (epochs: {epochs})...\")",
+     "    else:",
+     "        raise ValueError(f\"Unsupported synthesizer type: {synthesizer_type}\")",
+     "    ",
+     "    synthesizer.fit(data)"
+    ]
+   },
+   {
+    "file": "generator.py",
+    "line": 213,
+    "text": "# Generate synthetic data with CTGANSynthesizer",
+    "context": [
+     "    gaussian_output = os.path.join(output_dir, 'synthetic_data_gaussian_test.csv')",
+     "    gaussian_data.to_csv(gaussian_output, index=False)",
+     "    logger.info(f\"Data saved successfully to {gaussian_output}\")",
+     "    ",
+     "    # Generate synthetic data with CTGANSynthesizer",
+     "    logger.info(\"--- Testing CTGANSynthesizer ---\")",
+     "    logger.info(\"Generating 50 rows using CTGANSynthesizer (epochs: 5)...\")",
+     "    ctgan_data = generate_synthetic_data(",
+     "        preprocessed_data, "
+    ]
+   },
+   {
+    "file": "generator.py",
+    "line": 214,
+    "text": "logger.info(\"--- Testing CTGANSynthesizer ---\")",
+    "context": [
+     "    gaussian_data.to_csv(gaussian_output, index=False)",
+     "    logger.info(f\"Data saved successfully to {gaussian_output}\")",
+     "    ",
+     "    # Generate synthetic data with CTGANSynthesizer",
+     "    logger.info(\"--- Testing CTGANSynthesizer ---\")",
+     "    logger.info(\"Generating 50 rows using CTGANSynthesizer (epochs: 5)...\")",
+     "    ctgan_data = generate_synthetic_data(",
+     "        preprocessed_data, ",
+     "        num_rows=50,"
+    ]
+   },
+   {
+    "file": "generator.py",
+    "line": 215,
+    "text": "logger.info(\"Generating 50 rows using CTGANSynthesizer (epochs: 5)...\")",
+    "context": [
+     "    logger.info(f\"Data saved successfully to {gaussian_output}\")",
+     "    ",
+     "    # Generate synthetic data with CTGANSynthesizer",
+     "    logger.info(\"--- Testing CTGANSynthesizer ---\")",
+     "    logger.info(\"Generating 50 rows using CTGANSynthesizer (epochs: 5)...\")",
+     "    ctgan_data = generate_synthetic_data(",
+     "        preprocessed_data, ",
+     "        num_rows=50,",
+     "        synthesizer_type='ctgan',"
+    ]
+   },
+   {
+    "file": "app.py",
+    "line": 140,
+    "text": "logger.info(f\"Generating {num_rows} rows using CTGANSynthesizer (epochs: {args.epochs})...\")",
+    "context": [
+     "            ",
+     "            synthetic_data['gaussian'] = gaussian_data",
+     "        ",
+     "        if args.method in ['ctgan', 'both']:",
+     "            logger.info(f\"Generating {num_rows} rows using CTGANSynthesizer (epochs: {args.epochs})...\")",
+     "            ctgan_data = generate_synthetic_data(",
+     "                preprocessed_data, ",
+     "                num_rows=num_rows,",
+     "                synthesizer_type='ctgan',"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "generator.py",
+    "line": 41,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "        logger.info(f\"Successfully imported 'sdv'. Location: {sdv.__file__}\")",
+     "        logger.info(f\"SDV Version: {sdv.__version__}\")",
+     "        ",
+     "        try:",
+     "            from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "            logger.info(\"Successfully imported GaussianCopulaSynthesizer and CTGANSynthesizer from sdv.single_table\")",
+     "        except ImportError as e:",
+     "            logger.error(f\"Failed to import synthesizers from sdv.single_table: {e}\")",
+     "            raise"
+    ]
+   },
+   {
+    "file": "generator.py",
+    "line": 42,
+    "text": "logger.info(\"Successfully imported GaussianCopulaSynthesizer and CTGANSynthesizer from sdv.single_table\")",
+    "context": [
+     "        logger.info(f\"SDV Version: {sdv.__version__}\")",
+     "        ",
+     "        try:",
+     "            from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "            logger.info(\"Successfully imported GaussianCopulaSynthesizer and CTGANSynthesizer from sdv.single_table\")",
+     "        except ImportError as e:",
+     "            logger.error(f\"Failed to import synthesizers from sdv.single_table: {e}\")",
+     "            raise",
+     "        "
+    ]
+   },
+   {
+    "file": "generator.py",
+    "line": 54,
+    "text": "return sdv, GaussianCopulaSynthesizer, CTGANSynthesizer, SingleTableMetadata",
+    "context": [
+     "        except ImportError as e:",
+     "            logger.error(f\"Failed to import SingleTableMetadata from sdv.metadata: {e}\")",
+     "            raise",
+     "        ",
+     "        return sdv, GaussianCopulaSynthesizer, CTGANSynthesizer, SingleTableMetadata",
+     "    ",
+     "    except ImportError as e:",
+     "        logger.error(f\"Failed to import sdv: {e}\")",
+     "        logger.error(\"Please install SDV using: pip install sdv\")"
+    ]
+   },
+   {
+    "file": "generator.py",
+    "line": 128,
+    "text": "sdv, GaussianCopulaSynthesizer, CTGANSynthesizer, SingleTableMetadata = import_sdv_modules()",
+    "context": [
+     "    Returns:",
+     "        pandas DataFrame containing synthetic data",
+     "    \"\"\"",
+     "    # Import SDV modules",
+     "    sdv, GaussianCopulaSynthesizer, CTGANSynthesizer, SingleTableMetadata = import_sdv_modules()",
+     "    ",
+     "    # Determine number of rows to generate",
+     "    if num_rows is None:",
+     "        num_rows = len(data)"
+    ]
+   },
+   {
+    "file": "generator.py",
+    "line": 152,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "        logger.info(f\"  '{col}': {props['sdtype']}\")",
+     "    ",
+     "    # Create and fit synthesizer",
+     "    if synthesizer_type.lower() == 'gaussian':",
+     "        synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "        logger.info(\"Fitting GaussianCopulaSynthesizer to data...\")",
+     "    elif synthesizer_type.lower() == 'ctgan':",
+     "        synthesizer = CTGANSynthesizer(metadata, epochs=epochs)",
+     "        logger.info(f\"Fitting CTGANSynthesizer to data (epochs: {epochs})...\")"
+    ]
+   },
+   {
+    "file": "generator.py",
+    "line": 153,
+    "text": "logger.info(\"Fitting GaussianCopulaSynthesizer to data...\")",
+    "context": [
+     "    ",
+     "    # Create and fit synthesizer",
+     "    if synthesizer_type.lower() == 'gaussian':",
+     "        synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "        logger.info(\"Fitting GaussianCopulaSynthesizer to data...\")",
+     "    elif synthesizer_type.lower() == 'ctgan':",
+     "        synthesizer = CTGANSynthesizer(metadata, epochs=epochs)",
+     "        logger.info(f\"Fitting CTGANSynthesizer to data (epochs: {epochs})...\")",
+     "    else:"
+    ]
+   },
+   {
+    "file": "generator.py",
+    "line": 195,
+    "text": "# Generate synthetic data with GaussianCopulaSynthesizer",
+    "context": [
+     "        handle_blanks=True,",
+     "        columns_to_check=['hs_course_grade', 'final_exam_grade']",
+     "    )",
+     "    ",
+     "    # Generate synthetic data with GaussianCopulaSynthesizer",
+     "    logger.info(\"--- Testing GaussianCopulaSynthesizer ---\")",
+     "    logger.info(\"Generating 50 rows using GaussianCopulaSynthesizer...\")",
+     "    gaussian_data = generate_synthetic_data(",
+     "        preprocessed_data, "
+    ]
+   },
+   {
+    "file": "generator.py",
+    "line": 196,
+    "text": "logger.info(\"--- Testing GaussianCopulaSynthesizer ---\")",
+    "context": [
+     "        columns_to_check=['hs_course_grade', 'final_exam_grade']",
+     "    )",
+     "    ",
+     "    # Generate synthetic data with GaussianCopulaSynthesizer",
+     "    logger.info(\"--- Testing GaussianCopulaSynthesizer ---\")",
+     "    logger.info(\"Generating 50 rows using GaussianCopulaSynthesizer...\")",
+     "    gaussian_data = generate_synthetic_data(",
+     "        preprocessed_data, ",
+     "        num_rows=50,"
+    ]
+   },
+   {
+    "file": "generator.py",
+    "line": 197,
+    "text": "logger.info(\"Generating 50 rows using GaussianCopulaSynthesizer...\")",
+    "context": [
+     "    )",
+     "    ",
+     "    # Generate synthetic data with GaussianCopulaSynthesizer",
+     "    logger.info(\"--- Testing GaussianCopulaSynthesizer ---\")",
+     "    logger.info(\"Generating 50 rows using GaussianCopulaSynthesizer...\")",
+     "    gaussian_data = generate_synthetic_data(",
+     "        preprocessed_data, ",
+     "        num_rows=50,",
+     "        synthesizer_type='gaussian'"
+    ]
+   },
+   {
+    "file": "app.py",
+    "line": 124,
+    "text": "logger.info(f\"Generating {num_rows} rows using GaussianCopulaSynthesizer...\")",
+    "context": [
+     "        # Identify ID column if specified",
+     "        id_column = args.id_column",
+     "        ",
+     "        if args.method in ['gaussian', 'both']:",
+     "            logger.info(f\"Generating {num_rows} rows using GaussianCopulaSynthesizer...\")",
+     "            gaussian_data = generate_synthetic_data(",
+     "                preprocessed_data, ",
+     "                num_rows=num_rows,",
+     "                synthesizer_type='gaussian',"
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "evaluator.py",
+    "line": 12,
+    "text": "from sdv.evaluation import evaluate",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "import matplotlib.pyplot as plt",
+     "import seaborn as sns",
+     "from sdv.evaluation import evaluate",
+     "from sdv.metrics import get_column_plot, get_column_pair_plot",
+     "from sdv.metrics.tabular import KSTest, CSTest, LogisticDetection",
+     "from sklearn.decomposition import PCA",
+     "import os"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ev",
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv>=1.0.0"
+  ]
+ }
+}

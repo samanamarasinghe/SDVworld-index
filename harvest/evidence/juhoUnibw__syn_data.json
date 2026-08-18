@@ -1,0 +1,192 @@
+{
+ "repo": "juhoUnibw/syn_data",
+ "disk_kb": 456,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Utility Meets Privacy: A Critical Evaluation of Tabular Data Synthesizers\n### Supplementary code for paper publication\n\nThis repository contains the evaluation pipeline described in the paper **Utility Meets Privacy: A Critical Evaluation of Tabular Data Synthesizers**. \nIt can be used to reproduce the experimental part of the study, and may be adapted for evaluation of other synthesizers. The pipeline includes a script for privacy analysis of synthetic datasets (**pps.py**), which may also be used independently as described [here](#privacy-analysis-using-the-privacy-protection-score).\n\n\n## Run Pipeline\nFor replication of the papers' experiments, use of a docker image with pre-installed libraries is recommended.\nIt contains the 12 synthesizers and 17 datasets described in the paper. Download and use of the docker image are described below. \nFor evaluation of further synthesizers or datasets, feel free to adapt the code provided in the repository. \n\n### List of available datasets and synthesizers\n\nDatasets:\\\n**breast_cancer, breast_tissue, cardiotocography, kidney, dermatology, diabetes,\nretinography, echocardiogram, heart, lymphography, patient, stroke, thoracic_surgery,\nthyroid, tumor, sani, eye**\n\nSynthesizers:\\\n**tvae, gausscop, ctgan, arf, pzflow, knnmtd, mcgen, corgan, smote, priv_bayes, cart, great**\n\n\n### Prerequisites\n\nThe following dependencies are required.\n\n1. CUDA 12.7 and GPU\n2. Docker 27.4.1 (see https://docs.docker.com/engine/install/)\n3. Nvidia Container Toolkit 1.17.3 with Docker configuration (see https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)\n5. Docker image > request in comments (optionally install packages by yourself)\n\n>📌 **Note: if permission is denied when running docker, try the following:** \n> - use **sudo** prefix\n> - relocate docker root directory (see https://www.ibm.com/docs/en/z-logdata-analytics/5.1.0?topic=software-relocating-docker-root-directory)\n\n### Load docker image\n```\ndocker load -i ieee_gpu.tar\n```\n\n>📌 **Note: if you want to create a new image after code adaptions, you may use the Dockerfile in this repository**\n>: ```docker build -t [image_name] .```\n\n### Generate synthetic data\n\n```bash\ndocker run \\\n-v [abs_path]/gen_data:/app/eval/gen_data -w /app --gpus \"device=0\" ieee_gpu \\\npython3 IEEE_pipeline.py gen \\\n--data [dataset names] \\\n--n_spl [int] \\\n--method [synthesizer_names] \\\n--smpl_frac [float] \\\n--splits True \\\n--test True\n```\n\n**'--data'**: select [datasets](#list-of-available-datasets-and-synthesizers) to derive synthetic data from. Default='all'.\\\n**'--n_spl'**: choose number of real data splits to use for synthesis. Default=10.\\\n**'--method'**: select one or more [synthesizers](#list-of-available-datasets-and-synthesizers). Default='all' is time-consuming.\\\n**'--smpl_frac'**: define synthetic data size (value is multiplied with training data size). Default=1.\\\n**'--splits'**: set to True if data splits (train/test) from paper should be used. Default=False.\\\n**'--test'**: True for test purposes -> limits dataset sizes to max 5000. Default=False.\\\n\n> 📌 **Note:** Rather select subsets of synthesizers and datasets. Depending on your resources, running the full pipeline is time-consuming and may result in memory overload.  \n\n***Example:***\n```bash\ndocker run \\\n-v /home/julian_hoellig/ieee/gen_data:/app/eval/gen_data -w /app --gpus '\"device=0\"' ieee_gpu \\\npython3 IEEE_pipeline.py gen \\\n--n_spl 3 \\\n--method arf mcgen smote cart \\\n--data breast_cancer breast_tissue \\\n--test True\n```\n\n### Evaluate synthetic data\n\n```bash\ndocker run \\\n[abs_path]/gen_data:/app/eval/gen_data [abs_path]/results:/app/eval/results -w /app --gpus \"device=0\" ieee_gpu \\\npython3 IEEE_pipeline.py eval \\\n--real_train_path /app/eval/train_data \\\n--gen_data_path /app/eval/gen_data \\\n--real_test_path /app/eval/test_data \\\n--n_spl [int] \\\n--calc True \\\n--summary True \\\n--method [synthesizer_names] \\\n--data [dataset_names] \\\n--weights ([w_us],[w_pps])\n```\n**-v**: mounts local directories into the docker container. Make sure the **gen_data** directory contains the synthetic datasets generated from previous synthesis.\\\n**'--data'**: select [datasets](#list-of-available-datasets-and-synthesizers) to evaluate for each synthesizer. Default='all'.\\\n**'--n_spl'**: choose number of data splits to evaluate (max as many synthetic datasets available per dataset-synthesizer combination). Default=10.\\\n**'--method'**: select [synthesizers](#list-of-available-datasets-and-synthesizers) included in evaluation. Default='all' -> time-consuming.\\\n**'--weights'**: define weighting of utility/privacy for utility-privacy-score calculation. Default=(0.5, 0.5).\\\n**'--calc'**: calculate evaluation results. Default=False.\\\n**'--summary'**: generate summary statistics of evaluation results. Default=False.\\\n\n> 📌 **Note:** Consider evaluating subsets of synthesizers and datasets. Depending on your resources, running the full pipeline is time-consuming and may result in memory overload.\n\n**Results**\\\nThe summary results can be found in the mounted **results** directory. They contain scores for the selected synthesizers, averaged across the selected datasets.\nScores on the individual datasets can be found in the mounted **gen_data** directory.\n\n***Example***\n```bash\ndocker run \\\n-v /home/julian_hoellig/ieee/gen_data:/app/eval/gen_data -v /home/julian_hoellig/ieee/results:/app/eval/results \\\n-w /app --gpus '\"device=0\"' ieee_gpu python3 IEEE_pipeline.py eval \\\n--real_train_path /app/eval/train_data \\\n--gen_data_path /app/eval/gen_data \\\n--real_test_path /app/eval/test_data \\\n--n_spl 3 \\\n--calc True \\\n--summary True \\\n--method mcgen cart smote arf \\\n--data breast_cancer breast_tissue\n```\n\n## Privacy Analysis using the privacy protection score\n\n### Prerequisites\n\n1. python 3.11\n2. NumPy\n3. pandas\n4. CuPy (requires GPU access and CUDA)\n\n> 📌 **Note:** CuPy speeds up the analysis considerably by using GPU capacities. \n> However, if you want to run on CPU, you can replace CuPy operations (prefixed with **cp.**) with NumPy operations.\n\n### Run privacy analysis\n\n```bash\npython pps.py \\\n--train_path [path_to_train_data] \\\n--test_path [path_to_test_data] \\\n--gen_path [path_to_gen_data] \\\n--num_feat [list_of_numerical_feature_names] \\\n--class_var [list_of_categorical_feature_names]\n```\n\n**--train_path**: path to train dataset (CSV) that was used to generate the synthetic dataset.\\\n**--test_path**: path to test dataset (CSV) that was NOT used for synthesis.\\\n**--gen_path**: path to synthetic dataset (CSV)'.\n\n> 📌 **Note:** \n> 1) Train and test datasets were split 50/50 from the same real dataset.\n> 2) All feature names of the dataset must be specified in **--num_feat** and **--cat_feat**. \n> If all features are either numerical or categorical, only one of the arguments is required.\n> 2) Train, test and synthetic datasets must be in CSV format and have the same features.\n\n***Example***\n```bash\npython pps.py \\\n--train_path ex_data/train.csv \\\n--test_path ex_data/test.csv \\\n--gen_path ex_data/gen.csv \\\n--num_feat I0 PA500 HFS DA Area A/DA 'Max IP' DR P \\\n--class_var Class\n```\n\n### Citation\n\nIf you use the pps code for your research, please cite the following source:\n\nJ. Höllig and M. Geierhos, \"Utility Meets Privacy: A Critical Evaluation of Tabular Data Synthesizers,\" in IEEE Access, doi: 10.1109/ACCESS.2025.3549680.\nkeywords: {Synthesizers;Synthetic data;Data privacy;Machine learning;Data models;Privacy;Deep learning;Accuracy;Protection;Predictive models;Membership inference analysis;privacy evaluation;tabular data synthesizer;utility-privacy trade-off},\n\nBibTeX:\n```bash\n@ARTICLE{10918632,\n  author={Höllig, Julian and Geierhos, Michaela},\n  journal={IEEE Access}, \n  title={Utility Meets Privacy: A Critical Evaluation of Tabular Data Synthesizers}, \n  year={2025},\n  volume={},\n  number={},\n  pages={1-1},\n  keywords={Synthesizers;Synthetic data;Data privacy;Machine learning;Data models;Privacy;Deep learning;Accuracy;Protection;Predictive models;Membership inference analysis;privacy evaluation;tabular data synthesizer;utility-privacy trade-off},\n  doi={10.1109/ACCESS.2025.3549680}}\n\n```\n\n## Licenses\n\nThis repository is licensed under MIT license. It contains or requires installation of the following third-party codes and repositories:\n- arf: Adversarial Random Forests [10.32614/CRAN.package.arf] (GPL license).\n- cor-gan [https://github.com/astorfi/cor-gan] (authors allow use with attribution - please cite their paper when using this repository in your study)\n- be_great [https://github.com/kathrinse/be_great?tab=readme-ov-file] (MIT license)\n- MC-GEN: Multi-level Clustering for Private Synthetic Data Generation [https://github.com/mingchenli/MCGEN-Private-Synthetic-Data-Generator?] (Apache license 2.0)\n- pzflow [https://github.com/jfcrenshaw/pzflow] (MIT license)\n- SMOTE [https://imbalanced-learn.org/stable/references/generated/imblearn.over_sampling.SMOTE.html#imblearn.over_sampling.SMOTE] (MIT license)\n- dpart [https://pypi.org/project/dpart/] (MIT license)\n- kNNMTD [https://github.com/jsivaku1/kNNMTD] (authors allow use with attribution - please cite their paper when using this repository in your study)\n- SDV [https://github.com/sdv-dev/SDV] (Business Source License 1.1)\n\nAttribution cor-gan:\nA. Torfi and A. Fox, \"CorGAN: Correlation-Capturing Convolutional Generative Adversarial Networks for Generating Synthetic Healthcare Records,\" 2020, arXiv:2001.09346.\n\nAttribution kNNMTD:\nJ. Sivakumar, K. Ramamurthy, M. Radhakrishnan, and D. Won. \"Synthetic sampling from small datasets: A modified mega-trend diffusion approach using k-nearest neighbors,\" Knowledge-Based Systems, 2021, p. 107687.\n",
+ "hits": {
+  "st": [
+   {
+    "file": "methods/sdv/sdv.py",
+    "line": 4,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer",
+    "context": [
+     "import warnings",
+     "warnings.filterwarnings('ignore')",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer",
+     "import pandas as pd",
+     "",
+     "",
+     "def gen(train_set, smpl_frac, gen_meth, disc_feat_names, cont_feat_names, class_var):"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "methods/sdv/sdv.py",
+    "line": 3,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import warnings",
+     "warnings.filterwarnings('ignore')",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer",
+     "import pandas as pd",
+     "",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "methods/sdv/sdv.py",
+    "line": 3,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import warnings",
+     "warnings.filterwarnings('ignore')",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer",
+     "import pandas as pd",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "methods/sdv/sdv.py",
+    "line": 4,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer",
+    "context": [
+     "import warnings",
+     "warnings.filterwarnings('ignore')",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer",
+     "import pandas as pd",
+     "",
+     "",
+     "def gen(train_set, smpl_frac, gen_meth, disc_feat_names, cont_feat_names, class_var):"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "methods/sdv/sdv.py",
+    "line": 4,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer",
+    "context": [
+     "import warnings",
+     "warnings.filterwarnings('ignore')",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer",
+     "import pandas as pd",
+     "",
+     "",
+     "def gen(train_set, smpl_frac, gen_meth, disc_feat_names, cont_feat_names, class_var):"
+    ]
+   },
+   {
+    "file": "methods/sdv/sdv.py",
+    "line": 54,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "    # initializes synthesis method with meta information and generates random sample",
+     "    def sdv_gen(gen_meth, metadata, train_set, smpl_size):",
+     "",
+     "        if gen_meth == 'ctgan':",
+     "            synthesizer = CTGANSynthesizer(",
+     "                metadata = metadata,",
+     "                enforce_min_max_values = True,",
+     "                batch_size = 8, #500",
+     "                pac = 8) # requirement > batch_size % pac = 0"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "methods/sdv/sdv.py",
+    "line": 4,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer",
+    "context": [
+     "import warnings",
+     "warnings.filterwarnings('ignore')",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer",
+     "import pandas as pd",
+     "",
+     "",
+     "def gen(train_set, smpl_frac, gen_meth, disc_feat_names, cont_feat_names, class_var):"
+    ]
+   },
+   {
+    "file": "methods/sdv/sdv.py",
+    "line": 62,
+    "text": "synthesizer = GaussianCopulaSynthesizer(",
+    "context": [
+     "                pac = 8) # requirement > batch_size % pac = 0",
+     "        if gen_meth == 'tvae':",
+     "            synthesizer = TVAESynthesizer(metadata, batch_size=8)",
+     "        if gen_meth == 'gausscop':",
+     "            synthesizer = GaussianCopulaSynthesizer(",
+     "                metadata, # required",
+     "                enforce_min_max_values=True",
+     "            )",
+     "        synthesizer.fit(train_set)"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "methods/sdv/sdv.py",
+    "line": 4,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer",
+    "context": [
+     "import warnings",
+     "warnings.filterwarnings('ignore')",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer",
+     "import pandas as pd",
+     "",
+     "",
+     "def gen(train_set, smpl_frac, gen_meth, disc_feat_names, cont_feat_names, class_var):"
+    ]
+   },
+   {
+    "file": "methods/sdv/sdv.py",
+    "line": 60,
+    "text": "synthesizer = TVAESynthesizer(metadata, batch_size=8)",
+    "context": [
+     "                enforce_min_max_values = True,",
+     "                batch_size = 8, #500",
+     "                pac = 8) # requirement > batch_size % pac = 0",
+     "        if gen_meth == 'tvae':",
+     "            synthesizer = TVAESynthesizer(metadata, batch_size=8)",
+     "        if gen_meth == 'gausscop':",
+     "            synthesizer = GaussianCopulaSynthesizer(",
+     "                metadata, # required",
+     "                enforce_min_max_values=True"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "gc",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [
+  "methods/sdv"
+ ],
+ "dependencies": {
+  "requirements.txt": [
+   "copulas==0.9.2",
+   "ctgan==0.8.0",
+   "rdt==1.13.1",
+   "sdmetrics==0.13.0",
+   "sdv==1.8.0"
+  ]
+ }
+}

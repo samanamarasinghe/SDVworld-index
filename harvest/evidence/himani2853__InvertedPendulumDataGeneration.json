@@ -1,0 +1,201 @@
+{
+ "repo": "himani2853/InvertedPendulumDataGeneration",
+ "disk_kb": 147422,
+ "method": "partial_clone",
+ "tree_files": 144,
+ "status": "ok",
+ "readme": "# InvertedPendulumDataGeneration\n\nBTP - Project 2\n\nThis repository contains code for generating data from the OpenAI Gym InvertedPendulum environment, training a PPO agent, and producing/analysing synthetic data with CTGAN. Below is a short description of the main scripts under `src/` and cross-file notes to help you maintain and run the project.\n\n## Files and purpose\n\n- `analysis_utils.py`\n\t- Purpose: plotting / analysis utilities reused by other scripts.\n\t- Key functions:\n\t\t- `analyze_pendulum_data(df, num_episodes, total_timesteps, prefix='')` — histogram, phase plot, timeseries of longest episode; saves PNGs.\n\t\t- `plot_rewards_per_episode(df, num_episodes, total_timesteps, prefix='')` — bar plot of total reward per episode; saves PNG.\n\t- Inputs/outputs: expects a pandas DataFrame with columns like `pole_angle`, `pole_angular_velocity`, `reward`, `terminated`. Writes images to `../plots` with filenames containing `num_episodes` and `total_timesteps`.\n\t- Notes: path handling and directory creation are present but not fully consistent; consider standardizing output directories.\n\n- `ctgan_model.py`\n\t- Purpose: train a CTGAN on baseline CSV and save the model.\n\t- Behavior: loads CSV `BASELINE_DATA_FILE`, constructs a CTGAN, fits and saves the model to `../models/ctgan_model.pkl`.\n\t- Dependencies: `pandas` and a CTGAN implementation (`sdv` or `ctgan`).\n\t- Notes: there are two CTGAN APIs used across scripts; pick `sdv` or `ctgan` and align the code.\n\n- `ctgan_data.py`\n\t- Purpose: load a trained CTGAN model, sample synthetic rows, save CSV and run analysis on baseline & synthetic sets.\n\t- Behavior: loads a saved model, reads baseline CSV, samples synthetic data of equal length, writes synthetic CSV, and calls `analysis_utils` functions for plotting.\n\t- Notes: ensure the CTGAN library used here matches the model training script's API.\n\n- `invertedPendulum.py`\n\t- Purpose: generate random-action data from Gym `InvertedPendulum-v5`, save CSVs and produce plots.\n\t- Key functions:\n\t\t- `generate_inverted_pendulum_data(num_episodes=1)` — runs episodes with random actions and returns a DataFrame.\n\t\t- `analyze_pendulum_data(num_episodes, filepath)` — reads CSV and makes plots.\n\t\t- `plot_rewards_per_episode(num_episodes, filepath)` — bar plot of total reward per episode.\n\t- Notes: uses `gymnasium`, `numpy`, `pandas`, `matplotlib`, and `seaborn`. Paths to `csv` and `plots` are relative; be careful with the working directory when running.\n\n- `ppobaseline.py`\n\t- Purpose: train a PPO agent (`stable_baselines3`), generate trajectories with the trained agent, save CSV and run analysis.\n\t- Key functions:\n\t\t- `train_agent(env)` — trains PPO for `total_timesteps`.\n\t\t- `generate_data_with_trained_agent(env, model, num_episodes=50)` — runs episodes using `model.predict` and collects transitions into a DataFrame.\n\t- Notes: saves CSVs named with `num_episodes` and `total_timesteps`. Training with many timesteps and running many episodes can be time-consuming.\n\n## Cross-file notes and suggestions\n\n- Dependency mismatch: `ctgan_model.py` and `ctgan_data.py` use different CTGAN imports (`ctgan` vs `sdv.tabular`). Choose one library and update both scripts to match. Recommended: `pip install sdv` and use `from sdv.tabular import CTGAN` everywhere, or use the standalone `ctgan` package consistently.\n\n- Output paths: several scripts save plots to `../plots` but create `plots` locally. Standardize to a single `plots` directory and pass it as a parameter to plotting functions.\n\n- `.gitignore` currently ignores `./csv` and `./plots`. That caused git push/rebase problems because those folders exist locally. If you want to keep generated data out of version control, leave `.gitignore` as-is; otherwise remove entries and commit the generated files explicitly.\n\n- Model save/load API: ensure the model saving/loading methods match the chosen CTGAN library (SDV vs ctgan). SDV's `CTGAN` has `.save()`/.load() methods; the `ctgan` package uses `CTGANSynthesizer` and you may need to use `pickle` for saving.\n\n## Running the project (quick tips)\n\n- Install dependencies in your virtualenv:\n\n```bash\npip install gymnasium stable-baselines3 pandas matplotlib seaborn sdv\n```\n\n- Generate random data:\n\n```bash\ncd src\npython3 invertedPendulum.py\n```\n\n- Train PPO agent and generate agent data:\n\n```bash\ncd src\npython3 ppobaseline.py\n```\n\n- Train CTGAN and create synthetic data (after training data exists):\n\n```bash\ncd src\npython3 ctgan_model.py\npython3 ctgan_data.py\n```\n\nIf you'd like, I can make the CTGAN API consistent across files, standardize paths and add a `requirements.txt`. Tell me which CTGAN library you prefer (SDV or ctgan) and whether you want generated `csv`/`plots` committed to the repo or kept ignored.\n",
+ "hits": {
+  "sdv_any": [
+   {
+    "file": "README.md",
+    "line": 45,
+    "text": "- Dependency mismatch: `ctgan_model.py` and `ctgan_data.py` use different CTGAN imports (`ctgan` vs `sdv.tabular`). Choose one library and update both scripts to match. Recommended: `pip install sdv` and use `from sdv.tabular import CTGAN` everywhere, or use the standalone `ctgan` package consistent",
+    "context": [
+     "\t- Notes: saves CSVs named with `num_episodes` and `total_timesteps`. Training with many timesteps and running many episodes can be time-consuming.",
+     "",
+     "## Cross-file notes and suggestions",
+     "",
+     "- Dependency mismatch: `ctgan_model.py` and `ctgan_data.py` use different CTGAN imports (`ctgan` vs `sdv.tabular`). Choose one library and update both scripts to match. Recommended: `pip install sdv` ",
+     "",
+     "- Output paths: several scripts save plots to `../plots` but create `plots` locally. Standardize to a single `plots` directory and pass it as a parameter to plotting functions.",
+     "",
+     "- `.gitignore` currently ignores `./csv` and `./plots`. That caused git push/rebase problems because those folders exist locally. If you want to keep generated data out of version control, leave `.git"
+    ]
+   },
+   {
+    "file": "relevant/src/ctgan_data.py",
+    "line": 2,
+    "text": "# from sdv.tabular import CTGAN",
+    "context": [
+     "import pandas as pd",
+     "# from sdv.tabular import CTGAN",
+     "from ctgan import CTGAN",
+     "import os",
+     "",
+     "# Import your plotting functions from the new utility file"
+    ]
+   },
+   {
+    "file": "relevant/src/ctgan_model.py",
+    "line": 2,
+    "text": "# import sdv",
+    "context": [
+     "import pandas as pd",
+     "# import sdv",
+     "import torch",
+     "# from ctgan import CTGAN",
+     "# from sdv.sequential import PARModel  # <-- 1. Import PARModel",
+     "# from PARModel import PARModel"
+    ]
+   },
+   {
+    "file": "relevant/src/ctgan_model.py",
+    "line": 5,
+    "text": "# from sdv.sequential import PARModel  # <-- 1. Import PARModel",
+    "context": [
+     "import pandas as pd",
+     "# import sdv",
+     "import torch",
+     "# from ctgan import CTGAN",
+     "# from sdv.sequential import PARModel  # <-- 1. Import PARModel",
+     "# from PARModel import PARModel",
+     "# from sdv.timeseries import PAR",
+     "from deepecho.demo import load_demo",
+     "from deepecho.models.par import PARModel"
+    ]
+   },
+   {
+    "file": "relevant/src/ctgan_model.py",
+    "line": 7,
+    "text": "# from sdv.timeseries import PAR",
+    "context": [
+     "import torch",
+     "# from ctgan import CTGAN",
+     "# from sdv.sequential import PARModel  # <-- 1. Import PARModel",
+     "# from PARModel import PARModel",
+     "# from sdv.timeseries import PAR",
+     "from deepecho.demo import load_demo",
+     "from deepecho.models.par import PARModel",
+     "",
+     "if __name__ == \"__main__\":"
+    ]
+   },
+   {
+    "file": "src/ctgan_model.py",
+    "line": 2,
+    "text": "# import sdv",
+    "context": [
+     "import pandas as pd",
+     "# import sdv",
+     "from ctgan import CTGAN",
+     "",
+     "# The CSV file you created with the diverse, stochastic agent data",
+     "BASELINE_DATA_FILE = \"../csv/stochastic_trained_agent_data_500_episodes_timesteps_50000.csv\""
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "README.md",
+    "line": 51,
+    "text": "- Model save/load API: ensure the model saving/loading methods match the chosen CTGAN library (SDV vs ctgan). SDV's `CTGAN` has `.save()`/.load() methods; the `ctgan` package uses `CTGANSynthesizer` and you may need to use `pickle` for saving.",
+    "context": [
+     "- Output paths: several scripts save plots to `../plots` but create `plots` locally. Standardize to a single `plots` directory and pass it as a parameter to plotting functions.",
+     "",
+     "- `.gitignore` currently ignores `./csv` and `./plots`. That caused git push/rebase problems because those folders exist locally. If you want to keep generated data out of version control, leave `.git",
+     "",
+     "- Model save/load API: ensure the model saving/loading methods match the chosen CTGAN library (SDV vs ctgan). SDV's `CTGAN` has `.save()`/.load() methods; the `ctgan` package uses `CTGANSynthesizer` a",
+     "",
+     "## Running the project (quick tips)",
+     "",
+     "- Install dependencies in your virtualenv:"
+    ]
+   }
+  ],
+  "ctgan_mod": [
+   {
+    "file": "relevant/src/ctgan_data.py",
+    "line": 3,
+    "text": "from ctgan import CTGAN",
+    "context": [
+     "import pandas as pd",
+     "# from sdv.tabular import CTGAN",
+     "from ctgan import CTGAN",
+     "import os",
+     "",
+     "# Import your plotting functions from the new utility file",
+     "from analysis_utils import analyze_pendulum_data, plot_rewards_per_episode"
+    ]
+   },
+   {
+    "file": "relevant/src/ctgan_model.py",
+    "line": 4,
+    "text": "# from ctgan import CTGAN",
+    "context": [
+     "import pandas as pd",
+     "# import sdv",
+     "import torch",
+     "# from ctgan import CTGAN",
+     "# from sdv.sequential import PARModel  # <-- 1. Import PARModel",
+     "# from PARModel import PARModel",
+     "# from sdv.timeseries import PAR",
+     "from deepecho.demo import load_demo"
+    ]
+   },
+   {
+    "file": "src/ctgan_data.py",
+    "line": 2,
+    "text": "from ctgan import CTGAN",
+    "context": [
+     "import pandas as pd",
+     "from ctgan import CTGAN",
+     "import os",
+     "",
+     "# Import your plotting functions from the new utility file",
+     "from analysis_utils import analyze_pendulum_data, plot_rewards_per_episode"
+    ]
+   },
+   {
+    "file": "src/ctgan_model.py",
+    "line": 3,
+    "text": "from ctgan import CTGAN",
+    "context": [
+     "import pandas as pd",
+     "# import sdv",
+     "from ctgan import CTGAN",
+     "",
+     "# The CSV file you created with the diverse, stochastic agent data",
+     "BASELINE_DATA_FILE = \"../csv/stochastic_trained_agent_data_500_episodes_timesteps_50000.csv\"",
+     "EPOCHS = 100"
+    ]
+   }
+  ],
+  "sq": [
+   {
+    "file": "relevant/src/ctgan_model.py",
+    "line": 5,
+    "text": "# from sdv.sequential import PARModel  # <-- 1. Import PARModel",
+    "context": [
+     "import pandas as pd",
+     "# import sdv",
+     "import torch",
+     "# from ctgan import CTGAN",
+     "# from sdv.sequential import PARModel  # <-- 1. Import PARModel",
+     "# from PARModel import PARModel",
+     "# from sdv.timeseries import PAR",
+     "from deepecho.demo import load_demo",
+     "from deepecho.models.par import PARModel"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ctgan_mod",
+  "sdv_any",
+  "sq"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

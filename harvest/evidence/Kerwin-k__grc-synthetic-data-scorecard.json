@@ -1,0 +1,355 @@
+{
+ "repo": "Kerwin-k/grc-synthetic-data-scorecard",
+ "disk_kb": 37514,
+ "method": "partial_clone",
+ "tree_files": 18,
+ "status": "ok",
+ "readme": "# SynTab-GRC: A Multi-Dimensional Evaluation Framework for Synthetic Tabular Data\n\n**SynTab-GRC** is a comprehensive evaluation system designed to bridge the \"operational impasse\" between data science innovation and governance oversight. \n\nThis framework benchmarks synthetic data generators (Statistical, GAN-based, and VAE-based) across five responsible AI dimensions: **Fidelity, Utility, Privacy, Fairness, and Sustainability**. It features a novel **GRC Scorecard** mechanism that translates complex technical metrics into actionable, audit-ready risk signals (Red/Amber/Green).\n\n> **Context:** This repository contains the implementation code for the Master's Thesis: *\"Responsible AI in Practice: A Multi-Dimensional Evaluation Framework for Synthetic Tabular Data.\"*\n\n---\n\n## 🚀 Key Features\n\n### 1. Multi-Dimensional Benchmarking\nBeyond the traditional Fidelity-Utility-Privacy (FUP) trilemma, this framework integrates:\n* **Algorithmic Fairness:** Measures bias propagation using *Statistical Parity Difference (SPD)*.\n* **Computational Sustainability:** Tracks CO₂ emissions and energy consumption via *CodeCarbon*, implementing a tiered tracking logic (GPU priority with CPU fallback).\n\n### 2. Resource-Aware & Robust Execution\n* **Dynamic Stratified Sampling:** Automatically detects hardware constraints (RAM/GPU) and downsamples large datasets to a manageable size (e.g., 50k rows) while strictly preserving class distributions.\n* **OOM Protection:** Prevents training crashes on standard hardware when using heavy deep learning models (CTGAN, TVAE).\n\n### 3. Handling Mode Collapse (Imbalanced Data Support)\n* **Hybrid Resampling Strategy:** Implements a conditional upsampling mechanism in the training pipeline. This mitigates \"mode collapse\" in highly imbalanced datasets (e.g., Financial Fraud), ensuring that generative models capture minority class signals to preserve downstream Utility (F1-Score) and Fairness metrics.\n\n### 4. Governance-Oriented Visualization\n* **Automated Scorecard:** Converts raw floating-point metrics into categorical risk levels based on configurable, context-aware thresholds (defined in `config.py`).\n\n---\n\n## 📂 Repository Structure\n\n```bash\nSynTab-GRC/\n├── data/\n│   ├── raw/                 # Place original CSV files here (e.g., application_train.csv)\n│   └── processed/           # Cleaned and sampled data (auto-generated)\n├── metadata/                # SDV metadata JSON files (auto-generated)\n├── models/                  # Saved generator models (.pkl)\n├── results/\n│   ├── emissions/           # Carbon footprint logs (CodeCarbon)\n│   ├── synthetic_data/      # Generated synthetic datasets\n│   ├── metrics_report.json  # Raw calculated metrics\n│   └── grc_scorecard.png    # Final visualized scorecard\n├── src/\n│   ├── config.py            # Central Control Panel (Thresholds, Paths, Models)\n│   ├── data_loader.py       # Resource-aware ingestion & sampling\n│   ├── model_trainer.py     # Training loop with resampling & carbon tracking\n│   ├── evaluation_engine.py # 5-dimensional metric computation\n│   ├── grc_translator.py    # RAG logic application & visualization\n│   └── utils.py             # Helper functions\n├── main.py                  # Pipeline orchestrator (Entry Point)\n├── requirements.txt         # Dependencies\n└── README.md\n```\n## 🛠️ Installation & Prerequisites\n\n### Requirements\n* Python >= 3.8\n* CUDA-enabled GPU (Recommended for CTGAN/TVAE training, but works on CPU)\n\n### Setup\n1.  **Clone the repository:**\n    ```bash\n    git clone [https://github.com/YourUsername/SynTab-GRC.git](https://github.com/YourUsername/SynTab-GRC.git)\n    cd SynTab-GRC\n    ```\n\n2.  **Install dependencies:**\n    ```bash\n    pip install -r requirements.txt\n    ```\n    *Key dependencies include: `sdv`, `sdmetrics`, `codecarbon`, `fairlearn`, `scikit-learn`, `pandas`, `pynvml`.*\n\n---\n\n## ⚙️ Configuration\n\nThis project uses a **Configuration-Driven Architecture**. You do not need to modify the core logic code to switch datasets or adjust risk policies.\n\nAll settings are managed in `src/config.py`:\n\n1.  **Dataset Selection:**\n    Modify `DatasetConfig` to point to your target CSV.\n    ```python\n    class DatasetConfig:\n        RAW_DATA_FILE = \"application_train.csv\"  # Target file\n        TARGET_COLUMN = \"TARGET\"                 # Target variable for prediction\n        POSITIVE_LABEL = 1                       # Minority class label\n        SENSITIVE_FEATURES = [\"CODE_GENDER\"]     # For fairness assessment\n        SAMPLE_SIZE = 50000                      # Effective training size\n    ```\n\n2.  **Risk Thresholds (RAG Logic):**\n    Adjust `RAGThresholdConfig` based on the domain context (e.g., Finance vs. Healthcare).\n    ```python\n    class RAGThresholdConfig:\n        # Adjust thresholds based on task difficulty (e.g., Imbalanced vs Balanced)\n        UTILITY_TSTR_F1 = {\"green\": 0.40, \"amber\": 0.20} \n        PRIVACY_MIA = {\"green\": 0.55, \"amber\": 0.65}\n    ```\n\n---\n\n## 🚀 Usage\n\n### Running the Full Pipeline\nTo execute the complete workflow (Data Ingestion → Training → Evaluation → Scorecard Generation):\n\n```bash\npython main.py\n```\n### Workflow Details\n1.  **Ingestion:** The system loads the raw data, checks system resources, and applies stratified sampling if necessary (`data_loader.py`).\n2.  **Training:** Three models (GaussianCopula, CTGAN, TVAE) are trained. If class imbalance is detected, the system applies **stratified upsampling** to prevent mode collapse (`model_trainer.py`).\n3.  **Evaluation:** Synthetic data is evaluated against real data using JSD, NMI, TSTR (F1), MIA (AUC), and SPD (`evaluation_engine.py`).\n4.  **Reporting:** Results are aggregated, mapped to RAG colors, and exported as a PNG image (`grc_translator.py`).\n\n---\n\n## 📊 Methodology & Metrics\n\n### 1. Generative Models Benchmarked\n* **Gaussian Copula:** Statistical baseline (Multivariate covariance).\n* **CTGAN:** Conditional Generative Adversarial Network (Deep Learning).\n* **TVAE:** Tabular Variational Autoencoder (Deep Learning).\n\n### 2. Evaluation Dimensions\n| Dimension | Metric | Description |\n| :--- | :--- | :--- |\n| **Quality** | JSD & NMI | Measures marginal distribution (Shape) and correlation (Structure) retention. |\n| **Utility** | TSTR F1 | *Train-Synthetic-Test-Real*. Evaluates if synthetic data retains predictive signals. |\n| **Privacy** | Adversarial AUC | Measures how easily a discriminator can distinguish synthetic from real records. |\n| **Fairness** | SPD | *Statistical Parity Difference*. Checks if algorithmic bias is amplified. |\n| **Sustainability** | CO₂eq (kg) | Environmental cost of training, tracked via CodeCarbon. |\n\n### 3. Note on Resampling\nFor highly imbalanced datasets (e.g., Home Credit Default Risk), this framework employs a **Fidelity-Utility Trade-off Mechanism**. It minimally upsamples the minority class during training to ensure the model learns risk signals (Utility), acknowledging a controlled trade-off in statistical distribution fidelity.\n\n---\n\n## 📄 Outputs\n\nAfter execution, check the `results/` folder:\n* **`grc_scorecard.png`**: The visual artifact summarizing model performance for stakeholders.\n* **`metrics_report.json`**: Full technical logs containing raw float values.\n* **`emissions/`**: CSV logs detailed energy consumption (RAM, CPU, GPU).\n\n---\n\n## 📜 License\n\nThis project is licensed under the MIT License - see the LICENSE file for details.\n\n---\n\n## 🖊️ Citation\n\nIf you use this framework in your research, please cite:\n\n```bibtex\n@mastersthesis{SynTabGRC2025,\n  author = {Liu Kun},\n  title = {Responsible AI in Practice: A Multi-Dimensional Evaluation Framework for Synthetic Tabular Data},\n  school = {UCSI University},\n  year = {2025}\n}\n",
+ "hits": {
+  "md": [
+   {
+    "file": "main.py",
+    "line": 2,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from src.data_loader import load_and_clean_data, generate_and_save_metadata",
+     "from src.model_trainer import train_and_generate, MODELS_CONFIG",
+     "from src.evaluation_engine import run_evaluation_pipeline",
+     "from src.grc_translator import create_grc_scorecard, save_scorecard_as_image"
+    ]
+   },
+   {
+    "file": "src/data_loader.py",
+    "line": 14,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from typing import Optional",
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sklearn.model_selection import StratifiedShuffleSplit",
+     "",
+     "from src.config import DatasetConfig, PathConfig",
+     ""
+    ]
+   },
+   {
+    "file": "src/model_trainer.py",
+    "line": 6,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import time",
+     "import logging",
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from codecarbon import EmissionsTracker, OfflineEmissionsTracker",
+     "from sklearn.utils import resample",
+     "",
+     "# 导入配置"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "main.py",
+    "line": 2,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from src.data_loader import load_and_clean_data, generate_and_save_metadata",
+     "from src.model_trainer import train_and_generate, MODELS_CONFIG",
+     "from src.evaluation_engine import run_evaluation_pipeline",
+     "from src.grc_translator import create_grc_scorecard, save_scorecard_as_image"
+    ]
+   },
+   {
+    "file": "src/config.py",
+    "line": 20,
+    "text": "from sdv.single_table import (",
+    "context": [
+     "try:",
+     "    import psutil",
+     "except ImportError:",
+     "    psutil = None",
+     "from sdv.single_table import (",
+     "    GaussianCopulaSynthesizer,",
+     "    CTGANSynthesizer,",
+     "    TVAESynthesizer",
+     ")"
+    ]
+   },
+   {
+    "file": "src/data_loader.py",
+    "line": 14,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from typing import Optional",
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sklearn.model_selection import StratifiedShuffleSplit",
+     "",
+     "from src.config import DatasetConfig, PathConfig",
+     ""
+    ]
+   },
+   {
+    "file": "src/model_trainer.py",
+    "line": 6,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import time",
+     "import logging",
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from codecarbon import EmissionsTracker, OfflineEmissionsTracker",
+     "from sklearn.utils import resample",
+     "",
+     "# 导入配置"
+    ]
+   },
+   {
+    "file": "src/model_trainer.py",
+    "line": 14,
+    "text": "from sdv.single_table import (",
+    "context": [
+     "# 导入配置",
+     "from src.config import DatasetConfig, PathConfig, MODELS_CONFIG, SustainabilityConfig, ResourceConfig",
+     "",
+     "# 导入 SDV 合成器类",
+     "from sdv.single_table import (",
+     "    GaussianCopulaSynthesizer,",
+     "    CTGANSynthesizer,",
+     "    TVAESynthesizer,",
+     ")"
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "src/config.py",
+    "line": 20,
+    "text": "from sdv.single_table import (",
+    "context": [
+     "try:",
+     "    import psutil",
+     "except ImportError:",
+     "    psutil = None",
+     "from sdv.single_table import (",
+     "    GaussianCopulaSynthesizer,",
+     "    CTGANSynthesizer,",
+     "    TVAESynthesizer",
+     ")"
+    ]
+   },
+   {
+    "file": "src/model_trainer.py",
+    "line": 14,
+    "text": "from sdv.single_table import (",
+    "context": [
+     "# 导入配置",
+     "from src.config import DatasetConfig, PathConfig, MODELS_CONFIG, SustainabilityConfig, ResourceConfig",
+     "",
+     "# 导入 SDV 合成器类",
+     "from sdv.single_table import (",
+     "    GaussianCopulaSynthesizer,",
+     "    CTGANSynthesizer,",
+     "    TVAESynthesizer,",
+     ")"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "src/config.py",
+    "line": 22,
+    "text": "CTGANSynthesizer,",
+    "context": [
+     "except ImportError:",
+     "    psutil = None",
+     "from sdv.single_table import (",
+     "    GaussianCopulaSynthesizer,",
+     "    CTGANSynthesizer,",
+     "    TVAESynthesizer",
+     ")",
+     "",
+     "# --- 路径配置 (Path Configuration) ---"
+    ]
+   },
+   {
+    "file": "src/config.py",
+    "line": 219,
+    "text": "\"class\": CTGANSynthesizer,",
+    "context": [
+     "        \"params\": {}",
+     "    },",
+     "    # 深度学习模型 (GAN) / Deep Learning (GAN)",
+     "    \"CTGAN\": {",
+     "        \"class\": CTGANSynthesizer,",
+     "        \"params\": {\"epochs\": 100, \"verbose\": True}",
+     "    },",
+     "    # 深度学习模型 (VAE) / Deep Learning (VAE)",
+     "    \"TVAE\": {"
+    ]
+   },
+   {
+    "file": "src/model_trainer.py",
+    "line": 16,
+    "text": "CTGANSynthesizer,",
+    "context": [
+     "",
+     "# 导入 SDV 合成器类",
+     "from sdv.single_table import (",
+     "    GaussianCopulaSynthesizer,",
+     "    CTGANSynthesizer,",
+     "    TVAESynthesizer,",
+     ")",
+     "",
+     ""
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "src/config.py",
+    "line": 21,
+    "text": "GaussianCopulaSynthesizer,",
+    "context": [
+     "    import psutil",
+     "except ImportError:",
+     "    psutil = None",
+     "from sdv.single_table import (",
+     "    GaussianCopulaSynthesizer,",
+     "    CTGANSynthesizer,",
+     "    TVAESynthesizer",
+     ")",
+     ""
+    ]
+   },
+   {
+    "file": "src/config.py",
+    "line": 214,
+    "text": "\"class\": GaussianCopulaSynthesizer,",
+    "context": [
+     "# --- 模型配置 (Model Configuration) ---",
+     "MODELS_CONFIG = {",
+     "    # 统计基线模型 / Statistical Baseline",
+     "    \"GaussianCopula\": {",
+     "        \"class\": GaussianCopulaSynthesizer,",
+     "        \"params\": {}",
+     "    },",
+     "    # 深度学习模型 (GAN) / Deep Learning (GAN)",
+     "    \"CTGAN\": {"
+    ]
+   },
+   {
+    "file": "src/model_trainer.py",
+    "line": 15,
+    "text": "GaussianCopulaSynthesizer,",
+    "context": [
+     "from src.config import DatasetConfig, PathConfig, MODELS_CONFIG, SustainabilityConfig, ResourceConfig",
+     "",
+     "# 导入 SDV 合成器类",
+     "from sdv.single_table import (",
+     "    GaussianCopulaSynthesizer,",
+     "    CTGANSynthesizer,",
+     "    TVAESynthesizer,",
+     ")",
+     ""
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "src/config.py",
+    "line": 23,
+    "text": "TVAESynthesizer",
+    "context": [
+     "    psutil = None",
+     "from sdv.single_table import (",
+     "    GaussianCopulaSynthesizer,",
+     "    CTGANSynthesizer,",
+     "    TVAESynthesizer",
+     ")",
+     "",
+     "# --- 路径配置 (Path Configuration) ---",
+     "PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))"
+    ]
+   },
+   {
+    "file": "src/config.py",
+    "line": 224,
+    "text": "\"class\": TVAESynthesizer,",
+    "context": [
+     "        \"params\": {\"epochs\": 100, \"verbose\": True}",
+     "    },",
+     "    # 深度学习模型 (VAE) / Deep Learning (VAE)",
+     "    \"TVAE\": {",
+     "        \"class\": TVAESynthesizer,",
+     "        \"params\": {\"epochs\": 100, \"verbose\": True}",
+     "    }",
+     "}",
+     ""
+    ]
+   },
+   {
+    "file": "src/model_trainer.py",
+    "line": 17,
+    "text": "TVAESynthesizer,",
+    "context": [
+     "# 导入 SDV 合成器类",
+     "from sdv.single_table import (",
+     "    GaussianCopulaSynthesizer,",
+     "    CTGANSynthesizer,",
+     "    TVAESynthesizer,",
+     ")",
+     "",
+     "",
+     "def _create_emissions_tracker_for_model(model_name: str):"
+    ]
+   }
+  ],
+  "sm": [
+   {
+    "file": "src/evaluation_engine.py",
+    "line": 11,
+    "text": "from sdmetrics.reports.single_table import QualityReport",
+    "context": [
+     "    MetricFrame,",
+     "    demographic_parity_difference,",
+     "    equalized_odds_difference,",
+     ")",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "from sklearn.compose import ColumnTransformer",
+     "from sklearn.impute import SimpleImputer",
+     "from sklearn.linear_model import LogisticRegression",
+     "from sklearn.metrics import f1_score, roc_auc_score"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "gc",
+  "md",
+  "sdv_any",
+  "sm",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "# 注意：不要让 sdv 自动拉取最新的 torch 2.9.x",
+   "sdv==1.14.0",
+   "sdmetrics==0.14.0"
+  ]
+ }
+}

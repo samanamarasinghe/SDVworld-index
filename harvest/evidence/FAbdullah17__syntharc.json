@@ -1,0 +1,816 @@
+{
+ "repo": "FAbdullah17/syntharc",
+ "disk_kb": 698,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# syntharc: The Grand Unified Synthetic Data Generator\n\n[![CI](https://img.shields.io/github/actions/workflow/status/FAbdullah17/syntharc/ci.yml?branch=main)](https://github.com/FAbdullah17/syntharc/actions/workflows/ci.yml)\n[![PyPI version](https://img.shields.io/pypi/v/syntharc.svg)](https://pypi.org/project/syntharc/)\n[![Python Versions](https://img.shields.io/badge/python-%3E%3D3.10-blue.svg)](https://pypi.org/project/syntharc/)\n[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)\n\n**`syntharc`** is a powerful, flexible, and unified Python library for generating high-quality synthetic data across multiple domains. In the modern machine learning ecosystem, acquiring high-quality, privacy-compliant, and diverse datasets is often the biggest bottleneck. `syntharc` solves this by abstracting the complexity of various generative algorithms into a single, intuitive framework.\n\nWhether you need to anonymize sensitive tabular records, augment image operations for computer vision, simulate realistic text sequences, or replicate complex financial time-series signals. `syntharc` provides the unified API to do it all using state-of-the-art backend engines like PyTorch, Hugging Face Transformers, Albumentations, and the Synthetic Data Vault (SDV).\n\n---\n\n## How It Works: The Unified Lifecycle\n\nOne of the biggest hurdles in synthetic data generation is the fragmented tooling across different data types. `syntharc` forces all underlying models into a highly predictable **3-step lifecycle** inherited from our `BaseSynthesizer` architecture:\n\n1. **`prepare(**kwargs)`**: Configures the internal environment. This is where you define structural metadata, column types, sequence keys, or image transformation pipelines to guide the generation.\n2. **`fit(data)`**: Feeds your actual, real-world dataset into the generative model so it can learn patterns, probabilistic distributions, and internal representations.\n3. **`generate(**kwargs)`**: Samples from the trained model to yield your brand new synthetic dataset—retaining the statistical properties of the original without exposing real user information.\n\n---\n\n## Key Features\n\n*   **Tabular Data:** Synthesize fully relational datasets using Deep Learning (`CTGANSynthesizer`) or statistical modeling (`GaussianCopulaSynthesizer`).\n*   **Text Generation:** Leverage the power of LLMs (`TransformerSynthesizer`), classic statistical chains (`MarkovSynthesizer`), or strict ruleings (`TemplateSynthesizer`).\n*   **Image Augmentation:** Use `ImageAugmentor` to rapidly iterate through spatial and pixel-level augmentations, dynamically expanding computer vision datasets.\n*   **Time-Series:** Employ the `PARSynthesizer` (Probabilistic AutoRegressive model) to safely synthesize robust sequence data over time.\n*   **Evaluations:** Built-in tools for evaluating the quality, fidelity, and privacy metrics of your generated data against your source data.\n\n---\n\n## Installation\n\nInstall `syntharc` via pip. The base package provides the core infrastructure. We highly recommend installing the specific domain dependencies you intend to use to keep your environment lean:\n\n```bash\n# Install everything (Recommended for the full experience)\npip install \"syntharc[all]\"\n\n# Or individually pick your domains:\npip install \"syntharc[tabular]\"\npip install \"syntharc[text]\"\npip install \"syntharc[image]\"\npip install \"syntharc[timeseries]\"\n\n# For contributors and local development:\npip install \"syntharc[dev]\"\n```\n\n---\n\n## Comprehensive Quick Start\n\nBelow are examples of how our unified framework elegantly handles vastly different data constraints.\n\n### 1. Privacy-Preserving Tabular Data\nTrain a CTGAN model to learn the distribution of your customer data without saving real identities.\n```python\nimport pandas as pd\nfrom syntharc.tabular.ctgan import CTGANSynthesizer\n\nreal_data = pd.read_csv(\"customer_data.csv\")\n\n# 1. Initialize & Prepare metadata\nsynth = CTGANSynthesizer(epochs=50)\nsynth.prepare(metadata_dict={\"primary_key\": \"user_id\"})\n\n# 2. Fit to real data\nsynth.fit(real_data)\n\n# 3. Generate 1,000 synthetic rows!\nsynthetic_data = synth.generate(num_rows=1000)\nprint(synthetic_data.head())\n```\n\n### 2. Deep Time-Series Generation\nSynthesize sequential metrics, like stock prices or IoT sensor readings, using AutoRegressive modeling.\n```python\nfrom syntharc.timeseries.par import PARSynthesizer\n\n# 1. Initialize & Prepare\nsynth = PARSynthesizer(epochs=25)\n# Define what makes a \"sequence\" (e.g., separate tracking per 'device_id')\nsynth.prepare(metadata_dict={\n    \"sequence_key\": \"device_id\",\n    \"context_columns\": [\"region\"]\n})\n\n# 2. Fit\nsynth.fit(sensor_dataframe)\n\n# 3. Generate sequential data\nsynthetic_series = synth.generate(num_sequences=50)\n```\n\n### 3. Causal Text Generation (LLMs)\nEasily utilize Hugging Face causal language models.\n```python\nfrom syntharc.text.transformer import TransformerTextGenerator\n\n# 1. Initialize (Downloads SmolLM2-360M-Instruct by default)\nsynth = TransformerTextGenerator()\n\n# 2. Prepare with an optional style context\nsynth.prepare(corpus=\"The future of synthetic data is bright and highly scalable.\")\n\n# 3. Generate structured text from instructions\ntext_output = synth.generate(num_samples=1, instructions=\"Write a short summary about data.\")\nprint(text_output[0])\n```\n\n### 4. High-Speed Image Augmentation\nPrepare a pipeline of augmentations to expand your Machine Learning dataset effortlessly.\n```python\nfrom syntharc.image.augmentor import ImageAugmentor\nimport cv2\n\n# 1. Initialize rules\naugmentor = ImageAugmentor()\n# Uses Albumentations backend dictionary standards mapping\naugmentor.prepare(config={\n    'resize': (256, 256),\n    'horizontal_flip': 0.5,\n    'brightness_contrast': 0.2\n})\n\n# 2. Load Real Image\nimage = cv2.imread('dataset/cat.jpg')\n\n# 3. Generate augmentations\n# The generator seamlessly wraps Albumentations under the hood\naugmented_image = augmentor.generate(num_samples=1, data=[image])\nprint(f\"Augmented Shape: {augmented_image[0].shape}\")\n```\n\n---\n\n## Documentation\n\nFor comprehensive guides, parameter references, evaluations, and interactive Jupyter showcase notebooks, please check out the `docs/` folder:\n- [Getting Started](docs/getting_started.md)\n- [Tabular Generation Guide](docs/tabular.md)\n- [Time-Series Generation Guide](docs/timeseries.md)\n- [Text Generation Guide](docs/text.md)\n- [Image Augmentation Guide](docs/image.md)\n- [API Reference](docs/api_reference.md)\n\n---\n\n## Contributing\n\nWe love our contributors! If you're interested in adding a new generative model, fixing a bug, or improving the documentation, please refer to our [CONTRIBUTING.md](CONTRIBUTING.md) for detailed instructions on setting up your local environment, managing dependencies, and passing our CI checks.\n\n## License\n\nThis project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.\n\n---\n\nMade with ❤️ by the syntharc team.\n",
+ "hits": {
+  "ct": [
+   {
+    "file": "CHANGELOG.md",
+    "line": 12,
+    "text": "- **Tabular Domain**: Implemented `CTGANSynthesizer` and `GaussianCopulaSynthesizer` powered by SDV.",
+    "context": [
+     "## [0.1.0] - 2026-05-08",
+     "",
+     "### Added",
+     "- **Core API**: Introduced the unified `prepare()`, `fit()`, and `generate()` foundational architecture for all synthesis modules.",
+     "- **Tabular Domain**: Implemented `CTGANSynthesizer` and `GaussianCopulaSynthesizer` powered by SDV.",
+     "- **Text Domain**: Implemented `MarkovSynthesizer`, `TemplateSynthesizer`, and `TransformerSynthesizer` via Hugging Face.",
+     "- **Image Domain**: Implemented `ImageAugmentor` with fast robust augmentations using Albumentations.",
+     "- **Time-Series Domain**: Implemented `PARSynthesizer` for deep sequential data generation.",
+     "- **Examples**: Shipped an extensive interactive `syntharc_showcase.ipynb` Jupyter Notebook tutorial alongside basic `.py` standalone examples."
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 26,
+    "text": "*   **Tabular Data:** Synthesize fully relational datasets using Deep Learning (`CTGANSynthesizer`) or statistical modeling (`GaussianCopulaSynthesizer`).",
+    "context": [
+     "---",
+     "",
+     "## Key Features",
+     "",
+     "*   **Tabular Data:** Synthesize fully relational datasets using Deep Learning (`CTGANSynthesizer`) or statistical modeling (`GaussianCopulaSynthesizer`).",
+     "*   **Text Generation:** Leverage the power of LLMs (`TransformerSynthesizer`), classic statistical chains (`MarkovSynthesizer`), or strict ruleings (`TemplateSynthesizer`).",
+     "*   **Image Augmentation:** Use `ImageAugmentor` to rapidly iterate through spatial and pixel-level augmentations, dynamically expanding computer vision datasets.",
+     "*   **Time-Series:** Employ the `PARSynthesizer` (Probabilistic AutoRegressive model) to safely synthesize robust sequence data over time.",
+     "*   **Evaluations:** Built-in tools for evaluating the quality, fidelity, and privacy metrics of your generated data against your source data."
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 62,
+    "text": "from syntharc.tabular.ctgan import CTGANSynthesizer",
+    "context": [
+     "### 1. Privacy-Preserving Tabular Data",
+     "Train a CTGAN model to learn the distribution of your customer data without saving real identities.",
+     "```python",
+     "import pandas as pd",
+     "from syntharc.tabular.ctgan import CTGANSynthesizer",
+     "",
+     "real_data = pd.read_csv(\"customer_data.csv\")",
+     "",
+     "# 1. Initialize & Prepare metadata"
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 67,
+    "text": "synth = CTGANSynthesizer(epochs=50)",
+    "context": [
+     "",
+     "real_data = pd.read_csv(\"customer_data.csv\")",
+     "",
+     "# 1. Initialize & Prepare metadata",
+     "synth = CTGANSynthesizer(epochs=50)",
+     "synth.prepare(metadata_dict={\"primary_key\": \"user_id\"})",
+     "",
+     "# 2. Fit to real data",
+     "synth.fit(real_data)"
+    ]
+   },
+   {
+    "file": "tests/test_tabular/test_ctgan.py",
+    "line": 1,
+    "text": "\"\"\"Tests for CTGANSynthesizer.\"\"\"",
+    "context": [
+     "\"\"\"Tests for CTGANSynthesizer.\"\"\"",
+     "",
+     "from __future__ import annotations",
+     "",
+     "from typing import Any"
+    ]
+   },
+   {
+    "file": "tests/test_tabular/test_ctgan.py",
+    "line": 11,
+    "text": "from syntharc.tabular.ctgan import CTGANSynthesizer",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "import pytest",
+     "",
+     "from syntharc.tabular.ctgan import CTGANSynthesizer",
+     "from syntharc.tabular.utils import generate_from_schema",
+     "",
+     "",
+     "@pytest.fixture"
+    ]
+   },
+   {
+    "file": "tests/test_tabular/test_ctgan.py",
+    "line": 29,
+    "text": "class TestCTGANSynthesizerInit:",
+    "context": [
+     "        }",
+     "    )",
+     "",
+     "",
+     "class TestCTGANSynthesizerInit:",
+     "    \"\"\"Tests for CTGANSynthesizer initialization.\"\"\"",
+     "",
+     "    def test_default_config(self) -> None:",
+     "        synth = CTGANSynthesizer()"
+    ]
+   },
+   {
+    "file": "tests/test_tabular/test_ctgan.py",
+    "line": 30,
+    "text": "\"\"\"Tests for CTGANSynthesizer initialization.\"\"\"",
+    "context": [
+     "    )",
+     "",
+     "",
+     "class TestCTGANSynthesizerInit:",
+     "    \"\"\"Tests for CTGANSynthesizer initialization.\"\"\"",
+     "",
+     "    def test_default_config(self) -> None:",
+     "        synth = CTGANSynthesizer()",
+     "        assert synth.epochs == 300"
+    ]
+   },
+   {
+    "file": "tests/test_tabular/test_ctgan.py",
+    "line": 33,
+    "text": "synth = CTGANSynthesizer()",
+    "context": [
+     "class TestCTGANSynthesizerInit:",
+     "    \"\"\"Tests for CTGANSynthesizer initialization.\"\"\"",
+     "",
+     "    def test_default_config(self) -> None:",
+     "        synth = CTGANSynthesizer()",
+     "        assert synth.epochs == 300",
+     "        assert synth.batch_size == 500",
+     "        assert synth._lifecycle == \"fit\"",
+     "        assert synth.is_fitted is False"
+    ]
+   },
+   {
+    "file": "tests/test_tabular/test_ctgan.py",
+    "line": 40,
+    "text": "synth = CTGANSynthesizer(epochs=50, batch_size=64)",
+    "context": [
+     "        assert synth._lifecycle == \"fit\"",
+     "        assert synth.is_fitted is False",
+     "",
+     "    def test_custom_config(self) -> None:",
+     "        synth = CTGANSynthesizer(epochs=50, batch_size=64)",
+     "        assert synth.epochs == 50",
+     "        assert synth.batch_size == 64",
+     "",
+     "    def test_repr(self) -> None:"
+    ]
+   },
+   {
+    "file": "tests/test_tabular/test_ctgan.py",
+    "line": 45,
+    "text": "synth = CTGANSynthesizer()",
+    "context": [
+     "        assert synth.epochs == 50",
+     "        assert synth.batch_size == 64",
+     "",
+     "    def test_repr(self) -> None:",
+     "        synth = CTGANSynthesizer()",
+     "        assert \"CTGANSynthesizer\" in repr(synth)",
+     "        assert \"not initialized\" in repr(synth)",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "tests/test_tabular/test_ctgan.py",
+    "line": 46,
+    "text": "assert \"CTGANSynthesizer\" in repr(synth)",
+    "context": [
+     "        assert synth.batch_size == 64",
+     "",
+     "    def test_repr(self) -> None:",
+     "        synth = CTGANSynthesizer()",
+     "        assert \"CTGANSynthesizer\" in repr(synth)",
+     "        assert \"not initialized\" in repr(synth)",
+     "",
+     "",
+     "class TestCTGANSynthesizerValidation:"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "CHANGELOG.md",
+    "line": 12,
+    "text": "- **Tabular Domain**: Implemented `CTGANSynthesizer` and `GaussianCopulaSynthesizer` powered by SDV.",
+    "context": [
+     "## [0.1.0] - 2026-05-08",
+     "",
+     "### Added",
+     "- **Core API**: Introduced the unified `prepare()`, `fit()`, and `generate()` foundational architecture for all synthesis modules.",
+     "- **Tabular Domain**: Implemented `CTGANSynthesizer` and `GaussianCopulaSynthesizer` powered by SDV.",
+     "- **Text Domain**: Implemented `MarkovSynthesizer`, `TemplateSynthesizer`, and `TransformerSynthesizer` via Hugging Face.",
+     "- **Image Domain**: Implemented `ImageAugmentor` with fast robust augmentations using Albumentations.",
+     "- **Time-Series Domain**: Implemented `PARSynthesizer` for deep sequential data generation.",
+     "- **Examples**: Shipped an extensive interactive `syntharc_showcase.ipynb` Jupyter Notebook tutorial alongside basic `.py` standalone examples."
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 26,
+    "text": "*   **Tabular Data:** Synthesize fully relational datasets using Deep Learning (`CTGANSynthesizer`) or statistical modeling (`GaussianCopulaSynthesizer`).",
+    "context": [
+     "---",
+     "",
+     "## Key Features",
+     "",
+     "*   **Tabular Data:** Synthesize fully relational datasets using Deep Learning (`CTGANSynthesizer`) or statistical modeling (`GaussianCopulaSynthesizer`).",
+     "*   **Text Generation:** Leverage the power of LLMs (`TransformerSynthesizer`), classic statistical chains (`MarkovSynthesizer`), or strict ruleings (`TemplateSynthesizer`).",
+     "*   **Image Augmentation:** Use `ImageAugmentor` to rapidly iterate through spatial and pixel-level augmentations, dynamically expanding computer vision datasets.",
+     "*   **Time-Series:** Employ the `PARSynthesizer` (Probabilistic AutoRegressive model) to safely synthesize robust sequence data over time.",
+     "*   **Evaluations:** Built-in tools for evaluating the quality, fidelity, and privacy metrics of your generated data against your source data."
+    ]
+   },
+   {
+    "file": "tests/integration/test_pipeline_integration.py",
+    "line": 15,
+    "text": "from syntharc.tabular.gaussian_copula import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from PIL import Image",
+     "",
+     "from syntharc.image.augmentor import ImageAugmentor",
+     "from syntharc.tabular.gaussian_copula import GaussianCopulaSynthesizer",
+     "from syntharc.text.template import TemplateTextGenerator",
+     "from syntharc.timeseries.par import TimeSeriesSynthesizer",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "tests/integration/test_pipeline_integration.py",
+    "line": 40,
+    "text": "tab_synth = GaussianCopulaSynthesizer()",
+    "context": [
+     "            \"rating\": [5, 4, 3, 5, 2] * 2,",
+     "        }",
+     "    )",
+     "",
+     "    tab_synth = GaussianCopulaSynthesizer()",
+     "    tab_synth.fit(real_profiles)",
+     "    synth_profiles = tab_synth.generate(num_samples=10)",
+     "",
+     "    assert len(synth_profiles) == 10"
+    ]
+   },
+   {
+    "file": "tests/integration/test_tabular_integration.py",
+    "line": 9,
+    "text": "from syntharc.tabular.gaussian_copula import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "import pandas as pd",
+     "",
+     "from syntharc.tabular.evaluation import evaluate_tabular",
+     "from syntharc.tabular.gaussian_copula import GaussianCopulaSynthesizer",
+     "",
+     "",
+     "def test_tabular_lifecycle_integration() -> None:",
+     "    \"\"\"Test full tabular generation and evaluation pipeline.\"\"\""
+    ]
+   },
+   {
+    "file": "tests/integration/test_tabular_integration.py",
+    "line": 37,
+    "text": "synth = GaussianCopulaSynthesizer()",
+    "context": [
+     "        \"primary_key\": \"id\",",
+     "    }",
+     "",
+     "    # 2. Fit Synthesizer",
+     "    synth = GaussianCopulaSynthesizer()",
+     "    synth.fit(real_data)",
+     "    assert synth.is_fitted is True",
+     "",
+     "    # 3. Generate Synthetic Data"
+    ]
+   },
+   {
+    "file": "tests/test_tabular/test_gaussian_copula.py",
+    "line": 1,
+    "text": "\"\"\"Tests for GaussianCopulaSynthesizer.\"\"\"",
+    "context": [
+     "\"\"\"Tests for GaussianCopulaSynthesizer.\"\"\"",
+     "",
+     "from __future__ import annotations",
+     "",
+     "import numpy as np"
+    ]
+   },
+   {
+    "file": "tests/test_tabular/test_gaussian_copula.py",
+    "line": 9,
+    "text": "from syntharc.tabular.gaussian_copula import GaussianCopulaSynthesizer",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "import pytest",
+     "",
+     "from syntharc.tabular.gaussian_copula import GaussianCopulaSynthesizer",
+     "",
+     "",
+     "@pytest.fixture",
+     "def sample_df() -> pd.DataFrame:"
+    ]
+   },
+   {
+    "file": "tests/test_tabular/test_gaussian_copula.py",
+    "line": 26,
+    "text": "\"\"\"Tests for GaussianCopulaSynthesizer initialization.\"\"\"",
+    "context": [
+     "    )",
+     "",
+     "",
+     "class TestGaussianCopulaInit:",
+     "    \"\"\"Tests for GaussianCopulaSynthesizer initialization.\"\"\"",
+     "",
+     "    def test_default_config(self) -> None:",
+     "        synth = GaussianCopulaSynthesizer()",
+     "        assert synth._lifecycle == \"fit\""
+    ]
+   },
+   {
+    "file": "tests/test_tabular/test_gaussian_copula.py",
+    "line": 29,
+    "text": "synth = GaussianCopulaSynthesizer()",
+    "context": [
+     "class TestGaussianCopulaInit:",
+     "    \"\"\"Tests for GaussianCopulaSynthesizer initialization.\"\"\"",
+     "",
+     "    def test_default_config(self) -> None:",
+     "        synth = GaussianCopulaSynthesizer()",
+     "        assert synth._lifecycle == \"fit\"",
+     "        assert synth.is_fitted is False",
+     "",
+     "    def test_repr(self) -> None:"
+    ]
+   },
+   {
+    "file": "tests/test_tabular/test_gaussian_copula.py",
+    "line": 34,
+    "text": "synth = GaussianCopulaSynthesizer()",
+    "context": [
+     "        assert synth._lifecycle == \"fit\"",
+     "        assert synth.is_fitted is False",
+     "",
+     "    def test_repr(self) -> None:",
+     "        synth = GaussianCopulaSynthesizer()",
+     "        assert \"GaussianCopulaSynthesizer\" in repr(synth)",
+     "",
+     "",
+     "class TestGaussianCopulaValidation:"
+    ]
+   },
+   {
+    "file": "tests/test_tabular/test_gaussian_copula.py",
+    "line": 35,
+    "text": "assert \"GaussianCopulaSynthesizer\" in repr(synth)",
+    "context": [
+     "        assert synth.is_fitted is False",
+     "",
+     "    def test_repr(self) -> None:",
+     "        synth = GaussianCopulaSynthesizer()",
+     "        assert \"GaussianCopulaSynthesizer\" in repr(synth)",
+     "",
+     "",
+     "class TestGaussianCopulaValidation:",
+     "    \"\"\"Tests for input validation.\"\"\""
+    ]
+   }
+  ],
+  "par": [
+   {
+    "file": "CHANGELOG.md",
+    "line": 15,
+    "text": "- **Time-Series Domain**: Implemented `PARSynthesizer` for deep sequential data generation.",
+    "context": [
+     "- **Core API**: Introduced the unified `prepare()`, `fit()`, and `generate()` foundational architecture for all synthesis modules.",
+     "- **Tabular Domain**: Implemented `CTGANSynthesizer` and `GaussianCopulaSynthesizer` powered by SDV.",
+     "- **Text Domain**: Implemented `MarkovSynthesizer`, `TemplateSynthesizer`, and `TransformerSynthesizer` via Hugging Face.",
+     "- **Image Domain**: Implemented `ImageAugmentor` with fast robust augmentations using Albumentations.",
+     "- **Time-Series Domain**: Implemented `PARSynthesizer` for deep sequential data generation.",
+     "- **Examples**: Shipped an extensive interactive `syntharc_showcase.ipynb` Jupyter Notebook tutorial alongside basic `.py` standalone examples.",
+     "- **Documentation**: Deployed comprehensive markdown guides inside `docs/` detailing APIs and getting-started tutorials.",
+     "- **CI/CD**: Added robust GitHub Actions workflows for continuous integration (`ci.yml`) matrix-testing Python 3.10 to 3.12, and automated PyPI publishing (`publish.yml`) via Trusted Publishing.",
+     "- **Quality Assurance**: Added `pytest` coverage testing and integrated `pre-commit` hooks for `ruff` and `mypy` strict linting."
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 29,
+    "text": "*   **Time-Series:** Employ the `PARSynthesizer` (Probabilistic AutoRegressive model) to safely synthesize robust sequence data over time.",
+    "context": [
+     "",
+     "*   **Tabular Data:** Synthesize fully relational datasets using Deep Learning (`CTGANSynthesizer`) or statistical modeling (`GaussianCopulaSynthesizer`).",
+     "*   **Text Generation:** Leverage the power of LLMs (`TransformerSynthesizer`), classic statistical chains (`MarkovSynthesizer`), or strict ruleings (`TemplateSynthesizer`).",
+     "*   **Image Augmentation:** Use `ImageAugmentor` to rapidly iterate through spatial and pixel-level augmentations, dynamically expanding computer vision datasets.",
+     "*   **Time-Series:** Employ the `PARSynthesizer` (Probabilistic AutoRegressive model) to safely synthesize robust sequence data over time.",
+     "*   **Evaluations:** Built-in tools for evaluating the quality, fidelity, and privacy metrics of your generated data against your source data.",
+     "",
+     "---",
+     ""
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 81,
+    "text": "from syntharc.timeseries.par import PARSynthesizer",
+    "context": [
+     "",
+     "### 2. Deep Time-Series Generation",
+     "Synthesize sequential metrics, like stock prices or IoT sensor readings, using AutoRegressive modeling.",
+     "```python",
+     "from syntharc.timeseries.par import PARSynthesizer",
+     "",
+     "# 1. Initialize & Prepare",
+     "synth = PARSynthesizer(epochs=25)",
+     "# Define what makes a \"sequence\" (e.g., separate tracking per 'device_id')"
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 84,
+    "text": "synth = PARSynthesizer(epochs=25)",
+    "context": [
+     "```python",
+     "from syntharc.timeseries.par import PARSynthesizer",
+     "",
+     "# 1. Initialize & Prepare",
+     "synth = PARSynthesizer(epochs=25)",
+     "# Define what makes a \"sequence\" (e.g., separate tracking per 'device_id')",
+     "synth.prepare(metadata_dict={",
+     "    \"sequence_key\": \"device_id\",",
+     "    \"context_columns\": [\"region\"]"
+    ]
+   },
+   {
+    "file": "src/syntharc/timeseries/par.py",
+    "line": 3,
+    "text": "Wraps SDV's ``PARSynthesizer`` to learn deep generative models for",
+    "context": [
+     "\"\"\"PAR-based time-series synthesizer.",
+     "",
+     "Wraps SDV's ``PARSynthesizer`` to learn deep generative models for",
+     "multi-sequence time-series data. Requires a sequence identifier",
+     "and can conditionally generate based on context columns.",
+     "",
+     "Requires: ``pip install syntharc[timeseries]``"
+    ]
+   },
+   {
+    "file": "src/syntharc/timeseries/par.py",
+    "line": 76,
+    "text": "Extra keyword arguments passed to SDV's ``PARSynthesizer``.",
+    "context": [
+     "        context_columns : list[str] | None",
+     "            Optional list of columns that do not change within a sequence",
+     "            (e.g., \"country\", \"device_type\").",
+     "        **kwargs : Any",
+     "            Extra keyword arguments passed to SDV's ``PARSynthesizer``.",
+     "",
+     "        Returns",
+     "        -------",
+     "        TimeSeriesSynthesizer"
+    ]
+   },
+   {
+    "file": "src/syntharc/timeseries/par.py",
+    "line": 107,
+    "text": "from sdv.sequential import PARSynthesizer as SdvPar",
+    "context": [
+     "        self.sequence_key = sequence_key",
+     "        context_columns = kwargs.pop(\"context_columns\", [])",
+     "",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.sequential import PARSynthesizer as SdvPar",
+     "",
+     "        self._sample_data = data.copy()",
+     "",
+     "        self._metadata = SingleTableMetadata()"
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "src/syntharc/timeseries/evaluation.py",
+    "line": 133,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "    }",
+     "",
+     "    if metadata is not None:",
+     "        try:",
+     "            from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "            sdv_report = evaluate_quality(real_data, synthetic_data, metadata, verbose=False)",
+     "            result[\"sdv_quality_score\"] = sdv_report.get_score()",
+     "        except Exception:"
+    ]
+   },
+   {
+    "file": "src/syntharc/tabular/evaluation.py",
+    "line": 180,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "    }",
+     "",
+     "    if metadata is not None:",
+     "        try:",
+     "            from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "            sdv_report = evaluate_quality(real_data, synthetic_data, metadata, verbose=False)",
+     "            result[\"sdv_quality_score\"] = sdv_report.get_score()",
+     "        except Exception:"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "src/syntharc/timeseries/evaluation.py",
+    "line": 133,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "    }",
+     "",
+     "    if metadata is not None:",
+     "        try:",
+     "            from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "            sdv_report = evaluate_quality(real_data, synthetic_data, metadata, verbose=False)",
+     "            result[\"sdv_quality_score\"] = sdv_report.get_score()",
+     "        except Exception:"
+    ]
+   },
+   {
+    "file": "src/syntharc/timeseries/utils.py",
+    "line": 14,
+    "text": "import sdv  # noqa: F401",
+    "context": [
+     "",
+     "def require_sdv_timeseries() -> None:",
+     "    \"\"\"Raise a clear error if SDV is not installed.\"\"\"",
+     "    try:",
+     "        import sdv  # noqa: F401",
+     "    except ImportError as exc:",
+     "        raise ImportError(",
+     "            \"SDV is required for time-series synthesis. \"",
+     "            \"Install it with: pip install syntharc[timeseries]\""
+    ]
+   },
+   {
+    "file": "src/syntharc/timeseries/par.py",
+    "line": 106,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "        self.sequence_key = sequence_key",
+     "        context_columns = kwargs.pop(\"context_columns\", [])",
+     "",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.sequential import PARSynthesizer as SdvPar",
+     "",
+     "        self._sample_data = data.copy()",
+     ""
+    ]
+   },
+   {
+    "file": "src/syntharc/timeseries/par.py",
+    "line": 107,
+    "text": "from sdv.sequential import PARSynthesizer as SdvPar",
+    "context": [
+     "        self.sequence_key = sequence_key",
+     "        context_columns = kwargs.pop(\"context_columns\", [])",
+     "",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.sequential import PARSynthesizer as SdvPar",
+     "",
+     "        self._sample_data = data.copy()",
+     "",
+     "        self._metadata = SingleTableMetadata()"
+    ]
+   },
+   {
+    "file": "src/syntharc/tabular/evaluation.py",
+    "line": 180,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "    }",
+     "",
+     "    if metadata is not None:",
+     "        try:",
+     "            from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "            sdv_report = evaluate_quality(real_data, synthetic_data, metadata, verbose=False)",
+     "            result[\"sdv_quality_score\"] = sdv_report.get_score()",
+     "        except Exception:"
+    ]
+   },
+   {
+    "file": "src/syntharc/tabular/utils.py",
+    "line": 19,
+    "text": "import sdv  # noqa: F401",
+    "context": [
+     "",
+     "def require_sdv() -> None:",
+     "    \"\"\"Raise a clear error if SDV is not installed.\"\"\"",
+     "    try:",
+     "        import sdv  # noqa: F401",
+     "    except ImportError as exc:",
+     "        raise ImportError(",
+     "            \"SDV is required for tabular synthesis. \"",
+     "            \"Install it with: pip install syntharc[tabular]\""
+    ]
+   },
+   {
+    "file": "src/syntharc/tabular/ctgan.py",
+    "line": 96,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "            raise TypeError(f\"Expected pandas DataFrame, got {type(data).__name__}\")",
+     "        if data.empty:",
+     "            raise ValueError(\"Cannot fit on an empty DataFrame.\")",
+     "",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import CTGANSynthesizer as SdvCtgan",
+     "",
+     "        self._sample_data = data.copy()",
+     ""
+    ]
+   },
+   {
+    "file": "src/syntharc/tabular/ctgan.py",
+    "line": 97,
+    "text": "from sdv.single_table import CTGANSynthesizer as SdvCtgan",
+    "context": [
+     "        if data.empty:",
+     "            raise ValueError(\"Cannot fit on an empty DataFrame.\")",
+     "",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import CTGANSynthesizer as SdvCtgan",
+     "",
+     "        self._sample_data = data.copy()",
+     "",
+     "        self._metadata = SingleTableMetadata()"
+    ]
+   },
+   {
+    "file": "src/syntharc/tabular/gaussian_copula.py",
+    "line": 85,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "            raise TypeError(f\"Expected pandas DataFrame, got {type(data).__name__}\")",
+     "        if data.empty:",
+     "            raise ValueError(\"Cannot fit on an empty DataFrame.\")",
+     "",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import (",
+     "            GaussianCopulaSynthesizer as SdvGaussianCopula,",
+     "        )",
+     ""
+    ]
+   },
+   {
+    "file": "src/syntharc/tabular/gaussian_copula.py",
+    "line": 86,
+    "text": "from sdv.single_table import (",
+    "context": [
+     "        if data.empty:",
+     "            raise ValueError(\"Cannot fit on an empty DataFrame.\")",
+     "",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import (",
+     "            GaussianCopulaSynthesizer as SdvGaussianCopula,",
+     "        )",
+     "",
+     "        self._sample_data = data.copy()"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "src/syntharc/timeseries/par.py",
+    "line": 106,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "        self.sequence_key = sequence_key",
+     "        context_columns = kwargs.pop(\"context_columns\", [])",
+     "",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.sequential import PARSynthesizer as SdvPar",
+     "",
+     "        self._sample_data = data.copy()",
+     ""
+    ]
+   },
+   {
+    "file": "src/syntharc/tabular/ctgan.py",
+    "line": 96,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "            raise TypeError(f\"Expected pandas DataFrame, got {type(data).__name__}\")",
+     "        if data.empty:",
+     "            raise ValueError(\"Cannot fit on an empty DataFrame.\")",
+     "",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import CTGANSynthesizer as SdvCtgan",
+     "",
+     "        self._sample_data = data.copy()",
+     ""
+    ]
+   },
+   {
+    "file": "src/syntharc/tabular/gaussian_copula.py",
+    "line": 85,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "            raise TypeError(f\"Expected pandas DataFrame, got {type(data).__name__}\")",
+     "        if data.empty:",
+     "            raise ValueError(\"Cannot fit on an empty DataFrame.\")",
+     "",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import (",
+     "            GaussianCopulaSynthesizer as SdvGaussianCopula,",
+     "        )",
+     ""
+    ]
+   }
+  ],
+  "sq": [
+   {
+    "file": "src/syntharc/timeseries/par.py",
+    "line": 107,
+    "text": "from sdv.sequential import PARSynthesizer as SdvPar",
+    "context": [
+     "        self.sequence_key = sequence_key",
+     "        context_columns = kwargs.pop(\"context_columns\", [])",
+     "",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.sequential import PARSynthesizer as SdvPar",
+     "",
+     "        self._sample_data = data.copy()",
+     "",
+     "        self._metadata = SingleTableMetadata()"
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "src/syntharc/tabular/ctgan.py",
+    "line": 97,
+    "text": "from sdv.single_table import CTGANSynthesizer as SdvCtgan",
+    "context": [
+     "        if data.empty:",
+     "            raise ValueError(\"Cannot fit on an empty DataFrame.\")",
+     "",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import CTGANSynthesizer as SdvCtgan",
+     "",
+     "        self._sample_data = data.copy()",
+     "",
+     "        self._metadata = SingleTableMetadata()"
+    ]
+   },
+   {
+    "file": "src/syntharc/tabular/gaussian_copula.py",
+    "line": 86,
+    "text": "from sdv.single_table import (",
+    "context": [
+     "        if data.empty:",
+     "            raise ValueError(\"Cannot fit on an empty DataFrame.\")",
+     "",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import (",
+     "            GaussianCopulaSynthesizer as SdvGaussianCopula,",
+     "        )",
+     "",
+     "        self._sample_data = data.copy()"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ev",
+  "gc",
+  "md",
+  "par",
+  "sdv_any",
+  "sq",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "pyproject.toml": [
+   "    \"sdv>=1.10\",",
+   "    \"sdv>=1.10\","
+  ]
+ }
+}

@@ -1,0 +1,169 @@
+{
+ "repo": "KumarSaurav8452/NEUROGUT_CAPSTONE_PROJECT",
+ "disk_kb": 2940,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# NEUROGUT -- Gut-Brain Axis Diagnostic Platform\n\nAI-powered clinical decision support for Depression & Anxiety prediction from gut microbiome composition.\n\n## Architecture\n\n- **ML Model**: GutMicrobiomeStacker (RF + XGB ClassifierChain + LR Meta-Learner)\n- **Backend**: FastAPI + SQLAlchemy + SQLite\n- **Frontend**: Next.js 16 + TypeScript + Tailwind CSS + Plotly.js\n- **Deployment**: Docker + Nginx reverse proxy\n\n## Quick Start (Local)\n\n### Backend\n```bash\ncd neurogut-backend\npip install -r requirements.txt\npython -m uvicorn main:app --port 8000\n```\n\n### Frontend\n```bash\ncd neurogut-frontend\nnpm install\nnpm run dev -- --port 3000\n```\n\n### Docker (All-in-one)\n```bash\ndocker-compose up --build\n```\n\nThen visit:\n- Frontend: http://localhost:3000\n- Backend API: http://localhost:8000\n- Swagger Docs: http://localhost:8000/docs\n- Via Nginx: http://localhost\n\n## Demo Credentials\n\n| Role | Email | Password |\n|------|-------|----------|\n| Admin | admin@neurogut.demo | admin123 |\n| Clinician | clinician@neurogut.demo | clinician123 |\n| Researcher | researcher@neurogut.demo | researcher123 |\n\n## Model Metrics (5-Fold CV)\n\n| Metric | Score |\n|--------|-------|\n| Depression AUC | 0.945 |\n| Anxiety AUC | 0.893 |\n| Depression F1 | 0.933 |\n| Anxiety F1 | 0.862 |\n| Hamming Loss | 0.086 |\n",
+ "hits": {
+  "gc": [
+   {
+    "file": "implementation_plan.md",
+    "line": 52,
+    "text": "- SDV `GaussianCopulaSynthesizer` generates 500 synthetic samples",
+    "context": [
+     "- Uses: `RandomForestClassifier` (MultiOutput), `XGBClassifier` (ClassifierChain), `LogisticRegression` (meta-learner)",
+     "- Boruta feature selection (or uses the pre-selected 13 taxa)",
+     "",
+     "#### [NEW] neurogut-backend/tests/test_synthetic.py",
+     "- SDV `GaussianCopulaSynthesizer` generates 500 synthetic samples",
+     "- Evaluates: `hamming_loss`, `roc_auc_score`, `classification_report`",
+     "- Edge case tests (extreme dysbiosis, near-healthy, anxiety-only, missing taxa, determinism, OOD)",
+     "",
+     "#### [NEW] neurogut-backend/models/model_card.json"
+    ]
+   },
+   {
+    "file": "data/PRD_text.txt",
+    "line": 83,
+    "text": "Use the SDV (Synthetic Data Vault) library's GaussianCopulaSynthesizer to generate statistically faithful synthetic microbiome samples from the existing X_resampled.csv distribution. This produces test data that:",
+    "context": [
+     "Medium (PyTorch dependency)",
+     "2.3 Model Testing Plan — Synthetic Data Strategy",
+     "Since original training data is limited to 111 SMOTE samples and raw clinical data cannot be shared externally, testing will use a two-track approach:",
+     "Track A: Synthetic Data Generation (Primary Testing Track)",
+     "Use the SDV (Synthetic Data Vault) library's GaussianCopulaSynthesizer to generate statistically faithful synthetic microbiome samples from the existing X_resampled.csv distribution. This produces tes",
+     "Preserves marginal distributions of all 13 bacterial taxa",
+     "Preserves inter-feature correlations (critical — gut taxa are co-regulated)",
+     "Can produce arbitrarily large test sets (100–10,000 samples)",
+     "Is not traceable to any real patient, satisfying HIPAA/DISHA compliance"
+    ]
+   },
+   {
+    "file": "data/PRD_text.txt",
+    "line": 91,
+    "text": "Fit GaussianCopulaSynthesizer on X_resampled (features only)",
+    "context": [
+     "Is not traceable to any real patient, satisfying HIPAA/DISHA compliance",
+     "Implementation steps:",
+     "Install SDV: pip install sdv",
+     "Load X_resampled.csv + y_resampled.csv",
+     "Fit GaussianCopulaSynthesizer on X_resampled (features only)",
+     "Generate N=500 synthetic samples",
+     "Apply the same StandardScaler fitted on training data",
+     "Run GutMicrobiomeStacker.predict() and predict_proba()",
+     "Compute: hamming_loss, roc_auc_score, classification_report on known-label synthetic data"
+    ]
+   },
+   {
+    "file": "data/PRD_text.txt",
+    "line": 98,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "Run GutMicrobiomeStacker.predict() and predict_proba()",
+     "Compute: hamming_loss, roc_auc_score, classification_report on known-label synthetic data",
+     "Visualize: plot_feature_consensus, plot_consensus_radar, plot_dysbiosis_signature on synthetic batch",
+     "Synthetic Data Code Template (SDV)",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(X_resampled)",
+     "synthesizer = GaussianCopulaSynthesizer(metadata)"
+    ]
+   },
+   {
+    "file": "data/PRD_text.txt",
+    "line": 102,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(X_resampled)",
+     "synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "synthesizer.fit(X_resampled)",
+     "synthetic_X = synthesizer.sample(num_rows=500)",
+     "# Assign synthetic labels using the stacker",
+     "synthetic_y = stacker.predict(synthetic_X)"
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "data/PRD_text.txt",
+    "line": 98,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "Run GutMicrobiomeStacker.predict() and predict_proba()",
+     "Compute: hamming_loss, roc_auc_score, classification_report on known-label synthetic data",
+     "Visualize: plot_feature_consensus, plot_consensus_radar, plot_dysbiosis_signature on synthetic batch",
+     "Synthetic Data Code Template (SDV)",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(X_resampled)",
+     "synthesizer = GaussianCopulaSynthesizer(metadata)"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "data/PRD_text.txt",
+    "line": 99,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "Compute: hamming_loss, roc_auc_score, classification_report on known-label synthetic data",
+     "Visualize: plot_feature_consensus, plot_consensus_radar, plot_dysbiosis_signature on synthetic batch",
+     "Synthetic Data Code Template (SDV)",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(X_resampled)",
+     "synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "synthesizer.fit(X_resampled)"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "data/PRD_text.txt",
+    "line": 98,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "Run GutMicrobiomeStacker.predict() and predict_proba()",
+     "Compute: hamming_loss, roc_auc_score, classification_report on known-label synthetic data",
+     "Visualize: plot_feature_consensus, plot_consensus_radar, plot_dysbiosis_signature on synthetic batch",
+     "Synthetic Data Code Template (SDV)",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(X_resampled)",
+     "synthesizer = GaussianCopulaSynthesizer(metadata)"
+    ]
+   },
+   {
+    "file": "data/PRD_text.txt",
+    "line": 99,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "Compute: hamming_loss, roc_auc_score, classification_report on known-label synthetic data",
+     "Visualize: plot_feature_consensus, plot_consensus_radar, plot_dysbiosis_signature on synthetic batch",
+     "Synthetic Data Code Template (SDV)",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(X_resampled)",
+     "synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "synthesizer.fit(X_resampled)"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

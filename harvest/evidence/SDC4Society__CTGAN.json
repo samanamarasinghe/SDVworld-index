@@ -1,0 +1,413 @@
+{
+ "repo": "SDC4Society/CTGAN",
+ "disk_kb": 1546,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "<p align=\"left\">\n<img width=15% src=\"https://dai.lids.mit.edu/wp-content/uploads/2018/06/Logo_DAI_highres.png\" alt=“sdv-dev” />\n<i>An open source project from Data to AI Lab at MIT.</i>\n</p>\n\n[![Development Status](https://img.shields.io/badge/Development%20Status-2%20--%20Pre--Alpha-yellow)](https://pypi.org/search/?c=Development+Status+%3A%3A+2+-+Pre-Alpha)\n[![PyPI Shield](https://img.shields.io/pypi/v/ctgan.svg)](https://pypi.python.org/pypi/ctgan)\n[![Travis CI Shield](https://travis-ci.org/sdv-dev/CTGAN.svg?branch=master)](https://travis-ci.org/sdv-dev/CTGAN)\n[![Downloads](https://pepy.tech/badge/ctgan)](https://pepy.tech/project/ctgan)\n[![Coverage Status](https://codecov.io/gh/sdv-dev/CTGAN/branch/master/graph/badge.svg)](https://codecov.io/gh/sdv-dev/CTGAN)\n\n# CTGAN\n\nImplementation of our NeurIPS paper [Modeling Tabular data using Conditional GAN](https://arxiv.org/abs/1907.00503).\n\nCTGAN is a GAN-based data synthesizer that can generate synthetic tabular data with high fidelity.\n\n* License: [MIT](https://github.com/sdv-dev/CTGAN/blob/master/LICENSE)\n* Development Status: [Pre-Alpha](https://pypi.org/search/?c=Development+Status+%3A%3A+2+-+Pre-Alpha)\n* Documentation: https://sdv-dev.github.io/CTGAN\n* Homepage: https://github.com/sdv-dev/CTGAN\n\n## About This Fork\n\nThis repository is a fork of [spring-epfl/CTGAN](https://github.com/spring-epfl/CTGAN),\nwhich is itself a fork of the original [sdv-dev/CTGAN](https://github.com/sdv-dev/CTGAN)\nby MIT Data To AI Lab. Modifications are limited to minor compatibility updates\nfor newer dependency versions; the core algorithm is unchanged.\n\n## Overview\n\nBased on previous work ([TGAN](https://github.com/sdv-dev/TGAN)) on synthetic data generation,\nwe develop a new model called CTGAN. Several major differences make CTGAN outperform TGAN.\n\n- **Preprocessing**: CTGAN uses more sophisticated Variational Gaussian Mixture Model to detect\n  modes of continuous columns.\n- **Network structure**: TGAN uses LSTM to generate synthetic data column by column. CTGAN uses\n  Fully-connected networks which is more efficient.\n- **Features to prevent mode collapse**: We design a conditional generator and resample the\n  training data to prevent model collapse on discrete columns. We use WGANGP and PacGAN to\n  stabilize the training of GAN.\n\n\n# Install\n\n## Requirements\n\n**CTGAN** has been developed and tested on [Python 3.5, 3.6 and 3.7](https://www.python.org/downloads/)\n\n## Install from PyPI\n\nThe recommended way to installing **CTGAN** is using [pip](https://pip.pypa.io/en/stable/):\n\n```bash\npip install ctgan\n```\n\nThis will pull and install the latest stable release from [PyPI](https://pypi.org/).\n\nIf you want to install from source or contribute to the project please read the\n[Contributing Guide](https://sdv-dev.github.io/CTGAN/contributing.html#get-started).\n\n# Data Format\n\n**CTGAN** expects the input data to be a table given as either a `numpy.ndarray` or a\n`pandas.DataFrame` object with two types of columns:\n\n* **Continuous Columns**: Columns that contain numerical values and which can take any value.\n* **Discrete columns**: Columns that only contain a finite number of possible values, wether\nthese are string values or not.\n\nThis is an example of a table with 4 columns:\n\n* A continuous column with float values\n* A continuous column with integer values\n* A discrete column with string values\n* A discrete column with integer values\n\n|   | A    | B   | C   | D |\n|---|------|-----|-----|---|\n| 0 | 0.1  | 100 | 'a' | 1 |\n| 1 | -1.3 | 28  | 'b' | 2 |\n| 2 | 0.3  | 14  | 'a' | 2 |\n| 3 | 1.4  | 87  | 'a' | 3 |\n| 4 | -0.1 | 69  | 'b' | 2 |\n\n\n**NOTE**: CTGAN does not distinguish between float and integer columns, which means that it will\nsample float values in all cases. If integer values are required, the outputted float values\nmust be rounded to integers in a later step, outside of CTGAN.\n\n# Python Quickstart\n\nIn this short tutorial we will guide you through a series of steps that will help you\ngetting started with **CTGAN**.\n\n## 1. Model the data\n\n### Step 1: Prepare your data\n\nBefore being able to use CTGAN you will need to prepare your data as specified above.\n\nFor this example, we will be loading some data using the `ctgan.load_demo` function.\n\n```python\nfrom ctgan import load_demo\n\ndata = load_demo()\n```\n\nThis will download a copy of the [Adult Census Dataset](https://archive.ics.uci.edu/ml/datasets/adult) as a dataframe:\n\n|   age | workclass        |   fnlwgt | ... |   hours-per-week | native-country   | income   |\n|-------|------------------|----------|-----|------------------|------------------|----------|\n|    39 | State-gov        |    77516 | ... |               40 | United-States    | <=50K    |\n|    50 | Self-emp-not-inc |    83311 | ... |               13 | United-States    | <=50K    |\n|    38 | Private          |   215646 | ... |               40 | United-States    | <=50K    |\n|    53 | Private          |   234721 | ... |               40 | United-States    | <=50K    |\n|    28 | Private          |   338409 | ... |               40 | Cuba             | <=50K    |\n|   ... | ...              |      ... | ... |              ... | ...              | ...      |\n\n\nAside from the table itself, you will need to create a list with the names of the discrete\nvariables.\n\nFor this example:\n\n```python\ndiscrete_columns = [\n    'workclass',\n    'education',\n    'marital-status',\n    'occupation',\n    'relationship',\n    'race',\n    'sex',\n    'native-country',\n    'income'\n]\n```\n\n### Step 2: Fit CTGAN to your data\n\nOnce you have the data ready, you need to import and create an instance of the `CTGANSynthesizer`\nclass and fit it passing your data and the list of discrete columns.\n\n```python\nfrom ctgan import CTGANSynthesizer\n\nctgan = CTGANSynthesizer()\nctgan.fit(data, discrete_columns)\n```\n\nThis process is likely to take a long time to run.\nIf you want to make the process shorter, or longer, you can control the number of training epochs\nthat the model will be performing by adding it to the `fit` call:\n\n```python\nctgan.fit(data, discrete_columns, epochs=5)\n```\n\n## 2. Generate synthetic data\n\nOnce the process has finished, all you need to do is call the `sample` method of your\n`CTGANSynthesizer` instance indicating the number of rows that you want to generate.\n\n```python\nsamples = ctgan.sample(1000)\n```\n\nThe output will be a table with the exact same format as the input and filled with the synthetic\ndata generated by the model.\n\n|     age | workclass    |    fnlwgt | ... |   hours-per-week | native-country   | income   |\n|---------|--------------|-----------|-----|------------------|------------------|----------|\n| 26.3191 | Private      | 124079    | ... |          40.1557 | United-States    | <=50K    |\n| 39.8558 | Private      | 133996    | ... |          40.2507 | United-States    | <=50K    |\n| 38.2477 | Self-emp-inc | 135955    | ... |          40.1124 | Ecuador          | <=50K    |\n| 29.6468 | Private      |   3331.86 | ... |          27.012  | United-States    | <=50K    |\n| 20.9853 | Private      | 120637    | ... |          40.0238 | United-States    | <=50K    |\n|     ... | ...          |       ... | ... |              ... | ...              | ...      |\n\n\n# Join our community\n\n1. If you would like to try more dataset examples, please have a look at the [examples folder](\nhttps://github.com/sdv-dev/CTGAN/tree/master/examples) of the repository. Please contact us\nif you have a usage example that you would want to share with the community.\n2. If you want to contribute to the project code, please head to the [Contributing Guide](\nhttps://sdv-dev.github.io/CTGAN/contributing.html#get-started) for more details about how to do it.\n3. If you have any doubts, feature requests or detect an error, please [open an issue on github](\nhttps://github.com/sdv-dev/CTGAN/issues)\n4. Also do not forget to check the [project documentation site](https://sdv-dev.github.io/CTGAN/)!\n\n\n# Citing TGAN\n\nIf you use CTGAN, please cite the following work:\n\n- *Lei Xu, Maria Skoularidou, Alfredo Cuesta-Infante, Kalyan Veeramachaneni.* **Modeling Tabular data using Conditional GAN**. NeurIPS, 2019.\n\n```LaTeX\n@inproceedings{xu2019modeling,\n  title={Modeling Tabular data using Conditional GAN},\n  author={Xu, Lei and Skoularidou, Maria and Cuesta-Infante, Alfredo and Veeramachaneni, Kalyan},\n  booktitle={Advances in Neural Information Processing Systems},\n  year={2019}\n}\n```\n\n# Related Projects\n\n## R interface for CTGAN\n\nA wrapper around **CTGAN** has been implemented by Kevin Kuo @kevinykuo, bringing the functionalities\nof **CTGAN** to **R** users.\n\nMore details can be found in the corresponding repository: https://github.com/kasaai/ctgan\n\nPlease note that this package is an external contribution and is not maintained nor suporvised by\nthe MIT DAI-Lab team.\n",
+ "hits": {
+  "ctgan_mod": [
+   {
+    "file": "README.md",
+    "line": 106,
+    "text": "from ctgan import load_demo",
+    "context": [
+     "",
+     "For this example, we will be loading some data using the `ctgan.load_demo` function.",
+     "",
+     "```python",
+     "from ctgan import load_demo",
+     "",
+     "data = load_demo()",
+     "```",
+     ""
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 148,
+    "text": "from ctgan import CTGANSynthesizer",
+    "context": [
+     "Once you have the data ready, you need to import and create an instance of the `CTGANSynthesizer`",
+     "class and fit it passing your data and the list of discrete columns.",
+     "",
+     "```python",
+     "from ctgan import CTGANSynthesizer",
+     "",
+     "ctgan = CTGANSynthesizer()",
+     "ctgan.fit(data, discrete_columns)",
+     "```"
+    ]
+   },
+   {
+    "file": "ctgan/__init__.py",
+    "line": 9,
+    "text": "from ctgan.demo import load_demo",
+    "context": [
+     "__author__ = 'MIT Data To AI Lab'",
+     "__email__ = 'dailabmit@gmail.com'",
+     "__version__ = '0.2.2.dev0'",
+     "",
+     "from ctgan.demo import load_demo",
+     "from ctgan.synthesizer import CTGANSynthesizer",
+     "from ctgan.constants import *",
+     "",
+     "__all__ = ("
+    ]
+   },
+   {
+    "file": "ctgan/__init__.py",
+    "line": 10,
+    "text": "from ctgan.synthesizer import CTGANSynthesizer",
+    "context": [
+     "__email__ = 'dailabmit@gmail.com'",
+     "__version__ = '0.2.2.dev0'",
+     "",
+     "from ctgan.demo import load_demo",
+     "from ctgan.synthesizer import CTGANSynthesizer",
+     "from ctgan.constants import *",
+     "",
+     "__all__ = (",
+     "    'CTGANSynthesizer',"
+    ]
+   },
+   {
+    "file": "ctgan/__init__.py",
+    "line": 11,
+    "text": "from ctgan.constants import *",
+    "context": [
+     "__version__ = '0.2.2.dev0'",
+     "",
+     "from ctgan.demo import load_demo",
+     "from ctgan.synthesizer import CTGANSynthesizer",
+     "from ctgan.constants import *",
+     "",
+     "__all__ = (",
+     "    'CTGANSynthesizer',",
+     "    'load_demo',"
+    ]
+   },
+   {
+    "file": "ctgan/transformer.py",
+    "line": 7,
+    "text": "from ctgan.constants import CONTINUOUS, CATEGORICAL, ORDINAL",
+    "context": [
+     "from sklearn.exceptions import ConvergenceWarning",
+     "from sklearn.mixture import BayesianGaussianMixture",
+     "from sklearn.preprocessing import OneHotEncoder",
+     "# from sklearn.utils._testing import ignore_warnings",
+     "from ctgan.constants import CONTINUOUS, CATEGORICAL, ORDINAL",
+     "",
+     "",
+     "class DataTransformer(object):",
+     "    \"\"\"Data Transformer."
+    ]
+   },
+   {
+    "file": "ctgan/synthesizer.py",
+    "line": 7,
+    "text": "from ctgan.conditional import ConditionalGenerator",
+    "context": [
+     "from os import path",
+     "from torch import optim",
+     "from torch.nn import functional",
+     "",
+     "from ctgan.conditional import ConditionalGenerator",
+     "from ctgan.models import Discriminator, Generator",
+     "from ctgan.sampler import Sampler",
+     "from ctgan.transformer import DataTransformer",
+     ""
+    ]
+   },
+   {
+    "file": "ctgan/synthesizer.py",
+    "line": 8,
+    "text": "from ctgan.models import Discriminator, Generator",
+    "context": [
+     "from torch import optim",
+     "from torch.nn import functional",
+     "",
+     "from ctgan.conditional import ConditionalGenerator",
+     "from ctgan.models import Discriminator, Generator",
+     "from ctgan.sampler import Sampler",
+     "from ctgan.transformer import DataTransformer",
+     "",
+     "import logging"
+    ]
+   },
+   {
+    "file": "ctgan/synthesizer.py",
+    "line": 9,
+    "text": "from ctgan.sampler import Sampler",
+    "context": [
+     "from torch.nn import functional",
+     "",
+     "from ctgan.conditional import ConditionalGenerator",
+     "from ctgan.models import Discriminator, Generator",
+     "from ctgan.sampler import Sampler",
+     "from ctgan.transformer import DataTransformer",
+     "",
+     "import logging",
+     "from logging.config import fileConfig"
+    ]
+   },
+   {
+    "file": "ctgan/synthesizer.py",
+    "line": 10,
+    "text": "from ctgan.transformer import DataTransformer",
+    "context": [
+     "",
+     "from ctgan.conditional import ConditionalGenerator",
+     "from ctgan.models import Discriminator, Generator",
+     "from ctgan.sampler import Sampler",
+     "from ctgan.transformer import DataTransformer",
+     "",
+     "import logging",
+     "from logging.config import fileConfig",
+     "dirname = path.dirname(__file__)"
+    ]
+   },
+   {
+    "file": "ctgan/__main__.py",
+    "line": 3,
+    "text": "from ctgan.data import read_csv, read_tsv, write_tsv",
+    "context": [
+     "import argparse",
+     "",
+     "from ctgan.data import read_csv, read_tsv, write_tsv",
+     "from ctgan.synthesizer import CTGANSynthesizer",
+     "",
+     "",
+     "def _parse_args():"
+    ]
+   },
+   {
+    "file": "ctgan/__main__.py",
+    "line": 4,
+    "text": "from ctgan.synthesizer import CTGANSynthesizer",
+    "context": [
+     "import argparse",
+     "",
+     "from ctgan.data import read_csv, read_tsv, write_tsv",
+     "from ctgan.synthesizer import CTGANSynthesizer",
+     "",
+     "",
+     "def _parse_args():",
+     "    parser = argparse.ArgumentParser(description='CTGAN Command Line Interface')"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "README.md",
+    "line": 144,
+    "text": "Once you have the data ready, you need to import and create an instance of the `CTGANSynthesizer`",
+    "context": [
+     "```",
+     "",
+     "### Step 2: Fit CTGAN to your data",
+     "",
+     "Once you have the data ready, you need to import and create an instance of the `CTGANSynthesizer`",
+     "class and fit it passing your data and the list of discrete columns.",
+     "",
+     "```python",
+     "from ctgan import CTGANSynthesizer"
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 148,
+    "text": "from ctgan import CTGANSynthesizer",
+    "context": [
+     "Once you have the data ready, you need to import and create an instance of the `CTGANSynthesizer`",
+     "class and fit it passing your data and the list of discrete columns.",
+     "",
+     "```python",
+     "from ctgan import CTGANSynthesizer",
+     "",
+     "ctgan = CTGANSynthesizer()",
+     "ctgan.fit(data, discrete_columns)",
+     "```"
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 150,
+    "text": "ctgan = CTGANSynthesizer()",
+    "context": [
+     "",
+     "```python",
+     "from ctgan import CTGANSynthesizer",
+     "",
+     "ctgan = CTGANSynthesizer()",
+     "ctgan.fit(data, discrete_columns)",
+     "```",
+     "",
+     "This process is likely to take a long time to run."
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 165,
+    "text": "`CTGANSynthesizer` instance indicating the number of rows that you want to generate.",
+    "context": [
+     "",
+     "## 2. Generate synthetic data",
+     "",
+     "Once the process has finished, all you need to do is call the `sample` method of your",
+     "`CTGANSynthesizer` instance indicating the number of rows that you want to generate.",
+     "",
+     "```python",
+     "samples = ctgan.sample(1000)",
+     "```"
+    ]
+   },
+   {
+    "file": "ctgan/__init__.py",
+    "line": 10,
+    "text": "from ctgan.synthesizer import CTGANSynthesizer",
+    "context": [
+     "__email__ = 'dailabmit@gmail.com'",
+     "__version__ = '0.2.2.dev0'",
+     "",
+     "from ctgan.demo import load_demo",
+     "from ctgan.synthesizer import CTGANSynthesizer",
+     "from ctgan.constants import *",
+     "",
+     "__all__ = (",
+     "    'CTGANSynthesizer',"
+    ]
+   },
+   {
+    "file": "ctgan/__init__.py",
+    "line": 14,
+    "text": "'CTGANSynthesizer',",
+    "context": [
+     "from ctgan.synthesizer import CTGANSynthesizer",
+     "from ctgan.constants import *",
+     "",
+     "__all__ = (",
+     "    'CTGANSynthesizer',",
+     "    'load_demo',",
+     "    'CATEGORICAL',",
+     "    'ORDINAL',",
+     "    'CONTINUOUS'"
+    ]
+   },
+   {
+    "file": "ctgan/synthesizer.py",
+    "line": 20,
+    "text": "class CTGANSynthesizer(object):",
+    "context": [
+     "fileConfig(logconfig)",
+     "logger = logging.getLogger(__name__)",
+     "",
+     "",
+     "class CTGANSynthesizer(object):",
+     "    \"\"\"Conditional Table GAN Synthesizer.",
+     "",
+     "    This is the core class of the CTGAN project, where the different components",
+     "    are orchestrated together."
+    ]
+   },
+   {
+    "file": "ctgan/__main__.py",
+    "line": 4,
+    "text": "from ctgan.synthesizer import CTGANSynthesizer",
+    "context": [
+     "import argparse",
+     "",
+     "from ctgan.data import read_csv, read_tsv, write_tsv",
+     "from ctgan.synthesizer import CTGANSynthesizer",
+     "",
+     "",
+     "def _parse_args():",
+     "    parser = argparse.ArgumentParser(description='CTGAN Command Line Interface')"
+    ]
+   },
+   {
+    "file": "ctgan/__main__.py",
+    "line": 37,
+    "text": "model = CTGANSynthesizer()",
+    "context": [
+     "        data, discrete_columns = read_tsv(args.data, args.metadata)",
+     "    else:",
+     "        data, discrete_columns = read_csv(args.data, args.metadata, args.header, args.discrete)",
+     "",
+     "    model = CTGANSynthesizer()",
+     "    model.fit(data, discrete_columns, args.epochs)",
+     "",
+     "    num_samples = args.num_samples or len(data)",
+     "    sampled = model.sample(num_samples)"
+    ]
+   },
+   {
+    "file": "tests/integration/test_ctgan.py",
+    "line": 15,
+    "text": "from ctgan.synthesizer import CTGANSynthesizer",
+    "context": [
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "",
+     "from ctgan.synthesizer import CTGANSynthesizer",
+     "",
+     "",
+     "def test_ctgan_dataframe():",
+     "    data = pd.DataFrame({"
+    ]
+   },
+   {
+    "file": "tests/integration/test_ctgan.py",
+    "line": 25,
+    "text": "ctgan = CTGANSynthesizer()",
+    "context": [
+     "        'discrete': np.random.choice(['a', 'b', 'c'], 100)",
+     "    })",
+     "    discrete_columns = ['discrete']",
+     "",
+     "    ctgan = CTGANSynthesizer()",
+     "    ctgan.fit(data, discrete_columns, epochs=1)",
+     "",
+     "    sampled = ctgan.sample(100)",
+     ""
+    ]
+   },
+   {
+    "file": "tests/integration/test_ctgan.py",
+    "line": 43,
+    "text": "ctgan = CTGANSynthesizer()",
+    "context": [
+     "        'discrete': np.random.choice(['a', 'b', 'c'], 100)",
+     "    })",
+     "    discrete_columns = [1]",
+     "",
+     "    ctgan = CTGANSynthesizer()",
+     "    ctgan.fit(data.values, discrete_columns, epochs=1)",
+     "",
+     "    sampled = ctgan.sample(100)",
+     ""
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ctgan_mod"
+ ],
+ "vendored_dirs": [
+  "ctgan"
+ ],
+ "dependencies": {
+  "setup.py": [
+   "            'ctgan=ctgan.__main__:main'",
+   "        'ctgan': ['logging_config.ini'],",
+   "    keywords='ctgan CTGAN',",
+   "    name='ctgan',",
+   "    packages=find_packages(include=['ctgan', 'ctgan.*']),",
+   "    url='https://github.com/sdv-dev/CTGAN',"
+  ],
+  "setup.cfg": [
+   "[bumpversion:file:ctgan/__init__.py]"
+  ]
+ }
+}

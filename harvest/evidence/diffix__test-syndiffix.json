@@ -1,0 +1,487 @@
+{
+ "repo": "diffix/test-syndiffix",
+ "disk_kb": 2615,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "## Environment variables\n\n* `AB_RESULTS_DIR` is the path to the test configuration directory\n* `AB_PYTHON_DIR` is the path to the directory containing the python test programs\n* `AB_SHARP_DIR` is the path to the directory containing AB Sharp SynDiffix code (the `adaptive-buckets-sharp` directory)\n* `SYNDIFFIX_PY_DIR` is the path to the directory root of the SynDiffix Python implementation.\n\n## Tests directory structure\n\nThese tests all assume a root directory whose location is defined by the environment variable `AB_RESULTS_DIR`.\n\nUnderneath `AB_RESULTS_DIR` are a set of directories, each of which can be used to build and measure synthetic data for a some set of datasets. Each of these directories can be thought of as an experiment with respect to the corresponding set of data sets. We refer to these as an `experiment directory`.\n\nUnder each `experiment directory` is a number of directories with pre-subscribed names. There are eight different types of directories:\n\n* `csv`: contains CSV datasets for testing. The datasets must be split into `train` and `test` files, each containing half of the data, randomly selected (see `misc/splitFile.py`). These two sets are in directories labeled `train` and `test`.\n* `results`: contains the results of building synthetic data. Has one sub-directory per method (or different set of method parameters).\n* `measures`: contains the results of measuring data quality, ML efficacy measures, and privacy measures from the synthetic data.\n* `summaries`: contains graphs and csv files that summarize the measurements\n* `runs`: contains the commands used to run the tests, including SLURM jobs\n* `origMl`: the ML model scores against the original data\n* `origMl_samples`: temporary directory for the separate measurement samples for original ML measures\n* `measures_samples`: temporary directory for the separate measurement samples for the ML measures of the synthetic data\n\n### Synthetic data methods\n\nTo build synthetic data with SynDiffix, `github/diffix/syndiffix` needs to be installed.\n\nWe use the SDV library to build synthetic with learning-based methods (see `sdmManager.py`, and `sdmTools.py`).\n\n## Creating CSV datasets\n\n`quicktester.py` can build CSV datasets according to a variety of specifications.\n\nOther than this, one can put any CSV dataset they wish.\n\n## Building synthetic data\n\n`quicktester.py` can also build synthetic data and run quality measures on it.\n\n`oneModel.py` is used to build synthetic data on a SLURM cluster.\n\n### Running syndiffix with focus columns\n\nTo build synthetic data with focus columns, it is necessary to first run `sdmManager.py makeFocusRuns`. This will build the files `focusBuildJobs.json` and `batchFocus` in the run directory. Then run `sbatch batchFocus`. This will place the resulting output in the directory `syndiffix_focus` in the results directory. (Note that prior to running `sdmManager.py makeFocusRuns`, you must have already run `sdmManager.py makeMlRuns`. This is because `makeFocusRuns` requires the file `mlJobs.json`.)\n\n### Running syndiffix with features measures\n\nThis is currently just test software (prior to integrating features measure into syndiffix).\n\nRun `sdmManager.py makeFeatures --featuresDir=<featuresDir> --featuresType=<featuresType>` where `<featuresDir>` is the directory holding the features json files, and `<featuresType>` is 'univariate' or 'ml' or whatever else we decide. This creates the featuresDir, a file called `featuresJobs.json` in the runs directory, a SLURM batchfile called `batch_<featuresType>` in the runs directory, and a directory `logs_<featuresType>` in the runs directory.\n\nRun `sbatch batch_<featuresType>`. This creates the SLURM jobs with `oneFeaturesJob.py`\n\n### Running syndiffix with column combinations\n\nThere is a way to produce many syndiffix tables from the same original table, each with a different combination of columns.\n* Place a file `colCombs.json` in the runs directory. See example under `misc`.\n* Run `sdmManager makeColCombs --synMethod=sdx_whatever`. This produces the files `colcombJobs.json` and `batchCombs` in the runs directory.\n* Do `sbatch batchCombs`\n\n### Running synthpop\n\n* To create csv files with columns in order of least to most cardinality, edit and run `misc/prepCsvForSynthpop.py`.\n* Run `sdmManager.py makeSynthpopRuns`. This populates the directory `runs/synthpop_jobs` with R scripts, one per csv file. It also creates `runs/batchSynthpop`.\n* Run `sbatch batchSynthpop`. This generates the synthpop output in `synthpop_builds`.\n* To convert the synthpop output into the appropriate results files, edit and run `Rscripts/extractSynthpop.py`.\n\n## Measuring quality\n\n`quicktester.py` can measure quality.\n\nTo do measures on the SLURM cluster, we have the following workflow:\n\n* Use `sdmManager.py updateCsvInfo` whenever new tables are added to a csv directory, or when code has changed and you want to rerun the original ML measures. This creates the file `csvOrder.json` in the measures directory. Note that if a table is removed, then `csvOrder.json` should be removed first. Also remove `focusColumns.json` in the runs directory before running this.\n* Run `sdmManager.py makeOrigMlRuns` to create `batchOrigMl`. Select a temporary directory to hold the measure samples.\n* Run `sbatch batchOrigMl` to run ML measures over the original (not synthesized) datasets. The purpose of this is to determine which ML measures (i.e. column and method) have the best quality. These make the measures to use for comparison with synthetic data. This creates the `origMl` directory and populates it with one json file per model. Note that `batchOrigMlRuns` creates multiple measures per table/column/method combination, each such measure in a separate file.\n* Run `sdmManager.py makeMlRuns` to build the SLURM configuration information for doing ML measures (creates the files `mlJobs.json`, `batchMl`, and `batchMl.sh` in the `runs` directory).\n  * The cmd line parameter `--synMethod=method` can be used to limit the created jobs to those of the synMethod only. In any event, `makeMlRuns` will not schedule runs if measures already exist. You must manually remove existing measures if you want to rerun them.\n  * The cmd line parameter `--limitToFeatures=True|False` determines whether the measure is made over the entire table, or only over the K features found with `makeFeatures`. If `--limitToFeatures=True`, then the file `gatherFeatures.sh` is additionally created in the `runs` directory.\n  * NOTE: `makeMlRuns` needs to be run on a machine with more memory than the \"submit\" machines. Suggest pinky03 or brain03.\n* Run `batchMl.sh` to do the ML measures. Note that this makes multiple measures per table/column/method combination.\n* Run `sdmManager.py mergeMlMeasures`, which selects the best score of multiple ml measures, creates a json file containing that score, and places it in the appropriate `measures` subdirectory.\n* Run `sdmManager.py makeQualRuns` to build the SLURM configuration information for doing quality measures (creates the file `batchQual` in the `runs` directory)\n* In the `runs` directory, do `sbatch batchQual` to do the 1dim and 2dim quality measures.\n* Run `summarize.py` to summarize the performance measures and place them in various plots.\n\n## Measuring privacy\n\nWe use the python package `anonymeter` to measure privacy. This requires that we split all of our data files into `train` and `test` subsets. The basic idea is that `train` is synthesized, and then we use `test` as a control to test the effectiveness of attacks.\n\n* Run `misc/splitFiles.py` to generate the csv split files. These are placed into directories `train` and `test` under `csv` respectively\n* Generate synthesized data (e.g. using `oneModel.py`) from `train` and put them in the `results` directory.\n* (Run `sdmManager.py updateCsvInfo` if you haven't before.)\n* Run `sdmManager.py makePrivRuns` to create a jobs file `privJobs.json` and a batch script `batchPriv`, both placed in the `runs` directory. Do `sbatch batchPriv`. This places the privacy measures in the `measures` directory.\n\n## Summarizing quality and privacy\n\n`summarize.py` reads in data from the `measures` directory and produces a set of summary graphs. This reads in a configuration file `summarize.json`. An example of `summarize.json` can be found in `misc/`. `summarize.json` can be used to do a number of things:\n* Ignore listed synMethods\n* Rename synMethods (used to change labels in the plots)\n* Select the best ML measures from a pair of synMethods (note when using this feature, 2col quality scores are lost)\n* Select which combinations of synMethods should be plotted together\n\n-----------------------------------------------------------\n\n# Documentation for early development of PPoC (retired)\n\n### `csvLib`\n\nThe tests run off of prebuilt tables in `.csv` files. These files are by default in the directory `csvLib`. They can be in another directory as well.\n\n### `synResults`\n\nThis contains the output of the adaptive buckets programs. This directory has its own structure defined below. The test routines `syntest.py` and `quicktester.py` (among possibly others) by default place their output here.\n\nNote that `syntest.py` operates either with command line parameters or from a `json` config file. The file can be found in the `AB_RESULTS_DIR`, and by default is named `syntest.json`. An example of the file can be found in `sampleConfigs`.\n\n### `synMeasures`\n\nThis contains the output of tests that measure the quality of the data in `synResults`.\n\nNote that `synmeasure.py` operates either with command line parameters or from a `json` config file. The file can be found in the `AB_RESULTS_DIR`.  An example of the file can be found in `sampleConfigs/synmeasure.json`.\n\n## Structure of data in `synResults`\n\nEach test operates over a given data source, with given versions of the algorithms (forest, harvest, clustering), given parameters for each algorithm, and the implementation (python or F#).\n\n`synResults` contains one directory for each combination of versions, parameters, and implementation. The directory name is formatted as:\n\n`implementation.for_param_version.har_version.cl_param_version.md_version`\n\n`implementation` is either 'py' or 'fs' (for python or F#). Later we will have 'pg' as well.\n\nEach `param` is a tag defining the parameter set used for the respective algorithm (`for` for forest, `har` for harvest, `cl` for clustering, and `md` for microdata). (Note that at the moment, the default parameters have the tag `g0`.)\n\nEach `version` is the version of the algorithm (`v1`, `v2`, ...).\n\nAn example is `py.for_g0_v3.har_v5.cl_g0_v1.md_v1`.\n\n## Structure of results file names\n\nThe json files containing the results have the format:\n\n`sourceDataFile.directoryName.json`\n\nAn example is `4dimAirportCluster.csv.py.for_g0_v3.har_v5.cl_g0_v1.md_v1.json`.\n\n## Structure of the results file\n\nThe results file produced by `controller.py` has the following structure:\n\n```\n{\n    \"elapsedTime\": 0.5984406471252441,\n    \"colNames\": [\n        \"'c0'\",\n        \"'c1'\",\n        \"'c2'\",\n        \"'c3'\"\n    ],\n    \"originalRows\": [\n        [\n            \"'a'\",\n            \"'b'\",\n            0.9787379841057392,\n            2.240893199201458\n        ],\n        [\n            \"'a'\",\n            \"'b'\",\n            0.9500884175255894,\n            -0.1513572082976979\n        ],\n...\n    ],\n    \"synRows\": [\n        [\n            \"'a'\",\n            \"'a'\",\n            -0.48094763821008923,\n            1.3420975576293672\n        ],\n        [\n            \"'a'\",\n            \"'a'\",\n            1.6458741734699058,\n            -1.6682721485003236\n        ],\n...\n    \"params\": {\n        \"forest\": {\n            \"sing\": 10,\n            \"range\": 50,\n            \"lcf\": 5,\n            \"dependence\": 10,\n            \"threshSd\": 1.0,\n            \"noiseSd\": 1.0,\n            \"lcdBound\": 2,\n            \"pName\": \"g0\",\n            \"version\": \"v3\"\n        },\n        \"cluster\": {\n            \"thresholds\": [\n                null,\n                null,\n                0.05,\n                0.2,\n                0.35\n            ],\n            \"pName\": \"g0\"\n        },\n        \"baseConfig\": \"4dimDependentTextWithNoise.csv\",\n        \"clustered\": true,\n        \"fileName\": \"4dimDependentTextWithNoise.csv.py.for_g0_v3.har_v5.cl_g0_v1.md_v1\",\n        \"harvest\": {\n            \"version\": \"v5\"\n        },\n        \"microdata\": {\n            \"version\": \"v1\"\n        }\n    },\n... other stuff\n}\n```\n\n## Maintenance\n\n### Formatting\n\nPython code is formatted using:\n\n```\nautopep8 --in-place --recursive test_syndiffix/\n```\n",
+ "hits": {
+  "sm": [
+   {
+    "file": "test_syndiffix/sdmetricsPlay.py",
+    "line": 12,
+    "text": "import sdmetrics",
+    "context": [
+     "import seaborn as sns",
+     "import sys",
+     "sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))",
+     "import testUtils",
+     "import sdmetrics",
+     "import sdmetrics.single_table",
+     "import sdmetrics.reports.single_table",
+     "import sdmetrics.reports",
+     "import pandas as pd"
+    ]
+   },
+   {
+    "file": "test_syndiffix/sdmetricsPlay.py",
+    "line": 13,
+    "text": "import sdmetrics.single_table",
+    "context": [
+     "import sys",
+     "sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))",
+     "import testUtils",
+     "import sdmetrics",
+     "import sdmetrics.single_table",
+     "import sdmetrics.reports.single_table",
+     "import sdmetrics.reports",
+     "import pandas as pd",
+     "import cufflinks as cf"
+    ]
+   },
+   {
+    "file": "test_syndiffix/sdmetricsPlay.py",
+    "line": 14,
+    "text": "import sdmetrics.reports.single_table",
+    "context": [
+     "sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))",
+     "import testUtils",
+     "import sdmetrics",
+     "import sdmetrics.single_table",
+     "import sdmetrics.reports.single_table",
+     "import sdmetrics.reports",
+     "import pandas as pd",
+     "import cufflinks as cf",
+     "import plotly.graph_objects as go"
+    ]
+   },
+   {
+    "file": "test_syndiffix/sdmetricsPlay.py",
+    "line": 15,
+    "text": "import sdmetrics.reports",
+    "context": [
+     "import testUtils",
+     "import sdmetrics",
+     "import sdmetrics.single_table",
+     "import sdmetrics.reports.single_table",
+     "import sdmetrics.reports",
+     "import pandas as pd",
+     "import cufflinks as cf",
+     "import plotly.graph_objects as go",
+     "import copy"
+    ]
+   },
+   {
+    "file": "test_syndiffix/sdmetricsPlay.py",
+    "line": 508,
+    "text": "# For two categorical cols, the fig from sdmetrics is a subplot itself.",
+    "context": [
+     "                    combs = [self.baseColumns[j], self.baseColumns[i]]",
+     "                    colDistance = self.distances[str((i, j))] if self.distances else \"\"",
+     "                    colLabel = f\"{', '.join(combs)} distance = {colDistance}\"",
+     "                    if fields[self.baseColumns[j]]['type'] == 'categorical' and fields[self.baseColumns[i]]['type'] == 'categorical':",
+     "                        # For two categorical cols, the fig from sdmetrics is a subplot itself.",
+     "                        # We need to decompose it into two separate traces and add separately as two",
+     "                        # cells in our final subplot",
+     "                        fig = sdmetrics.reports.utils.get_column_pair_plot(",
+     "                            real_data=self.dforigAid,"
+    ]
+   },
+   {
+    "file": "test_syndiffix/sdmTools.py",
+    "line": 9,
+    "text": "import sdmetrics",
+    "context": [
+     "import time",
+     "import copy",
+     "import socket",
+     "import itertools",
+     "import sdmetrics",
+     "import sdmetrics.single_table",
+     "import sdmetrics.reports.single_table",
+     "import sdmetrics.reports",
+     "import pandas as pd"
+    ]
+   },
+   {
+    "file": "test_syndiffix/sdmTools.py",
+    "line": 10,
+    "text": "import sdmetrics.single_table",
+    "context": [
+     "import copy",
+     "import socket",
+     "import itertools",
+     "import sdmetrics",
+     "import sdmetrics.single_table",
+     "import sdmetrics.reports.single_table",
+     "import sdmetrics.reports",
+     "import pandas as pd",
+     "import cufflinks as cf"
+    ]
+   },
+   {
+    "file": "test_syndiffix/sdmTools.py",
+    "line": 11,
+    "text": "import sdmetrics.reports.single_table",
+    "context": [
+     "import socket",
+     "import itertools",
+     "import sdmetrics",
+     "import sdmetrics.single_table",
+     "import sdmetrics.reports.single_table",
+     "import sdmetrics.reports",
+     "import pandas as pd",
+     "import cufflinks as cf",
+     "import plotly.graph_objects as go"
+    ]
+   },
+   {
+    "file": "test_syndiffix/sdmTools.py",
+    "line": 12,
+    "text": "import sdmetrics.reports",
+    "context": [
+     "import itertools",
+     "import sdmetrics",
+     "import sdmetrics.single_table",
+     "import sdmetrics.reports.single_table",
+     "import sdmetrics.reports",
+     "import pandas as pd",
+     "import cufflinks as cf",
+     "import plotly.graph_objects as go",
+     "from anonymeter.evaluators import SinglingOutEvaluator"
+    ]
+   },
+   {
+    "file": "test_syndiffix/sdmTools.py",
+    "line": 308,
+    "text": "# For two categorical cols, the fig from sdmetrics is a subplot itself.",
+    "context": [
+     "                        colLabel = f\"{', '.join(combs)} score = {pairsScore:.3f}\"",
+     "                    else:",
+     "                        colLabel = f\"{', '.join(combs)}\"",
+     "                    if fields[baseColumns[j]]['sdtype'] == 'categorical' and fields[baseColumns[i]]['sdtype'] == 'categorical':",
+     "                        # For two categorical cols, the fig from sdmetrics is a subplot itself.",
+     "                        # We need to decompose it into two separate traces and add separately as two",
+     "                        # cells in our final subplot",
+     "                        fig = sdmetrics.reports.utils.get_column_pair_plot(",
+     "                            real_data=self.dfOrig,"
+    ]
+   },
+   {
+    "file": "test_syndiffix/oneModel.py",
+    "line": 13,
+    "text": "import sdmetricsPlay",
+    "context": [
+     "import subprocess",
+     "from datetime import date, datetime",
+     "sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))",
+     "import testUtils",
+     "import sdmetricsPlay",
+     "import sdmTools",
+     "from misc.csvUtils import readCsv",
+     "",
+     "''' This is used to run the SDMetrics synthetic data models in SLURM"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "test_syndiffix/oneModel.py",
+    "line": 33,
+    "text": "from sdv.tabular import GaussianCopula",
+    "context": [
+     "def runTest(runModel, metaData, df, colNames, outPath, dataSourceNum, testData):",
+     "    print(\"First row of data:\")",
+     "    print(df.iloc[0])",
+     "    if runModel == 'gaussianCopula':",
+     "        from sdv.tabular import GaussianCopula",
+     "        model = GaussianCopula()",
+     "    elif runModel == 'ctGan':",
+     "        from sdv.tabular import CTGAN",
+     "        model = CTGAN()"
+    ]
+   },
+   {
+    "file": "test_syndiffix/oneModel.py",
+    "line": 36,
+    "text": "from sdv.tabular import CTGAN",
+    "context": [
+     "    if runModel == 'gaussianCopula':",
+     "        from sdv.tabular import GaussianCopula",
+     "        model = GaussianCopula()",
+     "    elif runModel == 'ctGan':",
+     "        from sdv.tabular import CTGAN",
+     "        model = CTGAN()",
+     "    elif runModel == 'fastMl':",
+     "        from sdv.lite import TabularPreset",
+     "        model = TabularPreset(name='FAST_ML', metadata=metaData)"
+    ]
+   },
+   {
+    "file": "test_syndiffix/oneModel.py",
+    "line": 39,
+    "text": "from sdv.lite import TabularPreset",
+    "context": [
+     "    elif runModel == 'ctGan':",
+     "        from sdv.tabular import CTGAN",
+     "        model = CTGAN()",
+     "    elif runModel == 'fastMl':",
+     "        from sdv.lite import TabularPreset",
+     "        model = TabularPreset(name='FAST_ML', metadata=metaData)",
+     "    elif runModel == 'copulaGan':",
+     "        from sdv.tabular import CopulaGAN",
+     "        model = CopulaGAN()"
+    ]
+   },
+   {
+    "file": "test_syndiffix/oneModel.py",
+    "line": 42,
+    "text": "from sdv.tabular import CopulaGAN",
+    "context": [
+     "    elif runModel == 'fastMl':",
+     "        from sdv.lite import TabularPreset",
+     "        model = TabularPreset(name='FAST_ML', metadata=metaData)",
+     "    elif runModel == 'copulaGan':",
+     "        from sdv.tabular import CopulaGAN",
+     "        model = CopulaGAN()",
+     "    elif runModel == 'tvae':",
+     "        from sdv.tabular import TVAE",
+     "        model = TVAE()"
+    ]
+   },
+   {
+    "file": "test_syndiffix/oneModel.py",
+    "line": 45,
+    "text": "from sdv.tabular import TVAE",
+    "context": [
+     "    elif runModel == 'copulaGan':",
+     "        from sdv.tabular import CopulaGAN",
+     "        model = CopulaGAN()",
+     "    elif runModel == 'tvae':",
+     "        from sdv.tabular import TVAE",
+     "        model = TVAE()",
+     "    tempPath = f\"temp.{dataSourceNum}.csv\"",
+     "    start = time.time()",
+     "    tries = 2"
+    ]
+   },
+   {
+    "file": "test_syndiffix/attacks/outlierInference.py",
+    "line": 9,
+    "text": "from sdv.tabular import TVAE, CTGAN",
+    "context": [
+     "import subprocess",
+     "import fire",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.tabular import TVAE, CTGAN",
+     "import sys",
+     "sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))",
+     "from misc.csvUtils import readCsv",
+     ""
+    ]
+   },
+   {
+    "file": "dataPrep/sdvSynth.py",
+    "line": 8,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import bz2",
+     "import pickle",
+     "import requests",
+     "import pprint",
+     "from sdv.metadata import SingleTableMetadata",
+     "import sdv ",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.sequential import PARSynthesizer",
+     ""
+    ]
+   },
+   {
+    "file": "dataPrep/sdvSynth.py",
+    "line": 9,
+    "text": "import sdv",
+    "context": [
+     "import pickle",
+     "import requests",
+     "import pprint",
+     "from sdv.metadata import SingleTableMetadata",
+     "import sdv ",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.sequential import PARSynthesizer",
+     "",
+     "print(f\"SDV version {sdv.__version__}\")"
+    ]
+   },
+   {
+    "file": "dataPrep/sdvSynth.py",
+    "line": 10,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import requests",
+     "import pprint",
+     "from sdv.metadata import SingleTableMetadata",
+     "import sdv ",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.sequential import PARSynthesizer",
+     "",
+     "print(f\"SDV version {sdv.__version__}\")",
+     "dataSetDir = 'datasets'"
+    ]
+   },
+   {
+    "file": "dataPrep/sdvSynth.py",
+    "line": 11,
+    "text": "from sdv.sequential import PARSynthesizer",
+    "context": [
+     "import pprint",
+     "from sdv.metadata import SingleTableMetadata",
+     "import sdv ",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.sequential import PARSynthesizer",
+     "",
+     "print(f\"SDV version {sdv.__version__}\")",
+     "dataSetDir = 'datasets'",
+     ""
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "dataPrep/sdvSynth.py",
+    "line": 10,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import requests",
+     "import pprint",
+     "from sdv.metadata import SingleTableMetadata",
+     "import sdv ",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.sequential import PARSynthesizer",
+     "",
+     "print(f\"SDV version {sdv.__version__}\")",
+     "dataSetDir = 'datasets'"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "dataPrep/sdvSynth.py",
+    "line": 8,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import bz2",
+     "import pickle",
+     "import requests",
+     "import pprint",
+     "from sdv.metadata import SingleTableMetadata",
+     "import sdv ",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.sequential import PARSynthesizer",
+     ""
+    ]
+   }
+  ],
+  "sq": [
+   {
+    "file": "dataPrep/sdvSynth.py",
+    "line": 11,
+    "text": "from sdv.sequential import PARSynthesizer",
+    "context": [
+     "import pprint",
+     "from sdv.metadata import SingleTableMetadata",
+     "import sdv ",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.sequential import PARSynthesizer",
+     "",
+     "print(f\"SDV version {sdv.__version__}\")",
+     "dataSetDir = 'datasets'",
+     ""
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "dataPrep/sdvSynth.py",
+    "line": 10,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import requests",
+     "import pprint",
+     "from sdv.metadata import SingleTableMetadata",
+     "import sdv ",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.sequential import PARSynthesizer",
+     "",
+     "print(f\"SDV version {sdv.__version__}\")",
+     "dataSetDir = 'datasets'"
+    ]
+   },
+   {
+    "file": "dataPrep/sdvSynth.py",
+    "line": 64,
+    "text": "synthesizer = CTGANSynthesizer(metadata)",
+    "context": [
+     "        metadata.update_column(column_name='trans_id', sdtype='id')",
+     "    metadataDict = metadata.to_dict()",
+     "    print(f\"\\n{fileName}:\")",
+     "    pp.pprint(metadataDict)",
+     "    synthesizer = CTGANSynthesizer(metadata)",
+     "    synthesizer.fit(df)",
+     "    df_syn = synthesizer.sample(num_rows=len(df))",
+     "    saveDf(fileNameRoot+'.ctgan', df_syn)",
+     ""
+    ]
+   }
+  ],
+  "par": [
+   {
+    "file": "dataPrep/sdvSynth.py",
+    "line": 11,
+    "text": "from sdv.sequential import PARSynthesizer",
+    "context": [
+     "import pprint",
+     "from sdv.metadata import SingleTableMetadata",
+     "import sdv ",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.sequential import PARSynthesizer",
+     "",
+     "print(f\"SDV version {sdv.__version__}\")",
+     "dataSetDir = 'datasets'",
+     ""
+    ]
+   },
+   {
+    "file": "dataPrep/sdvSynth.py",
+    "line": 96,
+    "text": "synthesizer = PARSynthesizer(metadata)",
+    "context": [
+     "    print(f\"\\n{fileName}:\")",
+     "    pp.pprint(metadataDict)",
+     "    num_sequences = df['account_id'].nunique()",
+     "    print(num_sequences)",
+     "    synthesizer = PARSynthesizer(metadata)",
+     "    print(\"Before fit\")",
+     "    synthesizer.fit(df)",
+     "    print(\"After fit\")",
+     "    df_syn = synthesizer.sample(num_sequences=num_sequences)"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "par",
+  "sdv_any",
+  "sm",
+  "sq",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdmetrics==0.9.1",
+   "sdv==0.18.0"
+  ]
+ }
+}

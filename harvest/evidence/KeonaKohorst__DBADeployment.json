@@ -1,0 +1,204 @@
+{
+ "repo": "KeonaKohorst/DBADeployment",
+ "disk_kb": 639,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Database Administration Project - Algorithmic Trading \n\n## Purpose of Database\nThe database stores historical stock market data to support machine learning models for financial forecasting and predictive analysis. In a production environment, the database would receive real-time updates at 5 minute intervals to maintain current market information.\n\n## Key Users and Applications\nKey users include machine learning developers who query the database to extract historical stock data for model training and analysis via Python applications. The five database administrators also serve as key users, responsible for database maintenance and optimization.\n\n## Database Design\nThe database structure is based on the best structure for machine learning models. For best performance this would take the form of a data warehouse with a star schema, however in this implementation we have simply used one flat table to allow us to focus on DBA tasks beyond design.\n\n## Goals\n- To integrate the database with a BI tool and provides charts of the data.\n- To perform typical DBA tasks such as database configuration, backup and recovery, user management, security, performance tuning and maintenance.\n- To document the physical structure, configuration, operational procedures, and security policies of the database.\n\n# Database Deployment Instructions\n\nThis guide provides step-by-step instructions on how to download the automated deployment package and execute the database deployment process using the provided scripts.\n\n---\n\n## Downloading and Extracting the Deployment Package\n\n1.  Navigate to the primary installation directory:\n    \n    ```bash\n    cd /opt\n    ```\n\n2.  Place all files in this repo into a directory called /opt/dba_deployment.\n    \n---\n\n## Preparation and Execution\n\n### 1. Make the Deployment Script Executable\n\nEnsure the main deployment script has execution permissions:\n\n```bash\nchmod +x /opt/dba_deployment/deploy.sh\n```\n\n### 2. (Optional) Updating to the Full Stock Data File\n\nThe downloaded package contains only a smaller demo CSV file for the `Stocks` table. If you require the **full version (29M rows)**, follow these steps:\n\n* Request the full CSV file from one of the DBAs.\n* Copy the full CSV file into the deployment package's data directory, naming it `stock_data_utf.csv`:\n    \n    ```bash\n    cp /path/to/full/stock_data.csv /opt/dba_deployment/data/stock_data_utf.csv\n    ```\n\n* Edit the SQL\\*Loader control file, `/opt/dba_deployment/data/stock.ctl`, to change the `INFILE` parameter to point to the new full file: `stock_data_utf.csv`.\n\n### 3. Install Flyway CLI\n\nExecute the installation script to set up the database migration tool:\n\n* The script **`install_flyway.sh`** will install **Flyway CLI version 11.18.0** into the `/opt/flyway` directory and automatically add Flyway to your system's PATH.\n\n### 4. Execute Deployment\n\nNavigate to the deployment directory and run the master script:\n\n```bash\ncd /opt/dba_deployment\n./deploy.sh\n```\n\n---\n\n## Troubleshooting\n\nIf the deployment process fails, the **cleanup.sh** script in the /opt/dba_deployment directory performs a targeted reset of the database. It only removes items that would block a fresh run of deploy.sh (e.g., old users, tablespaces, and Flyway history).\n\nIt intentionally leaves non-interfering settings in place. For instance, the backup configuration remains (except for the crontab entries) because it's designed to be safely run multiple times without causing conflicts.\n\nExecute the script, fix the error, and then re-run deploy.sh:\n```bash\n./cleanup.sh\n> Fix the error which caused deployment to fail\n./deploy.sh\n```\n\nNote: This cleanup script would not be appropriate for a production database because it fully restarts the deployment process rather than recovering to the moment before the failure. Additionally, it is a highly destructive script and it would be preferrable to use a package with heavy security permissions to ensure no one accidentally or maliciously executes the destructive script.\n",
+ "hits": {
+  "st": [
+   {
+    "file": "data/synthesize_data.py",
+    "line": 25,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "=====================================================================================",
+     "\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "real_data = pd.read_csv('stocks_data_demo.csv')",
+     ""
+    ]
+   },
+   {
+    "file": "data/.ipynb_checkpoints/synthesize_data-checkpoint.py",
+    "line": 2,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "real_data = pd.read_csv('stocks_data_demo.csv')",
+     ""
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "data/synthesize_data.py",
+    "line": 26,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "real_data = pd.read_csv('stocks_data_demo.csv')",
+     "",
+     "metadata = SingleTableMetadata();"
+    ]
+   },
+   {
+    "file": "data/.ipynb_checkpoints/synthesize_data-checkpoint.py",
+    "line": 3,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "real_data = pd.read_csv('stocks_data_demo.csv')",
+     "",
+     "metadata = SingleTableMetadata();"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "data/synthesize_data.py",
+    "line": 25,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "=====================================================================================",
+     "\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "real_data = pd.read_csv('stocks_data_demo.csv')",
+     ""
+    ]
+   },
+   {
+    "file": "data/synthesize_data.py",
+    "line": 26,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "real_data = pd.read_csv('stocks_data_demo.csv')",
+     "",
+     "metadata = SingleTableMetadata();"
+    ]
+   },
+   {
+    "file": "data/.ipynb_checkpoints/synthesize_data-checkpoint.py",
+    "line": 2,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "real_data = pd.read_csv('stocks_data_demo.csv')",
+     ""
+    ]
+   },
+   {
+    "file": "data/.ipynb_checkpoints/synthesize_data-checkpoint.py",
+    "line": 3,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "real_data = pd.read_csv('stocks_data_demo.csv')",
+     "",
+     "metadata = SingleTableMetadata();"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "data/synthesize_data.py",
+    "line": 25,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "=====================================================================================",
+     "\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "real_data = pd.read_csv('stocks_data_demo.csv')",
+     ""
+    ]
+   },
+   {
+    "file": "data/synthesize_data.py",
+    "line": 33,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "",
+     "metadata = SingleTableMetadata();",
+     "metadata.detect_from_dataframe(data=real_data)",
+     "",
+     "synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "",
+     "synthesizer.fit(real_data)",
+     "",
+     "synthetic_data = synthesizer.sample(num_rows=10000)"
+    ]
+   },
+   {
+    "file": "data/.ipynb_checkpoints/synthesize_data-checkpoint.py",
+    "line": 2,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "real_data = pd.read_csv('stocks_data_demo.csv')",
+     ""
+    ]
+   },
+   {
+    "file": "data/.ipynb_checkpoints/synthesize_data-checkpoint.py",
+    "line": 10,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "",
+     "metadata = SingleTableMetadata();",
+     "metadata.detect_from_dataframe(data=real_data)",
+     "",
+     "synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "",
+     "synthesizer.fit(real_data)",
+     "",
+     "synthetic_data = synthesizer.sample(num_rows=10000)"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

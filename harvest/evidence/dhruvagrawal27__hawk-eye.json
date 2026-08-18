@@ -1,0 +1,78 @@
+{
+ "repo": "dhruvagrawal27/hawk-eye",
+ "disk_kb": 4765,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Hawk-Eye — Real-Time Insider & Privileged-User Fraud Detection\n\n> 👉 **New here / non-technical? Start with [`GETTING_STARTED.md`](GETTING_STARTED.md)** — a plain-English guide\n> to what this is, how to run it in 2 minutes, how it works, and a glossary of every term.\n\nA production-shaped, on-prem, **alert-only** insider-fraud detection platform for a public-sector bank, built local-first on **synthetic data**. Source of truth for *what* to build: [`Insider_Fraud_Detection_Implementation_Blueprint (2).md`](Insider_Fraud_Detection_Implementation_Blueprint%20(2).md) (34 parts). Source of truth for *how / in what order*: [`BUILD_PLAN.md`](BUILD_PLAN.md) (6 workstreams → 149 tasks).\n\n**🔴 Live:** **https://hawk-eye.nineagents.in** — auto-deployed from `main` on every push (AWS Lightsail; `.github/workflows/deploy-lightsail.yml`).\n\n## What it detects\nInsider & privileged-user fraud: SWIFT/LoU abuse, new-beneficiary-then-high-value-approve, dormant-account drain, direct DB manipulation, entitlement self-grant, bulk data exfiltration, maker-checker collusion rings, fake-vendor / ghost-payroll, rogue trading, and AML alert-suppression. Every event is **scored 0–100 with reason codes and explained** for a human EDD decision — the system **never auto-blocks money**.\n\n## The 8-layer detection stack (L0→L7)\nA defence-in-depth funnel of complementary detectors — full technical write-up in [`docs/DETECTION_LAYERS.md`](docs/DETECTION_LAYERS.md):\n\n| Layer | Technique | Catches |\n|---|---|---|\n| **L0** event | canonical actor/action/object/context/linkage schema (synthetic simulator) | — |\n| **L1** rules / BRE | deterministic SoD + toxic-combo predicates, hard-short-circuit (<5 ms) | known typologies, cold-start |\n| **L2** UEBA | IsolationForest + ECOD + AutoEncoder ensemble, peer-relative | novel / behavioural anomalies |\n| **L3** GBDT | LightGBM (default) + TreeSHAP, calibrated | precision scoring on labelled typologies |\n| **L4** sequence | USAD / TranAD / Anomaly-Transformer / LAXCAT (gated, async) | low-and-slow session drift |\n| **L5** graph | XGB-on-graph / GraphSAGE (async) | collusion rings, shared-identity links |\n| **L6** fusion | transparent stacked meta-learner + isotonic calibration | one calibrated 0–100 score + reason codes |\n| **L6.5** interdiction | privileged-action gate → ALLOW / STEP_UP / HOLD (policy-authored, four-eyes) | second-approver review of held staff actions |\n| **L7** dashboard | React investigator console (RBAC, alert-only) | human EDD triage |\n\nGraceful degradation: if the model server is unavailable it falls back to **L1 rules only** — it never goes dark, and never auto-blocks.\n\n## Run locally\nFull guide in [`GETTING_STARTED.md`](GETTING_STARTED.md). Quick start:\n- **Frontend (mock data, no backend needed):** `cd frontend && npm install && npm run dev` → http://localhost:5173 (`VITE_USE_MOCKS=true`).\n- **Backend (FastAPI):** run the API on `:8000` (OpenAPI/Swagger at `/docs`); point the frontend at it with `VITE_USE_MOCKS=false`. The root `docker-compose` brings up the full stack (ClickHouse/Postgres/Redis/Kafka…).\n\n## Tech stack\n- **Frontend:** React 19 · Vite 8 · TypeScript 5.6 · Tailwind 3.4 · Radix UI · TanStack Query/Table/Virtual · Recharts · Cytoscape · React Router 7 · MSW · Vitest · Playwright.\n- **Backend:** FastAPI · Pydantic 2 · JWT/Authlib RBAC · ClickHouse / Postgres / Redis (guarded, local fallbacks).\n- **ML:** scikit-learn · PyOD · LightGBM / XGBoost / CatBoost · PyTorch · PyTorch-Geometric · SHAP · ONNX Runtime.\n- **Platform:** Kafka/Flink (guarded) · MLflow · Prometheus/Grafana · Docker · Caddy on AWS Lightsail.\n- Exact pins: [`frontend/package.json`](frontend/package.json), [`backend/pyproject.toml`](backend/pyproject.toml), `deploy/versions.bom.yaml`.\n\n## Key API surfaces (`/api/v1`, JWT + RBAC)\nAuthoritative contract in [`BACKEND.md`](BACKEND.md) §3; index in [`docs/openapi-index.md`](docs/openapi-index.md); live spec at `/docs`.\n- **Alerts / EDD:** `GET /alerts` · `/alerts/stats` · `/alerts/{id}` · `POST /alerts/{id}/{assign,disposition,block-request}`.\n- **Explainability:** `GET /explanations/{id}` (fusion breakdown · per-layer model lineage · SHAP · rule provenance · L4 attention · structured L5 graph) · `POST /narratives/{id}` (TEE-attested).\n- **Entity-360:** `GET /entities/{id}` + `/timeline` `/graph` `/peers` `/risk-index` `/score-history` `/layer-scores`.\n- **Oversight / analytics:** `GET /activity/sub-threshold` · `/analytics/typologies` · `/graph` · `/audit` · `/services/status`.\n- **Interdiction (L6.5):** `/api/v1/action-gate/*` → ALLOW / STEP_UP / HOLD (four-eyes, audited).\n- **Rules / models / reports:** four-eyes rule changes · signed model promotion + kill-switch · CRILC / FMR / CFR draft exports.\n\n## What Hawk-Eye detects (problem-statement coverage)\n\nHawk-Eye is an **AI-powered Early-Warning System** that **continuously monitors the behaviour of internal and privileged users** across banking systems — **core banking, treasury, loan origination, and customer databases** — and **flags anomalous or potentially fraudulent activity in real time**. It uses machine-learning models to **establish a behavioural baseline for each user** (peer-relative) and to **detect deviations** such as **unusual transaction patterns, off-hours access, bulk data downloads, unauthorized account modifications, and privilege-escalation attempts**. Every alert carries a **calibrated risk score** and **contextual explanations**, and lands in a **dashboard for the fraud-investigation team to triage and act on cases efficiently**. Each clause of the problem statement maps to a detection layer:\n\n| Problem-statement signal | How Hawk-Eye catches it | Layer(s) |\n|---|---|---|\n| ML behavioural baseline per user | peer-relative UEBA (unsupervised, no labels) | L2 |\n| Unusual transaction patterns | hard rules + supervised GBDT (LightGBM) | L1 + L3 |\n| Off-hours access | time-of-day vs baseline + 7×24 heatmap | L1 + L2 |\n| Bulk data downloads | download volume vs baseline + leaver-window + export-to-personal-channel | L1 + L2 + L4 |\n| Unauthorized account modifications | DB write with no app transaction · out-of-scope access | L1 + L2 |\n| Privilege-escalation attempts | entitlement self-grant · temp-admin timed to transactions | L1 |\n| Real-time flagging | fast lane: event → feature → score → alert in seconds | L0–L6 |\n| Risk scores | one calibrated 0–100 score (severity × confidence) | L6 |\n| Alerts with contextual explanations | SHAP + structured reason codes + AI narrative | L3 / L6 / LLM |\n| Dashboard to triage & act | investigator console: ranked queue · entity-360 · EDD verdict | L7 |\n\nThe full mapping of **16 insider fraud vectors** to layers/signals is in [`docs/detection-coverage-map.md`](docs/detection-coverage-map.md); the honest scope limits are in [`docs/honest-limits.md`](docs/honest-limits.md). A panel-facing pitch deck (iDEA 2.0 template, mapped to the evaluation rubric) lives at [`docs/deliverables/HAWKEYE_iDEA2_DECK.pptx`](docs/deliverables/HAWKEYE_iDEA2_DECK.pptx).\n\n## Golden rules (every laptop, every task)\n1. **Alert-only.** The system scores and explains; a human decides. **It never auto-blocks money.**\n2. **On-prem + synthetic.** No real bank systems, no cloud creds, no real PII. Everything runs locally on the synthetic simulator + public datasets. Real feeds/creds/hardware are **SCAFFOLD**; human/legal/hardware acts are **MOCK**.\n3. **Validate against the blueprint.** No task is \"done\" until the matching blueprint Part's requirement is met. Cite the Part in your commits and your laptop log.\n4. **Nothing is dropped.** The 6 workstreams partition the entire blueprint. If you find a blueprint requirement that isn't in your task list or anyone else's, raise it in `CONTEXT.md` immediately.\n\n## The 6 workstreams (one laptop each)\n| # | Workstream | Owns dir(s) | Prompt |\n|---|---|---|---|\n| 1 | 📥 **DATA** — data & ingestion | `data/` | [prompts/01_DATA.md](prompts/01_DATA.md) |\n| 2 | 🤖 **ML** — models & MLOps | `ml/` | [prompts/02_ML.md](prompts/02_ML.md) |\n| 3 | ⚙️ **BACKEND** — services & API | `backend/` + owns `BACKEND.md` | [prompts/03_BACKEND.md](prompts/03_BACKEND.md) |\n| 4 | 🖥️ **FRONTEND** — dashboard | `frontend/` | [prompts/04_FRONTEND.md](prompts/04_FRONTEND.md) |\n| 5 | 🗄️ **DATABASE** — storage | `db/` | [prompts/05_DATABASE.md](prompts/05_DATABASE.md) |\n| 6 | 🏗️ **PLATFORM** — infra/security/governance/ops | `platform/`, `infra/`, `.github/`, root `docker-compose.yml` | [prompts/06_PLATFORM.md](prompts/06_PLATFORM.md) |\n\n## The four kinds of coordination MD files\n- **[`CONTEXT.md`](CONTEXT.md)** — shared full context. **Everyone appends** decisions, interfaces, and integration notes here.\n- **[`BACKEND.md`](BACKEND.md)** — the backend/integration **contract** (event schema, alert schema, API routes, RBAC, score/reason-code shapes). **Owned by the BACKEND laptop**; everyone else **reads** it to integrate.\n- **[`TODO.md`](TODO.md)** — shared task board. Each laptop keeps its rows current.\n- **`docs/laptops/<NN-workstream>.md`** — each laptop's **own** working log (decisions, files created, deviations, blockers).\n\n## Repo layout\n```\ndata/        ML-ready synthetic data, simulator, L0 schema, connectors, features (DATA laptop)\nml/          models L2–L6, training, eval, mlops, explainability, LLM gateway (ML laptop)\nbackend/     FastAPI, L1 rules, fusion service, serving, EDD loop, tokenization, reports (BACKEND laptop)\nfrontend/    React/TS investigator dashboard (FRONTEND laptop)\ndb/          ClickHouse/Postgres/Redis/object-store/WORM/registry schemas & config (DATABASE laptop)\ninfra/       docker-compose, k8s, terraform (PLATFORM laptop)\nplatform/    security, governance mocks, observability, DR, ops (PLATFORM laptop)\ntests/       cross-workstream integration tests (PLATFORM laptop owns harness; all contribute)\ndocs/        coordination docs + per-laptop logs\nprompts/     the 6 build prompts (one per laptop)\n```\n\n## Merge model\nEach laptop works on branch `hawk-eye/<workstream>` and only edits files **under its owned dirs** + its own laptop log + appends to shared MD files. Merges to `main` integrate cleanly because ownership is disjoint. Cross-workstream interfaces are agreed in `BACKEND.md` / `CONTEXT.md` **before** coding against them.\n",
+ "hits": {
+  "st": [
+   {
+    "file": "data/sim/augment.py",
+    "line": 30,
+    "text": "from sdv.single_table import CTGANSynthesizer  # type: ignore  # noqa: F401",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "",
+     "try:  # pragma: no cover - exercised only when SDV is installed",
+     "    from sdv.single_table import CTGANSynthesizer  # type: ignore  # noqa: F401",
+     "",
+     "    HAVE_SDV = True",
+     "except Exception:",
+     "    HAVE_SDV = False"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "data/sim/augment.py",
+    "line": 30,
+    "text": "from sdv.single_table import CTGANSynthesizer  # type: ignore  # noqa: F401",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "",
+     "try:  # pragma: no cover - exercised only when SDV is installed",
+     "    from sdv.single_table import CTGANSynthesizer  # type: ignore  # noqa: F401",
+     "",
+     "    HAVE_SDV = True",
+     "except Exception:",
+     "    HAVE_SDV = False"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "data/sim/augment.py",
+    "line": 30,
+    "text": "from sdv.single_table import CTGANSynthesizer  # type: ignore  # noqa: F401",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "",
+     "try:  # pragma: no cover - exercised only when SDV is installed",
+     "    from sdv.single_table import CTGANSynthesizer  # type: ignore  # noqa: F401",
+     "",
+     "    HAVE_SDV = True",
+     "except Exception:",
+     "    HAVE_SDV = False"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "data/requirements.txt": [
+   "# Heavy/optional deps (Kafka/Flink/Feast/Redis/ClickHouse/SDV/Snorkel/featuretools/GE/DVC/MLflow)",
+   "#   sdv>=1.15                 # generative augmentation"
+  ],
+  "data/pyproject.toml": [
+   "augment = [\"sdv>=1.15\"]"
+  ]
+ }
+}

@@ -1,0 +1,173 @@
+{
+ "repo": "aganrandave/DAT608-POS-Fraud-Detection",
+ "disk_kb": 19225,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# DAT608 — POS Agent Fraud Detection\n\n[![CI](https://github.com/aganrandave/DAT608-POS-Fraud-Detection/actions/workflows/ci.yml/badge.svg)](https://github.com/aganrandave/DAT608-POS-Fraud-Detection/actions/workflows/ci.yml)\n\nA real-time fraud detection system for Nigerian point-of-sale (POS) agent\ntransactions. Synthetic transactions are streamed through Kafka, enriched\nwith rolling features in Spark Structured Streaming, scored by an ensemble\nof XGBoost and Isolation Forest models tracked in MLflow, and surfaced as\ntiered alerts through ksqlDB and a Streamlit dashboard. The project is a\nDAT608 Big Data capstone at Pan-Atlantic University.\n\n## Team\n\n| Name | Role | GitHub username | Pipeline layer(s) |\n|------|------|------------------|--------------------|\n| David Aganran | EM/PM | [aganrandave](https://github.com/aganrandave) | infra, dashboard, tests, docs |\n| Omobolanle Adegboye     | LLM Evaluator | [bolanle-ea](https://github.com/bolanle-ea) | models |\n| Ololade Ajaegbu     | ML Engineer | [Ololade-ajaegbu](https://github.com/Ololade-ajaegbu) | models |\n| Oluwatiseunla Abdul     | Data Scientist | [Oluwatiseunla](https://github.com/Oluwatiseunla) | scoring |\n| John Babalola     | Data Engineer | [john-babalola1307](https://github.com/john-babalola1307) | producer, pipeline, alerts |\n| Jesselyn Ayanka | Data Management | [Jessayanka005](https://github.com/Jessayanka005) | infra, docker |\nUnstaffed layers (dashboard, tests, docs) default to the EM/PM until a\nnamed owner is assigned — see [`.github/CODEOWNERS`](.github/CODEOWNERS) for\nthe enforced mapping.\n\n## Architecture overview\n\n```\n +-------------+     +-------+     +----------------+     +---------------------+\n | Transaction | --> | Kafka | --> | Spark Structured| --> | Feature Store       |\n | Generator   |     | Topic |     | Streaming        |     | (data/features.xlsx)|\n +-------------+     +-------+     +----------------+     +----------+----------+\n                                                                       |\n                                                                       v\n                                                          +------------------------+\n                                                          | XGBoost + Isolation    |\n                                                          | Forest (MLflow logged) |\n                                                          +-----------+------------+\n                                                                       |\n                                                                       v\n+--------------+     +------------+     +----------+     +------------------------+\n| Streamlit    | <-- |  Alerts    | <-- | ksqlDB   | <-- | FastAPI Scoring Service|\n| Dashboard    |     | (alerts.   |     | Alert    |     | (data/fraud_scores.xlsx)|\n|              |     |  xlsx)     |     | Logic    |     |                        |\n+--------------+     +------------+     +----------+     +------------------------+\n```\n\nAll services are orchestrated with Docker Compose — see [infra/README.md](infra/README.md).\n\n## Layers\n\n| Layer | README |\n|---|---|\n| producer — synthetic transactions & Kafka producer | [producer/README.md](producer/README.md) |\n| pipeline — Spark Structured Streaming feature engineering | [pipeline/README.md](pipeline/README.md) |\n| models — XGBoost + Isolation Forest, MLflow | [models/README.md](models/README.md) |\n| scoring — FastAPI scoring service | [scoring/README.md](scoring/README.md) |\n| alerts — ksqlDB alert logic | [alerts/README.md](alerts/README.md) |\n| dashboard — Streamlit UI | [dashboard/README.md](dashboard/README.md) |\n| infra — Docker Compose orchestration | [infra/README.md](infra/README.md) |\n\n## Quickstart\n\n```bash\ngit clone https://github.com/aganrandave/DAT608-POS-Fraud-Detection.git\ncd DAT608-POS-Fraud-Detection\ncp .env.example .env\ndocker-compose up --build\n```\n\nThe Streamlit dashboard will be available at `http://localhost:8501` and the\nFastAPI scoring service at `http://localhost:8000/docs`.\n\n## Data store\n\nThis project uses **Excel files instead of a live database**. Every\npersistent record — raw transactions, engineered features, model scores,\nand alerts — lives under [`data/`](data/) as a tracked `.xlsx` file\n(`data/transactions_raw.xlsx`, `data/features.xlsx`, `data/fraud_scores.xlsx`,\n`data/alerts.xlsx`, `data/reference/terminals.xlsx`,\n`data/reference/merchants.xlsx`). Because these files are committed to Git,\nevery pull request carries its data alongside the code that produced it,\nand reviewers can diff data changes the same way they diff code. Each layer\nreads and writes these files through a shared `openpyxl` + `filelock`\npattern implemented in that layer's `excel_reader.py` / `excel_writer.py`.\n\n## Documentation\n\nFull technical documentation, including the data dictionary, API reference,\nand alert-tier logic, lives in [docs/architecture.md](docs/architecture.md).\n",
+ "hits": {
+  "st": [
+   {
+    "file": "models/synthetic_augmentation.py",
+    "line": 45,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling import Condition",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "from excel_reader import FEATURE_COLUMNS, load_training_frame",
+     "",
+     "OUTPUT_DIR = os.path.join(os.path.dirname(__file__), \"synthetic_output\")"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "models/synthetic_augmentation.py",
+    "line": 43,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import os",
+     "from datetime import datetime, timezone",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling import Condition",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "from excel_reader import FEATURE_COLUMNS, load_training_frame"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "models/synthetic_augmentation.py",
+    "line": 43,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import os",
+     "from datetime import datetime, timezone",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling import Condition",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "from excel_reader import FEATURE_COLUMNS, load_training_frame"
+    ]
+   },
+   {
+    "file": "models/synthetic_augmentation.py",
+    "line": 44,
+    "text": "from sdv.sampling import Condition",
+    "context": [
+     "from datetime import datetime, timezone",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling import Condition",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "from excel_reader import FEATURE_COLUMNS, load_training_frame",
+     ""
+    ]
+   },
+   {
+    "file": "models/synthetic_augmentation.py",
+    "line": 45,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling import Condition",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "from excel_reader import FEATURE_COLUMNS, load_training_frame",
+     "",
+     "OUTPUT_DIR = os.path.join(os.path.dirname(__file__), \"synthetic_output\")"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "models/synthetic_augmentation.py",
+    "line": 45,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling import Condition",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "from excel_reader import FEATURE_COLUMNS, load_training_frame",
+     "",
+     "OUTPUT_DIR = os.path.join(os.path.dirname(__file__), \"synthetic_output\")"
+    ]
+   },
+   {
+    "file": "models/synthetic_augmentation.py",
+    "line": 107,
+    "text": "def train_synthesizer(real_df: pd.DataFrame, metadata: SingleTableMetadata) -> CTGANSynthesizer:",
+    "context": [
+     "",
+     "    return metadata",
+     "",
+     "",
+     "def train_synthesizer(real_df: pd.DataFrame, metadata: SingleTableMetadata) -> CTGANSynthesizer:",
+     "    synthesizer = CTGANSynthesizer(metadata, epochs=CTGAN_EPOCHS, verbose=True)",
+     "    synthesizer.fit(real_df)",
+     "    return synthesizer",
+     ""
+    ]
+   },
+   {
+    "file": "models/synthetic_augmentation.py",
+    "line": 108,
+    "text": "synthesizer = CTGANSynthesizer(metadata, epochs=CTGAN_EPOCHS, verbose=True)",
+    "context": [
+     "    return metadata",
+     "",
+     "",
+     "def train_synthesizer(real_df: pd.DataFrame, metadata: SingleTableMetadata) -> CTGANSynthesizer:",
+     "    synthesizer = CTGANSynthesizer(metadata, epochs=CTGAN_EPOCHS, verbose=True)",
+     "    synthesizer.fit(real_df)",
+     "    return synthesizer",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "models/synthetic_augmentation.py",
+    "line": 117,
+    "text": "synthesizer: CTGANSynthesizer, training_df: pd.DataFrame",
+    "context": [
+     "JOINT_CONDITION_COLUMNS = [\"is_fraud\", \"terminal_reversal_count\", \"velocity_1h\", \"has_geo_jump\"]",
+     "",
+     "",
+     "def sample_conditionally_on_joint_distribution(",
+     "    synthesizer: CTGANSynthesizer, training_df: pd.DataFrame",
+     ") -> pd.DataFrame:",
+     "    \"\"\"Sample the same total row count as training_df, conditioning",
+     "    JOINTLY on all of JOINT_CONDITION_COLUMNS at their exact real joint",
+     "    counts - not just is_fraud alone (the original version of this"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "models/requirements.txt": [
+   "sdv==1.17.4"
+  ]
+ }
+}

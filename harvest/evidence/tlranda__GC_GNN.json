@@ -1,0 +1,458 @@
+{
+ "repo": "tlranda/GC_GNN",
+ "disk_kb": 335272,
+ "method": "partial_clone",
+ "tree_files": 23868,
+ "status": "ok",
+ "readme": "# GC_GNN\nCollaboration repository for novel work based upon HPDC'23 and ICS'23 papers.\n\n# Initial Experiment:\nDetermine if embeddings from GNN can be used to improve GC performance\n\n## Procedure:\n\n* Extract template from GC\\_TLA for use\n  + Picked Polybench's Syr2k benchmark as I have exhaustive empirical data for two application scales, which will make analyses easier\n  + File: syr2k\\_reference/mmp.c\n* Reconstruct the filled-in templates based on original tuning data used in the Gaussian Copula\n  + Original training data referenced from YTOPT source data\n    * File: syr2k\\_reference/syr2k\\_S.csv\n    * File: syr2k\\_reference/syr2k\\_L.csv\n  + Script fill\\_in.py mimics the experiment templating process.\n  + Execute: python3 fill\\_in.py --csv syr2k\\_reference/\\*.csv --template syr2k\\_reference/mmp.c --output-dir syr2k\\_recreations\n* Compile all templates in the same manner as original experiments\n  + Script build\\_compile\\_script.py writes a bash script to mitigate environment/replication issues.\n  + Execute: python3 build\\_compile\\_script.py\n    + After running, compile\\_script.sh will exist. Ensure it can be executed (chmod +x compile\\_script.sh) and execute it.\n    + Execute: ./compile\\_script.sh\n    + There are a LOT of templates, this can take up to half an hour or so to complete\n\n# Next Steps:\n* Use GNN to generate embeddings for each executable in syr2k\\_recreations\n* Compare GC performance:\n  + With GC\\_TLA approach only (quantile filtering on source task objectives)\n  + With GNN embeddings after quantile filtering\n",
+ "hits": {
+  "st": [
+   {
+    "file": "analysis/manual_inspection.py",
+    "line": 7,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer as GaussianCopula",
+    "context": [
+     "import warnings",
+     "import itertools",
+     "from scipy.stats import entropy",
+     "import matplotlib.pyplot as plt",
+     "from sdv.single_table import GaussianCopulaSynthesizer as GaussianCopula",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling.tabular import Condition",
+     "from sdv.constraints import ScalarRange",
+     "import argparse"
+    ]
+   },
+   {
+    "file": "analysis/backwards_solve.py",
+    "line": 8,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer as GaussianCopula",
+    "context": [
+     "import pandas as pd, numpy as np",
+     "import os, time, sys, argparse, pathlib, inspect, warnings, json, logging, itertools, multiprocessing",
+     "from importlib import import_module",
+     "from copy import deepcopy",
+     "from sdv.single_table import GaussianCopulaSynthesizer as GaussianCopula",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling.tabular import Condition",
+     "from sdv.constraints import ScalarRange",
+     "from GC_TLA import gc_tla_utils"
+    ]
+   },
+   {
+    "file": "gctla/mass_gc_sample.py",
+    "line": 13,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer as GC",
+    "context": [
+     "",
+     "# Other deps",
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer as GC",
+     "from sdv.metadata import SingleTableMetadata as STM",
+     "from sdv.sampling.tabular import Condition",
+     "import tqdm",
+     "# Local deps / GC"
+    ]
+   },
+   {
+    "file": "gctla/run_gctla/train_embeddings.py",
+    "line": 22,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer as GaussianCopula",
+    "context": [
+     "import pathlib, warnings, time, re, multiprocessing",
+     "import copy",
+     "import ConfigSpace as CS, ConfigSpace.hyperparameters as CSH",
+     "from ConfigSpace import ConfigurationSpace",
+     "from sdv.single_table import GaussianCopulaSynthesizer as GaussianCopula",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling.tabular import Condition",
+     "from sdv.constraints import ScalarRange",
+     ""
+    ]
+   },
+   {
+    "file": "neurovectorizer_data/transfer.py",
+    "line": 7,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer as GaussianCopula",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "from GC_TLA.implementations.neurovectorizer import neurovectorizer_titan as nvt",
+     "import sdv",
+     "from sdv.single_table import GaussianCopulaSynthesizer as GaussianCopula",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling.tabular import Condition",
+     "import tqdm",
+     "import torch # For controlling sdv rng"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "analysis/manual_inspection.py",
+    "line": 8,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import itertools",
+     "from scipy.stats import entropy",
+     "import matplotlib.pyplot as plt",
+     "from sdv.single_table import GaussianCopulaSynthesizer as GaussianCopula",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling.tabular import Condition",
+     "from sdv.constraints import ScalarRange",
+     "import argparse",
+     ""
+    ]
+   },
+   {
+    "file": "analysis/backwards_solve.py",
+    "line": 9,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import os, time, sys, argparse, pathlib, inspect, warnings, json, logging, itertools, multiprocessing",
+     "from importlib import import_module",
+     "from copy import deepcopy",
+     "from sdv.single_table import GaussianCopulaSynthesizer as GaussianCopula",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling.tabular import Condition",
+     "from sdv.constraints import ScalarRange",
+     "from GC_TLA import gc_tla_utils",
+     "# Math for auto-budgeting"
+    ]
+   },
+   {
+    "file": "gctla/mass_gc_sample.py",
+    "line": 14,
+    "text": "from sdv.metadata import SingleTableMetadata as STM",
+    "context": [
+     "# Other deps",
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer as GC",
+     "from sdv.metadata import SingleTableMetadata as STM",
+     "from sdv.sampling.tabular import Condition",
+     "import tqdm",
+     "# Local deps / GC",
+     "from GC_TLA.implementations.syr2k import (tunable_params,"
+    ]
+   },
+   {
+    "file": "gctla/run_gctla/train_embeddings.py",
+    "line": 23,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import copy",
+     "import ConfigSpace as CS, ConfigSpace.hyperparameters as CSH",
+     "from ConfigSpace import ConfigurationSpace",
+     "from sdv.single_table import GaussianCopulaSynthesizer as GaussianCopula",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling.tabular import Condition",
+     "from sdv.constraints import ScalarRange",
+     "",
+     "# Transfer Settings"
+    ]
+   },
+   {
+    "file": "neurovectorizer_data/transfer.py",
+    "line": 8,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "from GC_TLA.implementations.neurovectorizer import neurovectorizer_titan as nvt",
+     "import sdv",
+     "from sdv.single_table import GaussianCopulaSynthesizer as GaussianCopula",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling.tabular import Condition",
+     "import tqdm",
+     "import torch # For controlling sdv rng",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "analysis/manual_inspection.py",
+    "line": 7,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer as GaussianCopula",
+    "context": [
+     "import warnings",
+     "import itertools",
+     "from scipy.stats import entropy",
+     "import matplotlib.pyplot as plt",
+     "from sdv.single_table import GaussianCopulaSynthesizer as GaussianCopula",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling.tabular import Condition",
+     "from sdv.constraints import ScalarRange",
+     "import argparse"
+    ]
+   },
+   {
+    "file": "analysis/manual_inspection.py",
+    "line": 8,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import itertools",
+     "from scipy.stats import entropy",
+     "import matplotlib.pyplot as plt",
+     "from sdv.single_table import GaussianCopulaSynthesizer as GaussianCopula",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling.tabular import Condition",
+     "from sdv.constraints import ScalarRange",
+     "import argparse",
+     ""
+    ]
+   },
+   {
+    "file": "analysis/manual_inspection.py",
+    "line": 9,
+    "text": "from sdv.sampling.tabular import Condition",
+    "context": [
+     "from scipy.stats import entropy",
+     "import matplotlib.pyplot as plt",
+     "from sdv.single_table import GaussianCopulaSynthesizer as GaussianCopula",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling.tabular import Condition",
+     "from sdv.constraints import ScalarRange",
+     "import argparse",
+     "",
+     "compare_cols = [f'p{_}' for _ in range(6)]+['input']"
+    ]
+   },
+   {
+    "file": "analysis/manual_inspection.py",
+    "line": 10,
+    "text": "from sdv.constraints import ScalarRange",
+    "context": [
+     "import matplotlib.pyplot as plt",
+     "from sdv.single_table import GaussianCopulaSynthesizer as GaussianCopula",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling.tabular import Condition",
+     "from sdv.constraints import ScalarRange",
+     "import argparse",
+     "",
+     "compare_cols = [f'p{_}' for _ in range(6)]+['input']",
+     "display_cols = [compare_cols[_] for _ in [0,1,2,3,4,5]]"
+    ]
+   },
+   {
+    "file": "analysis/backwards_solve.py",
+    "line": 8,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer as GaussianCopula",
+    "context": [
+     "import pandas as pd, numpy as np",
+     "import os, time, sys, argparse, pathlib, inspect, warnings, json, logging, itertools, multiprocessing",
+     "from importlib import import_module",
+     "from copy import deepcopy",
+     "from sdv.single_table import GaussianCopulaSynthesizer as GaussianCopula",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling.tabular import Condition",
+     "from sdv.constraints import ScalarRange",
+     "from GC_TLA import gc_tla_utils"
+    ]
+   },
+   {
+    "file": "analysis/backwards_solve.py",
+    "line": 9,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import os, time, sys, argparse, pathlib, inspect, warnings, json, logging, itertools, multiprocessing",
+     "from importlib import import_module",
+     "from copy import deepcopy",
+     "from sdv.single_table import GaussianCopulaSynthesizer as GaussianCopula",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling.tabular import Condition",
+     "from sdv.constraints import ScalarRange",
+     "from GC_TLA import gc_tla_utils",
+     "# Math for auto-budgeting"
+    ]
+   },
+   {
+    "file": "analysis/backwards_solve.py",
+    "line": 10,
+    "text": "from sdv.sampling.tabular import Condition",
+    "context": [
+     "from importlib import import_module",
+     "from copy import deepcopy",
+     "from sdv.single_table import GaussianCopulaSynthesizer as GaussianCopula",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling.tabular import Condition",
+     "from sdv.constraints import ScalarRange",
+     "from GC_TLA import gc_tla_utils",
+     "# Math for auto-budgeting",
+     "try:"
+    ]
+   },
+   {
+    "file": "analysis/backwards_solve.py",
+    "line": 11,
+    "text": "from sdv.constraints import ScalarRange",
+    "context": [
+     "from copy import deepcopy",
+     "from sdv.single_table import GaussianCopulaSynthesizer as GaussianCopula",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling.tabular import Condition",
+     "from sdv.constraints import ScalarRange",
+     "from GC_TLA import gc_tla_utils",
+     "# Math for auto-budgeting",
+     "try:",
+     "    from math import comb"
+    ]
+   },
+   {
+    "file": "gctla/mass_gc_sample.py",
+    "line": 13,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer as GC",
+    "context": [
+     "",
+     "# Other deps",
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer as GC",
+     "from sdv.metadata import SingleTableMetadata as STM",
+     "from sdv.sampling.tabular import Condition",
+     "import tqdm",
+     "# Local deps / GC"
+    ]
+   },
+   {
+    "file": "gctla/mass_gc_sample.py",
+    "line": 14,
+    "text": "from sdv.metadata import SingleTableMetadata as STM",
+    "context": [
+     "# Other deps",
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer as GC",
+     "from sdv.metadata import SingleTableMetadata as STM",
+     "from sdv.sampling.tabular import Condition",
+     "import tqdm",
+     "# Local deps / GC",
+     "from GC_TLA.implementations.syr2k import (tunable_params,"
+    ]
+   },
+   {
+    "file": "gctla/mass_gc_sample.py",
+    "line": 15,
+    "text": "from sdv.sampling.tabular import Condition",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer as GC",
+     "from sdv.metadata import SingleTableMetadata as STM",
+     "from sdv.sampling.tabular import Condition",
+     "import tqdm",
+     "# Local deps / GC",
+     "from GC_TLA.implementations.syr2k import (tunable_params,",
+     "                                          problem_mapping,"
+    ]
+   },
+   {
+    "file": "gctla/run_gctla/train_embeddings.py",
+    "line": 22,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer as GaussianCopula",
+    "context": [
+     "import pathlib, warnings, time, re, multiprocessing",
+     "import copy",
+     "import ConfigSpace as CS, ConfigSpace.hyperparameters as CSH",
+     "from ConfigSpace import ConfigurationSpace",
+     "from sdv.single_table import GaussianCopulaSynthesizer as GaussianCopula",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling.tabular import Condition",
+     "from sdv.constraints import ScalarRange",
+     ""
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "analysis/manual_inspection.py",
+    "line": 7,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer as GaussianCopula",
+    "context": [
+     "import warnings",
+     "import itertools",
+     "from scipy.stats import entropy",
+     "import matplotlib.pyplot as plt",
+     "from sdv.single_table import GaussianCopulaSynthesizer as GaussianCopula",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling.tabular import Condition",
+     "from sdv.constraints import ScalarRange",
+     "import argparse"
+    ]
+   },
+   {
+    "file": "analysis/backwards_solve.py",
+    "line": 8,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer as GaussianCopula",
+    "context": [
+     "import pandas as pd, numpy as np",
+     "import os, time, sys, argparse, pathlib, inspect, warnings, json, logging, itertools, multiprocessing",
+     "from importlib import import_module",
+     "from copy import deepcopy",
+     "from sdv.single_table import GaussianCopulaSynthesizer as GaussianCopula",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling.tabular import Condition",
+     "from sdv.constraints import ScalarRange",
+     "from GC_TLA import gc_tla_utils"
+    ]
+   },
+   {
+    "file": "gctla/mass_gc_sample.py",
+    "line": 13,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer as GC",
+    "context": [
+     "",
+     "# Other deps",
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer as GC",
+     "from sdv.metadata import SingleTableMetadata as STM",
+     "from sdv.sampling.tabular import Condition",
+     "import tqdm",
+     "# Local deps / GC"
+    ]
+   },
+   {
+    "file": "gctla/run_gctla/train_embeddings.py",
+    "line": 22,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer as GaussianCopula",
+    "context": [
+     "import pathlib, warnings, time, re, multiprocessing",
+     "import copy",
+     "import ConfigSpace as CS, ConfigSpace.hyperparameters as CSH",
+     "from ConfigSpace import ConfigurationSpace",
+     "from sdv.single_table import GaussianCopulaSynthesizer as GaussianCopula",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling.tabular import Condition",
+     "from sdv.constraints import ScalarRange",
+     ""
+    ]
+   },
+   {
+    "file": "neurovectorizer_data/transfer.py",
+    "line": 7,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer as GaussianCopula",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "from GC_TLA.implementations.neurovectorizer import neurovectorizer_titan as nvt",
+     "import sdv",
+     "from sdv.single_table import GaussianCopulaSynthesizer as GaussianCopula",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.sampling.tabular import Condition",
+     "import tqdm",
+     "import torch # For controlling sdv rng"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

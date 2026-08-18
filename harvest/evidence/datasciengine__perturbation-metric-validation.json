@@ -1,0 +1,258 @@
+{
+ "repo": "datasciengine/perturbation-metric-validation",
+ "disk_kb": 1862,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# A Controlled-Perturbation Protocol for Validating Synthetic-Tabular-Data Metrics\n\nCode and reproducible environment for the paper *\"A Controlled-Perturbation Protocol for\nValidating Synthetic-Tabular-Data Metrics.\"*\n\nSynthetic-tabular-data fidelity is judged by many metrics, but it is rarely established *what a\ngiven metric actually detects*. This repository provides a controlled-perturbation protocol that\nsupplies ground truth: it injects known distributional failures into a real reference at graded\nseverity — separating **marginal-breaking** from **marginal-preserving joint** failures — and\nmeasures, with a scale-free, multi-seed analysis, whether each metric responds. It benchmarks a\npanel of metrics across five public datasets and releases a pinned CPU environment that reproduces\nthe reported numbers.\n\n## Repository layout\n\n| File | Purpose |\n|------|---------|\n| `config.py` | dataset configurations (adult, diabetes, student, california, bank) |\n| `data_loading.py` | loading, cleaning, numeric/categorical column resolution |\n| `perturbations.py` | the controlled perturbation injectors + registry |\n| `ssem.py` | the embedding-based metric (row → text → encoder → whitened space) |\n| `baselines.py` | nearest-neighbour and marginal (KS/TVD) baselines |\n| `benchmark_extra.py` | classifier two-sample test, propensity MSE, SDMetrics sub-scores, Wasserstein |\n| `run_validation.py` | main sensitivity harness → `results/<dataset>_sensitivity.csv` |\n| `analyze.py` | scale-free verdict (Spearman ρ + within-metric SNR, with CIs) |\n| `coda.py` | external-validity / transfer-gap study (generators + real-ceiling control) |\n| `ablations.py` | configuration ablations — k, PCA dim, rounding, feature order, encoder |\n| `make_fig1.py` | sensitivity-curve figure |\n| `smoke_test.py` | logic checks that do not require the encoder |\n| `Dockerfile`, `requirements*.txt` | pinned CPU environment |\n\n## Requirements\n\n- **Reproducible runs:** Docker (the image pins Python 3.9, CPU PyTorch, and every transitive\n  dependency via `requirements.lock.txt`).\n- **Development runs:** Python 3.9+ with the packages in `requirements.txt` (the encoder runs on\n  CPU, or on Apple MPS / CUDA if available).\n\nThe embedding metric uses the `intfloat/e5-base-v2` sentence encoder (downloaded once to a mounted\n`./.hf_cache`).\n\n## Reproduce the benchmark (pinned Docker/CPU)\n\n```bash\ndocker build -t ssem .\n\nDOCKER=\"docker run --rm -v $PWD/results:/app/results -v $PWD/.hf_cache:/app/.hf_cache -e HF_HUB_OFFLINE=1 ssem\"\nOUT=results/docker_final\nfor ds in diabetes student california adult bank; do\n  $DOCKER run_validation.py  --dataset \"$ds\" --seeds 10 --out-dir \"$OUT\"\n  $DOCKER benchmark_extra.py --dataset \"$ds\" --seeds 10 --out-dir \"$OUT/extra\"\n  tail -n +2 \"$OUT/extra/${ds}_extra_sensitivity.csv\" >> \"$OUT/${ds}_sensitivity.csv\"\ndone\n$DOCKER analyze.py --results-dir \"$OUT\"          # → results/docker_final/analysis_all.csv\npython3 make_fig1.py --results-dir \"$OUT\"        # → fig1_sensitivity.{pdf,png}\n```\n\nThe external-validity (transfer-gap) study — the datasets and seed counts reported in the paper\n(diabetes and student at ten seeds; the `--realceiling` pass prints the per-generator contrast and\nthe formal separation test):\n\n```bash\nfor cfg in \"diabetes 450 300\" \"student 600 400\"; do\n  set -- $cfg\n  $DOCKER coda.py --dataset \"$1\" --seeds 10 --train-n \"$2\" --ref-n \"$3\" --epochs 100\n  $DOCKER coda.py --dataset \"$1\" --seeds 10 --train-n \"$2\" --ref-n \"$3\" --realceiling\ndone\n```\n\nConfiguration ablations (§5.4) and the sample-size check (§5.5):\n\n```bash\n$DOCKER ablations.py --dataset diabetes --seeds 5            # k / PCA / rounding / order / encoder grid\n$DOCKER ablations.py --dataset diabetes --analyze            # verdict-stability table\n$DOCKER run_validation.py --dataset diabetes --seeds 10 --max-samples 350 --out-dir results/s4\n```\n\n## Quick start (native)\n\n```bash\nexport HF_HOME=\"$PWD/.hf_cache\"\npython3 smoke_test.py\npython3 run_validation.py --dataset diabetes --seeds 10\npython3 analyze.py --results-dir results\n```\n\n## Datasets\n\nAll five are public: UCI Adult / Census Income, Pima Indians Diabetes, UCI Student Performance,\nCalifornia Housing (via `scikit-learn` / StatLib), and UCI Bank Marketing. The CSVs are included\nfor turn-key reproduction; see `config.py` for the exact target columns and typing.\n\n## License\n\nReleased under the MIT License; see `LICENSE`.\n",
+ "hits": {
+  "md": [
+   {
+    "file": "benchmark_extra.py",
+    "line": 60,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    return float(c2st_score), float(pmse_score)",
+     "",
+     "",
+     "def _sdmetrics(real_df, cand_df, num_cols, cat_cols):",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdmetrics.reports.single_table import QualityReport",
+     "    md = SingleTableMetadata()",
+     "    for col in num_cols:",
+     "        md.add_column(col, sdtype=\"numerical\")"
+    ]
+   },
+   {
+    "file": "coda.py",
+    "line": 43,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "GENERATORS = [\"GaussianCopula\", \"CTGAN\", \"TVAE\"]",
+     "",
+     "",
+     "def _metadata(df, num_cols, cat_cols):",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    md = SingleTableMetadata()",
+     "    for c in num_cols:",
+     "        md.add_column(c, sdtype=\"numerical\")",
+     "    for c in cat_cols:"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "benchmark_extra.py",
+    "line": 60,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    return float(c2st_score), float(pmse_score)",
+     "",
+     "",
+     "def _sdmetrics(real_df, cand_df, num_cols, cat_cols):",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdmetrics.reports.single_table import QualityReport",
+     "    md = SingleTableMetadata()",
+     "    for col in num_cols:",
+     "        md.add_column(col, sdtype=\"numerical\")"
+    ]
+   },
+   {
+    "file": "coda.py",
+    "line": 43,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "GENERATORS = [\"GaussianCopula\", \"CTGAN\", \"TVAE\"]",
+     "",
+     "",
+     "def _metadata(df, num_cols, cat_cols):",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    md = SingleTableMetadata()",
+     "    for c in num_cols:",
+     "        md.add_column(c, sdtype=\"numerical\")",
+     "    for c in cat_cols:"
+    ]
+   },
+   {
+    "file": "coda.py",
+    "line": 53,
+    "text": "from sdv.single_table import (GaussianCopulaSynthesizer, CTGANSynthesizer,",
+    "context": [
+     "    return md",
+     "",
+     "",
+     "def _make(name, md, epochs):",
+     "    from sdv.single_table import (GaussianCopulaSynthesizer, CTGANSynthesizer,",
+     "                                  TVAESynthesizer)",
+     "    if name == \"GaussianCopula\":",
+     "        return GaussianCopulaSynthesizer(md)",
+     "    if name == \"CTGAN\":"
+    ]
+   }
+  ],
+  "sm": [
+   {
+    "file": "benchmark_extra.py",
+    "line": 61,
+    "text": "from sdmetrics.reports.single_table import QualityReport",
+    "context": [
+     "",
+     "",
+     "def _sdmetrics(real_df, cand_df, num_cols, cat_cols):",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdmetrics.reports.single_table import QualityReport",
+     "    md = SingleTableMetadata()",
+     "    for col in num_cols:",
+     "        md.add_column(col, sdtype=\"numerical\")",
+     "    for col in cat_cols:"
+    ]
+   },
+   {
+    "file": "coda.py",
+    "line": 85,
+    "text": "from sdmetrics.reports.single_table import QualityReport",
+    "context": [
+     "    \"\"\"SDMetrics QualityReport joint/marginal axes. NOTE: 'Column Pair Trends' is",
+     "    the SAME statistic as the panel's `sdmetrics_pairs` metric, so it is NOT",
+     "    independent of the metrics under test — we keep it only for continuity and lead",
+     "    the transfer-gap analysis with `_corr_frob` below (independent of the panel).\"\"\"",
+     "    from sdmetrics.reports.single_table import QualityReport",
+     "    rep = QualityReport()",
+     "    rep.generate(real, synth, md.to_dict(), verbose=False)",
+     "    props = rep.get_properties().set_index(\"Property\")[\"Score\"]",
+     "    return (float(props.get(\"Column Shapes\", np.nan)),"
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "coda.py",
+    "line": 53,
+    "text": "from sdv.single_table import (GaussianCopulaSynthesizer, CTGANSynthesizer,",
+    "context": [
+     "    return md",
+     "",
+     "",
+     "def _make(name, md, epochs):",
+     "    from sdv.single_table import (GaussianCopulaSynthesizer, CTGANSynthesizer,",
+     "                                  TVAESynthesizer)",
+     "    if name == \"GaussianCopula\":",
+     "        return GaussianCopulaSynthesizer(md)",
+     "    if name == \"CTGAN\":"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "coda.py",
+    "line": 53,
+    "text": "from sdv.single_table import (GaussianCopulaSynthesizer, CTGANSynthesizer,",
+    "context": [
+     "    return md",
+     "",
+     "",
+     "def _make(name, md, epochs):",
+     "    from sdv.single_table import (GaussianCopulaSynthesizer, CTGANSynthesizer,",
+     "                                  TVAESynthesizer)",
+     "    if name == \"GaussianCopula\":",
+     "        return GaussianCopulaSynthesizer(md)",
+     "    if name == \"CTGAN\":"
+    ]
+   },
+   {
+    "file": "coda.py",
+    "line": 58,
+    "text": "return CTGANSynthesizer(md, epochs=epochs)",
+    "context": [
+     "                                  TVAESynthesizer)",
+     "    if name == \"GaussianCopula\":",
+     "        return GaussianCopulaSynthesizer(md)",
+     "    if name == \"CTGAN\":",
+     "        return CTGANSynthesizer(md, epochs=epochs)",
+     "    if name == \"TVAE\":",
+     "        return TVAESynthesizer(md, epochs=epochs)",
+     "    raise ValueError(name)",
+     ""
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "coda.py",
+    "line": 53,
+    "text": "from sdv.single_table import (GaussianCopulaSynthesizer, CTGANSynthesizer,",
+    "context": [
+     "    return md",
+     "",
+     "",
+     "def _make(name, md, epochs):",
+     "    from sdv.single_table import (GaussianCopulaSynthesizer, CTGANSynthesizer,",
+     "                                  TVAESynthesizer)",
+     "    if name == \"GaussianCopula\":",
+     "        return GaussianCopulaSynthesizer(md)",
+     "    if name == \"CTGAN\":"
+    ]
+   },
+   {
+    "file": "coda.py",
+    "line": 56,
+    "text": "return GaussianCopulaSynthesizer(md)",
+    "context": [
+     "def _make(name, md, epochs):",
+     "    from sdv.single_table import (GaussianCopulaSynthesizer, CTGANSynthesizer,",
+     "                                  TVAESynthesizer)",
+     "    if name == \"GaussianCopula\":",
+     "        return GaussianCopulaSynthesizer(md)",
+     "    if name == \"CTGAN\":",
+     "        return CTGANSynthesizer(md, epochs=epochs)",
+     "    if name == \"TVAE\":",
+     "        return TVAESynthesizer(md, epochs=epochs)"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "coda.py",
+    "line": 54,
+    "text": "TVAESynthesizer)",
+    "context": [
+     "",
+     "",
+     "def _make(name, md, epochs):",
+     "    from sdv.single_table import (GaussianCopulaSynthesizer, CTGANSynthesizer,",
+     "                                  TVAESynthesizer)",
+     "    if name == \"GaussianCopula\":",
+     "        return GaussianCopulaSynthesizer(md)",
+     "    if name == \"CTGAN\":",
+     "        return CTGANSynthesizer(md, epochs=epochs)"
+    ]
+   },
+   {
+    "file": "coda.py",
+    "line": 60,
+    "text": "return TVAESynthesizer(md, epochs=epochs)",
+    "context": [
+     "        return GaussianCopulaSynthesizer(md)",
+     "    if name == \"CTGAN\":",
+     "        return CTGANSynthesizer(md, epochs=epochs)",
+     "    if name == \"TVAE\":",
+     "        return TVAESynthesizer(md, epochs=epochs)",
+     "    raise ValueError(name)",
+     "",
+     "",
+     "def _break_joints(df, rng):"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "gc",
+  "md",
+  "sdv_any",
+  "sm",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

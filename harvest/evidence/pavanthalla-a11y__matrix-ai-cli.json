@@ -1,0 +1,390 @@
+{
+ "repo": "pavanthalla-a11y/matrix-ai-cli",
+ "disk_kb": 139,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Matrix AI CLI\n\nA powerful command-line interface for generating and managing synthetic datasets using advanced AI models.\n\n## 📖 Overview\n\nMatrix AI CLI provides a simple yet powerful way to create high-fidelity synthetic data that mirrors the statistical properties of your original data. It's designed for developers, data scientists, and ML engineers who need realistic, privacy-safe data for testing, development, and model training.\n\n## ✨ Key Features\n\n* **High-Fidelity Synthetic Data**: Leverages the Synthetic Data Vault (SDV) libraries to create statistically accurate data.\n* **AI-Powered Schemas**: Uses AI to automatically infer schemas and relationships.\n* **Simple Command-Line Interface**: Easy to integrate into your existing scripts and data workflows.\n* **Secure Authentication**: Integrates with Google Cloud for secure access to your cloud resources.\n\n## ⚙️ Installation\n\nTo get started, clone the repository and install the required dependencies.\n\n```bash\n# Clone the repository\ngit clone https://github.com/pavanthalla-a11y/matrix-ai-cli.git\n\n# Navigate to the project directory\ncd matrix-ai-cli\n\n# Install dependencies\npip install -r requirements.txt\n\n# Install the CLI tool\npip install .\n\nExample : \n\n#Sample command\n\nmatrix-ai --description \"A multi table database with tables customers and transactions\" --records 100 --output ./bank_data/\n(The csv files will be stored in the same directory folder named /bank_data)\n\nOutput in Terminal :\n\nMatrix AI - Synthetic Data Generator\n\n⠋ Calling AI to design schema...WARNING: All log messages before absl::InitializeLog() is called are written to STDERR\nE0000 00:00:1759803798.733299    1896 alts_credentials.cc:93] ALTS creds ignored. Not running on GCP and untrusted ALTS is not enabled.\nSchema design complete. Please review.\n\nGenerated Schema:\n{\n  \"tables\": {\n    \"customers\": {\n      \"columns\": {\n        \"customer_id\": {\n          \"sdtype\": \"id\"\n        },\n        \"first_name\": {\n          \"sdtype\": \"categorical\"\n        },\n        \"last_name\": {\n          \"sdtype\": \"categorical\"\n        },\n        \"email\": {\n          \"sdtype\": \"categorical\"\n        },\n        \"phone_number\": {\n          \"sdtype\": \"categorical\"\n        },\n        \"address\": {\n          \"sdtype\": \"categorical\"\n        },\n        \"city\": {\n          \"sdtype\": \"categorical\"\n        },\n        \"state\": {\n          \"sdtype\": \"categorical\"\n        },\n        \"zip_code\": {\n          \"sdtype\": \"categorical\"\n        },\n        \"join_date\": {\n          \"sdtype\": \"datetime\",\n          \"datetime_format\": \"%Y-%m-%d %H:%M:%S\"\n        }\n      },\n      \"primary_key\": \"customer_id\"\n    },\n    \"transactions\": {\n      \"columns\": {\n        \"transaction_id\": {\n          \"sdtype\": \"id\"\n        },\n        \"customer_id\": {\n          \"sdtype\": \"id\"\n        },\n        \"transaction_date\": {\n          \"sdtype\": \"datetime\",\n          \"datetime_format\": \"%Y-%m-%d %H:%M:%S\"\n        },\n        \"amount\": {\n          \"sdtype\": \"numerical\"\n        },\n        \"payment_method\": {\n          \"sdtype\": \"categorical\"\n        },\n        \"product_category\": {\n          \"sdtype\": \"categorical\"\n        }\n      },\n      \"primary_key\": \"transaction_id\"\n    }\n  },\n  \"relationships\": [\n    {\n      \"parent_table_name\": \"customers\",\n      \"child_table_name\": \"transactions\",\n      \"parent_primary_key\": \"customer_id\",\n      \"child_foreign_key\": \"customer_id\"\n    }\n  ]\n}\n\nSeed Data Preview:\n                                                                           customers                                                                           \n┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┓ \n┃ customer_id ┃ first_name  ┃ last_name ┃ email                     ┃ phone_number ┃ address          ┃ city         ┃ state ┃ zip_code ┃ join_date           ┃ \n┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━┩ \n│ CUST-1001   │ John        │ Smith     │ john.smith@email.com      │ 212-555-0101 │ 123 Maple St     │ New York     │ NY    │ 10001    │ 2022-01-15 10:30:00 │ \n│ CUST-1002   │ Jane        │ Doe       │ jane.d@webmail.com        │ 310-555-0102 │ 456 Oak Ave      │ Los Angeles  │ CA    │ 90001    │ 2022-03-22 14:00:00 │ \n│ CUST-1003   │ Michael     │ Johnson   │ michael.j@corp.com        │ 312-555-0103 │ 789 Pine Ln      │ Chicago      │ IL    │ 60601    │ 2022-05-10 09:15:00 │ \n│ CUST-1004   │ Emily       │ Williams  │ emily.williams@email.com  │ 713-555-0104 │ 101 Birch Rd     │ Houston      │ TX    │ 77001    │ 2022-07-01 11:45:00 │ \n│ CUST-1005   │ David       │ Brown     │ d.brown@inbox.com         │ 215-555-0105 │ 212 Cedar Blvd   │ Philadelphia │ PA    │ 19101    │ 2022-08-19 18:00:00 │ \n│ CUST-1006   │ Sarah       │ Miller    │ sarah.miller@webmail.com  │ 602-555-0106 │ 333 Elm St       │ Phoenix      │ AZ    │ 85001    │ 2023-01-05 12:00:00 │ \n│ CUST-1007   │ Christopher │ Davis     │ chris.davis@corp.com      │ 210-555-0107 │ 444 Spruce Ct    │ San Antonio  │ TX    │ 78201    │ 2023-02-14 20:30:00 │ \n│ CUST-1008   │ Jessica     │ Garcia    │ jess.garcia@email.com     │ 858-555-0108 │ 555 Willow Way   │ San Diego    │ CA    │ 92101    │ 2023-04-30 16:20:00 │ \n│ CUST-1009   │ Daniel      │ Martinez  │ daniel.martinez@inbox.com │ 214-555-0109 │ 666 Redwood Dr   │ Dallas       │ TX    │ 75201    │ 2023-06-11 08:00:00 │ \n│ CUST-1010   │ Amanda      │ Rodriguez │ amanda.r@webmail.com      │ 408-555-0110 │ 777 Sequoia Path │ San Jose     │ CA    │ 95101    │ 2023-08-01 13:10:00 │ \n└─────────────┴─────────────┴───────────┴───────────────────────────┴──────────────┴──────────────────┴──────────────┴───────┴──────────┴─────────────────────┘ \n                                           transactions                                            \n┏━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┓\n┃ transaction_id ┃ customer_id ┃ transaction_date    ┃ amount ┃ payment_method ┃ product_category ┃\n┡━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━┩\n│ TRX-5001       │ CUST-1001   │ 2022-02-01 11:00:00 │ 125.5  │ Credit Card    │ Electronics      │\n│ TRX-5002       │ CUST-1002   │ 2022-03-25 15:30:00 │ 45.2   │ Debit Card     │ Groceries        │\n│ TRX-5003       │ CUST-1001   │ 2022-04-10 19:05:00 │ 78.99  │ Credit Card    │ Clothing         │\n│ TRX-5004       │ CUST-1003   │ 2022-06-15 09:45:00 │ 299.99 │ PayPal         │ Home Goods       │\n│ TRX-5005       │ CUST-1004   │ 2022-07-02 12:15:00 │ 19.95  │ Debit Card     │ Books            │\n│ TRX-5006       │ CUST-1005   │ 2022-09-01 14:20:00 │ 550.0  │ Bank Transfer  │ Electronics      │\n│ TRX-5007       │ CUST-1002   │ 2022-09-18 10:00:00 │ 88.4   │ Debit Card     │ Groceries        │\n│ TRX-5008       │ CUST-1006   │ 2023-01-20 18:50:00 │ 150.75 │ Credit Card    │ Automotive       │\n│ TRX-5009       │ CUST-1007   │ 2023-03-01 21:00:00 │ 65.0   │ PayPal         │ Clothing         │\n│ TRX-5010       │ CUST-1008   │ 2023-05-05 17:30:00 │ 420.0  │ Credit Card    │ Home Goods       │\n│ TRX-5011       │ CUST-1009   │ 2023-06-12 09:30:00 │ 25.5   │ Debit Card     │ Books            │\n│ TRX-5012       │ CUST-1010   │ 2023-08-10 11:00:00 │ 899.99 │ Bank Transfer  │ Electronics      │\n│ TRX-5013       │ CUST-1001   │ 2023-09-05 14:15:00 │ 55.0   │ Credit Card    │ Groceries        │\n│ TRX-5014       │ CUST-1003   │ 2023-10-20 10:20:00 │ 32.8   │ PayPal         │ Books            │\n│ TRX-5015       │ CUST-1007   │ 2023-11-11 11:11:00 │ 112.3  │ Credit Card    │ Automotive       │\n└────────────────┴─────────────┴─────────────────────┴────────┴────────────────┴──────────────────┘\n\nDo you want to [A]pprove, [R]efine, or [Q]uit? [A]: A\n\nSchema approved. Starting data synthesis...\n\nAI-based constraint validation ━╺━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━   3% -:--:--E0000 00:00:1759803948.262037    1896 alts_credentials.cc:93] ALTS creds ignored. Not running on GCP and untrusted ALTS is not enabled.\nSuccess! All foreign keys have referential integrity.\n\n  Table Name  # Rows (Original)  # Invalid Rows  # Rows (New)\n   customers                 10               0            10\ntransactions                 15               0            15\nPreprocess Tables:   0%|                                                                                                                 | 0/2 [00:00<?, ?it/s] \nPreprocess Tables:  50%|####################################################5                                                    | 1/2 [00:00<00:00,  6.68it/s] \nPreprocess Tables: 100%|#########################################################################################################| 2/2 [00:00<00:00,  9.19it/s] \n\n\nLearning relationships:\n(1/1) Tables 'customers' and 'transactions' ('customer_id'):   0%|                                                                      | 0/10 [00:00<?, ?it/s] \n(1/1) Tables 'customers' and 'transactions' ('customer_id'):  10%|######2                                                       | 1/10 [00:00<00:02,  3.16it/s] \n(1/1) Tables 'customers' and 'transactions' ('customer_id'):  20%|############4                                                 | 2/10 [00:00<00:01,  4.19it/s] \n(1/1) Tables 'customers' and 'transactions' ('customer_id'):  30%|##################5                                           | 3/10 [00:00<00:01,  4.73it/s] \n(1/1) Tables 'customers' and 'transactions' ('customer_id'):  70%|###########################################4                  | 7/10 [00:00<00:00, 11.30it/s] \n(1/1) Tables 'customers' and 'transactions' ('customer_id'): 100%|#############################################################| 10/10 [00:00<00:00, 11.51it/s] \nLearning relationships:\n(1/1) Tables 'customers' and 'transactions' ('customer_id'):   0%|                                                                      | 0/10 [00:00<?, ?it/s] \n(1/1) Tables 'customers' and 'transactions' ('customer_id'):  10%|######2                                                       | 1/10 [00:00<00:02,  3.16it/s] \n(1/1) Tables 'customers' and 'transactions' ('customer_id'):  20%|############4                                                 | 2/10 [00:00<00:01,  4.19it/s] \n(1/1) Tables 'customers' and 'transactions' ('customer_id'):  30%|##################5                                           | 3/10 [00:00<00:01,  4.73it/s] \n(1/1) Tables 'customers' and 'transactions' ('customer_id'):  70%|###########################################4                  | 7/10 [00:00<00:00, 11.30it/s] \n(1/1) Tables 'customers' and 'transactions' ('customer_id'): 100%|#############################################################| 10/10 [00:00<00:00, 11.51it/s] \n(1/1) Tables 'customers' and 'transactions' ('customer_id'):   0%|                                                                      | 0/10 [00:00<?, ?it/s] \n(1/1) Tables 'customers' and 'transactions' ('customer_id'):  10%|######2                                                       | 1/10 [00:00<00:02,  3.16it/s] \n(1/1) Tables 'customers' and 'transactions' ('customer_id'):  20%|############4                                                 | 2/10 [00:00<00:01,  4.19it/s] \n(1/1) Tables 'customers' and 'transactions' ('customer_id'):  30%|##################5                                           | 3/10 [00:00<00:01,  4.73it/s] \n(1/1) Tables 'customers' and 'transactions' ('customer_id'):  70%|###########################################4                  | 7/10 [00:00<00:00, 11.30it/s] \n(1/1) Tables 'customers' and 'transactions' ('customer_id'): 100%|#############################################################| 10/10 [00:00<00:00, 11.51it/s] \n(1/1) Tables 'customers' and 'transactions' ('customer_id'):  20%|############4                                                 | 2/10 [00:00<00:01,  4.19it/s] \n(1/1) Tables 'customers' and 'transactions' ('customer_id'):  30%|##################5                                           | 3/10 [00:00<00:01,  4.73it/s] \n(1/1) Tables 'customers' and 'transactions' ('customer_id'):  70%|###########################################4                  | 7/10 [00:00<00:00, 11.30it/s] \n(1/1) Tables 'customers' and 'transactions' ('customer_id'): 100%|#############################################################| 10/10 [00:00<00:00, 11.51it/s] \n(1/1) Tables 'customers' and 'transactions' ('customer_id'):  30%|##################5                                           | 3/10 [00:00<00:01,  4.73it/s] \n(1/1) Tables 'customers' and 'transactions' ('customer_id'):  70%|###########################################4                  | 7/10 [00:00<00:00, 11.30it/s] \n(1/1) Tables 'customers' and 'transactions' ('customer_id'): 100%|#############################################################| 10/10 [00:00<00:00, 11.51it/s] \n(1/1) Tables 'customers' and 'transactions' ('customer_id'):  70%|###########################################4                  | 7/10 [00:00<00:00, 11.30it/s] \n(1/1) Tables 'customers' and 'transactions' ('customer_id'): 100%|#############################################################| 10/10 [00:00<00:00, 11.51it/s] \n\n\nModeling Tables:   0%|                                                                                                                   | 0/2 [00:00<?, ?it/s] \n(1/1) Tables 'customers' and 'transactions' ('customer_id'): 100%|#############################################################| 10/10 [00:00<00:00, 11.51it/s] \n\n\nModeling Tables:   0%|                                                                                                                   | 0/2 [00:00<?, ?it/s] \nModeling Tables:  50%|#####################################################5                                                     | 1/2 [00:00<00:00,  1.40it/s] \nModeling Tables: 100%|###########################################################################################################| 2/2 [00:01<00:00,  2.12it/s] \nModeling Tables: 100%|###########################################################################################################| 2/2 [00:01<00:00,  1.97it/s] \n\n\nModeling Tables:   0%|                                                                                                                   | 0/2 [00:00<?, ?it/s] \nModeling Tables:  50%|#####################################################5                                                     | 1/2 [00:00<00:00,  1.40it/s] \nModeling Tables: 100%|###########################################################################################################| 2/2 [00:01<00:00,  2.12it/s] \nModeling Tables: 100%|###########################################################################################################| 2/2 [00:01<00:00,  1.97it/s] \nModeling Tables:  50%|#####################################################5                                                     | 1/2 [00:00<00:00,  1.40it/s] \nModeling Tables: 100%|###########################################################################################################| 2/2 [00:01<00:00,  2.12it/s] \nModeling Tables: 100%|###########################################################################################################| 2/2 [00:01<00:00,  1.97it/s] \n\n\n\n\nEnforcing precise row-level constraints with AI ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╺━━━━  88% 0:00:04E0000 00:00:1759803976.649586    1896 alts_credentials.cc:9https://cloud.google.com/vertex-ai/generative-ai/docs/deprecations/genai-vertexai-sdk.\n  warning_logs.show_deprecation_warning()\nEnforcing precise row-level constraints with AI ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╺━━━━  88% 0:00:04E0000 00:00:1759803976.649586    1896 alts_credentials.cc:9  warning_logs.show_deprecation_warning()\nEnforcing precise row-level constraints with AI ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╺━━━━  88% 0:00:04E0000 00:00:1759803976.649586    1896 alts_credentials.cc:9Enforcing precise row-level constraints with AI ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╺━━━━  88% 0:00:04E0000 00:00:1759803976.649586    1896 alts_credentials.cc:93] ALTS creds ignored. Not running on GCP and untrusted ALTS is not enabled.\nSynthesis complete. ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:00:00\n\nSaving data to ./bank_data/...\n- Saved ./bank_data/customers.csv\n- Saved ./bank_data/transactions.csv\n\nData generation complete.\n\n\n",
+ "hits": {
+  "st": [
+   {
+    "file": "matrix_ai/core/sdv.py",
+    "line": 9,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import logging",
+     "import traceback",
+     "from typing import Dict, Any, List",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.utils import drop_unknown_references",
+     "from typing import Callable",
+     ""
+    ]
+   },
+   {
+    "file": "build/lib/matrix_ai/core/sdv.py",
+    "line": 9,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import logging",
+     "import traceback",
+     "from typing import Dict, Any, List",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.utils import drop_unknown_references",
+     "from typing import Callable",
+     ""
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "matrix_ai/core/sdv.py",
+    "line": 8,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import gc",
+     "import logging",
+     "import traceback",
+     "from typing import Dict, Any, List",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.utils import drop_unknown_references",
+     "from typing import Callable"
+    ]
+   },
+   {
+    "file": "build/lib/matrix_ai/core/sdv.py",
+    "line": 8,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import gc",
+     "import logging",
+     "import traceback",
+     "from typing import Dict, Any, List",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.utils import drop_unknown_references",
+     "from typing import Callable"
+    ]
+   }
+  ],
+  "mt": [
+   {
+    "file": "matrix_ai/core/sdv.py",
+    "line": 10,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "import traceback",
+     "from typing import Dict, Any, List",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.utils import drop_unknown_references",
+     "from typing import Callable",
+     "",
+     "logger = logging.getLogger(__name__)"
+    ]
+   },
+   {
+    "file": "build/lib/matrix_ai/core/sdv.py",
+    "line": 10,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "import traceback",
+     "from typing import Dict, Any, List",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.utils import drop_unknown_references",
+     "from typing import Callable",
+     "",
+     "logger = logging.getLogger(__name__)"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "matrix_ai/core/sdv.py",
+    "line": 8,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import gc",
+     "import logging",
+     "import traceback",
+     "from typing import Dict, Any, List",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.utils import drop_unknown_references",
+     "from typing import Callable"
+    ]
+   },
+   {
+    "file": "matrix_ai/core/sdv.py",
+    "line": 9,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import logging",
+     "import traceback",
+     "from typing import Dict, Any, List",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.utils import drop_unknown_references",
+     "from typing import Callable",
+     ""
+    ]
+   },
+   {
+    "file": "matrix_ai/core/sdv.py",
+    "line": 10,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "import traceback",
+     "from typing import Dict, Any, List",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.utils import drop_unknown_references",
+     "from typing import Callable",
+     "",
+     "logger = logging.getLogger(__name__)"
+    ]
+   },
+   {
+    "file": "matrix_ai/core/sdv.py",
+    "line": 11,
+    "text": "from sdv.utils import drop_unknown_references",
+    "context": [
+     "from typing import Dict, Any, List",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.utils import drop_unknown_references",
+     "from typing import Callable",
+     "",
+     "logger = logging.getLogger(__name__)",
+     ""
+    ]
+   },
+   {
+    "file": "build/lib/matrix_ai/core/sdv.py",
+    "line": 8,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import gc",
+     "import logging",
+     "import traceback",
+     "from typing import Dict, Any, List",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.utils import drop_unknown_references",
+     "from typing import Callable"
+    ]
+   },
+   {
+    "file": "build/lib/matrix_ai/core/sdv.py",
+    "line": 9,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import logging",
+     "import traceback",
+     "from typing import Dict, Any, List",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.utils import drop_unknown_references",
+     "from typing import Callable",
+     ""
+    ]
+   },
+   {
+    "file": "build/lib/matrix_ai/core/sdv.py",
+    "line": 10,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "import traceback",
+     "from typing import Dict, Any, List",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.utils import drop_unknown_references",
+     "from typing import Callable",
+     "",
+     "logger = logging.getLogger(__name__)"
+    ]
+   },
+   {
+    "file": "build/lib/matrix_ai/core/sdv.py",
+    "line": 11,
+    "text": "from sdv.utils import drop_unknown_references",
+    "context": [
+     "from typing import Dict, Any, List",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.utils import drop_unknown_references",
+     "from typing import Callable",
+     "",
+     "logger = logging.getLogger(__name__)",
+     ""
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "matrix_ai/core/sdv.py",
+    "line": 9,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import logging",
+     "import traceback",
+     "from typing import Dict, Any, List",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.utils import drop_unknown_references",
+     "from typing import Callable",
+     ""
+    ]
+   },
+   {
+    "file": "matrix_ai/core/sdv.py",
+    "line": 825,
+    "text": "synthesizer = GaussianCopulaSynthesizer(single_metadata)",
+    "context": [
+     "                        data=table_df",
+     "                    )",
+     "                    ",
+     "                    # DEMO-SAFE: Always use GaussianCopula for reliability",
+     "                    synthesizer = GaussianCopulaSynthesizer(single_metadata)",
+     "                    ",
+     "                    if progress_callback: progress_callback(\"processing\", f\"Training {table_name}\", 30)",
+     "                    synthesizer.fit(table_df)",
+     "                    "
+    ]
+   },
+   {
+    "file": "build/lib/matrix_ai/core/sdv.py",
+    "line": 9,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import logging",
+     "import traceback",
+     "from typing import Dict, Any, List",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.utils import drop_unknown_references",
+     "from typing import Callable",
+     ""
+    ]
+   },
+   {
+    "file": "build/lib/matrix_ai/core/sdv.py",
+    "line": 825,
+    "text": "synthesizer = GaussianCopulaSynthesizer(single_metadata)",
+    "context": [
+     "                        data=table_df",
+     "                    )",
+     "                    ",
+     "                    # DEMO-SAFE: Always use GaussianCopula for reliability",
+     "                    synthesizer = GaussianCopulaSynthesizer(single_metadata)",
+     "                    ",
+     "                    if progress_callback: progress_callback(\"processing\", f\"Training {table_name}\", 30)",
+     "                    synthesizer.fit(table_df)",
+     "                    "
+    ]
+   }
+  ],
+  "hma": [
+   {
+    "file": "matrix_ai/core/sdv.py",
+    "line": 10,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "import traceback",
+     "from typing import Dict, Any, List",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.utils import drop_unknown_references",
+     "from typing import Callable",
+     "",
+     "logger = logging.getLogger(__name__)"
+    ]
+   },
+   {
+    "file": "matrix_ai/core/sdv.py",
+    "line": 870,
+    "text": "synthesizer = HMASynthesizer(metadata)",
+    "context": [
+     "                    logger.warning(f\"FK cleaning failed: {clean_error}. Using original tables.\")",
+     "                    cleaned_tables = seed_tables",
+     "                ",
+     "                # DEMO-SAFE: Use conservative HMA settings",
+     "                synthesizer = HMASynthesizer(metadata)",
+     "                ",
+     "                if progress_callback: progress_callback(\"processing\", \"Training HMA synthesizer\", 30)",
+     "                synthesizer.fit(cleaned_tables)",
+     "                "
+    ]
+   },
+   {
+    "file": "build/lib/matrix_ai/core/sdv.py",
+    "line": 10,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "import traceback",
+     "from typing import Dict, Any, List",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.utils import drop_unknown_references",
+     "from typing import Callable",
+     "",
+     "logger = logging.getLogger(__name__)"
+    ]
+   },
+   {
+    "file": "build/lib/matrix_ai/core/sdv.py",
+    "line": 870,
+    "text": "synthesizer = HMASynthesizer(metadata)",
+    "context": [
+     "                    logger.warning(f\"FK cleaning failed: {clean_error}. Using original tables.\")",
+     "                    cleaned_tables = seed_tables",
+     "                ",
+     "                # DEMO-SAFE: Use conservative HMA settings",
+     "                synthesizer = HMASynthesizer(metadata)",
+     "                ",
+     "                if progress_callback: progress_callback(\"processing\", \"Training HMA synthesizer\", 30)",
+     "                synthesizer.fit(cleaned_tables)",
+     "                "
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "gc",
+  "hma",
+  "md",
+  "mt",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv"
+  ],
+  "pyproject.toml": [
+   "    \"sdv\","
+  ]
+ }
+}

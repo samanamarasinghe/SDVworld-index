@@ -1,0 +1,204 @@
+{
+ "repo": "quadruplesec/academic-success-predictor",
+ "disk_kb": 16314,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Artificial Intelligence 2025/26 - Assignment 2\n\nThis repository contains the second assignment for UC L.EIC029 (Artificial Intelligence) in the academic year of 2025/2026.\n\nThe project was developed in Python and based on the dataset [Predict Students' Dropout and Academic Success](https://archive.ics.uci.edu/dataset/697/predict+students+dropout+and+academic+success), from [UC Irvine Machine Learning Repository](https://archive.ics.uci.edu/).\n\n## Project Overview\n\nThis project is a prototype flagging system designed to help university administrations and academic advisors in proactively approaching students who may be at a high risk of dropping out.\n\nWe identified that most of our university's support systems rely on initiative from the student to seek out academic, psychological, or financial aid. This project uses a dataset based on real university student data, which was then augmented synthetically in order to give us more data for training. We relied on supervised machine learning classification models to assess dropout risk based on the profile of the student (demographic, socioeconomic, and macroeconomic data), as well as their first-year academic performance.\n\n### Key Features\n\n- **Proactive Risk Assessment:** Predicts academic outcomes (Dropout vs. Enrolled/Graduate), optimized for high Recall to reduce the number of false-negatives.\n- **Synthetic Data Generation:** Utilizes the Gaussian Copula model (provided by [SDV](https://docs.sdv.dev/sdv)) to generate synthetic data, expanding the dataset and improving model robustness.\n- **Interactive Web Application:** Features a web application built with [Streamlit](https://streamlit.io/) that allows the user to run training jobs, data generation jobs, see performance metrics, as well as running individual student risk assessments by filling in their data.\n\n### Class Presentation and Conclusions\n\nThis project was presented during class, where we discussed the work developed and drew conclusions based on the results obtained. The supporting slides are available at [Machine Learning - Academic Success Predictor - Final Presentation.pdf](Machine%20Learning%20-%20Academic%20Success%20Predictor%20-%20Final%20Presentation.pdf).\n\n## Installing Dependencies\n\nIt is suggested that a virtual environment is created to install the project dependencies.\n\nTo do this, run the following commands:\n```bash\nmkdir .venv\npython3 -m venv .venv\nsource .venv/bin/activate\npip install -r requirements.txt\n```\n\n## Run\n\n(After installing dependencies.)\n\nTo reproduce everything from scratch: run data generation, then train each model, then evaluate each model.\n\n### Running the Web Application\n\nFor demonstration purposes, a simple web application was developed using [Streamlit](https://streamlit.io/). All functionalities can be used through the graphical interface provided by the web application. \n\nYou can launch it with the following command:\n\n```bash\npython run_webapp.py\n```\n\n### Generating synthetic data with SDV\n\nTo generate synthetic data with SDV, run:\n\n```bash\npython run_datageneration.py\n```\n\nYou can also run each step separately:\n\n```bash\npython run_datageneration.py fit\npython run_datageneration.py sample\npython run_datageneration.py sample [number_of_rows]\npython run_datageneration.py evaluate\npython run_datageneration.py combine\n```\n\nFor help, run:\n\n```bash\npython run_datageneration.py --help\n```\n\nThe data generation script uses the following paths:\n- Saved synthesizer: `data/saved_synthesizers/gaussian_copula.pkl`\n- Real data: `data/real/real_data.csv`\n- Synthetic data: `data/synthetic/synthetic_data.csv`\n- Combined real training data + synthetic training data: `data/processed/processed_train_data.csv`\n- Real testing data: `data/processed/processed_test_data.csv`\n- Evaluation reports: `data/synthetic/reports`\n\n### Training a model\n\nTo train a model, run:\n\n```bash\npython run_training.py --model [model_name]\n```\n\n```bash\npython run_training.py --model dummy\npython run_training.py --model logistic_regression\npython run_training.py --model decision_tree\npython run_training.py --model random_forest\n```\n\nFor help, run:\n\n```bash\npython run_training.py --help\n```\n\nThe training script uses the following paths:\n- Processed training data: `data/processed/processed_train_data.csv`\n- Saved models: `data/saved_models`\n\n### Evaluating a model\n\nTo evaluate a saved model, run:\n\n```bash\npython run_evaluation.py --model [model_name]\n```\n\n```bash\npython run_evaluation.py --model dummy\npython run_evaluation.py --model logistic_regression\npython run_evaluation.py --model decision_tree\npython run_evaluation.py --model random_forest\n```\n\nFor help, run:\n\n```bash\npython run_evaluation.py --help\n```\n\nThe evaluation script uses the following paths:\n- Real data: `data/real/real_data.csv`, split in memory for 10-fold cross-validation on the real training split only.\n- Processed testing data: `data/processed/processed_test_data.csv`, used for final holdout metrics.\n- Saved models: `data/saved_models`\n- Saved evaluations: `data/saved_evaluations`\n\n## Authors\n\nDeveloped by the members of our project group `Group_A2_52`:\n\n- Gonçalo Santana - up202306919@up.pt\n- Yago Sentieiro Alba - up202306314@up.pt\n\n## Credits\n\nThis project would not be possible without the libraries that power it, or without the dataset we based our project on.\n\n### Dataset\n\n- `Predict Students' Dropout and Academic Success` - https://archive.ics.uci.edu/dataset/697/predict+students+dropout+and+academic+success\n\n### Libraries\n\n- `streamlit` - https://streamlit.io/\n- `scikit-learn`- http://scikit-learn.org/\n- `pandas` - https://pandas.pydata.org/\n- `joblib` - https://joblib.readthedocs.io/en/stable/\n- `sdv` - https://docs.sdv.dev/sdv\n- `matplotlib` - https://matplotlib.org/\n- `altair` - https://altair-viz.github.io/\n",
+ "hits": {
+  "md": [
+   {
+    "file": "run_datageneration.py",
+    "line": 3,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import argparse",
+     "",
+     "from sdv.metadata import Metadata",
+     "",
+     "from src.academic_predictor.data_generation.sdv_generator import (",
+     "    fit_synthesizer,",
+     "    load_synthesizer_for_sampling,"
+    ]
+   },
+   {
+    "file": "src/academic_predictor/data_generation/sdv_generator.py",
+    "line": 6,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "from pathlib import Path",
+     "",
+     "import pandas as pd",
+     "",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality",
+     "from sdv.utils import load_synthesizer",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "run_datageneration.py",
+    "line": 3,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import argparse",
+     "",
+     "from sdv.metadata import Metadata",
+     "",
+     "from src.academic_predictor.data_generation.sdv_generator import (",
+     "    fit_synthesizer,",
+     "    load_synthesizer_for_sampling,"
+    ]
+   },
+   {
+    "file": "src/academic_predictor/data_generation/sdv_generator.py",
+    "line": 6,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "from pathlib import Path",
+     "",
+     "import pandas as pd",
+     "",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality",
+     "from sdv.utils import load_synthesizer",
+     ""
+    ]
+   },
+   {
+    "file": "src/academic_predictor/data_generation/sdv_generator.py",
+    "line": 7,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "import pandas as pd",
+     "",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality",
+     "from sdv.utils import load_synthesizer",
+     "",
+     "from src.academic_predictor.data_handling.loader import load_data"
+    ]
+   },
+   {
+    "file": "src/academic_predictor/data_generation/sdv_generator.py",
+    "line": 8,
+    "text": "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality",
+    "context": [
+     "import pandas as pd",
+     "",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality",
+     "from sdv.utils import load_synthesizer",
+     "",
+     "from src.academic_predictor.data_handling.loader import load_data",
+     "from src.academic_predictor.data_handling.preprocessor import prepare_raw_data"
+    ]
+   },
+   {
+    "file": "src/academic_predictor/data_generation/sdv_generator.py",
+    "line": 9,
+    "text": "from sdv.utils import load_synthesizer",
+    "context": [
+     "",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality",
+     "from sdv.utils import load_synthesizer",
+     "",
+     "from src.academic_predictor.data_handling.loader import load_data",
+     "from src.academic_predictor.data_handling.preprocessor import prepare_raw_data",
+     ""
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "src/academic_predictor/data_generation/sdv_generator.py",
+    "line": 7,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "import pandas as pd",
+     "",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality",
+     "from sdv.utils import load_synthesizer",
+     "",
+     "from src.academic_predictor.data_handling.loader import load_data"
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "src/academic_predictor/data_generation/sdv_generator.py",
+    "line": 8,
+    "text": "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality",
+    "context": [
+     "import pandas as pd",
+     "",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality",
+     "from sdv.utils import load_synthesizer",
+     "",
+     "from src.academic_predictor.data_handling.loader import load_data",
+     "from src.academic_predictor.data_handling.preprocessor import prepare_raw_data"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "src/academic_predictor/data_generation/sdv_generator.py",
+    "line": 7,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "import pandas as pd",
+     "",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality",
+     "from sdv.utils import load_synthesizer",
+     "",
+     "from src.academic_predictor.data_handling.loader import load_data"
+    ]
+   },
+   {
+    "file": "src/academic_predictor/data_generation/sdv_generator.py",
+    "line": 63,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "            \"ignore\",",
+     "            message=\"We strongly recommend saving the metadata using 'save_to_json'.*\",",
+     "            category=UserWarning,",
+     "        )",
+     "        synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "",
+     "    synthesizer.fit(real_data)",
+     "",
+     "    synthesizer_output_file_path = Path(synthesizer_output_file_path)"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ev",
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv==1.36.2"
+  ]
+ }
+}

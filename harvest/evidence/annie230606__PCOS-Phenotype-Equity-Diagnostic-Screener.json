@@ -1,0 +1,390 @@
+{
+ "repo": "annie230606/PCOS-Phenotype-Equity-Diagnostic-Screener",
+ "disk_kb": 333,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# PCOS Synthetic Equity Screener & Phenotype Model Guardrails\n\nA machine learning and synthetic data pipeline designed to address algorithmic bias in Polycystic Ovary Syndrome (PCOS) risk screening. Standard clinical AI models often develop blind spots for minority phenotypes—such as **Lean PCOS** (patients with PCOS having a BMI < 23 kg/m²)—because datasets are heavily skewed towards classical, high-BMI presentations.\n\nThis project uses **SDV (GaussianCopulaSynthesizer)** to generate phenotype-balanced synthetic clinical data, applies **medical logic guardrails** to eliminate synthetic data contradictions, trains an **Isotonically Calibrated XGBoost model**, and deploys an interactive **Streamlit web application** to compare baseline vs. guarded model predictions.\n\n---\n\n## 🌟 Key Features\n\n1. **Phenotype Bias Audit**: Slices dataset performance across patient subgroups (Normal, Classical PCOS, and Lean PCOS) to identify diagnostic blind spots.\n2. **Controlled Synthetic Data Generation**: Leverages SDV's `GaussianCopulaSynthesizer` to generate target synthetic samples specifically for underrepresented Lean PCOS cohorts.\n3. **Medical Guardrail Engine**: Enforces clinical validity by filtering out domain contradictions (e.g., non-PCOS diagnosis with high follicle count) and clipping extreme hormone outliers.\n4. **Calibrated Machine Learning Pipeline**: Trains XGBoost classifiers calibrated with `CalibratedClassifierCV` (isotonic regression) for accurate probability estimates.\n5. **Interactive Web Application**: Streamlit dashboard allowing real-time clinical parameter entry to compare standard baseline model outputs vs. equity-guarded model outputs.\n\n---\n\n## 📁 Repository Structure\n\n```\npcos-synthetic-equity/\n├── app.py                            # Streamlit web application dashboard\n├── requirements.txt                  # Python dependencies\n├── README.md                         # Project documentation\n├── data/\n│   ├── raw_pcos_data.csv             # Primary raw clinical dataset\n│   ├── balanced_train_data.csv       # SDV-synthesized phenotype-balanced dataset\n│   └── guarded_train_data.csv        # Final dataset after clinical guardrails\n├── images/\n│   ├── baseline_classification_report.png\n│   ├── baseline_confusion_matrix.png\n│   ├── guarded_classification_report.png\n│   └── guarded_confusion_matrix.png\n├── models/\n│   ├── xgboost_pcos_model.pkl        # Unguarded baseline XGBoost model\n│   └── xgboost_guarded_pcos_model.pkl# Final calibrated equity-guarded model\n└── notebooks/\n    ├── xgboost_base_model_training.ipynb   # Step 1: Baseline training & bias audit\n    ├── generating_synthetic_data.ipynb    # Step 2: SDV synthetic data generation\n    ├── applying_guardrails.ipynb          # Step 3: Clinical logic guardrails\n    └── final_model.ipynb                  # Step 4: Final model training & calibration\n```\n\n---\n\n## ⚙️ Installation & Setup\n\n### 1. Prerequisites\n- Python 3.10+ installed on your system.\n\n### 2. Clone Repository & Install Dependencies\n```bash\n# Install required Python packages\npip install -r requirements.txt\n```\n\n---\n\n## 🚀 Running the Interactive Web App\n\nLaunch the Streamlit app to test patient clinical profiles interactively across both models:\n\n```bash\nstreamlit run app.py\n```\n\nThe application will launch in your web browser. You can input parameters such as:\n- **Age (yrs)**\n- **BMI (Body Mass Index)**\n- **LH (mIU/mL) & FSH (mIU/mL)**\n- **Follicle Count (Left & Right ovaries)**\n- **Cycle Length (days)**\n\nThe app dynamically categorizes the patient's presentation (e.g., *Lean PCOS*, *Classical PCOS*, *Normal*) and displays side-by-side predictions and risk probabilities from both the Baseline Model and the Guarded Equity Model.\n\n---\n\n## 🧬 Machine Learning & Data Pipeline Methodology\n\n### 1. Baseline Model & Phenotype Audit (`notebooks/xgboost_base_model_training.ipynb`)\n- Extracted key clinical features: `Age`, `BMI`, `LH`, `FSH`, `Follicle No. (L)`, `Follicle No. (R)`, `Cycle length`.\n- Imputed missing BMI values using height and weight measurements.\n- Evaluated performance sliced by phenotype:\n  - **Normal**: High accuracy (~91.8%)\n  - **Classical PCOS**: ~73.1% accuracy\n  - **Lean PCOS**: Blind spots identified due to low representation.\n\n### 2. Phenotype-Targeted Synthetic Generation (`notebooks/generating_synthetic_data.ipynb`)\n- Categorized raw patient records into phenotype subgroups: `Normal`, `Classical_PCOS`, and `Lean_PCOS`.\n- Used SDV's `GaussianCopulaSynthesizer` to sample synthetic rows per subgroup, producing `balanced_train_data.csv`.\n\n### 3. Clinical Logic Guardrails (`notebooks/applying_guardrails.ipynb`)\n- **Contradiction Filtering**: Removed rows labeled as Non-PCOS (`PCOS=0`) that exhibited polycystic morphology (`Follicle No. >= 12`).\n- **Outlier Clipping**: Capped extreme hormone levels (`LH` and `FSH`) to clinical ceiling bounds (50 mIU/mL).\n- Exported clean training set to `guarded_train_data.csv`.\n\n### 4. Final Training & Isotonic Calibration (`notebooks/final_model.ipynb`)\n- Trained an XGBoost classifier with `max_depth=4`, `n_estimators=100`, `learning_rate=0.05`, `reg_lambda=1.5`.\n- Applied Isotonic Calibration via `CalibratedClassifierCV` on test probabilities.\n- Achieved **ROC-AUC of 0.9928** and high performance across all phenotype slices:\n  - **Classical PCOS**: 94.42% accuracy\n  - **Lean PCOS**: 96.48% accuracy\n  - **Normal**: 98.78% accuracy\n\n---\n\n## 📊 Evaluation & Model Visualizations\n\n### Baseline Model Performance\n| Metric | Baseline Confusion Matrix | Baseline Classification Report |\n|---|---|---|\n| Image | ![Baseline Confusion Matrix](images/baseline_confusion_matrix.png) | ![Baseline Classification Report](images/baseline_classification_report.png) |\n\n### Guarded & Calibrated Model Performance\n| Metric | Guarded Confusion Matrix | Guarded Classification Report |\n|---|---|---|\n| Image | ![Guarded Confusion Matrix](images/guarded_confusion_matrix.png) | ![Guarded Classification Report](images/guarded_classification_report.png) |\n\n---\n\n## 🛠️ Tech Stack\n\n- **Machine Learning**: `xgboost`, `scikit-learn`, `joblib`\n- **Synthetic Data**: `sdv` (Synthetic Data Vault), `copulas`\n- **Data Wrangling**: `pandas`, `numpy`\n- **Visualization**: `matplotlib`, `seaborn`\n- **Web App**: `streamlit`\n",
+ "hits": {
+  "gc": [
+   {
+    "file": "README.md",
+    "line": 5,
+    "text": "This project uses **SDV (GaussianCopulaSynthesizer)** to generate phenotype-balanced synthetic clinical data, applies **medical logic guardrails** to eliminate synthetic data contradictions, trains an **Isotonically Calibrated XGBoost model**, and deploys an interactive **Streamlit web application**",
+    "context": [
+     "# PCOS Synthetic Equity Screener & Phenotype Model Guardrails",
+     "",
+     "A machine learning and synthetic data pipeline designed to address algorithmic bias in Polycystic Ovary Syndrome (PCOS) risk screening. Standard clinical AI models often develop blind spots for minori",
+     "",
+     "This project uses **SDV (GaussianCopulaSynthesizer)** to generate phenotype-balanced synthetic clinical data, applies **medical logic guardrails** to eliminate synthetic data contradictions, trains an",
+     "",
+     "---",
+     "",
+     "## 🌟 Key Features"
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 12,
+    "text": "2. **Controlled Synthetic Data Generation**: Leverages SDV's `GaussianCopulaSynthesizer` to generate target synthetic samples specifically for underrepresented Lean PCOS cohorts.",
+    "context": [
+     "",
+     "## 🌟 Key Features",
+     "",
+     "1. **Phenotype Bias Audit**: Slices dataset performance across patient subgroups (Normal, Classical PCOS, and Lean PCOS) to identify diagnostic blind spots.",
+     "2. **Controlled Synthetic Data Generation**: Leverages SDV's `GaussianCopulaSynthesizer` to generate target synthetic samples specifically for underrepresented Lean PCOS cohorts.",
+     "3. **Medical Guardrail Engine**: Enforces clinical validity by filtering out domain contradictions (e.g., non-PCOS diagnosis with high follicle count) and clipping extreme hormone outliers.",
+     "4. **Calibrated Machine Learning Pipeline**: Trains XGBoost classifiers calibrated with `CalibratedClassifierCV` (isotonic regression) for accurate probability estimates.",
+     "5. **Interactive Web Application**: Streamlit dashboard allowing real-time clinical parameter entry to compare standard baseline model outputs vs. equity-guarded model outputs.",
+     ""
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 91,
+    "text": "- Used SDV's `GaussianCopulaSynthesizer` to sample synthetic rows per subgroup, producing `balanced_train_data.csv`.",
+    "context": [
+     "  - **Lean PCOS**: Blind spots identified due to low representation.",
+     "",
+     "### 2. Phenotype-Targeted Synthetic Generation (`notebooks/generating_synthetic_data.ipynb`)",
+     "- Categorized raw patient records into phenotype subgroups: `Normal`, `Classical_PCOS`, and `Lean_PCOS`.",
+     "- Used SDV's `GaussianCopulaSynthesizer` to sample synthetic rows per subgroup, producing `balanced_train_data.csv`.",
+     "",
+     "### 3. Clinical Logic Guardrails (`notebooks/applying_guardrails.ipynb`)",
+     "- **Contradiction Filtering**: Removed rows labeled as Non-PCOS (`PCOS=0`) that exhibited polycystic morphology (`Follicle No. >= 12`).",
+     "- **Outlier Clipping**: Capped extreme hormone levels (`LH` and `FSH`) to clinical ceiling bounds (50 mIU/mL)."
+    ]
+   },
+   {
+    "file": "notebooks/generating_synthetic_data.ipynb",
+    "line": 57,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "        \"import os\\n\",",
+     "        \"from google.colab import files\\n\",",
+     "        \"import pandas as pd\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "        \"\\n\",",
+     "        \"# 1. Load data\\n\",",
+     "        \"input_csv = \\\"raw_pcos_data.csv\\\"\\n\",",
+     "        \"df = pd.read_csv(input_csv)\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/generating_synthetic_data.ipynb",
+    "line": 105,
+    "text": "\"    synthesizer = GaussianCopulaSynthesizer(metadata)\\n\",",
+    "context": [
+     "        \"    print(f\\\"Fitting synthesizer for phenotype: {phenotype_name}...\\\")\\n\",",
+     "        \"    metadata = SingleTableMetadata()\\n\",",
+     "        \"    metadata.detect_from_dataframe(sub_data)\\n\",",
+     "        \"\\n\",",
+     "        \"    synthesizer = GaussianCopulaSynthesizer(metadata)\\n\",",
+     "        \"    synthesizer.fit(sub_data)\\n\",",
+     "        \"\\n\",",
+     "        \"    syn_sub = synthesizer.sample(num_rows=target_rows_per_phenotype)\\n\",",
+     "        \"    synthetic_dfs.append(syn_sub)\\n\","
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "notebooks/generating_synthetic_data.ipynb",
+    "line": 57,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "        \"import os\\n\",",
+     "        \"from google.colab import files\\n\",",
+     "        \"import pandas as pd\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "        \"\\n\",",
+     "        \"# 1. Load data\\n\",",
+     "        \"input_csv = \\\"raw_pcos_data.csv\\\"\\n\",",
+     "        \"df = pd.read_csv(input_csv)\\n\","
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "notebooks/generating_synthetic_data.ipynb",
+    "line": 56,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "      \"source\": [",
+     "        \"import os\\n\",",
+     "        \"from google.colab import files\\n\",",
+     "        \"import pandas as pd\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "        \"\\n\",",
+     "        \"# 1. Load data\\n\",",
+     "        \"input_csv = \\\"raw_pcos_data.csv\\\"\\n\","
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "notebooks/generating_synthetic_data.ipynb",
+    "line": 56,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "      \"source\": [",
+     "        \"import os\\n\",",
+     "        \"from google.colab import files\\n\",",
+     "        \"import pandas as pd\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "        \"\\n\",",
+     "        \"# 1. Load data\\n\",",
+     "        \"input_csv = \\\"raw_pcos_data.csv\\\"\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/generating_synthetic_data.ipynb",
+    "line": 57,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "        \"import os\\n\",",
+     "        \"from google.colab import files\\n\",",
+     "        \"import pandas as pd\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "        \"\\n\",",
+     "        \"# 1. Load data\\n\",",
+     "        \"input_csv = \\\"raw_pcos_data.csv\\\"\\n\",",
+     "        \"df = pd.read_csv(input_csv)\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/xgboost_base_model_training.ipynb",
+    "line": 54,
+    "text": "\"Collecting boto3<2.0.0,>=1.28 (from sdv)\\n\",",
+    "context": [
+     "            \"  Downloading sdv-1.38.0-py3-none-any.whl.metadata (14 kB)\\n\",",
+     "            \"Requirement already satisfied: xgboost in /usr/local/lib/python3.12/dist-packages (3.3.0)\\n\",",
+     "            \"Requirement already satisfied: scikit-learn in /usr/local/lib/python3.12/dist-packages (1.6.1)\\n\",",
+     "            \"Requirement already satisfied: pandas in /usr/local/lib/python3.12/dist-packages (2.2.2)\\n\",",
+     "            \"Collecting boto3<2.0.0,>=1.28 (from sdv)\\n\",",
+     "            \"  Downloading boto3-1.43.67-py3-none-any.whl.metadata (6.6 kB)\\n\",",
+     "            \"Collecting botocore<2.0.0,>=1.31 (from sdv)\\n\",",
+     "            \"  Downloading botocore-1.43.67-py3-none-any.whl.metadata (5.6 kB)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (3.1.2)\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/xgboost_base_model_training.ipynb",
+    "line": 56,
+    "text": "\"Collecting botocore<2.0.0,>=1.31 (from sdv)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: scikit-learn in /usr/local/lib/python3.12/dist-packages (1.6.1)\\n\",",
+     "            \"Requirement already satisfied: pandas in /usr/local/lib/python3.12/dist-packages (2.2.2)\\n\",",
+     "            \"Collecting boto3<2.0.0,>=1.28 (from sdv)\\n\",",
+     "            \"  Downloading boto3-1.43.67-py3-none-any.whl.metadata (6.6 kB)\\n\",",
+     "            \"Collecting botocore<2.0.0,>=1.31 (from sdv)\\n\",",
+     "            \"  Downloading botocore-1.43.67-py3-none-any.whl.metadata (5.6 kB)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (3.1.2)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.21)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.0.2)\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/xgboost_base_model_training.ipynb",
+    "line": 58,
+    "text": "\"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (3.1.2)\\n\",",
+    "context": [
+     "            \"Collecting boto3<2.0.0,>=1.28 (from sdv)\\n\",",
+     "            \"  Downloading boto3-1.43.67-py3-none-any.whl.metadata (6.6 kB)\\n\",",
+     "            \"Collecting botocore<2.0.0,>=1.31 (from sdv)\\n\",",
+     "            \"  Downloading botocore-1.43.67-py3-none-any.whl.metadata (5.6 kB)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (3.1.2)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.21)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.0.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv) (4.67.3)\\n\",",
+     "            \"Collecting copulas>=0.12.1 (from sdv)\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/xgboost_base_model_training.ipynb",
+    "line": 59,
+    "text": "\"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.21)\\n\",",
+    "context": [
+     "            \"  Downloading boto3-1.43.67-py3-none-any.whl.metadata (6.6 kB)\\n\",",
+     "            \"Collecting botocore<2.0.0,>=1.31 (from sdv)\\n\",",
+     "            \"  Downloading botocore-1.43.67-py3-none-any.whl.metadata (5.6 kB)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (3.1.2)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.21)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.0.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv) (4.67.3)\\n\",",
+     "            \"Collecting copulas>=0.12.1 (from sdv)\\n\",",
+     "            \"  Downloading copulas-0.14.1-py3-none-any.whl.metadata (9.7 kB)\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/xgboost_base_model_training.ipynb",
+    "line": 60,
+    "text": "\"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.0.2)\\n\",",
+    "context": [
+     "            \"Collecting botocore<2.0.0,>=1.31 (from sdv)\\n\",",
+     "            \"  Downloading botocore-1.43.67-py3-none-any.whl.metadata (5.6 kB)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (3.1.2)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.21)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.0.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv) (4.67.3)\\n\",",
+     "            \"Collecting copulas>=0.12.1 (from sdv)\\n\",",
+     "            \"  Downloading copulas-0.14.1-py3-none-any.whl.metadata (9.7 kB)\\n\",",
+     "            \"Collecting ctgan>=0.11.1 (from sdv)\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/xgboost_base_model_training.ipynb",
+    "line": 61,
+    "text": "\"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv) (4.67.3)\\n\",",
+    "context": [
+     "            \"  Downloading botocore-1.43.67-py3-none-any.whl.metadata (5.6 kB)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (3.1.2)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.21)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.0.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv) (4.67.3)\\n\",",
+     "            \"Collecting copulas>=0.12.1 (from sdv)\\n\",",
+     "            \"  Downloading copulas-0.14.1-py3-none-any.whl.metadata (9.7 kB)\\n\",",
+     "            \"Collecting ctgan>=0.11.1 (from sdv)\\n\",",
+     "            \"  Downloading ctgan-0.12.1-py3-none-any.whl.metadata (10 kB)\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/xgboost_base_model_training.ipynb",
+    "line": 62,
+    "text": "\"Collecting copulas>=0.12.1 (from sdv)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (3.1.2)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.21)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.0.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv) (4.67.3)\\n\",",
+     "            \"Collecting copulas>=0.12.1 (from sdv)\\n\",",
+     "            \"  Downloading copulas-0.14.1-py3-none-any.whl.metadata (9.7 kB)\\n\",",
+     "            \"Collecting ctgan>=0.11.1 (from sdv)\\n\",",
+     "            \"  Downloading ctgan-0.12.1-py3-none-any.whl.metadata (10 kB)\\n\",",
+     "            \"Collecting deepecho>=0.7.0 (from sdv)\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/xgboost_base_model_training.ipynb",
+    "line": 64,
+    "text": "\"Collecting ctgan>=0.11.1 (from sdv)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.0.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv) (4.67.3)\\n\",",
+     "            \"Collecting copulas>=0.12.1 (from sdv)\\n\",",
+     "            \"  Downloading copulas-0.14.1-py3-none-any.whl.metadata (9.7 kB)\\n\",",
+     "            \"Collecting ctgan>=0.11.1 (from sdv)\\n\",",
+     "            \"  Downloading ctgan-0.12.1-py3-none-any.whl.metadata (10 kB)\\n\",",
+     "            \"Collecting deepecho>=0.7.0 (from sdv)\\n\",",
+     "            \"  Downloading deepecho-0.8.1-py3-none-any.whl.metadata (11 kB)\\n\",",
+     "            \"Collecting rdt>=1.18.2 (from sdv)\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/xgboost_base_model_training.ipynb",
+    "line": 66,
+    "text": "\"Collecting deepecho>=0.7.0 (from sdv)\\n\",",
+    "context": [
+     "            \"Collecting copulas>=0.12.1 (from sdv)\\n\",",
+     "            \"  Downloading copulas-0.14.1-py3-none-any.whl.metadata (9.7 kB)\\n\",",
+     "            \"Collecting ctgan>=0.11.1 (from sdv)\\n\",",
+     "            \"  Downloading ctgan-0.12.1-py3-none-any.whl.metadata (10 kB)\\n\",",
+     "            \"Collecting deepecho>=0.7.0 (from sdv)\\n\",",
+     "            \"  Downloading deepecho-0.8.1-py3-none-any.whl.metadata (11 kB)\\n\",",
+     "            \"Collecting rdt>=1.18.2 (from sdv)\\n\",",
+     "            \"  Downloading rdt-1.22.0-py3-none-any.whl.metadata (11 kB)\\n\",",
+     "            \"Collecting sdmetrics>=0.28.1 (from sdv)\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/xgboost_base_model_training.ipynb",
+    "line": 68,
+    "text": "\"Collecting rdt>=1.18.2 (from sdv)\\n\",",
+    "context": [
+     "            \"Collecting ctgan>=0.11.1 (from sdv)\\n\",",
+     "            \"  Downloading ctgan-0.12.1-py3-none-any.whl.metadata (10 kB)\\n\",",
+     "            \"Collecting deepecho>=0.7.0 (from sdv)\\n\",",
+     "            \"  Downloading deepecho-0.8.1-py3-none-any.whl.metadata (11 kB)\\n\",",
+     "            \"Collecting rdt>=1.18.2 (from sdv)\\n\",",
+     "            \"  Downloading rdt-1.22.0-py3-none-any.whl.metadata (11 kB)\\n\",",
+     "            \"Collecting sdmetrics>=0.28.1 (from sdv)\\n\",",
+     "            \"  Downloading sdmetrics-0.28.2-py3-none-any.whl.metadata (9.9 kB)\\n\",",
+     "            \"Requirement already satisfied: platformdirs>=4.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (4.10.0)\\n\","
+    ]
+   }
+  ],
+  "ctgan_mod": [
+   {
+    "file": "notebooks/xgboost_base_model_training.ipynb",
+    "line": 87,
+    "text": "\"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.11.0+cpu)\\n\",",
+    "context": [
+     "            \"Collecting s3transfer<0.20.0,>=0.19.0 (from boto3<2.0.0,>=1.28->sdv)\\n\",",
+     "            \"  Downloading s3transfer-0.19.2-py3-none-any.whl.metadata (1.7 kB)\\n\",",
+     "            \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\n\",",
+     "            \"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (5.24.1)\\n\",",
+     "            \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.11.0+cpu)\\n\",",
+     "            \"Requirement already satisfied: six>=1.5 in /usr/local/lib/python3.12/dist-packages (from python-dateutil>=2.8.2->pandas) (1.17.0)\\n\",",
+     "            \"Collecting Faker!=37.11.0,>=17 (from rdt>=1.18.2->sdv)\\n\",",
+     "            \"  Downloading faker-40.36.0-py3-none-any.whl.metadata (16 kB)\\n\",",
+     "            \"Requirement already satisfied: tenacity>=6.2.0 in /usr/local/lib/python3.12/dist-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (9.1.4)\\n\","
+    ]
+   }
+  ],
+  "rdt": [
+   {
+    "file": "notebooks/xgboost_base_model_training.ipynb",
+    "line": 89,
+    "text": "\"Collecting Faker!=37.11.0,>=17 (from rdt>=1.18.2->sdv)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\n\",",
+     "            \"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (5.24.1)\\n\",",
+     "            \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.11.0+cpu)\\n\",",
+     "            \"Requirement already satisfied: six>=1.5 in /usr/local/lib/python3.12/dist-packages (from python-dateutil>=2.8.2->pandas) (1.17.0)\\n\",",
+     "            \"Collecting Faker!=37.11.0,>=17 (from rdt>=1.18.2->sdv)\\n\",",
+     "            \"  Downloading faker-40.36.0-py3-none-any.whl.metadata (16 kB)\\n\",",
+     "            \"Requirement already satisfied: tenacity>=6.2.0 in /usr/local/lib/python3.12/dist-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (9.1.4)\\n\",",
+     "            \"Requirement already satisfied: packaging in /usr/local/lib/python3.12/dist-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (26.2)\\n\",",
+     "            \"Requirement already satisfied: filelock in /usr/local/lib/python3.12/dist-packages (from torch>=2.3.0->ctgan>=0.11.1->sdv) (3.29.7)\\n\","
+    ]
+   }
+  ],
+  "copulas": [
+   {
+    "file": "notebooks/xgboost_base_model_training.ipynb",
+    "line": 86,
+    "text": "\"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (5.24.1)\\n\",",
+    "context": [
+     "            \"  Downloading jmespath-1.1.0-py3-none-any.whl.metadata (7.6 kB)\\n\",",
+     "            \"Collecting s3transfer<0.20.0,>=0.19.0 (from boto3<2.0.0,>=1.28->sdv)\\n\",",
+     "            \"  Downloading s3transfer-0.19.2-py3-none-any.whl.metadata (1.7 kB)\\n\",",
+     "            \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\n\",",
+     "            \"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (5.24.1)\\n\",",
+     "            \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.11.0+cpu)\\n\",",
+     "            \"Requirement already satisfied: six>=1.5 in /usr/local/lib/python3.12/dist-packages (from python-dateutil>=2.8.2->pandas) (1.17.0)\\n\",",
+     "            \"Collecting Faker!=37.11.0,>=17 (from rdt>=1.18.2->sdv)\\n\",",
+     "            \"  Downloading faker-40.36.0-py3-none-any.whl.metadata (16 kB)\\n\","
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "copulas",
+  "ctgan_mod",
+  "gc",
+  "md",
+  "rdt",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv>=1.38.0"
+  ]
+ }
+}

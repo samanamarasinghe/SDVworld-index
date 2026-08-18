@@ -1,0 +1,474 @@
+{
+ "repo": "StfnKhn/SyntheticTrialData",
+ "disk_kb": 115,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# SyntheticTrialData\nThis repository provides a codebase for the generation of static and longitudinal synthetic clinical trial data. This code was developed and published by Stefan Kuhn as part of a master thesis with the title *Syntetic Trial Data: Generation and Review of Synthetic Clinical Trial Data in Oncology* at the TU Berlin.\n\n## Installation Guide\n#### Install Dependencies with Poetry\n1. Clone Repository\n2. Make sure you installed poetry:\n    ```bash\n    curl -sSL https://install.python-poetry.org | python3 -\n    ```\n3. In your project directory, run the following to install required dependecies:\n    ```bash\n    poetry lock\n    poetry install\n    ```\n## Generate static synthetic clinical trial data\n1. Define data schema according to `config/dataset/data_schema.yaml`\n2. Configure settings of the experiment in `config/config_static_only.yaml`\n3. For the generation of **static** synthetic trial data run\n    ```bash\n    poetry run python train_static_only.py\n    ```\n\n## Generate longitudinal synthetic clinical trial data\n1. Define data schema according to `config/dataset/data_schema.yaml`\n2. Configure settings of the experiment in `config/config.yaml`\n3. For the generation of **longitudinal** synthetic trial data run\n    ```bash\n    poetry run python train.py\n    ```\n\n\n",
+ "hits": {
+  "sdv_any": [
+   {
+    "file": "train_static_only.py",
+    "line": 13,
+    "text": "from synthetic_trial_data.src.experiments.objectives.static_models.sdv import sdv_objective",
+    "context": [
+     "from synthetic_trial_data.src.experiments.data_split import data_split",
+     "from synthetic_trial_data.src.utils.experiments import make_model_checkpoint_dir, check_directory_exists",
+     "from synthetic_trial_data.src.utils.mflow import save_and_log_best_model",
+     "from synthetic_trial_data.src.experiments.objectives.static_models.synthcity import objective",
+     "from synthetic_trial_data.src.experiments.objectives.static_models.sdv import sdv_objective",
+     "from synthetic_trial_data.src.experiments.auditor import StaticAuditor",
+     "from synthetic_trial_data.src.experiments.preprocessing import general_preprocessing, drop_id_columns, SDV_Preprocessor",
+     "from synthetic_trial_data.src.experiments.experiment_config import STATIC_SYNTHCITY_MODELS, SDV_MODELS",
+     "from synthetic_trial_data.src.utils.dataframe_handling import intersection_exists"
+    ]
+   },
+   {
+    "file": "train.py",
+    "line": 18,
+    "text": "from synthetic_trial_data.src.experiments.objectives.static_models.sdv import sdv_objective",
+    "context": [
+     "from synthetic_trial_data.src.utils.mflow import save_and_log_best_model",
+     "from synthetic_trial_data.src.experiments.objectives.sequential_models.pars_objective import pars_objective",
+     "from synthetic_trial_data.src.experiments.objectives.sequential_models.gpt_objective import gpt_objective",
+     "from synthetic_trial_data.src.experiments.objectives.static_models.synthcity import objective",
+     "from synthetic_trial_data.src.experiments.objectives.static_models.sdv import sdv_objective",
+     "from synthetic_trial_data.src.experiments.auditor import StaticAuditor, SequentialAuditor",
+     "from synthetic_trial_data.src.experiments.preprocessing import (",
+     "    general_preprocessing,",
+     "    get_start_sequences,"
+    ]
+   },
+   {
+    "file": "synthetic_trial_data/src/experiments/preprocessing.py",
+    "line": 7,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import logging",
+     "import pandas as pd",
+     "from omegaconf import DictConfig, OmegaConf",
+     "from sklearn.pipeline import Pipeline",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from synthetic_trial_data.src.preprocessing.preprocessors import Imputer",
+     "from synthetic_trial_data.src.preprocessing.data_sequencing import PARSynthesizerInputSequencer, StartSequencer",
+     "from synthetic_trial_data.src.utils.trial_data import convert_numeric_static_to_categories"
+    ]
+   },
+   {
+    "file": "synthetic_trial_data/src/experiments/auditor.py",
+    "line": 9,
+    "text": "from sdv.sequential import PARSynthesizer",
+    "context": [
+     "from typing import List",
+     "from synthcity.plugins import Plugins",
+     "from synthcity.plugins.core.dataloader import GenericDataLoader",
+     "from synthcity.utils.serialization import load_from_file, save_to_file",
+     "from sdv.sequential import PARSynthesizer",
+     "",
+     "from synthetic_trial_data.src.datasets.synthetic_dataset import SyntheticDataset",
+     "from synthetic_trial_data.src.evaluators.trust_index import TrustIndexAuditor, TrustDimension",
+     "from synthetic_trial_data.src.utils.experiments import mix_datasets, load_from_pickle, save_as_pickle"
+    ]
+   },
+   {
+    "file": "synthetic_trial_data/src/experiments/objectives/sequential_models/pars_objective.py",
+    "line": 3,
+    "text": "from sdv.sequential import PARSynthesizer",
+    "context": [
+     "import logging",
+     "import optuna",
+     "from sdv.sequential import PARSynthesizer",
+     "from omegaconf import DictConfig, OmegaConf",
+     "",
+     "from synthetic_trial_data.src.datasets.synthetic_dataset import SyntheticDataset",
+     "from synthetic_trial_data.src.utils.mflow import log_trial"
+    ]
+   },
+   {
+    "file": "synthetic_trial_data/src/experiments/objectives/static_models/sdv.py",
+    "line": 5,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, TVAESynthesizer",
+    "context": [
+     "import logging",
+     "import optuna",
+     "import numpy as np",
+     "from omegaconf import DictConfig, OmegaConf",
+     "from sdv.single_table import GaussianCopulaSynthesizer, TVAESynthesizer",
+     "",
+     "from synthetic_trial_data.src.datasets.synthetic_dataset import SyntheticDataset",
+     "from synthetic_trial_data.src.utils.mflow import log_trial",
+     "from synthetic_trial_data.src.utils.dataframe_handling import ensure_list"
+    ]
+   },
+   {
+    "file": "synthetic_trial_data/src/models/PARSynthesizer/utils.py",
+    "line": 2,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "def get_metadata(X_train, unique_id_cols, time_col):",
+     "    # Define Metadata for sequential dataset",
+     "    metadata = SingleTableMetadata()"
+    ]
+   }
+  ],
+  "par": [
+   {
+    "file": "train.py",
+    "line": 23,
+    "text": "PARSynthesizerPreprocessor,",
+    "context": [
+     "from synthetic_trial_data.src.experiments.auditor import StaticAuditor, SequentialAuditor",
+     "from synthetic_trial_data.src.experiments.preprocessing import (",
+     "    general_preprocessing,",
+     "    get_start_sequences,",
+     "    PARSynthesizerPreprocessor,",
+     "    TabFormerGPT2Preprocessor,",
+     "    SDV_Preprocessor",
+     ")",
+     "from synthetic_trial_data.src.experiments.experiment_config import STATIC_SYNTHCITY_MODELS, SDV_MODELS, SEQUENTIAL_MODELS"
+    ]
+   },
+   {
+    "file": "train.py",
+    "line": 116,
+    "text": "X_train_seq, metadata = PARSynthesizerPreprocessor.run(cfg, X_train)",
+    "context": [
+     "        mlflow.set_tracking_uri(os.path.join(original_cwd, \"mlruns\"))",
+     "        mlflow.set_experiment(cfg.mlflow.sequential_model.experiment_name)",
+     "",
+     "        # Get input sequences with defined max length",
+     "        X_train_seq, metadata = PARSynthesizerPreprocessor.run(cfg, X_train)",
+     "        X_val_seq, _ = PARSynthesizerPreprocessor.run(cfg, X_val)",
+     "",
+     "        # Pretrain model auditor",
+     "        seq_auditor = SequentialAuditor(config=cfg, X_train=X_train_seq, X_val=X_val_seq, cwd=original_cwd).set_up()"
+    ]
+   },
+   {
+    "file": "train.py",
+    "line": 117,
+    "text": "X_val_seq, _ = PARSynthesizerPreprocessor.run(cfg, X_val)",
+    "context": [
+     "        mlflow.set_experiment(cfg.mlflow.sequential_model.experiment_name)",
+     "",
+     "        # Get input sequences with defined max length",
+     "        X_train_seq, metadata = PARSynthesizerPreprocessor.run(cfg, X_train)",
+     "        X_val_seq, _ = PARSynthesizerPreprocessor.run(cfg, X_val)",
+     "",
+     "        # Pretrain model auditor",
+     "        seq_auditor = SequentialAuditor(config=cfg, X_train=X_train_seq, X_val=X_val_seq, cwd=original_cwd).set_up()",
+     ""
+    ]
+   },
+   {
+    "file": "train.py",
+    "line": 134,
+    "text": "if model_class == \"PARSynthesizer\":",
+    "context": [
+     "            model_class_dir = os.path.join(base_checkpoints_dir, model_class)",
+     "            checkpoint_dir = make_model_checkpoint_dir(model_class_dir)",
+     "            ",
+     "            # Overwrite",
+     "            if model_class == \"PARSynthesizer\":",
+     "                # Create and optimize study",
+     "                study = optuna.create_study(direction=\"maximize\")",
+     "                study.optimize(",
+     "                    lambda trial: pars_objective(trial, seq_auditor, X_train_seq, metadata, cfg), "
+    ]
+   },
+   {
+    "file": "config/config.yaml",
+    "line": 54,
+    "text": "- PARSynthesizer",
+    "context": [
+     "  sequential_model:",
+     "    n_trials: 10",
+     "    model_classes:",
+     "      - TabFormerGPT2",
+     "      - PARSynthesizer",
+     "",
+     "sampling:",
+     "  seeds:",
+     "    static_models: [11, 42, 80, 111]"
+    ]
+   },
+   {
+    "file": "config/config.yaml",
+    "line": 114,
+    "text": "PARSynthesizer:",
+    "context": [
+     "      high: 0.9",
+     "      low: 0.1",
+     "    batch_size: 8",
+     "",
+     "PARSynthesizer:",
+     "  model_checkpoint:",
+     "    name: \"best_model\"",
+     "    path_to_dir: \"../model_checkpoints/PARSynthesizer\"",
+     "  training_params:"
+    ]
+   },
+   {
+    "file": "config/config.yaml",
+    "line": 117,
+    "text": "path_to_dir: \"../model_checkpoints/PARSynthesizer\"",
+    "context": [
+     "",
+     "PARSynthesizer:",
+     "  model_checkpoint:",
+     "    name: \"best_model\"",
+     "    path_to_dir: \"../model_checkpoints/PARSynthesizer\"",
+     "  training_params:",
+     "    epochs: [128, 1024, 4096,]",
+     "    sample_size:",
+     "      high: 100"
+    ]
+   },
+   {
+    "file": "config/auditor/sequential/auditor.yaml",
+    "line": 6,
+    "text": "name: \"PARSynthesizer\"",
+    "context": [
+     "",
+     "path_to_auditor: \"model_checkpoints/auditor/sequential_data/auditor.pkl\"",
+     "path_to_model: \"model_checkpoints/auditor/sequential_data/model.pkl\"",
+     "model_plugin:",
+     "  name: \"PARSynthesizer\"",
+     "  params:",
+     "    sample_size: 10",
+     "    epochs: 10",
+     ""
+    ]
+   },
+   {
+    "file": "synthetic_trial_data/src/experiments/experiment_config.py",
+    "line": 10,
+    "text": "\"PARSynthesizer\",",
+    "context": [
+     "    \"pategan\",",
+     "    \"ddpm\",",
+     "    \"decaf\",",
+     "    \"gmm\",",
+     "    \"PARSynthesizer\",",
+     "    \"TabFormerGPT2\",",
+     "    \"GaussianCopular\"",
+     "]",
+     ""
+    ]
+   },
+   {
+    "file": "synthetic_trial_data/src/experiments/experiment_config.py",
+    "line": 29,
+    "text": "\"PARSynthesizer\",",
+    "context": [
+     "    \"TVAE\"",
+     "]",
+     "",
+     "SEQUENTIAL_MODELS = [",
+     "    \"PARSynthesizer\",",
+     "    \"TabFormerGPT2\"",
+     "]"
+    ]
+   },
+   {
+    "file": "synthetic_trial_data/src/experiments/preprocessing.py",
+    "line": 10,
+    "text": "from synthetic_trial_data.src.preprocessing.data_sequencing import PARSynthesizerInputSequencer, StartSequencer",
+    "context": [
+     "from sklearn.pipeline import Pipeline",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from synthetic_trial_data.src.preprocessing.preprocessors import Imputer",
+     "from synthetic_trial_data.src.preprocessing.data_sequencing import PARSynthesizerInputSequencer, StartSequencer",
+     "from synthetic_trial_data.src.utils.trial_data import convert_numeric_static_to_categories",
+     "from synthetic_trial_data.src.models.PARSynthesizer.utils import get_metadata",
+     "from synthetic_trial_data.src.utils.trial_data import assign_ids_by_grouping, add_unique_id_column",
+     "from synthetic_trial_data.src.models.TabFormerGPT.vocab import Vocabulary, VocabularyBasisData"
+    ]
+   },
+   {
+    "file": "synthetic_trial_data/src/experiments/preprocessing.py",
+    "line": 12,
+    "text": "from synthetic_trial_data.src.models.PARSynthesizer.utils import get_metadata",
+    "context": [
+     "",
+     "from synthetic_trial_data.src.preprocessing.preprocessors import Imputer",
+     "from synthetic_trial_data.src.preprocessing.data_sequencing import PARSynthesizerInputSequencer, StartSequencer",
+     "from synthetic_trial_data.src.utils.trial_data import convert_numeric_static_to_categories",
+     "from synthetic_trial_data.src.models.PARSynthesizer.utils import get_metadata",
+     "from synthetic_trial_data.src.utils.trial_data import assign_ids_by_grouping, add_unique_id_column",
+     "from synthetic_trial_data.src.models.TabFormerGPT.vocab import Vocabulary, VocabularyBasisData",
+     "from synthetic_trial_data.src.preprocessing.tokenization import ClinicalTrialDataset",
+     "from synthetic_trial_data.src.preprocessing.custom_transformers import ContinuousBinner, CountVariableTransformer"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "synthetic_trial_data/src/experiments/preprocessing.py",
+    "line": 7,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import logging",
+     "import pandas as pd",
+     "from omegaconf import DictConfig, OmegaConf",
+     "from sklearn.pipeline import Pipeline",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from synthetic_trial_data.src.preprocessing.preprocessors import Imputer",
+     "from synthetic_trial_data.src.preprocessing.data_sequencing import PARSynthesizerInputSequencer, StartSequencer",
+     "from synthetic_trial_data.src.utils.trial_data import convert_numeric_static_to_categories"
+    ]
+   },
+   {
+    "file": "synthetic_trial_data/src/models/PARSynthesizer/utils.py",
+    "line": 2,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "def get_metadata(X_train, unique_id_cols, time_col):",
+     "    # Define Metadata for sequential dataset",
+     "    metadata = SingleTableMetadata()"
+    ]
+   }
+  ],
+  "sq": [
+   {
+    "file": "synthetic_trial_data/src/experiments/auditor.py",
+    "line": 9,
+    "text": "from sdv.sequential import PARSynthesizer",
+    "context": [
+     "from typing import List",
+     "from synthcity.plugins import Plugins",
+     "from synthcity.plugins.core.dataloader import GenericDataLoader",
+     "from synthcity.utils.serialization import load_from_file, save_to_file",
+     "from sdv.sequential import PARSynthesizer",
+     "",
+     "from synthetic_trial_data.src.datasets.synthetic_dataset import SyntheticDataset",
+     "from synthetic_trial_data.src.evaluators.trust_index import TrustIndexAuditor, TrustDimension",
+     "from synthetic_trial_data.src.utils.experiments import mix_datasets, load_from_pickle, save_as_pickle"
+    ]
+   },
+   {
+    "file": "synthetic_trial_data/src/experiments/objectives/sequential_models/pars_objective.py",
+    "line": 3,
+    "text": "from sdv.sequential import PARSynthesizer",
+    "context": [
+     "import logging",
+     "import optuna",
+     "from sdv.sequential import PARSynthesizer",
+     "from omegaconf import DictConfig, OmegaConf",
+     "",
+     "from synthetic_trial_data.src.datasets.synthetic_dataset import SyntheticDataset",
+     "from synthetic_trial_data.src.utils.mflow import log_trial"
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "synthetic_trial_data/src/experiments/objectives/static_models/sdv.py",
+    "line": 5,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, TVAESynthesizer",
+    "context": [
+     "import logging",
+     "import optuna",
+     "import numpy as np",
+     "from omegaconf import DictConfig, OmegaConf",
+     "from sdv.single_table import GaussianCopulaSynthesizer, TVAESynthesizer",
+     "",
+     "from synthetic_trial_data.src.datasets.synthetic_dataset import SyntheticDataset",
+     "from synthetic_trial_data.src.utils.mflow import log_trial",
+     "from synthetic_trial_data.src.utils.dataframe_handling import ensure_list"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "synthetic_trial_data/src/experiments/objectives/static_models/sdv.py",
+    "line": 5,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, TVAESynthesizer",
+    "context": [
+     "import logging",
+     "import optuna",
+     "import numpy as np",
+     "from omegaconf import DictConfig, OmegaConf",
+     "from sdv.single_table import GaussianCopulaSynthesizer, TVAESynthesizer",
+     "",
+     "from synthetic_trial_data.src.datasets.synthetic_dataset import SyntheticDataset",
+     "from synthetic_trial_data.src.utils.mflow import log_trial",
+     "from synthetic_trial_data.src.utils.dataframe_handling import ensure_list"
+    ]
+   },
+   {
+    "file": "synthetic_trial_data/src/experiments/objectives/static_models/sdv.py",
+    "line": 40,
+    "text": "model = GaussianCopulaSynthesizer(",
+    "context": [
+     "",
+     "    #try:",
+     "    # Get model and set hyperparameters",
+     "    if model_class == \"GaussianCopular\":",
+     "        model = GaussianCopulaSynthesizer(",
+     "            metadata,",
+     "            enforce_min_max_values=True,",
+     "            enforce_rounding=True,",
+     "            default_distribution=params[\"default_distribution\"]"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "synthetic_trial_data/src/experiments/objectives/static_models/sdv.py",
+    "line": 5,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, TVAESynthesizer",
+    "context": [
+     "import logging",
+     "import optuna",
+     "import numpy as np",
+     "from omegaconf import DictConfig, OmegaConf",
+     "from sdv.single_table import GaussianCopulaSynthesizer, TVAESynthesizer",
+     "",
+     "from synthetic_trial_data.src.datasets.synthetic_dataset import SyntheticDataset",
+     "from synthetic_trial_data.src.utils.mflow import log_trial",
+     "from synthetic_trial_data.src.utils.dataframe_handling import ensure_list"
+    ]
+   },
+   {
+    "file": "synthetic_trial_data/src/experiments/objectives/static_models/sdv.py",
+    "line": 47,
+    "text": "model = TVAESynthesizer(",
+    "context": [
+     "            enforce_rounding=True,",
+     "            default_distribution=params[\"default_distribution\"]",
+     "        )",
+     "    if model_class == \"TVAE\":",
+     "        model = TVAESynthesizer(",
+     "            metadata,",
+     "            enforce_rounding=True,",
+     "            epochs=params[\"epochs\"]",
+     "        )"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "gc",
+  "md",
+  "par",
+  "sdv_any",
+  "sq",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "pyproject.toml": [
+   "sdv = \"^1.4.0\""
+  ]
+ }
+}

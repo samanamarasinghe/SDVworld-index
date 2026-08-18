@@ -1,0 +1,504 @@
+{
+ "repo": "ntoa25001/GenAI",
+ "disk_kb": 1355,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# genai-synthetic-netsec\n\nSinh dữ liệu tổng hợp (synthetic data) bảo vệ quyền riêng tư cho dữ liệu mạng **UNSW-NB15**,\nđánh giá theo tam giác **Fidelity – Utility – Privacy**.\n\n**Môn học:** Nền tảng AI tạo sinh (Generative AI Foundations).\n**Đề tài:** Bảo mật & quyền riêng tư — sinh dữ liệu giả để bảo vệ thông tin nhạy cảm và bù đắp\ncác lớp tấn công hiếm trong log mạng.\n\n**Câu chuyện bài toán:** Log mạng thật rất nhạy cảm và không thể chia sẻ tự do; dữ liệu tấn công\nhiếm lại thiếu. Dự án dùng mô hình tạo sinh cho dữ liệu bảng (CTGAN, TVAE) để tạo dữ liệu mạng\n*giả nhưng giữ được đặc trưng thống kê*, sao cho: (1) chia sẻ/huấn luyện được mà không lộ dữ\nliệu gốc, và (2) bù đắp các lớp tấn công hiếm. Điểm nhấn của dự án là đánh giá có hệ thống theo\n3 trục **Fidelity** (giống thật), **Utility** (dùng được để train mô hình downstream), **Privacy**\n(không lộ bản ghi gốc), và phân tích đánh đổi giữa 3 trục này — không chỉ generate rồi dừng lại.\n\n**Trạng thái:** Toàn bộ Phase 0–7 đã chạy xong trên dataset **UNSW-NB15 thật** (175,341 dòng\ntrain / 82,332 dòng test) — xem kết quả ở mục 7.\n\n---\n\n## 1. Cài đặt\n\nYêu cầu **Python 3.11 hoặc 3.12** (không dùng 3.13/3.14 — `torch`/`sdv` chưa ổn định trên bản\nmới, đây là lỗi đã gặp trước đây với các package biên dịch).\n\n```bash\npython3.11 -m venv .venv\n.venv/Scripts/activate       # Windows\n# source .venv/bin/activate  # Linux/macOS\npip install -r requirements.txt\n```\n\nThư viện cốt lõi: `sdv` (CTGANSynthesizer, TVAESynthesizer, Metadata), `sdmetrics`, `pandas`,\n`numpy`, `scikit-learn`, `xgboost`, `matplotlib`, `seaborn`, `torch`.\n\n**Nếu có GPU NVIDIA (khuyến nghị):** `pip install -r requirements.txt` mặc định chỉ cài `torch`\nbản CPU-only. Cài thêm bản CUDA để train CTGAN/TVAE nhanh hơn nhiều:\n\n```bash\npip uninstall torch\npip install torch --index-url https://download.pytorch.org/whl/cu121\n```\n\nDự án này được train/test trên GPU **RTX 2060 12GB**. Kiểm tra GPU đã nhận chưa:\n`python -c \"import torch; print(torch.cuda.is_available())\"`.\n\n## 2. Dataset UNSW-NB15\n\nPipeline cần 2 file đặt vào `data/raw/` — **đã có sẵn trong repo này**, tải từ:\n\n- `data/raw/UNSW_NB15_training-set.csv` — 175,341 dòng, tải từ mirror HuggingFace\n  [`Mouwiya/UNSW-NB15`](https://huggingface.co/datasets/Mouwiya/UNSW-NB15)\n- `data/raw/UNSW_NB15_testing-set.csv` — 82,332 dòng, tải từ mirror GitHub\n  [`Nir-J/ML-Projects`](https://github.com/Nir-J/ML-Projects)\n\nĐã xác minh số dòng khớp chính xác với tài liệu UNSW-NB15 chính thức (175,341 / 82,332) và phân\nphối `attack_cat` đúng đặc điểm mất cân bằng đã biết (xem mục 7). Trang chính thức UNSW Sydney\n(https://research.unsw.edu.au/projects/unsw-nb15-dataset) dùng CloudStor cần thao tác tay, không\ntải trực tiếp bằng script được — 2 mirror trên là bản sao đúng của cùng bộ train/test-set chính\nthức, dùng khi cần tải lại. **Không dùng** bản 4 file gốc `UNSW-NB15_1..4.csv`.\n\n**Nếu `data/raw/` trống:** `src/data_prep.py` tự động sinh bộ dữ liệu **MOCK** nhỏ (2000 dòng\ntrain / 600 dòng test, đúng schema ~45 cột, mất cân bằng lớp `attack_cat` giả lập) để pipeline\nchạy thông phục vụ phát triển/kiểm thử khi chưa có mạng hoặc chưa tải dataset. Dữ liệu mock được\nđánh dấu rõ trong log bằng tiền tố `[MOCK DATA]`, không dùng để báo cáo học thuật. Đặt đúng 2 file\nCSV thật vào `data/raw/` rồi chạy lại là code tự dùng dữ liệu thật, không cần sửa gì thêm.\n\n## 3. Cấu trúc thư mục\n\n```\ngenai-synthetic-netsec/\n├── README.md\n├── requirements.txt\n├── config.yaml                # seed, duong dan, tham so model, epochs, subsampling...\n├── data/\n│   ├── raw/                    # CSV goc (UNSW-NB15 that, xem muc 2)\n│   ├── processed/               # sau tien xu ly: train_real.csv, test_real.csv, metadata.json\n│   └── synthetic/               # du lieu sinh ra, moi model 1 file (ctgan.csv, tvae.csv)\n├── models/                      # synthesizer da train (.pkl)\n├── src/\n│   ├── config.py                 # load config.yaml + set seed\n│   ├── data_prep.py              # Phase 1 - tien xu ly + mock data generator\n│   ├── eda.py                    # Phase 2 - EDA\n│   ├── train_synth.py            # Phase 3 - train CTGAN/TVAE (registry pattern)\n│   ├── evaluate_fidelity.py      # Phase 4 - Fidelity\n│   ├── evaluate_utility.py       # Phase 5 - Utility (TSTR/TRTR)\n│   ├── evaluate_privacy.py       # Phase 6 - Privacy (DCR, MIA)\n│   └── rare_class.py             # Phase 7 - Bu dap lop hiem + trade-off tong hop\n├── results/\n│   ├── figures/                  # 13 bieu do .png\n│   └── metrics/                  # 7 bang ket qua .csv\n└── notebooks/                    # (chua lam - xem muc 9)\n```\n\n## 4. Chạy pipeline\n\nMỗi script chạy độc lập được (module hoá, CLI qua `argparse`), thứ tự đúng phải tuần tự vì mỗi\nPhase phụ thuộc output của Phase trước:\n\n```bash\npython -m src.data_prep          # Phase 1: tien xu ly -> data/processed/\npython -m src.eda                # Phase 2: EDA -> results/figures/\npython -m src.train_synth        # Phase 3: train CTGAN/TVAE -> models/, data/synthetic/\npython -m src.evaluate_fidelity  # Phase 4: fidelity -> results/metrics/fidelity.csv\npython -m src.evaluate_utility   # Phase 5: TSTR/TRTR -> results/metrics/utility.csv\npython -m src.evaluate_privacy   # Phase 6: DCR/MIA -> results/metrics/privacy.csv\npython -m src.rare_class         # Phase 7: lop hiem + trade-off -> results/metrics/summary.csv\n```\n\nMọi tham số (seed, epochs, đường dẫn, danh sách model, lớp hiếm, subsampling...) nằm trong\n`config.yaml`, không hardcode rải rác trong code. Seed mặc định `42`, đặt cho\n`random`/`numpy`/`torch` ở mọi bước để kết quả tái lập được.\n\n**Thời gian chạy tham khảo** (GPU RTX 2060, dataset thật 175K dòng train): Phase 3 (train CTGAN +\nTVAE) ~5 phút/model, Phase 4 (fidelity) ~1 phút, Phase 5 (utility TRTR/TSTR) ~1.5 phút, Phase 6\n(privacy DCR/MIA) ~3 phút, Phase 7 (lớp hiếm + trade-off) ~3 phút. Tổng pipeline từ Phase 3–7\nkhoảng **15–20 phút** trên GPU.\n\n## 5. Quy ước kỹ thuật & các \"bẫy\" đã xử lý\n\n- **Cột categorical quan trọng:** `proto`, `service`, `state`, `attack_cat`, `label`. Cột còn\n  lại là numeric. Cột `id` bị loại bỏ trước khi train vì chỉ là số thứ tự.\n- **Bẫy SDV auto-detect:** `Metadata.detect_from_dataframe` từng nhận nhầm cột `state` và\n  `ct_state_ttl` thành PII (`administrative_unit`, kiểu \"US state\") chỉ vì tên cột trùng chữ\n  \"state\". `src/data_prep.py::build_metadata` ép tường minh sdtype cho **toàn bộ** cột (không\n  chỉ các cột categorical) thay vì tin tưởng kết quả detect, để tránh bẫy này tái diễn.\n- **Utility (TSTR) tuyệt đối không test trên synthetic** — luôn test trên `test_real.csv` (dữ\n  liệu thật giữ riêng, không dùng để train bất kỳ synthesizer nào).\n- **Data leakage khi train downstream classifier:** cột `attack_cat` bị loại khỏi tập feature\n  khi phân loại nhị phân `label`, vì `attack_cat == \"Normal\"` xác định `label` gần như tuyệt đối.\n- **Privacy phải báo cáo trung thực:** nếu có bản ghi synthetic trùng khít bản ghi thật\n  (DCR = 0), pipeline log cảnh báo `[CANH BAO PRIVACY]` chứ không giấu đi.\n- **Lớp hiếm với dataset rất nhỏ:** khi một lớp hiếm có quá ít bản ghi để train GAN/VAE ổn định\n  (< 8 dòng), `rare_class.py` tự động chuyển sang bootstrap + jitter Gaussian nhẹ trên cột số\n  thay vì train mô hình sâu trên vài mẫu — tránh mô hình học phân kỳ. Với UNSW-NB15 thật, cả 3\n  lớp hiếm (`Worms`=130, `Shellcode`=1133, `Backdoor`=1746 dòng) đều đủ dữ liệu để train TVAE\n  riêng, không cần rơi vào nhánh bootstrap.\n- **Dataset thật quá lớn để train CTGAN/TVAE với epoch hợp lý trong thời gian chấp nhận được**\n  (đo được ~130-230 giây/epoch trên CPU cho 175K dòng, dù có GPU cũng chỉ nhanh hơn ~1.8 lần vì\n  nút thắt nằm ở tiền xử lý dữ liệu categorical cardinality cao trên CPU chứ không phải compute\n  của mạng). Giải pháp: `config.yaml -> synth.train_sample_size = 30000` — fit CTGAN/TVAE trên\n  1 subsample **lấy mẫu phân tầng theo `attack_cat`** (giữ đúng tỉ lệ lớp, dữ liệu vẫn 100%\n  thật, chỉ giảm số dòng dùng để fit), giảm số batch/epoch ~6 lần. Sau khi fit xong, `sample()`\n  vẫn sinh đủ số dòng bằng train thật (175,341 dòng) để các Phase đánh giá sau không đổi logic.\n- **DCR/MIA (Phase 6) cũng là bài toán nearest-neighbor O(n×m)** — brute-force trên đầy đủ\n  175,341×175,341 cặp bị treo hàng chục phút không xong. `config.yaml -> privacy.sample_size =\n  5000` — subsample cả 2 phía (tập tham chiếu và tập truy vấn) trước khi tính khoảng cách. Đây\n  là thực hành chuẩn cho DCR/MIA trên dataset lớn (ước lượng phân phối khoảng cách không cần\n  toàn bộ dân số) và không làm sai lệch kết luận.\n\n## 6. Quy trình xây dựng (Phase 0 → 7)\n\nDự án được xây tuần tự theo checklist, mỗi Phase chạy thử và kiểm tra acceptance criteria trước\nkhi sang Phase tiếp theo:\n\n| Phase | Nội dung | Output chính |\n|---|---|---|\n| 0 | Khung repo, `config.yaml`, `src/config.py`, seed=42 | `config.yaml`, `src/config.py` |\n| 1 | Tiền xử lý: đọc raw CSV (hoặc sinh mock), bỏ `id`, xử lý missing, ép sdtype đúng, tạo `Metadata` SDV | `data/processed/{train_real,test_real}.csv`, `metadata.json` |\n| 2 | EDA: thống kê mô tả, phân phối cột số, phân phối `attack_cat` (làm nổi bật mất cân bằng), heatmap tương quan | `results/figures/eda_*.png` |\n| 3 | Train CTGAN + TVAE (registry `{tên: factory_fn}` để dễ thêm model mới) trên subsample phân tầng, sample dữ liệu synthetic đủ số dòng thật, lưu model `.pkl` | `models/*.pkl`, `data/synthetic/*.csv` |\n| 4 | Fidelity: SDV `run_diagnostic`/`evaluate_quality`, KS statistic, Total Variation Distance, overlay phân phối, so sánh heatmap tương quan | `results/metrics/fidelity.csv` |\n| 5 | Utility: TRTR (train real/test real) vs TSTR (train synthetic/test real) với RandomForest + XGBoost, so sánh F1 macro/weighted, ROC-AUC | `results/metrics/utility.csv` |\n| 6 | Privacy: DCR (Distance to Closest Record, synthetic→real vs holdout→real, subsample cho nearest-neighbor), MIA đơn giản dựa trên khoảng cách, NewRowSynthesis | `results/metrics/privacy.csv` |\n| 7 | Bù đắp lớp hiếm (`Worms`, `Shellcode`, `Backdoor`): train synthesizer riêng trên từng lớp, so recall trước/sau augment; tổng hợp radar chart Fidelity-Utility-Privacy | `results/metrics/{rare_class_recall,summary}.csv`, `tradeoff_radar.png` |\n\nTrước khi viết code cho các thư viện có API dễ đổi (`sdv`, `sdmetrics`, `torch`), signature của\ntừng hàm được kiểm tra trực tiếp qua `inspect.signature` thay vì đoán từ tài liệu cũ — ví dụ API\n`Metadata.detect_from_dataframe`, `CTGANSynthesizer.__init__`, `NewRowSynthesis.compute` (cần\n`metadata.tables[\"table\"].to_dict()` chứ không nhận thẳng object `Metadata`).\n\nSau khi có kết quả đầu tiên trên **dữ liệu mock** (chỉ để kiểm tra pipeline chạy thông), dự án đã\ntải dataset UNSW-NB15 **thật** (mục 2) và chạy lại toàn bộ Phase 1–7. Quá trình này phát hiện và\nxử lý 2 vấn đề hiệu năng chỉ xuất hiện ở quy mô dữ liệu thật (175K dòng, xem mục 5): thời gian\ntrain CTGAN/TVAE và độ phức tạp O(n²) của DCR/MIA — cả hai được giải quyết bằng subsampling có\nkiểm soát (stratified cho train, random cho privacy NN) thay vì hạ thấp epoch hoặc bỏ qua metric.\n\n## 7. Kết quả (chạy trên dataset UNSW-NB15 THẬT)\n\nDataset: `train_real` 175,341 dòng / `test_real` 82,332 dòng. `attack_cat` (train):\nNormal 56,000, Generic 40,000, Exploits 33,393, Fuzzers 18,184, DoS 12,264, Reconnaissance\n10,491, Analysis 2,000, Backdoor 1,746, Shellcode 1,133, **Worms 130** (lớp hiếm nhất, tỉ lệ\n~0.07%). CTGAN/TVAE train trên subsample phân tầng 30,000 dòng (giữ đúng tỉ lệ lớp), 150 epochs,\nGPU RTX 2060; sample ra đủ 175,341 dòng synthetic mỗi model.\n\n### Fidelity (`results/metrics/fidelity.csv`)\n\n| model | quality_score | column_shapes | column_pair_trends | avg_ks_statistic | avg_tvd |\n|---|---|---|---|---|---|\n| ctgan | 0.834 | 0.813 | 0.854 | 0.197 | 0.112 |\n| tvae  | 0.862 | 0.854 | 0.870 | 0.151 | 0.105 |\n\nCả 2 model đều đạt quality score >0.83 — dữ liệu synthetic bám khá sát phân phối thật, **TVAE\nnhỉnh hơn CTGAN** ở mọi chỉ số fidelity trên dataset này.\n\n### Utility — TSTR vs TRTR (`results/metrics/utility.csv`, phân loại nhị phân `label`)\n\n| model | scenario | classifier | f1_macro | roc_auc |\n|---|---|---|---|---|\n| real  | TRTR | random_forest | 0.865 | 0.979 |\n| real  | TRTR | xgboost       | 0.865 | 0.982 |\n| ctgan | TSTR | random_forest | 0.719 | 0.902 |\n| ctgan | TSTR | xgboost       | 0.720 | 0.899 |\n| tvae  | TSTR | random_forest | 0.813 | 0.947 |\n| tvae  | TSTR | xgboost       | 0.826 | 0.929 |\n\nTRTR baseline đạt F1-macro 0.865 / ROC-AUC ~0.98 — chứng tỏ tín hiệu thật rõ ràng giữa đặc trưng\nmạng và nhãn tấn công. **TVAE giữ khoảng cách với TRTR gần hơn CTGAN** (F1 0.81–0.83 so với TRTR\n0.865, so với CTGAN chỉ 0.72) — dữ liệu TVAE sinh ra \"dùng được\" hơn cho downstream detection.\n\n### Privacy (`results/metrics/privacy.csv`, subsample 5,000 dòng/phía cho nearest-neighbor)\n\n| model | mia_auc | new_row_synthesis | dcr_synth_mean | dcr_holdout_mean | exact_duplicates |\n|---|---|---|---|---|---|\n| ctgan | 0.584 | 1.0 | 2.248 | 1.000 | 0 |\n| tvae  | 0.556 | 1.0 | 1.979 | 1.000 | 0 |\n\nMIA-AUC 0.56–0.58 — cao hơn 0.5 một chút (attacker có lợi thế nhẹ hơn ngẫu nhiên nhưng không\nnghiêm trọng). Không có bản ghi synthetic trùng khít bản ghi thật (DCR=0) ở cả 2 model. DCR\ntrung bình của synthetic (~2.0–2.2) **cao hơn** DCR trung bình của real-holdout (~1.0) — tức\nsynthetic không nằm bất thường gần dữ liệu train hơn so với dữ liệu thật khác, tín hiệu riêng tư\nđược giữ.\n\n### Lớp hiếm & trade-off tổng hợp\n\n`results/metrics/rare_class_recall.csv` — recall lớp hiếm khi train multiclass RandomForest trên\nreal-only vs augmented (real + synthetic sinh riêng cho từng lớp hiếm bằng TVAE):\n\n| attack_cat | recall real-only | recall augmented | thay đổi |\n|---|---|---|---|\n| Worms     | 0.091 | 0.091 | không đổi (chỉ 130 mẫu gốc, khó cải thiện thêm) |\n| Shellcode | 0.664 | 0.696 | **+0.032** |\n| Backdoor  | 0.096 | 0.125 | **+0.029 (+30% tương đối)** |\n\n→ Bù đắp bằng synthetic cải thiện rõ recall của `Shellcode` và `Backdoor`, xác nhận đúng giả\nthuyết ban đầu của đề tài. `Worms` không cải thiện vì chỉ có 130 bản ghi gốc — cần augment nhiều\nhơn hoặc kỹ thuật khác (SMOTE kết hợp, oversample mạnh hơn) để thấy hiệu quả rõ với lớp cực hiếm.\n\n`results/metrics/summary.csv` — tổng hợp 1 điểm mỗi trục cho mỗi model:\n\n| model | fidelity_score | utility_score | privacy_score |\n|---|---|---|---|\n| ctgan | 0.834 | 0.720 | 0.833 |\n| tvae  | 0.862 | 0.820 | 0.888 |\n\n→ Trên UNSW-NB15 thật, **TVAE thắng CTGAN ở cả 3 trục** (radar chart:\n`results/figures/tradeoff_radar.png`) — vừa giống thật hơn, vừa dùng được hơn cho downstream\nclassifier, vừa an toàn hơn về mặt riêng tư (MIA-AUC thấp hơn). Balance trung bình 3 trục: TVAE\n0.856 vs CTGAN 0.796.\n\n## 8. Sản phẩm hiện có\n\n- Pipeline reproducible chạy end-to-end từ raw CSV (dataset thật, có fallback mock khi thiếu\n  data) → synthetic data → báo cáo đánh giá, seed cố định `42` ở mọi bước.\n- So sánh 2 mô hình sinh: **CTGAN** và **TVAE** trên dataset UNSW-NB15 thật (175K dòng), thiết\n  kế dạng registry để dễ thêm model mới (TabDDPM, DP-CTGAN...).\n- Đánh giá đầy đủ tam giác **Fidelity – Utility – Privacy** + phần bù đắp lớp hiếm và tổng hợp\n  trade-off (Phase 0–7, xem mục 6–7) — kết luận rõ ràng: **TVAE cân bằng hơn CTGAN** trên\n  dataset này.\n- Giải quyết 2 vấn đề hiệu năng thực tế khi scale lên dữ liệu thật (train time, DCR/MIA O(n²))\n  bằng subsampling có kiểm soát, không đánh đổi tính đúng đắn của kết luận.\n- 13 biểu đồ (`results/figures/`) và 7 bảng kết quả (`results/metrics/`).\n\n## 9. Chưa làm (ngoài phạm vi Phase 0–7 hiện tại)\n\n- **Phase 8 (tuỳ chọn):** TabDDPM (diffusion) hoặc DP-CTGAN (differential privacy) — thêm vào\n  registry trong `train_synth.py` và chạy lại Phase 4–7 để so sánh.\n- **Phase 9:** `run_all.py` chạy tuần tự toàn bộ pipeline, `notebooks/report.ipynb` trình bày\n  kết quả cuối cùng render từ `results/`.\n- **Cải thiện lớp `Worms` (130 mẫu gốc):** recall chưa cải thiện khi augment bằng TVAE đơn giản\n  — có thể thử tăng hệ số augment mạnh hơn, kết hợp SMOTE, hoặc train synthesizer chuyên biệt\n  hơn cho lớp cực hiếm.\n",
+ "hits": {
+  "ct": [
+   {
+    "file": "README.md",
+    "line": 34,
+    "text": "Thư viện cốt lõi: `sdv` (CTGANSynthesizer, TVAESynthesizer, Metadata), `sdmetrics`, `pandas`,",
+    "context": [
+     "# source .venv/bin/activate  # Linux/macOS",
+     "pip install -r requirements.txt",
+     "```",
+     "",
+     "Thư viện cốt lõi: `sdv` (CTGANSynthesizer, TVAESynthesizer, Metadata), `sdmetrics`, `pandas`,",
+     "`numpy`, `scikit-learn`, `xgboost`, `matplotlib`, `seaborn`, `torch`.",
+     "",
+     "**Nếu có GPU NVIDIA (khuyến nghị):** `pip install -r requirements.txt` mặc định chỉ cài `torch`",
+     "bản CPU-only. Cài thêm bản CUDA để train CTGAN/TVAE nhanh hơn nhiều:"
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 170,
+    "text": "`Metadata.detect_from_dataframe`, `CTGANSynthesizer.__init__`, `NewRowSynthesis.compute` (cần",
+    "context": [
+     "| 7 | Bù đắp lớp hiếm (`Worms`, `Shellcode`, `Backdoor`): train synthesizer riêng trên từng lớp, so recall trước/sau augment; tổng hợp radar chart Fidelity-Utility-Privacy | `results/metrics/{rare_cla",
+     "",
+     "Trước khi viết code cho các thư viện có API dễ đổi (`sdv`, `sdmetrics`, `torch`), signature của",
+     "từng hàm được kiểm tra trực tiếp qua `inspect.signature` thay vì đoán từ tài liệu cũ — ví dụ API",
+     "`Metadata.detect_from_dataframe`, `CTGANSynthesizer.__init__`, `NewRowSynthesis.compute` (cần",
+     "`metadata.tables[\"table\"].to_dict()` chứ không nhận thẳng object `Metadata`).",
+     "",
+     "Sau khi có kết quả đầu tiên trên **dữ liệu mock** (chỉ để kiểm tra pipeline chạy thông), dự án đã",
+     "tải dataset UNSW-NB15 **thật** (mục 2) và chạy lại toàn bộ Phase 1–7. Quá trình này phát hiện và"
+    ]
+   },
+   {
+    "file": "src/train_synth.py",
+    "line": 10,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "import logging",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "",
+     "from src.config import CFG, ROOT_DIR, set_global_seed",
+     "",
+     "logging.basicConfig(level=logging.INFO, format=\"%(asctime)s [%(levelname)s] %(message)s\")"
+    ]
+   },
+   {
+    "file": "src/train_synth.py",
+    "line": 18,
+    "text": "def _ctgan_factory(metadata: Metadata, epochs: int, batch_size: int) -> CTGANSynthesizer:",
+    "context": [
+     "logging.basicConfig(level=logging.INFO, format=\"%(asctime)s [%(levelname)s] %(message)s\")",
+     "logger = logging.getLogger(__name__)",
+     "",
+     "",
+     "def _ctgan_factory(metadata: Metadata, epochs: int, batch_size: int) -> CTGANSynthesizer:",
+     "    return CTGANSynthesizer(",
+     "        metadata, epochs=epochs, batch_size=batch_size, verbose=True,",
+     "        enable_gpu=CFG[\"synth\"].get(\"enable_gpu\", False),",
+     "    )"
+    ]
+   },
+   {
+    "file": "src/train_synth.py",
+    "line": 19,
+    "text": "return CTGANSynthesizer(",
+    "context": [
+     "logger = logging.getLogger(__name__)",
+     "",
+     "",
+     "def _ctgan_factory(metadata: Metadata, epochs: int, batch_size: int) -> CTGANSynthesizer:",
+     "    return CTGANSynthesizer(",
+     "        metadata, epochs=epochs, batch_size=batch_size, verbose=True,",
+     "        enable_gpu=CFG[\"synth\"].get(\"enable_gpu\", False),",
+     "    )",
+     ""
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "README.md",
+    "line": 34,
+    "text": "Thư viện cốt lõi: `sdv` (CTGANSynthesizer, TVAESynthesizer, Metadata), `sdmetrics`, `pandas`,",
+    "context": [
+     "# source .venv/bin/activate  # Linux/macOS",
+     "pip install -r requirements.txt",
+     "```",
+     "",
+     "Thư viện cốt lõi: `sdv` (CTGANSynthesizer, TVAESynthesizer, Metadata), `sdmetrics`, `pandas`,",
+     "`numpy`, `scikit-learn`, `xgboost`, `matplotlib`, `seaborn`, `torch`.",
+     "",
+     "**Nếu có GPU NVIDIA (khuyến nghị):** `pip install -r requirements.txt` mặc định chỉ cài `torch`",
+     "bản CPU-only. Cài thêm bản CUDA để train CTGAN/TVAE nhanh hơn nhiều:"
+    ]
+   },
+   {
+    "file": "src/rare_class.py",
+    "line": 19,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import matplotlib.pyplot as plt",
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sklearn.compose import ColumnTransformer",
+     "from sklearn.ensemble import RandomForestClassifier",
+     "from sklearn.metrics import f1_score, recall_score",
+     "from sklearn.preprocessing import OneHotEncoder"
+    ]
+   },
+   {
+    "file": "src/rare_class.py",
+    "line": 88,
+    "text": "synth = TVAESynthesizer(",
+    "context": [
+     "            synth_subset = bootstrap_jitter(subset, n_target, rng)",
+     "        else:",
+     "            logger.info(\"Lop '%s' co %d ban ghi -> train TVAE rieng, sinh %d mau.\", cls, n_real, n_target)",
+     "            batch_size = max(2, min(CFG[\"synth\"][\"batch_size\"], (n_real // 2) * 2))",
+     "            synth = TVAESynthesizer(",
+     "                metadata, epochs=CFG[\"synth\"][\"epochs\"], batch_size=batch_size, enable_gpu=False",
+     "            )",
+     "            synth.fit(subset)",
+     "            synth_subset = synth.sample(num_rows=n_target)"
+    ]
+   },
+   {
+    "file": "src/train_synth.py",
+    "line": 10,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "import logging",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "",
+     "from src.config import CFG, ROOT_DIR, set_global_seed",
+     "",
+     "logging.basicConfig(level=logging.INFO, format=\"%(asctime)s [%(levelname)s] %(message)s\")"
+    ]
+   },
+   {
+    "file": "src/train_synth.py",
+    "line": 25,
+    "text": "def _tvae_factory(metadata: Metadata, epochs: int, batch_size: int) -> TVAESynthesizer:",
+    "context": [
+     "        enable_gpu=CFG[\"synth\"].get(\"enable_gpu\", False),",
+     "    )",
+     "",
+     "",
+     "def _tvae_factory(metadata: Metadata, epochs: int, batch_size: int) -> TVAESynthesizer:",
+     "    return TVAESynthesizer(",
+     "        metadata, epochs=epochs, batch_size=batch_size,",
+     "        enable_gpu=CFG[\"synth\"].get(\"enable_gpu\", False),",
+     "    )"
+    ]
+   },
+   {
+    "file": "src/train_synth.py",
+    "line": 26,
+    "text": "return TVAESynthesizer(",
+    "context": [
+     "    )",
+     "",
+     "",
+     "def _tvae_factory(metadata: Metadata, epochs: int, batch_size: int) -> TVAESynthesizer:",
+     "    return TVAESynthesizer(",
+     "        metadata, epochs=epochs, batch_size=batch_size,",
+     "        enable_gpu=CFG[\"synth\"].get(\"enable_gpu\", False),",
+     "    )",
+     ""
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "src/rare_class.py",
+    "line": 19,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import matplotlib.pyplot as plt",
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sklearn.compose import ColumnTransformer",
+     "from sklearn.ensemble import RandomForestClassifier",
+     "from sklearn.metrics import f1_score, recall_score",
+     "from sklearn.preprocessing import OneHotEncoder"
+    ]
+   },
+   {
+    "file": "src/train_synth.py",
+    "line": 10,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "import logging",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "",
+     "from src.config import CFG, ROOT_DIR, set_global_seed",
+     "",
+     "logging.basicConfig(level=logging.INFO, format=\"%(asctime)s [%(levelname)s] %(message)s\")"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "src/rare_class.py",
+    "line": 18,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "matplotlib.use(\"Agg\")",
+     "import matplotlib.pyplot as plt",
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sklearn.compose import ColumnTransformer",
+     "from sklearn.ensemble import RandomForestClassifier",
+     "from sklearn.metrics import f1_score, recall_score"
+    ]
+   },
+   {
+    "file": "src/evaluate_fidelity.py",
+    "line": 18,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import pandas as pd",
+     "import seaborn as sns",
+     "from sdmetrics.single_column import KSComplement, TVComplement",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "from sdv.metadata import Metadata",
+     "",
+     "from src.config import CFG, ROOT_DIR, set_global_seed",
+     "",
+     "logging.basicConfig(level=logging.INFO, format=\"%(asctime)s [%(levelname)s] %(message)s\")"
+    ]
+   },
+   {
+    "file": "src/data_prep.py",
+    "line": 12,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import logging",
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "",
+     "from src.config import CFG, ROOT_DIR, set_global_seed",
+     "",
+     "logging.basicConfig(level=logging.INFO, format=\"%(asctime)s [%(levelname)s] %(message)s\")"
+    ]
+   },
+   {
+    "file": "src/train_synth.py",
+    "line": 9,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import argparse",
+     "import logging",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "",
+     "from src.config import CFG, ROOT_DIR, set_global_seed",
+     ""
+    ]
+   },
+   {
+    "file": "src/evaluate_privacy.py",
+    "line": 20,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "import seaborn as sns",
+     "from sdmetrics.single_table import NewRowSynthesis",
+     "from sdv.metadata import Metadata",
+     "from sklearn.compose import ColumnTransformer",
+     "from sklearn.metrics import roc_auc_score",
+     "from sklearn.neighbors import NearestNeighbors",
+     "from sklearn.preprocessing import OneHotEncoder, StandardScaler"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "src/rare_class.py",
+    "line": 18,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "matplotlib.use(\"Agg\")",
+     "import matplotlib.pyplot as plt",
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sklearn.compose import ColumnTransformer",
+     "from sklearn.ensemble import RandomForestClassifier",
+     "from sklearn.metrics import f1_score, recall_score"
+    ]
+   },
+   {
+    "file": "src/rare_class.py",
+    "line": 19,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import matplotlib.pyplot as plt",
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sklearn.compose import ColumnTransformer",
+     "from sklearn.ensemble import RandomForestClassifier",
+     "from sklearn.metrics import f1_score, recall_score",
+     "from sklearn.preprocessing import OneHotEncoder"
+    ]
+   },
+   {
+    "file": "src/evaluate_fidelity.py",
+    "line": 17,
+    "text": "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+    "context": [
+     "import matplotlib.pyplot as plt",
+     "import pandas as pd",
+     "import seaborn as sns",
+     "from sdmetrics.single_column import KSComplement, TVComplement",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "from sdv.metadata import Metadata",
+     "",
+     "from src.config import CFG, ROOT_DIR, set_global_seed",
+     ""
+    ]
+   },
+   {
+    "file": "src/evaluate_fidelity.py",
+    "line": 18,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import pandas as pd",
+     "import seaborn as sns",
+     "from sdmetrics.single_column import KSComplement, TVComplement",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "from sdv.metadata import Metadata",
+     "",
+     "from src.config import CFG, ROOT_DIR, set_global_seed",
+     "",
+     "logging.basicConfig(level=logging.INFO, format=\"%(asctime)s [%(levelname)s] %(message)s\")"
+    ]
+   },
+   {
+    "file": "src/data_prep.py",
+    "line": 12,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import logging",
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "",
+     "from src.config import CFG, ROOT_DIR, set_global_seed",
+     "",
+     "logging.basicConfig(level=logging.INFO, format=\"%(asctime)s [%(levelname)s] %(message)s\")"
+    ]
+   },
+   {
+    "file": "src/train_synth.py",
+    "line": 9,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import argparse",
+     "import logging",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "",
+     "from src.config import CFG, ROOT_DIR, set_global_seed",
+     ""
+    ]
+   },
+   {
+    "file": "src/train_synth.py",
+    "line": 10,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "import logging",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "",
+     "from src.config import CFG, ROOT_DIR, set_global_seed",
+     "",
+     "logging.basicConfig(level=logging.INFO, format=\"%(asctime)s [%(levelname)s] %(message)s\")"
+    ]
+   },
+   {
+    "file": "src/evaluate_privacy.py",
+    "line": 20,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "import seaborn as sns",
+     "from sdmetrics.single_table import NewRowSynthesis",
+     "from sdv.metadata import Metadata",
+     "from sklearn.compose import ColumnTransformer",
+     "from sklearn.metrics import roc_auc_score",
+     "from sklearn.neighbors import NearestNeighbors",
+     "from sklearn.preprocessing import OneHotEncoder, StandardScaler"
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "src/evaluate_fidelity.py",
+    "line": 17,
+    "text": "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+    "context": [
+     "import matplotlib.pyplot as plt",
+     "import pandas as pd",
+     "import seaborn as sns",
+     "from sdmetrics.single_column import KSComplement, TVComplement",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "from sdv.metadata import Metadata",
+     "",
+     "from src.config import CFG, ROOT_DIR, set_global_seed",
+     ""
+    ]
+   }
+  ],
+  "sm": [
+   {
+    "file": "src/evaluate_fidelity.py",
+    "line": 16,
+    "text": "from sdmetrics.single_column import KSComplement, TVComplement",
+    "context": [
+     "matplotlib.use(\"Agg\")",
+     "import matplotlib.pyplot as plt",
+     "import pandas as pd",
+     "import seaborn as sns",
+     "from sdmetrics.single_column import KSComplement, TVComplement",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "from sdv.metadata import Metadata",
+     "",
+     "from src.config import CFG, ROOT_DIR, set_global_seed"
+    ]
+   },
+   {
+    "file": "src/evaluate_privacy.py",
+    "line": 19,
+    "text": "from sdmetrics.single_table import NewRowSynthesis",
+    "context": [
+     "import matplotlib.pyplot as plt",
+     "import numpy as np",
+     "import pandas as pd",
+     "import seaborn as sns",
+     "from sdmetrics.single_table import NewRowSynthesis",
+     "from sdv.metadata import Metadata",
+     "from sklearn.compose import ColumnTransformer",
+     "from sklearn.metrics import roc_auc_score",
+     "from sklearn.neighbors import NearestNeighbors"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ev",
+  "md",
+  "sdv_any",
+  "sm",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv>=1.13,<2.0",
+   "sdmetrics>=0.14",
+   "# Neu co GPU NVIDIA, cai ban CUDA rieng (nhanh hon nhieu, vd CTGAN tren"
+  ]
+ }
+}

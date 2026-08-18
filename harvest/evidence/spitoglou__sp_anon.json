@@ -1,0 +1,208 @@
+{
+ "repo": "spitoglou/sp_anon",
+ "disk_kb": 9989,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# SP-Anon\n\nAnonymization algorithms for health-related datasets.\n\n## Overview\n\nSP-Anon is a Python library that provides various anonymization algorithms\nspecifically designed for health-related datasets. It offers tools for data\nprivacy protection while maintaining data utility for research and analysis\npurposes.\n\n## Features\n\n### Privacy Models\n- **K-Anonymity**: DataFly, Incognito, Mondrian, Flash, Samarati, BUA, TDR, OLA\n- **L-Diversity**: Distinct and entropy variants\n- **T-Closeness**: Distribution-based protection\n- **δ-Presence**: Membership disclosure protection\n- **β-Likeness**: Distribution distance constraints\n- **(α,k)-Anonymity**: Frequency-constrained k-anonymity\n- **m-Invariance**: Privacy for dynamic/re-published datasets\n- **Differential Privacy**: Formal mathematical privacy guarantees\n- **Local Differential Privacy**: Randomized response for decentralized collection\n\n### Algorithms (30+)\n- **Lattice-based**: DataFly, Incognito, OLA, Flash, Samarati, BUA, TDR\n- **High-dimensional**: Lightning, Genetic Algorithm, Top-Down Greedy\n- **Partitioning-based**: Mondrian, Mondrian L-T, Slicing\n- **Clustering-based**: K-Member, MDAV, GreedyClusteringAnonymizer, GAK, Agglomerative, PAM\n- **Non-generalization**: Anatomy, Permutation\n- **Extended Models**: δ-Presence, β-Likeness, (α,k)-Anonymity, m-Invariance\n- **Cell-level**: Local Recoding\n\n### Differential Privacy\n- **Mechanisms**: Laplace, Gaussian, Exponential\n- **Local DP**: Randomized Response (binary and categorical)\n- **Budget Tracking**: Track and manage privacy expenditure across operations\n- **Composition**: Basic and advanced composition theorems\n- **Integration**: Combine k-anonymity with differential privacy for defense-in-depth\n\n### Synthetic Data Generation\n- **CTGAN**: Conditional Tabular GAN\n- **TVAE**: Tabular Variational Autoencoder\n- **GaussianCopula**: Statistical copula-based generation\n- **PrivBayes**: Differentially private Bayesian network synthesis\n- **MST**: Maximum spanning tree with differential privacy\n- **Privacy Metrics**: Evaluate synthetic data privacy\n\n### Privacy Model Verification\n- `verify_delta_presence()`: Check δ-presence constraints\n- `verify_beta_likeness()`: Check β-likeness constraints\n- `verify_alpha_k_anonymity()`: Check (α,k)-anonymity constraints\n- `verify_m_invariance()`: Check m-invariance across releases\n- `KMapRiskCalculator`: Population-based re-identification risk\n\n### Additional Features\n- Benchmark datasets (UCI Adult, NHTSA FARS)\n- Privacy metrics and verification utilities\n- Comprehensive test suite with 200+ tests\n\n## Installation\n\nUsing UV (recommended):\n\n```bash\nuv sync\n```\n\nUsing pip:\n\n```bash\npip install -e .\n```\n\nFor development:\n\n```bash\nuv sync --extra dev\n# or\npip install -e \".[dev]\"\n```\n\n## Quick Start\n\n### K-Anonymity with Mondrian\n\n```python\nfrom sp_anon.algorithms.mondrian_k import MondrianKAnonymizer\n\nanonymizer = MondrianKAnonymizer(\n    k=5,\n    quasi_identifiers=[\"age\", \"zipcode\", \"gender\"]\n)\nanon_df = anonymizer.anonymize(df)\n```\n\n### Differential Privacy\n\n```python\nfrom sp_anon.differential_privacy import (\n    DPMondrianKAnonymizer,\n    DPAggregator,\n    PrivacyBudgetTracker,\n)\n\n# Track privacy budget\ntracker = PrivacyBudgetTracker(total_epsilon=2.0, total_delta=1e-5)\n\n# K-anonymity with differential privacy\nanonymizer = DPMondrianKAnonymizer(\n    k=5,\n    quasi_identifiers=[\"age\", \"zipcode\"],\n    epsilon=1.0,\n    delta=1e-6,\n    budget_tracker=tracker,\n)\nanon_df = anonymizer.anonymize(df)\n\n# DP-safe aggregation\nagg = DPAggregator(epsilon=0.5, budget_tracker=tracker)\ndp_mean_age = agg.dp_mean(anon_df[\"age\"], bounds=(0, 100))\n```\n\n### Extended Privacy Models\n\n```python\nfrom sp_anon.algorithms import (\n    DeltaPresenceAnonymizer,\n    BetaLikenessAnonymizer,\n    AlphaKAnonymizer,\n)\n\n# δ-Presence with population data\nanonymizer = DeltaPresenceAnonymizer(\n    k=5,\n    quasi_identifiers=[\"age\", \"zipcode\"],\n    population_df=population_df,\n    delta_min=0.2,\n    delta_max=0.8\n)\nanon_df = anonymizer.anonymize(df)\n\n# β-Likeness\nanonymizer = BetaLikenessAnonymizer(\n    k=5,\n    quasi_identifiers=[\"age\", \"zipcode\"],\n    sensitive_attribute=\"disease\",\n    beta=1.0\n)\nanon_df = anonymizer.anonymize(df)\n```\n\n### Local Differential Privacy\n\n```python\nfrom sp_anon.differential_privacy import RandomizedResponse\n\n# Randomized response for surveys\nrr = RandomizedResponse(epsilon=1.0, domain=[True, False])\nperturbed = rr.apply(df[\"has_condition\"])\nestimate = rr.estimate_distribution(perturbed)\nprint(f\"Estimated true rate: {estimate.distribution[True]:.2%}\")\n```\n\n### Synthetic Data Generation\n\n```python\nfrom sp_anon.synthetic import SyntheticDataGenerator, SDV_AVAILABLE\n\nif SDV_AVAILABLE:\n    generator = SyntheticDataGenerator(model_type=\"ctgan\", epochs=100)\n    synthetic_df = generator.fit_generate(df, n_samples=1000)\n    \n    # Evaluate privacy\n    metrics = generator.evaluate_privacy(synthetic_df)\n    print(f\"Nearest neighbor distance: {metrics.nearest_neighbor_distance:.4f}\")\n```\n\n### Using Benchmark Datasets\n\n```python\nfrom benchmark_data.loader import load_adult, get_adult_quasi_identifiers\n\ndf = load_adult()\nqis = get_adult_quasi_identifiers()\n```\n\n## Project Structure\n\n```text\nsp_anon/\n├── src/sp_anon/\n│   ├── algorithms/           # Anonymization algorithms (20+)\n│   ├── anonymization_utils/  # Privacy metrics and validation\n│   ├── differential_privacy/ # DP mechanisms and integration\n│   └── utils/                # General utilities\n├── benchmark_data/           # Standard datasets (Adult, FARS)\n├── tests/                    # Test suite (80+ tests)\n├── docs/                     # Documentation\n│   ├── algorithms.md         # Algorithm reference\n│   └── algorithm_gap_analysis.md\n├── openspec/                 # Specifications\n└── pyproject.toml            # Project configuration\n```\n\n## Development\n\nRun tests:\n\n```bash\nuv run pytest\n```\n\nFormat and lint:\n\n```bash\nuv run ruff format src/ tests/\nuv run ruff check src/ tests/\n```\n\nType checking:\n\n```bash\nuv run mypy src/\n```\n\n## Documentation\n\n- **[Algorithm Reference](docs/algorithms.md)**: Comprehensive guide to all algorithms\n- **[Gap Analysis](docs/algorithm_gap_analysis.md)**: Comparison with literature\n\n## License\n\nMIT License\n",
+ "hits": {
+  "st": [
+   {
+    "file": "openspec/changes/archive/2025-12-23-add-missing-privacy-models/design.md",
+    "line": 77,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "**Implementation:**",
+     "```python",
+     "try:",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    SDV_AVAILABLE = True",
+     "except ImportError:",
+     "    SDV_AVAILABLE = False",
+     ""
+    ]
+   },
+   {
+    "file": "src/sp_anon/synthetic/generator.py",
+    "line": 19,
+    "text": "from sdv.single_table import CopulaGANSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "",
+     "# Try to import SDV",
+     "try:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import CopulaGANSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "",
+     "    SDV_AVAILABLE = True",
+     "except ImportError:",
+     "    SDV_AVAILABLE = False"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "openspec/changes/archive/2025-12-23-add-missing-privacy-models/design.md",
+    "line": 77,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "**Implementation:**",
+     "```python",
+     "try:",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    SDV_AVAILABLE = True",
+     "except ImportError:",
+     "    SDV_AVAILABLE = False",
+     ""
+    ]
+   },
+   {
+    "file": "src/sp_anon/synthetic/generator.py",
+    "line": 18,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "",
+     "# Try to import SDV",
+     "try:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import CopulaGANSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "",
+     "    SDV_AVAILABLE = True",
+     "except ImportError:"
+    ]
+   },
+   {
+    "file": "src/sp_anon/synthetic/generator.py",
+    "line": 19,
+    "text": "from sdv.single_table import CopulaGANSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "",
+     "# Try to import SDV",
+     "try:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import CopulaGANSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "",
+     "    SDV_AVAILABLE = True",
+     "except ImportError:",
+     "    SDV_AVAILABLE = False"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "openspec/changes/archive/2025-12-23-add-missing-privacy-models/design.md",
+    "line": 77,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "**Implementation:**",
+     "```python",
+     "try:",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    SDV_AVAILABLE = True",
+     "except ImportError:",
+     "    SDV_AVAILABLE = False",
+     ""
+    ]
+   },
+   {
+    "file": "src/sp_anon/synthetic/generator.py",
+    "line": 19,
+    "text": "from sdv.single_table import CopulaGANSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "",
+     "# Try to import SDV",
+     "try:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import CopulaGANSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "",
+     "    SDV_AVAILABLE = True",
+     "except ImportError:",
+     "    SDV_AVAILABLE = False"
+    ]
+   },
+   {
+    "file": "src/sp_anon/synthetic/generator.py",
+    "line": 93,
+    "text": "return CTGANSynthesizer(",
+    "context": [
+     "",
+     "    def _create_synthesizer(self, metadata: Any) -> Any:",
+     "        \"\"\"Create the appropriate synthesizer based on method.\"\"\"",
+     "        if self.method == \"ctgan\":",
+     "            return CTGANSynthesizer(",
+     "                metadata,",
+     "                epochs=self.epochs,",
+     "                batch_size=self.batch_size,",
+     "                verbose=self.verbose,"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "src/sp_anon/synthetic/generator.py",
+    "line": 18,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "",
+     "# Try to import SDV",
+     "try:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import CopulaGANSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "",
+     "    SDV_AVAILABLE = True",
+     "except ImportError:"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "src/sp_anon/synthetic/generator.py",
+    "line": 19,
+    "text": "from sdv.single_table import CopulaGANSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "",
+     "# Try to import SDV",
+     "try:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import CopulaGANSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "",
+     "    SDV_AVAILABLE = True",
+     "except ImportError:",
+     "    SDV_AVAILABLE = False"
+    ]
+   },
+   {
+    "file": "src/sp_anon/synthetic/generator.py",
+    "line": 100,
+    "text": "return TVAESynthesizer(",
+    "context": [
+     "                batch_size=self.batch_size,",
+     "                verbose=self.verbose,",
+     "            )",
+     "        elif self.method == \"tvae\":",
+     "            return TVAESynthesizer(",
+     "                metadata,",
+     "                epochs=self.epochs,",
+     "                batch_size=self.batch_size,",
+     "            )"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "pyproject.toml": [
+   "    \"sdv>=1.32.0\","
+  ]
+ }
+}

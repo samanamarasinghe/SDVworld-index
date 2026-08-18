@@ -1,0 +1,1602 @@
+{
+ "repo": "mavroudisv/dpctgan",
+ "disk_kb": 17824,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "<p align=\"left\">\n  <a href=\"https://dai.lids.mit.edu\">\n    <img width=15% src=\"https://dai.lids.mit.edu/wp-content/uploads/2018/06/Logo_DAI_highres.png\" alt=\"DAI-Lab\" />\n  </a>\n  <i>An Open Source Project from the <a href=\"https://dai.lids.mit.edu\">Data to AI Lab, at MIT</a></i>\n</p>\n\n[![Development Status](https://img.shields.io/badge/Development%20Status-2%20--%20Pre--Alpha-yellow)](https://pypi.org/search/?c=Development+Status+%3A%3A+2+-+Pre-Alpha)\n[![Travis](https://travis-ci.org/sdv-dev/SDGym.svg?branch=master)](https://travis-ci.org/sdv-dev/SDGym)\n[![PyPi Shield](https://img.shields.io/pypi/v/sdgym.svg)](https://pypi.python.org/pypi/sdgym)\n[![Downloads](https://pepy.tech/badge/sdgym)](https://pepy.tech/project/sdgym)\n\n<img align=\"center\" width=30% src=\"docs/resources/header.png\">\n\nBenchmarking framework for Synthetic Data Generators\n\n* Website: https://sdv.dev\n* Documentation: https://sdv.dev/SDV\n* Repository: https://github.com/sdv-dev/SDGym\n* License: [MIT](https://github.com/sdv-dev/SDGym/blob/master/LICENSE)\n* Development Status: [Pre-Alpha](https://pypi.org/search/?c=Development+Status+%3A%3A+2+-+Pre-Alpha)\n\n# Overview\n\nSynthetic Data Gym (SDGym) is a framework to benchmark the performance of synthetic data\ngenerators based on [SDV](https://github.com/sdv-dev/SDV) and [SDMetrics](\nhttps://github.com/sdv-dev/SDMetrics).\n\nSDGym is a part of the [The Synthetic Data Vault](https://sdv.dev/) project.\n\n## What is a Synthetic Data Generator?\n\nA **Synthetic Data Generator** is a Python function (or method) that takes as input some\ndata, which we call the *real* data, learns a model from it, and outputs new *synthetic* data that\nhas the same structure and similar mathematical properties as the *real* one.\n\nPlease refer to the [synthesizers documentation](SYNTHESIZERS.md) for instructions about how to\nimplement your own Synthetic Data Generator and integrate with SDGym. You can also read about how\nto use the ones already included in **SDGym** and see how to run them.\n\n## Benchmark datasets\n\n**SDGym** evaluates the performance of **Synthetic Data Generators** using *single table*,\n*multi table* and *timeseries* datasets stored as CSV files alongside an [SDV Metadata](\nhttps://sdv.dev/SDV/user_guides/relational/relational_metadata.html) JSON file.\n\nFurther details about the list of available datasets and how to add your own datasets to\nthe collection can be found in the [datasets documentation](DATASETS.md).\n\n# Install\n\n**SDGym** can be installed using the following commands:\n\n**Using `pip`:**\n\n```bash\npip install sdgym\n```\n\n**Using `conda`:**\n\n```bash\nconda install -c sdv-dev -c conda-forge sdgym\n```\n\nFor more installation options please visit the [SDGym installation Guide](INSTALL.md)\n\n# Usage\n\n## Benchmarking your own Synthesizer\n\nSDGym evaluates **Synthetic Data Generators**, which are Python functions (or classes) that take\nas input some data, which we call the *real* data, learn a model from it, and output new\n*synthetic* data that has the same structure and similar mathematical properties as the *real* one.\n\nAs an example, let use define a synthesizer function that applies the [GaussianCopula model from SDV\n](https://sdv.dev/SDV/user_guides/single_table/gaussian_copula.html) with `gaussian` distribution.\n\n```python3\nimport numpy as np\nfrom sdv.tabular import GaussianCopula\n\n\ndef gaussian_copula(real_data, metadata):\n    gc = GaussianCopula(default_distribution='gaussian')\n    table_name = metadata.get_tables()[0]\n    gc.fit(real_data[table_name])\n    return {table_name: gc.sample()}\n```\n\n|:information_source: You can learn how to create your own synthesizer function [here](SYNTHESIZERS.md).|\n|:-|\n\nWe can now try to evaluate this function on the `asia` and `alarm` datasets:\n\n```python3\nimport sdgym\n\nscores = sdgym.run(synthesizers=gaussian_copula, datasets=['asia', 'alarm'])\n```\n\n|:information_source: You can learn about different arguments for `sdgym.run` function [here](BENCHMARK.md).|\n|:-|\n\nThe output of the `sdgym.run` function will be a `pd.DataFrame` containing the results obtained\nby your synthesizer on each dataset.\n\n| synthesizer     | dataset | modality     | metric          |      score | metric_time | model_time |\n|-----------------|---------|--------------|-----------------|------------|-------------|------------|\n| gaussian_copula | asia    | single-table | BNLogLikelihood |  -2.842690 |    2.762427 |   0.752364 |\n| gaussian_copula | alarm   | single-table | BNLogLikelihood | -20.223178 |    7.009401 |   3.173832 |\n\n## Benchmarking the SDGym Synthesizers\n\nIf you want to run the SDGym benchmark on the SDGym Synthesizers you can directly pass the\ncorresponding class, or a list of classes, to the `sdgym.run` function.\n\nFor example, if you want to run the complete benchmark suite to evaluate all the existing\nsynthesizers you can run (:warning: this will take a lot of time to run!):\n\n```python\nfrom sdgym.synthesizers import (\n    CLBN, CopulaGAN, CTGAN, HMA1, Identity, Independent,\n    MedGAN, PAR, PrivBN, SDV, TableGAN, TVAE,\n    Uniform, VEEGAN)\n\nall_synthesizers = [\n    CLBN,\n    CTGAN,\n    CopulaGAN,\n    HMA1,\n    Identity,\n    Independent,\n    MedGAN,\n    PAR,\n    PrivBN,\n    SDV,\n    TVAE,\n    TableGAN,\n    Uniform,\n    VEEGAN,\n]\nscores = sdgym.run(synthesizers=all_synthesizers)\n```\n\nFor further details about all the arguments and possibilities that the `benchmark` function offers\nplease refer to the [benchmark documentation](BENCHMARK.md)\n\n# Additional References\n\n* Datasets used in SDGym are detailed [here](DATASETS.md).\n* How to write a synthesizer is detailed [here](SYNTHESIZERS.md).\n* How to use benchmark function is detailed [here](BENCHMARK.md).\n* Detailed leaderboard results for all the releases are available [here](\nhttps://docs.google.com/spreadsheets/d/1iNJDVG_tIobcsGUG5Gn4iLa565vVhz2U/edit).\n\n# The Synthetic Data Vault\n\n<p>\n  <a href=\"https://sdv.dev\">\n    <img width=30% src=\"https://github.com/sdv-dev/SDV/blob/master/docs/images/SDV-Logo-Color-Tagline.png?raw=true\">\n  </a>\n  <p><i>This repository is part of <a href=\"https://sdv.dev\">The Synthetic Data Vault Project</a></i></p>\n</p>\n\n* Website: https://sdv.dev\n* Documentation: https://sdv.dev/SDV\n",
+ "hits": {
+  "sdv_any": [
+   {
+    "file": "Normalize_SDGym.ipynb",
+    "line": 85,
+    "text": "\"Requirement already satisfied: graphviz<1,>=0.13.2 in /usr/local/lib/python3.7/dist-packages (from sdv>=0.9.0->sdgym) (0.17)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: matplotlib<4,>=3.2.0 in /usr/local/lib/python3.7/dist-packages (from copulas<0.6,>=0.5.0->sdmetrics>=0.3.0->sdgym) (3.2.2)\\n\",",
+     "            \"Requirement already satisfied: kiwisolver>=1.0.1 in /usr/local/lib/python3.7/dist-packages (from matplotlib<4,>=3.2.0->copulas<0.6,>=0.5.0->sdmetrics>=0.3.0->sdgym) (1.3.2)\\n\",",
+     "            \"Requirement already satisfied: cycler>=0.10 in /usr/local/lib/python3.7/dist-packages (from matplotlib<4,>=3.2.0->copulas<0.6,>=0.5.0->sdmetrics>=0.3.0->sdgym) (0.10.0)\\n\",",
+     "            \"Requirement already satisfied: pyparsing!=2.0.4,!=2.1.2,!=2.1.6,>=2.0.1 in /usr/local/lib/python3.7/dist-packages (from matplotlib<4,>=3.2.0->copulas<0.6,>=0.5.0->sdmetrics>=0.3.0->sdgym)",
+     "            \"Requirement already satisfied: graphviz<1,>=0.13.2 in /usr/local/lib/python3.7/dist-packages (from sdv>=0.9.0->sdgym) (0.17)\\n\",",
+     "            \"Requirement already satisfied: ctgan<0.5,>=0.4.3 in /usr/local/lib/python3.7/dist-packages (from sdv>=0.9.0->sdgym) (0.4.3)\\n\",",
+     "            \"Requirement already satisfied: torchvision<1,>=0.5.0 in /usr/local/lib/python3.7/dist-packages (from sdv>=0.9.0->sdgym) (0.8.2)\\n\",",
+     "            \"Requirement already satisfied: Faker<4.15,>=1.0.1 in /usr/local/lib/python3.7/dist-packages (from sdv>=0.9.0->sdgym) (4.14.2)\\n\",",
+     "            \"Requirement already satisfied: deepecho<0.3,>=0.2.1 in /usr/local/lib/python3.7/dist-packages (from sdv>=0.9.0->sdgym) (0.2.1)\\n\","
+    ]
+   },
+   {
+    "file": "Normalize_SDGym.ipynb",
+    "line": 86,
+    "text": "\"Requirement already satisfied: ctgan<0.5,>=0.4.3 in /usr/local/lib/python3.7/dist-packages (from sdv>=0.9.0->sdgym) (0.4.3)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: kiwisolver>=1.0.1 in /usr/local/lib/python3.7/dist-packages (from matplotlib<4,>=3.2.0->copulas<0.6,>=0.5.0->sdmetrics>=0.3.0->sdgym) (1.3.2)\\n\",",
+     "            \"Requirement already satisfied: cycler>=0.10 in /usr/local/lib/python3.7/dist-packages (from matplotlib<4,>=3.2.0->copulas<0.6,>=0.5.0->sdmetrics>=0.3.0->sdgym) (0.10.0)\\n\",",
+     "            \"Requirement already satisfied: pyparsing!=2.0.4,!=2.1.2,!=2.1.6,>=2.0.1 in /usr/local/lib/python3.7/dist-packages (from matplotlib<4,>=3.2.0->copulas<0.6,>=0.5.0->sdmetrics>=0.3.0->sdgym)",
+     "            \"Requirement already satisfied: graphviz<1,>=0.13.2 in /usr/local/lib/python3.7/dist-packages (from sdv>=0.9.0->sdgym) (0.17)\\n\",",
+     "            \"Requirement already satisfied: ctgan<0.5,>=0.4.3 in /usr/local/lib/python3.7/dist-packages (from sdv>=0.9.0->sdgym) (0.4.3)\\n\",",
+     "            \"Requirement already satisfied: torchvision<1,>=0.5.0 in /usr/local/lib/python3.7/dist-packages (from sdv>=0.9.0->sdgym) (0.8.2)\\n\",",
+     "            \"Requirement already satisfied: Faker<4.15,>=1.0.1 in /usr/local/lib/python3.7/dist-packages (from sdv>=0.9.0->sdgym) (4.14.2)\\n\",",
+     "            \"Requirement already satisfied: deepecho<0.3,>=0.2.1 in /usr/local/lib/python3.7/dist-packages (from sdv>=0.9.0->sdgym) (0.2.1)\\n\",",
+     "            \"Requirement already satisfied: packaging in /usr/local/lib/python3.7/dist-packages (from ctgan<0.5,>=0.4.3->sdv>=0.9.0->sdgym) (21.0)\\n\","
+    ]
+   },
+   {
+    "file": "Normalize_SDGym.ipynb",
+    "line": 87,
+    "text": "\"Requirement already satisfied: torchvision<1,>=0.5.0 in /usr/local/lib/python3.7/dist-packages (from sdv>=0.9.0->sdgym) (0.8.2)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: cycler>=0.10 in /usr/local/lib/python3.7/dist-packages (from matplotlib<4,>=3.2.0->copulas<0.6,>=0.5.0->sdmetrics>=0.3.0->sdgym) (0.10.0)\\n\",",
+     "            \"Requirement already satisfied: pyparsing!=2.0.4,!=2.1.2,!=2.1.6,>=2.0.1 in /usr/local/lib/python3.7/dist-packages (from matplotlib<4,>=3.2.0->copulas<0.6,>=0.5.0->sdmetrics>=0.3.0->sdgym)",
+     "            \"Requirement already satisfied: graphviz<1,>=0.13.2 in /usr/local/lib/python3.7/dist-packages (from sdv>=0.9.0->sdgym) (0.17)\\n\",",
+     "            \"Requirement already satisfied: ctgan<0.5,>=0.4.3 in /usr/local/lib/python3.7/dist-packages (from sdv>=0.9.0->sdgym) (0.4.3)\\n\",",
+     "            \"Requirement already satisfied: torchvision<1,>=0.5.0 in /usr/local/lib/python3.7/dist-packages (from sdv>=0.9.0->sdgym) (0.8.2)\\n\",",
+     "            \"Requirement already satisfied: Faker<4.15,>=1.0.1 in /usr/local/lib/python3.7/dist-packages (from sdv>=0.9.0->sdgym) (4.14.2)\\n\",",
+     "            \"Requirement already satisfied: deepecho<0.3,>=0.2.1 in /usr/local/lib/python3.7/dist-packages (from sdv>=0.9.0->sdgym) (0.2.1)\\n\",",
+     "            \"Requirement already satisfied: packaging in /usr/local/lib/python3.7/dist-packages (from ctgan<0.5,>=0.4.3->sdv>=0.9.0->sdgym) (21.0)\\n\",",
+     "            \"Requirement already satisfied: text-unidecode==1.3 in /usr/local/lib/python3.7/dist-packages (from Faker<4.15,>=1.0.1->sdv>=0.9.0->sdgym) (1.3)\\n\","
+    ]
+   },
+   {
+    "file": "Normalize_SDGym.ipynb",
+    "line": 88,
+    "text": "\"Requirement already satisfied: Faker<4.15,>=1.0.1 in /usr/local/lib/python3.7/dist-packages (from sdv>=0.9.0->sdgym) (4.14.2)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: pyparsing!=2.0.4,!=2.1.2,!=2.1.6,>=2.0.1 in /usr/local/lib/python3.7/dist-packages (from matplotlib<4,>=3.2.0->copulas<0.6,>=0.5.0->sdmetrics>=0.3.0->sdgym)",
+     "            \"Requirement already satisfied: graphviz<1,>=0.13.2 in /usr/local/lib/python3.7/dist-packages (from sdv>=0.9.0->sdgym) (0.17)\\n\",",
+     "            \"Requirement already satisfied: ctgan<0.5,>=0.4.3 in /usr/local/lib/python3.7/dist-packages (from sdv>=0.9.0->sdgym) (0.4.3)\\n\",",
+     "            \"Requirement already satisfied: torchvision<1,>=0.5.0 in /usr/local/lib/python3.7/dist-packages (from sdv>=0.9.0->sdgym) (0.8.2)\\n\",",
+     "            \"Requirement already satisfied: Faker<4.15,>=1.0.1 in /usr/local/lib/python3.7/dist-packages (from sdv>=0.9.0->sdgym) (4.14.2)\\n\",",
+     "            \"Requirement already satisfied: deepecho<0.3,>=0.2.1 in /usr/local/lib/python3.7/dist-packages (from sdv>=0.9.0->sdgym) (0.2.1)\\n\",",
+     "            \"Requirement already satisfied: packaging in /usr/local/lib/python3.7/dist-packages (from ctgan<0.5,>=0.4.3->sdv>=0.9.0->sdgym) (21.0)\\n\",",
+     "            \"Requirement already satisfied: text-unidecode==1.3 in /usr/local/lib/python3.7/dist-packages (from Faker<4.15,>=1.0.1->sdv>=0.9.0->sdgym) (1.3)\\n\",",
+     "            \"Requirement already satisfied: statsmodels>=0.12.1 in /usr/local/lib/python3.7/dist-packages (from sktime<0.6,>=0.4->sdmetrics>=0.3.0->sdgym) (0.13.0)\\n\","
+    ]
+   },
+   {
+    "file": "Normalize_SDGym.ipynb",
+    "line": 89,
+    "text": "\"Requirement already satisfied: deepecho<0.3,>=0.2.1 in /usr/local/lib/python3.7/dist-packages (from sdv>=0.9.0->sdgym) (0.2.1)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: graphviz<1,>=0.13.2 in /usr/local/lib/python3.7/dist-packages (from sdv>=0.9.0->sdgym) (0.17)\\n\",",
+     "            \"Requirement already satisfied: ctgan<0.5,>=0.4.3 in /usr/local/lib/python3.7/dist-packages (from sdv>=0.9.0->sdgym) (0.4.3)\\n\",",
+     "            \"Requirement already satisfied: torchvision<1,>=0.5.0 in /usr/local/lib/python3.7/dist-packages (from sdv>=0.9.0->sdgym) (0.8.2)\\n\",",
+     "            \"Requirement already satisfied: Faker<4.15,>=1.0.1 in /usr/local/lib/python3.7/dist-packages (from sdv>=0.9.0->sdgym) (4.14.2)\\n\",",
+     "            \"Requirement already satisfied: deepecho<0.3,>=0.2.1 in /usr/local/lib/python3.7/dist-packages (from sdv>=0.9.0->sdgym) (0.2.1)\\n\",",
+     "            \"Requirement already satisfied: packaging in /usr/local/lib/python3.7/dist-packages (from ctgan<0.5,>=0.4.3->sdv>=0.9.0->sdgym) (21.0)\\n\",",
+     "            \"Requirement already satisfied: text-unidecode==1.3 in /usr/local/lib/python3.7/dist-packages (from Faker<4.15,>=1.0.1->sdv>=0.9.0->sdgym) (1.3)\\n\",",
+     "            \"Requirement already satisfied: statsmodels>=0.12.1 in /usr/local/lib/python3.7/dist-packages (from sktime<0.6,>=0.4->sdmetrics>=0.3.0->sdgym) (0.13.0)\\n\",",
+     "            \"Requirement already satisfied: numba>=0.50 in /usr/local/lib/python3.7/dist-packages (from sktime<0.6,>=0.4->sdmetrics>=0.3.0->sdgym) (0.51.2)\\n\","
+    ]
+   },
+   {
+    "file": "BENCHMARK.md",
+    "line": 11,
+    "text": "...: from sdv.tabular import GaussianCopula",
+    "context": [
+     "to evaluate your synthesizer function:",
+     "",
+     "```python3",
+     "In [1]: import numpy as np",
+     "   ...: from sdv.tabular import GaussianCopula",
+     "   ...:",
+     "   ...:",
+     "   ...: def my_synthesizer_function(real_data, metadata):",
+     "   ...:     gc = GaussianCopula(default_distribution='gaussian')"
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 81,
+    "text": "from sdv.tabular import GaussianCopula",
+    "context": [
+     "](https://sdv.dev/SDV/user_guides/single_table/gaussian_copula.html) with `gaussian` distribution.",
+     "",
+     "```python3",
+     "import numpy as np",
+     "from sdv.tabular import GaussianCopula",
+     "",
+     "",
+     "def gaussian_copula(real_data, metadata):",
+     "    gc = GaussianCopula(default_distribution='gaussian')"
+    ]
+   },
+   {
+    "file": "SDGym/datasets.py",
+    "line": 10,
+    "text": "from sdv import Metadata",
+    "context": [
+     "from zipfile import ZipFile",
+     "",
+     "import appdirs",
+     "import pandas as pd",
+     "from sdv import Metadata",
+     "",
+     "LOGGER = logging.getLogger(__name__)",
+     "",
+     "DATASETS_PATH = Path(appdirs.user_data_dir()) / 'SDGym' / 'datasets'"
+    ]
+   },
+   {
+    "file": "SDGym/synthesizers/sdv.py",
+    "line": 3,
+    "text": "import sdv",
+    "context": [
+     "import logging",
+     "",
+     "import sdv",
+     "import sdv.timeseries",
+     "",
+     "from sdgym.synthesizers.base import Baseline, SingleTableBaseline",
+     "from sdgym.synthesizers.utils import select_device"
+    ]
+   },
+   {
+    "file": "SDGym/synthesizers/sdv.py",
+    "line": 4,
+    "text": "import sdv.timeseries",
+    "context": [
+     "import logging",
+     "",
+     "import sdv",
+     "import sdv.timeseries",
+     "",
+     "from sdgym.synthesizers.base import Baseline, SingleTableBaseline",
+     "from sdgym.synthesizers.utils import select_device",
+     ""
+    ]
+   },
+   {
+    "file": "SDGym/synthesizers/independent.py",
+    "line": 2,
+    "text": "from sdv.metadata import Table",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import Table",
+     "from sklearn.mixture import GaussianMixture",
+     "",
+     "from sdgym.synthesizers.base import MultiSingleTableBaseline",
+     ""
+    ]
+   },
+   {
+    "file": "SDGym/synthesizers/uniform.py",
+    "line": 3,
+    "text": "from sdv.metadata import Table",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.metadata import Table",
+     "",
+     "from sdgym.synthesizers.base import MultiSingleTableBaseline",
+     "",
+     ""
+    ]
+   }
+  ],
+  "ctgan_mod": [
+   {
+    "file": "Normalize_SDGym.ipynb",
+    "line": 90,
+    "text": "\"Requirement already satisfied: packaging in /usr/local/lib/python3.7/dist-packages (from ctgan<0.5,>=0.4.3->sdv>=0.9.0->sdgym) (21.0)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: ctgan<0.5,>=0.4.3 in /usr/local/lib/python3.7/dist-packages (from sdv>=0.9.0->sdgym) (0.4.3)\\n\",",
+     "            \"Requirement already satisfied: torchvision<1,>=0.5.0 in /usr/local/lib/python3.7/dist-packages (from sdv>=0.9.0->sdgym) (0.8.2)\\n\",",
+     "            \"Requirement already satisfied: Faker<4.15,>=1.0.1 in /usr/local/lib/python3.7/dist-packages (from sdv>=0.9.0->sdgym) (4.14.2)\\n\",",
+     "            \"Requirement already satisfied: deepecho<0.3,>=0.2.1 in /usr/local/lib/python3.7/dist-packages (from sdv>=0.9.0->sdgym) (0.2.1)\\n\",",
+     "            \"Requirement already satisfied: packaging in /usr/local/lib/python3.7/dist-packages (from ctgan<0.5,>=0.4.3->sdv>=0.9.0->sdgym) (21.0)\\n\",",
+     "            \"Requirement already satisfied: text-unidecode==1.3 in /usr/local/lib/python3.7/dist-packages (from Faker<4.15,>=1.0.1->sdv>=0.9.0->sdgym) (1.3)\\n\",",
+     "            \"Requirement already satisfied: statsmodels>=0.12.1 in /usr/local/lib/python3.7/dist-packages (from sktime<0.6,>=0.4->sdmetrics>=0.3.0->sdgym) (0.13.0)\\n\",",
+     "            \"Requirement already satisfied: numba>=0.50 in /usr/local/lib/python3.7/dist-packages (from sktime<0.6,>=0.4->sdmetrics>=0.3.0->sdgym) (0.51.2)\\n\",",
+     "            \"Requirement already satisfied: wheel in /usr/local/lib/python3.7/dist-packages (from sktime<0.6,>=0.4->sdmetrics>=0.3.0->sdgym) (0.37.0)\\n\","
+    ]
+   },
+   {
+    "file": "ctgan/__init__.py",
+    "line": 9,
+    "text": "from ctgan.demo import load_demo",
+    "context": [
+     "__author__ = 'MIT Data To AI Lab'",
+     "__email__ = 'dailabmit@gmail.com'",
+     "__version__ = '0.3.1'",
+     "",
+     "from ctgan.demo import load_demo",
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+     "from ctgan.synthesizers.dpctgan import dpCTGANSynthesizer",
+     "from ctgan.synthesizers.tvae import TVAESynthesizer",
+     ""
+    ]
+   },
+   {
+    "file": "ctgan/__init__.py",
+    "line": 10,
+    "text": "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+    "context": [
+     "__email__ = 'dailabmit@gmail.com'",
+     "__version__ = '0.3.1'",
+     "",
+     "from ctgan.demo import load_demo",
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+     "from ctgan.synthesizers.dpctgan import dpCTGANSynthesizer",
+     "from ctgan.synthesizers.tvae import TVAESynthesizer",
+     "",
+     "__all__ = ("
+    ]
+   },
+   {
+    "file": "ctgan/__init__.py",
+    "line": 11,
+    "text": "from ctgan.synthesizers.dpctgan import dpCTGANSynthesizer",
+    "context": [
+     "__version__ = '0.3.1'",
+     "",
+     "from ctgan.demo import load_demo",
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+     "from ctgan.synthesizers.dpctgan import dpCTGANSynthesizer",
+     "from ctgan.synthesizers.tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    \"dpCTGANSynthesizer\""
+    ]
+   },
+   {
+    "file": "ctgan/__init__.py",
+    "line": 12,
+    "text": "from ctgan.synthesizers.tvae import TVAESynthesizer",
+    "context": [
+     "",
+     "from ctgan.demo import load_demo",
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+     "from ctgan.synthesizers.dpctgan import dpCTGANSynthesizer",
+     "from ctgan.synthesizers.tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    \"dpCTGANSynthesizer\"",
+     "\t'CTGANSynthesizer',"
+    ]
+   },
+   {
+    "file": "ctgan/__main__.py",
+    "line": 3,
+    "text": "from ctgan.data import read_csv, read_tsv, write_tsv",
+    "context": [
+     "import argparse",
+     "",
+     "from ctgan.data import read_csv, read_tsv, write_tsv",
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+     "",
+     "",
+     "def _parse_args():"
+    ]
+   },
+   {
+    "file": "ctgan/__main__.py",
+    "line": 4,
+    "text": "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+    "context": [
+     "import argparse",
+     "",
+     "from ctgan.data import read_csv, read_tsv, write_tsv",
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+     "",
+     "",
+     "def _parse_args():",
+     "    parser = argparse.ArgumentParser(description='CTGAN Command Line Interface')"
+    ]
+   },
+   {
+    "file": "ctgan/synthesizers/__init__.py",
+    "line": 1,
+    "text": "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+    "context": [
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+     "from ctgan.synthesizers.dpctgan import dpCTGANSynthesizer",
+     "from ctgan.synthesizers.tvae import TVAESynthesizer",
+     "",
+     "__all__ = ("
+    ]
+   },
+   {
+    "file": "ctgan/synthesizers/__init__.py",
+    "line": 2,
+    "text": "from ctgan.synthesizers.dpctgan import dpCTGANSynthesizer",
+    "context": [
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+     "from ctgan.synthesizers.dpctgan import dpCTGANSynthesizer",
+     "from ctgan.synthesizers.tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    'dpCTGANSynthesizer',"
+    ]
+   },
+   {
+    "file": "ctgan/synthesizers/__init__.py",
+    "line": 3,
+    "text": "from ctgan.synthesizers.tvae import TVAESynthesizer",
+    "context": [
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+     "from ctgan.synthesizers.dpctgan import dpCTGANSynthesizer",
+     "from ctgan.synthesizers.tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    'dpCTGANSynthesizer',",
+     "\t'CTGANSynthesizer',"
+    ]
+   },
+   {
+    "file": "ctgan/synthesizers/ctgan.py",
+    "line": 10,
+    "text": "from ctgan.data_sampler import DataSampler",
+    "context": [
+     "from packaging import version",
+     "from torch import optim",
+     "from torch.nn import BatchNorm1d, Dropout, LeakyReLU, Linear, Module, ReLU, Sequential, functional",
+     "",
+     "from ctgan.data_sampler import DataSampler",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.synthesizers.base import BaseSynthesizer",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "ctgan/synthesizers/ctgan.py",
+    "line": 11,
+    "text": "from ctgan.data_transformer import DataTransformer",
+    "context": [
+     "from torch import optim",
+     "from torch.nn import BatchNorm1d, Dropout, LeakyReLU, Linear, Module, ReLU, Sequential, functional",
+     "",
+     "from ctgan.data_sampler import DataSampler",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.synthesizers.base import BaseSynthesizer",
+     "",
+     "",
+     "class Discriminator(Module):"
+    ]
+   }
+  ],
+  "sm": [
+   {
+    "file": "Normalize_SDGym.ipynb",
+    "line": 79,
+    "text": "\"Requirement already satisfied: sktime<0.6,>=0.4 in /usr/local/lib/python3.7/dist-packages (from sdmetrics>=0.3.0->sdgym) (0.5.3)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: pyyaml in /usr/local/lib/python3.7/dist-packages (from pomegranate<0.14.2,>=0.13.4->sdgym) (3.13)\\n\",",
+     "            \"Requirement already satisfied: joblib>=0.9.0b4 in /usr/local/lib/python3.7/dist-packages (from pomegranate<0.14.2,>=0.13.4->sdgym) (1.0.1)\\n\",",
+     "            \"Requirement already satisfied: six>=1.5 in /usr/local/lib/python3.7/dist-packages (from python-dateutil<3.0.0,>=2.1->botocore<2,>=1.20->sdgym) (1.15.0)\\n\",",
+     "            \"Requirement already satisfied: threadpoolctl>=2.0.0 in /usr/local/lib/python3.7/dist-packages (from scikit-learn<1,>=0.23->sdgym) (3.0.0)\\n\",",
+     "            \"Requirement already satisfied: sktime<0.6,>=0.4 in /usr/local/lib/python3.7/dist-packages (from sdmetrics>=0.3.0->sdgym) (0.5.3)\\n\",",
+     "            \"Requirement already satisfied: copulas<0.6,>=0.5.0 in /usr/local/lib/python3.7/dist-packages (from sdmetrics>=0.3.0->sdgym) (0.5.1)\\n\",",
+     "            \"Requirement already satisfied: matplotlib<4,>=3.2.0 in /usr/local/lib/python3.7/dist-packages (from copulas<0.6,>=0.5.0->sdmetrics>=0.3.0->sdgym) (3.2.2)\\n\",",
+     "            \"Requirement already satisfied: kiwisolver>=1.0.1 in /usr/local/lib/python3.7/dist-packages (from matplotlib<4,>=3.2.0->copulas<0.6,>=0.5.0->sdmetrics>=0.3.0->sdgym) (1.3.2)\\n\",",
+     "            \"Requirement already satisfied: cycler>=0.10 in /usr/local/lib/python3.7/dist-packages (from matplotlib<4,>=3.2.0->copulas<0.6,>=0.5.0->sdmetrics>=0.3.0->sdgym) (0.10.0)\\n\","
+    ]
+   },
+   {
+    "file": "Normalize_SDGym.ipynb",
+    "line": 80,
+    "text": "\"Requirement already satisfied: copulas<0.6,>=0.5.0 in /usr/local/lib/python3.7/dist-packages (from sdmetrics>=0.3.0->sdgym) (0.5.1)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: joblib>=0.9.0b4 in /usr/local/lib/python3.7/dist-packages (from pomegranate<0.14.2,>=0.13.4->sdgym) (1.0.1)\\n\",",
+     "            \"Requirement already satisfied: six>=1.5 in /usr/local/lib/python3.7/dist-packages (from python-dateutil<3.0.0,>=2.1->botocore<2,>=1.20->sdgym) (1.15.0)\\n\",",
+     "            \"Requirement already satisfied: threadpoolctl>=2.0.0 in /usr/local/lib/python3.7/dist-packages (from scikit-learn<1,>=0.23->sdgym) (3.0.0)\\n\",",
+     "            \"Requirement already satisfied: sktime<0.6,>=0.4 in /usr/local/lib/python3.7/dist-packages (from sdmetrics>=0.3.0->sdgym) (0.5.3)\\n\",",
+     "            \"Requirement already satisfied: copulas<0.6,>=0.5.0 in /usr/local/lib/python3.7/dist-packages (from sdmetrics>=0.3.0->sdgym) (0.5.1)\\n\",",
+     "            \"Requirement already satisfied: matplotlib<4,>=3.2.0 in /usr/local/lib/python3.7/dist-packages (from copulas<0.6,>=0.5.0->sdmetrics>=0.3.0->sdgym) (3.2.2)\\n\",",
+     "            \"Requirement already satisfied: kiwisolver>=1.0.1 in /usr/local/lib/python3.7/dist-packages (from matplotlib<4,>=3.2.0->copulas<0.6,>=0.5.0->sdmetrics>=0.3.0->sdgym) (1.3.2)\\n\",",
+     "            \"Requirement already satisfied: cycler>=0.10 in /usr/local/lib/python3.7/dist-packages (from matplotlib<4,>=3.2.0->copulas<0.6,>=0.5.0->sdmetrics>=0.3.0->sdgym) (0.10.0)\\n\",",
+     "            \"Requirement already satisfied: pyparsing!=2.0.4,!=2.1.2,!=2.1.6,>=2.0.1 in /usr/local/lib/python3.7/dist-packages (from matplotlib<4,>=3.2.0->copulas<0.6,>=0.5.0->sdmetrics>=0.3.0->sdgym)"
+    ]
+   },
+   {
+    "file": "SDGym/metrics.py",
+    "line": 3,
+    "text": "import sdmetrics",
+    "context": [
+     "\"\"\"Metrics module.\"\"\"",
+     "",
+     "import sdmetrics",
+     "",
+     "",
+     "class WithKWargs:",
+     ""
+    ]
+   },
+   {
+    "file": "sdmetrics/__init__.py",
+    "line": 11,
+    "text": "from sdmetrics import (",
+    "context": [
+     "__version__ = '0.1.2'",
+     "",
+     "import pandas as pd",
+     "",
+     "from sdmetrics import (",
+     "    column_pairs, demos, goal, multi_table, single_column, single_table, timeseries)",
+     "from sdmetrics.demos import load_demo",
+     "",
+     "__all__ = ["
+    ]
+   },
+   {
+    "file": "sdmetrics/__init__.py",
+    "line": 13,
+    "text": "from sdmetrics.demos import load_demo",
+    "context": [
+     "import pandas as pd",
+     "",
+     "from sdmetrics import (",
+     "    column_pairs, demos, goal, multi_table, single_column, single_table, timeseries)",
+     "from sdmetrics.demos import load_demo",
+     "",
+     "__all__ = [",
+     "    'demos',",
+     "    'load_demo',"
+    ]
+   },
+   {
+    "file": "sdmetrics/timeseries/detection.py",
+    "line": 8,
+    "text": "from sdmetrics.goal import Goal",
+    "context": [
+     "import pandas as pd",
+     "import rdt",
+     "from sklearn.model_selection import train_test_split",
+     "",
+     "from sdmetrics.goal import Goal",
+     "from sdmetrics.timeseries import ml_scorers",
+     "from sdmetrics.timeseries.base import TimeSeriesMetric",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "sdmetrics/timeseries/detection.py",
+    "line": 9,
+    "text": "from sdmetrics.timeseries import ml_scorers",
+    "context": [
+     "import rdt",
+     "from sklearn.model_selection import train_test_split",
+     "",
+     "from sdmetrics.goal import Goal",
+     "from sdmetrics.timeseries import ml_scorers",
+     "from sdmetrics.timeseries.base import TimeSeriesMetric",
+     "",
+     "",
+     "class TimeSeriesDetectionMetric(TimeSeriesMetric):"
+    ]
+   },
+   {
+    "file": "sdmetrics/timeseries/detection.py",
+    "line": 10,
+    "text": "from sdmetrics.timeseries.base import TimeSeriesMetric",
+    "context": [
+     "from sklearn.model_selection import train_test_split",
+     "",
+     "from sdmetrics.goal import Goal",
+     "from sdmetrics.timeseries import ml_scorers",
+     "from sdmetrics.timeseries.base import TimeSeriesMetric",
+     "",
+     "",
+     "class TimeSeriesDetectionMetric(TimeSeriesMetric):",
+     "    \"\"\"Base class for Machine Learning Detection based metrics on time series."
+    ]
+   },
+   {
+    "file": "sdmetrics/timeseries/__init__.py",
+    "line": 3,
+    "text": "from sdmetrics.timeseries import base, detection, efficacy, ml_scorers",
+    "context": [
+     "\"\"\"Metrics for timeseries datasets.\"\"\"",
+     "",
+     "from sdmetrics.timeseries import base, detection, efficacy, ml_scorers",
+     "from sdmetrics.timeseries.base import TimeSeriesMetric",
+     "from sdmetrics.timeseries.detection import LSTMDetection, TimeSeriesDetectionMetric, TSFCDetection",
+     "from sdmetrics.timeseries.efficacy import TimeSeriesEfficacyMetric",
+     "from sdmetrics.timeseries.efficacy.classification import ("
+    ]
+   },
+   {
+    "file": "sdmetrics/timeseries/__init__.py",
+    "line": 4,
+    "text": "from sdmetrics.timeseries.base import TimeSeriesMetric",
+    "context": [
+     "\"\"\"Metrics for timeseries datasets.\"\"\"",
+     "",
+     "from sdmetrics.timeseries import base, detection, efficacy, ml_scorers",
+     "from sdmetrics.timeseries.base import TimeSeriesMetric",
+     "from sdmetrics.timeseries.detection import LSTMDetection, TimeSeriesDetectionMetric, TSFCDetection",
+     "from sdmetrics.timeseries.efficacy import TimeSeriesEfficacyMetric",
+     "from sdmetrics.timeseries.efficacy.classification import (",
+     "    LSTMClassifierEfficacy, TSFClassifierEfficacy)"
+    ]
+   },
+   {
+    "file": "sdmetrics/timeseries/__init__.py",
+    "line": 5,
+    "text": "from sdmetrics.timeseries.detection import LSTMDetection, TimeSeriesDetectionMetric, TSFCDetection",
+    "context": [
+     "\"\"\"Metrics for timeseries datasets.\"\"\"",
+     "",
+     "from sdmetrics.timeseries import base, detection, efficacy, ml_scorers",
+     "from sdmetrics.timeseries.base import TimeSeriesMetric",
+     "from sdmetrics.timeseries.detection import LSTMDetection, TimeSeriesDetectionMetric, TSFCDetection",
+     "from sdmetrics.timeseries.efficacy import TimeSeriesEfficacyMetric",
+     "from sdmetrics.timeseries.efficacy.classification import (",
+     "    LSTMClassifierEfficacy, TSFClassifierEfficacy)",
+     ""
+    ]
+   },
+   {
+    "file": "sdmetrics/timeseries/__init__.py",
+    "line": 6,
+    "text": "from sdmetrics.timeseries.efficacy import TimeSeriesEfficacyMetric",
+    "context": [
+     "",
+     "from sdmetrics.timeseries import base, detection, efficacy, ml_scorers",
+     "from sdmetrics.timeseries.base import TimeSeriesMetric",
+     "from sdmetrics.timeseries.detection import LSTMDetection, TimeSeriesDetectionMetric, TSFCDetection",
+     "from sdmetrics.timeseries.efficacy import TimeSeriesEfficacyMetric",
+     "from sdmetrics.timeseries.efficacy.classification import (",
+     "    LSTMClassifierEfficacy, TSFClassifierEfficacy)",
+     "",
+     "__all__ = ["
+    ]
+   }
+  ],
+  "gym": [
+   {
+    "file": "Normalize_SDGym.ipynb",
+    "line": 51,
+    "text": "\"Requirement already satisfied: scipy<1.7,>=1.4.1 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.4.1)\\n\",",
+    "context": [
+     "          \"output_type\": \"stream\",",
+     "          \"name\": \"stdout\",",
+     "          \"text\": [",
+     "            \"Requirement already satisfied: sdgym in /usr/local/lib/python3.7/dist-packages (0.4.1)\\n\",",
+     "            \"Requirement already satisfied: scipy<1.7,>=1.4.1 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.4.1)\\n\",",
+     "            \"Requirement already satisfied: appdirs<2,>=1.1.4 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.4.4)\\n\",",
+     "            \"Requirement already satisfied: pomegranate<0.14.2,>=0.13.4 in /usr/local/lib/python3.7/dist-packages (from sdgym) (0.14.1)\\n\",",
+     "            \"Requirement already satisfied: compress-pickle<2,>=1.2.0 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.2.0)\\n\",",
+     "            \"Requirement already satisfied: tqdm<5,>=4.14 in /usr/local/lib/python3.7/dist-packages (from sdgym) (4.62.3)\\n\","
+    ]
+   },
+   {
+    "file": "Normalize_SDGym.ipynb",
+    "line": 52,
+    "text": "\"Requirement already satisfied: appdirs<2,>=1.1.4 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.4.4)\\n\",",
+    "context": [
+     "          \"name\": \"stdout\",",
+     "          \"text\": [",
+     "            \"Requirement already satisfied: sdgym in /usr/local/lib/python3.7/dist-packages (0.4.1)\\n\",",
+     "            \"Requirement already satisfied: scipy<1.7,>=1.4.1 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.4.1)\\n\",",
+     "            \"Requirement already satisfied: appdirs<2,>=1.1.4 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.4.4)\\n\",",
+     "            \"Requirement already satisfied: pomegranate<0.14.2,>=0.13.4 in /usr/local/lib/python3.7/dist-packages (from sdgym) (0.14.1)\\n\",",
+     "            \"Requirement already satisfied: compress-pickle<2,>=1.2.0 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.2.0)\\n\",",
+     "            \"Requirement already satisfied: tqdm<5,>=4.14 in /usr/local/lib/python3.7/dist-packages (from sdgym) (4.62.3)\\n\",",
+     "            \"Requirement already satisfied: XlsxWriter<1.3,>=1.2.8 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.2.9)\\n\","
+    ]
+   },
+   {
+    "file": "Normalize_SDGym.ipynb",
+    "line": 53,
+    "text": "\"Requirement already satisfied: pomegranate<0.14.2,>=0.13.4 in /usr/local/lib/python3.7/dist-packages (from sdgym) (0.14.1)\\n\",",
+    "context": [
+     "          \"text\": [",
+     "            \"Requirement already satisfied: sdgym in /usr/local/lib/python3.7/dist-packages (0.4.1)\\n\",",
+     "            \"Requirement already satisfied: scipy<1.7,>=1.4.1 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.4.1)\\n\",",
+     "            \"Requirement already satisfied: appdirs<2,>=1.1.4 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.4.4)\\n\",",
+     "            \"Requirement already satisfied: pomegranate<0.14.2,>=0.13.4 in /usr/local/lib/python3.7/dist-packages (from sdgym) (0.14.1)\\n\",",
+     "            \"Requirement already satisfied: compress-pickle<2,>=1.2.0 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.2.0)\\n\",",
+     "            \"Requirement already satisfied: tqdm<5,>=4.14 in /usr/local/lib/python3.7/dist-packages (from sdgym) (4.62.3)\\n\",",
+     "            \"Requirement already satisfied: XlsxWriter<1.3,>=1.2.8 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.2.9)\\n\",",
+     "            \"Requirement already satisfied: sdv>=0.9.0 in /usr/local/lib/python3.7/dist-packages (from sdgym) (0.12.1)\\n\","
+    ]
+   },
+   {
+    "file": "Normalize_SDGym.ipynb",
+    "line": 54,
+    "text": "\"Requirement already satisfied: compress-pickle<2,>=1.2.0 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.2.0)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: sdgym in /usr/local/lib/python3.7/dist-packages (0.4.1)\\n\",",
+     "            \"Requirement already satisfied: scipy<1.7,>=1.4.1 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.4.1)\\n\",",
+     "            \"Requirement already satisfied: appdirs<2,>=1.1.4 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.4.4)\\n\",",
+     "            \"Requirement already satisfied: pomegranate<0.14.2,>=0.13.4 in /usr/local/lib/python3.7/dist-packages (from sdgym) (0.14.1)\\n\",",
+     "            \"Requirement already satisfied: compress-pickle<2,>=1.2.0 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.2.0)\\n\",",
+     "            \"Requirement already satisfied: tqdm<5,>=4.14 in /usr/local/lib/python3.7/dist-packages (from sdgym) (4.62.3)\\n\",",
+     "            \"Requirement already satisfied: XlsxWriter<1.3,>=1.2.8 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.2.9)\\n\",",
+     "            \"Requirement already satisfied: sdv>=0.9.0 in /usr/local/lib/python3.7/dist-packages (from sdgym) (0.12.1)\\n\",",
+     "            \"Requirement already satisfied: humanfriendly<9,>=8.2 in /usr/local/lib/python3.7/dist-packages (from sdgym) (8.2)\\n\","
+    ]
+   },
+   {
+    "file": "Normalize_SDGym.ipynb",
+    "line": 55,
+    "text": "\"Requirement already satisfied: tqdm<5,>=4.14 in /usr/local/lib/python3.7/dist-packages (from sdgym) (4.62.3)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: scipy<1.7,>=1.4.1 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.4.1)\\n\",",
+     "            \"Requirement already satisfied: appdirs<2,>=1.1.4 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.4.4)\\n\",",
+     "            \"Requirement already satisfied: pomegranate<0.14.2,>=0.13.4 in /usr/local/lib/python3.7/dist-packages (from sdgym) (0.14.1)\\n\",",
+     "            \"Requirement already satisfied: compress-pickle<2,>=1.2.0 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.2.0)\\n\",",
+     "            \"Requirement already satisfied: tqdm<5,>=4.14 in /usr/local/lib/python3.7/dist-packages (from sdgym) (4.62.3)\\n\",",
+     "            \"Requirement already satisfied: XlsxWriter<1.3,>=1.2.8 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.2.9)\\n\",",
+     "            \"Requirement already satisfied: sdv>=0.9.0 in /usr/local/lib/python3.7/dist-packages (from sdgym) (0.12.1)\\n\",",
+     "            \"Requirement already satisfied: humanfriendly<9,>=8.2 in /usr/local/lib/python3.7/dist-packages (from sdgym) (8.2)\\n\",",
+     "            \"Requirement already satisfied: torch<2,>=1.4 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.7.1)\\n\","
+    ]
+   },
+   {
+    "file": "Normalize_SDGym.ipynb",
+    "line": 56,
+    "text": "\"Requirement already satisfied: XlsxWriter<1.3,>=1.2.8 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.2.9)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: appdirs<2,>=1.1.4 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.4.4)\\n\",",
+     "            \"Requirement already satisfied: pomegranate<0.14.2,>=0.13.4 in /usr/local/lib/python3.7/dist-packages (from sdgym) (0.14.1)\\n\",",
+     "            \"Requirement already satisfied: compress-pickle<2,>=1.2.0 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.2.0)\\n\",",
+     "            \"Requirement already satisfied: tqdm<5,>=4.14 in /usr/local/lib/python3.7/dist-packages (from sdgym) (4.62.3)\\n\",",
+     "            \"Requirement already satisfied: XlsxWriter<1.3,>=1.2.8 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.2.9)\\n\",",
+     "            \"Requirement already satisfied: sdv>=0.9.0 in /usr/local/lib/python3.7/dist-packages (from sdgym) (0.12.1)\\n\",",
+     "            \"Requirement already satisfied: humanfriendly<9,>=8.2 in /usr/local/lib/python3.7/dist-packages (from sdgym) (8.2)\\n\",",
+     "            \"Requirement already satisfied: torch<2,>=1.4 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.7.1)\\n\",",
+     "            \"Requirement already satisfied: botocore<2,>=1.20 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.22.11)\\n\","
+    ]
+   },
+   {
+    "file": "Normalize_SDGym.ipynb",
+    "line": 57,
+    "text": "\"Requirement already satisfied: sdv>=0.9.0 in /usr/local/lib/python3.7/dist-packages (from sdgym) (0.12.1)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: pomegranate<0.14.2,>=0.13.4 in /usr/local/lib/python3.7/dist-packages (from sdgym) (0.14.1)\\n\",",
+     "            \"Requirement already satisfied: compress-pickle<2,>=1.2.0 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.2.0)\\n\",",
+     "            \"Requirement already satisfied: tqdm<5,>=4.14 in /usr/local/lib/python3.7/dist-packages (from sdgym) (4.62.3)\\n\",",
+     "            \"Requirement already satisfied: XlsxWriter<1.3,>=1.2.8 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.2.9)\\n\",",
+     "            \"Requirement already satisfied: sdv>=0.9.0 in /usr/local/lib/python3.7/dist-packages (from sdgym) (0.12.1)\\n\",",
+     "            \"Requirement already satisfied: humanfriendly<9,>=8.2 in /usr/local/lib/python3.7/dist-packages (from sdgym) (8.2)\\n\",",
+     "            \"Requirement already satisfied: torch<2,>=1.4 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.7.1)\\n\",",
+     "            \"Requirement already satisfied: botocore<2,>=1.20 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.22.11)\\n\",",
+     "            \"Requirement already satisfied: boto3<2,>=1.15.0 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.19.11)\\n\","
+    ]
+   },
+   {
+    "file": "Normalize_SDGym.ipynb",
+    "line": 58,
+    "text": "\"Requirement already satisfied: humanfriendly<9,>=8.2 in /usr/local/lib/python3.7/dist-packages (from sdgym) (8.2)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: compress-pickle<2,>=1.2.0 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.2.0)\\n\",",
+     "            \"Requirement already satisfied: tqdm<5,>=4.14 in /usr/local/lib/python3.7/dist-packages (from sdgym) (4.62.3)\\n\",",
+     "            \"Requirement already satisfied: XlsxWriter<1.3,>=1.2.8 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.2.9)\\n\",",
+     "            \"Requirement already satisfied: sdv>=0.9.0 in /usr/local/lib/python3.7/dist-packages (from sdgym) (0.12.1)\\n\",",
+     "            \"Requirement already satisfied: humanfriendly<9,>=8.2 in /usr/local/lib/python3.7/dist-packages (from sdgym) (8.2)\\n\",",
+     "            \"Requirement already satisfied: torch<2,>=1.4 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.7.1)\\n\",",
+     "            \"Requirement already satisfied: botocore<2,>=1.20 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.22.11)\\n\",",
+     "            \"Requirement already satisfied: boto3<2,>=1.15.0 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.19.11)\\n\",",
+     "            \"Requirement already satisfied: numpy<2,>=1.18.0 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.19.5)\\n\","
+    ]
+   },
+   {
+    "file": "Normalize_SDGym.ipynb",
+    "line": 59,
+    "text": "\"Requirement already satisfied: torch<2,>=1.4 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.7.1)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: tqdm<5,>=4.14 in /usr/local/lib/python3.7/dist-packages (from sdgym) (4.62.3)\\n\",",
+     "            \"Requirement already satisfied: XlsxWriter<1.3,>=1.2.8 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.2.9)\\n\",",
+     "            \"Requirement already satisfied: sdv>=0.9.0 in /usr/local/lib/python3.7/dist-packages (from sdgym) (0.12.1)\\n\",",
+     "            \"Requirement already satisfied: humanfriendly<9,>=8.2 in /usr/local/lib/python3.7/dist-packages (from sdgym) (8.2)\\n\",",
+     "            \"Requirement already satisfied: torch<2,>=1.4 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.7.1)\\n\",",
+     "            \"Requirement already satisfied: botocore<2,>=1.20 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.22.11)\\n\",",
+     "            \"Requirement already satisfied: boto3<2,>=1.15.0 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.19.11)\\n\",",
+     "            \"Requirement already satisfied: numpy<2,>=1.18.0 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.19.5)\\n\",",
+     "            \"Requirement already satisfied: rdt>=0.4.1 in /usr/local/lib/python3.7/dist-packages (from sdgym) (0.5.3)\\n\","
+    ]
+   },
+   {
+    "file": "Normalize_SDGym.ipynb",
+    "line": 60,
+    "text": "\"Requirement already satisfied: botocore<2,>=1.20 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.22.11)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: XlsxWriter<1.3,>=1.2.8 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.2.9)\\n\",",
+     "            \"Requirement already satisfied: sdv>=0.9.0 in /usr/local/lib/python3.7/dist-packages (from sdgym) (0.12.1)\\n\",",
+     "            \"Requirement already satisfied: humanfriendly<9,>=8.2 in /usr/local/lib/python3.7/dist-packages (from sdgym) (8.2)\\n\",",
+     "            \"Requirement already satisfied: torch<2,>=1.4 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.7.1)\\n\",",
+     "            \"Requirement already satisfied: botocore<2,>=1.20 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.22.11)\\n\",",
+     "            \"Requirement already satisfied: boto3<2,>=1.15.0 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.19.11)\\n\",",
+     "            \"Requirement already satisfied: numpy<2,>=1.18.0 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.19.5)\\n\",",
+     "            \"Requirement already satisfied: rdt>=0.4.1 in /usr/local/lib/python3.7/dist-packages (from sdgym) (0.5.3)\\n\",",
+     "            \"Requirement already satisfied: sdmetrics>=0.3.0 in /usr/local/lib/python3.7/dist-packages (from sdgym) (0.3.2)\\n\","
+    ]
+   },
+   {
+    "file": "Normalize_SDGym.ipynb",
+    "line": 61,
+    "text": "\"Requirement already satisfied: boto3<2,>=1.15.0 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.19.11)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: sdv>=0.9.0 in /usr/local/lib/python3.7/dist-packages (from sdgym) (0.12.1)\\n\",",
+     "            \"Requirement already satisfied: humanfriendly<9,>=8.2 in /usr/local/lib/python3.7/dist-packages (from sdgym) (8.2)\\n\",",
+     "            \"Requirement already satisfied: torch<2,>=1.4 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.7.1)\\n\",",
+     "            \"Requirement already satisfied: botocore<2,>=1.20 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.22.11)\\n\",",
+     "            \"Requirement already satisfied: boto3<2,>=1.15.0 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.19.11)\\n\",",
+     "            \"Requirement already satisfied: numpy<2,>=1.18.0 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.19.5)\\n\",",
+     "            \"Requirement already satisfied: rdt>=0.4.1 in /usr/local/lib/python3.7/dist-packages (from sdgym) (0.5.3)\\n\",",
+     "            \"Requirement already satisfied: sdmetrics>=0.3.0 in /usr/local/lib/python3.7/dist-packages (from sdgym) (0.3.2)\\n\",",
+     "            \"Requirement already satisfied: pandas<1.1.5,>=1.1 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.1.4)\\n\","
+    ]
+   },
+   {
+    "file": "Normalize_SDGym.ipynb",
+    "line": 62,
+    "text": "\"Requirement already satisfied: numpy<2,>=1.18.0 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.19.5)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: humanfriendly<9,>=8.2 in /usr/local/lib/python3.7/dist-packages (from sdgym) (8.2)\\n\",",
+     "            \"Requirement already satisfied: torch<2,>=1.4 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.7.1)\\n\",",
+     "            \"Requirement already satisfied: botocore<2,>=1.20 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.22.11)\\n\",",
+     "            \"Requirement already satisfied: boto3<2,>=1.15.0 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.19.11)\\n\",",
+     "            \"Requirement already satisfied: numpy<2,>=1.18.0 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.19.5)\\n\",",
+     "            \"Requirement already satisfied: rdt>=0.4.1 in /usr/local/lib/python3.7/dist-packages (from sdgym) (0.5.3)\\n\",",
+     "            \"Requirement already satisfied: sdmetrics>=0.3.0 in /usr/local/lib/python3.7/dist-packages (from sdgym) (0.3.2)\\n\",",
+     "            \"Requirement already satisfied: pandas<1.1.5,>=1.1 in /usr/local/lib/python3.7/dist-packages (from sdgym) (1.1.4)\\n\",",
+     "            \"Requirement already satisfied: tabulate<0.9,>=0.8.3 in /usr/local/lib/python3.7/dist-packages (from sdgym) (0.8.9)\\n\","
+    ]
+   }
+  ],
+  "copulas": [
+   {
+    "file": "Normalize_SDGym.ipynb",
+    "line": 81,
+    "text": "\"Requirement already satisfied: matplotlib<4,>=3.2.0 in /usr/local/lib/python3.7/dist-packages (from copulas<0.6,>=0.5.0->sdmetrics>=0.3.0->sdgym) (3.2.2)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: six>=1.5 in /usr/local/lib/python3.7/dist-packages (from python-dateutil<3.0.0,>=2.1->botocore<2,>=1.20->sdgym) (1.15.0)\\n\",",
+     "            \"Requirement already satisfied: threadpoolctl>=2.0.0 in /usr/local/lib/python3.7/dist-packages (from scikit-learn<1,>=0.23->sdgym) (3.0.0)\\n\",",
+     "            \"Requirement already satisfied: sktime<0.6,>=0.4 in /usr/local/lib/python3.7/dist-packages (from sdmetrics>=0.3.0->sdgym) (0.5.3)\\n\",",
+     "            \"Requirement already satisfied: copulas<0.6,>=0.5.0 in /usr/local/lib/python3.7/dist-packages (from sdmetrics>=0.3.0->sdgym) (0.5.1)\\n\",",
+     "            \"Requirement already satisfied: matplotlib<4,>=3.2.0 in /usr/local/lib/python3.7/dist-packages (from copulas<0.6,>=0.5.0->sdmetrics>=0.3.0->sdgym) (3.2.2)\\n\",",
+     "            \"Requirement already satisfied: kiwisolver>=1.0.1 in /usr/local/lib/python3.7/dist-packages (from matplotlib<4,>=3.2.0->copulas<0.6,>=0.5.0->sdmetrics>=0.3.0->sdgym) (1.3.2)\\n\",",
+     "            \"Requirement already satisfied: cycler>=0.10 in /usr/local/lib/python3.7/dist-packages (from matplotlib<4,>=3.2.0->copulas<0.6,>=0.5.0->sdmetrics>=0.3.0->sdgym) (0.10.0)\\n\",",
+     "            \"Requirement already satisfied: pyparsing!=2.0.4,!=2.1.2,!=2.1.6,>=2.0.1 in /usr/local/lib/python3.7/dist-packages (from matplotlib<4,>=3.2.0->copulas<0.6,>=0.5.0->sdmetrics>=0.3.0->sdgym)",
+     "            \"Requirement already satisfied: graphviz<1,>=0.13.2 in /usr/local/lib/python3.7/dist-packages (from sdv>=0.9.0->sdgym) (0.17)\\n\","
+    ]
+   },
+   {
+    "file": "sdv/tabular/copulas.py",
+    "line": 5,
+    "text": "import copulas",
+    "context": [
+     "\"\"\"Wrappers around copulas models.\"\"\"",
+     "",
+     "import logging",
+     "",
+     "import copulas",
+     "import copulas.multivariate",
+     "import copulas.univariate",
+     "import numpy as np",
+     ""
+    ]
+   },
+   {
+    "file": "sdv/tabular/copulas.py",
+    "line": 6,
+    "text": "import copulas.multivariate",
+    "context": [
+     "",
+     "import logging",
+     "",
+     "import copulas",
+     "import copulas.multivariate",
+     "import copulas.univariate",
+     "import numpy as np",
+     "",
+     "from sdv.metadata import Table"
+    ]
+   },
+   {
+    "file": "sdv/tabular/copulas.py",
+    "line": 7,
+    "text": "import copulas.univariate",
+    "context": [
+     "import logging",
+     "",
+     "import copulas",
+     "import copulas.multivariate",
+     "import copulas.univariate",
+     "import numpy as np",
+     "",
+     "from sdv.metadata import Table",
+     "from sdv.tabular.base import BaseTabularModel, NonParametricError"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "SDGym/synthesizers/independent.py",
+    "line": 2,
+    "text": "from sdv.metadata import Table",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import Table",
+     "from sklearn.mixture import GaussianMixture",
+     "",
+     "from sdgym.synthesizers.base import MultiSingleTableBaseline",
+     ""
+    ]
+   },
+   {
+    "file": "SDGym/synthesizers/uniform.py",
+    "line": 3,
+    "text": "from sdv.metadata import Table",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.metadata import Table",
+     "",
+     "from sdgym.synthesizers.base import MultiSingleTableBaseline",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "sdv/__init__.py",
+    "line": 13,
+    "text": "from sdv.metadata import Metadata, Table",
+    "context": [
+     "__version__ = '0.7.1.dev0'",
+     "",
+     "from sdv import constraints, evaluation, metadata, relational, tabular",
+     "from sdv.demo import get_available_demos, load_demo",
+     "from sdv.metadata import Metadata, Table",
+     "from sdv.sdv import SDV",
+     "",
+     "__all__ = (",
+     "    'demo',"
+    ]
+   },
+   {
+    "file": "sdv/demo.py",
+    "line": 13,
+    "text": "from sdv.metadata import Metadata, Table",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "from faker import Faker",
+     "",
+     "from sdv.metadata import Metadata, Table",
+     "",
+     "LOGGER = logging.getLogger(__name__)",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "sdv/relational/base.py",
+    "line": 11,
+    "text": "from sdv.metadata import Metadata, utils",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "",
+     "from sdv.errors import NotFittedError",
+     "from sdv.metadata import Metadata, utils",
+     "",
+     "LOGGER = logging.getLogger(__name__)",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "sdv/timeseries/base.py",
+    "line": 11,
+    "text": "from sdv.metadata import Table",
+    "context": [
+     "",
+     "import pandas as pd",
+     "import rdt",
+     "",
+     "from sdv.metadata import Table",
+     "from sdv.tabular.copulas import GaussianCopula",
+     "",
+     "LOGGER = logging.getLogger(__name__)",
+     ""
+    ]
+   },
+   {
+    "file": "sdv/tabular/copulas.py",
+    "line": 10,
+    "text": "from sdv.metadata import Table",
+    "context": [
+     "import copulas.multivariate",
+     "import copulas.univariate",
+     "import numpy as np",
+     "",
+     "from sdv.metadata import Table",
+     "from sdv.tabular.base import BaseTabularModel, NonParametricError",
+     "from sdv.tabular.utils import (",
+     "    check_matrix_symmetric_positive_definite, flatten_dict, make_positive_definite, square_matrix,",
+     "    unflatten_dict)"
+    ]
+   },
+   {
+    "file": "sdv/tabular/base.py",
+    "line": 8,
+    "text": "from sdv.metadata import Table",
+    "context": [
+     "import pickle",
+     "",
+     "import pandas as pd",
+     "",
+     "from sdv.metadata import Table",
+     "",
+     "LOGGER = logging.getLogger(__name__)",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "sdv/metadata/__init__.py",
+    "line": 3,
+    "text": "from sdv.metadata import visualization",
+    "context": [
+     "\"\"\"Metadata module.\"\"\"",
+     "",
+     "from sdv.metadata import visualization",
+     "from sdv.metadata.dataset import Metadata",
+     "from sdv.metadata.errors import MetadataError, MetadataNotFittedError",
+     "from sdv.metadata.table import Table",
+     ""
+    ]
+   },
+   {
+    "file": "sdv/metadata/dataset.py",
+    "line": 13,
+    "text": "from sdv.metadata import visualization",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "from rdt import HyperTransformer, transformers",
+     "",
+     "from sdv.metadata import visualization",
+     "from sdv.metadata.errors import MetadataError",
+     "",
+     "LOGGER = logging.getLogger(__name__)",
+     ""
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "SDGym/synthesizers/ctgan.py",
+    "line": 269,
+    "text": "class CTGANSynthesizer(BaseSynthesizer):",
+    "context": [
+     "        (gradients.view(-1, pac * real_data.size(1)).norm(2, dim=1) - 1) ** 2).mean() * lambda_",
+     "    return gradient_penalty",
+     "",
+     "",
+     "class CTGANSynthesizer(BaseSynthesizer):",
+     "    \"\"\"docstring for IdentitySynthesizer.\"\"\"",
+     "",
+     "    def __init__(self,",
+     "                 embedding_dim=128,"
+    ]
+   },
+   {
+    "file": "ctgan/__init__.py",
+    "line": 10,
+    "text": "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+    "context": [
+     "__email__ = 'dailabmit@gmail.com'",
+     "__version__ = '0.3.1'",
+     "",
+     "from ctgan.demo import load_demo",
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+     "from ctgan.synthesizers.dpctgan import dpCTGANSynthesizer",
+     "from ctgan.synthesizers.tvae import TVAESynthesizer",
+     "",
+     "__all__ = ("
+    ]
+   },
+   {
+    "file": "ctgan/__init__.py",
+    "line": 11,
+    "text": "from ctgan.synthesizers.dpctgan import dpCTGANSynthesizer",
+    "context": [
+     "__version__ = '0.3.1'",
+     "",
+     "from ctgan.demo import load_demo",
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+     "from ctgan.synthesizers.dpctgan import dpCTGANSynthesizer",
+     "from ctgan.synthesizers.tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    \"dpCTGANSynthesizer\""
+    ]
+   },
+   {
+    "file": "ctgan/__init__.py",
+    "line": 15,
+    "text": "\"dpCTGANSynthesizer\"",
+    "context": [
+     "from ctgan.synthesizers.dpctgan import dpCTGANSynthesizer",
+     "from ctgan.synthesizers.tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    \"dpCTGANSynthesizer\"",
+     "\t'CTGANSynthesizer',",
+     "    'TVAESynthesizer',",
+     "    'load_demo'",
+     ")"
+    ]
+   },
+   {
+    "file": "ctgan/__init__.py",
+    "line": 16,
+    "text": "'CTGANSynthesizer',",
+    "context": [
+     "from ctgan.synthesizers.tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    \"dpCTGANSynthesizer\"",
+     "\t'CTGANSynthesizer',",
+     "    'TVAESynthesizer',",
+     "    'load_demo'",
+     ")"
+    ]
+   },
+   {
+    "file": "ctgan/__main__.py",
+    "line": 4,
+    "text": "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+    "context": [
+     "import argparse",
+     "",
+     "from ctgan.data import read_csv, read_tsv, write_tsv",
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+     "",
+     "",
+     "def _parse_args():",
+     "    parser = argparse.ArgumentParser(description='CTGAN Command Line Interface')"
+    ]
+   },
+   {
+    "file": "ctgan/__main__.py",
+    "line": 67,
+    "text": "model = CTGANSynthesizer.load(args.load)",
+    "context": [
+     "    else:",
+     "        data, discrete_columns = read_csv(args.data, args.metadata, args.header, args.discrete)",
+     "",
+     "    if args.load:",
+     "        model = CTGANSynthesizer.load(args.load)",
+     "    else:",
+     "        generator_dim = [int(x) for x in args.generator_dim.split(',')]",
+     "        discriminator_dim = [int(x) for x in args.discriminator_dim.split(',')]",
+     "        model = CTGANSynthesizer("
+    ]
+   },
+   {
+    "file": "ctgan/__main__.py",
+    "line": 71,
+    "text": "model = CTGANSynthesizer(",
+    "context": [
+     "        model = CTGANSynthesizer.load(args.load)",
+     "    else:",
+     "        generator_dim = [int(x) for x in args.generator_dim.split(',')]",
+     "        discriminator_dim = [int(x) for x in args.discriminator_dim.split(',')]",
+     "        model = CTGANSynthesizer(",
+     "            embedding_dim=args.embedding_dim, generator_dim=generator_dim,",
+     "            discriminator_dim=discriminator_dim, generator_lr=args.generator_lr,",
+     "            generator_decay=args.generator_decay, discriminator_lr=args.discriminator_lr,",
+     "            discriminator_decay=args.discriminator_decay, batch_size=args.batch_size,"
+    ]
+   },
+   {
+    "file": "ctgan/synthesizers/__init__.py",
+    "line": 1,
+    "text": "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+    "context": [
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+     "from ctgan.synthesizers.dpctgan import dpCTGANSynthesizer",
+     "from ctgan.synthesizers.tvae import TVAESynthesizer",
+     "",
+     "__all__ = ("
+    ]
+   },
+   {
+    "file": "ctgan/synthesizers/__init__.py",
+    "line": 2,
+    "text": "from ctgan.synthesizers.dpctgan import dpCTGANSynthesizer",
+    "context": [
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+     "from ctgan.synthesizers.dpctgan import dpCTGANSynthesizer",
+     "from ctgan.synthesizers.tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    'dpCTGANSynthesizer',"
+    ]
+   },
+   {
+    "file": "ctgan/synthesizers/__init__.py",
+    "line": 6,
+    "text": "'dpCTGANSynthesizer',",
+    "context": [
+     "from ctgan.synthesizers.dpctgan import dpCTGANSynthesizer",
+     "from ctgan.synthesizers.tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    'dpCTGANSynthesizer',",
+     "\t'CTGANSynthesizer',",
+     "    'TVAESynthesizer' ",
+     ")",
+     ""
+    ]
+   },
+   {
+    "file": "ctgan/synthesizers/__init__.py",
+    "line": 7,
+    "text": "'CTGANSynthesizer',",
+    "context": [
+     "from ctgan.synthesizers.tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    'dpCTGANSynthesizer',",
+     "\t'CTGANSynthesizer',",
+     "    'TVAESynthesizer' ",
+     ")",
+     "",
+     ""
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "SDGym/synthesizers/tvae.py",
+    "line": 76,
+    "text": "class TVAESynthesizer(BaseSynthesizer):",
+    "context": [
+     "    KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())",
+     "    return sum(loss) * factor / x.size()[0], KLD / x.size()[0]",
+     "",
+     "",
+     "class TVAESynthesizer(BaseSynthesizer):",
+     "    \"\"\"TVAESynthesizer.\"\"\"",
+     "",
+     "    def __init__(",
+     "        self,"
+    ]
+   },
+   {
+    "file": "SDGym/synthesizers/tvae.py",
+    "line": 77,
+    "text": "\"\"\"TVAESynthesizer.\"\"\"",
+    "context": [
+     "    return sum(loss) * factor / x.size()[0], KLD / x.size()[0]",
+     "",
+     "",
+     "class TVAESynthesizer(BaseSynthesizer):",
+     "    \"\"\"TVAESynthesizer.\"\"\"",
+     "",
+     "    def __init__(",
+     "        self,",
+     "        embedding_dim=128,"
+    ]
+   },
+   {
+    "file": "ctgan/__init__.py",
+    "line": 12,
+    "text": "from ctgan.synthesizers.tvae import TVAESynthesizer",
+    "context": [
+     "",
+     "from ctgan.demo import load_demo",
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+     "from ctgan.synthesizers.dpctgan import dpCTGANSynthesizer",
+     "from ctgan.synthesizers.tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    \"dpCTGANSynthesizer\"",
+     "\t'CTGANSynthesizer',"
+    ]
+   },
+   {
+    "file": "ctgan/__init__.py",
+    "line": 17,
+    "text": "'TVAESynthesizer',",
+    "context": [
+     "",
+     "__all__ = (",
+     "    \"dpCTGANSynthesizer\"",
+     "\t'CTGANSynthesizer',",
+     "    'TVAESynthesizer',",
+     "    'load_demo'",
+     ")"
+    ]
+   },
+   {
+    "file": "ctgan/synthesizers/__init__.py",
+    "line": 3,
+    "text": "from ctgan.synthesizers.tvae import TVAESynthesizer",
+    "context": [
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+     "from ctgan.synthesizers.dpctgan import dpCTGANSynthesizer",
+     "from ctgan.synthesizers.tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    'dpCTGANSynthesizer',",
+     "\t'CTGANSynthesizer',"
+    ]
+   },
+   {
+    "file": "ctgan/synthesizers/__init__.py",
+    "line": 8,
+    "text": "'TVAESynthesizer'",
+    "context": [
+     "",
+     "__all__ = (",
+     "    'dpCTGANSynthesizer',",
+     "\t'CTGANSynthesizer',",
+     "    'TVAESynthesizer' ",
+     ")",
+     "",
+     "",
+     "def get_all_synthesizers():"
+    ]
+   },
+   {
+    "file": "ctgan/synthesizers/tvae.py",
+    "line": 75,
+    "text": "class TVAESynthesizer(BaseSynthesizer):",
+    "context": [
+     "    KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())",
+     "    return sum(loss) * factor / x.size()[0], KLD / x.size()[0]",
+     "",
+     "",
+     "class TVAESynthesizer(BaseSynthesizer):",
+     "    \"\"\"TVAESynthesizer.\"\"\"",
+     "",
+     "    def __init__(",
+     "        self,"
+    ]
+   },
+   {
+    "file": "ctgan/synthesizers/tvae.py",
+    "line": 76,
+    "text": "\"\"\"TVAESynthesizer.\"\"\"",
+    "context": [
+     "    return sum(loss) * factor / x.size()[0], KLD / x.size()[0]",
+     "",
+     "",
+     "class TVAESynthesizer(BaseSynthesizer):",
+     "    \"\"\"TVAESynthesizer.\"\"\"",
+     "",
+     "    def __init__(",
+     "        self,",
+     "        embedding_dim=128,"
+    ]
+   },
+   {
+    "file": "tests/test_synthesizers.py",
+    "line": 6,
+    "text": "MedganSynthesizer, PrivBNSynthesizer, TableganSynthesizer, TVAESynthesizer, UniformSynthesizer,",
+    "context": [
+     "",
+     "from sdgym.benchmark import run",
+     "from sdgym.synthesizers import (",
+     "    CLBNSynthesizer, CTGANSynthesizer, IdentitySynthesizer, IndependentSynthesizer,",
+     "    MedganSynthesizer, PrivBNSynthesizer, TableganSynthesizer, TVAESynthesizer, UniformSynthesizer,",
+     "    VEEGANSynthesizer, dpCTGANSynthesizer)",
+     "",
+     "EPOCHS_SYNTHS = (",
+     "    CTGANSynthesizer,"
+    ]
+   },
+   {
+    "file": "tests/test_synthesizers.py",
+    "line": 14,
+    "text": "TVAESynthesizer,",
+    "context": [
+     "    CTGANSynthesizer,",
+     "    dpCTGANSynthesizer,",
+     "    MedganSynthesizer,",
+     "    TableganSynthesizer,",
+     "    TVAESynthesizer,",
+     "    VEEGANSynthesizer,",
+     ")",
+     "",
+     "NO_INIT = ("
+    ]
+   },
+   {
+    "file": "sdv/tabular/ctgan.py",
+    "line": 3,
+    "text": "from ctgan import CTGANSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "\"\"\"Wrapper around CTGAN model.\"\"\"",
+     "",
+     "from ctgan import CTGANSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "",
+     "from sdv.tabular.base import BaseTabularModel",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "sdv/tabular/ctgan.py",
+    "line": 179,
+    "text": "\"\"\"Model wrapping ``TVAESynthesizer`` model.",
+    "context": [
+     "",
+     "        self._cuda = cuda",
+     "",
+     "class TVAE(CTGANModel):",
+     "    \"\"\"Model wrapping ``TVAESynthesizer`` model.",
+     "",
+     "    Args:",
+     "        field_names (list[str]):",
+     "            List of names of the fields that need to be modeled"
+    ]
+   }
+  ],
+  "rdt": [
+   {
+    "file": "SDGym/synthesizers/base.py",
+    "line": 4,
+    "text": "import rdt",
+    "context": [
+     "import logging",
+     "",
+     "import pandas as pd",
+     "import rdt",
+     "",
+     "from sdgym.errors import UnsupportedDataset",
+     "",
+     "LOGGER = logging.getLogger(__name__)"
+    ]
+   },
+   {
+    "file": "ctgan/data_transformer.py",
+    "line": 5,
+    "text": "from rdt.transformers import OneHotEncodingTransformer",
+    "context": [
+     "from collections import namedtuple",
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from rdt.transformers import OneHotEncodingTransformer",
+     "from sklearn.mixture import BayesianGaussianMixture",
+     "",
+     "SpanInfo = namedtuple(\"SpanInfo\", [\"dim\", \"activation_fn\"])",
+     "ColumnTransformInfo = namedtuple("
+    ]
+   },
+   {
+    "file": "ctgan/data_transformer_dp.py",
+    "line": 5,
+    "text": "from rdt.transformers import OneHotEncodingTransformer",
+    "context": [
+     "from collections import namedtuple",
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from rdt.transformers import OneHotEncodingTransformer",
+     "from sklearn.mixture import BayesianGaussianMixture, GaussianMixture",
+     "",
+     "##### Privacy ######",
+     "from numpy import random"
+    ]
+   },
+   {
+    "file": "sdmetrics/timeseries/detection.py",
+    "line": 5,
+    "text": "import rdt",
+    "context": [
+     "\"\"\"Machine Learning Detection based metrics for Time Series.\"\"\"",
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "import rdt",
+     "from sklearn.model_selection import train_test_split",
+     "",
+     "from sdmetrics.goal import Goal",
+     "from sdmetrics.timeseries import ml_scorers"
+    ]
+   },
+   {
+    "file": "sdmetrics/timeseries/ml_scorers.py",
+    "line": 3,
+    "text": "import rdt",
+    "context": [
+     "\"\"\"Machine Learning Detection based metrics for Time Series.\"\"\"",
+     "",
+     "import rdt",
+     "import torch",
+     "from sklearn.pipeline import Pipeline",
+     "from sktime.classification.compose import TimeSeriesForestClassifier",
+     "from sktime.transformations.panel.compose import ColumnConcatenator"
+    ]
+   },
+   {
+    "file": "sdmetrics/timeseries/efficacy/base.py",
+    "line": 5,
+    "text": "import rdt",
+    "context": [
+     "\"\"\"Base class for Machine Learning Efficacy based metrics for Time Series.\"\"\"",
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "import rdt",
+     "from sklearn.model_selection import train_test_split",
+     "",
+     "from sdmetrics.goal import Goal",
+     "from sdmetrics.timeseries.base import TimeSeriesMetric"
+    ]
+   },
+   {
+    "file": "sdmetrics/single_table/multi_single_column.py",
+    "line": 4,
+    "text": "from rdt import HyperTransformer",
+    "context": [
+     "\"\"\"SingleTable metrics based on applying a SingleColumnMetric on all the columns.\"\"\"",
+     "",
+     "import numpy as np",
+     "from rdt import HyperTransformer",
+     "",
+     "from sdmetrics import single_column",
+     "from sdmetrics.single_table.base import SingleTableMetric",
+     "from sdmetrics.utils import NestedAttrsMeta"
+    ]
+   },
+   {
+    "file": "sdmetrics/single_table/efficacy/base.py",
+    "line": 4,
+    "text": "import rdt",
+    "context": [
+     "\"\"\"Base class for Efficacy metrics for single table datasets.\"\"\"",
+     "",
+     "import numpy as np",
+     "import rdt",
+     "from sklearn.impute import SimpleImputer",
+     "from sklearn.pipeline import Pipeline",
+     "from sklearn.preprocessing import RobustScaler",
+     ""
+    ]
+   },
+   {
+    "file": "sdmetrics/single_table/detection/base.py",
+    "line": 6,
+    "text": "from rdt import HyperTransformer",
+    "context": [
+     "",
+     "import logging",
+     "",
+     "import numpy as np",
+     "from rdt import HyperTransformer",
+     "from sklearn.metrics import roc_auc_score",
+     "from sklearn.model_selection import StratifiedKFold",
+     "",
+     "from sdmetrics.goal import Goal"
+    ]
+   },
+   {
+    "file": "sdv/timeseries/base.py",
+    "line": 9,
+    "text": "import rdt",
+    "context": [
+     "import pickle",
+     "import uuid",
+     "",
+     "import pandas as pd",
+     "import rdt",
+     "",
+     "from sdv.metadata import Table",
+     "from sdv.tabular.copulas import GaussianCopula",
+     ""
+    ]
+   },
+   {
+    "file": "sdv/tabular/copulagan.py",
+    "line": 3,
+    "text": "from rdt import HyperTransformer",
+    "context": [
+     "\"\"\"Combination of GaussianCopula transformation and GANs.\"\"\"",
+     "",
+     "from rdt import HyperTransformer",
+     "from rdt.transformers import GaussianCopulaTransformer",
+     "",
+     "from sdv.tabular.ctgan import CTGAN",
+     ""
+    ]
+   },
+   {
+    "file": "sdv/tabular/copulagan.py",
+    "line": 4,
+    "text": "from rdt.transformers import GaussianCopulaTransformer",
+    "context": [
+     "\"\"\"Combination of GaussianCopula transformation and GANs.\"\"\"",
+     "",
+     "from rdt import HyperTransformer",
+     "from rdt.transformers import GaussianCopulaTransformer",
+     "",
+     "from sdv.tabular.ctgan import CTGAN",
+     "",
+     ""
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "sdv/benchmark.py",
+    "line": 14,
+    "text": "from sdv.evaluation import evaluate",
+    "context": [
+     "import pandas as pd",
+     "",
+     "from sdv import SDV, Metadata",
+     "from sdv.demo import get_available_demos, load_demo",
+     "from sdv.evaluation import evaluate",
+     "",
+     "LOGGER = logging.getLogger(__name__)",
+     "",
+     ""
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "copulas",
+  "ct",
+  "ctgan_mod",
+  "ev",
+  "gym",
+  "md",
+  "rdt",
+  "sdv_any",
+  "sm",
+  "tvae"
+ ],
+ "vendored_dirs": [
+  "SDGym",
+  "ctgan",
+  "sdmetrics",
+  "sdv"
+ ],
+ "dependencies": {
+  "setup.py": [
+   "    'rdt>=0.3.0,<0.4',",
+   "    'sdmetrics>=0.1.2,<0.2',",
+   "    'sdv>=0.7.0,<0.8',",
+   "            'sdgym=sdgym.__main__:main'",
+   "    name='sdgym',",
+   "    packages=find_packages(include=['sdgym', 'sdgym.*']),",
+   "    url='https://github.com/sdv-dev/SDGym',"
+  ],
+  "setup.cfg": [
+   "[bumpversion:file:sdgym/__init__.py]",
+   "exclude = docs, .tox, .git, __pycache__, .ipynb_checkpoints, sdgym/utils",
+   "known_first_party = sdgym"
+  ],
+  "conda/meta.yaml": [
+   "{% set name = 'sdgym' %}",
+   "    - sdgym=sdgym.__main__:main",
+   "    - ctgan >=0.2.2.dev1,<0.3",
+   "    - sdv >=0.4.4.dev0,<0.6",
+   "    - ctgan >=0.2.2.dev1,<0.3",
+   "    - sdv >=0.4.4.dev0,<0.6",
+   "  home: \"https://github.com/sdv-dev/SDGym\"",
+   "    - sdv-dev"
+  ]
+ }
+}

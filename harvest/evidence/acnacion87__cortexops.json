@@ -1,0 +1,228 @@
+{
+ "repo": "acnacion87/cortexops",
+ "disk_kb": 86,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# CortexOps\n⚠️ This is a proof of concept and is not production-ready. Use at your own risk.\n\nThis project is authored by Arjay Nacion and may be freely used or modified by Myridius, provided attribution is retained.\n\n- [CortexOps](#cortexops)\n  - [Description](#description)\n  - [How it Works](#how-it-works)\n  - [Tools](#tools)\n  - [Architecture](#architecture)\n  - [Monitoring and Evaluation](#monitoring-and-evaluation)\n  - [Current Limitations](#current-limitations)\n  - [Future Enhancements](#future-enhancements)\n\n## Description\nSmart incident resolution powered by AI, using synthetic data for demonstration purposes. The system provides IT support teams with rapid, contextually relevant resolution recommendations for new incident reports by leveraging AI-generated knowledge from past incidents and documentation.\n\n## How it Works\n1. **Synthetic Data Generation**: Using SDV (Synthetic Data Vault) to generate realistic synthetic incidents and documentation:\n   - ServiceNow incidents with descriptions, categories, and resolutions\n   - ServiceNow Knowledge Base articles with troubleshooting guides and best practices\n   - Data represents common and edge-case scenarios in Merchant Onboarding\n\n2. **Knowledge Base**: Vector embeddings stored in FAISS database for semantic search\n\n3. **Incident Processing**: HTTP POST endpoint receives new incidents for analysis\n\n4. **AI-Powered Analysis**: Agent-based system with OpenAI (gpt-4o-mini) for inference and feedback:\n   - Validates query relevance to Merchant Onboarding System\n   - Uses tools to search incidents and knowledge base\n   - Generates resolution recommendations with conversation memory\n   - Real-time streaming via Chainlit UI\n\n## Tools\n- OpenAI (gpt-4o-mini) - LLM for inference and feedback\n- SDV - Synthetic data generation\n- LangChain - LLM application framework\n- Chainlit - Chatbot UI framework\n- FAISS - Vector similarity search\n- FastAPI - API framework\n- Redis - Message broker\n- TruLens - LLM application monitoring and evaluation\n\n## Architecture\n\n```mermaid\ngraph TB\n    %% External Systems\n    SDV[SDV<br/>Data Generation]\n    \n    %% Data Processing\n    Ingest[Ingest Script<br/>Vector Embedding Creation]\n    \n    %% Storage\n    FAISS[(FAISS Vector DB<br/>Incident/Doc Embeddings)]\n    Redis[(Redis<br/>Message Broker)]\n    \n    %% User Interface\n    Chainlit[Chainlit UI<br/>User Interface]\n    \n    %% AI Components\n    Agent[Agent<br/>Query Validation & Tools]\n    Tools[Tools<br/>Search & Validation]\n    OpenAI[OpenAI<br/>gpt-4o-mini Model]\n    TruLens[TruLens<br/>Monitoring & Evaluation]\n    \n    %% User\n    User((User))\n    \n    %% Connections\n    SDV -->|Generate Data| Ingest\n    Ingest -->|Store Vectors| FAISS\n    FAISS -->|Vector Search| Tools\n    Chainlit -->|User Interaction| Agent\n    Agent -->|Use Tools| Tools\n    Agent -->|Validate Query| OpenAI\n    Tools -->|Search Knowledge| FAISS\n    OpenAI -->|Search Results| FAISS\n    User -->|Submit/Analyze| Chainlit\n    Chainlit -->|Poll| Redis\n    Agent -->|Monitor| TruLens\n    Tools -->|Monitor| TruLens\n    OpenAI -->|Evaluate| TruLens\n    \n    %% Styling\n    classDef external fill:#e6f3ff,stroke:#0066cc,stroke-width:2px,color:#000\n    classDef process fill:#fff2e6,stroke:#cc6600,stroke-width:2px,color:#000\n    classDef storage fill:#e6ffe6,stroke:#006600,stroke-width:2px,color:#000\n    classDef ui fill:#ffe6e6,stroke:#cc0000,stroke-width:2px,color:#000\n    classDef ai fill:#f2e6ff,stroke:#6600cc,stroke-width:2px,color:#000\n    classDef user fill:#f5f5f5,stroke:#666666,stroke-width:2px,color:#000\n    \n    class SDV external\n    class Ingest process\n    class FAISS,Redis storage\n    class Chainlit ui\n    class Agent,Tools,OpenAI,TruLens ai\n    class User user\n```\n\n## Monitoring and Evaluation\nThe system uses TruLens for comprehensive monitoring and evaluation of the RAG pipeline:\n- **Feedback Collection**: Tracks user feedback on resolution recommendations\n- **Performance Metrics**: Monitors latency, token usage, and response quality\n- **Quality Assurance**: Evaluates retrieval relevance and generation accuracy\n- **Custom Feedback Functions**: Implements domain-specific evaluation criteria for incident resolution quality\n\n## Current Limitations\n- Proof of concept using synthetic data\n- Polling-based Redis implementation\n- OpenAI API dependency\n- Basic agent implementation with query validation\n\n## Future Enhancements\n- Redis Pub/Sub integration\n- Production-grade security\n- Cloud-based deployment\n- Enhanced agentic capabilities",
+ "hits": {
+  "st": [
+   {
+    "file": "synthesize_kb.py",
+    "line": 9,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "import pandas as pd",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "from faker import Faker",
+     "",
+     "def get_seed_dataset():"
+    ]
+   },
+   {
+    "file": "synthesize_incidents.py",
+    "line": 9,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "import pandas as pd",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "",
+     "def get_seed_dataset():",
+     "    INCIDENTS_SEED_DATASET_HF_REPO_ID = os.getenv(\"INCIDENTS_SEED_DATASET_HF_REPO_ID\")"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "synthesize_kb.py",
+    "line": 8,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from datasets import Dataset, load_dataset",
+     "",
+     "import pandas as pd",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "from faker import Faker",
+     ""
+    ]
+   },
+   {
+    "file": "synthesize_incidents.py",
+    "line": 8,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from datasets import Dataset, load_dataset",
+     "",
+     "import pandas as pd",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "",
+     "def get_seed_dataset():"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "synthesize_kb.py",
+    "line": 8,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from datasets import Dataset, load_dataset",
+     "",
+     "import pandas as pd",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "from faker import Faker",
+     ""
+    ]
+   },
+   {
+    "file": "synthesize_kb.py",
+    "line": 9,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "import pandas as pd",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "from faker import Faker",
+     "",
+     "def get_seed_dataset():"
+    ]
+   },
+   {
+    "file": "synthesize_incidents.py",
+    "line": 8,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from datasets import Dataset, load_dataset",
+     "",
+     "import pandas as pd",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "",
+     "def get_seed_dataset():"
+    ]
+   },
+   {
+    "file": "synthesize_incidents.py",
+    "line": 9,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "import pandas as pd",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "",
+     "def get_seed_dataset():",
+     "    INCIDENTS_SEED_DATASET_HF_REPO_ID = os.getenv(\"INCIDENTS_SEED_DATASET_HF_REPO_ID\")"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "synthesize_kb.py",
+    "line": 9,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "import pandas as pd",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "from faker import Faker",
+     "",
+     "def get_seed_dataset():"
+    ]
+   },
+   {
+    "file": "synthesize_kb.py",
+    "line": 44,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "",
+     "def synthesize_incidents(num_rows=10):",
+     "    df = get_seed_dataset()",
+     "    metadata = get_metadata()",
+     "    synthesizer = CTGANSynthesizer(",
+     "        metadata=metadata,",
+     "        verbose=True",
+     "    )",
+     ""
+    ]
+   },
+   {
+    "file": "synthesize_incidents.py",
+    "line": 9,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "import pandas as pd",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "",
+     "def get_seed_dataset():",
+     "    INCIDENTS_SEED_DATASET_HF_REPO_ID = os.getenv(\"INCIDENTS_SEED_DATASET_HF_REPO_ID\")"
+    ]
+   },
+   {
+    "file": "synthesize_incidents.py",
+    "line": 34,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "",
+     "def synthesize_incidents(num_rows=10):",
+     "    df = get_seed_dataset()",
+     "    metadata = get_metadata()",
+     "    synthesizer = CTGANSynthesizer(",
+     "        metadata=metadata,",
+     "        verbose=True",
+     "    )",
+     ""
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv"
+  ],
+  "environment.yml": [
+   "      - copulas==0.12.3",
+   "      - ctgan==0.11.0",
+   "      - rdt==1.17.1",
+   "      - sdmetrics==0.21.0",
+   "      - sdv==1.24.0"
+  ]
+ }
+}

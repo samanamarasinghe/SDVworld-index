@@ -1,0 +1,256 @@
+{
+ "repo": "kumarswamyg2005/SynthLab",
+ "disk_kb": 118,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# SynthLab\n\nI got tired of being blocked on ML experiments because the real\ndataset was \"still in legal review.\" SynthLab came from building\nthe same synthetic data script for the third time in a year.\n\nCTGAN handles mixed tabular data better than most people expect.\nThe discriminator score is the metric I trust most — if a LightGBM\ncan't tell real from synthetic, you're good.\n\nThe privacy audit is conservative by design. It'll flag rows that\nare technically fine. Better to over-flag than to ship a GDPR liability.\n\n---\n\n## Technical Stack\n\n- **Backend:** FastAPI (Python 3.11)\n- **ML Framework:** PyTorch 2.x\n- **Synthesizers:** SDV (CTGAN, GaussianCopula), Custom PyTorch TableVAE\n- **Quality / stats:** SciPy (KS-test, Chi-square), LightGBM (Discriminator AUC)\n- **Privacy audit:** Scikit-learn (k-anonymity neighborhood checks, shadow modeling)\n- **Task Queue:** Celery + Redis\n- **Frontend:** React 18 + TypeScript (Vite), Recharts, D3 heatmaps\n- **Database:** PostgreSQL 15\n\n---\n\n## File Structure\n\n```\nsynthlab/\n├── backend/\n│   ├── app/\n│   │   ├── agents/\n│   │   │   ├── data_profiler.py\n│   │   │   ├── model_selector.py\n│   │   │   ├── trainer.py\n│   │   │   ├── fidelity_evaluator.py\n│   │   │   └── privacy_auditor.py\n│   │   ├── models/\n│   │   │   └── table_vae.py\n│   │   ├── api/\n│   │   │   └── routes/\n│   │   ├── core/\n│   │   └── tasks/\n│   │       └── pipeline.py\n│   └── Dockerfile\n├── frontend/\n│   ├── src/\n│   │   ├── components/\n│   │   ├── pages/\n│   │   └── styles/\n│   └── Dockerfile\n└── docker-compose.yml\n```\n\n---\n\n## Quick Start\n\nSynthLab can be run using either Docker Compose (recommended) or native local installations.\n\n### Option A: Running with Docker Compose (Recommended)\n\nEnsure you have Docker and Docker Compose installed.\n\n1. **Spin up all services in the background:**\n   ```bash\n   docker compose up --build -d\n   ```\n\n2. **Access the application dashboard:**\n   - **Frontend UI:** [http://localhost:5173](http://localhost:5173)\n   - **Interactive API Docs (Swagger):** [http://localhost:8000/docs](http://localhost:8000/docs)\n\n3. **Check status of running containers:**\n   ```bash\n   docker compose ps\n   ```\n\n4. **Shutdown services:**\n   ```bash\n   docker compose down\n   ```\n\n### Option B: Running Natively (Local Setup)\n\nEnsure you have PostgreSQL 15+, Redis 7+, Node.js 18+, and Python 3.11+ running locally.\n\n1. **Database & Cache Setup:**\n   - Create a PostgreSQL database named `synthlab`.\n   - Ensure Redis is running locally on `redis://localhost:6379`.\n   - Configure environment variables in a `.env` file in the root workspace.\n\n2. **Start Backend Service (with automatic busy port detection & fallback):**\n   ```bash\n   cd backend\n   python -m venv venv\n   source venv/bin/activate  # on Windows: venv\\Scripts\\activate\n   pip install -r requirements.txt\n   python run_local.py\n   ```\n\n3. **Start Celery Asynchronous Worker:**\n   In a new terminal window:\n   ```bash\n   cd backend\n   source venv/bin/activate\n   celery -A app.tasks.pipeline worker --loglevel=info\n   ```\n\n4. **Start Frontend Dashboard:**\n   In a new terminal window:\n   ```bash\n   cd frontend\n   npm install\n   npm run dev\n   ```\n   Open [http://localhost:5173](http://localhost:5173) in your browser.\n\n---\n\n## Roadmap\n\n- [ ] TODO: add support for time series data (LSTM-based generator)\n- [ ] TODO: multi-table synthesis (relational datasets with FK constraints)\n- [ ] TODO: add differential privacy budget (ε, δ) as configurable option\n- [ ] TODO: streaming upload for files > 100MB (currently hard blocks)\n\n",
+ "hits": {
+  "st": [
+   {
+    "file": "backend/app/main.py",
+    "line": 81,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "            real_df = pd.read_parquet(dataset.file_path)",
+     "            ",
+     "        # Create temp job for Copula",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import GaussianCopulaSynthesizer",
+     "        ",
+     "        metadata = SingleTableMetadata()",
+     "        metadata.detect_from_dataframe(real_df)",
+     "        "
+    ]
+   },
+   {
+    "file": "backend/app/agents/trainer.py",
+    "line": 10,
+    "text": "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer",
+    "context": [
+     "import contextlib",
+     "import pandas as pd",
+     "from typing import Dict, Any, Callable",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer",
+     "from app.core.config import settings",
+     "from app.models.table_vae import TableVAE",
+     "",
+     "class CTGANProgressInterceptor:"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "backend/app/main.py",
+    "line": 80,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "        else:",
+     "            real_df = pd.read_parquet(dataset.file_path)",
+     "            ",
+     "        # Create temp job for Copula",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import GaussianCopulaSynthesizer",
+     "        ",
+     "        metadata = SingleTableMetadata()",
+     "        metadata.detect_from_dataframe(real_df)"
+    ]
+   },
+   {
+    "file": "backend/app/agents/trainer.py",
+    "line": 9,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pickle",
+     "import contextlib",
+     "import pandas as pd",
+     "from typing import Dict, Any, Callable",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer",
+     "from app.core.config import settings",
+     "from app.models.table_vae import TableVAE",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "backend/app/main.py",
+    "line": 80,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "        else:",
+     "            real_df = pd.read_parquet(dataset.file_path)",
+     "            ",
+     "        # Create temp job for Copula",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import GaussianCopulaSynthesizer",
+     "        ",
+     "        metadata = SingleTableMetadata()",
+     "        metadata.detect_from_dataframe(real_df)"
+    ]
+   },
+   {
+    "file": "backend/app/main.py",
+    "line": 81,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "            real_df = pd.read_parquet(dataset.file_path)",
+     "            ",
+     "        # Create temp job for Copula",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import GaussianCopulaSynthesizer",
+     "        ",
+     "        metadata = SingleTableMetadata()",
+     "        metadata.detect_from_dataframe(real_df)",
+     "        "
+    ]
+   },
+   {
+    "file": "backend/app/agents/trainer.py",
+    "line": 9,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pickle",
+     "import contextlib",
+     "import pandas as pd",
+     "from typing import Dict, Any, Callable",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer",
+     "from app.core.config import settings",
+     "from app.models.table_vae import TableVAE",
+     ""
+    ]
+   },
+   {
+    "file": "backend/app/agents/trainer.py",
+    "line": 10,
+    "text": "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer",
+    "context": [
+     "import contextlib",
+     "import pandas as pd",
+     "from typing import Dict, Any, Callable",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer",
+     "from app.core.config import settings",
+     "from app.models.table_vae import TableVAE",
+     "",
+     "class CTGANProgressInterceptor:"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "backend/app/main.py",
+    "line": 81,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "            real_df = pd.read_parquet(dataset.file_path)",
+     "            ",
+     "        # Create temp job for Copula",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import GaussianCopulaSynthesizer",
+     "        ",
+     "        metadata = SingleTableMetadata()",
+     "        metadata.detect_from_dataframe(real_df)",
+     "        "
+    ]
+   },
+   {
+    "file": "backend/app/main.py",
+    "line": 86,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "        ",
+     "        metadata = SingleTableMetadata()",
+     "        metadata.detect_from_dataframe(real_df)",
+     "        ",
+     "        synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "        synthesizer.fit(real_df)",
+     "        ",
+     "        synth_df = synthesizer.sample(n)",
+     "        return synth_df.to_dict(orient=\"records\")"
+    ]
+   },
+   {
+    "file": "backend/app/agents/trainer.py",
+    "line": 10,
+    "text": "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer",
+    "context": [
+     "import contextlib",
+     "import pandas as pd",
+     "from typing import Dict, Any, Callable",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer",
+     "from app.core.config import settings",
+     "from app.models.table_vae import TableVAE",
+     "",
+     "class CTGANProgressInterceptor:"
+    ]
+   },
+   {
+    "file": "backend/app/agents/trainer.py",
+    "line": 119,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "        # GaussianCopula fits almost instantly",
+     "        metadata = SingleTableMetadata()",
+     "        metadata.detect_from_dataframe(df)",
+     "        ",
+     "        synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "        synthesizer.fit(df)",
+     "        ",
+     "        # Trigger completed status callback",
+     "        progress_callback(1, 0.0)"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "backend/app/agents/trainer.py",
+    "line": 10,
+    "text": "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer",
+    "context": [
+     "import contextlib",
+     "import pandas as pd",
+     "from typing import Dict, Any, Callable",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer",
+     "from app.core.config import settings",
+     "from app.models.table_vae import TableVAE",
+     "",
+     "class CTGANProgressInterceptor:"
+    ]
+   },
+   {
+    "file": "backend/app/agents/trainer.py",
+    "line": 75,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "                elif col_type == \"datetime\":",
+     "                    metadata.update_column(column_name=col, sdtype=\"datetime\")",
+     "        ",
+     "        # Create synthesizer",
+     "        synthesizer = CTGANSynthesizer(",
+     "            metadata, ",
+     "            epochs=epochs, ",
+     "            batch_size=batch_size, ",
+     "            verbose=True"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "backend/requirements.txt": [
+   "sdv>=1.11.0"
+  ]
+ }
+}

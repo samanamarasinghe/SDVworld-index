@@ -1,0 +1,160 @@
+{
+ "repo": "EnterpriseDB/pgai-blueprints",
+ "disk_kb": 743,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# EDB Postgres® AI Blueprints v0.1.1\n\n*For demonstration purposes only.*\n\nA reference architecture demonstrating end-to-end integration between operational databases, analytics, AI, and real-time pipelines with industry-standard use cases.\n\nThis project provides a comprehensive proof-of-concept (PoC) environment that showcases the seamless integration between enterprise database systems and modern data analytics platforms. It demonstrates how organizations can leverage the power of EDB PG AI Platform alongside other components to build robust, scalable, and intelligent data solutions.\n\n## Disclaimer\n\nThis project is for demonstration purposes only.\n\n---\n\n## Use Cases\n\nThe active **BFSI Fraud Detection** stack exposes 6 progressive use cases. Each builds on the previous and is click-to-run from the UI's *Use Cases* tab, with an inline collapsible Flow panel explaining the narrative.\n\n- **UC1 · OLTP** — Bank App writes transactions into EDB PGD; start a live transaction simulator from the UI to keep the stream flowing.\n- **UC2 · OLAP & Streaming** — Debezium CDC fans the OLTP feed into ClickHouse, RisingWave, and Iceberg, viewable side-by-side in Metabase. Includes a hybrid-search dashboard (BM25 + AIDB BERT + Reciprocal Rank Fusion) and an Airflow DAG that reconciles row counts across surfaces and raises drift alerts.\n- **UC3 · ML Fraud Detection** — Jupyter trains a fraud model, MLflow registers it, and four inference paths (Kafka, RisingWave, ClickHouse, PGAA) score the live transaction stream in parallel.\n- **UC4 · ML Governance** — MLflow experiment tracking and model registry over UC3's runs, including parameter, metric, and artifact lineage.\n- **UC5 · GenAI Fraud Audit** — LangFlow visual agent audits flagged transactions, backed by AIDB semantic search over a rule corpus and an Ollama LLM.\n- **UC6 · AI Governance** — LLM-as-judge evaluation of UC5's agent on AWS Bedrock; results land back in MLflow alongside the ML metrics.\n\n---\n\n## Architecture at a Glance\n\n```\n Bank App ──INSERT──► EDB PGD ──Debezium CDC──► Kafka ──┬──► ClickHouse   (OLAP)\n                          │                             ├──► RisingWave   (streaming SQL)\n                          │                             └──► Iceberg/MinIO (lake)\n                          ▼\n                        AIDB ──► Hybrid Search (BM25 + BERT + RRF)\n                          │\n              ┌───────────┴───────────┐\n              ▼                       ▼\n           ML Fraud              GenAI Audit\n   (Jupyter → MLflow →     (LangFlow agent +\n    4 inference paths)         Ollama LLM)\n              │                       │\n              └────► Airflow ◄────────┘\n                        │\n                        ▼\n                    Metabase (BI)\n```\n\nFull service topology, port map, and profile layout: [`stacks/bfsi-fraud-detection/ARCHITECTURE.md`](stacks/bfsi-fraud-detection/ARCHITECTURE.md).\n\n---\n\n## Technology Stack\n\nIntegrated technologies that power the BFSI stack:\n\n| Technology | Role | Status |\n|---|---|---|\n| EDB Postgres Distributed (PGD + PGAA + AIDB) | OLTP + vector / AI extensions | ✓ Active |\n| RisingWave | Streaming SQL, materialized views | ✓ Active |\n| ClickHouse | OLAP / batch analytics | ✓ Active |\n| MinIO | S3-compatible object storage (Iceberg + rule docs) | ✓ Active |\n| MLflow | ML lifecycle (experiments, model registry, traces) | ✓ Active |\n| JupyterHub / Jupyter | ML training environment | ✓ Active |\n| LangFlow | Visual GenAI agent builder | ✓ Active |\n| Lakekeeper | Apache Iceberg REST catalog | ✓ Active |\n| Metabase | BI dashboards across the data layers | ✓ Active |\n| Airflow | Workflow orchestration (UC2 drift reconciliation DAG) | ✓ Active |\n\n---\n\n## Framework Principle\n\nStacks are **vendored as-is** — we never modify the upstream `docker-compose.yaml` or scripts. The value-add is the chat agent + `stack.yaml` metadata that translates **one stack definition** into the target infra:\n\n| Deploy target | What the agent does with `docker-compose.yaml` |\n|---|---|\n| Laptop · Docker Desktop | `docker compose up -d --build` against the desktop-linux context |\n| Laptop · Colima | Same command, against the `colima` context, plus VM preflight (CPU / memory / Rosetta / `/var/run/docker.sock`) |\n| Cloud · Northflank (BYOC) | Translates services → NF Services (pods), one-shot init containers → NF Jobs, env + bind-mounts → NF Secrets; deploys via NF REST API |\n\n**One stack file. Three deploy targets. No per-infra forks.** Pick the target from the UI header dropdown at deploy time.\n\n---\n\n## Supported Targets\n\nEDB Postgres® AI Blueprints supports three deploy targets, selectable from the UI header dropdown.\n\n### Target 1 — Laptop · Docker Desktop (default)\n\nThe path most users land on. Works on macOS, Windows (WSL2), and Linux.\n\n**Pre-requisites**\n\n- Docker Desktop installed and running (macOS / Windows) **or** Docker Engine + Compose plugin (Linux)\n- Python 3.9+\n- Git\n- An LLM credential: Anthropic API key **or** AWS Bedrock (SSO profile / access keys)\n- **Agent API key** (`AGENT_API_KEY` in `.env`) — required. The agent refuses to start without it. Generate any strong value, for example `openssl rand -hex 32`.\n- **EDB subscription token** (`EDB_SUBSCRIPTION_TOKEN` in `.env`) — required for BFSI and any stack that pulls EDB images from `docker.enterprisedb.com`. Get it at https://www.enterprisedb.com/repos-downloads\n- For BFSI: ≥8 vCPU / 32 GiB / 100 GB allocated to Docker Desktop (Settings → Resources). Lighter stacks fit in 4/8/60.\n\n**Configuration**\n\n```bash\ncp .env.example .env\n# Edit .env and set, at minimum:\n#   AGENT_API_KEY=$(openssl rand -hex 32)        # required — agent refuses to start without it\n#   ANTHROPIC_API_KEY=...  (or AWS Bedrock vars) # see Operating Guide → .env Configuration\n#   EDB_SUBSCRIPTION_TOKEN=...                   # required for BFSI\n```\n\n**Windows (WSL2) — corporate SSL / Netskope**\n\nRun all commands in the WSL2 shell. Some networks use a TLS proxy (e.g. **Netskope**) with a custom root certificate. Testers have reported that **AWS Bedrock** can work with the usual AWS SSL environment, while the **Anthropic (Claude) path** may need extra trust settings so Python / Node pick up your corporate CA.\n\n1. Complete **AWS Bedrock** login / SSO as you normally would (`aws sso login`, etc.).\n2. Export your browser's SSL / org CA to a PEM file and place it somewhere stable, e.g. `C:\\certs\\certadmin.pem`.\n3. Point `.env` at it (centralizes the path for all scripts):\n\n   ```bash\n   CORP_SSL_CERT=C:/certs/certadmin.pem\n   ```\n\n4. For **WSL** or **Git Bash**, scripts pick up `CORP_SSL_CERT` automatically. If running tools manually outside the scripts:\n\n   ```bash\n   export NODE_EXTRA_CA_CERTS=\"${CORP_SSL_CERT:-C:/certs/certadmin.pem}\"\n   export AWS_CA_BUNDLE=\"${CORP_SSL_CERT:-C:/certs/certadmin.pem}\"\n   export NODE_OPTIONS=\"--use-openssl-ca\"\n   ```\n\n   Inside WSL, `C:\\...` maps to `/mnt/c/...`.\n\n5. Then run **`make agent`**. Order matters: Bedrock auth first, then these variables, then the tool.\n\n   When the UI prompts for `AGENT_API_KEY`, enter the value you set in `.env`.\n\n   If TLS errors persist, confirm the PEM matches what the browser trusts and that IT has approved the cert for API access. This is an environment-specific workaround, not a product requirement.\n\n**Steps**\n\n```bash\nmake setup                 # one-time prereq check\nmake agent                 # opens http://127.0.0.1:4000\n```\n\nIn the UI: pick **Laptop · Docker Desktop** in the header dropdown → click **Deploy** on BFSI Fraud Detection. First deploy takes ~10 min for cold image pulls.\n\n---\n\n### Target 2 — Laptop · Colima (macOS / Linux only)\n\nFree, open-source alternative to Docker Desktop. Runs `dockerd` inside a lightweight VM. Hidden in the UI on Windows.\n\n**Pre-requisites**\n\n- Homebrew\n- ≥40 GB host RAM (VM wants 32 GB for BFSI; host needs headroom)\n- ≥120 GB free disk on `/`\n- Apple Silicon Mac recommended (for `--vz-rosetta`, which makes amd64-pinned containers like BFSI's PGD ~10× faster); Intel Mac and Linux work without it.\n- Same `EDB_SUBSCRIPTION_TOKEN`, LLM credential, Python 3.9+, and Git as Target 1.\n\n**Configuration**\n\n```bash\nbrew install docker docker-compose colima        # installs docker CLI only — NOT Docker Desktop\n\n# Apple Silicon (M1/M2/M3/M4)\ncolima start --cpu 8 --memory 32 --disk 100 --vm-type=vz --vz-rosetta\n\n# Intel Mac / Linux\ncolima start --cpu 8 --memory 32 --disk 100\n\ndocker context use colima                        # point the docker CLI at Colima\ndocker context show                              # expect: colima\n```\n\nSizing reference: BFSI floor is **8 / 32 / 100**, `core-banking-simulator` runs at 6/24/80, lighter stacks fit in 4/8/60.\n\nLifecycle:\n\n```bash\ncolima stop                # pause VM (state preserved)\ncolima delete              # destroy VM entirely\ncolima start --memory 40   # resize (stop first, then start with new flags)\n```\n\n**Steps**\n\n```bash\nmake setup\nmake agent\n```\n\nIn the UI: pick **Laptop · Colima** in the header dropdown → click **Deploy**. The chat shows a preflight report — if the VM is undersized, the docker context is wrong, or Rosetta is off when needed, the message tells you the exact command to fix it.\n\n---\n\n### Target 3 — Cloud · Northflank (BYOC)\n\nProduction-grade option for shared / partner demos. Northflank provisions an EKS cluster in **your** AWS account and acts as the control plane; EDB Postgres® AI Blueprints translates `docker-compose.yaml` into NF Services + Jobs + Secrets via the NF REST API. Currently NF-enabled stacks: `bfsi-fraud-detection`, `core-banking-simulator`, `sovereign-data-tier`.\n\n**Pre-requisites**\n\n- AWS account with billing alerts configured\n- Northflank account + API key (project-scoped)\n- AWS SSO profile that can create IAM roles (`aws sso login`)\n- GitHub PAT with `read:packages` scope (for ghcr.io image pulls)\n- `EDB_SUBSCRIPTION_TOKEN` if you plan to (re)build any EDB-based GHCR images locally before pushing; not needed at deploy time since NF pulls from your pre-built GHCR\n- Budget for ~$26/day with 3× t3a.2xlarge while the cluster is running\n\n**Configuration**\n\nOne-time setup (~30 min):\n\n1. **NF Console → Cloud Providers → Add AWS integration**. Copy the trust policy, inline policy, and the NF principal ARN it shows.\n\n2. **Create the cross-account IAM role** in your AWS account. Save the trust + inline policies from step 1 to local files (e.g. `nf-trust-policy.json`, `nf-inline-policy.json`), then:\n\n   ```bash\n   aws --profile edb-eks iam create-role --role-name northflank-byoc \\\n     --assume-role-policy-document file://nf-trust-policy.json\n   aws --profile edb-eks iam put-role-policy --role-name northflank-byoc \\\n     --policy-name northflank-byoc-policy \\\n     --policy-document file://nf-inline-policy.json\n   ```\n\n   Paste the role ARN back into NF → Verify (must show 50/50 OK).\n\n3. **Provision the EKS cluster** from NF Console: `us-east-1`, default VPC, 3× `t3a.2xlarge` node pool. ~20 min.\n\n4. **Create the NF project** bound to that cluster, then under Registries add `ghcr.io` with your GitHub PAT.\n\n5. **Build + push** any private images listed in `engine/agent/translators/northflank.py:GHCR_IMAGES`. Public images pull directly from upstream.\n\n6. **`.env` entries**:\n\n   ```bash\n   NORTHFLANK_API_KEY=nf-...\n   NORTHFLANK_TEAM=<team>\n   NORTHFLANK_PROJECT=<project-id>\n   NORTHFLANK_BILLING_PLAN=nf-compute-200\n   NORTHFLANK_REGISTRY_CREDENTIALS=<registry-id>\n   GHCR_PREFIX=ghcr.io/<github-user>/<image-prefix>\n   ```\n\n**Steps**\n\n```bash\nmake agent\n```\n\nIn the UI: pick **Northflank Cloud** in the header dropdown → click **Deploy**.\n\n**Cost & cleanup**: tear the cluster down from NF Console after each test session — AWS keeps billing for control plane + nodes otherwise.\n\n---\n\n## Operating Guide\n\n### .env Configuration\n\nCopy `.env.example` → `.env`. The agent auto-detects LLM credentials in order: direct Anthropic key → AWS profile / SSO → Bedrock-oriented profile names → default AWS chain. Explicit overrides:\n\n```bash\n# LLM (pick one)\nANTHROPIC_API_KEY=sk-ant-...                      # Anthropic API\n# OR\nAWS_PROFILE=Bedrock                               # AWS Bedrock via SSO\nAWS_DEFAULT_REGION=us-east-1\n# OR\nAWS_ACCESS_KEY_ID=...                             # AWS Bedrock via access keys\nAWS_SECRET_ACCESS_KEY=...\nAWS_DEFAULT_REGION=us-east-1\n\n# EDB subscription (REQUIRED for stacks that pull from docker.enterprisedb.com —\n# BFSI Fraud Detection, analytics-comparison, core-banking-simulator,\n# and unified-analytics-intelligence).\n# Get the token at: https://www.enterprisedb.com/repos-downloads\nEDB_SUBSCRIPTION_TOKEN=\n\n# Agent API key (REQUIRED — the agent refuses to start without it).\n# Protects /api/* and /ws/* endpoints. Generate with: openssl rand -hex 32\nAGENT_API_KEY=\n\n# Northflank (only if using Target 3)\nNORTHFLANK_API_KEY=nf-...\nNORTHFLANK_TEAM=<team>\nNORTHFLANK_PROJECT=<project-id>\nNORTHFLANK_BILLING_PLAN=nf-compute-200\nNORTHFLANK_REGISTRY_CREDENTIALS=<registry-id>\nGHCR_PREFIX=ghcr.io/<github-user>/<image-prefix>\n\n# Optional overrides\n# LLM_PROVIDER=anthropic | bedrock\n# PORT=4000\n# CORP_SSL_CERT=/path/to/ca.pem      # corporate TLS proxy (Netskope etc.)\n```\n\n### Make Commands\n\n| Command | One-liner |\n|---|---|\n| `make setup` | Verify Docker is running, install Python deps, check free ports. |\n| `make agent` | Start the chat agent UI at **http://127.0.0.1:4000**. Does not deploy a stack. |\n| `make stop` | Kill the agent process only. Containers + volumes keep running. |\n| `make restart` | `stop` then `agent`. |\n| `make stop-all` | Stop every stack's containers; keep data volumes. |\n| `make clean` | **Cross-infra full reset**: agent + containers + volumes + networks + ports across Docker Desktop *and* Colima, plus NF destroys for tracked stacks. Refuses to kill foreign processes unless `FORCE_KILL_PORTS=1`. |\n| `make status` | Read-only: running containers, compose projects, framework ports. |\n| `make logs` | Last 50 lines of `engine/agent/logs/agent.log`. |\n| `make logs-follow` | `tail -f` the agent log. |\n\n### UI Tabs\n\n| Tab | Purpose |\n|---|---|\n| **Industry** | Stack catalog. Pick a stack to deploy. |\n| **Use Cases** | Per-stack pipelines with click-to-run steps and a collapsible Flow panel that explains each one. |\n| **Workspace** | Live view of the running stack — embedded Metabase dashboards, app links, container logs, and a terminal into the toolbox container. |\n\n### Repeatable Deploy Recipe\n\nThree steps for first-time testers — never has to think about state.\n\n```bash\n# 1. ONE-TIME PER LAPTOP\nmake setup\n\n# 2. EVERY TIME — start the agent\nmake agent\n# → open http://127.0.0.1:4000\n\n# 3. IN THE BROWSER\n#    a. Pick a deploy target in the header (Docker Desktop / Colima / Northflank)\n#    b. Click \"Deploy\" on BFSI Fraud Detection\n#    c. Wait ~10 min for cold image pulls\n#    d. Use Cases tab → Use Case 1 → expand the Flow panel for guidance\n```\n\nWhen anything looks wrong, the one-liner rule is:\n\n```bash\nmake clean && make agent\n```\n\n`make clean` is cross-runtime aware — it tears down compose projects on both Docker Desktop and Colima, frees ports, stops Colima if it was holding any port, and destroys NF stacks the agent is tracking. After it returns you can pick a different deploy target with zero leftover state.\n\n### Quick Guide\n\n| Situation | Command |\n|---|---|\n| First time on this laptop | `make setup && make agent` |\n| Resume a session | `make agent` |\n| Pause for the day, keep data | `make stop-all` |\n| Switch between Docker Desktop ↔ Colima ↔ NF | `make clean && make agent` |\n| Agent acting weird | `make restart` |\n| Anything else looks broken | `make clean && make agent` |\n| Done for the day | `make clean` (frees ports, stops Colima, destroys NF stacks) |\n\n---\n\n## Active Stacks\n\n### BFSI Fraud Detection — Live\n\nThe reference implementation. 6 progressive use cases (OLTP → OLAP → ML Fraud → ML Gov → GenAI Audit → AI Gov), with the Flow panel teaching what each step does.\n\n- Folder: [`stacks/bfsi-fraud-detection/`](stacks/bfsi-fraud-detection/)\n- NF-enabled: yes\n- Default sizing: 8 vCPU / 32 GiB / 100 GB\n\n### Coming Soon\n\nIndustry-case placeholders that render greyed-out on the Industry tab. Defined in `engine/agent/app.py` (`CARD_DEFS`, ~line 5148). To activate one, add a `/stacks/<key>/` folder with `docker-compose.yaml` + `stack.yaml` where `<key>` matches.\n\n- Telecom Churn Prediction\n- Healthcare Claims Anomaly\n- Manufacturing Defect Detection\n- E-Commerce Product Search\n- Legal Document Intelligence\n- Media Content Discovery\n- Pharma Drug Interaction\n- Government Citizen Data\n- Financial Regulatory Reporting\n- Healthcare Patient Records\n- Energy Grid Telemetry\n\n### Archived Reference Stacks\n\nOlder reference vendor stacks live under [`stacks/_archive/`](stacks/_archive/). They are not surfaced in the agent UI and are retained only as read-only references. **BFSI Fraud Detection is the only supported stack on this branch.**\n\nThe `_template` folder remains at the top of `stacks/` as the starting point for new stacks.\n\n---\n\n## Adding a New Stack\n\n```bash\ncp -r stacks/_template stacks/my-stack\n# Edit:\n#   stacks/my-stack/docker-compose.yaml   ← services, ports, env\n#   stacks/my-stack/stack.yaml            ← name, deploy_targets, pipelines, flow\n# Click \"Reload\" in the UI — no agent restart required.\n```\n\n**To surface it on the Industry tab**: add an entry to `CARD_DEFS` in `engine/agent/app.py` whose `key` matches your folder name.\n\n**To add a new use case to an existing stack**: edit `stacks/<stack>/stack.yaml` under `pipelines:` — name it, list shell commands as steps, optionally add a `flow:` block:\n\n```yaml\nflow: |\n  **What this use case shows:** one-liner overview always visible.\n  1. **Step name** — what this step does.\n  2. **Next step** — and so on.\n```\n\nThe first paragraph stays visible; the numbered list collapses behind a \"Show steps\" disclosure.\n\n---\n\n## Directory Structure\n\n```\npgai-blueprints/\n  engine/\n    agent/                # Chat agent (FastAPI + Claude / Bedrock)\n      translators/        # Per-target deploy logic\n        laptop.py         # Docker Desktop + Colima preflight\n        northflank.py     # NF API translation\n    synthdb/              # Synthetic data service (SDV), on-demand\n  stacks/                 # Reference stacks (BFSI Fraud Detection is the active one)\n  scripts/                # clean-ports.sh, cross-runtime-clean.sh, list-stack-ports.py\n  Makefile\n  bootstrap.sh\n```\n\n---\n\n## Documentation\n\n- [Security](SECURITY.md) — defaults, credentials, hardening\n- [CI/CD Guidelines](CI.md) — maintaining pipelines\n- [Contributing](CONTRIBUTING.md) — contributor guide\n- [BFSI Fraud Detection — stack README](stacks/bfsi-fraud-detection/README.md) — services, ports, quick start\n- [BFSI Fraud Detection — architecture](stacks/bfsi-fraud-detection/ARCHITECTURE.md) — container topology, profiles, data flow\n\n## License\n\nCopyright (c) 2025-2026 EnterpriseDB Corporation. All rights reserved.\n\nSee [LICENSE](LICENSE) for details.\n\n---\n\n## Author\n\n- **Raghavendra Rao** - Pioneer Team - Conceived the EDB Postgres® AI Blueprints framework and drove its initial design.\n\n## Committers\n\n- **Pranish Kumar**\n- **Vibhor Kumar**\n- **Maneesh Goyal**\n- **Rahul Saha**\n- **Ajit Gadge**\n- **Gianni Ciolli**\n",
+ "hits": {
+  "st": [
+   {
+    "file": "engine/synthdb/edb-synthdb.py",
+    "line": 23,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import argparse",
+     "import sys",
+     "from pathlib import Path",
+     "from typing import Dict, List, Optional",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from collections import defaultdict",
+     "import warnings",
+     "warnings.filterwarnings('ignore')"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "engine/synthdb/edb-synthdb.py",
+    "line": 24,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import sys",
+     "from pathlib import Path",
+     "from typing import Dict, List, Optional",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from collections import defaultdict",
+     "import warnings",
+     "warnings.filterwarnings('ignore')",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "engine/synthdb/edb-synthdb.py",
+    "line": 23,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import argparse",
+     "import sys",
+     "from pathlib import Path",
+     "from typing import Dict, List, Optional",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from collections import defaultdict",
+     "import warnings",
+     "warnings.filterwarnings('ignore')"
+    ]
+   },
+   {
+    "file": "engine/synthdb/edb-synthdb.py",
+    "line": 24,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import sys",
+     "from pathlib import Path",
+     "from typing import Dict, List, Optional",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from collections import defaultdict",
+     "import warnings",
+     "warnings.filterwarnings('ignore')",
+     ""
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "engine/synthdb/edb-synthdb.py",
+    "line": 9,
+    "text": "edb-synthdb -  EDB Synthetic Data Generator using SDV/GaussianCopulaSynthesizer",
+    "context": [
+     "License: EDB Corporation, MIT License",
+     "",
+     "For demonstration purposes only.",
+     "",
+     "edb-synthdb -  EDB Synthetic Data Generator using SDV/GaussianCopulaSynthesizer",
+     "               Creates database schemas and generates realistic synthetic data ",
+     "               using SDV's GaussianCopulaSynthesizer. Supports Oracle and ",
+     "               PostgreSQL with multiple data models.",
+     ""
+    ]
+   },
+   {
+    "file": "engine/synthdb/edb-synthdb.py",
+    "line": 11,
+    "text": "using SDV's GaussianCopulaSynthesizer. Supports Oracle and",
+    "context": [
+     "For demonstration purposes only.",
+     "",
+     "edb-synthdb -  EDB Synthetic Data Generator using SDV/GaussianCopulaSynthesizer",
+     "               Creates database schemas and generates realistic synthetic data ",
+     "               using SDV's GaussianCopulaSynthesizer. Supports Oracle and ",
+     "               PostgreSQL with multiple data models.",
+     "",
+     "\"\"\"",
+     ""
+    ]
+   },
+   {
+    "file": "engine/synthdb/edb-synthdb.py",
+    "line": 23,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import argparse",
+     "import sys",
+     "from pathlib import Path",
+     "from typing import Dict, List, Optional",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from collections import defaultdict",
+     "import warnings",
+     "warnings.filterwarnings('ignore')"
+    ]
+   },
+   {
+    "file": "engine/synthdb/edb-synthdb.py",
+    "line": 129,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "                pk = table_config['primary_key']",
+     "                if pk in df.columns:",
+     "                    metadata.set_primary_key(pk)",
+     "            ",
+     "            synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "            synthesizer.fit(df)",
+     "            self.synthesizers[table_name] = synthesizer",
+     "    ",
+     "    def generate(self, scale: Optional[float] = None, total_rows: Optional[int] = None):"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "engine/synthdb/requirements.txt": [
+   "sdv>=1.0.0"
+  ],
+  "engine/synthdb/setup.py": [
+   "        \"sdv>=1.0.0\","
+  ]
+ }
+}

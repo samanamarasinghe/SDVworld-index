@@ -1,0 +1,145 @@
+{
+ "repo": "silenzio111/DataScienceContest",
+ "disk_kb": 6626,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# 数智风控：面向新产品的信用风险评估\n\n数据科学竞赛项目 - 基于小样本数据的信贷违约风险预测\n\n---\n\n## 📋 赛题概述\n\n### 背景\n\n当前金融产品快速迭代，新产品上线初期往往具有：\n- 还款表现期短\n- 风险暴露不充分\n- 可用建模样本少\n- 违约样本极少\n\n本竞赛探索\"知识+数据\"双驱动的数智风控解决方案，推动数据科学、人工智能、业务需求的深度融合。\n\n### 任务目标\n\n基于信贷风控脱敏数据集，构建违约风险预测模型，预测客户是否会违约。\n\n**核心挑战**:\n- 训练集仅500条，违约样本约10条（2%违约率）\n- 训练集与测试集可能存在较大分布偏差\n- 需要充分理解业务知识，运用AI技术进行特征增强、样本重构\n\n---\n\n## 📊 数据说明\n\n### 数据规模\n\n- **训练集**: 500条\n- **测试集**: 4500条（公榜1000条 + 私榜1000条 + 干扰2500条）\n- **特征维度**: 23个字段（含标签）\n- **标签**: target（1=违约，0=正常还款）\n\n### 特征类型\n\n| 类别 | 特征示例 |\n|------|----------|\n| 贷款基本信息 | 申请金额、贷款用途 |\n| 借款人特征 | 月收入、工龄、房屋所有权 |\n| 历史信用行为 | 逾期次数、违约次数、征信查询次数 |\n| 负债与账户 | 信用卡数量、已用额度、总授信额度、多头借贷 |\n| 近期信用动态 | 最近信用卡开户月数、最近借款月数 |\n\n---\n\n## 🎯 项目结构\n\n```\nDataScienceContest/\n│\n├── baseline/                          # 基准模型方法\n│   ├── data_preprocessing.py         # 数据预处理\n│   ├── machine_learning_models.py    # 基础ML模型\n│   ├── stacking_models.py            # Stacking集成\n│   ├── credit_risk_main.py           # 主程序\n│   ├── run_stacking.py               # Stacking训练\n│   ├── plot_predictions.py           # 可视化分析\n│   ├── requirements.txt              # 依赖包\n│   └── outputs/                      # 输出结果\n│\n├── GANmodel/                          # GAN数据增强方法\n│   ├── train_gan.py                  # GAN训练\n│   ├── generate_synthetic_data.py    # 合成数据生成\n│   ├── evaluate_synthetic_data.py    # 质量评估\n│   ├── train_with_gan.py             # G-XGBoost训练\n│   ├── requirements.txt              # 依赖包\n│   ├── models/                       # GAN模型\n│   ├── synthetic_data/               # 合成数据\n│   └── evaluation/                   # 评估结果\n│\n├── 初赛选手数据/                      # 比赛数据\n│   ├── 训练数据集.xlsx\n│   ├── 测试集.xlsx\n│   └── 提交样例.csv\n│\n├── 赛题与数据说明.md                  # 赛题详细说明\n└── README.md                          # 本文件\n```\n\n---\n\n## 🚀 快速开始\n\n### 环境准备\n\n```bash\n# Python 3.8+\npip install pandas numpy scikit-learn matplotlib seaborn\npip install xgboost lightgbm openpyxl imbalanced-learn\n```\n\n### 方法1: Baseline方法（推荐首选）\n\n```bash\ncd baseline\n\n# 运行完整流程\npython credit_risk_main.py\n# 输出: outputs/ensemble_submission.csv\n\n# 或使用优化的Stacking模型\npython run_stacking.py --strategy simple_average\n# 输出: outputs/stacking_top3_simple_avg_submission.csv\n\n# 可视化分析\npython plot_predictions.py\n```\n\n**预期得分**: 0.56-0.58\n\n### 方法2: GAN数据增强方法（实验性）\n\n```bash\ncd GANmodel\n\n# 步骤1: 训练GAN生成违约样本\npython train_gan.py --use-sdv --target-class minority --epochs 300\n\n# 步骤2: 生成合成数据\npython generate_synthetic_data.py \\\n    --use-sdv \\\n    --target-class minority \\\n    --num-samples 500\n\n# 步骤3: 评估合成数据质量\npython evaluate_synthetic_data.py \\\n    --real-data ../初赛选手数据/训练数据集.xlsx \\\n    --synthetic-data synthetic_data/synthetic_minority.csv\n\n# 步骤4: 使用增强数据训练模型\npython train_with_gan.py \\\n    --synthetic-data-path synthetic_data/synthetic_minority.csv \\\n    --augment-strategy minority \\\n    --model-type stacking\n```\n\n**预期得分**: 0.57-0.59（理论）\n\n---\n\n## 📈 技术方案\n\n### Baseline方案\n\n#### 1. 数据预处理\n- 缺失值处理（中位数/众数填充）\n- 特征工程（衍生特征、比率特征）\n- SMOTE样本平衡（解决2%违约率问题）\n- 特征标准化\n\n#### 2. 模型集成\n**基础模型**:\n- Logistic Regression\n- Random Forest\n- Gradient Boosting\n- XGBoost\n- LightGBM\n- KNN\n- Decision Tree\n- Naive Bayes\n\n**集成策略**:\n- Voting Ensemble（简单平均/加权平均）\n- Stacking（两层模型，Ridge元学习器）\n\n#### 3. 最佳配置\n```bash\n# Top3模型简单平均\npython run_stacking.py --strategy simple_average --top-n 3\n```\n\n**Top3模型**: XGBoost + Random Forest + Gradient Boosting\n\n### GAN数据增强方案（G-XGBoost）\n\n基于论文《A Credit Risk Model with Small Sample Data Based on G-XGBoost》\n\n#### 核心思想\n1. 使用CTGAN学习真实数据分布\n2. 生成高质量合成违约样本\n3. 扩充训练集（500 → 1000+）\n4. 缓解样本不平衡和过拟合\n\n#### 关键技术\n- **CTGAN**: 专为表格数据设计的条件GAN\n- **数据质量评估**: 分布对比、相关性分析、PCA可视化\n- **增强策略**: 只增强少数类（违约样本）\n\n#### 优势\n- 解决小样本问题\n- 平衡正负样本\n- 提升模型泛化能力\n\n---\n\n## 📊 性能对比\n\n| 方法 | 预测均值 | CV AUC | 实际得分 | 推荐度 |\n|------|----------|--------|----------|--------|\n| **Ensemble (Baseline)** | 0.0565 | - | **0.5607** | ⭐⭐⭐ |\n| Stacking Simple Avg | 0.0419 | ~0.999 | ? | ⭐⭐⭐ |\n| Stacking Ridge | 0.0531 | ~0.999 | ? | ⭐⭐ |\n| G-XGBoost (GAN增强) | ? | ? | ? | ⭐⭐⭐ (实验性) |\n| Gradient Boosting | 0.0424 | 0.9984 | ? | ⭐⭐ |\n| Random Forest | 0.0670 | 0.9990 | ? | ⭐⭐ |\n| XGBoost | 0.0163 | 0.9989 | ? | ⭐ |\n\n---\n\n## 🔍 关键发现\n\n### 1. 过拟合问题严重\n- 训练集AUC接近1.0\n- 预测过于保守（均值过低）或激进（均值过高）都不利\n- **最佳预测均值**: 0.05-0.06（接近Ensemble）\n\n### 2. 集成优于单模型\n- 简单平均效果优于复杂元学习器\n- Top3模型足够，更多模型不一定更好\n- 避免元模型过拟合\n\n### 3. SMOTE样本平衡必要\n- 原始2%违约率导致模型偏向预测0\n- SMOTE扩充到20-30%违约率效果最佳\n- 过度平衡（50%）可能适得其反\n\n### 4. 特征工程价值有限\n- 原始特征已较完善\n- 简单衍生特征（比率、交互）有帮助\n- 复杂特征可能引入噪声\n\n---\n\n## 📚 详细文档\n\n- **baseline/README.md**: Baseline方法完整指南\n- **baseline/STACKING_README.md**: Stacking模型详细说明\n- **GANmodel/README.md**: GAN数据增强完整指南\n- **赛题与数据说明.md**: 官方赛题说明\n- **baseline/outputs/**: 各种训练报告和分析\n\n---\n\n## 🛠️ 推荐使用流程\n\n### 初学者流程\n\n```bash\n# 1. 运行Baseline获取基准\ncd baseline\npython credit_risk_main.py\n\n# 2. 查看结果\nls outputs/*.csv\npython plot_predictions.py\n\n# 3. 提交最佳结果\n# 提交 outputs/ensemble_submission.csv\n```\n\n### 进阶流程\n\n```bash\n# 1. 尝试优化的Stacking\ncd baseline\npython run_stacking.py --test-all\n\n# 2. 对比所有模型\npython plot_predictions.py\n\n# 3. 实验GAN增强\ncd ../GANmodel\npython train_gan.py --use-sdv --target-class minority\npython generate_synthetic_data.py --use-sdv --num-samples 500\npython train_with_gan.py --augment-strategy minority --model-type stacking\n\n# 4. 选择最佳方案提交\n```\n\n---\n\n## ⚙️ 高级配置\n\n### Stacking参数调优\n\n```bash\npython run_stacking.py \\\n    --strategy simple_average \\  # 策略: simple_average/ridge/xgboost\n    --top-n 3 \\                  # 使用Top N个模型\n    --n-folds 5 \\                # K折交叉验证\n    --C 0.1                      # 正则化强度（仅Ridge）\n```\n\n### GAN参数调优\n\n```bash\npython train_gan.py \\\n    --use-sdv \\                  # 使用SDV库的CTGAN\n    --target-class minority \\    # 生成类别: both/minority/majority\n    --epochs 300 \\               # 训练轮数\n    --batch-size 500             # 批次大小\n```\n\n---\n\n## 🎯 优化建议\n\n### 短期优化（可立即尝试）\n1. ✅ 调整SMOTE比例（尝试10%, 20%, 30%）\n2. ✅ 测试不同Top-N组合（Top2, Top3, Top4）\n3. ✅ 调整正则化强度（C=0.01, 0.1, 1.0）\n4. ✅ 尝试不同集成权重\n\n### 中期优化（需要实验）\n1. 🔄 GAN数据增强（已实现，待验证）\n2. 🔄 更多特征工程\n3. 🔄 模型参数精调\n4. 🔄 概率校准技术\n\n### 长期优化（高级技术）\n1. ⏳ 深度学习模型（TabNet, AutoInt）\n2. ⏳ AutoML自动调参\n3. ⏳ 半监督学习利用测试集\n4. ⏳ 领域知识融入（专家规则）\n\n---\n\n## 🤔 常见问题\n\n### Q1: 为什么训练AUC=1.0但得分不高？\n**A**: 严重过拟合。关注交叉验证AUC和预测分布，而非训练指标。\n\n### Q2: 应该使用哪个模型提交？\n**A**: 推荐 `ensemble_submission.csv` 或 `stacking_top3_simple_avg_submission.csv`\n\n### Q3: GAN增强真的有用吗？\n**A**: 理论上有用，但需要实验验证。论文报告有2-3%提升。\n\n### Q4: 如何避免过拟合？\n**A**:\n- 使用简单模型/集成策略\n- 添加正则化\n- 关注预测分布\n- K折交叉验证\n\n### Q5: 预测分布异常怎么办？\n**A**:\n- 检查预测均值（应该0.05-0.06）\n- 调整SMOTE比例\n- 降低模型复杂度\n- 增加正则化\n\n---\n\n## 📖 参考资料\n\n### 论文\n- Xu et al. (2019) - CTGAN: Conditional Tabular GAN\n- Goodfellow et al. (2014) - Generative Adversarial Networks\n- 《A Credit Risk Model with Small Sample Data Based on G-XGBoost》\n\n### 工具库\n- [scikit-learn](https://scikit-learn.org/)\n- [XGBoost](https://xgboost.readthedocs.io/)\n- [imbalanced-learn](https://imbalanced-learn.org/)\n- [SDV - Synthetic Data Vault](https://github.com/sdv-dev/SDV)\n\n---\n\n## 🔄 更新日志\n\n### v2.0 (2025-10-18)\n- ✅ 完整的GAN数据增强模块\n- ✅ 优化的Stacking集成策略\n- ✅ 完善的可视化分析\n- ✅ 详细的文档和使用指南\n\n### v1.0 (2025-10-17)\n- ✅ Baseline实现\n- ✅ 多模型集成\n- ✅ 基础预处理流程\n\n---\n\n## 📧 联系方式\n\n如有问题或建议，请查看各子目录的详细文档或提出Issue。\n\n---\n\n## 📄 许可证\n\n本项目仅用于数据科学竞赛学习交流，数据已脱敏处理，不涉及客户隐私。\n\n---\n\n**祝比赛顺利！** 🎯\n",
+ "hits": {
+  "st": [
+   {
+    "file": "GANmodel/train_gan.py",
+    "line": 14,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from datetime import datetime",
+     "import pandas as pd",
+     "import numpy as np",
+     "from ctgan import CTGAN",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "",
+     "def parse_args():"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "GANmodel/train_gan.py",
+    "line": 15,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from ctgan import CTGAN",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "",
+     "def parse_args():",
+     "    \"\"\"解析命令行参数\"\"\""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "GANmodel/train_gan.py",
+    "line": 14,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from datetime import datetime",
+     "import pandas as pd",
+     "import numpy as np",
+     "from ctgan import CTGAN",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "",
+     "def parse_args():"
+    ]
+   },
+   {
+    "file": "GANmodel/train_gan.py",
+    "line": 15,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from ctgan import CTGAN",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "",
+     "def parse_args():",
+     "    \"\"\"解析命令行参数\"\"\""
+    ]
+   }
+  ],
+  "ctgan_mod": [
+   {
+    "file": "GANmodel/train_gan.py",
+    "line": 13,
+    "text": "from ctgan import CTGAN",
+    "context": [
+     "import pickle",
+     "from datetime import datetime",
+     "import pandas as pd",
+     "import numpy as np",
+     "from ctgan import CTGAN",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     ""
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "GANmodel/train_gan.py",
+    "line": 14,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from datetime import datetime",
+     "import pandas as pd",
+     "import numpy as np",
+     "from ctgan import CTGAN",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "",
+     "def parse_args():"
+    ]
+   },
+   {
+    "file": "GANmodel/train_gan.py",
+    "line": 126,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "    print(f\"训练轮数: {epochs}\")",
+     "    print(f\"批次大小: {batch_size}\")",
+     "",
+     "    # 创建合成器",
+     "    synthesizer = CTGANSynthesizer(",
+     "        metadata=metadata,",
+     "        epochs=epochs,",
+     "        batch_size=batch_size,",
+     "        verbose=True"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ctgan_mod",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "GANmodel/requirements.txt": [
+   "sdv>=1.0.0",
+   "ctgan>=0.7.0"
+  ]
+ }
+}

@@ -1,0 +1,258 @@
+{
+ "repo": "bmodayur/feature-reduction",
+ "disk_kb": 12657,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Early Markers - Bayesian Surprise Analysis for Infant Developmental Risks\n\n[![Python Version](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)\n[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)\n[![Documentation](https://img.shields.io/badge/docs-complete-brightgreen.svg)](docs/)\n\n**A research codebase for analyzing early infant movement markers using Bayesian statistical methods and machine learning techniques.**\n\n---\n\n## Overview\n\nEarly Markers implements a Bayesian surprise analysis framework to identify developmental anomalies in infant movement data. The system quantifies how unexpected an infant's movement patterns are compared to a normative reference population, enabling early detection of at-risk developmental trajectories.\n\n### Key Features\n\n- 🧠 **Bayesian Surprise Analysis**: Compute z-scores from movement feature distributions\n- 🎯 **Advanced Feature Selection**: Enhanced Adaptive RFE with noise injection and consensus testing\n- 📊 **Sample Size Estimation**: Bayesian Assurance Method (BAM) for study planning\n- 🔬 **Synthetic Data Generation**: Validation and power analysis with SDV/Gretel\n- 📈 **ROC Analysis**: Comprehensive metrics with confidence intervals\n- 📑 **Automated Reporting**: Excel workbooks with formatted tables and plots\n\n### Core Methodology\n\n**Bayesian Surprise** quantifies deviation from normative patterns:\n\n1. Compute negative log-likelihood for each feature: `-log P(x | N(μ_ref, σ²_ref))`\n2. Sum across features: `S_i = Σ_f [-log P(x_if)]`\n3. Standardize: `z_i = (S_i - μ_train) / σ_train`\n4. Compute p-value: `p_i = 2 × SF(|z_i|)`\n\nHigher z-scores indicate greater deviation from typical development.\n\n---\n\n## License & Patents\n\nThis repository is licensed under the **Apache License 2.0** - you are free to use, modify, and distribute this code for both research and clinical applications. See the [LICENSE](LICENSE) file for details.\n\n**Patent Notice**: While Cribsy's platform is protected by [US Patent No. 12,272,054](https://patents.google.com/patent/US12272054), this specific feature reduction technique and the identified feature set for infant movement anomaly detection are provided as open source under Apache 2.0. Healthcare providers, researchers, and developers are encouraged to use this methodology to improve early detection of developmental risks in infants.\n\n**Intended Use**: This code is suitable for research purposes and clinical implementation. We encourage its use in any setting where early identification of at-risk infants can lead to better outcomes.\n\n---\n\n## Quick Start\n\n### Installation\n\n**Requirements**: Python 3.10–3.12 (NOT 3.13)\n\n```bash\ngit clone <repository-url>\ncd early-markers\n```\n\n**Option A: Poetry (recommended for development)**\n```bash\npoetry install\npoetry shell\n```\n\n**Option B: Conda + pip**\n```bash\nconda create -n early-markers python=3.12\nconda activate early-markers\npip install -r requirements.txt\n```\n\n**Option C: venv + pip**\n```bash\npython -m venv venv\nsource venv/bin/activate  # Windows: venv\\Scripts\\activate\npip install -r requirements.txt\n```\n\n### Basic Usage\n\n```python\nfrom early_markers.cribsy.common.bayes import BayesianData\n\n# Initialize with data\nbd = BayesianData(base_file=\"features_merged.pkl\")\n\n# Run feature selection\nbd.run_rfe_on_base(\n    rfe_name=\"rfe_trial_1\",\n    features_to_keep_pct=0.9\n)\n\n# Compute Bayesian surprise\nbd.run_surprise_with_rfe(\n    model_prefix=\"trial_1\",\n    rfe_name=\"rfe_trial_1\"\n)\n\n# Calculate ROC metrics\nbd.run_metrics_from_surprise(\n    metrics_name=\"trial_1_metrics\",\n    model_name=f\"trial_1_k_{bd.rfe_k('rfe_trial_1')}\"\n)\n\n# Access results\nmetrics_df = bd.metrics_df(\"trial_1_metrics\")\nprint(f\"AUC: {metrics_df['auc'].iloc[0]:.3f}\")\n```\n\n### Jupyter Notebooks\n\nPrimary workflow uses Jupyter notebooks:\n\n```bash\npoetry run jupyter notebook\n```\n\nKey notebooks in `early_markers/cribsy/notebooks/`:\n- `01_rfe_real.ipynb` - Real data feature selection with iterative RFE\n- `01_rfe_real_fast.ipynb` - Fast mode feature selection (10 trials)\n- `02_synthetic_sdv.ipynb` - Synthetic data generation with SDV\n- `03_rfe_synthetic.ipynb` - Feature selection on synthetic data\n- `04_bam_sample_size.ipynb` - BAM sample size estimation\n- `05_test_retest_sample_size.ipynb` - Test-retest reliability analysis\n- `06_tost_sample_size.ipynb` - TOST equivalence testing\n\n**Primary workflow**: Run notebooks 01 → 04 for complete analysis from raw data to sample size estimation.\n\n---\n\n## Two Pathways for Users\n\n### Pathway 1: Core API & Methodology\n\nFor users who want to **understand the methodology** or **run their own analyses**:\n\n- Run notebooks 01 → 04 in `early_markers/cribsy/notebooks/`\n- See [docs/WORKFLOWS.md](docs/WORKFLOWS.md) for step-by-step guides\n- See [docs/API.md](docs/API.md) for API reference\n\n### Pathway 2: Analysis Scripts & Results\n\nFor users who want to **reproduce specific analyses** or **understand current results**:\n\n```\nRFE → ROC → BAM\n │      │     └─ Sample size planning\n │      └─ Screener metrics (Se, Sp, AUC)\n └─ Feature selection (59 → 20 features)\n```\n\n**Current Best Model** (20-feature with transformation): AUC=0.902, Se=92.1%, Sp=77.5%\n\n**Feature File** Downloadable from this link: https://drive.google.com/drive/folders/1CYEV9lFP5RnKG09xeeNdJ-9NTVk1fp4b?usp=sharing \n\n| Script | Purpose | Docs |\n|--------|---------|------|\n| `scripts/run_rfe_with_age_forced.py` | Feature selection | [RFE_METHODOLOGY.md](docs/RFE_METHODOLOGY.md) |\n| `scripts/compute_roc_after_rfe.py` | ROC metrics | [FEATURE_TRANSFORMATION_METHODOLOGY.md](docs/FEATURE_TRANSFORMATION_METHODOLOGY.md) |\n| `scripts/run_bam_20feature_nov21.py` | Sample size | [BAM_for_20FeatureSet.md](docs/BAM_for_20FeatureSet.md) |\n\nSee [docs/ANALYSIS_WORKFLOW.md](docs/ANALYSIS_WORKFLOW.md) for detailed step-by-step instructions.\n\n---\n\n## Documentation\n\n### 📚 Complete Documentation Suite\n\n**Core Documentation** (Pathway 1):\n\n| Document | Description |\n|----------|-------------|\n| **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** | System design and methodology |\n| **[docs/API.md](docs/API.md)** | Complete API reference |\n| **[docs/WORKFLOWS.md](docs/WORKFLOWS.md)** | Common analysis patterns |\n| **[docs/DATA_FORMATS.md](docs/DATA_FORMATS.md)** | Data specifications |\n| **[docs/CONFIGURATION.md](docs/CONFIGURATION.md)** | Parameter tuning guide |\n\n**Analysis Documentation** (Pathway 2):\n\n| Document | Description |\n|----------|-------------|\n| **[docs/BAM_for_20FeatureSet.md](docs/BAM_for_20FeatureSet.md)** | Sample size analysis for current model |\n| **[docs/RFE_METHODOLOGY.md](docs/RFE_METHODOLOGY.md)** | Enhanced Adaptive RFE methodology |\n| **[docs/FEATURE_TRANSFORMATION_METHODOLOGY.md](docs/FEATURE_TRANSFORMATION_METHODOLOGY.md)** | 1/(1+\\|x\\|) transformation for bidirectional detection |\n| **[docs/FEATURE_SET_PROVENANCE.md](docs/FEATURE_SET_PROVENANCE.md)** | Tracking feature set origins |\n| **[docs/FEATURE_SETS_SUMMARY.md](docs/FEATURE_SETS_SUMMARY.md)** | Comparison of feature sets |\n\n### 🎓 Getting Started Guide\n\n**New users should read in this order:**\n\n1. **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** - Understand the Bayesian surprise methodology\n2. **[DATA_FORMATS.md](docs/DATA_FORMATS.md)** - Learn about data structures\n3. **[WORKFLOWS.md](docs/WORKFLOWS.md)** - Follow step-by-step analysis patterns\n4. **[API.md](docs/API.md)** - Reference for all classes and methods\n5. **[CONFIGURATION.md](docs/CONFIGURATION.md)** - Tune parameters for your use case\n\n### 📖 Quick Links\n\n- **[Basic Analysis Workflow](docs/WORKFLOWS.md#basic-analysis-workflow)** - 6-step guide\n- **[Feature Selection Guide](docs/WORKFLOWS.md#feature-selection-workflow)** - RFE methods\n- **[Configuration Profiles](docs/CONFIGURATION.md#configuration-profiles)** - Production/dev/reproducibility\n- **[Data Transformations](docs/DATA_FORMATS.md#data-transformations)** - Pipeline details\n- **[Troubleshooting](docs/WORKFLOWS.md#troubleshooting)** - Common issues\n\n---\n\n## Project Structure\n\n```\nearly-markers/\n├── README.md                          # This file\n├── CLAUDE.md                          # Claude Code guidance\n├── pyproject.toml                    # Poetry dependencies\n├── requirements.txt                  # Pip dependencies\n│\n├── docs/                             # Documentation\n│   ├── ARCHITECTURE.md               # System design (Pathway 1)\n│   ├── API.md                        # API reference (Pathway 1)\n│   ├── WORKFLOWS.md                  # Analysis patterns (Pathway 1)\n│   ├── DATA_FORMATS.md               # Data specifications (Pathway 1)\n│   ├── CONFIGURATION.md              # Parameter tuning (Pathway 1)\n│   ├── BAM_for_20FeatureSet.md       # Sample size analysis (Pathway 2)\n│   ├── RFE_METHODOLOGY.md            # RFE methodology (Pathway 2)\n│   ├── FEATURE_TRANSFORMATION_METHODOLOGY.md  # Transformation (Pathway 2)\n│   ├── FEATURE_SET_PROVENANCE.md     # Feature set tracking (Pathway 2)\n│   └── FEATURE_SETS_SUMMARY.md       # Feature set comparison (Pathway 2)\n│\n├── scripts/                          # Analysis scripts (Pathway 2)\n│   ├── compute_roc_after_rfe.py      # ROC metrics for feature sets\n│   ├── run_rfe_with_age_forced.py    # RFE with forced age inclusion\n│   ├── run_bam_20feature_nov21.py    # BAM sample size calculation\n│   └── *.py                          # Additional analysis scripts\n├── early_markers/\n│   ├── cribsy/                       # Core analysis module\n│   │   ├── __init__.py              # Random seed init\n│   │   ├── bam.py                   # Legacy BAM functions\n│   │   ├── thresholds.py            # Pre-computed thresholds\n│   │   ├── common/\n│   │   │   ├── bayes.py             # Main orchestration (BayesianData)\n│   │   │   ├── adaptive_rfe.py      # Enhanced feature selection\n│   │   │   ├── bam_unified.py       # Unified BAM implementation\n│   │   │   ├── bam_export.py        # BAM results export utilities\n│   │   │   ├── rfe.py               # Base RFE\n│   │   │   ├── constants.py         # Configuration\n│   │   │   ├── enums.py             # Type definitions\n│   │   │   ├── metrics_n.py         # Sample size formulas\n│   │   │   └── data.py              # Legacy data loading\n│   │   └── notebooks/               # Jupyter analysis notebooks\n│   │       ├── 01_rfe_real.ipynb          # Real data RFE\n│   │       ├── 01_rfe_real_fast.ipynb     # Fast RFE mode\n│   │       ├── 02_synthetic_sdv.ipynb     # SDV synthetic data\n│   │       ├── 03_rfe_synthetic.ipynb     # Synthetic RFE\n│   │       ├── 04_bam_sample_size.ipynb   # BAM estimation\n│   │       ├── 05_test_retest_sample_size.ipynb  # ICC analysis\n│   │       ├── 06_tost_sample_size.ipynb  # TOST equivalence\n│   │       └── hold/                      # Archive/legacy\n│   ├── common/\n│   │   └── xlsx.py                  # Excel formatting\n│   └── emmacp_metrics/              # Raw data directory\n└── working/                          # Working directory\n```\n\n---\n\n## Core Components\n\n### BayesianData Class\n\nMain orchestration class for the analysis pipeline.\n\n```python\nfrom early_markers.cribsy.common.bayes import BayesianData\n\nbd = BayesianData(\n    base_file=\"features_merged.pkl\",  # Data file\n    synthetic=False,                   # Real vs synthetic data\n    augment=False,                     # Add noise features\n    train_n=None,                      # Sample size (None = all)\n    test_n=None\n)\n```\n\n**Key Methods**:\n- `run_rfe_on_base()` - Feature selection\n- `run_surprise_with_rfe()` - Compute Bayesian surprise\n- `run_metrics_from_surprise()` - ROC analysis\n- `metrics_df()` - Access results\n\n### EnhancedAdaptiveRFE Class\n\nAdvanced feature selection with stability testing.\n\n```python\nfrom early_markers.cribsy.common.adaptive_rfe import EnhancedAdaptiveRFE\n\nselector = EnhancedAdaptiveRFE(\n    n_trials=50,              # Parallel trials\n    alpha=0.05,               # Significance level\n    noise_ratio=0.1,          # Noise injection\n    n_jobs=12                 # Parallelization\n)\n\nselector.fit(X, y, features_to_keep_pct=0.9)\nselected = selector.get_significant_features()\n```\n\n### BAM Functions\n\nBayesian Assurance Method for sample size estimation when planning new studies.\n\n```python\nfrom early_markers.cribsy.common.bam_unified import BAMEstimator\n\n# Initialize BAM estimator\nestimator = BAMEstimator(seed=20250313, verbose=True)\n\n# Estimate sample size for joint sensitivity + specificity\nresult = estimator.estimate_joint(\n    pilot_se=(tp, total_positives),  # Pilot data tuple\n    pilot_sp=(tn, total_negatives),  # Pilot data tuple\n    target_width=0.15,               # Target CI width\n    ci=0.95,                         # Confidence level\n    target_assurance=0.80,           # Desired assurance\n    prevalence_prior=(8, 32)         # Beta prior for prevalence\n)\n\nprint(f\"Recommended N: {result.n_total}\")\nprint(f\"Se CI width: {result.se_width:.3f}, Sp CI width: {result.sp_width:.3f}\")\n```\n\n**Note**: See `04_bam_sample_size.ipynb` for complete BAM workflow and grid search examples.\n\n---\n\n## Data\n\n### Movement Features (56 total)\n\n**Body Parts** (8): Ankle, Wrist, Knee, Elbow, Hip, Shoulder, Ear, Eye (L/R)\n\n**Feature Types**:\n- Position: entropy, mean, std\n- Velocity: entropy, mean, std\n- Acceleration: entropy, mean, std\n- Correlation: xy, vx_vy\n- Age: `age_in_weeks`\n\n**Example Features**:\n- `Ankle_L_position_entropy`\n- `Wrist_R_velocity_mean`\n- `Hip_L_acceleration_std`\n\n### Data Formats\n\n**Long Format** (internal):\n```\ninfant | category | risk | feature                | value\n-------|----------|------|------------------------|-------\ninf_01 | 1        | 0    | Ankle_L_position_entropy | 0.234\ninf_01 | 1        | 0    | Wrist_R_velocity_mean    | 1.567\n```\n\n**Wide Format** (for ML):\n```\ninfant | category | risk | Ankle_L_... | Wrist_R_... | ...\n-------|----------|------|-------------|-------------|-----\ninf_01 | 1        | 0    | 0.234       | 1.567       | ...\n```\n\nSee **[DATA_FORMATS.md](docs/DATA_FORMATS.md)** for complete specifications.\n\n### Data File\nYou can download the data file from the link below and place it in data/pkl\n\n***Google Drive***:\nhttps://drive.google.com/drive/folders/1CYEV9lFP5RnKG09xeeNdJ-9NTVk1fp4b?usp=drive_link\n---\n\n## Configuration\n\n### Key Parameters\n\nAll configuration in `early_markers/cribsy/common/constants.py`:\n\n```python\n# Reproducibility\nRAND_STATE = 20250313        # Never change!\n\n# RFE Settings\nRFE_N_TRIALS = 50            # Parallel trials\nRFE_ALPHA = 0.05             # Significance level\nRFE_KEEP_PCT = 0.9           # Target 90% features\nRFE_NOISE_RATIO = 0.1        # 10% noise injection\n\n# Random Forest\nN_ESTIMATORS = 200           # Trees per forest\nN_JOBS = 8                   # Parallel jobs\n\n# Cross-Validation\nRKFOLD_REPEATS = 3           # Repeated k-fold\nRKFOLD_SPLITS = 5            # K-fold splits (15 total)\n```\n\n### Configuration Profiles\n\n**Production** (2-4 hours):\n- `RFE_N_TRIALS=50`, `N_ESTIMATORS=200`\n- Full reproducibility and stability\n\n**Development** (15-30 minutes):\n- `RFE_N_TRIALS=20`, `N_ESTIMATORS=100`\n- 10-20× faster for iteration\n\n**Reproducibility** (8-12 hours):\n- `n_jobs=1` everywhere\n- Bit-exact results across machines\n\nSee **[CONFIGURATION.md](docs/CONFIGURATION.md)** for complete tuning guide.\n\n---\n\n## Development\n\n### Environment Setup\n\n```bash\n# Install dependencies\npoetry install\n\n# Activate virtual environment\npoetry shell\n\n# Run tests (if available)\npoetry run pytest\n\n# Start Jupyter\npoetry run jupyter notebook\n```\n\n### Path Configuration\n\n**Machine-specific paths** in `constants.py`:\n\n```python\nBASE_DATA_DIR = Path(\"/Volumes/secure/data/early_markers/cribsy\")\nRAW_DATA_PATH = Path(\"/Volumes/secure/code/early-markers/early_markers/emmacp_metrics/features_merged.pkl\")\n```\n\n**Update these for your machine!**\n\n### Reproducibility\n\n- Random seed set globally: `RAND_STATE = 20250313`\n- All stochastic operations use this seed\n- For exact reproducibility: set `n_jobs=1` in all estimators\n- See **[CONFIGURATION.md](docs/CONFIGURATION.md)** for details\n\n---\n\n## Performance\n\n### Computational Costs\n\n| Operation | Complexity | Typical Time |\n|-----------|------------|-------------|\n| Data Loading | O(n × f) | < 1 minute |\n| RFE | O(trials × folds × trees) | 1-2 hours |\n| Surprise Calculation | O(n × f) | < 5 minutes |\n| ROC Analysis | O(n × thresholds) | < 1 minute |\n\n### Optimization Strategies\n\n1. **Reduce RFE trials**: 50 → 20 (~2.5× speedup)\n2. **Reduce RF trees**: 200 → 100 (~2× speedup)\n3. **Increase step size**: `RFE_MAX_STEP` 5 → 10 (~1.5× speedup)\n4. **Reduce CV folds**: (3,5) → (1,3) (~5× speedup)\n5. **Simplify grid**: 27 → 9 combinations (~3× speedup)\n\n**Combined**: 10-20× faster for development\n\nSee **[CONFIGURATION.md](docs/CONFIGURATION.md#performance-tuning)** for details.\n\n---\n\n## Output Artifacts\n\n### Excel Reports\n\n**Location**: `/Volumes/secure/data/early_markers/cribsy/xlsx/`\n\n**Format**:\n- Summary sheet with top models by AUC and Youden's J\n- Detail sheets per model with full metrics\n- Conditional formatting and hyperlinks\n- Confidence intervals and sample size estimates\n\n### Plots\n\n**Location**: `/Volumes/secure/data/early_markers/cribsy/png/`\n\n**Types**:\n- ROC curves with AUC\n- Feature importance heatmaps\n- Stability plots\n- Threshold sensitivity analysis\n\n### Intermediate Data\n\n**Pickle files** (`.pkl`): Cached intermediate results  \n**IPC files** (`.ipc`): Synthetic datasets (Polars format)  \n**CSV files** (`.csv`): Tabular exports  \n\n---\n\n## Common Workflows\n\n### 1. Basic Analysis\n\n```python\nfrom early_markers.cribsy.common.bayes import BayesianData\n\nbd = BayesianData(base_file=\"features_merged.pkl\")\nbd.run_rfe_on_base(rfe_name=\"rfe_1\", features_to_keep_pct=0.9)\nbd.run_surprise_with_rfe(model_prefix=\"model\", rfe_name=\"rfe_1\")\nbd.run_metrics_from_surprise(\n    metrics_name=\"trial_1\",\n    model_name=f\"model_k_{bd.rfe_k('rfe_1')}\"\n)\nmetrics_df = bd.metrics_df(\"trial_1\")\n```\n\n### 2. Model Comparison\n\n```python\n# Feature count sweep\nfor pct in [0.7, 0.8, 0.9, 0.95]:\n    bd.run_rfe_on_base(rfe_name=f\"rfe_{int(pct*100)}\", features_to_keep_pct=pct)\n    bd.run_surprise_with_rfe(model_prefix=f\"sweep\", rfe_name=f\"rfe_{int(pct*100)}\")\n    # ... compute metrics\n\n# Compare AUC across models\nfor name in bd.metrics_names:\n    metrics = bd.metrics(name)\n    print(f\"{name}: AUC = {metrics.auc:.3f}\")\n```\n\n### 3. Sample Size Planning\n\n```python\nfrom early_markers.cribsy.bam import informed_bam_performance\n\n# Based on pilot results\nresults = informed_bam_performance(\n    pilot_se=0.85,\n    pilot_sp=0.80,\n    prevalence_prior=(1, 1),\n    hdi_width=0.15\n)\n\nprint(f\"Recommended sample size: {results['n_total']} (se: {results['n_se']}, sp: {results['n_sp']})\")\n```\n\nSee **[WORKFLOWS.md](docs/WORKFLOWS.md)** for complete examples.\n\n---\n\n## Testing\n\n### Validation Strategy\n\n**No formal test suite.** Validation performed through:\n\n1. **Synthetic data generation**: Create datasets with known properties\n2. **Jupyter notebooks**: Visual inspection and comparison\n3. **Known thresholds**: Compare against pre-computed values in `thresholds.py`\n4. **Cross-validation metrics**: Consistency checks across folds\n\n### Running Validation\n\n```bash\n# Start Jupyter\npoetry run jupyter notebook\n\n# Run synthetic data notebook\n# Navigate to: early_markers/cribsy/notebooks/synthetic.ipynb\n# Execute all cells and verify metrics\n```\n\n---\n\n## Troubleshooting\n\n### Common Issues\n\n**Issue**: Python version mismatch  \n**Solution**: Must use Python 3.12 (NOT 3.13)  \n```bash\npyenv install 3.12.7\npyenv local 3.12.7\npoetry env use python3.12\n```\n\n**Issue**: Path not found errors  \n**Solution**: Update machine-specific paths in `constants.py`  \n```python\nBASE_DATA_DIR = Path(\"/your/path/here\")\n```\n\n**Issue**: Memory errors during RFE  \n**Solution**: Reduce parallelization  \n```python\nRFE_N_JOBS = 4  # Instead of 12\nN_JOBS = 4      # Instead of 8\n```\n\n**Issue**: Non-reproducible results  \n**Solution**: Set n_jobs=1 for exact reproducibility  \n```python\nRFE_N_JOBS = 1\nN_JOBS = 1\n```\n\nSee **[WORKFLOWS.md](docs/",
+ "hits": {
+  "st": [
+   {
+    "file": "early_markers/cribsy/notebooks/02_synthetic_sdv.ipynb",
+    "line": 59,
+    "text": "\"from sdv.single_table import CTGANSynthesizer, CopulaGANSynthesizer, GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "    \"import polars as pl\\n\",",
+     "    \"from polars import DataFrame\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer, CopulaGANSynthesizer, GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"from sdv.evaluation.single_table import run_diagnostic, evaluate_quality\\n\",",
+     "    \"\\n\",",
+     "    \"from early_markers.cribsy.common.bayes import BayesianData\\n\","
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "early_markers/cribsy/notebooks/02_synthetic_sdv.ipynb",
+    "line": 60,
+    "text": "\"from sdv.metadata import Metadata\\n\",",
+    "context": [
+     "    \"from polars import DataFrame\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer, CopulaGANSynthesizer, GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"from sdv.evaluation.single_table import run_diagnostic, evaluate_quality\\n\",",
+     "    \"\\n\",",
+     "    \"from early_markers.cribsy.common.bayes import BayesianData\\n\",",
+     "    \"from early_markers.cribsy.common.constants import (\\n\","
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "early_markers/cribsy/notebooks/02_synthetic_sdv.ipynb",
+    "line": 61,
+    "text": "\"from sdv.evaluation.single_table import run_diagnostic, evaluate_quality\\n\",",
+    "context": [
+     "    \"import pandas as pd\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer, CopulaGANSynthesizer, GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"from sdv.evaluation.single_table import run_diagnostic, evaluate_quality\\n\",",
+     "    \"\\n\",",
+     "    \"from early_markers.cribsy.common.bayes import BayesianData\\n\",",
+     "    \"from early_markers.cribsy.common.constants import (\\n\",",
+     "    \"    IPC_DIR,\\n\","
+    ]
+   },
+   {
+    "file": "early_markers/cribsy/notebooks/02_synthetic_sdv.ipynb",
+    "line": 3167,
+    "text": "\"# from sdv.evaluation.single_table import get_column_pair_plot\\n\",",
+    "context": [
+     "    }",
+     "   },",
+     "   \"cell_type\": \"code\",",
+     "   \"source\": [",
+     "    \"# from sdv.evaluation.single_table import get_column_pair_plot\\n\",",
+     "    \"#\\n\",",
+     "    \"# fig = get_column_pair_plot(\\n\",",
+     "    \"#     real_data=df.to_pandas(),\\n\",",
+     "    \"#     synthetic_data=data_synth,\\n\","
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "early_markers/cribsy/notebooks/02_synthetic_sdv.ipynb",
+    "line": 59,
+    "text": "\"from sdv.single_table import CTGANSynthesizer, CopulaGANSynthesizer, GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "    \"import polars as pl\\n\",",
+     "    \"from polars import DataFrame\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer, CopulaGANSynthesizer, GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"from sdv.evaluation.single_table import run_diagnostic, evaluate_quality\\n\",",
+     "    \"\\n\",",
+     "    \"from early_markers.cribsy.common.bayes import BayesianData\\n\","
+    ]
+   },
+   {
+    "file": "early_markers/cribsy/notebooks/02_synthetic_sdv.ipynb",
+    "line": 60,
+    "text": "\"from sdv.metadata import Metadata\\n\",",
+    "context": [
+     "    \"from polars import DataFrame\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer, CopulaGANSynthesizer, GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"from sdv.evaluation.single_table import run_diagnostic, evaluate_quality\\n\",",
+     "    \"\\n\",",
+     "    \"from early_markers.cribsy.common.bayes import BayesianData\\n\",",
+     "    \"from early_markers.cribsy.common.constants import (\\n\","
+    ]
+   },
+   {
+    "file": "early_markers/cribsy/notebooks/02_synthetic_sdv.ipynb",
+    "line": 61,
+    "text": "\"from sdv.evaluation.single_table import run_diagnostic, evaluate_quality\\n\",",
+    "context": [
+     "    \"import pandas as pd\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer, CopulaGANSynthesizer, GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"from sdv.evaluation.single_table import run_diagnostic, evaluate_quality\\n\",",
+     "    \"\\n\",",
+     "    \"from early_markers.cribsy.common.bayes import BayesianData\\n\",",
+     "    \"from early_markers.cribsy.common.constants import (\\n\",",
+     "    \"    IPC_DIR,\\n\","
+    ]
+   },
+   {
+    "file": "early_markers/cribsy/notebooks/02_synthetic_sdv.ipynb",
+    "line": 3167,
+    "text": "\"# from sdv.evaluation.single_table import get_column_pair_plot\\n\",",
+    "context": [
+     "    }",
+     "   },",
+     "   \"cell_type\": \"code\",",
+     "   \"source\": [",
+     "    \"# from sdv.evaluation.single_table import get_column_pair_plot\\n\",",
+     "    \"#\\n\",",
+     "    \"# fig = get_column_pair_plot(\\n\",",
+     "    \"#     real_data=df.to_pandas(),\\n\",",
+     "    \"#     synthetic_data=data_synth,\\n\","
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "early_markers/cribsy/notebooks/02_synthetic_sdv.ipynb",
+    "line": 59,
+    "text": "\"from sdv.single_table import CTGANSynthesizer, CopulaGANSynthesizer, GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "    \"import polars as pl\\n\",",
+     "    \"from polars import DataFrame\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer, CopulaGANSynthesizer, GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"from sdv.evaluation.single_table import run_diagnostic, evaluate_quality\\n\",",
+     "    \"\\n\",",
+     "    \"from early_markers.cribsy.common.bayes import BayesianData\\n\","
+    ]
+   },
+   {
+    "file": "early_markers/cribsy/notebooks/02_synthetic_sdv.ipynb",
+    "line": 211,
+    "text": "\"# synthesizer = CTGANSynthesizer(\\n\",",
+    "context": [
+     "    \"#     epochs=500,\\n\",",
+     "    \"#     verbose=True\\n\",",
+     "    \"# )\\n\",",
+     "    \"\\n\",",
+     "    \"# synthesizer = CTGANSynthesizer(\\n\",",
+     "    \"#     metadata=metadata,\\n\",",
+     "    \"#     enforce_rounding=True,\\n\",",
+     "    \"#     enforce_min_max_values=True,\\n\",",
+     "    \"#     epochs=500,\\n\","
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "early_markers/cribsy/notebooks/02_synthetic_sdv.ipynb",
+    "line": 35,
+    "text": "\"5.  **Synthesizer Configuration**: Instantiates the `GaussianCopulaSynthesizer` with the defined metadata and distributions. It also adds a `FixedCombinations` constraint to ensure that the relationships between `risk` and `category` are preserved from the real data.\\n\",",
+    "context": [
+     "    \"1.  **Setup**: Imports `sdv` components and defines the number of synthetic rows to generate.\\n\",",
+     "    \"2.  **Feature Subsetting**: Selects a specific subset of `keeps` features from the full dataset to model.\\n\",",
+     "    \"3.  **Metadata Generation**: Automatically detects metadata from the real data and saves it to `sdv_metadata.json`. It also explicitly sets the `risk` column to be treated as categorical.\\n\",",
+     "    \"4.  **Distribution Specification**: Manually defines which statistical distribution (`gaussian_kde`, `beta`, `norm`) should be used to model each specific feature in the `distros` dictionary. Thi",
+     "    \"5.  **Synthesizer Configuration**: Instantiates the `GaussianCopulaSynthesizer` with the defined metadata and distributions. It also adds a `FixedCombinations` constraint to ensure that the relat",
+     "    \"6.  **Fit and Sample**: Fits the synthesizer to the real data and samples the specified number of new synthetic rows.\"",
+     "   ]",
+     "  },",
+     "  {"
+    ]
+   },
+   {
+    "file": "early_markers/cribsy/notebooks/02_synthetic_sdv.ipynb",
+    "line": 59,
+    "text": "\"from sdv.single_table import CTGANSynthesizer, CopulaGANSynthesizer, GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "    \"import polars as pl\\n\",",
+     "    \"from polars import DataFrame\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer, CopulaGANSynthesizer, GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"from sdv.evaluation.single_table import run_diagnostic, evaluate_quality\\n\",",
+     "    \"\\n\",",
+     "    \"from early_markers.cribsy.common.bayes import BayesianData\\n\","
+    ]
+   },
+   {
+    "file": "early_markers/cribsy/notebooks/02_synthetic_sdv.ipynb",
+    "line": 196,
+    "text": "\"synthesizer = GaussianCopulaSynthesizer(\\n\",",
+    "context": [
+     "    \"metadata.save_to_json(JSON_DIR / \\\"sdv_metadata.json\\\", mode=\\\"overwrite\\\")\\n\",",
+     "    \"\\n\",",
+     "    \"# metadata.visualize()\\n\",",
+     "    \"\\n\",",
+     "    \"synthesizer = GaussianCopulaSynthesizer(\\n\",",
+     "    \"    metadata,\\n\",",
+     "    \"    numerical_distributions=distros,\\n\",",
+     "    \"    enforce_min_max_values=True,\\n\",",
+     "    \")\\n\","
+    ]
+   }
+  ],
+  "sm": [
+   {
+    "file": "early_markers/cribsy/notebooks/02_synthetic_sdv.ipynb",
+    "line": 344,
+    "text": "\"from sdmetrics.visualization import get_column_plot\\n\",",
+    "context": [
+     "    }",
+     "   },",
+     "   \"cell_type\": \"code\",",
+     "   \"source\": [",
+     "    \"from sdmetrics.visualization import get_column_plot\\n\",",
+     "    \"from plotly.subplots import make_subplots\\n\",",
+     "    \"\\n\",",
+     "    \"\\n\",",
+     "    \"figures = []\\n\","
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ev",
+  "gc",
+  "md",
+  "sdv_any",
+  "sm",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

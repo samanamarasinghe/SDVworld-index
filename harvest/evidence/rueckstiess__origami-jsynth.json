@@ -1,0 +1,318 @@
+{
+ "repo": "rueckstiess/origami-jsynth",
+ "disk_kb": 27229,
+ "method": "partial_clone",
+ "tree_files": 83,
+ "status": "ok",
+ "readme": "# Autoregressive Synthesis of Sparse and Semi-Structured Mixed-Type Data\n\nReproduction package for Origami tabular/JSON synthesis experiments and baselines for the publication:\n[Autoregressive Synthesis of Sparse and Semi-Structured Mixed-Type Data](https://arxiv.org/abs/2603.01444).\n\n\n## Setup\n\nRequires Python 3.11+. MPS (Apple Silicon) or CUDA-capable GPU recommended for training, but CPU-only is possible for small datasets.\n\n### Optional: Create a virtual environment\n\nIt's recommended to create a virtual environment to manage dependencies. You can use the built-in `venv` module:\n\n```bash\npython -m venv .venv\nsource .venv/bin/activate\n```\n\n### Install the package\n\n```bash\npip install -e .\n```\n\nTo run baseline synthesizers (CTGAN, TVAE, REaLTabFormer, Mostly AI, TabDiff), instead install with the `baselines` extra:\n\n```bash\npip install -e \".[baselines]\"\n```\n\n## Quick Start\n\nRun the full pipeline for a dataset:\n\n```bash\norigami-jsynth all --dataset adult --model origami\n```\n\nOr run each step individually (every step requires the previous steps to have completed):\n\n```text\n# 1. load and prepare data\norigami-jsynth data --dataset adult --model origami\n\n# 2. train model\norigami-jsynth train --dataset adult --model origami\n\n# 3. generate synthetic data\norigami-jsynth sample --dataset adult --model origami\n\n# 4. evaluate synthetic samples\norigami-jsynth eval --dataset adult --model origami\n```\n\nResults are saved to `./results/<dataset>/<model>/`.\n\n### Quick end-to-end run\n\nTo verify the full pipeline works end-to-end (splitting, training, sampling, evaluation):\n\n```bash\norigami-jsynth all --dataset adult --model origami -R 2 --param training.num_epochs=5\n```\n\nThis completes in approximately 5 minutes with an MPS or CUDA device. The evaluation results from this quick run are not representative of the final results reported in the paper, which require significantly longer training (the paper uses 400 epochs on the adult dataset).\n\n## Baselines\n\nThe `--model` flag selects which synthesizer to run. The default is `origami`.\n\n| Model | Package | Description |\n|-------|---------|-------------|\n| `origami` | `origami-ml` | Origami (ours) |\n| `ctgan` | `sdv` | CTGAN |\n| `tvae` | `sdv` | TVAE |\n| `realtabformer` | `realtabformer` | REaLTabFormer |\n| `mostlyai` | `mostlyai-engine` | Mostly AI (TabularARGN) |\n| `tabdiff` | (vendored) | TabDiff (diffusion based) |\n\n```bash\norigami-jsynth all --dataset adult --model ctgan\n```\n\nAll models share the same `data`, `sample`, and `eval` pipeline. Each model's artifacts (checkpoints, samples, reports) are stored under `results/<dataset>/<model>/`.\n\n[Tabby](https://github.com/soCromp/tabby) is not included in this package because they do not offer a Python SDK and instead operate with Python scripts on `.csv` files directly. We ran these baselines in their repository using the flattened `.csv` splits produced by the `data` command.\n\n\n## Enforcing wall-clock time budget\n\nTo enforce a wall-clock time budget for training the models, use the `--max-minutes` flag with the `train` or `all` command.\n\nIn the paper, we use a max. 24h wall-clock time budget: \n\n```\norigami-jsynth all --dataset github_issues --model origami --max-minutes 1440\n```\n\nTraining will be gracefully stopped when the time limit is reached, the best checkpoint so far will be used for sampling, and the pipeline will continue to evaluation.\n\n\n## Replicates\n\nTo measure variance in evaluation metrics, use `--replicates` (`-R`) to run multiple independent sampling rounds with different seeds:\n\n```bash\norigami-jsynth sample --dataset adult --replicates 3\norigami-jsynth eval --dataset adult\n```\n\nThe default in this package is `--replicates 1` for a quick run, but the paper results use `--replicates 3` for all datasets.\n\nThis produces `synthetic_1.jsonl` through `synthetic_3.jsonl` in the samples directory. The `eval` command automatically discovers all replicate files, evaluates each independently, and reports aggregate statistics (mean and standard deviation). Results are saved as individual `results_{i}.json` files plus an `agg_results.json` with the aggregate summary.\n\nSampling is resumable: if interrupted, re-running the same command will skip replicates that already have completed.\n\n## DCR Privacy Evaluation\n\nTo evaluate privacy using Distance to Closest Record (DCR), use the `--dcr` flag with any of the commands. This creates a 50/50 train/test split and evaluates privacy only, for example:\n\n```bash\norigami-jsynth all --dataset adult --dcr\n```\n\nDCR results are saved to `./results/<dataset>_dcr/<model>/`.\n\n## Datasets\n\n| Dataset | Type | Task | Records | Source |\n|---------|------|------|---------|--------|\n| adult | Tabular | Binary classification | 48,842 | HuggingFace |\n| diabetes | Tabular | Binary classification | ~81K | HuggingFace |\n| electric_vehicles | Tabular | Multiclass | ~210K | HuggingFace |\n| ddxplus | Semi-structured | Multiclass | ~1.16M | HuggingFace |\n| yelp | Semi-structured | Multiclass | ~150K | Manual download |\n| github_issues | Semi-structured | Multiclass | ~642k | HuggingFace |\n\n### Yelp Dataset\n\nThe Yelp dataset cannot be redistributed due to the [Yelp Dataset Terms of Use](https://www.yelp.com/dataset/download). To use it:\n\n1. Go to https://www.yelp.com/dataset and accept the terms\n2. Download the dataset (you need `yelp_academic_dataset_business.json`)\n3. Place it at `./results/yelp_academic_dataset_business.json`\n4. Run `origami-jsynth data --dataset yelp` to prepare the splits and flattened CSV.\n\n## CLI Reference\n\n```\norigami-jsynth <command> --dataset <name> [--output-dir ./results] [--dcr]\n\nCommands:\n  data      Download and prepare dataset splits\n  train     Train a model (Origami or baseline)\n  sample    Generate synthetic data from a trained model\n  eval      Evaluate synthetic data quality\n  results   Show evaluation status and results across all datasets/models\n  all       Run the full pipeline (data -> train -> sample -> eval)\n\nOptions:\n  --dataset         Dataset name (adult, diabetes, electric_vehicles, ddxplus, yelp)\n  --model           Synthesizer to use (default: origami; see Baselines section)\n  --output-dir      Base output directory (default: ./results)\n  --dcr             DCR mode: 50/50 split, privacy evaluation only\n  --num-workers     Number of parallel sampling workers (default: 4, sample/all only)\n  -R, --replicates  Number of independent sampling rounds (default: 1, sample/all only)\n  --param           Override config parameters (e.g. --param training.num_epochs=5)\n```\n\n## Output Structure\n\n```\nresults/\n├── adult/                       # regular run\n│   ├── data/\n│   │   ├── train.jsonl\n│   │   ├── test.jsonl\n│   │   ├── train.csv            # flattened tabular view\n│   │   └── test.csv\n│   └── origami/                 # one subdirectory per --model\n│       ├── checkpoints/\n│       ├── samples/\n│       │   ├── synthetic_1.jsonl\n│       │   └── ...              # synthetic_{N}.jsonl when using --replicates N\n│       └── report/\n│           ├── results_1.json\n│           ├── ...              # results_{N}.json when using --replicates N\n│           └── agg_results.json\n└── adult_dcr/                   # DCR privacy run (--dcr flag)\n    └── ...                      # same layout as above\n```\n\n## Hyper-parameter settings for ORiGAMi model\n\nThe hyper-parameters for the ORiGAMi model are defined in the `./configs/<dataset>.yaml` files, one for each dataset. These are used by default when running the CLI commands. To override any hyper-parameter, use the `--param` flag with dot notation to specify the parameter path and value, for example:\n\n```bash\norigami-jsynth train --model origami --dataset adult --param model.d_model=32 \n```\n\n## Tips for faster ORiGAMi training and sampling\n\n### Dataloader Workers\n\nThe `training.dataloader_num_workers` parameter controls the number of parallel workers on CUDA devices for loading training data and preparing masks for grammar and schema constraints while the GPU is processing the current batch. We recommend setting this to half the available CPU cores (check with `nproc`). For example, on a 16-core machine, use \n\n```\norigami-jsynth train --model origami --dataset <dataset> --param training.dataloader_num_workers=8\n```\n\n### Sampling Workers\n\nSampling can be slow for the largest datasets (ddxplus, github_issues) due to the autoregressive decoding process. We recommend using the `--num-workers` flag for the `all` or `sample` commands set to the number of available cores minus 2 (to leave room for other system processes). For example, on a 16-core machine, use\n\n```\norigami-jsynth sample --model origami --dataset <dataset> --num-workers 14\n```\n\n\n\n## Ablation Experiments\n\nTo reproduce the ablation experiments from the paper, check out the notebooks in the `notebooks/` directory. \nThese are not integrated into the CLI and require manual execution:\n\n- [Kernel Density Plots on Electric Vehicles](notebooks/kde_electric_vehicles.ipynb)\n- [Array Lengths analysis](notebooks/array_length_ablation.ipynb)\n- [KVPE vs. sequential position encoding](notebooks/kvpe_ablation.ipynb)\n- [Shuffled vs. unshuffled key order](notebooks/shuffle_keys_ablation.ipynb)\n\n## Origami standalone package\n\nThe Origami model architecture is published as a standalone package `origami-ml` for flexible use in various contexts.\nIf you want to train an Origami model on your own datasets or for use cases beyond synthetic data generation, we recommend \nyou use the [Origami repository](https://github.com/rueckstiess/origami/) directly.\n\n## Citation\n\nIf you find this work useful, please consider citing our paper:\n\n```bibtex\n@misc{rueckstiess2026origami,\n  title={Autoregressive Synthesis of Sparse and Semi-Structured Mixed-Type Data},\n  author={R{\\\"u}ckstie{\\ss}, Thomas and Vujanic, Robin},\n  year={2026},\n  eprint={2603.01444},\n  archivePrefix={arXiv},\n  primaryClass={cs.LG}\n}\n```\n",
+ "hits": {
+  "md": [
+   {
+    "file": "origami_jsynth/baselines/_preprocessing.py",
+    "line": 30,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "        bool                 → boolean",
+     "        datetime64           → datetime",
+     "        everything else      → categorical",
+     "    \"\"\"",
+     "    from sdv.metadata import Metadata",
+     "",
+     "    metadata = Metadata()",
+     "    metadata.add_table(\"table\")",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "origami_jsynth/baselines/_preprocessing.py",
+    "line": 30,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "        bool                 → boolean",
+     "        datetime64           → datetime",
+     "        everything else      → categorical",
+     "    \"\"\"",
+     "    from sdv.metadata import Metadata",
+     "",
+     "    metadata = Metadata()",
+     "    metadata.add_table(\"table\")",
+     ""
+    ]
+   },
+   {
+    "file": "origami_jsynth/baselines/ctgan.py",
+    "line": 34,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "    def fit(",
+     "        self, records: list[dict[str, Any]], max_seconds: float | None = None, **kwargs: Any",
+     "    ) -> None:",
+     "        try:",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "        except ImportError:",
+     "            raise ImportError(",
+     "                \"CTGAN requires the 'sdv' package. \"",
+     "                \"Install with: pip install origami-jsynth[baselines]\""
+    ]
+   },
+   {
+    "file": "origami_jsynth/baselines/ctgan.py",
+    "line": 62,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "    @classmethod",
+     "    def load(cls, path: Path, tabular: bool = True) -> CTGANAdapter:",
+     "        try:",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "        except ImportError:",
+     "            raise ImportError(",
+     "                \"CTGAN requires the 'sdv' package. \"",
+     "                \"Install with: pip install origami-jsynth[baselines]\""
+    ]
+   },
+   {
+    "file": "origami_jsynth/baselines/tvae.py",
+    "line": 34,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "    def fit(",
+     "        self, records: list[dict[str, Any]], max_seconds: float | None = None, **kwargs: Any",
+     "    ) -> None:",
+     "        try:",
+     "            from sdv.single_table import TVAESynthesizer",
+     "        except ImportError:",
+     "            raise ImportError(",
+     "                \"TVAE requires the 'sdv' package. \"",
+     "                \"Install with: pip install origami-jsynth[baselines]\""
+    ]
+   },
+   {
+    "file": "origami_jsynth/baselines/tvae.py",
+    "line": 62,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "",
+     "    @classmethod",
+     "    def load(cls, path: Path, tabular: bool = True) -> TVAEAdapter:",
+     "        try:",
+     "            from sdv.single_table import TVAESynthesizer",
+     "        except ImportError:",
+     "            raise ImportError(",
+     "                \"TVAE requires the 'sdv' package. \"",
+     "                \"Install with: pip install origami-jsynth[baselines]\""
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "origami_jsynth/baselines/ctgan.py",
+    "line": 34,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "    def fit(",
+     "        self, records: list[dict[str, Any]], max_seconds: float | None = None, **kwargs: Any",
+     "    ) -> None:",
+     "        try:",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "        except ImportError:",
+     "            raise ImportError(",
+     "                \"CTGAN requires the 'sdv' package. \"",
+     "                \"Install with: pip install origami-jsynth[baselines]\""
+    ]
+   },
+   {
+    "file": "origami_jsynth/baselines/ctgan.py",
+    "line": 62,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "    @classmethod",
+     "    def load(cls, path: Path, tabular: bool = True) -> CTGANAdapter:",
+     "        try:",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "        except ImportError:",
+     "            raise ImportError(",
+     "                \"CTGAN requires the 'sdv' package. \"",
+     "                \"Install with: pip install origami-jsynth[baselines]\""
+    ]
+   },
+   {
+    "file": "origami_jsynth/baselines/tvae.py",
+    "line": 34,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "    def fit(",
+     "        self, records: list[dict[str, Any]], max_seconds: float | None = None, **kwargs: Any",
+     "    ) -> None:",
+     "        try:",
+     "            from sdv.single_table import TVAESynthesizer",
+     "        except ImportError:",
+     "            raise ImportError(",
+     "                \"TVAE requires the 'sdv' package. \"",
+     "                \"Install with: pip install origami-jsynth[baselines]\""
+    ]
+   },
+   {
+    "file": "origami_jsynth/baselines/tvae.py",
+    "line": 62,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "",
+     "    @classmethod",
+     "    def load(cls, path: Path, tabular: bool = True) -> TVAEAdapter:",
+     "        try:",
+     "            from sdv.single_table import TVAESynthesizer",
+     "        except ImportError:",
+     "            raise ImportError(",
+     "                \"TVAE requires the 'sdv' package. \"",
+     "                \"Install with: pip install origami-jsynth[baselines]\""
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "origami_jsynth/baselines/ctgan.py",
+    "line": 34,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "    def fit(",
+     "        self, records: list[dict[str, Any]], max_seconds: float | None = None, **kwargs: Any",
+     "    ) -> None:",
+     "        try:",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "        except ImportError:",
+     "            raise ImportError(",
+     "                \"CTGAN requires the 'sdv' package. \"",
+     "                \"Install with: pip install origami-jsynth[baselines]\""
+    ]
+   },
+   {
+    "file": "origami_jsynth/baselines/ctgan.py",
+    "line": 45,
+    "text": "self._model = CTGANSynthesizer(metadata, **self.kwargs)",
+    "context": [
+     "        from ._timeout import TrainingTimeout",
+     "",
+     "        df, self._state = records_to_dataframe(records, self.tabular)",
+     "        metadata = build_metadata(df)",
+     "        self._model = CTGANSynthesizer(metadata, **self.kwargs)",
+     "        with TrainingTimeout(max_seconds):",
+     "            self._model.fit(df)",
+     "",
+     "    def sample(self, n: int) -> list[dict[str, Any]]:"
+    ]
+   },
+   {
+    "file": "origami_jsynth/baselines/ctgan.py",
+    "line": 62,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "    @classmethod",
+     "    def load(cls, path: Path, tabular: bool = True) -> CTGANAdapter:",
+     "        try:",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "        except ImportError:",
+     "            raise ImportError(",
+     "                \"CTGAN requires the 'sdv' package. \"",
+     "                \"Install with: pip install origami-jsynth[baselines]\""
+    ]
+   },
+   {
+    "file": "origami_jsynth/baselines/ctgan.py",
+    "line": 70,
+    "text": "adapter._model = CTGANSynthesizer.load(str(path / \"model.pkl\"))",
+    "context": [
+     "                \"Install with: pip install origami-jsynth[baselines]\"",
+     "            ) from None",
+     "",
+     "        adapter = cls(tabular=tabular)",
+     "        adapter._model = CTGANSynthesizer.load(str(path / \"model.pkl\"))",
+     "        adapter._state = PreprocessingState.load(path / \"preprocess_state.pkl\")",
+     "        return adapter"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "origami_jsynth/baselines/tvae.py",
+    "line": 34,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "    def fit(",
+     "        self, records: list[dict[str, Any]], max_seconds: float | None = None, **kwargs: Any",
+     "    ) -> None:",
+     "        try:",
+     "            from sdv.single_table import TVAESynthesizer",
+     "        except ImportError:",
+     "            raise ImportError(",
+     "                \"TVAE requires the 'sdv' package. \"",
+     "                \"Install with: pip install origami-jsynth[baselines]\""
+    ]
+   },
+   {
+    "file": "origami_jsynth/baselines/tvae.py",
+    "line": 45,
+    "text": "self._model = TVAESynthesizer(metadata, **self.kwargs)",
+    "context": [
+     "        from ._timeout import TrainingTimeout",
+     "",
+     "        df, self._state = records_to_dataframe(records, self.tabular)",
+     "        metadata = build_metadata(df)",
+     "        self._model = TVAESynthesizer(metadata, **self.kwargs)",
+     "        with TrainingTimeout(max_seconds):",
+     "            self._model.fit(df)",
+     "",
+     "    def sample(self, n: int) -> list[dict[str, Any]]:"
+    ]
+   },
+   {
+    "file": "origami_jsynth/baselines/tvae.py",
+    "line": 62,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "",
+     "    @classmethod",
+     "    def load(cls, path: Path, tabular: bool = True) -> TVAEAdapter:",
+     "        try:",
+     "            from sdv.single_table import TVAESynthesizer",
+     "        except ImportError:",
+     "            raise ImportError(",
+     "                \"TVAE requires the 'sdv' package. \"",
+     "                \"Install with: pip install origami-jsynth[baselines]\""
+    ]
+   },
+   {
+    "file": "origami_jsynth/baselines/tvae.py",
+    "line": 70,
+    "text": "adapter._model = TVAESynthesizer.load(str(path / \"model.pkl\"))",
+    "context": [
+     "                \"Install with: pip install origami-jsynth[baselines]\"",
+     "            ) from None",
+     "",
+     "        adapter = cls(tabular=tabular)",
+     "        adapter._model = TVAESynthesizer.load(str(path / \"model.pkl\"))",
+     "        adapter._state = PreprocessingState.load(path / \"preprocess_state.pkl\")",
+     "        return adapter"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "pyproject.toml": [
+   "    \"sdmetrics>=0.27.1\",",
+   "    \"sdv>=1.0\","
+  ]
+ }
+}

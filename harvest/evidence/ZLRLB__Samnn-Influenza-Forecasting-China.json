@@ -1,0 +1,141 @@
+{
+ "repo": "ZLRLB/Samnn-Influenza-Forecasting-China",
+ "disk_kb": 183,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# SAMNN A/H1N1 Influenza Forecasting Code\n\nThis repository contains the analysis scripts accompanying the manuscript:\n\n> **Stage-aware deep learning with adversarial data synthesis enables prospective season-scale A/H1N1 influenza forecasting in China**\n\nThe released scripts cover the season-specific SAMNN implementations, five baseline models, adversarial synthetic-covariate generation, the 2024/25 scenario analysis, and the SHAP Sankey-bubble visualization.\n\n## Repository contents\n\n| File | Purpose |\n|---|---|\n| `samnn_2018_2019.py` | SAMNN evaluation for the 2018/19 season |\n| `samnn_2022_2023.py` | SAMNN evaluation for the 2022/23 season |\n| `samnn_2023_2024.py` | Stage-aware weighted-fusion SAMNN evaluation for the 2023/24 season |\n| `samnn_2024_2025_scenario.py` | Season-scale 2024/25 scenario forecasting |\n| `baseline_lightgbm.py` | LightGBM baseline |\n| `baseline_xgboost.py` | XGBoost baseline |\n| `baseline_svr.py` | Support vector regression baseline |\n| `baseline_lstm.py` | Long short-term memory baseline |\n| `baseline_transformer.py` | Transformer baseline |\n| `generate_synthetic_covariates.py` | WGAN-GP and CTGAN synthetic-covariate generation and diagnostics |\n| `plot_shap_sankey_bubble.py` | Sankey-bubble visualization from precomputed SHAP summaries |\n\n## Forecasting design\n\nThe historical evaluation seasons are:\n\n- 2018/19\n- 2022/23\n- 2023/24\n\nThe forecast horizon is controlled by `FORECAST_LEAD`.\n\nFor SAMNN, LightGBM, SVR, LSTM, and Transformer:\n\n- `FORECAST_LEAD = 1`: epidemiological lags 1-4\n- `FORECAST_LEAD = 2`: epidemiological lags 2-5\n- `FORECAST_LEAD = 4`: epidemiological lags 4-7\n\nThe final XGBoost implementation uses three horizon-specific epidemiological lags:\n\n- `FORECAST_LEAD = 1`: lags 1-3\n- `FORECAST_LEAD = 2`: lags 2-4\n- `FORECAST_LEAD = 4`: lags 4-6\n\nThis model-specific configuration is retained to reproduce the analyses reported in the manuscript.\n\n## Model-specific implementations\n\nThe repository preserves the original season-specific and architecture-specific implementations used in the study.\n\n- The 2018/19 and 2022/23 SAMNN scripts use direct fusion of epidemiological, climatic, and social-context representations.\n- The 2023/24 SAMNN script adds a time-period input, learnable softmax-weighted fusion, and increased weighting of post-pandemic training observations.\n- The 2024/25 script uses the scenario-analysis implementation provided with the study.\n- Baseline models retain their original sliding-window or sequence construction and season-specific hyperparameter settings.\n\nAll historical models are evaluated on the prespecified held-out weekly targets for the corresponding epidemic seasons.\n\n## Required input data\n\nThe scripts expect a prepared weekly analysis table. The original analysis used the following legacy local filenames:\n\n- `2011-2024AH1N1预测数据(返修).csv`\n- `2011-2024AH1N1预测数据.csv`\n\nThese filenames are retained in the scripts for compatibility with the original workflow. Users may replace the paths with local English filenames without changing the analysis.\n\nThe prepared table should contain, as applicable:\n\n- `time`\n- `time_part`\n- `time_part_code`\n- `H1N1_ILI%×positive%_national`\n- epidemiological lag variables for weeks 1-7\n- 12 climatic variables\n- `holiday`\n- `trend_stage`\n- `H1N1_flu_season`\n\nThe source surveillance and meteorological data are not redistributed in this repository. Access and reuse should follow the policies of the original data providers.\n\n## Running the scripts\n\n1. Place the prepared analysis table in the working directory or update the input path in the relevant script.\n2. Set `FORECAST_LEAD` to `1`, `2`, or `4`.\n3. Run the required season-specific SAMNN or baseline script.\n4. Use `generate_synthetic_covariates.py` to generate synthetic climatic, epidemiological, and social-context samples.\n5. Use `samnn_2024_2025_scenario.py` with the prepared scenario input table for the 2024/25 scenario analysis.\n6. Use `plot_shap_sankey_bubble.py` after preparing the three season-specific SHAP summary files:\n   - `shap_sankey_2018_2019.csv`\n   - `shap_sankey_2022_2023.csv`\n   - `shap_sankey_2023_2024.csv`\n\nThe SHAP plotting script visualizes precomputed `mean_abs_shap` summaries. It does not train a model or calculate SHAP values.\n\n## Metric and interval conventions\n\nThe scripts report R2, MAE, RMSE, and Pearson correlation where applicable.\n\nIn the residual plots:\n\n> residual = observed - predicted\n\nResidual-based uncertainty limits are obtained from the dispersion of training residuals. These limits should be interpreted as empirical uncertainty intervals rather than formal parameter confidence intervals.\n\nThe 2024/25 scenario script saves unsmoothed weekly predictions and applies a three-week rolling mean to the displayed scenario trajectory and interval bounds.\n\n## Synthetic-data workflow\n\n`generate_synthetic_covariates.py` uses:\n\n- WGAN-GP for climatic variables\n- CTGAN for epidemiological and social-context variables\n\nThe script also calculates distribution-distance metrics, nearest-neighbor overlap, diversity, direct-leak diagnostics, and real-versus-synthetic classification performance.\n\nSome internal variable names containing the legacy prefix `mia_` are retained for traceability. The corresponding output text describes the implemented procedure as real-versus-synthetic classification rather than a formal membership-inference attack.\n\n## Software\n\nThe scripts require Python and the packages listed in `requirements.txt`.\n\nBecause deep-learning and synthetic-data results may depend on software, hardware, and random-number implementation details, users should record the full execution environment when performing an exact replication.\n\n## Translation and code integrity\n\nThe public versions translate Chinese comments, docstrings, console messages, plot labels, and revision-process wording into neutral technical English. Model structures, mathematical operations, numeric constants, training settings, feature selections, date ranges, and control flow were not modified.\n\nSee `TRANSLATION_AND_INTEGRITY_REPORT.md` for details.\n\n## Citation\n\nPlease cite the associated manuscript when using this code. Full bibliographic information should be added after publication.\n",
+ "hits": {
+  "st": [
+   {
+    "file": "generate_synthetic_covariates.py",
+    "line": 14,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from sklearn.neighbors import NearestNeighbors",
+     "from scipy.stats import wasserstein_distance, entropy",
+     "from sklearn.manifold import TSNE",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "# ==== Step 0. Set all random seeds ====",
+     "SEED = 42",
+     ""
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "generate_synthetic_covariates.py",
+    "line": 13,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from sklearn.preprocessing import MinMaxScaler, LabelEncoder",
+     "from sklearn.neighbors import NearestNeighbors",
+     "from scipy.stats import wasserstein_distance, entropy",
+     "from sklearn.manifold import TSNE",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "# ==== Step 0. Set all random seeds ====",
+     "SEED = 42"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "generate_synthetic_covariates.py",
+    "line": 13,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from sklearn.preprocessing import MinMaxScaler, LabelEncoder",
+     "from sklearn.neighbors import NearestNeighbors",
+     "from scipy.stats import wasserstein_distance, entropy",
+     "from sklearn.manifold import TSNE",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "# ==== Step 0. Set all random seeds ====",
+     "SEED = 42"
+    ]
+   },
+   {
+    "file": "generate_synthetic_covariates.py",
+    "line": 14,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from sklearn.neighbors import NearestNeighbors",
+     "from scipy.stats import wasserstein_distance, entropy",
+     "from sklearn.manifold import TSNE",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "# ==== Step 0. Set all random seeds ====",
+     "SEED = 42",
+     ""
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "generate_synthetic_covariates.py",
+    "line": 14,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from sklearn.neighbors import NearestNeighbors",
+     "from scipy.stats import wasserstein_distance, entropy",
+     "from sklearn.manifold import TSNE",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "# ==== Step 0. Set all random seeds ====",
+     "SEED = 42",
+     ""
+    ]
+   },
+   {
+    "file": "generate_synthetic_covariates.py",
+    "line": 163,
+    "text": "social_ctgan = CTGANSynthesizer(metadata=metadata_social)",
+    "context": [
+     "# ==== Step 3. Train CTGAN and sample social-context and epidemiological features ====",
+     "df_social = df[BASE_SOCIAL].copy()",
+     "metadata_social = SingleTableMetadata()",
+     "metadata_social.detect_from_dataframe(df_social)",
+     "social_ctgan = CTGANSynthesizer(metadata=metadata_social)",
+     "social_ctgan.fit(df_social)",
+     "gen_social_df = social_ctgan.sample(n_gen)",
+     "",
+     "label_encoders = {}"
+    ]
+   },
+   {
+    "file": "generate_synthetic_covariates.py",
+    "line": 185,
+    "text": "epi_ctgan = CTGANSynthesizer(metadata=metadata_epi)",
+    "context": [
+     "",
+     "df_epi = df[BASE_EPIDEMIOLOGY].copy()",
+     "metadata_epi = SingleTableMetadata()",
+     "metadata_epi.detect_from_dataframe(df_epi)",
+     "epi_ctgan = CTGANSynthesizer(metadata=metadata_epi)",
+     "epi_ctgan.fit(df_epi)",
+     "gen_epi_df = epi_ctgan.sample(n_gen)",
+     "",
+     "# ==== Step 4. Combine generated feature blocks ===="
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv>=1.10"
+  ]
+ }
+}

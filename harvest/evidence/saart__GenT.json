@@ -1,0 +1,294 @@
+{
+ "repo": "saart/GenT",
+ "disk_kb": 2212,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Gen-T\n\nGen-T is a system designed to reduce the triage cost of distributed tracing (DT) in microservice architectures by leveraging deep generative compression techniques.\nThis repository includes the source code, test cases, and supplementary data for our paper.\n\n## Table of Contents\n\n- [Introduction](#introduction)\n- [Repository Structure](#repository-structure)\n- [Getting Started](#getting-started)\n- [Use in Production](#use-in-production)\n- [Replicate Experiments from the Paper](#replicate-experiments-from-the-paper)\n  - [Demo Application Experiments](#demo-application-experiments)\n  - [PandoraTrace Benchmark](#pandoratrace-benchmark)\n  - [Scripts for Paper Reproduction](#scripts-for-paper-reproduction)\n- [Contributing](#contributing)\n- [License](#license)\n- [References](#references)\n\n## Introduction\n\nMicroservice architectures are widely adopted for building scalable and agile software systems. As these environments grow in complexity, the need for observability (o11y) tools to manage, diagnose, and optimize these systems becomes critical. Distributed tracing is a key component of o11y, providing an end-to-end view of requests as they travel through various services.\n\nHowever, the cost of transmitting traces often leads to operators disabling or reducing tracing, particularly during the triage phase. This project addresses this issue by proposing a novel approach using deep generative compression to offer better fidelity-flexibility-cost tradeoffs for DT.\n\n## Repository Structure\n\nThe repository is organized as follows:\n\n```\nGenT/\n├── README.md\n├── results/ # Contains results from Gen-T experiments\n├── src/\n│ ├── collector/ # Code related to data collection and normalization\n│ ├── drivers/ # Drivers for different trace generation models\n│ ├── fidelity/ # Fidelity analysis and data processing tools\n│ ├── ml/ # Machine learning models and utilities\n│ ├── gent_utils/ # Utility functions and constants for GenT\n│ ├── paper/ # Supplementary materials related to the paper itself (e.g. figures, baselines)\n│ ├── pandora_trace/ # Our framework to create tracing data from various applications and different error types\n│ ├── requirements.txt # Python dependencies\n├── tests/\n│ ├── collector/ # Test cases for collector components\n│ ├── fidelity/ # Test cases for fidelity components\n│ ├── ml/ # Test cases for ML components\n│ ├── test_data/ # Test data used in test cases\n├── traces/ # Directory containing trace data - not included in the GitHub repository\n├── venv/ # Virtual environment directory\n```\n\n\n## Getting Started\n\n### Prerequisites\n\n- Python 3.8+\n- [pip](https://pip.pypa.io/en/stable/installation/)\n\n### Installation\n\n1. Clone the repository:\n    ```sh\n    git clone https://github.com/saart/GenT.git\n    cd GenT\n    ```\n\n2. Create and activate a virtual environment:\n    ```sh\n    python3 -m venv venv\n    source venv/bin/activate\n    ```\n\n3. Install the required dependencies:\n    ```sh\n    pip install -r src/requirements.txt\n    ```\n   \n4. Install our modified version of CTGAN:\n    ```sh\n    pushd libs/CTGAN && pip install . && popd\n   ```\n   \n4. Add our source code to the Python path:\n    ```sh\n    export PYTHONPATH=$PYTHONPATH:$(pwd)/src\n    ```\n   \n## Quick Start\n\nTo help with a very quick start, this repo includes a small set of traces that were generated using the PandoraTrace Benchmark. The rest of the traces can be downloaded using the instructions below.\n\nTo demonstrates the basic functionality of Gen-T, run the following script that generates synthetic traces from a set of Jaeger traces.\n\n```sh\nfrom drivers.gent.gent_driver import GenTDriver, GenTConfig\nfrom pandora_trace.jaeger_to_gent import translate_jaeger_to_gent\nimport tempfile\n\ntemp_dir = tempfile.mkdtemp()\ntranslate_jaeger_to_gent(from_dir=f\"./src/pandora_trace/data/socialNetwork/packet_loss-0.2/raw_jaeger/\", to_dir=temp_dir)\ndriver = GenTDriver(GenTConfig(traces_dir=temp_dir))\ndriver.train()\nprint(\"Path to raw GenT compressed data:\", driver.get_model_gzip_file())\ndriver.generate()\nprint(\"Path to generated traces:\", driver.get_generated_data_folder())\n```\n\n\n## Use in production\n\nTo use Gen-T in production, you need to incorporate two main components:\n\n1. **Compression Mechanism at the Collector**: This component batches the incoming spans. We recommend using a batch size of around 10,000 traces. Given a batch of OTEL traces, create a compressed model using the following steps:\n```python\nfrom drivers.gent.gent_driver import GenTDriver\nfrom pandora_trace.jaeger_to_gent import translate_jaeger_to_gent\n\n# preprocess the OTEL traces into GenT format\ntranslate_jaeger_to_gent(from_dir=f\"abs/path/to/otel/traces\", to_dir=f\"abs/target/path/to/gent/traces\")\n\n# Initialize the driver and train the model\ndriver = GenTDriver(GenTConfig(traces_dir=\"abs/target/path/to/gent/traces\"))\ndriver.train()  # note: it takes a while to train the model. Consider around 1 minute per 10,000 traces and 10 iterations in a machine with a single GPU.\n\nto_send = driver.get_model_gzip_file()  # returns the path to GenT model\n```\n2. **Decompression Mechanism at the Backend**: This component generates synthetic traces from the model. Given a compressed model, create a GenTDriver and generate traces using the following steps:\n```python\nfrom drivers.gent.gent_driver import GenTDriver\n\ndriver = GenTDriver(GenTConfig(traces_dir=\"abs/target/path/to/gent/traces\"))\ndriver.load_model_gzip_file(\"path/to/GenT/model.zip\")\ndriver.generate()  # note: it takes a while to train the model. Consider around 1 minute, as mentioned above.\n# the generated traces will be stored in the traces_dir\n```\nAs discussed in the paper, GenTConfig is highly configurable and offers different trade-offs to better fit the target application. Ensure you use the same parameters in both the compression and decompression processes.\n\nNote: This repository represents ongoing academic research. Please take the necessary precautions when using it in production environments. Use at your own risk.\n\n## Replicate Experiments from the Paper\n\nThe paper runs experiments in two settings. The first uses existing Jaeger traces from demo applications (we used HotROD and WildRydes). The second generates new traces with PandoraTrace, a new observability benchmark suite that we developed to provide the research community greater granularity and control in evaluating incidents in microservice environments.\n\n### Demo Application Experiments\n\n#### Downloading Traces from Jaeger\n\nIf you need to download traces from the Jaeger API, you can use the provided utility:\n\n```python\nfrom pandora_trace.jaeger_to_gent import download_traces_from_jaeger_for_all_services\n\ndownload_traces_from_jaeger_for_all_services(target_dir=f\"abs/path/to/otel/traces\", jaeger_url=\"http://localhost:16686\")\n```\n\n#### Translating Jaeger Traces to GenT Format\nBefore running the GenTDriver on a directory containing raw OTEL spans, you need to parse them into a format that GenT can process using the following utility:\n```python\nfrom pandora_trace.jaeger_to_gent import translate_jaeger_to_gent\n\ntranslate_jaeger_to_gent(from_dir=f\"abs/path/to/otel/traces\", to_dir=f\"abs/target/path/to/gent/traces\")\n```\n\n#### Running the Training and Generation Process\nTo run the training and generation process, you can use the following script:\n\n```python\nfrom drivers.gent.gent_driver import GenTDriver\n\n# Configure the GenTDriver with the desired configuration\nconfig = GenTConfig(chain_length=2, iterations=3, tx_end=10000 + i, traces_dir=\"path/to/traces_dir\")\n\n# Initialize the driver\ndriver = GenTDriver(config)\n\n# Train the model and generate traces\ndriver.train_and_generate()\n```\n\n##### Parameters\n* chain_length: Length of the chain as described in the paper.\n* iterations: Number of iterations for training.\n* tx_end: number of traces to use for training.\n* traces_dir: Directory where trace data is stored.\n\nEnsure that you update the traces_dir with the appropriate path to your trace data directory.\n\n\n\n## PandoraTrace Benchmark\n\nPandoraTrace is a benchmark designed to create tracing data from various applications and different error types.\n\n### Structure\n\nUsers of PandoraTrace can programmatically produce (and probe) traces that exhibit incidents by specifying four key components: Applications, Request Patterns, Incident Types, and Queries.\n\n* **Applications**: We used the microservices applications from the DeathStarBench suite: socialNetwork, hotelReservation, and mediaMicroservices.\n* **Request Patterns**: To simulate realistic and diverse traffic patterns, we utilized RESTler, a stateful REST API fuzzer. RESTler generates a broad spectrum of trace request patterns with varying properties, effectively mimicking the unpredictable nature of real user interactions with these services.\n* **Incident Types**: We generated traces simulating 10 specific incidents, ranging from induced delays to internal errors in third-party services. These incidents are induced in the running application using various tools, such as the “stress” apt package to simulate CPU and memory bottlenecks, and “iproute2” for introducing network delays.\n* **Queries**: We use a set of 10 queries derived from TraceQL, Jaeger, and PromQL.\n\n### Using the Benchmark\n\nUsing this benchmark involves two main steps:\n1. Creating the raw traces. Each created directory holds traces for a single DeathStarBench application and an error.\n2. Comparing raw traces to synthetic traces. We assume that these traces are provided as two SQL tables. Our output is a single number: the average Wasserstein distance across all the generated queries.\n\n#### Creating Raw Traces\n\n* `run_benchmark.create_baseline`: Creates a set of traces of a specific application without any incidents.\n* `run_benchmark.main`:\n  * Runs each DeathStarBench application.\n  * Adds an incident.\n  * Creates traffic using RESTler (based on the Swagger docs).\n  * Downloads the Jaeger traces and translates them into GenT format.\n  * Merges the erroneous traces with the baseline (benign) data using a distribution derived from an exponential random variable.\n\n#### Comparing Results\n\nThe API function `run_template` takes a dictionary that maps attributes to values and a list of SQL queries parameterized by these attributes, additionally it takes the name of two SQL tables and a DB cursor. It formats the queries using the given attributes, runs the resulting queries on the input tables, and compares the queries results using the Wasserstein distance. It returns the average distance.\n\n\n## Scripts for Paper Reproduction\n\n1. All the traces that were used in the paper can be downloaded from https://gen-t-code.s3.us-west-2.amazonaws.com/traces.zip.\n2. The file `src/paper/ml_ops.py` executes the different ablation configurations used in the paper: `chain_length`, `ctgan_dim`, etc. \n3. The file `src/paper/adaption_experiment.py` executes the simulation where the traces' properties have changed every batch.\n4. The file `src/fidelity/raw_sql.py` is used to calculate fidelity metrics using SQLite DB that holds synthetic and raw traces. The function `fill_data` fills the database with the raw/synthetic traces from the given directory. Functions like `trigger_correlation`, `monitor_errors`, `bottlenecks_by_time_range`, calculate a specific fidelity metric given syn/raw tables. Functions like `ctgan_gen_dim`, `rolling_experiment` are used to generate the final fidelity data for the figures in the paper.\n5. The file `src/paper/figures.py` generates the figures used in the paper, based on the output from the previous step. In the `main` function, comment in/out the desired figures to generate.\n\n\n## Contributing\n\nWe welcome contributions to Gen-T! Please fork the repository and submit pull requests for review.\n\n### Steps to Contribute\n\n1. Fork the repository.\n2. Create a new branch (`git checkout -b feature/YourFeature`).\n3. Commit your changes (`git commit -m 'Add YourFeature'`).\n4. Push to the branch (`git push origin feature/YourFeature`).\n5. Open a pull request.\n\n## License\n\nThis project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.\n\n## References\n\nIf you use this code in a publication, please cite the following work: \n\n@inproceedings{tochner2023gen,\\\n    title={Gen-T: Reduce Distributed Tracing Operational Costs Using Generative Models},\\  \n    author={Tochner, Saar and Fanti, Giulia and Sekar, Vyas},\\\n    booktitle={Temporal Graph Learning Workshop@ NeurIPS 2023},\\\n    year={2023}\\\n}\n",
+ "hits": {
+  "ct": [
+   {
+    "file": "libs/CTGAN/HISTORY.md",
+    "line": 43,
+    "text": "* Cannot save CTGANSynthesizer after sampling (TypeError) - Issue [#270](https://github.com/sdv-dev/CTGAN/issues/270) by @pvk-developer",
+    "context": [
+     "This release fixes a bug that prevented the `CTGAN` model from being saved after sampling.",
+     "",
+     "### Bugs Fixed",
+     "",
+     "* Cannot save CTGANSynthesizer after sampling (TypeError) - Issue [#270](https://github.com/sdv-dev/CTGAN/issues/270) by @pvk-developer",
+     "",
+     "## v0.7.0 - 2023-01-20",
+     "",
+     "This release adds support for python 3.10 and drops support for python 3.6. It also fixes a couple of the most common warnings that were surfacing."
+    ]
+   },
+   {
+    "file": "libs/CTGAN/HISTORY.md",
+    "line": 64,
+    "text": "This release renames the models in CTGAN. `CTGANSynthesizer` is now called `CTGAN` and `TVAESynthesizer` is now called `TVAE`.",
+    "context": [
+     "* CTGAN Package Maintenance Updates - Issue [#257](https://github.com/sdv-dev/CTGAN/issues/257) by @amontanez24",
+     "",
+     "## v0.6.0 - 2022-10-07",
+     "",
+     "This release renames the models in CTGAN. `CTGANSynthesizer` is now called `CTGAN` and `TVAESynthesizer` is now called `TVAE`.",
+     "",
+     "### New Features",
+     "",
+     "* Rename synthesizers - Issue [#243](https://github.com/sdv-dev/CTGAN/issues/243) by @amontanez24"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "libs/CTGAN/HISTORY.md",
+    "line": 64,
+    "text": "This release renames the models in CTGAN. `CTGANSynthesizer` is now called `CTGAN` and `TVAESynthesizer` is now called `TVAE`.",
+    "context": [
+     "* CTGAN Package Maintenance Updates - Issue [#257](https://github.com/sdv-dev/CTGAN/issues/257) by @amontanez24",
+     "",
+     "## v0.6.0 - 2022-10-07",
+     "",
+     "This release renames the models in CTGAN. `CTGANSynthesizer` is now called `CTGAN` and `TVAESynthesizer` is now called `TVAE`.",
+     "",
+     "### New Features",
+     "",
+     "* Rename synthesizers - Issue [#243](https://github.com/sdv-dev/CTGAN/issues/243) by @amontanez24"
+    ]
+   }
+  ],
+  "ctgan_mod": [
+   {
+    "file": "libs/CTGAN/README.md",
+    "line": 83,
+    "text": "from ctgan import CTGAN",
+    "context": [
+     "",
+     "In this example we load the [Adult Census Dataset](https://archive.ics.uci.edu/ml/datasets/adult)* which is a built-in demo dataset. We use CTGAN to learn from the real data and then generate some syn",
+     "",
+     "```python3",
+     "from ctgan import CTGAN",
+     "from ctgan import load_demo",
+     "",
+     "real_data = load_demo()",
+     ""
+    ]
+   },
+   {
+    "file": "libs/CTGAN/README.md",
+    "line": 84,
+    "text": "from ctgan import load_demo",
+    "context": [
+     "In this example we load the [Adult Census Dataset](https://archive.ics.uci.edu/ml/datasets/adult)* which is a built-in demo dataset. We use CTGAN to learn from the real data and then generate some syn",
+     "",
+     "```python3",
+     "from ctgan import CTGAN",
+     "from ctgan import load_demo",
+     "",
+     "real_data = load_demo()",
+     "",
+     "# Names of the columns that are discrete"
+    ]
+   },
+   {
+    "file": "libs/CTGAN/ctgan/__init__.py",
+    "line": 9,
+    "text": "from ctgan.demo import load_demo",
+    "context": [
+     "__author__ = 'DataCebo, Inc.'",
+     "__email__ = 'info@sdv.dev'",
+     "__version__ = '0.7.5.dev0'",
+     "",
+     "from ctgan.demo import load_demo",
+     "from ctgan.synthesizers.ctgan import CTGAN",
+     "from ctgan.synthesizers.tvae import TVAE",
+     "",
+     "__all__ = ("
+    ]
+   },
+   {
+    "file": "libs/CTGAN/ctgan/__init__.py",
+    "line": 10,
+    "text": "from ctgan.synthesizers.ctgan import CTGAN",
+    "context": [
+     "__email__ = 'info@sdv.dev'",
+     "__version__ = '0.7.5.dev0'",
+     "",
+     "from ctgan.demo import load_demo",
+     "from ctgan.synthesizers.ctgan import CTGAN",
+     "from ctgan.synthesizers.tvae import TVAE",
+     "",
+     "__all__ = (",
+     "    'CTGAN',"
+    ]
+   },
+   {
+    "file": "libs/CTGAN/ctgan/__init__.py",
+    "line": 11,
+    "text": "from ctgan.synthesizers.tvae import TVAE",
+    "context": [
+     "__version__ = '0.7.5.dev0'",
+     "",
+     "from ctgan.demo import load_demo",
+     "from ctgan.synthesizers.ctgan import CTGAN",
+     "from ctgan.synthesizers.tvae import TVAE",
+     "",
+     "__all__ = (",
+     "    'CTGAN',",
+     "    'TVAE',"
+    ]
+   },
+   {
+    "file": "libs/CTGAN/ctgan/__main__.py",
+    "line": 5,
+    "text": "from ctgan.data import read_csv, read_tsv, write_tsv",
+    "context": [
+     "\"\"\"CLI.\"\"\"",
+     "",
+     "import argparse",
+     "",
+     "from ctgan.data import read_csv, read_tsv, write_tsv",
+     "from ctgan.synthesizers.ctgan import CTGAN",
+     "",
+     "",
+     "def _parse_args():"
+    ]
+   },
+   {
+    "file": "libs/CTGAN/ctgan/__main__.py",
+    "line": 6,
+    "text": "from ctgan.synthesizers.ctgan import CTGAN",
+    "context": [
+     "",
+     "import argparse",
+     "",
+     "from ctgan.data import read_csv, read_tsv, write_tsv",
+     "from ctgan.synthesizers.ctgan import CTGAN",
+     "",
+     "",
+     "def _parse_args():",
+     "    parser = argparse.ArgumentParser(description='CTGAN Command Line Interface')"
+    ]
+   },
+   {
+    "file": "libs/CTGAN/ctgan/synthesizers/__init__.py",
+    "line": 3,
+    "text": "from ctgan.synthesizers.ctgan import CTGAN",
+    "context": [
+     "\"\"\"Synthesizers module.\"\"\"",
+     "",
+     "from ctgan.synthesizers.ctgan import CTGAN",
+     "from ctgan.synthesizers.tvae import TVAE",
+     "",
+     "__all__ = (",
+     "    'CTGAN',"
+    ]
+   },
+   {
+    "file": "libs/CTGAN/ctgan/synthesizers/__init__.py",
+    "line": 4,
+    "text": "from ctgan.synthesizers.tvae import TVAE",
+    "context": [
+     "\"\"\"Synthesizers module.\"\"\"",
+     "",
+     "from ctgan.synthesizers.ctgan import CTGAN",
+     "from ctgan.synthesizers.tvae import TVAE",
+     "",
+     "__all__ = (",
+     "    'CTGAN',",
+     "    'TVAE'"
+    ]
+   },
+   {
+    "file": "libs/CTGAN/ctgan/synthesizers/ctgan.py",
+    "line": 13,
+    "text": "from ctgan.data_sampler import DataSampler",
+    "context": [
+     "from torch import optim",
+     "from torch.nn import BatchNorm1d, Dropout, LeakyReLU, Linear, Module, ReLU, Sequential, functional",
+     "import torch_geometric",
+     "",
+     "from ctgan.data_sampler import DataSampler",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.synthesizers.base import BaseSynthesizer",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "libs/CTGAN/ctgan/synthesizers/ctgan.py",
+    "line": 14,
+    "text": "from ctgan.data_transformer import DataTransformer",
+    "context": [
+     "from torch.nn import BatchNorm1d, Dropout, LeakyReLU, Linear, Module, ReLU, Sequential, functional",
+     "import torch_geometric",
+     "",
+     "from ctgan.data_sampler import DataSampler",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.synthesizers.base import BaseSynthesizer",
+     "",
+     "",
+     "class Noise(Module):"
+    ]
+   },
+   {
+    "file": "libs/CTGAN/ctgan/synthesizers/ctgan.py",
+    "line": 15,
+    "text": "from ctgan.synthesizers.base import BaseSynthesizer",
+    "context": [
+     "import torch_geometric",
+     "",
+     "from ctgan.data_sampler import DataSampler",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.synthesizers.base import BaseSynthesizer",
+     "",
+     "",
+     "class Noise(Module):",
+     "    def __init__("
+    ]
+   }
+  ],
+  "rdt": [
+   {
+    "file": "libs/CTGAN/ctgan/data_transformer.py",
+    "line": 8,
+    "text": "from rdt.transformers import ClusterBasedNormalizer, OneHotEncoder",
+    "context": [
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from joblib import Parallel, delayed",
+     "from rdt.transformers import ClusterBasedNormalizer, OneHotEncoder",
+     "",
+     "SpanInfo = namedtuple('SpanInfo', ['dim', 'activation_fn'])",
+     "ColumnTransformInfo = namedtuple(",
+     "    'ColumnTransformInfo', ["
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ctgan_mod",
+  "rdt",
+  "tvae"
+ ],
+ "vendored_dirs": [
+  "libs/CTGAN"
+ ],
+ "dependencies": {
+  "libs/CTGAN/setup.py": [
+   "    'rdt>=1.6.1,<2.0',",
+   "    author_email='info@sdv.dev',",
+   "            'ctgan=ctgan.__main__:main'",
+   "    keywords='ctgan CTGAN',",
+   "    name='ctgan',",
+   "    packages=find_packages(include=['ctgan', 'ctgan.*']),",
+   "    url='https://github.com/sdv-dev/CTGAN',"
+  ],
+  "libs/CTGAN/setup.cfg": [
+   "[bumpversion:file:ctgan/__init__.py]",
+   "\tctgan/data.py:T001"
+  ]
+ }
+}

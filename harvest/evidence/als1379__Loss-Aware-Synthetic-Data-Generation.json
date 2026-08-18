@@ -1,0 +1,195 @@
+{
+ "repo": "als1379/Loss-Aware-Synthetic-Data-Generation",
+ "disk_kb": 372,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Loss-Aware Synthetic Data Generation\n\nExperimental framework for evaluating synthetic tabular data through a privacy-utility trade-off lens.\n\nThe project compares real and synthetic tabular datasets using:\n\n- Utility loss: feature-level distributional similarity, mixed-type association preservation, and downstream model performance.\n- Privacy risk: distance-to-closest-record indicators and simple inference-risk proxies.\n- Loss-aware generation: multiple synthetic candidates are generated and selected by a composite utility loss, subject to a privacy threshold.\n\nThis is designed for a Trustworthy AI course project. Adult/Census Income is included as a simple baseline, while ACSIncome via Folktables is the selected harder benchmark.\n\n## Repository Structure\n\n```text\ndata/\n  raw/          # downloaded or manually placed source datasets\n  processed/    # cleaned train/test artifacts\n  synthetic/    # generated synthetic datasets\nsrc/\n  lossaware/    # framework code\nnotebooks/      # exploratory analysis\nresults/        # metrics, plots, tables\nreports/        # final writeups and figures\ntests/          # lightweight regression tests\nconfig/         # reproducible experiment configuration\n```\n\n## Setup\n\nCreate and activate a Python environment, then install dependencies:\n\n```bash\npython -m venv .venv\n.venv\\Scripts\\activate\npip install -r requirements.txt\n```\n\nThe main configuration lives in `config/default.json`. Randomness should be controlled through the `project.random_seed` value.\n\n## Reproducibility\n\n- Use the fixed seed in `config/default.json` for data splits, model training, and synthetic-data generation.\n- Keep downloaded raw datasets in `data/raw/`.\n- Write generated datasets to `data/synthetic/`.\n- Write metric tables and plots to `results/`.\n\n## Baseline Training\n\nAfter installing the dependencies, run the real-data preprocessing and baseline classifiers with:\n\n```bash\nset PYTHONPATH=src\npython -m lossaware.run_baseline_training --config config/default.json\n```\n\nOn PowerShell, use:\n\n```powershell\n$env:PYTHONPATH = \"src\"\npython -m lossaware.run_baseline_training --config config/default.json\n```\n\nThis downloads the configured dataset if needed, writes cleaned train/test splits under `data/processed/`, and writes baseline metrics under `results/`.\n\n## Synthetic Generation\n\nGenerate synthetic datasets from the real training split with:\n\n```powershell\n$env:PYTHONPATH = \"src\"\npython -m lossaware.run_synthetic_generation --config config/default.json\n```\n\nThe current local configuration trains GaussianCopula, CTGAN, and TVAE on a reproducible subset of the real training data and writes synthetic CSV files to `data/synthetic/`.\n\n## Utility Evaluation\n\nEvaluate distribution similarity, correlation preservation, and Train-Synthetic-Test-Real utility with:\n\n```powershell\n$env:PYTHONPATH = \"src\"\npython -m lossaware.run_utility_evaluation --config config/default.json\n```\n\nOutputs are written under `results/<dataset>/`, including metric CSVs and distribution plots.\n\n## Privacy Evaluation\n\nEvaluate distance-based privacy indicators with:\n\n```powershell\n$env:PYTHONPATH = \"src\"\npython -m lossaware.run_privacy_evaluation --config config/default.json\n```\n\nThis writes privacy metrics and a joined privacy-utility trade-off table under `results/<dataset>/`.\n\n## Loss-Aware Selection\n\nSelect the best synthetic candidate by weighted utility loss subject to privacy constraints with:\n\n```powershell\n$env:PYTHONPATH = \"src\"\npython -m lossaware.run_loss_aware_selection --config config/default.json\n```\n\nThis writes a ranked candidate table and copies the selected synthetic dataset to `results/<dataset>/loss_aware_selected.csv`.\n\n## Full Pipeline\n\nRun the full reproducible pipeline with:\n\n```powershell\n$env:PYTHONPATH = \"src\"\npython -m lossaware.run_pipeline --config config/default.json\n```\n\nFor local iteration using existing outputs:\n\n```powershell\n$env:PYTHONPATH = \"src\"\npython -m lossaware.run_pipeline --config config/default.json --reuse-existing\n```\n\nThe final report is written to `reports/final_summary.md`, and a compact result table is written to `results/<dataset>/final_results_summary.csv`.\n\n## Stronger Colab Run\n\nThe default config is intentionally small enough for local development. For stronger results, use `config/strong.json` in Colab or another GPU environment:\n\n```powershell\n$env:PYTHONPATH = \"src\"\npython -m lossaware.run_pipeline --config config/strong.json\n```\n\nThe strong config removes the ACS row cap, fits synthetic generators on more rows, generates larger synthetic datasets, and trains CTGAN/TVAE for more epochs.\n\n## Datasets\n\nImplemented loaders:\n\n- `adult`: UCI Adult/Census Income, used as the simple baseline.\n- `folktables_acs_income`: ACSIncome via Folktables, selected as the harder benchmark because it is larger, more realistic, configurable by state/year, and ethically relevant for socioeconomic prediction.\n\nThe default configuration uses `folktables_acs_income` with 2018 1-Year ACS person records for California. This keeps early experiments manageable while still moving beyond the Adult toy baseline. The Folktables settings can be changed in `config/default.json`.\n\nFor local development, `config/default.json` caps baseline training to a reproducible stratified sample of `20000` rows. Use `config/strong.json` for a full-size Colab run.\n\nAlternative candidates kept in the dataset registry for later extension:\n\n- `uci_bank_marketing`\n- `uci_default_credit_card`\n\n## Current Status\n\nThe framework includes dataset loading, preprocessing, baseline training, synthetic generation, utility evaluation, privacy evaluation, loss-aware selection, and final reporting.\n",
+ "hits": {
+  "st": [
+   {
+    "file": "src/lossaware/synthetic.py",
+    "line": 12,
+    "text": "from sdv.single_table import (",
+    "context": [
+     "from typing import Any",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    GaussianCopulaSynthesizer,",
+     "    TVAESynthesizer,",
+     ")"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "src/lossaware/synthetic.py",
+    "line": 11,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from pathlib import Path",
+     "from typing import Any",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    GaussianCopulaSynthesizer,",
+     "    TVAESynthesizer,"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "src/lossaware/synthetic.py",
+    "line": 11,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from pathlib import Path",
+     "from typing import Any",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    GaussianCopulaSynthesizer,",
+     "    TVAESynthesizer,"
+    ]
+   },
+   {
+    "file": "src/lossaware/synthetic.py",
+    "line": 12,
+    "text": "from sdv.single_table import (",
+    "context": [
+     "from typing import Any",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    GaussianCopulaSynthesizer,",
+     "    TVAESynthesizer,",
+     ")"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "src/lossaware/synthetic.py",
+    "line": 13,
+    "text": "CTGANSynthesizer,",
+    "context": [
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    GaussianCopulaSynthesizer,",
+     "    TVAESynthesizer,",
+     ")",
+     ""
+    ]
+   },
+   {
+    "file": "src/lossaware/synthetic.py",
+    "line": 59,
+    "text": "return CTGANSynthesizer(",
+    "context": [
+     "    \"\"\"Instantiate an SDV synthesizer by registry name.\"\"\"",
+     "    if name == \"gaussian_copula\":",
+     "        return GaussianCopulaSynthesizer(metadata)",
+     "    if name == \"ctgan\":",
+     "        return CTGANSynthesizer(",
+     "            metadata,",
+     "            epochs=settings.get(\"epochs\", 300),",
+     "            batch_size=settings.get(\"batch_size\", 500),",
+     "            enable_gpu=settings.get(\"enable_gpu\", True),"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "src/lossaware/synthetic.py",
+    "line": 14,
+    "text": "GaussianCopulaSynthesizer,",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    GaussianCopulaSynthesizer,",
+     "    TVAESynthesizer,",
+     ")",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "src/lossaware/synthetic.py",
+    "line": 57,
+    "text": "return GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "    settings: dict[str, Any],",
+     "):",
+     "    \"\"\"Instantiate an SDV synthesizer by registry name.\"\"\"",
+     "    if name == \"gaussian_copula\":",
+     "        return GaussianCopulaSynthesizer(metadata)",
+     "    if name == \"ctgan\":",
+     "        return CTGANSynthesizer(",
+     "            metadata,",
+     "            epochs=settings.get(\"epochs\", 300),"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "src/lossaware/synthetic.py",
+    "line": 15,
+    "text": "TVAESynthesizer,",
+    "context": [
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    GaussianCopulaSynthesizer,",
+     "    TVAESynthesizer,",
+     ")",
+     "",
+     "",
+     "@dataclass(frozen=True)"
+    ]
+   },
+   {
+    "file": "src/lossaware/synthetic.py",
+    "line": 67,
+    "text": "return TVAESynthesizer(",
+    "context": [
+     "            enable_gpu=settings.get(\"enable_gpu\", True),",
+     "            verbose=settings.get(\"verbose\", False),",
+     "        )",
+     "    if name == \"tvae\":",
+     "        return TVAESynthesizer(",
+     "            metadata,",
+     "            epochs=settings.get(\"epochs\", 300),",
+     "            batch_size=settings.get(\"batch_size\", 500),",
+     "            enable_gpu=settings.get(\"enable_gpu\", True),"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "gc",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv"
+  ]
+ }
+}

@@ -1,0 +1,375 @@
+{
+ "repo": "timothy22000/data-anonymization-toolkit",
+ "disk_kb": 124,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "<h1 align=\"center\">Data Anonymization Toolkit</h1>\n\n<p align=\"center\">\n  <em>Config-driven anonymisation, synthetic data generation, and adversarial privacy validation for tabular datasets.</em>\n</p>\n\n<p align=\"center\">\n  <img alt=\"Python\" src=\"https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat&logo=python&logoColor=white\">\n  <img alt=\"License\" src=\"https://img.shields.io/badge/License-MIT-green?style=flat\">\n  <img alt=\"Status\" src=\"https://img.shields.io/badge/Status-Active-blue?style=flat\">\n  <a href=\"https://mirai-analytics.com\"><img alt=\"Built by MIRAI\" src=\"https://img.shields.io/badge/Built%20by-MIRAI%20Analytics-0F172A?style=flat\"></a>\n</p>\n\n---\n\n## Why this exists\n\nMost real-world analytics work is gated on a single, recurring blocker: **moving sensitive tabular data across organisational, regulatory, or vendor boundaries**. The default options are unsatisfying.\n\n- *Hand-rolled anonymisation scripts* are brittle, hard to audit, and rarely tested against re-identification attacks.\n- *Off-the-shelf synthetic data tools* generate plausible-looking rows but don't quantify the residual privacy risk.\n- *Differential privacy libraries* are powerful but require expertise most analytics teams don't have on hand.\n\nThis toolkit closes that gap. It runs a **10-step pipeline** that anonymises real tabular data, generates statistically faithful synthetic data, and stress-tests the result against a **10-attack adversarial red team** - all from a single YAML config. The output is a privacy-validated dataset plus a reproducible audit report you can hand to a DPO, security reviewer, or regulator.\n\nOriginally built for [MIRAI Analytics](https://mirai-analytics.com) consulting engagements where clients needed to share data with vendors, partners, or research collaborators without triggering full GDPR-grade controls on every transfer.\n\n---\n\n## What it does\n\n```\nRaw data ──> [Anonymisation] ──> [Synthetic generation] ──> [Validation] ──> Release-ready dataset + audit report\n                  │                       │                       │\n                  ▼                       ▼                       ▼\n            PII removal,            SDV-based modelling      Statistical fidelity\n            quasi-identifier        (GaussianCopula,         + privacy red team\n            generalisation,         CTGAN, TVAE)             (10 attacks)\n            k-anonymity, noise\n```\n\n### Highlights\n\n| Capability | What it gives you |\n|---|---|\n| **10-step anonymisation pipeline** | PII removal, quasi-identifier generalisation, calibrated noise injection, k-anonymity enforcement |\n| **YAML-driven configuration** | No hardcoded column references. One config per dataset; reusable across engagements |\n| **Synthetic data via SDV** | Multi-phase conditional generation with GaussianCopula, CTGAN, and TVAE backends |\n| **Statistical fidelity validation** | Chi-square, Kolmogorov-Smirnov, correlation-structure tests against the source |\n| **Privacy metrics** | Membership inference AUC, duplicate class rate, nearest-neighbour distance distributions |\n| **Adversarial red team** | 10 automated attacks testing re-identification, attribute disclosure, and linkage risk |\n| **Two release profiles** | `ml` (k=5, lighter, for internal model training) and `public` (k=20, stronger, for external release) |\n| **Auto-generated reports** | PDF guides and markdown audit trails - ready for DPO / security review |\n\n---\n\n## Quick start\n\n```bash\n# Install\ngit clone https://github.com/timothy22000/data-anonymization-toolkit\ncd data-anonymization-toolkit\nconda env create -f environment.yml && conda activate data-anon\n\n# Generate the bundled sample data\npython scripts/create_sample_data.py\n\n# 1. Anonymise\npython scripts/anonymize_data.py \\\n  --input data/raw.csv \\\n  --output data/anonymized.csv \\\n  --config config/example_simple_anonymization.yaml \\\n  --profile ml --seed 42\n\n# 2. Generate synthetic data\npython scripts/generate_synthetic.py \\\n  --input data/raw.csv \\\n  --output data/synthetic.csv \\\n  --config config/example_synthetic.yaml\n\n# 3. Validate fidelity + privacy\npython scripts/validate.py \\\n  --real data/raw.csv \\\n  --released data/anonymized.csv\n\n# 4. Adversarial red team\npython scripts/red_team.py \\\n  --real data/raw.csv \\\n  --released data/anonymized.csv \\\n  --config config/example_red_team.yaml\n\n# 5. Build the audit guide\npython scripts/generate_guide.py --output reports/audit.pdf\n```\n\n### Minimal anonymisation config\n\n```yaml\n# config/example_simple_anonymization.yaml\nprofile: ml\nseed: 42\nk_target: 5\n\ncolumns:\n  drop:\n    direct_ids:   [full_name, email, phone_number, national_id]\n    fingerprints: [source_system_code, internal_batch_id]\n  quasi_identifiers:\n    - column: age\n      method: band\n      params: {width: 10}\n    - column: region\n      method: top_n\n      params: {n: 6}\n  numeric_targets:\n    - column: income\n      noise_type: multiplicative\n      noise_pct: 0.05\n      round_to: 2\n  date_columns:\n    - created_date\n```\n\nFor larger releases, switch `profile: public` (default `k_target: 20`) and use `config/example_anonymization.yaml` as a starting template.\n\n---\n\n## Project structure\n\n```\nanonymization/   # PII removal, generalisation, noise, k-anonymity enforcement\nsynthetic/       # SDV-based synthetic data generation\nvalidation/      # Statistical fidelity + privacy validation\nreporting/       # PDF + markdown audit output\nconfig/          # YAML configs (anonymisation, synthetic, red team)\nscripts/         # CLI entry points (anonymize, generate_synthetic, validate, red_team, generate_guide)\ntemplates/       # Report templates\nexamples/        # End-to-end sample runs\ndata/            # Sample datasets (synthetic - no real data)\ndocs/            # Methodology notes + design rationale\n```\n\n---\n\n## Methods reference\n\n### Anonymisation methods supported\n\n| Method | When to use |\n|---|---|\n| Direct identifier removal | Mandatory for any release |\n| Quasi-identifier generalisation (hierarchies) | Reduces re-identification risk while preserving analytic utility |\n| k-anonymity enforcement | Default privacy baseline; tunable per profile |\n| Calibrated noise injection | For numeric quasi-identifiers (configurable epsilon) |\n| Suppression | For records that can't reach k without over-generalising |\n\n### Synthetic data backends\n\n| Backend | Best for |\n|---|---|\n| **GaussianCopula** | Fast, interpretable, captures marginal + correlation structure |\n| **CTGAN** | Better for mixed continuous/categorical with complex joint distributions |\n| **TVAE** | Strong for high-cardinality categoricals; smoother latent space |\n\n### Red team attacks\n\nThe validation suite runs 10 adversarial attacks against the released dataset, including membership inference, attribute disclosure, linkage attacks against plausible auxiliary datasets, and nearest-neighbour-based identification. Each attack outputs an AUC or success-rate metric that's included in the audit report.\n\n---\n\n## Status\n\nActive, used in production MIRAI Analytics engagements. Public release is intentionally minimal so client-specific extensions stay private; the core pipeline, validation suite, and red team are open source under MIT.\n\nIf you're using this in your own work, an issue or PR is very welcome.\n\n---\n\n## Citation\n\nIf you use this toolkit in research, please cite:\n\n```bibtex\n@software{sumhonmun_data_anon_toolkit,\n  author = {Sum Hon Mun, Timothy},\n  title  = {Data Anonymization Toolkit: config-driven anonymisation, synthetic data generation, and adversarial privacy validation for tabular datasets},\n  year   = {2025},\n  url    = {https://github.com/timothy22000/data-anonymization-toolkit}\n}\n```\n\n---\n\n## About\n\nBuilt and maintained by **[Timothy Sum Hon Mun](https://www.linkedin.com/in/timothysumhonmun)** at **[MIRAI Analytics](https://mirai-analytics.com)**.\n\nPhD in medical imaging AI (Institute of Cancer Research). 4+ years commercial ML at Ageas Insurance. 11 peer-reviewed publications across MICCAI, AAAI, ISMRM, and MIDL.\n\n- 🤗 [HuggingFace](https://huggingface.co/t22000t)\n- 💼 [LinkedIn](https://www.linkedin.com/in/timothysumhonmun)\n- 🌐 [MIRAI Analytics](https://mirai-analytics.com)\n\n---\n\n## License\n\nMIT - see [LICENSE](LICENSE).\n",
+ "hits": {
+  "st": [
+   {
+    "file": "synthetic/synthesizers.py",
+    "line": 39,
+    "text": "from sdv.single_table import (",
+    "context": [
+     "SDV_AVAILABLE: bool = False",
+     "",
+     "try:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import (",
+     "        GaussianCopulaSynthesizer,",
+     "        CTGANSynthesizer,",
+     "        TVAESynthesizer,",
+     "    )"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "synthetic/synthesizers.py",
+    "line": 38,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "SDV_AVAILABLE: bool = False",
+     "",
+     "try:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import (",
+     "        GaussianCopulaSynthesizer,",
+     "        CTGANSynthesizer,",
+     "        TVAESynthesizer,"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "synthetic/synthesizers.py",
+    "line": 38,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "SDV_AVAILABLE: bool = False",
+     "",
+     "try:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import (",
+     "        GaussianCopulaSynthesizer,",
+     "        CTGANSynthesizer,",
+     "        TVAESynthesizer,"
+    ]
+   },
+   {
+    "file": "synthetic/synthesizers.py",
+    "line": 39,
+    "text": "from sdv.single_table import (",
+    "context": [
+     "SDV_AVAILABLE: bool = False",
+     "",
+     "try:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import (",
+     "        GaussianCopulaSynthesizer,",
+     "        CTGANSynthesizer,",
+     "        TVAESynthesizer,",
+     "    )"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "synthetic/synthesizers.py",
+    "line": 41,
+    "text": "CTGANSynthesizer,",
+    "context": [
+     "try:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import (",
+     "        GaussianCopulaSynthesizer,",
+     "        CTGANSynthesizer,",
+     "        TVAESynthesizer,",
+     "    )",
+     "",
+     "    SDV_AVAILABLE = True"
+    ]
+   },
+   {
+    "file": "synthetic/synthesizers.py",
+    "line": 59,
+    "text": "\"ctgan\": \"CTGANSynthesizer\",",
+    "context": [
+     "# ---------------------------------------------------------------------------",
+     "",
+     "_STRATEGY_MAP: dict[str, str] = {",
+     "    \"copula\": \"GaussianCopulaSynthesizer\",",
+     "    \"ctgan\": \"CTGANSynthesizer\",",
+     "    \"tvae\": \"TVAESynthesizer\",",
+     "    # \"hybrid\" uses copula as the global default; individual phases may",
+     "    # specify a different strategy via their own \"strategy\" key.",
+     "    \"hybrid\": \"GaussianCopulaSynthesizer\","
+    ]
+   },
+   {
+    "file": "synthetic/synthesizers.py",
+    "line": 144,
+    "text": "``GaussianCopulaSynthesizer``, ``CTGANSynthesizer``, or",
+    "context": [
+     "                whose column definitions cover all columns present in *df*.",
+     "",
+     "        Returns:",
+     "            A fitted SDV synthesizer instance : one of",
+     "            ``GaussianCopulaSynthesizer``, ``CTGANSynthesizer``, or",
+     "            ``TVAESynthesizer``.",
+     "",
+     "        Raises:",
+     "            ImportError: If SDV is not installed."
+    ]
+   },
+   {
+    "file": "synthetic/synthesizers.py",
+    "line": 181,
+    "text": "elif synthesizer_class_name == \"CTGANSynthesizer\":",
+    "context": [
+     "        synthesizer: Any",
+     "",
+     "        if synthesizer_class_name == \"GaussianCopulaSynthesizer\":",
+     "            synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "        elif synthesizer_class_name == \"CTGANSynthesizer\":",
+     "            synthesizer = CTGANSynthesizer(",
+     "                metadata,",
+     "                epochs=epochs,",
+     "                batch_size=self._config.batch_size,"
+    ]
+   },
+   {
+    "file": "synthetic/synthesizers.py",
+    "line": 182,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "",
+     "        if synthesizer_class_name == \"GaussianCopulaSynthesizer\":",
+     "            synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "        elif synthesizer_class_name == \"CTGANSynthesizer\":",
+     "            synthesizer = CTGANSynthesizer(",
+     "                metadata,",
+     "                epochs=epochs,",
+     "                batch_size=self._config.batch_size,",
+     "            )"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "synthetic/synthesizers.py",
+    "line": 40,
+    "text": "GaussianCopulaSynthesizer,",
+    "context": [
+     "",
+     "try:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import (",
+     "        GaussianCopulaSynthesizer,",
+     "        CTGANSynthesizer,",
+     "        TVAESynthesizer,",
+     "    )",
+     ""
+    ]
+   },
+   {
+    "file": "synthetic/synthesizers.py",
+    "line": 58,
+    "text": "\"copula\": \"GaussianCopulaSynthesizer\",",
+    "context": [
+     "# Strategy routing table",
+     "# ---------------------------------------------------------------------------",
+     "",
+     "_STRATEGY_MAP: dict[str, str] = {",
+     "    \"copula\": \"GaussianCopulaSynthesizer\",",
+     "    \"ctgan\": \"CTGANSynthesizer\",",
+     "    \"tvae\": \"TVAESynthesizer\",",
+     "    # \"hybrid\" uses copula as the global default; individual phases may",
+     "    # specify a different strategy via their own \"strategy\" key."
+    ]
+   },
+   {
+    "file": "synthetic/synthesizers.py",
+    "line": 63,
+    "text": "\"hybrid\": \"GaussianCopulaSynthesizer\",",
+    "context": [
+     "    \"ctgan\": \"CTGANSynthesizer\",",
+     "    \"tvae\": \"TVAESynthesizer\",",
+     "    # \"hybrid\" uses copula as the global default; individual phases may",
+     "    # specify a different strategy via their own \"strategy\" key.",
+     "    \"hybrid\": \"GaussianCopulaSynthesizer\",",
+     "}",
+     "",
+     "",
+     "def _require_sdv() -> None:"
+    ]
+   },
+   {
+    "file": "synthetic/synthesizers.py",
+    "line": 144,
+    "text": "``GaussianCopulaSynthesizer``, ``CTGANSynthesizer``, or",
+    "context": [
+     "                whose column definitions cover all columns present in *df*.",
+     "",
+     "        Returns:",
+     "            A fitted SDV synthesizer instance : one of",
+     "            ``GaussianCopulaSynthesizer``, ``CTGANSynthesizer``, or",
+     "            ``TVAESynthesizer``.",
+     "",
+     "        Raises:",
+     "            ImportError: If SDV is not installed."
+    ]
+   },
+   {
+    "file": "synthetic/synthesizers.py",
+    "line": 174,
+    "text": "epochs if synthesizer_class_name != \"GaussianCopulaSynthesizer\" else \"n/a\",",
+    "context": [
+     "            phase_config.get(\"name\", \"<unnamed>\"),",
+     "            strategy,",
+     "            synthesizer_class_name,",
+     "            len(df),",
+     "            epochs if synthesizer_class_name != \"GaussianCopulaSynthesizer\" else \"n/a\",",
+     "        )",
+     "",
+     "        synthesizer: Any",
+     ""
+    ]
+   },
+   {
+    "file": "synthetic/synthesizers.py",
+    "line": 179,
+    "text": "if synthesizer_class_name == \"GaussianCopulaSynthesizer\":",
+    "context": [
+     "        )",
+     "",
+     "        synthesizer: Any",
+     "",
+     "        if synthesizer_class_name == \"GaussianCopulaSynthesizer\":",
+     "            synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "        elif synthesizer_class_name == \"CTGANSynthesizer\":",
+     "            synthesizer = CTGANSynthesizer(",
+     "                metadata,"
+    ]
+   },
+   {
+    "file": "synthetic/synthesizers.py",
+    "line": 180,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "",
+     "        synthesizer: Any",
+     "",
+     "        if synthesizer_class_name == \"GaussianCopulaSynthesizer\":",
+     "            synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "        elif synthesizer_class_name == \"CTGANSynthesizer\":",
+     "            synthesizer = CTGANSynthesizer(",
+     "                metadata,",
+     "                epochs=epochs,"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "synthetic/synthesizers.py",
+    "line": 42,
+    "text": "TVAESynthesizer,",
+    "context": [
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import (",
+     "        GaussianCopulaSynthesizer,",
+     "        CTGANSynthesizer,",
+     "        TVAESynthesizer,",
+     "    )",
+     "",
+     "    SDV_AVAILABLE = True",
+     "    logger.debug(\"SDV imported successfully\")"
+    ]
+   },
+   {
+    "file": "synthetic/synthesizers.py",
+    "line": 60,
+    "text": "\"tvae\": \"TVAESynthesizer\",",
+    "context": [
+     "",
+     "_STRATEGY_MAP: dict[str, str] = {",
+     "    \"copula\": \"GaussianCopulaSynthesizer\",",
+     "    \"ctgan\": \"CTGANSynthesizer\",",
+     "    \"tvae\": \"TVAESynthesizer\",",
+     "    # \"hybrid\" uses copula as the global default; individual phases may",
+     "    # specify a different strategy via their own \"strategy\" key.",
+     "    \"hybrid\": \"GaussianCopulaSynthesizer\",",
+     "}"
+    ]
+   },
+   {
+    "file": "synthetic/synthesizers.py",
+    "line": 145,
+    "text": "``TVAESynthesizer``.",
+    "context": [
+     "",
+     "        Returns:",
+     "            A fitted SDV synthesizer instance : one of",
+     "            ``GaussianCopulaSynthesizer``, ``CTGANSynthesizer``, or",
+     "            ``TVAESynthesizer``.",
+     "",
+     "        Raises:",
+     "            ImportError: If SDV is not installed.",
+     "            ValueError: If the resolved strategy is not a recognised value."
+    ]
+   },
+   {
+    "file": "synthetic/synthesizers.py",
+    "line": 187,
+    "text": "elif synthesizer_class_name == \"TVAESynthesizer\":",
+    "context": [
+     "                metadata,",
+     "                epochs=epochs,",
+     "                batch_size=self._config.batch_size,",
+     "            )",
+     "        elif synthesizer_class_name == \"TVAESynthesizer\":",
+     "            synthesizer = TVAESynthesizer(",
+     "                metadata,",
+     "                epochs=epochs,",
+     "                batch_size=self._config.batch_size,"
+    ]
+   },
+   {
+    "file": "synthetic/synthesizers.py",
+    "line": 188,
+    "text": "synthesizer = TVAESynthesizer(",
+    "context": [
+     "                epochs=epochs,",
+     "                batch_size=self._config.batch_size,",
+     "            )",
+     "        elif synthesizer_class_name == \"TVAESynthesizer\":",
+     "            synthesizer = TVAESynthesizer(",
+     "                metadata,",
+     "                epochs=epochs,",
+     "                batch_size=self._config.batch_size,",
+     "            )"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "gc",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "environment.yml": [
+   "    - sdv>=1.17"
+  ],
+  "pyproject.toml": [
+   "synthetic = [\"sdv>=1.17\"]",
+   "all = [\"sdv>=1.17\", \"reportlab\", \"statsmodels\"]"
+  ]
+ }
+}

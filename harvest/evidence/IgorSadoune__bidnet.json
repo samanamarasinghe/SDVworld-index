@@ -1,0 +1,55 @@
+{
+ "repo": "IgorSadoune/bidnet",
+ "disk_kb": 201,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "We present a deep learning solution to address the challenges of simulating realistic synthetic first-price sealed-bid auction data. The complexities encountered in this type of auction data include high-cardinality discrete feature spaces and a multilevel structure arising from multiple bids associated with a single auction instance. Our methodology combines deep generative modeling (DGM) with an artificial learner that predicts the conditional bid distribution based on auction characteristics, contributing to advancements in simulation-based research. This approach lays the groundwork for creating realistic auction environments suitable for agent-based learning and modeling applications. Our contribution is twofold: we introduce a comprehensive methodology for simulating multilevel discrete auction data, and we underscore the potential of DGM as a powerful instrument for refining simulation techniques and fostering the development of economic models grounded in generative AI.\n\n# Table of Contents\n\n1. [Requirements](#requirements)\n2. [Installation](#installation)\n   - [Clone the Repository](#clone-the-repository)\n   - [Virtual Environment (optional but recommended)](#virtual-environment-optional-but-recommended)\n   - [Install the Required Dependencies](#install-the-required-dependencies)\n3. [Data Download](#data-download)\n4. [File Description](#file-description)\n5. [Study Replication](#study-replication)\n   - [Full Routine](#full-routine)\n   - [Validation Routine](#validation-routine)\n   - [Run Python Files Individually](#run-python-files-individually)\n6. [License](#license)\n\n\n# Requirements \n\n- Git ([install Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git))\n- Python: from v3.8 to v3.10 ([intsall Python](https://www.python.org/downloads/))\n- pip package installer (usually installed automatically with Python)\n- 32GB RAM\n- GPU access (optional but recommended)\n- Mac OS, Linux distribution or Windows\n\n# Installation\n\n(Via command line)\n\n## Clone the Repository\n\n`git clone https://github.com/IgorSadoune/multi-level-auction-generator.git`\n\n## Virtual Environment (optional but recommended)\n\n1. Create a virtual environment inside the downloaded repository. Go to the root of the folder \"multi-level-auction-generator\" and execute:\n\n- On Mac/Linux, execute:\n`python3 -m venv venv`\n\n- On Windows, execute:\n`python -m venv venv`\n\n2. Activate the virtual environment using:\n\n- On Mac/Linux, execute:\n`source venv/bin/activate`\n\n- On Windows, execute:\n`.\\venv\\Scripts\\activate`\n\n**The virtual environment always needs to be activated when executing files from this repository.**\n\n## Install the Required Dependencies:\n\nThe required python libraries are listed in the \"requirements.txt\" file. Those can directly be downloaded to your virtual environment (or root system if venv not setup) by executing\n\n`pip install -r requirements.txt`\n\n**If for some reason an error occurs with one package, the following commands will allow you to install the subsequent packages in the list:**\n\n- On Mac/Linux:\n  `while read package; do\n    pip install \"$package\" || echo \"Failed to install $package\" >&2\ndone < requirements.txt`\n\n- On Windows:\n   - if using PowerShell 7:\n     `Get-Content requirements.txt | ForEach-Object {\n       pip install $_ || Write-Error \"Failed to install $_\"}`\n   - or, if using command prompt:\n     `for /f %i in (requirements.txt) do pip install %i`\n     \n**We do not provide support for Windows users utilizing PowerShell 5.**\n\n# Data Download\n\n1. Download the `datasets.zip` file from [this link](https://zenodo.org/records/10649028).\n\n2. Extract `datasets.zip` to a location outside of `multi-level-auction-generator/`.\n\n3. Copy all the 20 files inside the `datasets` folder (the newly unfolded archive) to the root of `multi-level-auction-generator/data/` folder. \n**Make sure to copy and not move the files, as the datasets in the multi-level-auction-generator/data/ folder might be overwritten in subsequent steps.**\n\n4. (optional) Download the `model_parameters.zip`, and extract it into the `multi-level-auction-generator/models/` folder.\n\n# File Description\nWe recommend reading the `file_description.md` file [here](https://github.com/IgorSadoune/multi-level-auction-generator/blob/master/file_description.md), which catalogs and describes all the files that make up the project.\n\n# Study Replication\n\n**Always place yourself at the root of the repository (multi-level-auction-generator/)**\n\nThere are two ways to replicate the study:\n\nEither \n\n1. You can execute the \"Full Routine\", which trains and evaluates models, replicating Table 2, 3 and 4. List of model being trained by this routine: CTGAN, TVAE, BIDNET, MSVR, REGTREE and the three classifiers for the inception score.\n\nOr\n\n2. You can follow the \"Validation Routine\" to produce results of Table 2 and 4 (You need to train the BidNet, MSVR and regtree in order to get the results of Table 3).\n\n## Full Routine\n\nRun the entire routine, including the training of the CTGAN, TVAE, BidNet and classifiers for inception scoring. Note that the full routine took approximately 8 hours on a RTX2060.\n\n1. Make sure that the pickle file `raw_data.pkl` is in the folder `multi-level-auction-generator/data/`. Only this one file is necessary to run the full routine. \n\n2. Run the test file which execute the routine with a small amount of data and training iterations\n\n- On Mac/Linux, execute:\n    `bash test_full.sh`\n\n- For Windows users:\n    `test_full.bat`\n\n3. If the test is successful (no error was raised), run the routine using the entirety of the data\n\n- On Mac/Linux, execute:\n    `bash full.sh`\n\n- For Windows users:\n    `full.bat`\n\nThis will train the models and output the results displayed in Table 2, 3, and 4.\n\n## Validation Routine\n\nTo replicate the study without training the models\n\n1. Make sure that the files:\n\n- `transformed_features_squeezed.npy`\n- `synthetic_data_ctgan.npy`\n- `synthetic_data_tvae.npy`\n- `info.pkl`\n- `average_standardized_log_bids.npy`\n- `b_hat.npy`\n- `b_tilde_ctgan.npy`\n- `b_tilde_tvae.npy`\n\nare in the `multi-level-auction-generator/data/` folder.\n**Note that if you have executed the test routine (test_full.sh or test_full.bat) prior to executing the validation routine, the required files mentioned above will have been overwritten by their test versions. As a result, the validation routine will not reproduce the results presented in the paper. The files listed above must either be produced by the full routine (by executing full.sh or full.bat) or be the original files contained in the datasets.zip archive.**\n\n2. Run the validation procedure by executing\n\n- On Mac/Linux, execute:\n `bash validation.sh`\n\n- For Windows users:\n `validation.bat`\n\nThis will output the results displayed in Table 2 and 4.\n\n## Run Python Files Individually\n\nAlternatively, python files can be ran individually using, for example,\n\n- On Mac/Linux, execute:\n `python3 src/script/data_transform.py`\n \n- For Windows users:\n `python src/script/data_transform.py`\n\nReplace \"data_transform.py\" by the file you need to run. \n\n**Note that running training scripts (any Python file ending with \"_train.py\") with the argument --save_model (e.g., python3 src/script/bidnet_train.py --save_model) will overwrite the associated model parameters stored in multi-level-auction-generator/models/. Running any script may also overwrite data outputs stored in multi-level-auction-generator/data/.** \n\n# License\n\nThis project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.\n\n",
+ "hits": {
+  "ctgan_mod": [
+   {
+    "file": "src/scripts/ctgan_tvae_train.py",
+    "line": 29,
+    "text": "from ctgan import CTGAN",
+    "context": [
+     "import pickle",
+     "import numpy as np",
+     "",
+     "sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'modules'))",
+     "from ctgan import CTGAN",
+     "from tvae import TVAE ",
+     "",
+     "import argparse",
+     ""
+    ]
+   }
+  ],
+  "rdt": [
+   {
+    "file": "src/modules/transformer.py",
+    "line": 15,
+    "text": "from rdt.transformers import ClusterBasedNormalizer, OneHotEncoder",
+    "context": [
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from joblib import Parallel, delayed",
+     "from rdt.transformers import ClusterBasedNormalizer, OneHotEncoder",
+     "import torch ",
+     "",
+     "SpanInfo = namedtuple('SpanInfo', ['dim', 'activation_fn'])",
+     "ColumnTransformInfo = namedtuple("
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ctgan_mod",
+  "rdt"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "rdt==1.9.1"
+  ]
+ }
+}

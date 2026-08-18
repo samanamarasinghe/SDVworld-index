@@ -1,0 +1,127 @@
+{
+ "repo": "richiemin28/EarthQuakePredictor",
+ "disk_kb": 39708,
+ "method": "partial_clone",
+ "tree_files": 32,
+ "status": "ok",
+ "readme": "# Adaptive Earthquake Forecast System\n\nAn adaptive, continually-learning machine learning system for short-term earthquake\nforecasting — currently covering **Myanmar** and **Japan**, two of the world's most\nseismically active and consequential countries, with more regions plannable using the\nsame architecture.\n\nThe project began as the software artefact for an MSc dissertation on Myanmar\nspecifically (below), and has since been extended to a second country: Japan suffers\nsome of the most severe and frequent earthquakes on Earth (the 2011 Mw 9.0 Tohoku\nearthquake among them) and has a far denser, better-instrumented public catalog than\nMyanmar's — a genuinely useful, different test of whether the same continual-learning\napproach holds up in a very different seismic and data regime. The goal is the same one\nthe dissertation started with: put a real, working, continuously-updating forecasting\ntool in front of people living somewhere earthquakes are a real and recurring risk, not\njust a one-off historical-data exercise.\n\n> **Research artefact — not an early-warning system.** Predictions are probabilistic\n> outputs of a statistical pattern-matching model, not seismological forecasts. They are\n> not validated for operational use and must not be relied on for emergency response,\n> public safety, or infrastructure decisions. See [Disclaimer](#disclaimer) below.\n\nSee [CHANGELOG.md](CHANGELOG.md) for release history.\n\n---\n\n## Why this exists\n\nMyanmar sits at the junction of the Indian, Eurasian, and Sunda plates and is cut by the\nSagaing Fault, which accommodates roughly 20–23 mm/year of right-lateral strike-slip\nmotion. On 28 March 2025 an Mw 7.7 earthquake ruptured ~500 km of the fault near\nMandalay — one of the largest continental strike-slip events recorded globally in recent\ndecades. The seismic gap that produced it had been recognised in the literature for\nyears, yet no machine-learning-based prediction system existed for the region at the\ntime.\n\nDespite that hazard, Myanmar is one of the least seismically monitored regions in Asia,\nand virtually all published ML earthquake-prediction work (Mukherjee et al., 2025; Yavas\net al., 2024; Hu et al., 2025) shares the same limitation: models are trained once on a\nfixed historical catalog and never updated, so their knowledge of evolving regional\nseismicity grows steadily more stale. No published study had applied **continual\nlearning** to earthquake prediction in Myanmar, or any similarly data-sparse seismic\nregion, before this project.\n\n**Hypothesis tested by this system:** a model that is continuously updated with incoming\nreal-time seismic data will outperform a static, frozen model at short-term earthquake\nprediction, measured by precision, recall, F1, and AUC across multiple magnitude\nthresholds and prediction windows. Myanmar was the original test case (data-sparse,\nunder-monitored); Japan is the second, deliberately different one (data-dense,\nextremely well-monitored) — the same architecture, retrained independently on each\ncountry's own catalog.\n\n## What the system does\n\nThe system runs a controlled experiment between two models trained identically on\nhistorical data, then diverging:\n\n- **Static model** — frozen after initial training, never updated. Represents the\n  conventional approach used throughout the literature.\n- **Adaptive model** — after initial training, incrementally updates as new seismic\n  events arrive, using **replay-based continual learning** (each update combines the new\n  data with a randomly sampled 20% of prior training data) to mitigate catastrophic\n  forgetting.\n\nBoth are XGBoost classifiers trained on 15 seismic indicator features computed with a\nrolling 50-event window, following the feature taxonomy of Mukherjee et al. (2025).\n**CTGAN** synthetic data augmentation (Joshi et al., 2025) balances the training set for\nrare high-magnitude classes where needed. A dedicated spatial module turns raw\nprobability outputs into estimated epicenter coordinates, zone names, and uncertainty\nradii using magnitude-weighted, recency-weighted spatial clustering across named\ntectonic zones — ten for Myanmar (Sagaing Fault, Indo-Burman Range, Andaman Sea, etc.)\nand ten for Japan (Nankai Trough, Japan Trench, Sagami Trough, etc.).\n\n**The adaptive model keeps learning in production, not just in the evaluation.** A\ndaily scheduled job fetches confirmed new earthquakes for both countries, recomputes\nfeatures and labels, and genuinely retrains the adaptive model on them — see\n[Keeping the model current](#keeping-the-model-current-in-production) below for exactly\nhow, since this is the kind of claim that's easy to leave true only on paper.\n\n### Magnitude range differs by country, deliberately\n\nThe dashboard shows the full M4-M10 range the catalogs were checked against for both\ncountries — every threshold that has enough independent historical events to train a\nreal classifier shows a real forecast; every threshold that doesn't is shown too, marked\nplainly as \"insufficient historical data\" rather than hidden or, worse, filled in with a\nnumber that has no statistical basis. The cutoff isn't a round number chosen for looks —\nit's wherever the real event count actually runs out for that country:\n\n- **Myanmar: M4.0 / M4.5 / M5.0 / M5.5 / M6.0.** M6.0 was added after checking real\n  row-level label counts, not just raw catalog counts (rolling-window labels can look\n  \"full\" even from a single historical event) — 59 independent M≥6.0 events over\n  1990–2025 clears the same bar Japan's own thresholds were held to. M6.5+ has only 18\n  real events, M7.0+ just 3 (including the March 2025 Mw 7.7 Mandalay earthquake) — too\n  thin to train a classifier that means anything beyond \"it happened a couple of times\".\n- **Japan: M4.5 / M5.0 / M5.5 / M6.0 / M6.5 / M7.0.** Can't start at M4.0 the way\n  Myanmar does — Japan's catalog is fetched starting at M4.5 specifically to keep\n  feature computation and training tractable (see config_japan.py), so there's no\n  dormant M4.0-4.4 data sitting unused to expose the way there was for Myanmar. At the\n  top end, M7.5+ has only 10 real events over 1990–2025 (below the ~34-event bar that\n  justified M7.0 itself), and M8.0+ is essentially the 2011 Tohoku Mw 9.1 alone (1-2 real\n  events) — training on that would be fitting one historical earthquake, not learning a\n  pattern, however healthy the rolling-window label counts might look (they reach into\n  the hundreds purely because one massive earthquake makes every preceding day's row\n  count as \"positive\").\n\nBelow either country's floor, prediction windows were already saturating near 100%\n(background seismicity really is that dense at moderate magnitudes) — real, but\nuninformative. Above either ceiling, there just isn't enough independent signal yet.\n\n### Location precision: named zones only, tied to the forecast window, tightening over time\n\nEvery location prediction is a real named tectonic zone — Sagaing Fault Zone, Japan\nTrench (Tohoku), and so on. There is no generic \"Country Region (General)\" catch-all in\nthe output; if recent activity isn't concentrated inside a known zone's boundary closely\nenough to say something specific, the system reports the nearest well-established zone\nby known seismic hazard significance rather than a vague region-sized answer.\n\nEach zone's boundary is itself data-driven, not a rough administrative outline: it's the\nmagnitude-weighted middle 70% (15th–85th percentile) of real M≥3.0 events from the\n1990–2025 catalog that fell within that zone's original, much larger boundary — the box\ntightened down to where the real seismicity actually concentrates.\n\n**Within a zone, the centroid comes from the actual hotspot, not an average across the\nwhole zone.** A zone can be 100-300km across, and recent events inside it don't\nnecessarily form one blob — averaging every event in the zone can land the \"predicted\"\npoint in a location with zero historical activity, geometrically the mean but\nstatistically meaningless (literally between two real clusters rather than at either\none). Recent events are density-clustered first (DBSCAN, haversine distance so it\nrespects the Earth's curvature — see `spatial_predictor._find_hotspot_mask`), and the\ncluster with the most combined magnitude/recency weight — not just the most points —\nbecomes the basis for the centroid, radius, and depth. Every prediction reports which\none happened (`is_hotspot` in the JSON, \"Based on: a real cluster of nearby events\" vs.\n\"a wider average\" in the map popup), so the confidence behind the number is never hidden.\nFalls back to the whole-zone average only when there aren't enough points, or events are\ntoo scattered, for any real cluster to emerge.\n\nThe uncertainty radius (and depth — see below) is computed fresh from recent clustering\n(not a fixed per-zone number), and — since a \"7 days from now\" answer and a \"30 days\nfrom now\" answer shouldn't necessarily point at the same circle — it's computed\nseparately per forecast window, with shorter windows drawing on a shorter, more\nimmediate lookback so a near-term forecast reflects near-term activity specifically.\n\n**The precision floor scales with how much recent data actually backs the estimate,\ndown to 5km at the tightest — it is not one fixed number applied regardless of sample\nsize.** A tight radius computed from 2-3 events could just be coincidence, not genuine\nconfidence, so it isn't allowed to claim the same precision as the same tight number\nbacked by dozens of clustered events:\n\n| Recent events behind the estimate | Radius floor | Depth floor |\n|---|---|---|\n| < 15 | 30 km | 10 km |\n| 15–24 | 20 km | 8 km |\n| 25–39 | 10 km | 5 km |\n| ≥ 40 | 5 km | 3 km |\n\nNone of today's zones have enough near-term clustering (per the per-window lookback\nabove) to reach the tightest tier yet — that's expected, not a shortfall to hide. The\ncalculation is simply never artificially prevented from getting there as the adaptive\nmodels accumulate more confirmed real earthquakes to cluster on, recomputed against a\nrecurring schedule (see\n[Keeping the model current](#keeping-the-model-current-in-production)). It's a direct\nextension of the same continual-learning story as the magnitude models: more confirmed\nreal data should mean the location answer keeps getting tighter, not that it was\nhardcoded tight from day one.\n\n**Depth is estimated the same way location is.** Alongside the horizontal centroid and\nradius, each prediction now also reports an estimated depth and depth uncertainty —\ncomputed identically (magnitude/recency-weighted mean and spread of recent nearby\nevents' recorded depths), floored by the same confidence tiers, shown in the map popup\nfor the top zone. Like the horizontal position, this is a descriptive statistic over\nrecent real events, not a physically modelled rupture depth.\n\n## Result: does adaptive updating actually help?\n\nEvaluated pseudo-prospectively across the 2020–2025 test period (1,279 held-out Myanmar\nevents, never seen during training):\n\n| Magnitude threshold | What happened |\n|---|---|\n| **M5.5** (large, disaster-relevant events) | The static model scores **near-zero F1** and **below-random AUC** on 3 of 4 prediction windows — it is actively worse than guessing. The adaptive model recovers meaningful skill: **F1 0.15–0.43**, **AUC 0.59–0.66**. |\n| **M5.0** | Adaptive AUC improves by **+0.08 to +0.19** across all four prediction windows. |\n| **M4.5** | Adaptive model improves both F1 and AUC on all three windows evaluated. |\n| **M4.0** | Both models score >0.98 F1 — this just reflects Myanmar's near-continuous background seismicity at that threshold and isn't a meaningful signal either way. |\n\nAcross the 12 meaningfully-evaluated label/window combinations (excluding the trivial\nM4.0 case), the adaptive model beats the static baseline on **9/12 F1** and **10/12\nAUC** comparisons. The improvement is not perfectly monotonic year-over-year (2023 shows\na temporary dip, consistent with known replay-buffer stability/plasticity trade-offs),\nbut the combined multi-year comparison is unambiguous, and the effect is largest exactly\nwhere it matters most: detecting the region's most dangerous earthquakes. Full\nmethodology, per-year tables, and discussion are in Chapters 5–6 of the original\ndissertation (Myanmar-only at time of writing).\n\nJapan's own pseudo-prospective evaluation runs the identical methodology independently\non Japan's catalog — see `predictions/japan_latest_predictions.json` and the terminal\noutput of `python run_pipeline.py japan --mode evaluate` for current numbers; a\ndedicated write-up comparing the two countries' results is a natural next step but isn't\nfolded into the original dissertation text, which predates Japan's addition.\n\n## Architecture\n\n```\nconfig.py                Myanmar configuration — geographic bounds, API endpoints,\n                          zones, magnitude thresholds, and file paths\nconfig_japan.py           Japan's equivalent configuration, same structure, different\n                          bounds/zones/thresholds/file paths (all japan_-prefixed so\n                          nothing collides with Myanmar's data)\nrun_pipeline.py           Runs main.py or generate.py against a specific country's\n                          config by swapping sys.modules[\"config\"] before import -\n                          every pipeline module does `from config import X`, so this\n                          works without editing any of them. See its own docstring.\ndata_acquisition.py       USGS historical catalog fetch + real-time ATOM feed polling\nfeature_engineering.py    15 seismic indicator features + binary label construction\ndata_augmentation.py      CTGAN synthetic minority-class generation\nmodels.py                 StaticModel and AdaptiveModel (XGBoost + replay buffer)\nspatial_predictor.py      Magnitude/recency-weighted spatial clustering → zone,\n                          centroid, depth, and uncertainty radius (confidence-scaled\n                          by event count). Computed per forecast window (not one\n                          fixed snapshot); named zones only, no generic catch-all\nprediction_engine.py      Turns model output + spatial stats into structured\n                          predictions, including per-magnitude effect/action text\nlive_updater.py           LiveUpdater class used by `main.py --mode live`\nlive_demo.py              Standalone real-time terminal dashboard (continuous polling\n                          + adaptive updates + prediction refresh)\ngenerate.py                Lightweight refresh: loads the saved model and regenerates\n                          predictions without retraining (~60s) — used by CI\nmain.py                   Master pipeline entry point (train/update/evaluate/live/predict)\nindex.html                 Static front-end dashboard — mobile-first, light/dark theme,\n                          country switcher, plain-language forecast summary\n.github/workflows/\n  update-predictions.yml   Every 6 hours: refreshes predictions for both countries from\n                          the current model and deploys them, no retraining\n  adaptive-update.yml      Once daily: the real continual-learning step — fetches\n                          confirmed new earthquakes and actually retrains both\n                          countries' adaptive models on them\n```\n\nData flows: `data_acquisition.py` → `feature_engineering.py` → (`data_augmentation.py` →)\n`models.py` → `spatial_predictor.py` / `prediction_engine.py` →\n`predictions/{country}_latest_predictions.json` → `index.html`.\n\n## Getting started\n\nRequires Python 3.10+ (developed and tested on 3.13).\n\n```bash\ngit clone https://github.com/richiemin28/EarthQuakePredictor.git\ncd EarthQuakePredictor\npip install -r requirements.txt\n```\n\n`requirements.txt` covers the full pipeline (including CTGAN/`sdv`, used only for\ntraining). `requirements_server.txt` is the trimmed dependency set used by CI (both the\nlightweight refresh and the real adaptive-update job — neither needs CTGAN).\n\n### Run the full pipeline\n\n```bash\n# Myanmar (default config):\npython main.py --mode full\n\n# Japan (or any future country with its own config_<name>.py):\npython run_pipeline.py japan --mode full\n```\n\nThis takes a while on first run — the historical fetch and rolling-window feature\ncomputation are the slow steps. Results are cached to `data/` and `models/` (with\n`japan_`-prefixed filenames for Japan) so subsequent runs are fast.\n\n### Other modes\n\nWorks identically for either country — just choose whether to call `main.py` directly\n(Myanmar) or route it through `run_pipeline.py <country>` (any other country):\n\n```bash\npython main.py --mode train              # (Re)train static + adaptive models from scratch\npython main.py --mode train --refresh    # Force a fresh USGS download instead of using the cache\npython main.py --mode evaluate           # Pseudo-prospective evaluation, static vs adaptive\npython main.py --mode predict            # Generate structured predictions from the saved model\npython main.py --mode update             # Fetch new confirmed events, actually retrain the model\npython main.py --mode live               # Start the continuous live-updating loop\n\npython run_pipeline.py japan --mode train\npython run_pipeline.py japan --mode update\npython run_pipeline.py japan generate    # equivalent to generate.py, but for Japan\n```\n\n### Live terminal dashboard\n\n```bash\npython live_demo.py                 # Myanmar, poll USGS every 5 minutes (default)\npython live_demo.py --interval 60   # Poll every 60 seconds\n```\n\nPolls the USGS ATOM feed, ingests any new events in the bounding box, triggers an\nadaptive model update, and redraws a full prediction dashboard (recent activity, zone\nrankings, forward predictions with coordinates/radius/probability) in the terminal. Press\n`Ctrl+C` to stop — the model checkpoints automatically on exit.\n\n### Web dashboard\n\n`index.html` is a self-contained static page — open it directly in a browser, or serve it\nwith any static file server. It reads `predictions/{country}_latest_predictions.json`\nfor the ML forecasts and polls the USGS ATOM feed directly in the browser for live\nactivity. A country switcher in the header lets a visitor pick Myanmar or Japan without\nreloading the page; a light/dark theme toggle persists the visitor's choice.\n\nFixed-height app shell at every width, 44px+ touch targets throughout. Below 900px the\nmap fills the screen like a native map app and the forecast panel becomes a draggable\nbottom sheet on top of it (peek/half/full snap states) instead of a long page the map\nsits at the bottom of; at 900px and up it's the two-pane desktop layout with the panel\nas a fixed sidebar. A plain-language \"hero\" summary leads every visit — described in\nwords (\"78% chance of a strong earthquake near the Sagaing Fault Zone\"), not just a raw\npercentage — with a 7d/15d/30d switcher so it's never locked to one horizon; the bars\ndirectly below it follow the same selection. The full multi-window, multi-magnitude\nforecast table is open by default further down the panel, not hidden behind a click.\n\n## Keeping the model current in production\n\nTwo separate scheduled jobs, deliberately different cadences:\n\n- **`update-predictions.yml`, every 6 hours** — cheap. Loads whatever model already\n  exists and regenerates predictions using the latest 90 days of USGS data for spatial\n  context. Doesn't touch the model's learned weights.\n- **`adaptive-update.yml`, once daily at 03:00 UTC** — the real thing. Fetches every\n  confirmed new earthquake since the last run, recomputes the full feature/label set,\n  and actually calls the adaptive model's `.update()` method — genuine incremental\n  retraining on real outcomes, with the replay buffer doing its job of not overwriting\n  what the model already knew. Runs daily rather than every 6 hours deliberately:\n  continual learning is more stable with a meaningful batch of new events per update\n  than with many very small ones. Both countries' ca",
+ "hits": {
+  "st": [
+   {
+    "file": "data_augmentation.py",
+    "line": 32,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "# CTGAN is provided by the 'sdv' (Synthetic Data Vault) library.",
+     "# Install with: pip install sdv",
+     "try:",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    CTGAN_AVAILABLE = True",
+     "except ImportError:",
+     "    CTGAN_AVAILABLE = False"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "data_augmentation.py",
+    "line": 33,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "# CTGAN is provided by the 'sdv' (Synthetic Data Vault) library.",
+     "# Install with: pip install sdv",
+     "try:",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    CTGAN_AVAILABLE = True",
+     "except ImportError:",
+     "    CTGAN_AVAILABLE = False",
+     "    print(\"[AUGMENT] Warning: sdv library not installed. \""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "data_augmentation.py",
+    "line": 32,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "# CTGAN is provided by the 'sdv' (Synthetic Data Vault) library.",
+     "# Install with: pip install sdv",
+     "try:",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    CTGAN_AVAILABLE = True",
+     "except ImportError:",
+     "    CTGAN_AVAILABLE = False"
+    ]
+   },
+   {
+    "file": "data_augmentation.py",
+    "line": 33,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "# CTGAN is provided by the 'sdv' (Synthetic Data Vault) library.",
+     "# Install with: pip install sdv",
+     "try:",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    CTGAN_AVAILABLE = True",
+     "except ImportError:",
+     "    CTGAN_AVAILABLE = False",
+     "    print(\"[AUGMENT] Warning: sdv library not installed. \""
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "data_augmentation.py",
+    "line": 32,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "# CTGAN is provided by the 'sdv' (Synthetic Data Vault) library.",
+     "# Install with: pip install sdv",
+     "try:",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    CTGAN_AVAILABLE = True",
+     "except ImportError:",
+     "    CTGAN_AVAILABLE = False"
+    ]
+   },
+   {
+    "file": "data_augmentation.py",
+    "line": 98,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "    # Set up CTGAN metadata",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(X_positive)",
+     "",
+     "    synthesizer = CTGANSynthesizer(",
+     "        metadata,",
+     "        epochs=CTGAN_EPOCHS,",
+     "        verbose=verbose,",
+     "    )"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "# Synthetic data generation (CTGAN)",
+   "sdv>=1.9.0"
+  ]
+ }
+}

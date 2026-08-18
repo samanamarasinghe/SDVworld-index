@@ -1,0 +1,155 @@
+{
+ "repo": "WB-Jang/MLOps-Default-prediction",
+ "disk_kb": 1880,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# MLOps Default Prediction Pipeline\n\nA comprehensive MLOps pipeline for loan default prediction using PyTorch, Airflow, and MongoDB.\n\n# 배포\n\n```실행 시\ncd /AI_ML_DL/Projects/MLOps-Default-prediction\ndocker compose down\ndocker compose up -d\n```\n\n```test 방법\n# 태스크를 테스트 모드로 직접 실행\n<이미 container가 올라가 있을 때에 사용하는 방법>\ndocker compose exec <서비스_이름> python <파일_경로>/program.py\n\ndocker compose exec airflow-scheduler airflow tasks test model_evaluation_pipeline load_latest_model 2026-01-21\ndocker compose exec airflow-scheduler airflow tasks test model_evaluation_pipeline evaluate_model 2026-01-21\ndocker compose exec airflow-scheduler airflow tasks test model_evaluation_pipeline check_model_performance 2026-01-21\ndocker compose exec airflow-scheduler airflow tasks test model_evaluation_pipeline prepare_retraining_data 2026-01-21\n\n<container를 올리지 않고 Dockerfile을 활용하여 실행하는 방법>\ndocker의 환경을 그대로 활용하여 특정 .py를 실행하고 싶을 때에는 \ndocker compose run --rm airflow-scheduler python /opt/airflow/src/data/test.py\n```\n\n\n```MongoDB 결과 조회\ndocker compose exec mongodb mongosh mlops_default_prediction \\\n  -u admin \\\n  -p changeme \\\n  --authenticationDatabase admin \\\n  --eval \"db.alerts.find().sort({_id:-1}).limit(1)\"\n```\n\n```dag 실행 내역 삭제\ndocker compose exec airflow-scheduler airflow dags delete model_evaluation_pipeline -y\n```\n\n```\n# 구문 에러 확인\npython -m py_compile src/data/data_gen_loader_processor.py && echo \"✅ No syntax errors\" || echo \"❌ Syntax error found\"\n\n# 컨테이너 재시작\ndocker compose restart airflow-scheduler airflow-webserver\n\n```\n\n## Summary \n1. 파이프라인 오케스트레이션 (Airflow)\n```\nData Ingestion DAG\nModel Training DAG\nModel Evaluation DAG (재학습 메커니즘 포함)\nModel Deployment DAG\n```\n\n2. 모델 버전 관리 & 메타데이터 추적\n```\nMongoDB를 활용한 모델 버전 관리\n하이퍼파라미터, 성능 지표, 학습 로그 저장\n```\n\n3. 자동화된 재학습 & 모니터링\n```\nF1 Score 기반 자동 재학습 (최대 3회)\nAlert 시스템 (성능 저하 시 MongoDB에 알림 저장)\n```\n\n4. 데이터 파이프라인\n```\nSDV 기반 합성 데이터 생성\n데이터 전처리 및 Feature Engineering\n```\n\n5. 컨테이너화 & 인프라\n```\nDocker Compose로 전체 스택 배포\nAirflow, MongoDB 통합 환경\n```\n\n6. Points\n```\n실무적 재학습 전략: 최대 3회 재학습 후 Alert\n모델 성능 추적: MongoDB로 모든 평가 이벤트를 기록하여 모델 드리프트 모니터링 가능\nEnd-to-End 파이프라인: 데이터 생성 → 학습 → 평가 → 배포까지 완전 자동화\nTab Transformer 활용: 테이블 데이터에 적합한 최신 아키텍처 사용\n```\n## Architecture Overview\n\nThis project implements a complete MLOps pipeline with the following components:\n\n### Core Components\n\n1. **Machine Learning Models**\n   - Transformer-based encoder for tabular data\n   - Tab Transformer classifier for binary default prediction\n   - Contrastive learning pretraining support\n   - Models saved in `.pth` format (PyTorch standard)\n\n2. **Data Generation & Processing**\n   - Synthetic data generation for loan applications\n   - Raw data preprocessing and feature engineering\n   - Categorical and numerical feature handling\n   - Train/test split with stratification\n\n3. **MongoDB Database**\n   - **Model Metadata**: Stores model versions, hyperparameters, and paths\n   - **Performance Metrics**: Tracks model evaluation results\n   - **Predictions**: Logs all model predictions with timestamps\n   - **Training Logs**: Records training pipeline execution data\n\n4. **Airflow Orchestration**\n   - **Data Ingestion DAG**: Automated data generation using distribution model and processing\n   - **Model Training DAG**: End-to-end training pipeline\n   - **Model Evaluation DAG**: Automated evaluation with **3-retry retraining** and alert mechanism\n   - **Model Deployment DAG**: Automated deployment of approved models\n\n5. **Advanced Features**\n   - **Automatic Retraining**: Up to 3 retries if model F1 score < threshold\n   - **Alert System**: Automatic alerts stored in MongoDB when max retries exceeded\n   - **Code Reuse**: Evaluation and fine-tuning use code from `corp_default_modeling_f.py`\n   - **Version Control**: All models tracked with versions in MongoDB\n   - **Daily Automation**: Complete pipeline runs daily\n\n## Project Structure\n\n```\nMLOps-Default-prediction/\n├── src/\n│   ├── models/           # Model architecture and training\n│   │   ├── network.py    # Neural network definitions\n│   │   ├── training.py   # Training utilities\n│   │   └── evaluation.py # Evaluation & fine-tuning (from corp_default_modeling_f.py)\n│   ├── data/             # Data processing\n│   │   ├── data_gen_loader_processor.py  # SDV-based data generation\n│   │   └── distribution_model.pkl         # Distribution model for synthetic data\n│   ├── database/         # MongoDB integration\n│   │   └── mongodb.py\n│   └── airflow/\n│       └── dags/         # Airflow DAGs\n│           ├── data_ingestion_dag.py      # Data generation & processing\n│           ├── model_training_dag.py       # Model training\n│           ├── model_evaluation_dag.py     # Evaluation with retry\n│           └── model_deployment_dag.py     # Model deployment\n├── config/               # Configuration\n│   └── settings.py\n├── logs/                # Application logs\n├── docker/              # Docker configurations\n│   ├── Dockerfile.airflow\n│   └── Dockerfile.app\n├── docker-compose.yml   # Full stack deployment\n├── requirements.txt\n├── README.md\n└── WORKFLOW.md         # Complete workflow documentation (Korean)\n```\n\n### model training results\n```\n--- Starting V2: Contrastive Learning Pre-training ---\n[Pretrain V2] Epoch 1, Loss: 2.0119\n\n--- Starting Fine-tuning ---\n[Finetune] Epoch  1 | Loss: 97.8080 | Acc: 0.9795 | AUC: 0.9634 | F1: 0.8461\n[Finetune] Epoch  2 | Loss: 26.8114 | Acc: 0.9884 | AUC: 0.9751 | F1: 0.9079\n[Finetune] Epoch  3 | Loss: 2.0275 | Acc: 0.9924 | AUC: 0.9777 | F1: 0.9375\n   -> Test Accuracy: 0.9952, Test ROC-AUC: 0.9771, Test F1-score: 0.9596\n---pretrained_model_f.pth 저장 완료---\n---finetuned_model_f.pth 저장 완료---\n```\n### Project Flow\n\n본 프로젝트는 일별로 반복되는 완전한 MLOps 파이프라인을 구현합니다:\n\n```\n1. 초기 모델 저장 (MongoDB)\n   ↓\n2. 일별 데이터 생성 (Distribution model 활용)\n   → MongoDB 저장\n   ↓\n3. 데이터 전처리\n   → MongoDB processed_data 저장\n   ↓\n4. 최신 모델 평가 (corp_default_modeling_f.py 코드 사용)\n   ↓\n5. F1 Score 체크\n   ├─ F1 >= 0.75 → 배포\n   └─ F1 < 0.75 → 재학습 시작 (최대 3회)\n       ├─ 1차 재학습 → 평가\n       ├─ 2차 재학습 → 평가 (필요시)\n       ├─ 3차 재학습 → 평가 (필요시)\n       └─ 3회 후에도 실패 → 가장 최근 Approved model 사용 and Alert 발송\n   ↓\n6. 승인된 모델 MongoDB에 새 버전으로 저장\n   ↓\n7. 모델 배포 (프로덕션)\n   ↓\n8. 다음 날 2번부터 반복\n```\n\n### Enhanced DAG Flow (With Retry Mechanism)\n\n```\n                                            ┌─ (F1 >= 0.75) ─┐\n                                            │                 │\nload_latest_model → evaluate_model → check_model_performance │\n                                            │                 │\n                                            │ (F1 < 0.75)     │\n                                            ▼                 │\n                                     prepare_retraining_data  │\n                                            ▼                 │\n                                      finetune_model          │\n                                            ▼                 │\n                                   evaluate_finetuned_model   │\n                                            │                 │\n                    ┌─── (retry<3) ────────┤                 │\n                    │                       │                 │\n                    │              (retry>=3 & F1<0.75)       │\n                    │                       │                 │\n                    ↓                       ↓                 │\n          check_model_performance      send_alert            │\n               (Loop back)                  │                 │\n                                            └────────┬────────┘\n                                                     ▼\n                                           send_evaluation_results\n                                                     ↓\n                                           deploy_model\n```\n\n**주요 특징**:\n- **최대 3회 재학습**: F1 score가 threshold 미만이면 최대 3회까지 자동 재학습\n- **자동 Alert**: 3회 재학습 후에도 실패하면 MongoDB에 alert 저장\n- **코드 재사용**: `corp_default_modeling_f.py`의 평가/학습 코드 사용\n- **버전 관리**: 모든 재학습 모델은 새 버전으로 MongoDB에 저장\n- **자동 배포**: 승인된 모델은 자동으로 프로덕션에 배포\n## Setup Instructions\n\n### Prerequisites\n\n- Docker and Docker Compose (for full stack deployment)\n- Python 3.10+\n- 8GB+ RAM recommended\n\n### Quick Start - Complete Pipeline Setup\n\nFollow these steps to set up and run the entire MLOps pipeline:\n\n#### 1. Clone and Setup\n\n```bash\n# Clone the repository\ngit clone https://github.com/WB-Jang/MLOps-Default-prediction.git\ncd MLOps-Default-prediction\n\n# Create necessary directories\nmkdir -p data/raw models logs\n\n# Configure environment (optional)\ncp .env.example .env\n# Edit .env with your configuration if needed\n```\n\n#### 2. Generate Raw Data\n\n**This is the first step and is required for the pipeline to work.**\n\n```bash\n# Generate synthetic loan application data (10,000 rows by default)\npython generate_raw_data.py\n\n# Generate with custom parameters\npython generate_raw_data.py --num-rows 50000 --output-dir ./data/raw\n\n# Generate without target variable (for inference only)\npython generate_raw_data.py --num-rows 10000 --no-target\n\n# View help for all options\npython generate_raw_data.py --help\n```\n\n**Output:**\n- `data/raw/synthetic_data.csv` - Raw loan application data\n- `data/raw/synthetic_data_info.txt` - Dataset statistics and information\n\n**Data Schema:**\nThe generated data includes:\n- **Categorical Features (10)**: employment_type, income_category, education_level, credit_score_category, payment_history, loan_purpose, property_type, marital_status, dependents, region\n- **Numerical Features (15)**: annual_income, loan_amount, debt_to_income_ratio, credit_score, existing_debt, employment_length_years, months_at_current_job, loan_term_months, interest_rate, num_credit_lines, num_credit_inquiries, revolving_balance, revolving_utilization, age, months_since_last_delinquency\n- **Target Variable**: default (0 = no default, 1 = default)\n\n#### 3. Option A: Docker Deployment (Recommended for Full Pipeline)\n\n```bash\n# Start all services (Kafka, MongoDB, Airflow)\ndocker-compose up -d\n\n# Check service status\ndocker-compose ps\n\n# Initialize Airflow (first time only)\ndocker-compose run airflow-init\n\n# View logs\ndocker-compose logs -f airflow-scheduler\ndocker-compose logs -f kafka\ndocker-compose logs -f mongodb\n```\n\n**Access Services:**\n- Airflow UI: http://localhost:8080 (username: `admin`, password: `admin`)\n- MongoDB: localhost:27017\n\n**Run the Pipeline via Airflow:**\n\n1. Navigate to Airflow UI (http://localhost:8080)\n2. Enable the DAGs:\n   - `data_ingestion_pipeline` - Loads raw data and stores to MongoDB\n   - `model_training_pipeline` - Trains models end-to-end\n   - `model_evaluation_pipeline` - Evaluates trained models\n3. Trigger DAGs manually or let them run on schedule:\n   - Data Ingestion: Runs hourly\n   - Model Training: Runs daily\n   - Model Evaluation: Runs daily after training\n\n#### 4. Option B: Manual Setup (Development)\n\n**Install Dependencies:**\n\n```bash\n# Create virtual environment\npython -m venv venv\nsource venv/bin/activate  # On Windows: venv\\Scripts\\activate\n\n# Install dependencies\npip install -r requirements.txt\n```\n\n**Start Required Services:**\n\n```bash\n# Start MongoDB (in separate terminal)\ndocker run -d --name mongodb -p 27017:27017 \\\n  -e MONGO_INITDB_ROOT_USERNAME=admin \\\n  -e MONGO_INITDB_ROOT_PASSWORD=changeme \\\n  mongo:7.0\n```\n\n**Train Models Locally:**\n\n```bash\n# Train with generated data (uses data/raw/synthetic_data.csv)\npython train.py --train --epochs 10\n\n# Pretrain encoder only\npython train.py --pretrain --epochs 10\n\n# Both pretraining and training\npython train.py --pretrain --train --epochs 10\n\n# Train with custom data path\npython train.py --train --data-path ./data/raw/custom_data.csv --epochs 20\n\n# View all training options\npython train.py --help\n```\n\n**Training Output:**\n- Models saved to `./models/` directory\n- `pretrained_encoder_YYYYMMDD_HHMMSS.pth` - Pretrained encoder\n- `classifier_YYYYMMDD_HHMMSS.pth` - Trained classifier\n- Training logs in `./logs/` directory\n\n## Complete Pipeline Workflow\n\n### Data Flow Diagram\n\n```\n┌─────────────────────────────────────────────────────────────────┐\n│ 1. DATA GENERATION                                              │\n│    python generate_raw_data.py                                  │\n│    └─> data/raw/synthetic_data.csv                             │\n└────────────────────┬────────────────────────────────────────────┘\n                     │\n                     ▼\n┌─────────────────────────────────────────────────────────────────┐\n│ 2. DATA INGESTION                                               │\n│    Airflow DAG: data_ingestion_pipeline                         │\n│    └─> Loads CSV → Stores to MongoDB raw_data collection       │\n└────────────────────┬────────────────────────────────────────────┘\n                     │\n                     ▼\n┌─────────────────────────────────────────────────────────────────┐\n│ 3. DATA PROCESSING                                              │\n│    DAG processes raw data → MongoDB processed_data collection   │\n│    └─> Normalizes features, encodes categoricals               │\n└────────────────────┬────────────────────────────────────────────┘\n                     │\n                     ▼\n┌─────────────────────────────────────────────────────────────────┐\n│ 4. MODEL TRAINING                                               │\n│    Airflow DAG: model_training_pipeline                         │\n│    ├─> Loads data from CSV or MongoDB                          │\n│    ├─> Pretrain encoder (contrastive learning)                 │\n│    ├─> Train classifier (supervised)                            │\n│    ├─> Save models to ./models/*.pth                            │\n│    └─> Store metadata in MongoDB                                │\n└────────────────────┬────────────────────────────────────────────┘\n                     │\n                     ▼\n┌─────────────────────────────────────────────────────────────────┐\n│ 5. MODEL EVALUATION                                             │\n│    Airflow DAG: model_evaluation_pipeline                       │\n│    ├─> Load latest model from MongoDB                           │\n│    ├─> Evaluate on test set                                     │\n│    └─> Store metrics in MongoDB                                 │\n└─────────────────────────────────────────────────────────────────┘\n```\n\n### Step-by-Step Execution\n\n**1. Generate Raw Data:**\n```bash\npython generate_raw_data.py --num-rows 10000\n```\n\n**2. Start Services:**\n```bash\ndocker-compose up -d\n```\n\n**3. Trigger Pipeline via Airflow UI or CLI:**\n```bash\n# Using Airflow CLI (if installed)\nairflow dags trigger data_ingestion_pipeline\nairflow dags trigger model_training_pipeline\nairflow dags trigger model_evaluation_pipeline\n```\n\n**4. Monitor Pipeline:**\n- Check Airflow UI for DAG execution status\n- View logs in `./logs/` directory\n- Query MongoDB for model metadata and metrics\n\n**5. Use Trained Models:**\n```python\nimport torch\nfrom src.models import TabTransformerClassifier\nfrom src.database.mongodb import mongodb_client\n\n# Connect to MongoDB\nmongodb_client.connect()\n\n# Get latest model metadata\nmodel_metadata = mongodb_client.get_model_metadata(\"default_prediction_classifier\")\n\n# Load model\nmodel = TabTransformerClassifier(...)  # Initialize with saved hyperparameters\ncheckpoint = torch.load(model_metadata['model_path'])\nmodel.load_state_dict(checkpoint['model_state_dict'])\n\n# Make predictions\nmodel.eval()\nwith torch.no_grad():\n    predictions = model(x_cat, x_num)\n```\n\n## Configuration\n\n### Environment Variables\n\nEdit `.env` file or set environment variables:\n\n```bash\n# MongoDB Configuration\nMONGODB_HOST=localhost\nMONGODB_PORT=27017\nMONGODB_DATABASE=mlops_default_prediction\n\n# Model Configuration\nMODEL_SAVE_PATH=./models\nD_MODEL=32\nNHEAD=4\nNUM_LAYERS=6\nDIM_FEEDFORWARD=64\nDROPOUT_RATE=0.3\n\n# Training Configuration\nBATCH_SIZE=32\nLEARNING_RATE=0.0003\nEPOCHS=10\n```\n\n### Modifying Model Hyperparameters\n\nEdit `config/settings.py` or set environment variables before training:\n\n```bash\n# Example: Train with larger model\nexport D_MODEL=64\nexport NUM_LAYERS=8\nexport EPOCHS=20\npython train.py --train\n```\n\n## Data Generation Details\n\n### Using the Data Augmentation Generator\n\nThe project includes `src/data/data_augmentation_generator.py` for SDV-based data generation (requires trained distribution model):\n\n```python\nfrom sdv.single_table import GaussianCopulaSynthesizer\nimport pandas as pd\n\n# Load pre-trained synthesizer\nsynthesizer = GaussianCopulaSynthesizer.load('./distribution_model.pkl')\n\n# Generate synthetic data\nsynthetic_data = synthesizer.sample(num_rows=10000)\nsynthetic_data.to_csv('./data/raw/synthetic_data.csv', index=False, encoding='utf-8-sig')\n```\n\n**Note:** The `generate_raw_data.py` script provides a simpler, self-contained approach that doesn't require a pre-trained SDV model.\n\n### Custom Data Integration\n\nTo use your own data instead of synthetic data:\n\n1. Prepare CSV file with same schema as `synthetic_data.csv`\n2. Place in `data/raw/` directory\n3. Update `--data-path` argument when training:\n\n```bash\npython train.py --train --data-path ./data/raw/your_data.csv\n```\n\nOr update data path in DAG files:\n```python\n# In src/airflow/dags/data_ingestion_dag.py\ndata_path = \"./data/raw/your_data.csv\"\n```\n\n## Testing\n\nRun the test suite:\n\n```bash\n# All tests\npytest tests/\n\n# Specific test file\npytest tests/test_kafka.py\npytest tests/test_models.py\npytest tests/test_mongodb.py\n\n# With coverage report\npytest --cov=src tests/\n\n# Verbose output\npytest -v tests/\n```\n\n## Troubleshooting\n\n### Common Issues\n\n**1. Data file not found**\n```bash\nFileNotFoundError: Data file not found: ./data/raw/synthetic_data.csv\n```\n**Solution:** Run `python generate_raw_data.py` to generate the data file.\n\n**2. MongoDB connection issues**\n```bash\n# Check MongoDB is running\ndocker ps | grep mongodb\n\n# Test connection\ndocker exec -it mongodb mongosh\n```\n\n**3. Airflow DAG not appearing**\n```bash\n# Check DAG syntax\npython src/airflow/dags/data_ingestion_dag.py\n\n# Refresh DAGs in UI\n# Airflow UI -> DAGs -> Refresh button\n\n# View scheduler logs\ndocker-compose logs airflow-scheduler\n```\n\n### Viewing Logs\n\n```bash\n# Application logs\ntail -f logs/training_*.log\ntail -f logs/data_generation_*.log\n\n# Docker service logs\ndocker-compose logs -f airflow-scheduler\ndocker-compose logs -f airflow-webserver\ndocker-compose logs -f mongodb\n```\n\n### Cleaning Up\n\n```bash\n# Stop all services\ndocker-compose down\n\n# Remove volumes (WARNING: deletes all data)\ndocker-compose down -v\n\n# Clean generated data and models\nrm -rf data/raw/*.csv models/*.pth logs/*.log\n```\n\n## Advanced Usage\n\n### Complete Workflow Documentation\n\nFor detailed information about the complete daily pipeline workflow, see **[WORKFLOW.md](WORKFLOW.md)** (Korean).\n\nThis document includes:\n- Complete workflow diagram with retry mechanism\n- Detailed implementation of each step\n- How evaluation and fine-tuning code from `corp_default_modeling_f.py` is used\n- MongoDB collection structure\n- Retry and alert mechanism details\n- Troubleshooting guide\n\n### Accessing MongoDB Data\n\n```bash\n# Connect to MongoDB (if using Docker)\ndocker exec -it mongodb mongosh\n\n# View collections\nuse mlops_default_prediction\nshow collections\n\n# Query data\ndb.raw_data.find().limit(5)\ndb.model_metadata.find().pretty()\ndb.training_events.find().sort({timestamp: -1}).limit(10)\ndb.evaluation_events.find().sort({timestamp: -1}).limit(10)\n\n# Check alerts (for failed retraining)\ndb.alerts.find().sort({timestamp: -1})\n\n# Check processed data\ndb.processed_data.find().limit(5)\n\n# Check deployment history\ndb.deployment_events.find().sort({timestamp: -1})\n```\n\n### Monitoring Model Performance\n\n```javascript\n// MongoDB shell queries for monitoring\n\n// Get latest model evaluation\ndb.evaluation_events.findOne({}, {sort: {timestamp: -1}})\n\n// Get models that needed retraining\ndb.model_metadata.find({finetuned_from: {$exists: true}})\n\n// Get all alerts\ndb.alerts.find({alert_type: \"MODEL_PERFORMANCE_FAILURE\"})\n\n// Check retry history\ndb.evaluation_events.find({\n  \"retraining_info.was_retrained\": true\n}).sort({timestamp: -1})\n```\n\n### Adjusting",
+ "hits": {
+  "st": [
+   {
+    "file": "README.md",
+    "line": 513,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "The project includes `src/data/data_augmentation_generator.py` for SDV-based data generation (requires trained distribution model):",
+     "",
+     "```python",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "import pandas as pd",
+     "",
+     "# Load pre-trained synthesizer",
+     "synthesizer = GaussianCopulaSynthesizer.load('./distribution_model.pkl')"
+    ]
+   },
+   {
+    "file": "src/data/data_gen_loader_processor.py",
+    "line": 13,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "from sklearn.impute import SimpleImputer",
+     "from sklearn.model_selection import train_test_split",
+     "from torch.utils.data import Dataset, DataLoader",
+     "import torch",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "class DataGenLoaderProcessor:",
+     "    \"\"\"Generate and Load and manage raw data for the pipeline.\"\"\"",
+     "    "
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "README.md",
+    "line": 513,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "The project includes `src/data/data_augmentation_generator.py` for SDV-based data generation (requires trained distribution model):",
+     "",
+     "```python",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "import pandas as pd",
+     "",
+     "# Load pre-trained synthesizer",
+     "synthesizer = GaussianCopulaSynthesizer.load('./distribution_model.pkl')"
+    ]
+   },
+   {
+    "file": "src/data/data_gen_loader_processor.py",
+    "line": 13,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "from sklearn.impute import SimpleImputer",
+     "from sklearn.model_selection import train_test_split",
+     "from torch.utils.data import Dataset, DataLoader",
+     "import torch",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "class DataGenLoaderProcessor:",
+     "    \"\"\"Generate and Load and manage raw data for the pipeline.\"\"\"",
+     "    "
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "README.md",
+    "line": 513,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "The project includes `src/data/data_augmentation_generator.py` for SDV-based data generation (requires trained distribution model):",
+     "",
+     "```python",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "import pandas as pd",
+     "",
+     "# Load pre-trained synthesizer",
+     "synthesizer = GaussianCopulaSynthesizer.load('./distribution_model.pkl')"
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 517,
+    "text": "synthesizer = GaussianCopulaSynthesizer.load('./distribution_model.pkl')",
+    "context": [
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "import pandas as pd",
+     "",
+     "# Load pre-trained synthesizer",
+     "synthesizer = GaussianCopulaSynthesizer.load('./distribution_model.pkl')",
+     "",
+     "# Generate synthetic data",
+     "synthetic_data = synthesizer.sample(num_rows=10000)",
+     "synthetic_data.to_csv('./data/raw/synthetic_data.csv', index=False, encoding='utf-8-sig')"
+    ]
+   },
+   {
+    "file": "src/data/data_gen_loader_processor.py",
+    "line": 13,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "from sklearn.impute import SimpleImputer",
+     "from sklearn.model_selection import train_test_split",
+     "from torch.utils.data import Dataset, DataLoader",
+     "import torch",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "class DataGenLoaderProcessor:",
+     "    \"\"\"Generate and Load and manage raw data for the pipeline.\"\"\"",
+     "    "
+    ]
+   },
+   {
+    "file": "src/data/data_gen_loader_processor.py",
+    "line": 34,
+    "text": "synthesizer = GaussianCopulaSynthesizer.load(model_path)",
+    "context": [
+     "        ",
+     "    def data_generation(self, data_quantity: int = 10000):",
+     "        import os",
+     "        model_path = os.path.join(os.path.dirname(__file__), 'distribution_model.pkl')",
+     "        synthesizer = GaussianCopulaSynthesizer.load(model_path)",
+     "        synthetic_data = synthesizer.sample(data_quantity)",
+     "        synthetic_data.to_csv(self.data_path,index=False, encoding='utf-8-sig')",
+     "        ",
+     "    def load_raw_data(self) -> pd.DataFrame:"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "gc",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv>=1.0.0",
+   "sdmetrics>=0.12.0"
+  ]
+ }
+}

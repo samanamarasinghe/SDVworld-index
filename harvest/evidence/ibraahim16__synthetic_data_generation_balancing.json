@@ -1,0 +1,583 @@
+{
+ "repo": "ibraahim16/synthetic_data_generation_balancing",
+ "disk_kb": 245,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Sentetik Tabular Veri Üretimi ve Değerlendirme Projesi\n\nBu depo, **UCI Adult (Census Income)** ve **UCI Bank Marketing** veri kümelerinin sentetik versiyonlarını üretmek ve kapsamlı biçimde değerlendirmek amacıyla geliştirilmiştir.\n\nProjede klasik istatistiksel yöntemler, derin öğrenme tabanlı üretken modeller (GAN/VAE) ve sınıf dengeleme teknikleri kullanılarak sentetik veri üretimi gerçekleştirilmiş; elde edilen veriler hem istatistiksel benzerlik hem de makine öğrenmesi performansı açısından analiz edilmiştir. Sonuçlar, **Streamlit tabanlı etkileşimli bir dashboard** üzerinden görselleştirilebilir.\n\n---\n\n## Veri Kümeleri\n\n### UCI Adult (Census Income)\n\n- **Kayıt sayısı:** ~48.842 (train + test)\n- **Özellik sayısı:** 14\n- **Kaynak:** 1994 ABD Nüfus Sayımı\n- **Hedef değişken:** Yıllık gelir\n  - `<= 50K` (çoğunluk sınıfı)\n  - `> 50K` (azınlık sınıfı)\n\nVeri seti; yaş, eğitim, iş sınıfı, medeni durum, meslek, ilişki durumu, ırk, cinsiyet, sermaye kazancı/kaybı, haftalık çalışma saati ve ülke gibi **kategorik ve sayısal** değişkenlerden oluşur. Hedef değişken dağılımı **dengesizdir**.\n\n### UCI Bank Marketing\n\n- **Kayıt sayısı:** ~41.188\n- **Özellik sayısı:** 20\n- **Kaynak:** Portekiz bankasının doğrudan pazarlama kampanyaları\n- **Hedef değişken:** Vadeli mevduat aboneliği (`y`)\n  - `no` (çoğunluk sınıfı)\n  - `yes` (azınlık sınıfı)\n\nVeri seti; müşteri demografisi, iletişim bilgileri, kampanya geçmişi ve makroekonomik göstergeler gibi **kategorik ve sayısal** değişkenlerden oluşur. Hedef değişken dağılımı **dengesizdir**.\n\n---\n\n## Sentetik Veri Üretim Yöntemleri\n\n### Gaussian Copula Synthesizer\nGaussian Copula yaklaşımı, her özniteliği Gauss dağılımına eşleyerek değişkenler arası bağımlılık yapısını copula ile modeller. Klasik istatistiksel temellere dayandığı için projede **referans (baseline)** yöntem olarak kullanılmıştır.\n\n### CTGAN (Conditional Tabular GAN)\nCTGAN, koşullu üretici–ayırt edici ağ yapısı ile **karmaşık tabular veri dağılımlarını** öğrenir. Özellikle kategorik değişkenler için özel gömme (embedding) mekanizmaları kullanır ve koşullu örnekleme yapabilir.\n\n### TVAE (Tabular Variational Autoencoder)\nTVAE, variational autoencoder mimarisi ile tabular veri üzerinde **olasılıksal yoğunluk tahmini** yapar. Sürekli değişkenlerin karmaşık dağılımlarında stabil öğrenme avantajı sağlar.\n\n---\n\n## Sınıf Dengesini Sağlama Yöntemleri\n\n### SMOTE ve Varyasyonları\nSMOTE algoritması, azınlık sınıfını rastgele çoğaltmak yerine **yakın komşular arasında enterpolasyon** yaparak yeni örnekler üretir.\n\nKullanılan yöntemler:\n- **SMOTE** — sürekli özellikler\n- **SMOTEN** — kategorik özellikler\n- **SMOTENC** — karma (nominal + sürekli) özellikler\n\n### GAN Tabanlı Azınlık Veri Üretimi\nCTGAN ve TVAE modelleri yalnızca **azınlık sınıfı verileri** üzerinde eğitilerek yeni örnekler üretmiştir.\n\n### Ensemble ve Ağırlıklı Ensemble\n- **Ensemble:** CTGAN, TVAE ve Gaussian Copula çıktıları birleştirilir.\n- **Weighted Ensemble:** Modellerin **F1 skorlarına göre ağırlıklandırılmış** sentetik veri karışımı oluşturulur.\n\n---\n\n## Değerlendirme Metrikleri\n\n| Metrik | Açıklama |\n|--------|----------|\n| **F1 Skoru** | Sınıflandırma performansı (TRTR / TSTR) |\n| **ROC-AUC** | Sınıflandırma ayırt ediciliği |\n| **JSD** | Dağılım benzerliği (Jensen–Shannon divergansı) |\n| **KS Complement** | Sürekli dağılım uyumu |\n| **Wasserstein** | Dağılım farkı |\n| **Pearson Korelasyon** | Korelasyon korunumu |\n| **Mutual Information** | Özellik–hedef bilgi korunumu |\n| **PSC** | Propensity Score Classifier — gizlilik & ayırt edilemezlik |\n| **Privacy Score** | Gizlilik korunumu |\n\nDashboard'daki **Genel Değerlendirme** sayfası; dağılım benzerliği, korelasyon korunumu, ML faydalılığı, bilgi korunumu ve gizlilik metriklerini birleştirerek **Overall Score** hesaplar.\n\n---\n\n## Etkileşimli Dashboard\n\nProje, Streamlit ile geliştirilmiş çok sayfalı bir kontrol paneli içerir. Dashboard **Türkçe ve İngilizce** dil desteği sunar; sidebar üzerinden veri seti, dengeleme türü ve model seçimi yapılabilir.\n\n| Sayfa | İçerik |\n|-------|--------|\n| **Dağılım Benzerliği** | KS, JS ve Wasserstein metrikleri (model ve özellik düzeyi) |\n| **Korelasyon Korunumu** | Korelasyon matrisi karşılaştırması ve fark analizi |\n| **PCA / t-SNE** | Geometrik benzerlik ve örtüşme analizi |\n| **ML Faydalılığı** | TRTR vs TSTR performans karşılaştırması |\n| **Özellik Önemi & MI** | Feature importance ve mutual information benzerliği |\n| **Gizlilik** | Privacy Score değerlendirmesi |\n| **PSC** | Propensity Score Classifier sonuçları |\n| **Sınıf Dağılımı** | Gerçek ve sentetik veri sınıf oranları |\n| **Genel Değerlendirme** | Tüm metriklerin birleşik skor kartı |\n\n**Desteklenen modeller:**\n\n- *Dengesiz:* CTGAN, TVAE, CopulaGAN, Ensemble, Weighted Ensemble\n- *Dengeli:* CTGAN_minority, TVAE_post, Smoten_Smote, Smote_NC\n\n---\n\n## Proje Yapısı\n\n```\nsynthetic_adult_project/\n├── datasets/\n│   ├── adult/                  # Adult train/test CSV\n│   └── bank_marketing/         # Bank Marketing train/test CSV\n├── src/\n│   ├── download_adult_dataset.py\n│   ├── download_bankmarketing_dataset.py\n│   ├── train_gan_models.py          # Adult — imbalanced GAN eğitimi\n│   ├── train_gan_models_2.py        # Bank Marketing — imbalanced GAN eğitimi\n│   ├── balanced_*.py                # Dengeleme scriptleri (Adult)\n│   ├── balanced_*_2.py              # Dengeleme scriptleri (Bank Marketing)\n│   ├── train_ensemble.py / train_ensemble_2.py\n│   ├── train_weighted_ensemble.py / train_weighted_ensemble_2.py\n│   ├── analyze_*.py                 # Analiz ve metrik hesaplama scriptleri\n│   └── real_data_performance.py / real_data_performance_2.py\n├── models/\n│   ├── adult/\n│   └── bank_marketing/\n├── synthetic_data/\n│   ├── adult/\n│   └── bank_marketing/\n├── results/\n│   ├── adult/\n│   └── bank_marketing/\n├── dashboard/\n│   ├── app.py\n│   ├── sidebar.py\n│   ├── views/                       # Dashboard sayfaları\n│   └── utils/                       # Veri yükleme, sabitler, çeviriler\n├── requirements.txt\n└── README.md\n```\n\n> **Not:** `_2` soneki taşıyan scriptler **Bank Marketing** veri seti için, soneksiz olanlar **Adult** veri seti için çalışır.\n\n---\n\n## Kurulum ve Çalıştırma\n\n### 1. Ortam Kurulumu\n\n```bash\npython -m venv venv\n\n# Windows\nvenv\\Scripts\\activate\n\n# Linux / macOS\nsource venv/bin/activate\n\npip install -r requirements.txt\n```\n\n### 2. Veri Setlerini İndirme\n\n```bash\n# Adult veri seti\npython src/download_adult_dataset.py\n\n# Bank Marketing veri seti\npython src/download_bankmarketing_dataset.py\n```\n\n### 3. Model Eğitimi ve Sentetik Veri Üretimi\n\n**Adult veri seti için:**\n\n```bash\npython src/train_gan_models.py\npython src/balanced_ctgan_minority.py\npython src/balanced_tvae_post.py\npython src/balanced_smote-nc.py\npython src/balanced_smote_smoten.py\npython src/train_ensemble.py\npython src/train_weighted_ensemble.py\n```\n\n**Bank Marketing veri seti için:**\n\n```bash\npython src/train_gan_models_2.py\npython src/balanced_ctgan_minority_2.py\npython src/balanced_tvae_post_2.py\npython src/balanced_smote-nc_2.py\npython src/balanced_smote_smoten_2.py\npython src/train_ensemble_2.py\npython src/train_weighted_ensemble_2.py\n```\n\n### 4. Analiz Scriptlerini Çalıştırma\n\n**Adult:**\n\n```bash\npython src/analyze_real_data.py\npython src/real_data_performance.py\npython src/analyze_synthetic_data.py\npython src/analyze_balanced_all.py\npython src/analyze_ensemble&w_ensemble.py\n```\n\n**Bank Marketing:**\n\n```bash\npython src/analyze_real_data_2.py\npython src/real_data_performance_2.py\npython src/analyze_synthetic_data_2.py\npython src/analyze_balanced_all_2.py\npython src/analyze_ensemble&w_ensemble_2.py\n```\n\n### 5. Dashboard'u Başlatma\n\nAnaliz scriptleri çalıştırıldıktan ve `results/` klasörü doldurulduktan sonra:\n\n```bash\nstreamlit run dashboard/app.py\n```\n\nTarayıcıda açılan panelden veri seti (Adult / Bank Marketing), dengeleme türü (Dengesiz / Dengeli), model ve dil seçimi yapılabilir.\n\n---\n\n## Bilimsel ve Etik Değerlendirme\n\nBu proje, sentetik verinin gizlilik–fayda dengesini gözeterek tasarlanmıştır. Amaç, gerçek veriye benzer fakat bireysel kayıtları ifşa etmeyen veri üretmektir. PSC (Propensity Score Classifier) ve Privacy Score metrikleri, üretilen sentetik verinin ayırt edilemezlik düzeyini ölçmek için kullanılmıştır.\n",
+ "hits": {
+  "ct": [
+   {
+    "file": "requirements.txt",
+    "line": 16,
+    "text": "sdv==1.8.0               # Sentetik veri üretimi (GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer)",
+    "context": [
+     "imbalanced-learn==0.12.0 # SMOTE ve SMOTE-variations (SMOTE-NC, SMOTEN) için dengesiz veri işleme",
+     "joblib==1.3.0            # Modellerin seri hale getirilmesi ve diske yazılması",
+     "",
+     "# Sentetik veri üretimi ve değerlendirme",
+     "sdv==1.8.0               # Sentetik veri üretimi (GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer)",
+     "sdmetrics==0.10.0        # Sentetik veri ve gerçek veri benzerliğini ölçen metrikler (Jensen–Shannon divergansı, KSComplement vb.)",
+     "",
+     "# Görselleştirme ve etkileşimli raporlama",
+     "matplotlib==3.8.0        # Statik grafikler ve histogramlar çizmek için"
+    ]
+   },
+   {
+    "file": "src/train_gan_models.py",
+    "line": 7,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "import joblib",
+     "import time",
+     "from datetime import datetime",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "",
+     "#  Dosya Yolu"
+    ]
+   },
+   {
+    "file": "src/train_gan_models.py",
+    "line": 36,
+    "text": "\"CTGAN\": CTGANSynthesizer(metadata),",
+    "context": [
+     "",
+     "",
+     "# Modelleri tanımla",
+     "models = {",
+     "    \"CTGAN\": CTGANSynthesizer(metadata),",
+     "    \"TVAE\": TVAESynthesizer(metadata),",
+     "    \"CopulaGAN\": GaussianCopulaSynthesizer(metadata)",
+     "}",
+     ""
+    ]
+   },
+   {
+    "file": "src/balanced_ctgan_minority.py",
+    "line": 4,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import os",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "import matplotlib.pyplot as plt",
+     "import seaborn as sns",
+     "import joblib",
+     ""
+    ]
+   },
+   {
+    "file": "src/balanced_ctgan_minority.py",
+    "line": 53,
+    "text": "ctgan = CTGANSynthesizer(metadata, epochs=100)  # epoch sayısını istersen arttır",
+    "context": [
+     "    #  CTGAN: sadece azınlık satırlarını kullanarak eğitim",
+     "    minority_df = train_df[train_df[target] == minority_class].copy()",
+     "    print(f\"CTGAN sadece azınlık satırları ile eğitiliyor. Satır sayısı: {len(minority_df)}\")",
+     "",
+     "    ctgan = CTGANSynthesizer(metadata, epochs=100)  # epoch sayısını istersen arttır",
+     "    ctgan.fit(minority_df)",
+     "",
+     "    model_path = os.path.join(MODELS_DIR, \"ctgan_minority_model.pkl\")",
+     "    joblib.dump(ctgan, model_path)"
+    ]
+   },
+   {
+    "file": "src/train_gan_models_2.py",
+    "line": 7,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "import joblib",
+     "import time",
+     "from datetime import datetime",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "",
+     "#  Dosya Yolu"
+    ]
+   },
+   {
+    "file": "src/train_gan_models_2.py",
+    "line": 40,
+    "text": "\"CTGAN\": CTGANSynthesizer(metadata),",
+    "context": [
+     "",
+     "",
+     "# Modelleri tanımla",
+     "models = {",
+     "    \"CTGAN\": CTGANSynthesizer(metadata),",
+     "    \"TVAE\": TVAESynthesizer(metadata),",
+     "    \"CopulaGAN\": GaussianCopulaSynthesizer(metadata)",
+     "}",
+     ""
+    ]
+   },
+   {
+    "file": "src/balanced_ctgan_minority_2.py",
+    "line": 4,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import os",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "import matplotlib.pyplot as plt",
+     "import seaborn as sns",
+     "import joblib",
+     ""
+    ]
+   },
+   {
+    "file": "src/balanced_ctgan_minority_2.py",
+    "line": 54,
+    "text": "ctgan = CTGANSynthesizer(metadata, epochs=100)  # epoch sayısını istersen arttır",
+    "context": [
+     "    #  CTGAN: sadece azınlık satırlarını kullanarak eğitim",
+     "    minority_df = train_df[train_df[target] == minority_class].copy()",
+     "    print(f\"CTGAN sadece azınlık satırları ile eğitiliyor. Satır sayısı: {len(minority_df)}\")",
+     "",
+     "    ctgan = CTGANSynthesizer(metadata, epochs=100)  # epoch sayısını istersen arttır",
+     "    ctgan.fit(minority_df)",
+     "",
+     "    model_path = os.path.join(MODELS_DIR, \"ctgan_minority_model.pkl\")",
+     "    joblib.dump(ctgan, model_path)"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "requirements.txt",
+    "line": 16,
+    "text": "sdv==1.8.0               # Sentetik veri üretimi (GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer)",
+    "context": [
+     "imbalanced-learn==0.12.0 # SMOTE ve SMOTE-variations (SMOTE-NC, SMOTEN) için dengesiz veri işleme",
+     "joblib==1.3.0            # Modellerin seri hale getirilmesi ve diske yazılması",
+     "",
+     "# Sentetik veri üretimi ve değerlendirme",
+     "sdv==1.8.0               # Sentetik veri üretimi (GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer)",
+     "sdmetrics==0.10.0        # Sentetik veri ve gerçek veri benzerliğini ölçen metrikler (Jensen–Shannon divergansı, KSComplement vb.)",
+     "",
+     "# Görselleştirme ve etkileşimli raporlama",
+     "matplotlib==3.8.0        # Statik grafikler ve histogramlar çizmek için"
+    ]
+   },
+   {
+    "file": "src/train_gan_models.py",
+    "line": 7,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "import joblib",
+     "import time",
+     "from datetime import datetime",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "",
+     "#  Dosya Yolu"
+    ]
+   },
+   {
+    "file": "src/train_gan_models.py",
+    "line": 38,
+    "text": "\"CopulaGAN\": GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "# Modelleri tanımla",
+     "models = {",
+     "    \"CTGAN\": CTGANSynthesizer(metadata),",
+     "    \"TVAE\": TVAESynthesizer(metadata),",
+     "    \"CopulaGAN\": GaussianCopulaSynthesizer(metadata)",
+     "}",
+     "",
+     "",
+     "# Eğitim ve sentetik veri üretimi"
+    ]
+   },
+   {
+    "file": "src/train_gan_models_2.py",
+    "line": 7,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "import joblib",
+     "import time",
+     "from datetime import datetime",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "",
+     "#  Dosya Yolu"
+    ]
+   },
+   {
+    "file": "src/train_gan_models_2.py",
+    "line": 42,
+    "text": "\"CopulaGAN\": GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "# Modelleri tanımla",
+     "models = {",
+     "    \"CTGAN\": CTGANSynthesizer(metadata),",
+     "    \"TVAE\": TVAESynthesizer(metadata),",
+     "    \"CopulaGAN\": GaussianCopulaSynthesizer(metadata)",
+     "}",
+     "",
+     "",
+     "# Eğitim ve sentetik veri üretimi"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "requirements.txt",
+    "line": 16,
+    "text": "sdv==1.8.0               # Sentetik veri üretimi (GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer)",
+    "context": [
+     "imbalanced-learn==0.12.0 # SMOTE ve SMOTE-variations (SMOTE-NC, SMOTEN) için dengesiz veri işleme",
+     "joblib==1.3.0            # Modellerin seri hale getirilmesi ve diske yazılması",
+     "",
+     "# Sentetik veri üretimi ve değerlendirme",
+     "sdv==1.8.0               # Sentetik veri üretimi (GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer)",
+     "sdmetrics==0.10.0        # Sentetik veri ve gerçek veri benzerliğini ölçen metrikler (Jensen–Shannon divergansı, KSComplement vb.)",
+     "",
+     "# Görselleştirme ve etkileşimli raporlama",
+     "matplotlib==3.8.0        # Statik grafikler ve histogramlar çizmek için"
+    ]
+   },
+   {
+    "file": "src/train_gan_models.py",
+    "line": 7,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "import joblib",
+     "import time",
+     "from datetime import datetime",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "",
+     "#  Dosya Yolu"
+    ]
+   },
+   {
+    "file": "src/train_gan_models.py",
+    "line": 37,
+    "text": "\"TVAE\": TVAESynthesizer(metadata),",
+    "context": [
+     "",
+     "# Modelleri tanımla",
+     "models = {",
+     "    \"CTGAN\": CTGANSynthesizer(metadata),",
+     "    \"TVAE\": TVAESynthesizer(metadata),",
+     "    \"CopulaGAN\": GaussianCopulaSynthesizer(metadata)",
+     "}",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "src/train_gan_models_2.py",
+    "line": 7,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "import joblib",
+     "import time",
+     "from datetime import datetime",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "",
+     "#  Dosya Yolu"
+    ]
+   },
+   {
+    "file": "src/train_gan_models_2.py",
+    "line": 41,
+    "text": "\"TVAE\": TVAESynthesizer(metadata),",
+    "context": [
+     "",
+     "# Modelleri tanımla",
+     "models = {",
+     "    \"CTGAN\": CTGANSynthesizer(metadata),",
+     "    \"TVAE\": TVAESynthesizer(metadata),",
+     "    \"CopulaGAN\": GaussianCopulaSynthesizer(metadata)",
+     "}",
+     "",
+     ""
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "src/train_gan_models.py",
+    "line": 7,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "import joblib",
+     "import time",
+     "from datetime import datetime",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "",
+     "#  Dosya Yolu"
+    ]
+   },
+   {
+    "file": "src/balanced_ctgan_minority.py",
+    "line": 4,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import os",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "import matplotlib.pyplot as plt",
+     "import seaborn as sns",
+     "import joblib",
+     ""
+    ]
+   },
+   {
+    "file": "src/train_gan_models_2.py",
+    "line": 7,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "import joblib",
+     "import time",
+     "from datetime import datetime",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "",
+     "#  Dosya Yolu"
+    ]
+   },
+   {
+    "file": "src/balanced_ctgan_minority_2.py",
+    "line": 4,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import os",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "import matplotlib.pyplot as plt",
+     "import seaborn as sns",
+     "import joblib",
+     ""
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "src/train_gan_models.py",
+    "line": 8,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import time",
+     "from datetime import datetime",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "",
+     "#  Dosya Yolu",
+     "BASE_DIR = os.path.dirname(os.path.dirname(__file__))"
+    ]
+   },
+   {
+    "file": "src/balanced_ctgan_minority.py",
+    "line": 3,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import os",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "import matplotlib.pyplot as plt",
+     "import seaborn as sns",
+     "import joblib"
+    ]
+   },
+   {
+    "file": "src/train_gan_models_2.py",
+    "line": 8,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import time",
+     "from datetime import datetime",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "",
+     "#  Dosya Yolu",
+     "BASE_DIR = os.path.dirname(os.path.dirname(__file__))"
+    ]
+   },
+   {
+    "file": "src/balanced_ctgan_minority_2.py",
+    "line": 3,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import os",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "import matplotlib.pyplot as plt",
+     "import seaborn as sns",
+     "import joblib"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "src/train_gan_models.py",
+    "line": 7,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "import joblib",
+     "import time",
+     "from datetime import datetime",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "",
+     "#  Dosya Yolu"
+    ]
+   },
+   {
+    "file": "src/train_gan_models.py",
+    "line": 8,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import time",
+     "from datetime import datetime",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "",
+     "#  Dosya Yolu",
+     "BASE_DIR = os.path.dirname(os.path.dirname(__file__))"
+    ]
+   },
+   {
+    "file": "src/balanced_ctgan_minority.py",
+    "line": 3,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import os",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "import matplotlib.pyplot as plt",
+     "import seaborn as sns",
+     "import joblib"
+    ]
+   },
+   {
+    "file": "src/balanced_ctgan_minority.py",
+    "line": 4,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import os",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "import matplotlib.pyplot as plt",
+     "import seaborn as sns",
+     "import joblib",
+     ""
+    ]
+   },
+   {
+    "file": "src/train_gan_models_2.py",
+    "line": 7,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "import joblib",
+     "import time",
+     "from datetime import datetime",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "",
+     "#  Dosya Yolu"
+    ]
+   },
+   {
+    "file": "src/train_gan_models_2.py",
+    "line": 8,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import time",
+     "from datetime import datetime",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "",
+     "#  Dosya Yolu",
+     "BASE_DIR = os.path.dirname(os.path.dirname(__file__))"
+    ]
+   },
+   {
+    "file": "src/balanced_ctgan_minority_2.py",
+    "line": 3,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import os",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "import matplotlib.pyplot as plt",
+     "import seaborn as sns",
+     "import joblib"
+    ]
+   },
+   {
+    "file": "src/balanced_ctgan_minority_2.py",
+    "line": 4,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import os",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "import matplotlib.pyplot as plt",
+     "import seaborn as sns",
+     "import joblib",
+     ""
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "gc",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv==1.8.0               # Sentetik veri üretimi (GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer)",
+   "sdmetrics==0.10.0        # Sentetik veri ve gerçek veri benzerliğini ölçen metrikler (Jensen–Shannon divergansı, KSComplement vb.)",
+   "torch==2.1.0             # SDV’nin derin öğrenme tabanlı modellerinde (CTGAN ve TVAE) PyTorch gerekliliği"
+  ]
+ }
+}

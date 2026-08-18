@@ -1,0 +1,126 @@
+{
+ "repo": "code4indo/incubation_bkpm",
+ "disk_kb": 25353,
+ "method": "partial_clone",
+ "tree_files": 324,
+ "status": "ok",
+ "readme": "# BKPM AI-Powered Investment Platform\n## Complete Production Architecture with Data Scraping, Governance & API\n\n### Architecture Overview\n\n```\n┌─────────────────────────────────────────────────────────────────────────────┐\n│                           EXTERNAL DATA SOURCE                               │\n│                    https://regionalinvestment.bkpm.go.id                     │\n└─────────────────────────────────────────────────────────────────────────────┘\n                                       │\n                                       ▼\n┌─────────────────────────────────────────────────────────────────────────────┐\n│                              SCRAPER LAYER                                   │\n│  ┌──────────────────────────────────────────────────────────────────────┐   │\n│  │  bkpm_scraper.py                                                      │   │\n│  │  • Playwright headless browser (JavaScript rendering)              │   │\n│  │  • Polite rate limiting (3-5s delay)                                 │   │\n│  │  • Parallel execution (max 5 concurrent)                            │   │\n│  │  • Data validation & quality scoring                                  │   │\n│  │  • Automatic retry with exponential backoff                           │   │\n│  └──────────────────────────────────────────────────────────────────────┘   │\n│                                       │                                     │\n│                                       ▼                                     │\n│  ┌──────────────────────────────────────────────────────────────────────┐   │\n│  │  data_governance.py                                                 │   │\n│  │  • Field validation (CRITICAL/REQUIRED/OPTIONAL/ENRICHED)           │   │\n│  │  • Quality scoring (0-100, 5 dimensions)                              │   │\n│  │  • Coordinate validation (Indonesia bounding box)                     │   │\n│  │  • Financial metrics sanity checks                                    │   │\n│  │  • Data lineage tracking                                             │   │\n│  └──────────────────────────────────────────────────────────────────────┘   │\n└─────────────────────────────────────────────────────────────────────────────┘\n                                       │\n                                       ▼\n┌─────────────────────────────────────────────────────────────────────────────┐\n│                           DATA STORAGE LAYER                                 │\n│  ┌──────────────────────┐  ┌──────────────────────┐  ┌──────────────────────┐   │\n│  │  JSON Backup         │  │  Qdrant Vector DB    │  │  PostgreSQL (opt)    │   │\n│  │  bkpm_projects.json  │  │  (for RAG search)    │  │  (future migration)   │   │\n│  └──────────────────────┘  └──────────────────────┘  └──────────────────────┘   │\n└─────────────────────────────────────────────────────────────────────────────┘\n                                       │\n                                       ▼\n┌─────────────────────────────────────────────────────────────────────────────┐\n│                            API SERVICE LAYER                                   │\n│  ┌──────────────────────────────────────────────────────────────────────┐   │\n│  │  api_service.py (FastAPI)                                             │   │\n│  │  • REST API with OpenAPI docs                                         │   │\n│  │  • Pagination, filtering, sorting                                    │   │\n│  │  • Full-text search across all fields                               │   │\n│  │  • Province & sector analytics                                         │   │\n│  │  • CORS enabled for webapp integration                               │   │\n│  │  • Rate limiting ready                                                │   │\n│  └──────────────────────────────────────────────────────────────────────┘   │\n└─────────────────────────────────────────────────────────────────────────────┘\n                                       │\n                    ┌──────────────────┼──────────────────┐\n                    │                  │                  │\n                    ▼                  ▼                  ▼\n┌──────────────────────┐  ┌──────────────────────┐  ┌──────────────────────┐\n│  REACT WEBAPP        │  │  AI LEGAL CHATBOT    │  │  EXTERNAL SYSTEMS    │\n│  (this project)      │  │  (NVIDIA Stack 32GB) │  │  (future consumers) │\n│  • Investment intel  │  │  • Qwen3.5-122B-A10B │  │  • BI Dashboards     │\n│  • Geospatial AI     │  │  • Nemotron Embed    │  │  • Mobile Apps       │\n│  • Match scoring     │  │  • Nemotron Rerank   │  │  • Partner APIs      │\n└──────────────────────┘  └──────────────────────┘  └──────────────────────┘\n```\n\n### File Structure\n\n```\n├── scraper/\n│   ├── bkpm_scraper.py          # Production scraper with Playwright\n│   ├── data_governance.py        # Validation, quality, lineage\n│   └── requirements.txt         # Python dependencies\n│\n├── api/\n│   ├── api_service.py           # FastAPI REST service\n│   ├── Dockerfile               # Container image\n│   └── requirements.txt         # Python dependencies\n│\n├── ml_pipeline/                 # G-XGBoost ML Pipeline\n│   ├── README.md                # Full ML pipeline documentation\n│   ├── requirements.txt         # Python ML dependencies\n│   ├── scripts/\n│   │   ├── 01_extract_real_data.py\n│   │   ├── 02_build_panel_dataset.py\n│   │   ├── 03_generate_semi_synthetic.py\n│   │   ├── 04_train_gxgboost.py\n│   │   └── 05_precompute_predictions.py\n│   └── data/                    # ML artifacts (raw, processed, models)\n│\n├── data/\n│   └── bkpm_projects.json       # Scraped data output\n│\n├── app/                         # React webapp (existing)\n│   ├── src/\n│   │   ├── lib/\n│   │   │   ├── mlScoringService.ts  # ML API client + fallback\n│   │   │   └── scoringEngine.ts     # Hybrid scoring (60% ML + 40% rule)\n│   │   └── data/\n│   │       └── suitability/         # Provincial indices + layer registry\n│   └── dist/\n│\n├── docker-compose.yml           # Full stack orchestration\n├── nginx.conf                   # Webapp + API proxy\n└── README.md                    # This file\n```\n\n### Quick Start\n\n#### 0. Run ML Pipeline (G-XGBoost)\n\n```bash\ncd ml_pipeline\npip install -r requirements.txt\n\n# Run full pipeline (5 steps)\npython scripts/01_extract_real_data.py\npython scripts/02_build_panel_dataset.py\npython scripts/03_generate_semi_synthetic.py\npython scripts/04_train_gxgboost.py\npython scripts/05_precompute_predictions.py\n```\n\nThis generates pre-computed ML predictions in `api/data/` for the FastAPI backend.\nSee [ml_pipeline/README.md](ml_pipeline/README.md) for detailed documentation.\n\n#### 1. Scrape Data from BKPM Portal\n\n```bash\ncd scraper\npip install -r requirements.txt\nplaywright install chromium\n\n# Scrape projects 1-1500 (takes ~2-3 hours for full range)\npython bkpm_scraper.py --start-id 1 --end-id 1500 --output ../data/bkpm_projects.json\n\n# Or scrape smaller range for testing\npython bkpm_scraper.py --start-id 1200 --end-id 1300 --output ../data/bkpm_test.json\n```\n\n#### 2. Start API Service\n\n```bash\n# Option A: Direct Python\ncd api\npip install -r requirements.txt\nuvicorn api_service:app --host 0.0.0.0 --port 8000\n\n# Option B: Docker\ndocker build -t bkpm-api ./api\ndocker run -p 8000:8000 -v $(pwd)/data:/app/data bkpm-api\n\n# Option C: Docker Compose (full stack)\ndocker-compose up -d\n```\n\n#### 3. Access Services\n\n| Service | URL | Description |\n|---------|-----|-------------|\n| Webapp | http://localhost:3000 | React frontend |\n| API | http://localhost:8000 | REST API |\n| API Docs | http://localhost:8000/docs | OpenAPI Swagger |\n| Health | http://localhost:8000/health | Status check |\n\n### API Endpoints\n\n#### Core Endpoints\n\n```\nGET  /                  → API info\nGET  /health            → Health check\nGET  /projects          → List projects (paginated, filterable)\nGET  /projects/{id}     → Single project detail\nGET  /search?q={query}  → Full-text search\nGET  /provinces         → Province statistics\nGET  /sectors           → Sector statistics\nPOST /projects          → Create project (auth)\nDELETE /projects/{id}   → Delete project (auth)\n```\n\n#### ML Model Endpoints (G-XGBoost)\n\n```\nGET  /ml/model-info                     → Model metadata (architecture, performance, limitations)\nGET  /ml/predict?province=X&sector=Y     → Single prediction + SHAP explanation\nGET  /ml/all-scores                      → All scores as compact lookup table\nGET  /ml/provincial-scores?sector=X      → Province rankings per sector\nGET  /ml/sector-rankings?province=X      → Sector rankings per province\nGET  /ml/feature-importance              → Global SHAP feature importance\n```\n\n> **Full ML pipeline documentation:** See [ml_pipeline/README.md](ml_pipeline/README.md)\n\n### Data Governance\n\n#### Quality Score Computation\n\n| Dimension | Weight | Rule |\n|-----------|--------|------|\n| Field Completeness | 40% | % of fields with non-null values |\n| Financial Validity | 20% | IRR/NPV/Payback in reasonable range |\n| Coordinate Precision | 15% | Within Indonesia bounding box |\n| Temporal Validity | 10% | Year between 2010-2035 |\n| Investment Magnitude | 15% | Between 1M and 100T IDR |\n\n#### Data Classification\n\n| Level | Fields | Requirement |\n|-------|--------|-------------|\n| CRITICAL | id, name_id, district, province, lat, lng | Must be present |\n| REQUIRED | investment_value, year, category, kbli | Should be present |\n| OPTIONAL | irr, npv, payback, description | Nice to have |\n| ENRICHED | name_en, description_en, quality_score | AI-generated |\n\n### G-XGBoost Geospatial ML Model\n\nThe platform includes a Geographically Weighted XGBoost model for predicting investment suitability scores across 35 Indonesian provinces × 8 sectors.\n\n| Metric | Value |\n|--------|-------|\n| Model | G-XGBoost (Geographically Weighted XGBoost) |\n| CV R² | 0.5596 |\n| TSTR Utility | LOW (semi-synthetic data) |\n| Features | 31 (spatial, socioeconomic, infrastructure, PIR, derived, encoding) |\n| Dataset | 134 real + 536 semi-synthetic = 670 combined |\n| Spatial Validation | Moran's I = -0.0147, p=0.056 (no significant autocorrelation) |\n\n**Architecture:** 3-Tier Hybrid (roadmap)\n- Tier 1: G-XGBoost + SHAP (implemented)\n- Tier 2: Fuzzy AHP + TOPSIS (planned)\n- Tier 3: Spatial Durbin + LISA (planned)\n\nSee [ml_pipeline/README.md](ml_pipeline/README.md) for full documentation.\n\n### NVIDIA AI Stack (32GB GPU)\n\n```\n┌─────────────────────────────────────────────────┐\n│  GPU 32GB — Self-Hosted                         │\n├─────────────────────────────────────────────────┤\n│  • llama-nemotron-embed-1b-v2   (0.5GB)         │\n│  • llama-3.2-nv-rerankqa-1b-v2  (0.5GB)         │\n│  • qwen3.5-122b-a10b           (~22GB) ← Main   │\n│  • nemotron-ocr-v1              (1.0GB)         │\n│  • nemotron-3-safety-guard-8b   (4.0GB)         │\n├─────────────────────────────────────────────────┤\n│  Total: ~28GB / 32GB ✅                        │\n│  Context: 128K tokens (64K+ with safety margin) │\n└─────────────────────────────────────────────────┘\n```\n\n### License & Attribution\n\n- Data Source: BKPM (Badan Koordinasi Penanaman Modal) — regionalinvestment.bkpm.go.id\n- Scraper: Apache 2.0\n- API: Apache 2.0\n- ML Pipeline: Apache 2.0\n- Models: Various (NVIDIA Open License, Apache 2.0)\n\n### Troubleshooting\n\n**Scraper times out?**\n→ Increase `--delay-max` to 8 or reduce `--concurrency` to 3\n\n**Playwright not found?**\n→ Run `playwright install chromium` after pip install\n\n**API returns empty?**\n→ Check `data/bkpm_projects.json` exists or run scraper first\n\n**ML predictions not loading?**\n→ Run the ML pipeline first: `cd ml_pipeline && python scripts/05_precompute_predictions.py`\n→ Then check `api/data/ml_predictions.json` exists\n\n**ML API `/ml/all-scores` returns empty?**\n→ Ensure `api/data/ml_predictions.json` has data and restart the API server\n\n**GPU OOM with Qwen?**\n→ Reduce `--max-model-len` to 32768 or use Qwen2.5-32B instead\n",
+ "hits": {
+  "st": [
+   {
+    "file": "ml_pipeline/scripts/03_generate_semi_synthetic.py",
+    "line": 95,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "}",
+     "",
+     "def generate_corridor_synthetic(real_data, corridor_name, n_synthetic, seed=42):",
+     "    \"\"\"Generate synthetic data for a specific corridor using Gaussian Copula.\"\"\"",
+     "    from sdv.single_table import GaussianCopulaSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    ",
+     "    corridor_data = real_data[real_data['koridor'] == corridor_name].copy()",
+     "    "
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "ml_pipeline/scripts/03_generate_semi_synthetic.py",
+    "line": 96,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "def generate_corridor_synthetic(real_data, corridor_name, n_synthetic, seed=42):",
+     "    \"\"\"Generate synthetic data for a specific corridor using Gaussian Copula.\"\"\"",
+     "    from sdv.single_table import GaussianCopulaSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    ",
+     "    corridor_data = real_data[real_data['koridor'] == corridor_name].copy()",
+     "    ",
+     "    if len(corridor_data) < 5:"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "ml_pipeline/scripts/03_generate_semi_synthetic.py",
+    "line": 95,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "}",
+     "",
+     "def generate_corridor_synthetic(real_data, corridor_name, n_synthetic, seed=42):",
+     "    \"\"\"Generate synthetic data for a specific corridor using Gaussian Copula.\"\"\"",
+     "    from sdv.single_table import GaussianCopulaSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    ",
+     "    corridor_data = real_data[real_data['koridor'] == corridor_name].copy()",
+     "    "
+    ]
+   },
+   {
+    "file": "ml_pipeline/scripts/03_generate_semi_synthetic.py",
+    "line": 96,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "def generate_corridor_synthetic(real_data, corridor_name, n_synthetic, seed=42):",
+     "    \"\"\"Generate synthetic data for a specific corridor using Gaussian Copula.\"\"\"",
+     "    from sdv.single_table import GaussianCopulaSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    ",
+     "    corridor_data = real_data[real_data['koridor'] == corridor_name].copy()",
+     "    ",
+     "    if len(corridor_data) < 5:"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "ml_pipeline/scripts/03_generate_semi_synthetic.py",
+    "line": 95,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "}",
+     "",
+     "def generate_corridor_synthetic(real_data, corridor_name, n_synthetic, seed=42):",
+     "    \"\"\"Generate synthetic data for a specific corridor using Gaussian Copula.\"\"\"",
+     "    from sdv.single_table import GaussianCopulaSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    ",
+     "    corridor_data = real_data[real_data['koridor'] == corridor_name].copy()",
+     "    "
+    ]
+   },
+   {
+    "file": "ml_pipeline/scripts/03_generate_semi_synthetic.py",
+    "line": 134,
+    "text": "synthesizer = GaussianCopulaSynthesizer(",
+    "context": [
+     "        pass",
+     "    ",
+     "    # Fit Gaussian Copula",
+     "    try:",
+     "        synthesizer = GaussianCopulaSynthesizer(",
+     "            metadata,",
+     "            enforce_min_max_values=True,",
+     "            enforce_rounding=False,",
+     "            numerical_distributions=None  # auto-detect"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "ml_pipeline/requirements.txt": [
+   "sdv>=1.10.0                    # Gaussian Copula synthesizer"
+  ]
+ }
+}

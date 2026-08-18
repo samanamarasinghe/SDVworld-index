@@ -1,0 +1,84 @@
+{
+ "repo": "chaeminlee57/fraudulent-simulation",
+ "disk_kb": 70,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Synthetic Fraud Data Generator\n\n**Overview:**\nA Machine Learning pipeline generating realistic synthetic fraudulent transaction data using GANs (CTGAN, TimeGAN, GraphRNN). \nThis pipeline produces over 315,990 events across six fraud taxonomies, maintaining high statistical similarity to real data for testing and training fraud-detection models without privacy risks.\n\n---\n\n## Core Capabilities\n\n* Trains models on real (for T1) and seed data (for the rest) to generate fraud scenarios\n* Enables safe model testing, dataset balancing, and edge-case creation\n* Fully automated with Airflow DAG orchestration and FastAPI endpoints\n\n---\n\n### Key Metrics\n\n* TSTR Accuracy: 98.82% a.k.a. synthetic-trained model performs almost identically to real-data-trained\n* PSI Drift Reduction: 15% after retraining, maintains long-term data quality\n* Total Events Generated: 315,990\n* KS Score (T1): 0.1505 which is above ideal 0.07 but will get lower with longer hours of training\n\n---\n\n### Tech Stack\n\n* Modeling: PyTorch, CTGAN, TimeGAN, GraphRNN, SDV\n* Orchestration: Apache Airflow (DAGs, retries)\n* API: FastAPI (`/generate`, `/metrics`)\n* Storage: PostgreSQL (JSONB schema), MLflow (experiment tracking)\n* Seed Data: Faker, NetworkX\n\n---\n\n### Fraud Taxonomies\n\n| Taxonomy | Model    | Description            | Samples |\n| -------- | -------- | ---------------------- | ------- |\n| T1       | CTGAN    | Credit card fraud      | 64k     |\n| T2       | CTGAN    | Account takeovers      | 4k      |\n| T3       | CTGAN    | Return abuse           | 4k      |\n| T4       | GraphRNN | Money-laundering rings | 236k    |\n| T5       | CTGAN    | Wire fraud             | 4k      |\n| T6       | TimeGAN  | Chargeback sequences   | 3.9k    |\n\n---\n\n### Limitations\n\n* T1 KS was less than ideal; complex fraud correlations are hard to replicate\n* Long training time (over 4 hrs)\n* Simplified TimeGAN/GraphRNN for speed\n\n---\n\n### Future Work\n\n* Improve KS via tuning \n* GPU/distributed training\n* Expanded metrics (such as precision, recall, fairness)\n",
+ "hits": {
+  "st": [
+   {
+    "file": "src/generate.py",
+    "line": 3,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from pathlib import Path",
+     "import json",
+     "from datetime import datetime",
+     "import argparse"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "src/generate.py",
+    "line": 3,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from pathlib import Path",
+     "import json",
+     "from datetime import datetime",
+     "import argparse"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "src/generate.py",
+    "line": 3,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from pathlib import Path",
+     "import json",
+     "from datetime import datetime",
+     "import argparse"
+    ]
+   },
+   {
+    "file": "src/generate.py",
+    "line": 19,
+    "text": "synthesizer = CTGANSynthesizer.load(str(model_path))",
+    "context": [
+     "    ",
+     "    if not model_path.exists():",
+     "        raise FileNotFoundError(f\"Model not found for {taxonomy}\")",
+     "    ",
+     "    synthesizer = CTGANSynthesizer.load(str(model_path))",
+     "    ",
+     "    batch_id = datetime.now().strftime(\"%Y%m%d_%H%M%S\")",
+     "    output_dir = Path(f\"data/gen/{taxonomy}/{batch_id}\")",
+     "    output_dir.mkdir(parents=True, exist_ok=True)"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv>=1.3.0"
+  ]
+ }
+}

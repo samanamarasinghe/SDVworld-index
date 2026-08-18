@@ -1,0 +1,129 @@
+{
+ "repo": "ChrisWeijers/plausible-counterfactual-creation",
+ "disk_kb": 8601,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Improving Counterfactual Plausibility Through Generative Manifold Constraints\n\nThis repository contains the code, models, and results for the bachelor end project \"Explainable AI: Improving Counterfactual Plausibility Through Generative Manifold Constraints\".\n\nThe project studies counterfactual explanations for tabular classification by combining:\n\n- a heterogeneous variational autoencoder (VAE) that models the data distribution,\n- a black-box classifier trained on the same dataset,\n- a latent-space counterfactual search that balances prediction flipping, proximity, and manifold plausibility.\n\n## Key Components\n\n- `main.py` — orchestrates the full pipeline, running dataset preparation, VAE training, and counterfactual generation in sequence.\n- `tabular_vae.py` — heterogeneous VAE definition and training pipeline for South German Credit and MIMIC-IV.\n- `counterfactual_generator.py` — black-box counterfactual search in VAE latent space with plausibility and actionability constraints and baseline comparison support.\n- `german_credit_model.py` — data preprocessing and Random Forest classifier training for the South German Credit dataset.\n- `mimic_model.py` — preprocessing and XGBoost classifier training for MIMIC-IV mortality prediction.\n- `data_splits.py` — reproducible train/test split utilities shared by model and VAE workflows.\n- `data/` — raw and processed dataset files.\n- `models/` — trained VAE weights and classifier artifacts.\n- `results/` — generated counterfactual datasets and summary metrics.\n\n## Objectives\n\nThe pipeline is designed to:\n\n- generate counterfactuals that flip classifier decisions,\n- keep changes small and actionable,\n- preserve plausibility by staying close to the learned data manifold,\n- support mixed feature types (continuous, ordinal, categorical),\n- evaluate counterfactual quality using validity, proximity, sparsity, and plausibility.\n\n![alt text](img_pipeline.png)\n\n## Supported Datasets\n\n### South German Credit\n\n- Raw input: `data/SouthGermanCredit/SouthGermanCredit.asc`\n- Processed CSV: `data/SouthGermanCredit/processed_credit_data.csv`\n- Trained models and splits are saved under `models/` and `splits/`.\n\n### MIMIC-IV\n\n- Raw input: `data/MIMIC_IV/bq-results.csv`\n- This dataset is used for mortality prediction with an XGBoost classifier.\n- Trained models and splits are saved under `models/` and `splits/`.\n\n> Note: MIMIC-IV dataset is not added to the repository due to it not being publicly available. The `data/README.md` file contains additional dataset notes and preprocessing details.\n\n## Requirements\n\nThe repository includes a `requirements.txt` file for the exact package versions used during development.\n\nUsing `pip`:\n\n```bash\npython -m venv .venv\nsource .venv/bin/activate\npip install -r requirements.txt\n```\n\nUsing `conda`:\n\n```bash\nconda create -n counterfactual-creation python=3.11\nconda activate counterfactual-creation\npip install -r requirements.txt\n```\n\n## Workflow\n\n### 0. Run the end-to-end pipeline\n\nThe repository includes `main.py` to run the full pipeline in sequence:\n\n```bash\npython main.py\n```\n\nOptional flags supported by `main.py` include:\n\n- `--dataset credit|mimic|both`\n- `--skip-credit`\n- `--skip-mimic`\n- `--skip-vae`\n- `--skip-cf`\n- `--vae-augment`\n- `--wandb`\n- `--no-baselines`\n- `--summary-file <path>`\n- `--skip-summary`\n\nOtherwise, run the scripts seperately:\n\n### 1. Train / prepare classifiers\n\nTrain the credit classification pipeline:\n\n```bash\npython german_credit_model.py\n```\n\nTrain the MIMIC-IV classifier:\n\n```bash\npython mimic_model.py\n```\n\nThese scripts produce:\n\n- `models/rf_credit_model.pkl`\n- `models/xgb_mimic_model.json`\n- `splits/credit_split.pkl`\n- `splits/mimic_split.pkl`\n\n### 2. Train the VAE\n\nTrain the VAE for credit data:\n\n```bash\npython tabular_vae.py --dataset credit\n```\n\nTrain the VAE for MIMIC-IV data:\n\n```bash\npython tabular_vae.py --dataset mimic\n```\n\nTrain both datasets together:\n\n```bash\npython tabular_vae.py --dataset both\n```\n\nThe script saves model checkpoints to `models/`:\n\n- `models/credit_augmented_vae_best.pt`\n- `models/credit_real_only_vae_best.pt`\n- `models/mimic_iv_vae_best.pt`\n\nIt also saves preprocessors for the credit and MIMIC data.\n\n### 3. Generate counterfactual explanations\n\nUse `counterfactual_generator.py` to search in VAE latent space and generate plausible counterfactuals. The script supports additional options such as:\n\n- `--dataset credit|mimic|both`\n- `--no-baselines`\n- `--summary-file <path>`\n- `--skip-summary`\n- `--lambda-manifold-values <values>`\n\nBecause `counterfactual_generator.py` can run directly from the CLI, you can generate full evaluation summaries from the command line.\n\nExample Python usage:\n\n```python\nfrom counterfactual_generator import CounterfactualGenerator, FeatureConstraints\nfrom tabular_vae import TabularPreprocessor, TabularVAE\nimport torch\nimport pickle\n\n# Load saved preprocessing and classifier artifacts\nprep = pickle.load(open('models/credit_preprocessor.pkl', 'rb'))\nrf = pickle.load(open('models/rf_credit_model.pkl', 'rb'))\n\ndevice = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')\nvae_config = {\n    'input_dim': prep.input_dim,\n    'hidden_dims': [128, 64],\n    'latent_dim': 8,\n    'feature_info': prep.feature_info,\n    'beta': 1.0,\n}\n\ngen = CounterfactualGenerator.from_checkpoint(\n    vae_path='models/credit_real_only_vae_best.pt',\n    vae_config=vae_config,\n    classifier=rf,\n    preprocessor=prep,\n    device=device,\n)\n\n# Generate counterfactuals for scaled inputs\nX_scaled, X_targets = prep.transform(raw_df)\ncf_df = gen.generate(X_scaled, X_targets, desired_class=0)\n```\n\n> Note: `desired_class` should correspond to the target label you want the counterfactuals to achieve.\n\n### 4. Evaluate counterfactuals\n\nThe generator supports evaluation metrics:\n\n```python\nmetrics = gen.evaluate(X_scaled, cf_scaled, cf_targets, desired_class=0)\nprint(metrics)\n```\n\nCommon metrics include:\n\n- validity\n- proximity (L1, L2)\n- sparsity\n- mean features changed\n- plausibility\n\n## Results\n\nGenerated counterfactual datasets and evaluation summaries are available in `results/`, including:\n\n- `counterfactuals_credit_*.csv`\n- `counterfactuals_mimic_*.csv`\n- `results/metrics_summary.csv`\n\n## Notes\n\n- The VAE is heterogeneous and handles continuous, ordinal, and categorical features separately.\n- The counterfactual search is gradient-free and treats the classifier as a black box.\n- Feature constraints can enforce immutability, increasing-only, or decreasing-only behavior.\n\n## Contact\n\nChris Weijers - c.r.j.weijers@student.tue.nl\n",
+ "hits": {
+  "st": [
+   {
+    "file": "tabular_vae.py",
+    "line": 694,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "    TVAE augmentation from Xu et al. (2019). Install: pip install sdv",
+     "    Source: https://arxiv.org/abs/1907.00503",
+     "    \"\"\"",
+     "    try:",
+     "        from sdv.single_table import TVAESynthesizer",
+     "        from sdv.metadata import SingleTableMetadata",
+     "    except ImportError:",
+     "        print(\"SDV not installed. Run: pip install sdv\")",
+     "        return df"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "tabular_vae.py",
+    "line": 695,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    Source: https://arxiv.org/abs/1907.00503",
+     "    \"\"\"",
+     "    try:",
+     "        from sdv.single_table import TVAESynthesizer",
+     "        from sdv.metadata import SingleTableMetadata",
+     "    except ImportError:",
+     "        print(\"SDV not installed. Run: pip install sdv\")",
+     "        return df",
+     "    meta = SingleTableMetadata()"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "tabular_vae.py",
+    "line": 694,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "    TVAE augmentation from Xu et al. (2019). Install: pip install sdv",
+     "    Source: https://arxiv.org/abs/1907.00503",
+     "    \"\"\"",
+     "    try:",
+     "        from sdv.single_table import TVAESynthesizer",
+     "        from sdv.metadata import SingleTableMetadata",
+     "    except ImportError:",
+     "        print(\"SDV not installed. Run: pip install sdv\")",
+     "        return df"
+    ]
+   },
+   {
+    "file": "tabular_vae.py",
+    "line": 695,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    Source: https://arxiv.org/abs/1907.00503",
+     "    \"\"\"",
+     "    try:",
+     "        from sdv.single_table import TVAESynthesizer",
+     "        from sdv.metadata import SingleTableMetadata",
+     "    except ImportError:",
+     "        print(\"SDV not installed. Run: pip install sdv\")",
+     "        return df",
+     "    meta = SingleTableMetadata()"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "tabular_vae.py",
+    "line": 694,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "    TVAE augmentation from Xu et al. (2019). Install: pip install sdv",
+     "    Source: https://arxiv.org/abs/1907.00503",
+     "    \"\"\"",
+     "    try:",
+     "        from sdv.single_table import TVAESynthesizer",
+     "        from sdv.metadata import SingleTableMetadata",
+     "    except ImportError:",
+     "        print(\"SDV not installed. Run: pip install sdv\")",
+     "        return df"
+    ]
+   },
+   {
+    "file": "tabular_vae.py",
+    "line": 701,
+    "text": "synth = TVAESynthesizer(meta, epochs=300, verbose=True)",
+    "context": [
+     "        print(\"SDV not installed. Run: pip install sdv\")",
+     "        return df",
+     "    meta = SingleTableMetadata()",
+     "    meta.detect_from_dataframe(df)",
+     "    synth = TVAESynthesizer(meta, epochs=300, verbose=True)",
+     "    synth.fit(df)",
+     "    n_syn = max(0, target_rows - len(df))",
+     "    df_out = pd.concat([df, synth.sample(num_rows=n_syn)], ignore_index=True)",
+     "    print(f\"Augmented: {len(df)} real + {n_syn} synthetic = {len(df_out)} rows\")"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "copulas==0.14.1",
+   "ctgan==0.12.1",
+   "rdt==1.21.0",
+   "sdmetrics==0.28.0",
+   "sdv==1.36.1"
+  ]
+ }
+}

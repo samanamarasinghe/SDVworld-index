@@ -1,0 +1,436 @@
+{
+ "repo": "Brandon-Ism/synthetic-data-evaluation",
+ "disk_kb": 90609,
+ "method": "partial_clone",
+ "tree_files": 103,
+ "status": "ok",
+ "readme": "## synthetic-data-evaluation\n\nInformation-theoretic evaluation of **synthetic**, **simulated**, and **ground-truth** data, with a focus on fidelity metrics (e.g., Jensen–Shannon divergence, MMD, classifier two-sample tests) across multiple data modalities.\n\n### Publications\n\n- B. Ismalej, X. Ruan, X. Jiang, “Evaluating Privacy and Utility of Synthetic Tabular Data with Membership Inference Attacks”. In press to IEEE Future Machine Learning and Data Science (FMLDS) 2025, Nov 2-5, 2025, Los Angeles, CA, USA.\n\n## Project Page\n- More context + talk slides: [Project page on my website](https://github.com/Brandon-Ism/synthetic-data-evaluation)\n\n### What’s in this repo\n\n- **Core experiment pipelines (CLI)**: under `experiments/`\n  - `experiments/adult_tabular`: GT vs SIM vs SYN (SDV CTGAN/TVAE) on UCI Adult.\n  - `experiments/time_series_har`: GT vs SIM (DFM-mosaic) on UCI HAR inertial signals.\n  - `experiments/bank_marketing`: currently mirrors the Adult pipeline (see note below).\n- **Shared utilities**: under `common/` (metrics, I/O, seeding, visualization).\n- **Docs**: LaTeX writeups (and built PDFs) under `docs/` documenting methodology and exact run commands.\n- **Tutorial notebook**: `notebooks/synthetic_data_tutorial.ipynb` (intro-style SDV walkthrough).\n\n### Quickstart\n\nRun an experiment from the repo root:\n\n```bash\npython -m experiments.adult_tabular.run \\\n  --seed 42 \\\n  --n_eval 5000 \\\n  --sim_mode gaussian_copula \\\n  --synth ctgan \\\n  --epochs 300 \\\n  --batch_size 500 \\\n  --pac 10 \\\n  --out results_ctgan.json\n```\n\nThis writes:\n- **Figures** to `experiments/adult_tabular/figures/`\n- **Results JSON** to `experiments/adult_tabular/<out>`\n\n### Installation\n\n```bash\npython -m venv .venv\nsource .venv/bin/activate\npip install -r requirements.txt\n```\n\n\n### Running experiments\n\n#### `experiments/adult_tabular` (tabular: GT vs SIM vs SYN)\n\n- **Entry point**: `python -m experiments.adult_tabular.run`\n- **Key flags**:\n  - `--sim_mode {independent,gaussian_copula}`\n  - `--synth {ctgan,tvae}`\n  - `--epochs`, `--batch_size`, `--pac` (CTGAN requires `batch_size % pac == 0`)\n  - `--n_eval` (size for SIM/SYN sampling and GT reference)\n\n#### `experiments/time_series_har` (time-series: GT vs SIM)\n\n- **Entry point**: `python -m experiments.time_series_har.run`\n- **Example**:\n\n```bash\npython -m experiments.time_series_har.run \\\n  --seed 42 \\\n  --n_sim 4000 \\\n  --sg_window 15 --sg_poly 3 \\\n  --segments_min 3 --segments_max 6 \\\n  --seglen_min_frac 0.15 --seglen_max_frac 0.35 \\\n  --residual_scale 1.0 \\\n  --reconstruct mul \\\n  --out results_sim.json\n```\n\nOutputs:\n- `experiments/time_series_har/figures/` (global overlays + per-class grids)\n- `experiments/time_series_har/<out>` (results JSON)\n\n\n### Repository layout\n\n- `common/`: shared utilities\n  - `metrics.py`: JS divergence (histogram), RBF-MMD, C2ST AUC\n  - `io.py`: JSON writing + runtime metadata helpers\n  - `sampling.py`: global seeding\n  - `viz.py`: plotting helpers used by experiments\n- `experiments/`: reproducible CLI pipelines\n- `docs/`: LaTeX/PDF writeups \n- `notebooks/`: standalone tutorial notebook\n\n\n\n",
+ "hits": {
+  "st": [
+   {
+    "file": "experiments/adult_tabular/synth_sdv.py",
+    "line": 5,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "",
+     "import pandas as pd",
+     "from typing import Literal, Tuple",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "",
+     "def train_and_sample_sdv(",
+     "    df_train: pd.DataFrame,",
+     "    n_samples: int,"
+    ]
+   },
+   {
+    "file": "experiments/bank_marketing/synth_sdv.py",
+    "line": 5,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "",
+     "import pandas as pd",
+     "from typing import Literal, Tuple",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "",
+     "def train_and_sample_sdv(",
+     "    df_train: pd.DataFrame,",
+     "    n_samples: int,"
+    ]
+   },
+   {
+    "file": "notebooks/synthetic_data_tutorial.ipynb",
+    "line": 558,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "        }",
+     "      ],",
+     "      \"source\": [",
+     "        \"# Import the GaussianCopulaSynthesizer and Metadata classes from the Synthetic Data Vault library\\n\",",
+     "        \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "        \"from sdv.metadata import Metadata\\n\",",
+     "        \"\\n\",",
+     "        \"# Number of samples to generate from the synthetic heart disease dataset\\n\",",
+     "        \"NUM_HEART_DISEASE_SYNTHETIC_SAMPLES = 50\\n\","
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "experiments/adult_tabular/synth_sdv.py",
+    "line": 4,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "import pandas as pd",
+     "from typing import Literal, Tuple",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "",
+     "def train_and_sample_sdv(",
+     "    df_train: pd.DataFrame,"
+    ]
+   },
+   {
+    "file": "experiments/bank_marketing/synth_sdv.py",
+    "line": 4,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "import pandas as pd",
+     "from typing import Literal, Tuple",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "",
+     "def train_and_sample_sdv(",
+     "    df_train: pd.DataFrame,"
+    ]
+   },
+   {
+    "file": "notebooks/synthetic_data_tutorial.ipynb",
+    "line": 559,
+    "text": "\"from sdv.metadata import Metadata\\n\",",
+    "context": [
+     "      ],",
+     "      \"source\": [",
+     "        \"# Import the GaussianCopulaSynthesizer and Metadata classes from the Synthetic Data Vault library\\n\",",
+     "        \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "        \"from sdv.metadata import Metadata\\n\",",
+     "        \"\\n\",",
+     "        \"# Number of samples to generate from the synthetic heart disease dataset\\n\",",
+     "        \"NUM_HEART_DISEASE_SYNTHETIC_SAMPLES = 50\\n\",",
+     "        \"\\n\","
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "experiments/adult_tabular/synth_sdv.py",
+    "line": 4,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "import pandas as pd",
+     "from typing import Literal, Tuple",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "",
+     "def train_and_sample_sdv(",
+     "    df_train: pd.DataFrame,"
+    ]
+   },
+   {
+    "file": "experiments/adult_tabular/synth_sdv.py",
+    "line": 5,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "",
+     "import pandas as pd",
+     "from typing import Literal, Tuple",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "",
+     "def train_and_sample_sdv(",
+     "    df_train: pd.DataFrame,",
+     "    n_samples: int,"
+    ]
+   },
+   {
+    "file": "experiments/bank_marketing/synth_sdv.py",
+    "line": 4,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "import pandas as pd",
+     "from typing import Literal, Tuple",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "",
+     "def train_and_sample_sdv(",
+     "    df_train: pd.DataFrame,"
+    ]
+   },
+   {
+    "file": "experiments/bank_marketing/synth_sdv.py",
+    "line": 5,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "",
+     "import pandas as pd",
+     "from typing import Literal, Tuple",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "",
+     "def train_and_sample_sdv(",
+     "    df_train: pd.DataFrame,",
+     "    n_samples: int,"
+    ]
+   },
+   {
+    "file": "notebooks/synthetic_data_tutorial.ipynb",
+    "line": 558,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "        }",
+     "      ],",
+     "      \"source\": [",
+     "        \"# Import the GaussianCopulaSynthesizer and Metadata classes from the Synthetic Data Vault library\\n\",",
+     "        \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "        \"from sdv.metadata import Metadata\\n\",",
+     "        \"\\n\",",
+     "        \"# Number of samples to generate from the synthetic heart disease dataset\\n\",",
+     "        \"NUM_HEART_DISEASE_SYNTHETIC_SAMPLES = 50\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/synthetic_data_tutorial.ipynb",
+    "line": 559,
+    "text": "\"from sdv.metadata import Metadata\\n\",",
+    "context": [
+     "      ],",
+     "      \"source\": [",
+     "        \"# Import the GaussianCopulaSynthesizer and Metadata classes from the Synthetic Data Vault library\\n\",",
+     "        \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "        \"from sdv.metadata import Metadata\\n\",",
+     "        \"\\n\",",
+     "        \"# Number of samples to generate from the synthetic heart disease dataset\\n\",",
+     "        \"NUM_HEART_DISEASE_SYNTHETIC_SAMPLES = 50\\n\",",
+     "        \"\\n\","
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "experiments/adult_tabular/synth_sdv.py",
+    "line": 5,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "",
+     "import pandas as pd",
+     "from typing import Literal, Tuple",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "",
+     "def train_and_sample_sdv(",
+     "    df_train: pd.DataFrame,",
+     "    n_samples: int,"
+    ]
+   },
+   {
+    "file": "experiments/adult_tabular/synth_sdv.py",
+    "line": 34,
+    "text": "model = CTGANSynthesizer(**common_args, pac=pac)",
+    "context": [
+     "        verbose=verbose,",
+     "        batch_size=batch_size,",
+     "    )",
+     "    if synth == \"ctgan\":",
+     "        model = CTGANSynthesizer(**common_args, pac=pac)  ",
+     "    elif synth == \"tvae\":",
+     "        model = TVAESynthesizer(**common_args)",
+     "    else:",
+     "        raise ValueError(f\"Unknown synthesizer: {synth}\")"
+    ]
+   },
+   {
+    "file": "experiments/bank_marketing/synth_sdv.py",
+    "line": 5,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "",
+     "import pandas as pd",
+     "from typing import Literal, Tuple",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "",
+     "def train_and_sample_sdv(",
+     "    df_train: pd.DataFrame,",
+     "    n_samples: int,"
+    ]
+   },
+   {
+    "file": "experiments/bank_marketing/synth_sdv.py",
+    "line": 34,
+    "text": "model = CTGANSynthesizer(**common_args, pac=pac)",
+    "context": [
+     "        verbose=verbose,",
+     "        batch_size=batch_size,",
+     "    )",
+     "    if synth == \"ctgan\":",
+     "        model = CTGANSynthesizer(**common_args, pac=pac)  ",
+     "    elif synth == \"tvae\":",
+     "        model = TVAESynthesizer(**common_args)",
+     "    else:",
+     "        raise ValueError(f\"Unknown synthesizer: {synth}\")"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "experiments/adult_tabular/synth_sdv.py",
+    "line": 5,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "",
+     "import pandas as pd",
+     "from typing import Literal, Tuple",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "",
+     "def train_and_sample_sdv(",
+     "    df_train: pd.DataFrame,",
+     "    n_samples: int,"
+    ]
+   },
+   {
+    "file": "experiments/adult_tabular/synth_sdv.py",
+    "line": 36,
+    "text": "model = TVAESynthesizer(**common_args)",
+    "context": [
+     "    )",
+     "    if synth == \"ctgan\":",
+     "        model = CTGANSynthesizer(**common_args, pac=pac)  ",
+     "    elif synth == \"tvae\":",
+     "        model = TVAESynthesizer(**common_args)",
+     "    else:",
+     "        raise ValueError(f\"Unknown synthesizer: {synth}\")",
+     "",
+     "    model.fit(df_train)"
+    ]
+   },
+   {
+    "file": "experiments/bank_marketing/synth_sdv.py",
+    "line": 5,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "",
+     "import pandas as pd",
+     "from typing import Literal, Tuple",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "",
+     "def train_and_sample_sdv(",
+     "    df_train: pd.DataFrame,",
+     "    n_samples: int,"
+    ]
+   },
+   {
+    "file": "experiments/bank_marketing/synth_sdv.py",
+    "line": 36,
+    "text": "model = TVAESynthesizer(**common_args)",
+    "context": [
+     "    )",
+     "    if synth == \"ctgan\":",
+     "        model = CTGANSynthesizer(**common_args, pac=pac)  ",
+     "    elif synth == \"tvae\":",
+     "        model = TVAESynthesizer(**common_args)",
+     "    else:",
+     "        raise ValueError(f\"Unknown synthesizer: {synth}\")",
+     "",
+     "    model.fit(df_train)"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "notebooks/synthetic_data_tutorial.ipynb",
+    "line": 305,
+    "text": "\"The **Gaussian Copula** (used by default in SDV’s `GaussianCopulaSynthesizer` [1] ) works as follows:\\n\",",
+    "context": [
+     "        \"### Gaussian Copula in SDV\\n\",",
+     "        \"\\n\",",
+     "        \"A **copula** is a mathematical tool that allows us to model the **dependence structure** between random variables separately from their individual (marginal) distributions.\\n\",",
+     "        \"\\n\",",
+     "        \"The **Gaussian Copula** (used by default in SDV’s `GaussianCopulaSynthesizer` [1] ) works as follows:\\n\",",
+     "        \"\\n\",",
+     "        \"1. Suppose our dataset has $n$ columns (features):  \\n\",",
+     "        \"   $X = (X_1, X_2, \\\\dots, X_n)$\\n\",",
+     "        \"\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/synthetic_data_tutorial.ipynb",
+    "line": 557,
+    "text": "\"# Import the GaussianCopulaSynthesizer and Metadata classes from the Synthetic Data Vault library\\n\",",
+    "context": [
+     "          \"output_type\": \"execute_result\"",
+     "        }",
+     "      ],",
+     "      \"source\": [",
+     "        \"# Import the GaussianCopulaSynthesizer and Metadata classes from the Synthetic Data Vault library\\n\",",
+     "        \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "        \"from sdv.metadata import Metadata\\n\",",
+     "        \"\\n\",",
+     "        \"# Number of samples to generate from the synthetic heart disease dataset\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/synthetic_data_tutorial.ipynb",
+    "line": 558,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "        }",
+     "      ],",
+     "      \"source\": [",
+     "        \"# Import the GaussianCopulaSynthesizer and Metadata classes from the Synthetic Data Vault library\\n\",",
+     "        \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "        \"from sdv.metadata import Metadata\\n\",",
+     "        \"\\n\",",
+     "        \"# Number of samples to generate from the synthetic heart disease dataset\\n\",",
+     "        \"NUM_HEART_DISEASE_SYNTHETIC_SAMPLES = 50\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/synthetic_data_tutorial.ipynb",
+    "line": 567,
+    "text": "\"# Initialize the GaussianCopulaSynthesizer with the detected metadata\\n\",",
+    "context": [
+     "        \"\\n\",",
+     "        \"# Detect metadata from the sampled heart disease dataset\\n\",",
+     "        \"heart_disease_metadata = Metadata.detect_from_dataframe(heart_disease_sampled_df)\\n\",",
+     "        \"\\n\",",
+     "        \"# Initialize the GaussianCopulaSynthesizer with the detected metadata\\n\",",
+     "        \"synthesizer = GaussianCopulaSynthesizer(heart_disease_metadata)\\n\",",
+     "        \"\\n\",",
+     "        \"# Fit the synthesizer on the sampled heart disease dataset\\n\",",
+     "        \"synthesizer.fit(heart_disease_sampled_df)\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/synthetic_data_tutorial.ipynb",
+    "line": 568,
+    "text": "\"synthesizer = GaussianCopulaSynthesizer(heart_disease_metadata)\\n\",",
+    "context": [
+     "        \"# Detect metadata from the sampled heart disease dataset\\n\",",
+     "        \"heart_disease_metadata = Metadata.detect_from_dataframe(heart_disease_sampled_df)\\n\",",
+     "        \"\\n\",",
+     "        \"# Initialize the GaussianCopulaSynthesizer with the detected metadata\\n\",",
+     "        \"synthesizer = GaussianCopulaSynthesizer(heart_disease_metadata)\\n\",",
+     "        \"\\n\",",
+     "        \"# Fit the synthesizer on the sampled heart disease dataset\\n\",",
+     "        \"synthesizer.fit(heart_disease_sampled_df)\\n\",",
+     "        \"\\n\","
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "gc",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "copulas==0.12.3",
+   "ctgan==0.11.0",
+   "rdt==1.18.0",
+   "sdmetrics==0.23.0",
+   "sdv==1.26.0"
+  ]
+ }
+}

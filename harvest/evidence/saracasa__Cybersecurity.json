@@ -1,0 +1,237 @@
+{
+ "repo": "saracasa/Cybersecurity",
+ "disk_kb": 86532,
+ "method": "partial_clone",
+ "tree_files": 10,
+ "status": "ok",
+ "readme": "# PROJECT 7 - Privacy-preserving synthetic healthcare data generation\n\n## Research question\nCan synthetic healthcare data generated for cybersecurity protection maintain sufficient statistical fidelity and research utility to replace real patient data in medical research and machine learning applications?\n\n## Introduction\nHealthcare data breaches are increasingly common and devastating, yet researchers need access to realistic datasets for medical AI development and clinical trials. Synthetic data generation offers a cybersecurity solution: if breached, synthetic datasets contain no real patient information, minimizing legal liability and patient harm. However, synthetic data is only valuable if it preserves the properties necessary for valid research. This project evaluates the fundamental trade-off: is it possible to generate synthetic healthcare data that is simultaneously secure against privacy attacks and useful for medical research?\n\nSpecifically, the study compares the application of three privacy guarantee levels (no privacy, moderate privacy and strong privacy) to identify which techniques best balance privacy protection with data utility.\n\n## Replicability\nThe project was developed to ensure maximum transparency and to be fully replicable by running the notebook `progettoCybersecurity.ipynb`. The entire workflow is managed within the `progettoCybersecurity.ipynb` notebook, which offers the user two distinct operational paths based on their computational needs:\n\n- **Full reproduction of the experiment (from scratch):** the notebook downloads the original dataset from Kaggle, performs preprocessing, trains the CTGAN and DP-CTGAN models, and generates new synthetic datasets usable for all subsequent phases.\n- **Rapid analysis and consultation of our experiment results (loading pre-existing data):** to facilitate the project review without the need for high computational resources or long waiting times, it is possible to proceed in two ways:\n  - **Static consultation:** The notebook is delivered with the most important cell outputs already rendered. It is therefore possible to analyze graphs, quality metrics, and MIA attack results directly from the pre-executed version.\n  - **Partial execution (data loading):** It is possible to skip the training phases by loading the already generated synthetic datasets. In this way, the user can instantly re-run only the analysis cells, verifying the validity of the results in real-time.\n\n## Notebook structure\nThe project is divided into the following main phases:\n\n1. **Installation of libraries and imports necessary for the project.**\n2. **Loading and preprocessing:** importation of the \"Diabetes Health Indicators\" dataset from Kaggle (https://www.kaggle.com/datasets/alexteboul/diabetes-health-indicators-dataset/data?select=diabetes_binary_health_indicators_BRFSS2015.csv) and its subdivision into train and holdout sets, or the use of predefined datasets to ensure exact reproducibility of the project.\n3. **Synthetic data generation:**\n   - For the dataset without privacy guarantees, the `CTGANSynthesizer` model (`Synthetic Data Vault` (SDV) v1.29.1) was employed.\n   - For the protected datasets, the `DP-CTGAN` model from the `SmartNoise-Synth` library was used, which extends CTGAN by integrating Differential Privacy principles. The level of privacy guaranteed by the generative model is determined by the epsilon parameter ($\\varepsilon$): high values of $\\varepsilon$ (> 2.0) correspond to low privacy protection, while lower values (0.1 – 2.0) indicate high protection. In our study, we set $\\varepsilon$ = 4.0 for moderate privacy and $\\varepsilon$ = 2.0 for strong privacy.\n4. **Evaluation of synthetic data similarity compared to real data:**\n   - Analysis of synthetic data quality through the _Diagnostic Report_ and _Quality Score_ provided by SDV. The _Diagnostic Report_ evaluates whether the synthetic dataset is structurally valid, i.e., if it respects the formal and semantic constraints defined by the original data schema. The _Quality Score_ provides a quantitative measure of the statistical fidelity of the synthetic data compared to the real dataset.\n   - Evaluation of statistical similarity by comparing means, standard deviations, variable distributions, correlation matrices, and Frobenius distance between synthetic and real data.\n5. **Evaluation of utility for medical research:**\n\n   The goal of this phase is to verify if the clinical knowledge extracted from the synthetic dataset is transferable to real-world contexts. To test this research utility, we adopted the TSTR (Train on Synthetic, Test on Real) protocol: models are trained exclusively on synthetic data and their predictive capacity is measured on real data never seen by the generator (holdout set).\n\n   To ensure a robust evaluation, four different Machine Learning architectures were employed, chosen for their different complexity and algorithmic nature:\n     - Logistic Regression\n     - Random Forest\n     - XGBoost\n     - MLP (Multi-Layer Perceptron)\n    \n    The effectiveness of the models was quantified via ROC-AUC. This metric was chosen because:\n     - **Threshold independence:** It evaluates the model's ability to distinguish between classes (e.g., diabetic vs. non-diabetic) at all possible confidence levels.\n     - **Robustness to imbalance:** It is more reliable than simple accuracy in medical datasets where class distribution may be imbalanced.\n7. **Privacy evaluation:**\n\n     A _Membership Inference Attack_ was implemented to measure information loss. The attack was formulated as a binary classification problem. The attacker is an XGBoost classifier trained on a dataset composed exclusively of real data labeled as members, coming from the generator's training set, and non-members, coming from a never-before-seen holdout dataset. The attacker does not have direct access to the generator but only observes the considered synthetic dataset and, based on this, builds features that measure how well each real record is represented by the synthetic data.\n    - The first feature is the **distance to the k-nearest neighbors**, which measures how close a real record is to the k nearest synthetic samples.\n    - The second is **local density**, which evaluates how much synthetic data mass is concentrated around that record.\n    - Finally, the **reconstruction error** measures how well the relationships between the features of the real record are consistent with those learned from the synthetic dataset.\n    \n    Attack performance is evaluated via ROC-AUC, which is independent of the decision threshold. A ROC-AUC equal to 0.5 indicates a random attack, while higher values represent a loss of privacy.\n\n10. **Privacy-Utility trade-off analysis:**\n\n    We related two metrics: on the horizontal axis, clinical utility, measured via the ROC-AUC of the logistic regression model (which is the most robust among those analyzed and the ROC-AUC best reflects the actual utility of the model), and on the vertical axis, the privacy risk, measured by the ROC-AUC of the attack.\n\n    To guide the interpretation, we defined two strategic thresholds:\n    - A **threshold of acceptable utility** at 0.70, below which the model would not be clinically relevant;\n    - An **optimal privacy threshold** at 0.50, which represents the random level for the attack: values close to 0.50 indicate complete anonymity protection.\n\n    Consequently, the goal is to identify the model located in the green area of the graph, where clinical utility remains valid but the risk of privacy loss is minimized.\n",
+ "hits": {
+  "st": [
+   {
+    "file": "progettoCybersecurity.ipynb",
+    "line": 66,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "        \"from sklearn.model_selection import train_test_split\\n\",",
+     "        \"from scipy.stats import wasserstein_distance, entropy\\n\",",
+     "        \"\\n\",",
+     "        \"from snsynth import Synthesizer\\n\",",
+     "        \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"\\n\",",
+     "        \"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+     "        \"from sdv.evaluation.single_table import evaluate_quality\\n\","
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "progettoCybersecurity.ipynb",
+    "line": 67,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "        \"from scipy.stats import wasserstein_distance, entropy\\n\",",
+     "        \"\\n\",",
+     "        \"from snsynth import Synthesizer\\n\",",
+     "        \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"\\n\",",
+     "        \"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+     "        \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "        \"\\n\","
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "progettoCybersecurity.ipynb",
+    "line": 69,
+    "text": "\"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+    "context": [
+     "        \"from snsynth import Synthesizer\\n\",",
+     "        \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"\\n\",",
+     "        \"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+     "        \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "        \"\\n\",",
+     "        \"from sdv.evaluation.single_table import evaluate_quality, run_diagnostic, get_column_plot\\n\",",
+     "        \"\\n\","
+    ]
+   },
+   {
+    "file": "progettoCybersecurity.ipynb",
+    "line": 70,
+    "text": "\"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+    "context": [
+     "        \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"\\n\",",
+     "        \"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+     "        \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "        \"\\n\",",
+     "        \"from sdv.evaluation.single_table import evaluate_quality, run_diagnostic, get_column_plot\\n\",",
+     "        \"\\n\",",
+     "        \"from sklearn.linear_model import LogisticRegression\\n\","
+    ]
+   },
+   {
+    "file": "progettoCybersecurity.ipynb",
+    "line": 72,
+    "text": "\"from sdv.evaluation.single_table import evaluate_quality, run_diagnostic, get_column_plot\\n\",",
+    "context": [
+     "        \"\\n\",",
+     "        \"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+     "        \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "        \"\\n\",",
+     "        \"from sdv.evaluation.single_table import evaluate_quality, run_diagnostic, get_column_plot\\n\",",
+     "        \"\\n\",",
+     "        \"from sklearn.linear_model import LogisticRegression\\n\",",
+     "        \"from sklearn.ensemble import RandomForestClassifier\\n\",",
+     "        \"from xgboost import XGBRegressor, XGBClassifier\\n\","
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "progettoCybersecurity.ipynb",
+    "line": 66,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "        \"from sklearn.model_selection import train_test_split\\n\",",
+     "        \"from scipy.stats import wasserstein_distance, entropy\\n\",",
+     "        \"\\n\",",
+     "        \"from snsynth import Synthesizer\\n\",",
+     "        \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"\\n\",",
+     "        \"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+     "        \"from sdv.evaluation.single_table import evaluate_quality\\n\","
+    ]
+   },
+   {
+    "file": "progettoCybersecurity.ipynb",
+    "line": 67,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "        \"from scipy.stats import wasserstein_distance, entropy\\n\",",
+     "        \"\\n\",",
+     "        \"from snsynth import Synthesizer\\n\",",
+     "        \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"\\n\",",
+     "        \"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+     "        \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "        \"\\n\","
+    ]
+   },
+   {
+    "file": "progettoCybersecurity.ipynb",
+    "line": 69,
+    "text": "\"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+    "context": [
+     "        \"from snsynth import Synthesizer\\n\",",
+     "        \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"\\n\",",
+     "        \"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+     "        \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "        \"\\n\",",
+     "        \"from sdv.evaluation.single_table import evaluate_quality, run_diagnostic, get_column_plot\\n\",",
+     "        \"\\n\","
+    ]
+   },
+   {
+    "file": "progettoCybersecurity.ipynb",
+    "line": 70,
+    "text": "\"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+    "context": [
+     "        \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"\\n\",",
+     "        \"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+     "        \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "        \"\\n\",",
+     "        \"from sdv.evaluation.single_table import evaluate_quality, run_diagnostic, get_column_plot\\n\",",
+     "        \"\\n\",",
+     "        \"from sklearn.linear_model import LogisticRegression\\n\","
+    ]
+   },
+   {
+    "file": "progettoCybersecurity.ipynb",
+    "line": 72,
+    "text": "\"from sdv.evaluation.single_table import evaluate_quality, run_diagnostic, get_column_plot\\n\",",
+    "context": [
+     "        \"\\n\",",
+     "        \"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+     "        \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "        \"\\n\",",
+     "        \"from sdv.evaluation.single_table import evaluate_quality, run_diagnostic, get_column_plot\\n\",",
+     "        \"\\n\",",
+     "        \"from sklearn.linear_model import LogisticRegression\\n\",",
+     "        \"from sklearn.ensemble import RandomForestClassifier\\n\",",
+     "        \"from xgboost import XGBRegressor, XGBClassifier\\n\","
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "progettoCybersecurity.ipynb",
+    "line": 66,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "        \"from sklearn.model_selection import train_test_split\\n\",",
+     "        \"from scipy.stats import wasserstein_distance, entropy\\n\",",
+     "        \"\\n\",",
+     "        \"from snsynth import Synthesizer\\n\",",
+     "        \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"\\n\",",
+     "        \"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+     "        \"from sdv.evaluation.single_table import evaluate_quality\\n\","
+    ]
+   },
+   {
+    "file": "progettoCybersecurity.ipynb",
+    "line": 326,
+    "text": "\"    model = CTGANSynthesizer(\\n\",",
+    "context": [
+     "        \"            metadata.update_column(col, sdtype='numerical')\\n\",",
+     "        \"        else:\\n\",",
+     "        \"            metadata.update_column(col, sdtype='categorical')\\n\",",
+     "        \"\\n\",",
+     "        \"    model = CTGANSynthesizer(\\n\",",
+     "        \"        metadata,\\n\",",
+     "        \"        epochs=50,\\n\",",
+     "        \"        batch_size=2000,\\n\",",
+     "        \"        generator_dim=(256, 256, 256),\\n\","
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 25,
+    "text": "- For the dataset without privacy guarantees, the `CTGANSynthesizer` model (`Synthetic Data Vault` (SDV) v1.29.1) was employed.",
+    "context": [
+     "",
+     "1. **Installation of libraries and imports necessary for the project.**",
+     "2. **Loading and preprocessing:** importation of the \"Diabetes Health Indicators\" dataset from Kaggle (https://www.kaggle.com/datasets/alexteboul/diabetes-health-indicators-dataset/data?select=diabete",
+     "3. **Synthetic data generation:**",
+     "   - For the dataset without privacy guarantees, the `CTGANSynthesizer` model (`Synthetic Data Vault` (SDV) v1.29.1) was employed.",
+     "   - For the protected datasets, the `DP-CTGAN` model from the `SmartNoise-Synth` library was used, which extends CTGAN by integrating Differential Privacy principles. The level of privacy guaranteed ",
+     "4. **Evaluation of synthetic data similarity compared to real data:**",
+     "   - Analysis of synthetic data quality through the _Diagnostic Report_ and _Quality Score_ provided by SDV. The _Diagnostic Report_ evaluates whether the synthetic dataset is structurally valid, i.e.",
+     "   - Evaluation of statistical similarity by comparing means, standard deviations, variable distributions, correlation matrices, and Frobenius distance between synthetic and real data."
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ev",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

@@ -1,0 +1,222 @@
+{
+ "repo": "mbwatson/radx-datagen",
+ "disk_kb": 76,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Synthetic Data Generator\n\n## 🚧 Development\n\nTo develop both the API and UI simultaneously, we can spin up both.\n\n1. clone this repo & move into project root\n2. spin up development API and UI servers: `docker compose up`\n3. You now should be able to view the UI in your browser at [http://localhost:8855/](http://localhost:8855/) and hit the API at [http://localhost:8888/](http://localhost:8888/).\n4. CTRL+C to quit.\n\nNote: To run _only_ the API or only the UI, one simply runs `docker compose up api` or `docker compose up ui`.\n\nThe source directories are mounted into the containers,\nso editing locally works as expected, complete with hot module reloading.\n\n## 🎁 Production\n\nThere is a `docker-compose.prod.yaml` file for production deployment that will likely need modification, but we're not there yet. To use it anyway, use `docker compose -f docker-compose.prod.yaml up`.\n\n## 🌉 Architecture\n\nThe application is comprised of two parts: an API and a UI.\nThe API is a [Flask](https://flask.palletsprojects.com/en/stable/) app.\nThe frontend is a [Dash](https://dash.plotly.com/) app.\n\n## 📝 The Temporary Real Data\n\nChatGPT was given this prompt:\n\n> generate a CSV with 1000 rows having columns\n> `first_name`, `last_name`, `age`, and `has_disease_x`,\n> with the following specifications:\n> \n> - 500 rows represent people aged below 60,\n>   50 of which have `has_disease_x=True`.\n>   The other 450 have `has_disease_x=False`.\n> \n> - 500 rows represent people aged 60 or older,\n>   450 of which have `has_disease_x=True`.\n>   The remaining 50 have `has_disease_x=False`.\n\nThe distribution of `has_disease_x` is summarized in the following table.\n\n|                       | `age < 60` | `60 ≤ age` |\n| --------------------: | :--------: | :--------: |\n|  `has_disease_x=True` |     50     |    450     |\n| `has_disease_x=False` |    450     |     50     |\n|                 total |    500     |    500     |\n\nThe API utilizes this\n[data](https://github.com/mbwatson/radx-datagen/blob/dev/api/data/real_data.csv),\nas temporary real data, to generate synthetic data with [SDV](https://docs.sdv.dev/sdv).\n",
+ "hits": {
+  "st": [
+   {
+    "file": "api/generator.py",
+    "line": 5,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import os",
+     "from flask import jsonify",
+     "from sdv.datasets import demo",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.datasets.local import load_csvs",
+     "from sdv.evaluation.single_table import run_diagnostic",
+     "import pandas as pd",
+     ""
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "api/generator.py",
+    "line": 4,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import os",
+     "from flask import jsonify",
+     "from sdv.datasets import demo",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.datasets.local import load_csvs",
+     "from sdv.evaluation.single_table import run_diagnostic",
+     "import pandas as pd"
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "api/generator.py",
+    "line": 7,
+    "text": "from sdv.evaluation.single_table import run_diagnostic",
+    "context": [
+     "from sdv.datasets import demo",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.datasets.local import load_csvs",
+     "from sdv.evaluation.single_table import run_diagnostic",
+     "import pandas as pd",
+     "",
+     "datasets = load_csvs(folder_name='./data/')",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "api/generator.py",
+    "line": 3,
+    "text": "from sdv.datasets import demo",
+    "context": [
+     "import os",
+     "from flask import jsonify",
+     "from sdv.datasets import demo",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.datasets.local import load_csvs",
+     "from sdv.evaluation.single_table import run_diagnostic"
+    ]
+   },
+   {
+    "file": "api/generator.py",
+    "line": 4,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import os",
+     "from flask import jsonify",
+     "from sdv.datasets import demo",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.datasets.local import load_csvs",
+     "from sdv.evaluation.single_table import run_diagnostic",
+     "import pandas as pd"
+    ]
+   },
+   {
+    "file": "api/generator.py",
+    "line": 5,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import os",
+     "from flask import jsonify",
+     "from sdv.datasets import demo",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.datasets.local import load_csvs",
+     "from sdv.evaluation.single_table import run_diagnostic",
+     "import pandas as pd",
+     ""
+    ]
+   },
+   {
+    "file": "api/generator.py",
+    "line": 6,
+    "text": "from sdv.datasets.local import load_csvs",
+    "context": [
+     "from flask import jsonify",
+     "from sdv.datasets import demo",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.datasets.local import load_csvs",
+     "from sdv.evaluation.single_table import run_diagnostic",
+     "import pandas as pd",
+     "",
+     "datasets = load_csvs(folder_name='./data/')"
+    ]
+   },
+   {
+    "file": "api/generator.py",
+    "line": 7,
+    "text": "from sdv.evaluation.single_table import run_diagnostic",
+    "context": [
+     "from sdv.datasets import demo",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.datasets.local import load_csvs",
+     "from sdv.evaluation.single_table import run_diagnostic",
+     "import pandas as pd",
+     "",
+     "datasets = load_csvs(folder_name='./data/')",
+     ""
+    ]
+   },
+   {
+    "file": "api/app.py",
+    "line": 3,
+    "text": "from sdv.datasets import demo",
+    "context": [
+     "import os",
+     "from flask import Flask, jsonify, request",
+     "from sdv.datasets import demo",
+     "from generator import generate_synthetic_data",
+     "",
+     "app = Flask(__name__)",
+     ""
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "api/generator.py",
+    "line": 5,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import os",
+     "from flask import jsonify",
+     "from sdv.datasets import demo",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.datasets.local import load_csvs",
+     "from sdv.evaluation.single_table import run_diagnostic",
+     "import pandas as pd",
+     ""
+    ]
+   },
+   {
+    "file": "api/generator.py",
+    "line": 14,
+    "text": "radx_synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "datasets = load_csvs(folder_name='./data/')",
+     "",
+     "radx_real_data = datasets['real_data']",
+     "metadata = Metadata.load_from_json(filepath='./data/metadata.json')",
+     "radx_synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "radx_synthesizer.fit(radx_real_data)",
+     "",
+     "def radx_sampler(count):",
+     "    synthetic_data = radx_synthesizer.sample(num_rows=count)"
+    ]
+   },
+   {
+    "file": "api/generator.py",
+    "line": 30,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "    real_data, metadata = demo.download_demo(",
+     "        modality='single_table',",
+     "        dataset_name=dataset_name",
+     "    )",
+     "    synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "    synthesizer.fit(real_data)",
+     "    synthetic_data = synthesizer.sample(num_rows=count)",
+     "    diagnostic_report = run_diagnostic(",
+     "        real_data=radx_real_data,"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ev",
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "api/requirements.txt": [
+   "copulas==0.12.1; python_version < '3.14' and python_version >= '3.8'",
+   "ctgan==0.10.2; python_version < '3.13' and python_version >= '3.8'",
+   "rdt==1.13.2; python_version < '3.13' and python_version >= '3.8'",
+   "sdmetrics==0.18.0; python_version < '3.13' and python_version >= '3.8'",
+   "sdv==1.17.4; python_version < '3.13' and python_version >= '3.8'"
+  ]
+ }
+}

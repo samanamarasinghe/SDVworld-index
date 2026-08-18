@@ -1,0 +1,323 @@
+{
+ "repo": "natalinio/agentic-powerbi-squad",
+ "disk_kb": 27976,
+ "method": "partial_clone",
+ "tree_files": 135,
+ "status": "ok",
+ "readme": "# Agentic Power BI Squad\n\n> **Build complete Power BI projects — semantic models (TMDL) and reports (PBIR) — from functional specifications using a multi-agent system powered by GitHub Copilot.**\n\n[![Power BI](https://img.shields.io/badge/Power%20BI-PBIP%20Format-yellow)](https://powerbi.microsoft.com)\n[![Python 3.10+](https://img.shields.io/badge/Python-3.10+-blue)](https://www.python.org/)\n\n---\n\n## What Is This?\n\n**Agentic Power BI Squad** is a **multi-agent system** for Power BI development that runs inside VS Code with GitHub Copilot. Instead of a single monolithic agent, it uses a team of **6 domain-specific agents** coordinated by an orchestrator, each backed by **16 modular skills** containing procedural knowledge, reference materials, and examples.\n\n![Agent squad Power BI Architecture](.github/docs/architecture.png)\n\nYou provide a functional specification in Markdown. The squad produces:\n\n- **Dimensional data model** (Kimball Star Schema) with TMDL files\n- **Optimized DAX measures** (time intelligence, KPIs, variances)\n- **Mock CSV datasets** for local development\n- **Automated functional tests** with pass/fail reports\n- **Report blueprint** (design system, page layouts, visual specs)\n- **PBIR report files** (pages, visuals, slicers) ready for Power BI Desktop\n- **Custom visuals** via SVG inline graphics, HTML custom visual (full-frame), and Deneb (Vega/Vega-Lite)\n- **Report themes** with full formatting hierarchy\n- **Quality validation** at every step\n\nThe output is a complete **PBIP project** that opens directly in Power BI Desktop.\n\n### Two Ways to Work\n\nThe squad supports **two operating modes**:\n\n| Mode | How it works | When to use |\n|---|---|---|\n| **Workflow Mode** | The `delivery-lead` orchestrator coordinates all 6 agents through a structured 7-phase workflow with approval gates at each phase | Building a complete project from a specification end-to-end |\n| **Standalone Mode** | Invoke any agent directly (e.g., `@pbi-semantic-model`, `@pbi-report`, `@pbi-qa`) for a specific task | Adding a measure, creating a visual, running tests, or any targeted change |\n\nBoth modes share the same agents, skills, and project structure — the difference is whether you want full orchestration or direct control.\n\n### Installation Options\n\n| Method | When to use |\n|--------|-------------|\n| **CLI** (recommended) | Install agents and skills into your workspace from the terminal — no fork or clone required |\n| **Fork / Clone** | For contributors who want to modify the agent system itself |\n\n#### Option 1: CLI (npx)\n\n```bash\n# Install everything\nnpx pbi-agent-squad install --all\n\n# Install only specific agents (dependencies auto-resolved)\nnpx pbi-agent-squad install --agent pbi-report --agent pbi-qa\n\n# Install only specific skills\nnpx pbi-agent-squad install --skill dax-development --skill svg-visuals\n\n# Install all agents (with their skill dependencies)\nnpx pbi-agent-squad install --agents\n\n# List available components\nnpx pbi-agent-squad list\n\n# Check what's installed\nnpx pbi-agent-squad status\n\n# Update installed components\nnpx pbi-agent-squad update --all\n\n# Uninstall a component\nnpx pbi-agent-squad uninstall skill:dax-development\n```\n\nThe CLI copies components into your workspace's `.github/` folder. GitHub Copilot automatically discovers the installed agents and skills.\n\nA lock file (`.github/.pbi-agent-squad.lock.json`) tracks installed components. User-modified files are never overwritten unless you pass `--force`.\n\n#### Option 2: Fork (for contributors)\n\n- Use a **fork** for experimentation, adaptation, and contributions\n- Submit changes back through **pull requests**\n- Do **not** use external setup tools or generated scaffolds to overwrite the repository-native `.github/agents`, `.github/skills`, `.github/prompts`, or instruction files\n- Review [LICENSE](LICENSE), [CONTRIBUTING.md](CONTRIBUTING.md), and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) before reusing adapted material outside your fork\n\n---\n\n## Architecture\n\n### Agents Squad\n\n| Agent | Domain | Description |\n|---|---|---|\n| `delivery-lead` | Orchestration | End-to-end workflow management, phase transitions, user approvals |\n| `business-data-analyst` | Requirements | Analyzes specs, extracts KPIs, dimensions, grain, constraints |\n| `pbi-semantic-model` | Semantic Model | Designs logical models, writes TMDL, develops DAX measures |\n| `data-generator` | Mock Data | Generates realistic CSV datasets from model schema |\n| `pbi-report` | Report Design & Implementation | Designs layouts, generates PBIR visuals, SVG graphics, Deneb charts, themes |\n| `pbi-qa` | Quality Assurance | Validates models (BPA), runs tests, reviews reports, checks SVG/Deneb/design quality |\n\n### Skills (16)\n\nSkills are self-contained knowledge packages consumed by agents. Each skill has procedural instructions (`SKILL.md`), reference files, and examples.\n\n| Skill | Agent(s) | Purpose |\n|---|---|---|\n| `requirements-analysis` | business-data-analyst | Extract KPIs, dimensions, grain from specs |\n| `logical-model` | pbi-semantic-model | Star schema design, ER diagrams |\n| `physical-model-tmdl` | pbi-semantic-model | Generate TMDL files from logical model |\n| `dax-development` | pbi-semantic-model | DAX measure authoring with patterns and pitfalls |\n| `mock-data-generation` | data-generator | CSV dataset generation with referential integrity |\n| `report-design` | pbi-report | Layout, storytelling, chart selection, design system |\n| `report-implementation` | pbi-report | PBIR JSON generation from blueprint |\n| `svg-visuals` | pbi-report | Inline SVG micro-charts via DAX (sparklines, bars, KPI indicators) in table/matrix/card visuals |\n| `html-visuals` | pbi-report | Full-frame HTML and SVG visuals via DAX for the `htmlContent` custom visual (trend charts, comparison tables, narrative panels) |\n| `deneb-visuals` | pbi-report | Vega/Vega-Lite custom charts with PBIR integration |\n| `theme-customization` | pbi-report | Theme authoring, formatting hierarchy, visual-type overrides |\n| `code-review` | pbi-qa | TMDL quality, BPA compliance, naming conventions |\n| `functional-testing` | pbi-qa | Automated DAX measure testing against expected values |\n| `report-quality-validation` | pbi-qa | PBIR validation, SVG/Deneb review, design quality checks |\n| `project-initialization` | delivery-lead | PBIP project scaffolding |\n| `workflow-orchestration` | delivery-lead | Phase management, state tracking, decision ledger |\n\n### Shared References\n\nCross-cutting references in `.github/references/`:\n- `naming-conventions.md` — naming standards for all objects\n- `pbip-folder-structure.md` — PBIP workspace folder layout\n- `security-rls-best-practices.md` — Row-level security patterns\n\n---\n\n## How to Use\n\n### Prerequisites\n\n- **VS Code** with **GitHub Copilot** (Chat + Agents enabled)\n- **Power BI Desktop** (December 2025+ for PBIR support)\n- **Python 3.10+** (for mock data generation and test execution)\n\n```bash\npip install -r requirements.txt\n```\n\n#### Optional: `pbir-cli`\n\nThe local `pbir` CLI enhances report mutation workflows (faster visual/page operations, built-in validation). It is **not required** — all agents fall back to skill-guided file editing when the CLI is unavailable.\n\nTo install (optional):\n```bash\nuv tool install pbir-cli\n```\n\nWhen `pbir` is detected, agents prefer it for report mutations and validation. When absent, they work normally via direct JSON editing.\n\n### Two Operating Modes\n\n#### 1. Workflow Mode (Full Project)\n\nUse the `delivery-lead` agent to build a complete project from a specification.\n\n```\n@delivery-lead Build a Power BI project from spec/sample_spec.md\n```\n\nThe orchestrator coordinates all agents through a 7-phase workflow:\n\n| Phase | Agent | Action |\n|---|---|---|\n| 1 | delivery-lead | Initialize the real project folder and PBIP scaffold |\n| 2 | business-data-analyst | Analyze specification, extract KPIs, grain, constraints, and clarifications |\n| 3 | pbi-semantic-model | Develop the semantic model: logical design, TMDL, and DAX measures |\n| 4 | data-generator | Generate mock CSV datasets and align local partitions |\n| 5 | pbi-qa | Run model QA: code review, BPA checks, and functional tests |\n| 6 | pbi-report | Design the report blueprint and implement PBIR artifacts |\n| 7 | pbi-qa | Validate report quality and report/render consistency |\n\nEach step has **mandatory approval gates** — the orchestrator presents results and waits for your approval before proceeding.\n\nWithin a phase, the orchestrator may coordinate multiple specialist activities, but workflow progression is tracked at the phase level in `workflow_state.json`.\n\n### Report Mutation Policy\n\nFor modifications to an existing PBIR report, the repository now follows a **CLI-first mutation path**:\n\n- prefer the local `pbir` CLI for visual, page, and theme mutations when the command surface supports the requested change\n- do not hand-edit `visual.json`, `page.json`, `pages.json`, or theme JSON for routine report mutations\n- allow direct JSON edits only for documented CLI capability gaps, followed by dual validation\n- close report work only after both `pbir validate --all` and the repository report validator succeed\n\n#### 2. Standalone Mode (Individual Tasks)\n\nInvoke any agent directly for specific tasks:\n\n```\n@pbi-semantic-model Add a YTD measure for Sales Amount to the SalesOverview project\n\n@pbi-report Add a clustered bar chart showing Sales by Area to Page 1\n\n@pbi-report Create a Deneb heatmap for monthly sales by region\n\n@pbi-report Create an SVG sparkline measure for revenue trend\n\n@pbi-report Create an HTML custom visual with a YoY trend chart comparing current vs previous year\n\n@pbi-report Create an HTML narrative panel showing top/worst performers\n\n@pbi-report Create a custom theme with blue/orange palette and enterprise formatting\n\n@pbi-qa Validate the PBIR report structure for SalesOverview\n\n@pbi-qa Review SVG measures for correctness\n\n@data-generator Generate mock data for the SalesOverview semantic model\n```\n\nEach agent automatically discovers the project context (TMDL files, existing visuals, blueprint) before acting.\n\n---\n\n## Project Structure\n\n```\n<ProjectName>/\n├── spec/                          # Specifications and blueprints\n│   ├── spec_<name>.md             # Functional specification (input)\n│   ├── requirements_summary.md    # Extracted requirements\n│   ├── er_diagram.md              # Logical model diagram\n│   └── report_blueprint.json      # Report design blueprint\n├── data/                          # Mock CSV datasets\n├── PBIP/                          # Power BI Project (PBIP format)\n│   ├── <Name>.pbip                # Project entry point\n│   ├── <Name>.SemanticModel/\n│   │   └── definition/\n│   │       ├── model.tmdl\n│   │       ├── relationships.tmdl\n│   │       ├── expressions.tmdl\n│   │       └── tables/            # One .tmdl per table\n│   └── <Name>.Report/\n│       └── definition/\n│           ├── report.json\n│           ├── reportExtensions.json  # Extension measures\n│           ├── pages/\n│           │   ├── pages.json\n│           │   └── <pageId>/\n│           │       ├── page.json\n│           │       └── visuals/\n│           │           └── <visualId>/\n│           │               └── visual.json\n│           └── StaticResources/\n│               └── SharedResources/\n│                   └── BaseThemes/    # Report themes\n├── tests/                         # Test definitions and results\n├── scripts/                       # Data generation scripts\n└── workflow_state.json            # Orchestrator state (workflow mode)\n```\n\n---\n\n## Workflow Observability\n\nThe agentic workflow is observable through a combination of repository artifacts and local VS Code session logs.\n\n### Repository-Native Sources\n\n- `<ProjectName>/workflow_state.json` is the authoritative workflow state for orchestrated runs. It records current phase, approvals, decisions, assigned agent, and key artifacts.\n- `<ProjectName>/spec/`, `<ProjectName>/tests/`, `<ProjectName>/data/`, and `<ProjectName>/PBIP/` provide the artifact trail of what each specialist produced.\n- `agent_session_state.json`, when present, is only for standalone specialist continuity. It is not the source of truth for end-to-end workflow progression.\n\n### Local VS Code Session Sources\n\n- VS Code Copilot transcripts under the local `workspaceStorage/.../GitHub.copilot-chat/transcripts/` folder show user prompts, assistant messages, and tool execution events.\n- `chat-session-resources/` stores captured tool outputs referenced by the transcript.\n- These local files are useful for reconstructing the coordinator's execution flow during a session.\n\n### Current Limits\n\n- The current setup does not provide first-class per-sub-agent telemetry with dedicated start/stop events, token usage, or cost accounting for each delegated worker.\n- In practice, structured understanding of the workflow comes from combining `workflow_state.json`, produced artifacts, and the local session transcript.\n- If deeper observability is needed, add a repository-level execution log for delegated tasks rather than relying only on editor-local debug traces.\n\n---\n\n## Getting Started\n\n### Quick Start (CLI)\n\n1. **Install the toolkit** into your target workspace:\n   ```bash\n   npx pbi-agent-squad install --all\n   ```\n2. **Install Python dependencies** (for data generation and testing):\n   ```bash\n   pip install -r .github/skills/functional-testing/scripts/requirements.txt\n   ```\n3. **Open VS Code** with GitHub Copilot enabled on your Power BI project\n4. **Start with a specification** — use `[ProjectName]/spec/specification_template.md` as the template\n5. **Choose your mode**:\n   - **Full project**: `@delivery-lead Build from spec/my_spec.md`\n   - **Single task**: `@pbi-semantic-model Create a logical model for <requirements>`\n6. **Open the result** in Power BI Desktop: open the `.pbip` file from the `PBIP/` folder\n\n### Getting Started (Contributors / Fork)\n\n1. **Fork the repository** on GitHub.\n\n2. **Clone your fork**:\n   ```bash\n   git clone <your-fork-url>\n   cd agentic-powerbi-development\n   ```\n\n3. **Install Python dependencies**:\n   ```bash\n   pip install -r requirements.txt\n   ```\n\n4. **Open in VS Code** with GitHub Copilot enabled.\n\n5. **Start with a specification** — use `spec/specification_template.md` as the template and `spec/sample_spec.md` as a worked example.\n\n6. **Choose your mode**:\n   - **Full project**: `@delivery-lead Build from spec/sample_spec.md`\n   - **Single task**: `@pbi-semantic-model Create a logical model for <requirements>`\n\n7. **Open the result** in Power BI Desktop: open the `.pbip` file from the `PBIP/` folder.\n\n---\n\n## Reference Assets\n\nThe repository includes reusable templates only. Use these assets as the starting point:\n\n- `[ProjectName]/` for expected project folder layout\n- `spec/specification_template.md` for the empty specification template\n- `spec/sample_spec.md` for a completed example specification\n\nGenerated semantic model, report, data, and test artifacts are created when you run the workflow or the specialist agents against your own project folder.\n\nFor local-only experiments, client prototypes, and generated project artifacts that must not be published, keep them under ignored folders such as `_local/`, `local-experiments/`, or `sandbox/`.\n\n---\n\n## Attribution\n\nThis repository includes original material plus adapted domain knowledge derived from the **[Goblin Power BI Agentic Development](https://github.com/data-goblins)** project by Data Goblins. The most relevant adapted areas are documented in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).\n\nIf you reuse or adapt material influenced by that project, preserve attribution and review the upstream reuse terms before distributing it outside a fork-based workflow.\n\n**Original project**: [https://github.com/data-goblins](https://github.com/data-goblins)\n\n---\n\n---\n\n## Custom Visual Deployment Note\n\nThe `html-visuals` skill and the `deneb-visuals` skill produce visuals that require the Power BI HTML custom visual or Deneb custom visual. When publishing to **Power BI Service**, a tenant admin must enable custom visuals:\n\n> **Admin portal → Tenant settings → Custom visuals → Allow visuals created using the Power BI SDK**\n\nWithout this setting, custom visuals render as blank tiles in the cloud. The `pbi-report` agent will remind you of this after completing any HTML or Deneb visual task.\n\n---\n\n## Contributing\n\nThis repository accepts changes through a **fork + pull request** flow only. See [CONTRIBUTING.md](CONTRIBUTING.md) for the contribution model and non-overwrite rules.\n\n## Security\n\nSee [SECURITY.md](SECURITY.md) for vulnerability reporting and secret-handling guidance.\n\n## Code of Conduct\n\nSee [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for participation expectations.\n\n## License\n\nRepository use is governed by the fork-first terms in [LICENSE](LICENSE). Third-party attribution and additional reuse notes are documented in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).\n",
+ "hits": {
+  "st": [
+   {
+    "file": ".github/skills/mock-data-generation/SKILL.md",
+    "line": 122,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "### SDV Metadata and Sampling Pattern",
+     "```python",
+     "from sdv.metadata import MultiTableMetadata, SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "def build_metadata(dim_date_seed, dim_customer_seed, dim_area_seed, fact_sales_seed):",
+     "    metadata = MultiTableMetadata()",
+     "    metadata.detect_table_from_dataframe(table_name='Dim_Date', data=dim_date_seed)"
+    ]
+   },
+   {
+    "file": ".github/skills/mock-data-generation/SKILL.md",
+    "line": 167,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "### Fact Table Generation Pattern",
+     "```python",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "def generate_fact_sales(dim_date, dim_customer, dim_area, fact_seed, num_rows=1000):",
+     "    fact_metadata = SingleTableMetadata()",
+     "    fact_metadata.detect_from_dataframe(data=fact_seed)"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": ".github/skills/mock-data-generation/SKILL.md",
+    "line": 121,
+    "text": "from sdv.metadata import MultiTableMetadata, SingleTableMetadata",
+    "context": [
+     "```",
+     "",
+     "### SDV Metadata and Sampling Pattern",
+     "```python",
+     "from sdv.metadata import MultiTableMetadata, SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "def build_metadata(dim_date_seed, dim_customer_seed, dim_area_seed, fact_sales_seed):",
+     "    metadata = MultiTableMetadata()"
+    ]
+   },
+   {
+    "file": ".github/skills/mock-data-generation/SKILL.md",
+    "line": 166,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "```",
+     "",
+     "### Fact Table Generation Pattern",
+     "```python",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "def generate_fact_sales(dim_date, dim_customer, dim_area, fact_seed, num_rows=1000):",
+     "    fact_metadata = SingleTableMetadata()"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": ".github/skills/mock-data-generation/SKILL.md",
+    "line": 56,
+    "text": "python -c \"import sdv; print('SDV core package available')\"",
+    "context": [
+     "```",
+     "",
+     "Optional SDV verification:",
+     "```powershell",
+     "python -c \"import sdv; print('SDV core package available')\"",
+     "```",
+     "",
+     "## Script Generation Rules",
+     ""
+    ]
+   },
+   {
+    "file": ".github/skills/mock-data-generation/SKILL.md",
+    "line": 121,
+    "text": "from sdv.metadata import MultiTableMetadata, SingleTableMetadata",
+    "context": [
+     "```",
+     "",
+     "### SDV Metadata and Sampling Pattern",
+     "```python",
+     "from sdv.metadata import MultiTableMetadata, SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "def build_metadata(dim_date_seed, dim_customer_seed, dim_area_seed, fact_sales_seed):",
+     "    metadata = MultiTableMetadata()"
+    ]
+   },
+   {
+    "file": ".github/skills/mock-data-generation/SKILL.md",
+    "line": 122,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "### SDV Metadata and Sampling Pattern",
+     "```python",
+     "from sdv.metadata import MultiTableMetadata, SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "def build_metadata(dim_date_seed, dim_customer_seed, dim_area_seed, fact_sales_seed):",
+     "    metadata = MultiTableMetadata()",
+     "    metadata.detect_table_from_dataframe(table_name='Dim_Date', data=dim_date_seed)"
+    ]
+   },
+   {
+    "file": ".github/skills/mock-data-generation/SKILL.md",
+    "line": 166,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "```",
+     "",
+     "### Fact Table Generation Pattern",
+     "```python",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "def generate_fact_sales(dim_date, dim_customer, dim_area, fact_seed, num_rows=1000):",
+     "    fact_metadata = SingleTableMetadata()"
+    ]
+   },
+   {
+    "file": ".github/skills/mock-data-generation/SKILL.md",
+    "line": 167,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "### Fact Table Generation Pattern",
+     "```python",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "def generate_fact_sales(dim_date, dim_customer, dim_area, fact_seed, num_rows=1000):",
+     "    fact_metadata = SingleTableMetadata()",
+     "    fact_metadata.detect_from_dataframe(data=fact_seed)"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": ".github/skills/mock-data-generation/SKILL.md",
+    "line": 122,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "### SDV Metadata and Sampling Pattern",
+     "```python",
+     "from sdv.metadata import MultiTableMetadata, SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "def build_metadata(dim_date_seed, dim_customer_seed, dim_area_seed, fact_sales_seed):",
+     "    metadata = MultiTableMetadata()",
+     "    metadata.detect_table_from_dataframe(table_name='Dim_Date', data=dim_date_seed)"
+    ]
+   },
+   {
+    "file": ".github/skills/mock-data-generation/SKILL.md",
+    "line": 159,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "",
+     "def synthesize_dimension(seed_df, num_rows):",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(data=seed_df)",
+     "    synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "    synthesizer.fit(seed_df)",
+     "    return synthesizer.sample(num_rows=num_rows)",
+     "```",
+     ""
+    ]
+   },
+   {
+    "file": ".github/skills/mock-data-generation/SKILL.md",
+    "line": 167,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "### Fact Table Generation Pattern",
+     "```python",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "def generate_fact_sales(dim_date, dim_customer, dim_area, fact_seed, num_rows=1000):",
+     "    fact_metadata = SingleTableMetadata()",
+     "    fact_metadata.detect_from_dataframe(data=fact_seed)"
+    ]
+   },
+   {
+    "file": ".github/skills/mock-data-generation/SKILL.md",
+    "line": 172,
+    "text": "synthesizer = GaussianCopulaSynthesizer(fact_metadata)",
+    "context": [
+     "",
+     "def generate_fact_sales(dim_date, dim_customer, dim_area, fact_seed, num_rows=1000):",
+     "    fact_metadata = SingleTableMetadata()",
+     "    fact_metadata.detect_from_dataframe(data=fact_seed)",
+     "    synthesizer = GaussianCopulaSynthesizer(fact_metadata)",
+     "    synthesizer.fit(fact_seed)",
+     "    df = synthesizer.sample(num_rows=num_rows)",
+     "",
+     "    df['DateKey'] = df['DateKey'].where(df['DateKey'].isin(dim_date['DateKey']), dim_date['DateKey'].sample(len(df), replace=True).to_numpy())"
+    ]
+   }
+  ],
+  "hma": [
+   {
+    "file": ".github/skills/mock-data-generation/SKILL.md",
+    "line": 78,
+    "text": "4. Use `HMASynthesizer` only when preserving cross-table dependency structure is more important than runtime.",
+    "context": [
+     "2. Build SDV metadata from the seed tables and explicitly define primary keys and fact-to-dimension relationships.",
+     "3. Prefer a **hybrid SDV strategy** for performance:",
+     "    - Use SDV single-table synthesizers for dimensions.",
+     "    - Use an SDV probabilistic synthesizer for each fact table with FK columns treated as categorical business keys.",
+     "4. Use `HMASynthesizer` only when preserving cross-table dependency structure is more important than runtime.",
+     "5. After sampling, run post-processing to enforce integer keys, decimal precision, null rules, and orphan-key repair.",
+     "",
+     "This hybrid pattern is preferred for Power BI star schemas because dimensions are usually small and stable, while fact tables require faster generation at higher volumes.",
+     ""
+    ]
+   },
+   {
+    "file": ".github/skills/mock-data-generation/SKILL.md",
+    "line": 184,
+    "text": "### When to Use `HMASynthesizer`",
+    "context": [
+     "",
+     "    return df",
+     "```",
+     "",
+     "### When to Use `HMASynthesizer`",
+     "- Use `HMASynthesizer` when you already have a representative relational seed dataset and must preserve multi-table correlations across the entire star schema.",
+     "- Do NOT make `HMASynthesizer` the default for Step 05 when the goal is fast local mock generation for Power BI validation.",
+     "- If `HMASynthesizer` is used, keep the seed dataset compact and sample up to the target row counts instead of fitting on large bootstrap datasets.",
+     ""
+    ]
+   },
+   {
+    "file": ".github/skills/mock-data-generation/SKILL.md",
+    "line": 185,
+    "text": "- Use `HMASynthesizer` when you already have a representative relational seed dataset and must preserve multi-table correlations across the entire star schema.",
+    "context": [
+     "    return df",
+     "```",
+     "",
+     "### When to Use `HMASynthesizer`",
+     "- Use `HMASynthesizer` when you already have a representative relational seed dataset and must preserve multi-table correlations across the entire star schema.",
+     "- Do NOT make `HMASynthesizer` the default for Step 05 when the goal is fast local mock generation for Power BI validation.",
+     "- If `HMASynthesizer` is used, keep the seed dataset compact and sample up to the target row counts instead of fitting on large bootstrap datasets.",
+     "",
+     "### CSV Output"
+    ]
+   },
+   {
+    "file": ".github/skills/mock-data-generation/SKILL.md",
+    "line": 186,
+    "text": "- Do NOT make `HMASynthesizer` the default for Step 05 when the goal is fast local mock generation for Power BI validation.",
+    "context": [
+     "```",
+     "",
+     "### When to Use `HMASynthesizer`",
+     "- Use `HMASynthesizer` when you already have a representative relational seed dataset and must preserve multi-table correlations across the entire star schema.",
+     "- Do NOT make `HMASynthesizer` the default for Step 05 when the goal is fast local mock generation for Power BI validation.",
+     "- If `HMASynthesizer` is used, keep the seed dataset compact and sample up to the target row counts instead of fitting on large bootstrap datasets.",
+     "",
+     "### CSV Output",
+     "- Files go to `<ProjectName>/data/` folder"
+    ]
+   },
+   {
+    "file": ".github/skills/mock-data-generation/SKILL.md",
+    "line": 187,
+    "text": "- If `HMASynthesizer` is used, keep the seed dataset compact and sample up to the target row counts instead of fitting on large bootstrap datasets.",
+    "context": [
+     "",
+     "### When to Use `HMASynthesizer`",
+     "- Use `HMASynthesizer` when you already have a representative relational seed dataset and must preserve multi-table correlations across the entire star schema.",
+     "- Do NOT make `HMASynthesizer` the default for Step 05 when the goal is fast local mock generation for Power BI validation.",
+     "- If `HMASynthesizer` is used, keep the seed dataset compact and sample up to the target row counts instead of fitting on large bootstrap datasets.",
+     "",
+     "### CSV Output",
+     "- Files go to `<ProjectName>/data/` folder",
+     "- Use comma delimiter, **UTF-8 encoding WITHOUT BOM**, no index"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "gc",
+  "hma",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "# The default generator works without SDV and falls back to deterministic generation.",
+   "# Keep SDV out of the default requirements because its full dependency chain can fail",
+   "# python -m pip install sdv==1.34.3 --no-deps"
+  ]
+ }
+}

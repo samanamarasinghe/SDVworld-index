@@ -1,0 +1,483 @@
+{
+ "repo": "M00N7682/Fraud-Aware-Synthetic-Data-Generation-",
+ "disk_kb": 999,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# 🔬 Fraud-Aware Synthetic Data Generation (FA-GAN)\n\n**희소 사기 패턴 보존을 위한 합성 데이터 생성 프레임워크**\n\n## 📊 연구 개요\n\n금융 사기 탐지 모델 학습에서 발생하는 **극심한 클래스 불균형 문제**(사기 비율 ~0.17%)를 해결하기 위한 Fraud-Aware 합성 데이터 생성 프레임워크를 제안합니다.\n\n### 핵심 아이디어\n\n1. **분리 학습(Decoupled Training)**: 정상/사기 데이터를 별도 생성기로 학습\n2. **Pattern-Preserving Loss**: 사기 데이터의 상관관계 구조와 분포 특성 보존\n3. **F-cKS 평가지표**: 생성된 사기 패턴의 품질을 정량적으로 평가\n\n## 🎯 실험 결과\n\n| Model | Fraud % | Recall | AUROC | F-cKS |\n|-------|---------|--------|-------|-------|\n| Baseline | 0.98% | 82.7% | 0.954 | - |\n| SMOTE | 50.0% | 87.8% | 0.979 | 0.040 |\n| FA-SMOTE | 4.74% | 86.7% | 0.966 | 0.037 |\n| GMM-Fraud | 2.00% | 88.8% | 0.954 | 0.083 |\n| **FA-GAN** | 3.00% | **89.8%** | 0.951 | 0.315 |\n\n**주요 성과:**\n- ✅ **FA-GAN**: Baseline 대비 Recall **+7.1%p** 향상\n- ✅ **Pattern-Preserving Loss**: Recall 87.8% → 92.9% (+5.1%p)\n- ✅ 적은 사기 비율(3%)로도 높은 탐지 성능 달성\n\n## 🏗️ 아키텍처\n\n```\n┌─────────────────────────────────────────────────────────────┐\n│                    FA-GAN Framework                          │\n├─────────────────────────────────────────────────────────────┤\n│                                                              │\n│  ┌──────────────┐    ┌──────────────┐                       │\n│  │ Normal Data  │    │  Fraud Data  │                       │\n│  └──────┬───────┘    └──────┬───────┘                       │\n│         │                   │                               │\n│         ▼                   ▼                               │\n│  ┌──────────────┐    ┌──────────────────┐                   │\n│  │   Normal     │    │   Fraud          │                   │\n│  │   Generator  │    │   Generator      │                   │\n│  │   (Stage 1)  │    │   (Stage 2)      │                   │\n│  │              │    │                  │                   │\n│  │  Adversarial │    │  Adversarial     │                   │\n│  │     Loss     │    │     Loss         │                   │\n│  │              │    │       +          │                   │\n│  │              │    │  Pattern Loss    │ ← Correlation +   │\n│  │              │    │                  │   Moment Loss     │\n│  └──────┬───────┘    └──────┬───────────┘                   │\n│         │                   │                               │\n│         └─────────┬─────────┘                               │\n│                   │                                         │\n│                   ▼                                         │\n│          ┌───────────────┐                                  │\n│          │ Synthetic Data│                                  │\n│          │ (Normal+Fraud)│                                  │\n│          └───────────────┘                                  │\n│                                                              │\n└─────────────────────────────────────────────────────────────┘\n```\n\n## 📁 프로젝트 구조\n\n```\npaper2/\n├── src/\n│   ├── fa_gan.py              # FA-GAN 핵심 모듈\n│   ├── metrics.py             # F-cKS 평가 지표\n│   ├── synthetic_generators.py # 기타 생성기\n│   └── run_full_experiment.py # 실험 파이프라인\n├── results/\n│   ├── experiment_results.json\n│   └── comparison_table.csv\n├── figures/\n│   ├── experiment_results.png\n│   ├── improvement_chart.png\n│   └── ablation_study.png\n└── creditcard.csv             # 데이터\n```\n\n## 🚀 실행 방법\n\n```bash\n# 1. 환경 설정\npython3 -m venv venv\nsource venv/bin/activate\npip install -r requirements.txt\n\n# 2. 실험 실행\npython src/run_full_experiment.py\n```\n\n## 📈 Ablation Study: Pattern-Preserving Loss\n\n| λ (Lambda) | Recall | F-cKS |\n|------------|--------|-------|\n| 0.0 (No PL)| 87.8%  | 0.508 |\n| 0.25       | **92.9%** | 0.380 |\n| 0.5 (Default) | **92.9%** | **0.379** |\n| 1.0        | 88.8%  | 0.397 |\n\n→ λ=0.5에서 최적 성능 (Recall과 F-cKS 균형)\n\n## 🔧 주요 컴포넌트\n\n### 1. Pattern-Preserving Loss\n```python\nL_pattern = λ_corr * ||Corr(real) - Corr(fake)||_F \n          + λ_moment * (MSE(μ) + MSE(σ²))\n```\n\n### 2. F-cKS (Fraud-conditional KS Distance)\n```python\nF-cKS = mean([KS(real_fraud[f], synth_fraud[f]) for f in features])\n```\n- 낮을수록 좋음 (사기 패턴이 잘 보존됨)\n\n## 📚 관련 연구\n\n- CTGAN: Modeling Tabular data using Conditional GAN (NeurIPS 2019)\n- SMOTE: Synthetic Minority Over-sampling Technique (JAIR 2002)\n- Tail-Conditional KS Distance (T-cKS) - 선행 연구\n\n## 📝 License\n\nMIT License\n\n## 👤 Author\n\n연구자 정보\n",
+ "hits": {
+  "st": [
+   {
+    "file": "src/synthetic_generators.py",
+    "line": 49,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "        self.metadata = None",
+     "    ",
+     "    def fit(self, data: pd.DataFrame):",
+     "        try:",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "            from sdv.metadata import SingleTableMetadata",
+     "            ",
+     "            # 메타데이터 자동 감지",
+     "            self.metadata = SingleTableMetadata()"
+    ]
+   },
+   {
+    "file": "src/synthetic_generators.py",
+    "line": 90,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "        self.metadata = None",
+     "    ",
+     "    def fit(self, data: pd.DataFrame):",
+     "        try:",
+     "            from sdv.single_table import TVAESynthesizer",
+     "            from sdv.metadata import SingleTableMetadata",
+     "            ",
+     "            self.metadata = SingleTableMetadata()",
+     "            self.metadata.detect_from_dataframe(data)"
+    ]
+   },
+   {
+    "file": "src/synthetic_generators.py",
+    "line": 126,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "        self.metadata = None",
+     "    ",
+     "    def fit(self, data: pd.DataFrame):",
+     "        try:",
+     "            from sdv.single_table import GaussianCopulaSynthesizer",
+     "            from sdv.metadata import SingleTableMetadata",
+     "            ",
+     "            self.metadata = SingleTableMetadata()",
+     "            self.metadata.detect_from_dataframe(data)"
+    ]
+   },
+   {
+    "file": "src/synthetic_generators.py",
+    "line": 299,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "        self.feature_cols = None",
+     "    ",
+     "    def fit(self, data: pd.DataFrame):",
+     "        try:",
+     "            from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "            from sdv.metadata import SingleTableMetadata",
+     "            ",
+     "            # 데이터 분리",
+     "            normal_data = data[data['Class'] == 0].copy()"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "src/synthetic_generators.py",
+    "line": 50,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    ",
+     "    def fit(self, data: pd.DataFrame):",
+     "        try:",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "            from sdv.metadata import SingleTableMetadata",
+     "            ",
+     "            # 메타데이터 자동 감지",
+     "            self.metadata = SingleTableMetadata()",
+     "            self.metadata.detect_from_dataframe(data)"
+    ]
+   },
+   {
+    "file": "src/synthetic_generators.py",
+    "line": 91,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    ",
+     "    def fit(self, data: pd.DataFrame):",
+     "        try:",
+     "            from sdv.single_table import TVAESynthesizer",
+     "            from sdv.metadata import SingleTableMetadata",
+     "            ",
+     "            self.metadata = SingleTableMetadata()",
+     "            self.metadata.detect_from_dataframe(data)",
+     "            "
+    ]
+   },
+   {
+    "file": "src/synthetic_generators.py",
+    "line": 127,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    ",
+     "    def fit(self, data: pd.DataFrame):",
+     "        try:",
+     "            from sdv.single_table import GaussianCopulaSynthesizer",
+     "            from sdv.metadata import SingleTableMetadata",
+     "            ",
+     "            self.metadata = SingleTableMetadata()",
+     "            self.metadata.detect_from_dataframe(data)",
+     "            "
+    ]
+   },
+   {
+    "file": "src/synthetic_generators.py",
+    "line": 300,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    ",
+     "    def fit(self, data: pd.DataFrame):",
+     "        try:",
+     "            from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "            from sdv.metadata import SingleTableMetadata",
+     "            ",
+     "            # 데이터 분리",
+     "            normal_data = data[data['Class'] == 0].copy()",
+     "            fraud_data = data[data['Class'] == 1].copy()"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "src/synthetic_generators.py",
+    "line": 49,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "        self.metadata = None",
+     "    ",
+     "    def fit(self, data: pd.DataFrame):",
+     "        try:",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "            from sdv.metadata import SingleTableMetadata",
+     "            ",
+     "            # 메타데이터 자동 감지",
+     "            self.metadata = SingleTableMetadata()"
+    ]
+   },
+   {
+    "file": "src/synthetic_generators.py",
+    "line": 50,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    ",
+     "    def fit(self, data: pd.DataFrame):",
+     "        try:",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "            from sdv.metadata import SingleTableMetadata",
+     "            ",
+     "            # 메타데이터 자동 감지",
+     "            self.metadata = SingleTableMetadata()",
+     "            self.metadata.detect_from_dataframe(data)"
+    ]
+   },
+   {
+    "file": "src/synthetic_generators.py",
+    "line": 90,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "        self.metadata = None",
+     "    ",
+     "    def fit(self, data: pd.DataFrame):",
+     "        try:",
+     "            from sdv.single_table import TVAESynthesizer",
+     "            from sdv.metadata import SingleTableMetadata",
+     "            ",
+     "            self.metadata = SingleTableMetadata()",
+     "            self.metadata.detect_from_dataframe(data)"
+    ]
+   },
+   {
+    "file": "src/synthetic_generators.py",
+    "line": 91,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    ",
+     "    def fit(self, data: pd.DataFrame):",
+     "        try:",
+     "            from sdv.single_table import TVAESynthesizer",
+     "            from sdv.metadata import SingleTableMetadata",
+     "            ",
+     "            self.metadata = SingleTableMetadata()",
+     "            self.metadata.detect_from_dataframe(data)",
+     "            "
+    ]
+   },
+   {
+    "file": "src/synthetic_generators.py",
+    "line": 126,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "        self.metadata = None",
+     "    ",
+     "    def fit(self, data: pd.DataFrame):",
+     "        try:",
+     "            from sdv.single_table import GaussianCopulaSynthesizer",
+     "            from sdv.metadata import SingleTableMetadata",
+     "            ",
+     "            self.metadata = SingleTableMetadata()",
+     "            self.metadata.detect_from_dataframe(data)"
+    ]
+   },
+   {
+    "file": "src/synthetic_generators.py",
+    "line": 127,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    ",
+     "    def fit(self, data: pd.DataFrame):",
+     "        try:",
+     "            from sdv.single_table import GaussianCopulaSynthesizer",
+     "            from sdv.metadata import SingleTableMetadata",
+     "            ",
+     "            self.metadata = SingleTableMetadata()",
+     "            self.metadata.detect_from_dataframe(data)",
+     "            "
+    ]
+   },
+   {
+    "file": "src/synthetic_generators.py",
+    "line": 299,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "        self.feature_cols = None",
+     "    ",
+     "    def fit(self, data: pd.DataFrame):",
+     "        try:",
+     "            from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "            from sdv.metadata import SingleTableMetadata",
+     "            ",
+     "            # 데이터 분리",
+     "            normal_data = data[data['Class'] == 0].copy()"
+    ]
+   },
+   {
+    "file": "src/synthetic_generators.py",
+    "line": 300,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    ",
+     "    def fit(self, data: pd.DataFrame):",
+     "        try:",
+     "            from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "            from sdv.metadata import SingleTableMetadata",
+     "            ",
+     "            # 데이터 분리",
+     "            normal_data = data[data['Class'] == 0].copy()",
+     "            fraud_data = data[data['Class'] == 1].copy()"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "src/synthetic_generators.py",
+    "line": 49,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "        self.metadata = None",
+     "    ",
+     "    def fit(self, data: pd.DataFrame):",
+     "        try:",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "            from sdv.metadata import SingleTableMetadata",
+     "            ",
+     "            # 메타데이터 자동 감지",
+     "            self.metadata = SingleTableMetadata()"
+    ]
+   },
+   {
+    "file": "src/synthetic_generators.py",
+    "line": 57,
+    "text": "self.model = CTGANSynthesizer(",
+    "context": [
+     "            self.metadata = SingleTableMetadata()",
+     "            self.metadata.detect_from_dataframe(data)",
+     "            ",
+     "            # 모델 초기화 및 학습",
+     "            self.model = CTGANSynthesizer(",
+     "                metadata=self.metadata,",
+     "                epochs=self.epochs,",
+     "                batch_size=self.batch_size,",
+     "                verbose=True"
+    ]
+   },
+   {
+    "file": "src/synthetic_generators.py",
+    "line": 299,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "        self.feature_cols = None",
+     "    ",
+     "    def fit(self, data: pd.DataFrame):",
+     "        try:",
+     "            from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "            from sdv.metadata import SingleTableMetadata",
+     "            ",
+     "            # 데이터 분리",
+     "            normal_data = data[data['Class'] == 0].copy()"
+    ]
+   },
+   {
+    "file": "src/synthetic_generators.py",
+    "line": 317,
+    "text": "self.normal_model = CTGANSynthesizer(",
+    "context": [
+     "            normal_metadata = SingleTableMetadata()",
+     "            normal_metadata.detect_from_dataframe(normal_data)",
+     "            ",
+     "            if self.base_generator == 'CTGAN':",
+     "                self.normal_model = CTGANSynthesizer(",
+     "                    metadata=normal_metadata,",
+     "                    epochs=self.epochs_normal,",
+     "                    verbose=False",
+     "                )"
+    ]
+   },
+   {
+    "file": "src/synthetic_generators.py",
+    "line": 336,
+    "text": "self.fraud_model = CTGANSynthesizer(",
+    "context": [
+     "            fraud_metadata = SingleTableMetadata()",
+     "            fraud_metadata.detect_from_dataframe(fraud_data)",
+     "            ",
+     "            if self.base_generator == 'CTGAN':",
+     "                self.fraud_model = CTGANSynthesizer(",
+     "                    metadata=fraud_metadata,",
+     "                    epochs=self.epochs_fraud,",
+     "                    verbose=False",
+     "                )"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "src/synthetic_generators.py",
+    "line": 126,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "        self.metadata = None",
+     "    ",
+     "    def fit(self, data: pd.DataFrame):",
+     "        try:",
+     "            from sdv.single_table import GaussianCopulaSynthesizer",
+     "            from sdv.metadata import SingleTableMetadata",
+     "            ",
+     "            self.metadata = SingleTableMetadata()",
+     "            self.metadata.detect_from_dataframe(data)"
+    ]
+   },
+   {
+    "file": "src/synthetic_generators.py",
+    "line": 132,
+    "text": "self.model = GaussianCopulaSynthesizer(",
+    "context": [
+     "            ",
+     "            self.metadata = SingleTableMetadata()",
+     "            self.metadata.detect_from_dataframe(data)",
+     "            ",
+     "            self.model = GaussianCopulaSynthesizer(",
+     "                metadata=self.metadata",
+     "            )",
+     "            self.model.fit(data)",
+     "            self.is_fitted = True"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "src/synthetic_generators.py",
+    "line": 90,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "        self.metadata = None",
+     "    ",
+     "    def fit(self, data: pd.DataFrame):",
+     "        try:",
+     "            from sdv.single_table import TVAESynthesizer",
+     "            from sdv.metadata import SingleTableMetadata",
+     "            ",
+     "            self.metadata = SingleTableMetadata()",
+     "            self.metadata.detect_from_dataframe(data)"
+    ]
+   },
+   {
+    "file": "src/synthetic_generators.py",
+    "line": 96,
+    "text": "self.model = TVAESynthesizer(",
+    "context": [
+     "            ",
+     "            self.metadata = SingleTableMetadata()",
+     "            self.metadata.detect_from_dataframe(data)",
+     "            ",
+     "            self.model = TVAESynthesizer(",
+     "                metadata=self.metadata,",
+     "                epochs=self.epochs,",
+     "                batch_size=self.batch_size,",
+     "                verbose=True"
+    ]
+   },
+   {
+    "file": "src/synthetic_generators.py",
+    "line": 299,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "        self.feature_cols = None",
+     "    ",
+     "    def fit(self, data: pd.DataFrame):",
+     "        try:",
+     "            from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "            from sdv.metadata import SingleTableMetadata",
+     "            ",
+     "            # 데이터 분리",
+     "            normal_data = data[data['Class'] == 0].copy()"
+    ]
+   },
+   {
+    "file": "src/synthetic_generators.py",
+    "line": 323,
+    "text": "self.normal_model = TVAESynthesizer(",
+    "context": [
+     "                    epochs=self.epochs_normal,",
+     "                    verbose=False",
+     "                )",
+     "            else:",
+     "                self.normal_model = TVAESynthesizer(",
+     "                    metadata=normal_metadata,",
+     "                    epochs=self.epochs_normal,",
+     "                    verbose=False",
+     "                )"
+    ]
+   },
+   {
+    "file": "src/synthetic_generators.py",
+    "line": 342,
+    "text": "self.fraud_model = TVAESynthesizer(",
+    "context": [
+     "                    epochs=self.epochs_fraud,",
+     "                    verbose=False",
+     "                )",
+     "            else:",
+     "                self.fraud_model = TVAESynthesizer(",
+     "                    metadata=fraud_metadata,",
+     "                    epochs=self.epochs_fraud,",
+     "                    verbose=False",
+     "                )"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "gc",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv>=1.0.0"
+  ]
+ }
+}

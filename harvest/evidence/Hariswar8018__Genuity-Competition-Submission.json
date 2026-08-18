@@ -1,0 +1,719 @@
+{
+ "repo": "Hariswar8018/Genuity-Competition-Submission",
+ "disk_kb": 38,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Genuity x Ethos Synthetic Data Challenge - Solution Writeup\n\n## 🏆 Competition Overview\n\n**Competition:** Genuity x Ethos => Synthetic Data Challenge  \n**Host:** ETHOS Coding Club, IIT Guwahati & Genuity IO  \n**Task:** Generate synthetic time-series data that balances accuracy, privacy, and fairness  \n**Dataset Size:** 3,322 rows (60% provided, 40% hidden for evaluation)\n\n### Objective\nBuild high-quality synthetic time-series datasets using Genuity's open-source library that:\n- Maintains statistical similarity to real data\n- Preserves privacy (no memorization)\n- Achieves low detectability (realistic synthetic data)\n\n---\n\n## 📊 Evaluation Metrics\n\nThe final score is computed as the average of three components:\n\n1. **Statistical Similarity** - Distribution alignment, correlations, autocorrelation structures\n2. **Privacy Score** - Protection against direct leakage and memorization\n3. **Detectability Score** - Difficulty in distinguishing real vs synthetic samples\n\n**Formula:**\n```\nFinal Score = (Statistical Similarity + Privacy Score + Detectability Score) / 3\n```\n\n---\n\n## 🔧 My Approach\n\n### Models Explored\n\nI experimented with multiple synthetic data generation approaches:\n\n| Model | Description | Performance |\n|-------|-------------|-------------|\n| **Genuity Model** | Competition's official library | Baseline |\n| **CTGAN** | Conditional Generative Adversarial Network | ⭐ Best performing |\n| **TVAE** | Tabular Variational Autoencoder | Moderate |\n| **Gaussian Copulas** | Statistical copula-based approach | Moderate |\n| **Copula GAN** | Hybrid copula + GAN approach | Moderate |\n\n### Final Solution: Ensemble Approach\n\nMy final submission combined **CTGAN** with **Genuity predictions** using harmonic mean ensemble:\n\n```python\n# Ensemble strategy: Harmonic mean for numerical columns\nfor col in cols_to_ensemble:\n    ensemble_df[col] = 2 / (1/df1[col] + 1/df2[col])\n```\n\n**Why CTGAN dominated?** After testing, CTGAN showed superior performance on the evaluation metrics, so I weighted the ensemble accordingly.\n\n---\n\n## 💻 Implementation Details\n\n### Key Hyperparameters\n\n<details>\n<summary><b>Pre Processing</b></summary>\n\n```python\n# Preprocessing Done\npre = TabularPreprocessor(\n    scaler_type=\"standard\",\n    encoding_strategy=\"onehot\",\n)\n\n```\n<details>\n<summary><b>1. Genuity Model</b></summary>\n\n```python\n# Genuity hyperparameters\nctgan = CTGANAPI()\n\nlosses = ctgan.fit(\n    data=X.values,\n    continuous_cols=list(range(len(result[\"continuous\"].columns))),\n    categorical_cols=list(range(\n        len(result[\"continuous\"].columns),\n        X.shape[1]\n    )),\n    epochs=300\n)\n```\n</details>\n\n<details>\n<summary><b>2. CTGAN</b></summary>\n\n```python\n# CTGAN hyperparameters\nctgan = CTGANSynthesizer(\n     metadata=metadata,\n        epochs=100,\n        generator_dim=(512, 512, 512, 512),\n        discriminator_dim=(512, 512, 512, 512),\n)\n```\n</details>\n\n<details>\n<summary><b>3. TVAE</b></summary>\n\n```python\n# TVAE hyperparameters\ntvae = TVAESynthesizer(metadata, epochs=100)\n```\n</details>\n\n<details>\n<summary><b>4. Gaussian Copulas</b></summary>\n\n```python\n# Gaussian Copulas hyperparameters\ngc = GaussianCopulaSynthesizer(\n    metadata\n    )\n```\n</details>\n\n<details>\n<summary><b>5. Copula GAN</b></summary>\n\n```python\n# Copula GAN hyperparameters\ncgan = CopulaGANSynthesizer(\n    metadata, epochs=200,verbose=True,\n    )\n```\n</details>\n\n---\n\n## 🛠️ Submission Pipeline\n\n### Global Submission Function\n\nCreated a robust submission function to handle all formatting requirements and avoid evaluation errors:\n\n```python\ndef submit(data, subname):\n    \"\"\"\n    Prepares and saves submission file in exact competition format\n    \n    Args:\n        data: DataFrame with synthetic data\n        subname: Name for the output CSV file\n    \"\"\"\n    df = data.copy()\n    \n    # Sort by timestamp\n    df = df.sort_values(\"t\").reset_index(drop=True)\n    \n    # Add row_id_column_name starting from 1\n    df[\"row_id_column_name\"] = range(1, len(df) + 1)\n    \n    # Remove Series column if present (mandatory)\n    if \"Series\" in df.columns:\n        df = df.drop(columns=[\"Series\"])\n    \n    # Exact column order required for submission\n    submission_cols = [\n        \"row_id_column_name\", \"Symbol\", \"Prev Close\", \"Open\", \n        \"High\", \"Low\", \"Last\", \"Close\", \"VWAP\", \"Volume\", \n        \"Turnover\", \"Trades\", \"Deliverable Volume\", \"%Deliverble\", \"t\"\n    ]\n    \n    df = df[submission_cols]\n    df.to_csv(f\"{subname}.csv\", index=False)\n    \n    print(\"Done! Matched EXACT submission format.\")\n    print(f\"Done! Saved as {subname}.csv file submission done\")\n```\n\n### Key Submission Requirements\n\n✅ **Must have:** `row_id_column_name` as first column (0-3321)  \n✅ **Exact row count:** 3,322 rows  \n✅ **Remove:** 'Series' column (mandatory)  \n✅ **Timestamp:** Must be in strictly ascending order  \n✅ **Schema:** Must match `real_0.6.csv` exactly\n\n---\n\n## 🚧 Challenges Faced\n\n### 1. Evaluation Errors\nMultiple submission attempts failed due to:\n- Schema mismatches\n- Incorrect row counts\n- Column ordering issues\n- Missing/extra columns\n\n**Solution:** Created the standardized `submit()` function to ensure consistent formatting\n\n### 2. Model Selection\nBalancing the three metrics (similarity, privacy, detectability) was challenging as models optimized for one often compromised others.\n\n**Solution:** Ensemble approach leveraging strengths of both Genuity and CTGAN\n\n### 3. Hyperparameter Tuning\nEach model required extensive tuning to achieve optimal performance on the composite metric.\n\n---\n\n## 📈 Results\n\n### Public Leaderboard Scores\n\n| Approach | Statistical Similarity | Privacy Score | Detectability | Final Score |\n|----------|----------------------|---------------|---------------|-------------|\n| Genuity Baseline | [Score] | [Score] | [Score] | [Score] |\n| CTGAN | [Score] | [Score] | [Score] | [Score] |\n| TVAE | [Score] | [Score] | [Score] | [Score] |\n| Gaussian Copulas | [Score] | [Score] | [Score] | [Score] |\n| Copula GAN | [Score] | [Score] | [Score] | [Score] |\n| **Final Ensemble** | **[Score]** | **[Score]** | **[Score]** | **[Score]** |\n\n---\n\n## 🔑 Key Takeaways\n\n1. **CTGAN excels at time-series synthesis** - Particularly effective for financial/stock market data\n2. **Ensemble methods improve robustness** - Combining models can balance competing objectives\n3. **Submission format matters** - Always validate against exact competition requirements\n4. **Hyperparameter tuning is crucial** - Small changes significantly impact all three metrics\n\n---\n\n## 📚 Resources\n\n- **Genuity Library:** [GitHub Repository](https://github.com/S-G-mathematics/genuity_os)\n- **Competition Page:** [Kaggle Competition](https://kaggle.com/competitions/genuityxethos)\n\n---\n\n## 🙏 Acknowledgments\n\n- **ETHOS Coding Club, IIT Guwahati** for organizing the competition\n- **Genuity IO** for providing the open-source library and mentorship\n- The Kaggle community for discussions and insights\n\n---\n\n## 📝 Citation\n\n```\nGenuity io. Genuity x Ethos=>Synthetic Data Challenge. \nhttps://kaggle.com/competitions/genuityxethos, 2025. Kaggle.\n```\n\n---\n\n**Competition Period:** September 29, 2025 - November 30, 2025  \n**Prize Pool:** ₹45,000 INR + Direct hiring interviews at Genuity IO\n\n---\n\n## 🚀 Reproducibility\n\nAll code is available in the Kaggle Notebook. To reproduce:\n\n1. Clone the repository or download the notebook\n2. Install required libraries: `pip install genuity sdv pandas numpy`\n3. Run the preprocessing pipeline\n4. Train models with provided hyperparameters\n5. Generate ensemble predictions\n6. Use the `submit()` function to create final submission\n\nOR\n\nUse my Github Code which have all the Three file \n  i. Genuity Notebook\n  ii. CTGAN Notebook\n  iii. Ensmeble Code\n\n---\n\n**Author:** Ayusman Samasi \n**Contact:** hariswarsamasi@gmail.com  \n**Kaggle Profile:** https://www.kaggle.com/samasiayushman/\n",
+ "hits": {
+  "st": [
+   {
+    "file": "collab_sdv.py",
+    "line": 14,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "!pip install sdv --quiet",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "df = pd.read_csv(\"/content/real_0.6.csv\")",
+     "",
+     "metadata = SingleTableMetadata()"
+    ]
+   },
+   {
+    "file": "collab_sdv.py",
+    "line": 259,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "\"\"\"# TVAE - TRAIN & SAVE\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "",
+     "tvae = TVAESynthesizer(metadata, epochs=100)",
+     "tvae.fit(df)",
+     ""
+    ]
+   },
+   {
+    "file": "collab_sdv.py",
+    "line": 275,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "\"\"\"# Gaussian Copla\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "",
+     "gc = GaussianCopulaSynthesizer(",
+     "    metadata"
+    ]
+   },
+   {
+    "file": "collab_sdv.py",
+    "line": 294,
+    "text": "from sdv.single_table import CopulaGANSynthesizer",
+    "context": [
+     "\"\"\"# CopulaGAN\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CopulaGANSynthesizer",
+     "",
+     "cgan = CopulaGANSynthesizer(",
+     "    metadata, epochs=200,verbose=True,",
+     "    )"
+    ]
+   },
+   {
+    "file": "svm_notebook.ipynb",
+    "line": 53,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"import pandas as pd\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "        \"\\n\",",
+     "        \"df = pd.read_csv(\\\"/content/real_0.6.csv\\\")\\n\",",
+     "        \"\\n\",",
+     "        \"metadata = SingleTableMetadata()\\n\","
+    ]
+   },
+   {
+    "file": "svm_notebook.ipynb",
+    "line": 675,
+    "text": "\"from sdv.single_table import TVAESynthesizer\\n\",",
+    "context": [
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"import pandas as pd\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "        \"\\n\",",
+     "        \"tvae = TVAESynthesizer(metadata, epochs=100)\\n\",",
+     "        \"tvae.fit(df)\\n\",",
+     "        \"\\n\","
+    ]
+   },
+   {
+    "file": "svm_notebook.ipynb",
+    "line": 755,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"import pandas as pd\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "        \"\\n\",",
+     "        \"\\n\",",
+     "        \"gc = GaussianCopulaSynthesizer(\\n\",",
+     "        \"    metadata\\n\","
+    ]
+   },
+   {
+    "file": "svm_notebook.ipynb",
+    "line": 836,
+    "text": "\"from sdv.single_table import CopulaGANSynthesizer\\n\",",
+    "context": [
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"import pandas as pd\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"from sdv.single_table import CopulaGANSynthesizer\\n\",",
+     "        \"\\n\",",
+     "        \"cgan = CopulaGANSynthesizer(\\n\",",
+     "        \"    metadata, epochs=200,verbose=True,\\n\",",
+     "        \"    )\\n\","
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "collab_sdv.py",
+    "line": 13,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "!pip install sdv --quiet",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "df = pd.read_csv(\"/content/real_0.6.csv\")",
+     ""
+    ]
+   },
+   {
+    "file": "collab_sdv.py",
+    "line": 258,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "\"\"\"# TVAE - TRAIN & SAVE\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "",
+     "tvae = TVAESynthesizer(metadata, epochs=100)",
+     "tvae.fit(df)"
+    ]
+   },
+   {
+    "file": "collab_sdv.py",
+    "line": 274,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "\"\"\"# Gaussian Copla\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "",
+     "gc = GaussianCopulaSynthesizer("
+    ]
+   },
+   {
+    "file": "collab_sdv.py",
+    "line": 293,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "\"\"\"# CopulaGAN\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CopulaGANSynthesizer",
+     "",
+     "cgan = CopulaGANSynthesizer(",
+     "    metadata, epochs=200,verbose=True,"
+    ]
+   },
+   {
+    "file": "svm_notebook.ipynb",
+    "line": 52,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"import pandas as pd\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "        \"\\n\",",
+     "        \"df = pd.read_csv(\\\"/content/real_0.6.csv\\\")\\n\",",
+     "        \"\\n\","
+    ]
+   },
+   {
+    "file": "svm_notebook.ipynb",
+    "line": 674,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"import pandas as pd\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "        \"\\n\",",
+     "        \"tvae = TVAESynthesizer(metadata, epochs=100)\\n\",",
+     "        \"tvae.fit(df)\\n\","
+    ]
+   },
+   {
+    "file": "svm_notebook.ipynb",
+    "line": 754,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"import pandas as pd\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "        \"\\n\",",
+     "        \"\\n\",",
+     "        \"gc = GaussianCopulaSynthesizer(\\n\","
+    ]
+   },
+   {
+    "file": "svm_notebook.ipynb",
+    "line": 835,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"import pandas as pd\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"from sdv.single_table import CopulaGANSynthesizer\\n\",",
+     "        \"\\n\",",
+     "        \"cgan = CopulaGANSynthesizer(\\n\",",
+     "        \"    metadata, epochs=200,verbose=True,\\n\","
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "collab_sdv.py",
+    "line": 13,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "!pip install sdv --quiet",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "df = pd.read_csv(\"/content/real_0.6.csv\")",
+     ""
+    ]
+   },
+   {
+    "file": "collab_sdv.py",
+    "line": 14,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "!pip install sdv --quiet",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "df = pd.read_csv(\"/content/real_0.6.csv\")",
+     "",
+     "metadata = SingleTableMetadata()"
+    ]
+   },
+   {
+    "file": "collab_sdv.py",
+    "line": 258,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "\"\"\"# TVAE - TRAIN & SAVE\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "",
+     "tvae = TVAESynthesizer(metadata, epochs=100)",
+     "tvae.fit(df)"
+    ]
+   },
+   {
+    "file": "collab_sdv.py",
+    "line": 259,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "\"\"\"# TVAE - TRAIN & SAVE\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "",
+     "tvae = TVAESynthesizer(metadata, epochs=100)",
+     "tvae.fit(df)",
+     ""
+    ]
+   },
+   {
+    "file": "collab_sdv.py",
+    "line": 274,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "\"\"\"# Gaussian Copla\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "",
+     "gc = GaussianCopulaSynthesizer("
+    ]
+   },
+   {
+    "file": "collab_sdv.py",
+    "line": 275,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "\"\"\"# Gaussian Copla\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "",
+     "gc = GaussianCopulaSynthesizer(",
+     "    metadata"
+    ]
+   },
+   {
+    "file": "collab_sdv.py",
+    "line": 293,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "\"\"\"# CopulaGAN\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CopulaGANSynthesizer",
+     "",
+     "cgan = CopulaGANSynthesizer(",
+     "    metadata, epochs=200,verbose=True,"
+    ]
+   },
+   {
+    "file": "collab_sdv.py",
+    "line": 294,
+    "text": "from sdv.single_table import CopulaGANSynthesizer",
+    "context": [
+     "\"\"\"# CopulaGAN\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CopulaGANSynthesizer",
+     "",
+     "cgan = CopulaGANSynthesizer(",
+     "    metadata, epochs=200,verbose=True,",
+     "    )"
+    ]
+   },
+   {
+    "file": "svm_notebook.ipynb",
+    "line": 52,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"import pandas as pd\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "        \"\\n\",",
+     "        \"df = pd.read_csv(\\\"/content/real_0.6.csv\\\")\\n\",",
+     "        \"\\n\","
+    ]
+   },
+   {
+    "file": "svm_notebook.ipynb",
+    "line": 53,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"import pandas as pd\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "        \"\\n\",",
+     "        \"df = pd.read_csv(\\\"/content/real_0.6.csv\\\")\\n\",",
+     "        \"\\n\",",
+     "        \"metadata = SingleTableMetadata()\\n\","
+    ]
+   },
+   {
+    "file": "svm_notebook.ipynb",
+    "line": 674,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"import pandas as pd\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "        \"\\n\",",
+     "        \"tvae = TVAESynthesizer(metadata, epochs=100)\\n\",",
+     "        \"tvae.fit(df)\\n\","
+    ]
+   },
+   {
+    "file": "svm_notebook.ipynb",
+    "line": 675,
+    "text": "\"from sdv.single_table import TVAESynthesizer\\n\",",
+    "context": [
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"import pandas as pd\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "        \"\\n\",",
+     "        \"tvae = TVAESynthesizer(metadata, epochs=100)\\n\",",
+     "        \"tvae.fit(df)\\n\",",
+     "        \"\\n\","
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "collab_sdv.py",
+    "line": 14,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "!pip install sdv --quiet",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "df = pd.read_csv(\"/content/real_0.6.csv\")",
+     "",
+     "metadata = SingleTableMetadata()"
+    ]
+   },
+   {
+    "file": "collab_sdv.py",
+    "line": 199,
+    "text": "ctgan = CTGANSynthesizer(",
+    "context": [
+     "df_prep, stats = preprocess_for_ctgan(df, categorical_cols=categorical, exclude_cols=['t'])",
+     "",
+     "df2 = df_prep.copy()",
+     "",
+     "ctgan = CTGANSynthesizer(",
+     "     metadata=metadata,",
+     "        epochs=100,",
+     "        generator_dim=(512, 512, 512, 512),",
+     "        discriminator_dim=(512, 512, 512, 512),"
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 100,
+    "text": "ctgan = CTGANSynthesizer(",
+    "context": [
+     "<summary><b>2. CTGAN</b></summary>",
+     "",
+     "```python",
+     "# CTGAN hyperparameters",
+     "ctgan = CTGANSynthesizer(",
+     "     metadata=metadata,",
+     "        epochs=100,",
+     "        generator_dim=(512, 512, 512, 512),",
+     "        discriminator_dim=(512, 512, 512, 512),"
+    ]
+   },
+   {
+    "file": "svm_notebook.ipynb",
+    "line": 53,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"import pandas as pd\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "        \"\\n\",",
+     "        \"df = pd.read_csv(\\\"/content/real_0.6.csv\\\")\\n\",",
+     "        \"\\n\",",
+     "        \"metadata = SingleTableMetadata()\\n\","
+    ]
+   },
+   {
+    "file": "svm_notebook.ipynb",
+    "line": 290,
+    "text": "\"ctgan = CTGANSynthesizer(\\n\",",
+    "context": [
+     "    },",
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"ctgan = CTGANSynthesizer(\\n\",",
+     "        \"     metadata=metadata,\\n\",",
+     "        \"        epochs=100,\\n\",",
+     "        \"        generator_dim=(512, 512, 512, 512),\\n\",",
+     "        \"        discriminator_dim=(512, 512, 512, 512),\\n\","
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "collab_sdv.py",
+    "line": 275,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "\"\"\"# Gaussian Copla\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "",
+     "gc = GaussianCopulaSynthesizer(",
+     "    metadata"
+    ]
+   },
+   {
+    "file": "collab_sdv.py",
+    "line": 278,
+    "text": "gc = GaussianCopulaSynthesizer(",
+    "context": [
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "",
+     "gc = GaussianCopulaSynthesizer(",
+     "    metadata",
+     "    )",
+     "gc.fit(df)",
+     ""
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 123,
+    "text": "gc = GaussianCopulaSynthesizer(",
+    "context": [
+     "<summary><b>4. Gaussian Copulas</b></summary>",
+     "",
+     "```python",
+     "# Gaussian Copulas hyperparameters",
+     "gc = GaussianCopulaSynthesizer(",
+     "    metadata",
+     "    )",
+     "```",
+     "</details>"
+    ]
+   },
+   {
+    "file": "svm_notebook.ipynb",
+    "line": 755,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"import pandas as pd\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "        \"\\n\",",
+     "        \"\\n\",",
+     "        \"gc = GaussianCopulaSynthesizer(\\n\",",
+     "        \"    metadata\\n\","
+    ]
+   },
+   {
+    "file": "svm_notebook.ipynb",
+    "line": 758,
+    "text": "\"gc = GaussianCopulaSynthesizer(\\n\",",
+    "context": [
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "        \"\\n\",",
+     "        \"\\n\",",
+     "        \"gc = GaussianCopulaSynthesizer(\\n\",",
+     "        \"    metadata\\n\",",
+     "        \"    )\\n\",",
+     "        \"gc.fit(df)\\n\",",
+     "        \"\\n\","
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "collab_sdv.py",
+    "line": 259,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "\"\"\"# TVAE - TRAIN & SAVE\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "",
+     "tvae = TVAESynthesizer(metadata, epochs=100)",
+     "tvae.fit(df)",
+     ""
+    ]
+   },
+   {
+    "file": "collab_sdv.py",
+    "line": 261,
+    "text": "tvae = TVAESynthesizer(metadata, epochs=100)",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import TVAESynthesizer",
+     "",
+     "tvae = TVAESynthesizer(metadata, epochs=100)",
+     "tvae.fit(df)",
+     "",
+     "tvae.save(\"TVAE_model.pkl\")",
+     ""
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 114,
+    "text": "tvae = TVAESynthesizer(metadata, epochs=100)",
+    "context": [
+     "<summary><b>3. TVAE</b></summary>",
+     "",
+     "```python",
+     "# TVAE hyperparameters",
+     "tvae = TVAESynthesizer(metadata, epochs=100)",
+     "```",
+     "</details>",
+     "",
+     "<details>"
+    ]
+   },
+   {
+    "file": "svm_notebook.ipynb",
+    "line": 675,
+    "text": "\"from sdv.single_table import TVAESynthesizer\\n\",",
+    "context": [
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"import pandas as pd\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "        \"\\n\",",
+     "        \"tvae = TVAESynthesizer(metadata, epochs=100)\\n\",",
+     "        \"tvae.fit(df)\\n\",",
+     "        \"\\n\","
+    ]
+   },
+   {
+    "file": "svm_notebook.ipynb",
+    "line": 677,
+    "text": "\"tvae = TVAESynthesizer(metadata, epochs=100)\\n\",",
+    "context": [
+     "        \"import pandas as pd\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "        \"\\n\",",
+     "        \"tvae = TVAESynthesizer(metadata, epochs=100)\\n\",",
+     "        \"tvae.fit(df)\\n\",",
+     "        \"\\n\",",
+     "        \"tvae.save(\\\"TVAE_model.pkl\\\")\\n\",",
+     "        \"\\n\","
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "gc",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

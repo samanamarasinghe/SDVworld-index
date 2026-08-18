@@ -1,0 +1,204 @@
+{
+ "repo": "fluidEgo/kura",
+ "disk_kb": 28080,
+ "method": "partial_clone",
+ "tree_files": 10287,
+ "status": "ok",
+ "readme": "\n# Kura\n\n**AI-Powered Clinical Triage & Decision Support System**\n\n[![Python](https://img.shields.io/badge/Python-3.9%2B-blue)](https://www.python.org/)\n[![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-green)](https://fastapi.tiangolo.com/)\n[![React](https://img.shields.io/badge/React-18%2B-61DAFB)](https://react.dev/)\n[![XGBoost](https://img.shields.io/badge/XGBoost-2.0%2B-orange)](https://xgboost.readthedocs.io/)\n[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)\n\nKura is an intelligent clinical decision support system designed to enhance emergency department triage through machine learning, natural language processing, and fairness-aware AI. The system provides real-time risk stratification, department routing recommendations, and bias detection to ensure equitable patient care.\n\n---\n\n## 🏥 Overview\n\nKura addresses critical challenges in healthcare triage:\n\n- **Equitable Triage**: Mitigates gender and age bias in cardiac and geriatric emergency presentations\n- **Real-time Risk Assessment**: Hybrid ML + rule-based system for immediate triage decisions\n- **Explainable AI**: SHAP-based feature importance for clinical transparency\n- **Intelligent Routing**: Automated department recommendations with reasoning\n- **Continuous Monitoring**: Built-in fairness auditing and drift detection\n\n---\n\n## 🚀 Quick Start\n\n### Prerequisites\n\n- Python 3.9+\n- Node.js 18+\n- 4GB+ RAM (for ML model inference)\n\n### Installation\n\n```bash\n# Clone the repository\ngit clone https://github.com/your-org/kura.git\ncd kura\n\n# Run automated setup\nchmod +x run.sh\n./run.sh\n```\n\nThe startup script will:\n1. Create Python virtual environment\n2. Install backend dependencies\n3. Generate/training data if needed\n4. Train ML models\n5. Start FastAPI backend (port 8000)\n6. Start React frontend (port 3000)\n\n### Manual Setup\n\n**Backend:**\n```bash\ncd backend\npython -m venv venv\nsource venv/bin/activate  # Windows: venv\\Scripts\\activate\npip install -r requirements.txt\n\n# Generate training data & train model\npython run_training.py\n\n# Start API server\nuvicorn project.main:app --reload --port 8000\n```\n\n**Frontend:**\n```bash\nnpm install\nnpm run dev\n```\n\n---\n\n## 🏗️ Architecture\n\n```\n┌─────────────────────────────────────────────────────────────┐\n│                        FRONTEND (React)                      │\n│  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────┐    │\n│  │ Triage Form │ │ Risk Cards  │ │ Department Routing  │    │\n│  │  Vitals     │ │  SHAP Viz   │ │   Trend Analysis    │    │\n│  └─────────────┘ └─────────────┘ └─────────────────────┘    │\n└─────────────────────────────────────────────────────────────┘\n                              │\n                              ▼\n┌─────────────────────────────────────────────────────────────┐\n│                      BACKEND (FastAPI)                       │\n│  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────┐    │\n│  │   Triage    │ │  Fairness   │ │   Audit Logger      │    │\n│  │   Engine    │ │   Audit     │ │   (JSONL/CSV)       │    │\n│  └─────────────┘ └─────────────┘ └─────────────────────┘    │\n└─────────────────────────────────────────────────────────────┘\n                              │\n        ┌─────────────────────┼─────────────────────┐\n        ▼                     ▼                     ▼\n┌──────────────┐    ┌──────────────┐    ┌──────────────┐\n│   XGBoost    │    │   ESI        │    │   Hybrid     │\n│   Risk Model │    │  Guardrails  │    │ Recommender  │\n│  (4 classes) │    │  (Safety)    │    │  (ML+Rules)  │\n└──────────────┘    └──────────────┘    └──────────────┘\n        │                     │                     │\n        └─────────────────────┼─────────────────────┘\n                              ▼\n                    ┌─────────────────┐\n                    │  SHAP Explainer │\n                    │  (Feature Import)│\n                    └─────────────────┘\n```\n\n---\n\n## 🔬 Core Components\n\n### 1. Triage Prediction Engine (`backend/project/ai/`)\n\n| Component | Description | Key Features |\n|-----------|-------------|--------------|\n| `train_model.py` | XGBoost classifier training | 4-class stratification (RED/ORANGE/YELLOW/GREEN), class balancing |\n| `risk_model.py` | Alternative ML backends | Random Forest, Gradient Boosting ensembles |\n| `recommender.py` | Department routing | Hybrid rule-based + ML fallback |\n| `generate_data.py` | Synthetic data generation | SDV Gaussian Copula, fairness-constrained sampling |\n\n**Model Features (15 total):**\n- Vital signs: heart_rate, spo2, sbp, dbp, temperature, respiratory_rate, gcs, pain_score\n- Demographics: age, gender (encoded: MALE=0, FEMALE=1, OTHER=2)\n- NLP flags: is_cardiac_related, is_respiratory_related, is_neurological_related, is_trauma_related, is_infection_related\n\n### 2. Safety Guardrails (`backend/project/logic/rules.py`)\n\nESI-based hard rules override ML predictions for critical conditions:\n\n```python\nCRITICAL_THRESHOLDS = {\n    \"spo2\": 90,           # Hypoxia\n    \"sbp\": 90,            # Hypotension  \n    \"heart_rate\": 130,    # Tachycardia\n    \"gcs\": 8              # Altered consciousness\n}\n```\n\n### 3. Fairness Audit System (`backend/project/services/fairness_audit.py`)\n\nDetects and quantifies bias across protected attributes:\n\n- **Cardiac Gender Gap**: Odds ratio for male vs. female cardiac detection\n- **Geriatric Trap Detection**: Age-stratified sensitivity analysis\n- **Demographic Parity**: Triage level distribution by gender/age group\n\nTarget metrics: Odds Ratio ∈ [0.8, 1.25] for fair classification\n\n### 4. Explainability Layer (`backend/project/logic/explain.py`)\n\nSHAP-based feature attribution for clinical transparency:\n\n```json\n{\n  \"risk_drivers\": [\n    {\"feature\": \"Pain Score\", \"impact\": 1.399, \"direction\": \"Risk Increaser\"},\n    {\"feature\": \"SpO2\", \"impact\": 0.280, \"direction\": \"Risk Increaser\"},\n    {\"feature\": \"Age\", \"impact\": 0.260, \"direction\": \"Risk Increaser\"}\n  ]\n}\n```\n\n---\n\n## 📊 Data Pipeline\n\n### Golden Seed Generation (`create_golden_seed.py`)\n\nCreates 50 balanced training exemplars ensuring:\n- **Gender parity** in cardiac cases (10F/10M)\n- **Age diversity** with geriatric representation\n- **Department coverage**: Cardiology, Pulmonology, Neurology, Orthopedics, General Medicine\n\n### Bias Test Suite (`create_test_bias.py`)\n\n50 adversarial test cases targeting:\n- Atypical female cardiac presentations (nausea, fatigue, jaw pain)\n- Geriatric subtle deterioration (normal vitals, altered GCS)\n- Trend-based detection (vitals delta analysis)\n\n---\n\n## 🔌 API Reference\n\n### Core Endpoints\n\n| Endpoint | Method | Description | Request Body |\n|----------|--------|-------------|--------------|\n| `/predict` | POST | Triage assessment | `{age, gender, chief_complaint, vitals, previous_vitals?}` |\n| `/health` | GET | System status | - |\n| `/audit/fairness` | GET | Bias metrics | - |\n| `/identify-medication` | POST | Pill image recognition | `multipart/form-data` (image) |\n\n### Example Prediction Request\n\n```bash\ncurl -X POST http://localhost:8000/predict \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"age\": 75,\n    \"gender\": \"FEMALE\",\n    \"chief_complaint\": \"chest pain with arm numbness\",\n    \"vitals\": {\n      \"heartRate\": 105,\n      \"sbp\": 100,\n      \"spO2\": 93,\n      \"temperature\": 37.0,\n      \"gcs\": 14\n    },\n    \"previous_vitals\": {\n      \"heartRate\": 85,\n      \"spO2\": 97,\n      \"sbp\": 125\n    }\n  }'\n```\n\n### Response Schema\n\n```json\n{\n  \"triage_level\": \"RED\",\n  \"method\": \"HYBRID_ML\",\n  \"confidence\": 0.645,\n  \"risk_drivers\": [...],\n  \"trend_analysis\": [\"Significant Heart Rate Spike\", \"Acute Oxygen Saturation decline\"],\n  \"trend_multiplier\": 1.5,\n  \"nlp_features_detected\": {\n    \"is_cardiac_related\": 1,\n    \"is_neurological_related\": 1\n  },\n  \"department_recommendation\": {\n    \"department\": \"CARDIOLOGY\",\n    \"confidence\": 0.95,\n    \"method\": \"RULE\",\n    \"reasoning\": [\"Direct match for 'chest pain'\"]\n  }\n}\n```\n\n---\n\n## 🧪 Testing & Verification\n\nRun comprehensive system verification:\n\n```bash\npython comprehensive_verification.py\n```\n\n**Test Coverage:**\n1. Backend health & model loading\n2. ESI safety guardrails\n3. Trend analysis engine\n4. Fairness audit calculations\n5. NLP feature extraction\n6. SHAP explainability\n7. Department routing logic\n8. Data quality validation\n\n---\n\n## 📁 Project Structure\n\n```\nkura/\n├── backend/\n│   ├── project/\n│   │   ├── ai/                    # ML training & inference\n│   │   ├── data/                  # Training datasets\n│   │   ├── logic/                 # Business rules & explainability\n│   │   ├── models/                # Serialized XGBoost + metadata\n│   │   ├── services/              # Fairness audit, NLP, logging\n│   │   ├── integration/           # Voice, vision, weather APIs\n│   │   └── main.py                # FastAPI application entry\n│   ├── logs/audit/                # Decision logging (JSONL)\n│   ├── create_golden_seed.py      # Balanced data generation\n│   ├── create_test_bias.py        # Adversarial test cases\n│   └── run_training.py            # Model training pipeline\n├── src/                           # React frontend\n│   ├── components/\n│   │   ├── audit/                 # Fairness visualization\n│   │   ├── identification/        # Pill upload, voice input\n│   │   ├── results/               # Risk cards, SHAP charts\n│   │   └── triage/                # Crisis mode, vitals form\n│   ├── context/AppContext.jsx     # Global state management\n│   └── pages/                     # Route-level components\n├── comprehensive_verification.py  # End-to-end test suite\n└── run.sh                         # Production startup script\n```\n\n---\n\n## 🛡️ Clinical Safety\n\n> **⚠️ IMPORTANT**: Kura is a **clinical decision support tool**, not a diagnostic system. All triage recommendations must be validated by qualified healthcare professionals.\n\n- Hard safety guardrails prevent ML override of critical conditions\n- Confidence thresholds trigger human review requirements\n- Complete audit trail for all decisions (timestamped JSONL logs)\n- Model performance monitoring with drift detection\n\n---\n\n## 📈 Performance Metrics\n\n| Metric | Target | Current |\n|--------|--------|---------|\n| Triage Accuracy | >85% | 92.7% |\n| Cardiac Detection (Female) | >90% | 94% |\n| Cardiac Detection (Male) | >90% | 96% |\n| Odds Ratio (Gender Parity) | 0.8-1.25 | 0.98 |\n| Inference Latency | <200ms | ~85ms |\n| SHAP Computation | <500ms | ~120ms |\n\n---\n\n## 🤝 Contributing\n\nWe welcome contributions that enhance fairness, accuracy, and clinical utility:\n\n1. Fork the repository\n2. Create feature branch (`git checkout -b feature/amazing-feature`)\n3. Commit changes (`git commit -m 'Add amazing feature'`)\n4. Push to branch (`git push origin feature/amazing-feature`)\n5. Open Pull Request\n\n**Priority Areas:**\n- Additional language support for NLP feature extraction\n- Pediatric-specific triage models\n- Integration with EHR systems (HL7/FHIR)\n- Mobile application for pre-hospital triage\n\n---\n\n## 📄 License\n\n\n\n---\n\n## 🙏 Acknowledgments\ninitial frontend which was done in streamlit\nReact frontend\nData Engineering\nIntelligence \nIntegration\n---\n\n**Built with ❤️ for equitable healthcare**\n\n*For questions or support, contact:*\n```\n",
+ "hits": {
+  "st": [
+   {
+    "file": "project_bundle.md",
+    "line": 2124,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "</file>",
+     "",
+     "<file path=\"backend/project/ai/generate_data.py\">",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import pandas as pd",
+     "import logging",
+     "import sys"
+    ]
+   },
+   {
+    "file": "backend/project/ai/generate_data.py",
+    "line": 1,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import pandas as pd",
+     "import logging",
+     "import sys"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "project_bundle.md",
+    "line": 2125,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "</file>",
+     "",
+     "<file path=\"backend/project/ai/generate_data.py\">",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import pandas as pd",
+     "import logging",
+     "import sys",
+     "from pathlib import Path"
+    ]
+   },
+   {
+    "file": "backend/project/ai/generate_data.py",
+    "line": 2,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import pandas as pd",
+     "import logging",
+     "import sys",
+     "from pathlib import Path"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "project_bundle.md",
+    "line": 2124,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "</file>",
+     "",
+     "<file path=\"backend/project/ai/generate_data.py\">",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import pandas as pd",
+     "import logging",
+     "import sys"
+    ]
+   },
+   {
+    "file": "project_bundle.md",
+    "line": 2125,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "</file>",
+     "",
+     "<file path=\"backend/project/ai/generate_data.py\">",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import pandas as pd",
+     "import logging",
+     "import sys",
+     "from pathlib import Path"
+    ]
+   },
+   {
+    "file": "backend/project/ai/generate_data.py",
+    "line": 1,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import pandas as pd",
+     "import logging",
+     "import sys"
+    ]
+   },
+   {
+    "file": "backend/project/ai/generate_data.py",
+    "line": 2,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import pandas as pd",
+     "import logging",
+     "import sys",
+     "from pathlib import Path"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "project_bundle.md",
+    "line": 2124,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "</file>",
+     "",
+     "<file path=\"backend/project/ai/generate_data.py\">",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import pandas as pd",
+     "import logging",
+     "import sys"
+    ]
+   },
+   {
+    "file": "project_bundle.md",
+    "line": 2196,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "    ",
+     "    logger.info(\"Metadata detected. Training Synthesizer...\")",
+     "",
+     "    # 🧠 Step 3: Train Gaussian Copula Synthesizer",
+     "    synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "    synthesizer.fit(real_data)",
+     "",
+     "    # 🧬 Step 4: Generate synthetic rows",
+     "    logger.info(f\"Synthesizing {num_rows} rows...\")"
+    ]
+   },
+   {
+    "file": "backend/project/ai/generate_data.py",
+    "line": 1,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import pandas as pd",
+     "import logging",
+     "import sys"
+    ]
+   },
+   {
+    "file": "backend/project/ai/generate_data.py",
+    "line": 73,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "    ",
+     "    logger.info(\"Metadata detected. Training Synthesizer...\")",
+     "",
+     "    # 🧠 Step 3: Train Gaussian Copula Synthesizer",
+     "    synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "    synthesizer.fit(real_data)",
+     "",
+     "    # 🧬 Step 4: Generate synthetic rows",
+     "    logger.info(f\"Synthesizing {num_rows} rows...\")"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "backend/requirements.txt": [
+   "sdv>=1.2.0"
+  ]
+ }
+}

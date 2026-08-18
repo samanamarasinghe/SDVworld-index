@@ -1,0 +1,385 @@
+{
+ "repo": "Vicomtech/A2PRIVCOMP-Synthetic-Data-Generation-Models-Validation",
+ "disk_kb": 6346,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Synthetic Data Generation Models Validation\n\nThis repository contains the code used for Deliverable 3 of the A2-PRIVCOMP project, entitled \"_Validación de nuevos modelos de generación de datos sintéticos_\" and authored by Vicomtech Foundation.\n\n# Overview\nThis repository provides tools to train and evaluate different synthetic data generation models. It allows:\n- Loading and preprocessing real datasets.\n- Training and evaluating multiple synthetic tabular data generative models.\n- Tracking evaluation metrics and results using MLflow and MinIO.\n- Reproducible evaluation workflows for synthetic tabular data research.\n\n## Structure\n```bash\n├── Notebooks # Contains Jupyter notebooks used to load, preprocess and split the source data for each used dataset.\n├── Real Data # Stores the datasets used in the deliverable, organized into three subfolders\n│   ├── Complete Data # Original real data in its raw format.\n│   ├── Train Data # Data used for model training (generated via the notebooks in Notebooks).\n│   └──  Test Data # Data used to validate the synthetic data (also generated via the notebooks in Notebooks).\n├── requirements # Includes multiple .txt files, each listing the dependencies needed to run the code and the different synthetic data generator models.\n├── results # Includes a Jupyter notebook demonstrating how to retrieve registered metrics from MLflow and use them.\n├── src # Contains the implementation code for synthetic data generation models and evaluation metrics and methods.\n├── .env # Defines the env variables for data paths.\n├── .env.minio # Defines the env variables for minio container. This must be correctly configured for models to access the necessary data.\n├── .env.mlflow # Defines the env variables for mlflow container. This must be correctly configured for models to access the necessary data.\n├── .gitignore\n├── .pre-commit-config.yaml\n├── docker-compose.yml # A docker compose file containing all the the required specifications to correctly set the containers.\n├── Dockerfile_mlflow # A dockerfile used as base in order to corectly set the mlflow container.\n├── README.md\n└── train_{model_name}_model.py # A collection of Python scripts that act as entry points for training the different models defined within them.\n```\n\n## Requirements\n- *Python 3.8+*\n- *Python environment manager*: Some of the models in this repository are mutually exclusive, meaning they cannot coexist in the same Python environment. Keep in mind the limitations this can imply.\n- *Docker & Docker Compose*: All metrics are tracked using an MLflow container ([mlflow.org](https://mlflow.org/)) which relies on MinIO ([min.io](https://www.min.io/))\n\n---\n**NOTE**\n\nThe containers do not need to run on the same machine used for training and evaluating the synthetic data generators. However, the training machine must be able to establish a connection to the MLflow container, even if MLflow is hosted remotely.\n\n---\n\n## Usage\n\n### Deployment with Docker \nThis repository includes a docker-compose.yml file that deploys two containers: MLflow and MinIO.\n\n- **MLflow** is used to track models and log metrics for each training process.\n\n- **MinIO** serves as the backend storage for these models and metrics.\n\nFor the containers to work properly, **two .env files are required** (one for each service). Both are included in the repository but must be completed with the correct values before starting the containers.\n\nTo launch the containers, run (.env files must be filled):\n\n```\ndocker compose -f docker-compose.yml up \n```\n\nadding \"_-d_\" will detach the process once the containers are ready. \n\nBefore generating synthetic data, it is **necessary to create a bucket named mlflow-bucket in MinIO** to do so:\n\n1. Open the MinIO web interface at port 9001 on the host machine where the containers were deployed. If running locally, go to: http://localhost:9001 in case of running on other machine set the ip of the machine instead of \"localhost\".\n\n2. Log in with the credentials defined in the .env.minio file.\n\n3. Create a bucket named mlflow-bucket.\n\nMLflow will then use this bucket to store evaluation results and artifacts.\n\n### Generative models training and evaluation with Python \nUsing your chosen Python environment manager, create a new environment and install the requirements for the model you want to train.\n\nIf training a specific model, install the dependencies listed in its corresponding requirements file.\n\nFor example, in order to train the _dp-npc_ model install the according requirements files (under the requirements folder):\n\n```\npip install -r requirements_npc.txt\n```\n\nOnce the enviroment is ready open the appropriate .py file for the target model and perform the following steps:\n\n1. At the bottom of the file, specify which datasets should be used for training, there should be some examples ready, it is possible to use more than one dataset per execution.\n\n2. The datasets must already be partitioned into train and test sets, and stored correctly in the Real Data folder.\n\n3. **Ensure the code includes a tracking_uri variable**. This must be set to the IP address and port of the MLflow container where metrics will be tracked. Model hyperparameters are set to default in case of changes the class containing the parameters can be changed. Refer to the .py files stored in src/sdg_models to see the available hyperparameter for each model.\n\nOnce everything is set correctly run the chosen .py file, for example:\n\n```\npython train_models_dp_npc.py\n```\n\n---\n**NOTE**\n\nSome models and datasets may require significantly more computational resources than others.\n\n---\n\n## Results\nResults and metrics are tracked in MLflow and stored in MinIO. A Jupyter notebook is provided under _Results/_ as an example to retrieve and visualize metrics for one dataset.\n\n\n## Contributing\nContributions, issues and feature requests are welcome. Open a pull request or report a bug via the issues page.\n\n\n## Funding\nThis work has been funded by the A2-PRIVCOMP project funded by the Spanish Government PRTR funds, part of the European Union-NextGeneration EU recovery plan.\n\n![alt text](./src/images/Logo.png)\n\n## Related publications\nIf you use this repository in your research, please cite:\n\n> Hernandez M, Osorio-Marulanda PA, Catalina M, Loinaz L, Epelde G and Aginako N (2025). *Comprehensive evaluation framework for synthetic tabular data in health: fidelity, utility and privacy analysis of generative models with and without privacy guarantees*. Front. Digit. Health 7:1576290. doi: [10.3389/fdgth.2025.1576290](https://doi.org/10.3389/fdgth.2025.1576290)\n\n",
+ "hits": {
+  "st": [
+   {
+    "file": "src/sdg_models/without_privacy_guarantes/sdv/GaussianCopulaModel.py",
+    "line": 7,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import os",
+     "",
+     "# Third-party app imports",
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# Imports from your apps",
+     "from src.sdg_models.AbstractModelMLFlow import ("
+    ]
+   },
+   {
+    "file": "src/sdg_models/without_privacy_guarantes/sdv/CopulaGANModel.py",
+    "line": 7,
+    "text": "from sdv.single_table import CopulaGANSynthesizer",
+    "context": [
+     "import os",
+     "",
+     "# Third-party app imports",
+     "import pandas as pd",
+     "from sdv.single_table import CopulaGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# Imports from your apps",
+     "from src.sdg_models.AbstractModelMLFlow import ("
+    ]
+   },
+   {
+    "file": "src/sdg_models/without_privacy_guarantes/sdv/CTGANModel.py",
+    "line": 7,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import os",
+     "",
+     "# Third-party app imports",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# Imports from your apps",
+     "from src.sdg_models.AbstractModelMLFlow import ("
+    ]
+   },
+   {
+    "file": "src/sdg_models/without_privacy_guarantes/sdv/TVAEModel.py",
+    "line": 7,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import os",
+     "",
+     "# Third-party app imports",
+     "import pandas as pd",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# Imports from your apps",
+     "from src.sdg_models.AbstractModelMLFlow import ("
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "src/sdg_models/without_privacy_guarantes/sdv/GaussianCopulaModel.py",
+    "line": 8,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "# Third-party app imports",
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# Imports from your apps",
+     "from src.sdg_models.AbstractModelMLFlow import (",
+     "    SDGModelParams,"
+    ]
+   },
+   {
+    "file": "src/sdg_models/without_privacy_guarantes/sdv/CopulaGANModel.py",
+    "line": 8,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "# Third-party app imports",
+     "import pandas as pd",
+     "from sdv.single_table import CopulaGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# Imports from your apps",
+     "from src.sdg_models.AbstractModelMLFlow import (",
+     "    SDGModelParams,"
+    ]
+   },
+   {
+    "file": "src/sdg_models/without_privacy_guarantes/sdv/CTGANModel.py",
+    "line": 8,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "# Third-party app imports",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# Imports from your apps",
+     "from src.sdg_models.AbstractModelMLFlow import (",
+     "    SDGModelParams,"
+    ]
+   },
+   {
+    "file": "src/sdg_models/without_privacy_guarantes/sdv/TVAEModel.py",
+    "line": 8,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "# Third-party app imports",
+     "import pandas as pd",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# Imports from your apps",
+     "from src.sdg_models.AbstractModelMLFlow import (",
+     "    SDGModelParams,"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "src/sdg_models/without_privacy_guarantes/sdv/GaussianCopulaModel.py",
+    "line": 7,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import os",
+     "",
+     "# Third-party app imports",
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# Imports from your apps",
+     "from src.sdg_models.AbstractModelMLFlow import ("
+    ]
+   },
+   {
+    "file": "src/sdg_models/without_privacy_guarantes/sdv/GaussianCopulaModel.py",
+    "line": 8,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "# Third-party app imports",
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# Imports from your apps",
+     "from src.sdg_models.AbstractModelMLFlow import (",
+     "    SDGModelParams,"
+    ]
+   },
+   {
+    "file": "src/sdg_models/without_privacy_guarantes/sdv/CopulaGANModel.py",
+    "line": 7,
+    "text": "from sdv.single_table import CopulaGANSynthesizer",
+    "context": [
+     "import os",
+     "",
+     "# Third-party app imports",
+     "import pandas as pd",
+     "from sdv.single_table import CopulaGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# Imports from your apps",
+     "from src.sdg_models.AbstractModelMLFlow import ("
+    ]
+   },
+   {
+    "file": "src/sdg_models/without_privacy_guarantes/sdv/CopulaGANModel.py",
+    "line": 8,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "# Third-party app imports",
+     "import pandas as pd",
+     "from sdv.single_table import CopulaGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# Imports from your apps",
+     "from src.sdg_models.AbstractModelMLFlow import (",
+     "    SDGModelParams,"
+    ]
+   },
+   {
+    "file": "src/sdg_models/without_privacy_guarantes/sdv/CTGANModel.py",
+    "line": 7,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import os",
+     "",
+     "# Third-party app imports",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# Imports from your apps",
+     "from src.sdg_models.AbstractModelMLFlow import ("
+    ]
+   },
+   {
+    "file": "src/sdg_models/without_privacy_guarantes/sdv/CTGANModel.py",
+    "line": 8,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "# Third-party app imports",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# Imports from your apps",
+     "from src.sdg_models.AbstractModelMLFlow import (",
+     "    SDGModelParams,"
+    ]
+   },
+   {
+    "file": "src/sdg_models/without_privacy_guarantes/sdv/TVAEModel.py",
+    "line": 7,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import os",
+     "",
+     "# Third-party app imports",
+     "import pandas as pd",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# Imports from your apps",
+     "from src.sdg_models.AbstractModelMLFlow import ("
+    ]
+   },
+   {
+    "file": "src/sdg_models/without_privacy_guarantes/sdv/TVAEModel.py",
+    "line": 8,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "# Third-party app imports",
+     "import pandas as pd",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# Imports from your apps",
+     "from src.sdg_models.AbstractModelMLFlow import (",
+     "    SDGModelParams,"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "src/sdg_models/without_privacy_guarantes/sdv/GaussianCopulaModel.py",
+    "line": 7,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import os",
+     "",
+     "# Third-party app imports",
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# Imports from your apps",
+     "from src.sdg_models.AbstractModelMLFlow import ("
+    ]
+   },
+   {
+    "file": "src/sdg_models/without_privacy_guarantes/sdv/GaussianCopulaModel.py",
+    "line": 41,
+    "text": "self.model = GaussianCopulaSynthesizer(",
+    "context": [
+     "    def _initialize_model_internal(self, input_data: pd.DataFrame):",
+     "        metadata = SingleTableMetadata()",
+     "        metadata.detect_from_dataframe(input_data)",
+     "",
+     "        self.model = GaussianCopulaSynthesizer(",
+     "            metadata=metadata,",
+     "            enforce_rounding=self.model_params.enforce_rounding,",
+     "            enforce_min_max_values=self.model_params.enforce_min_max_values,",
+     "        )"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "src/sdg_models/without_privacy_guarantes/sdv/CTGANModel.py",
+    "line": 7,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import os",
+     "",
+     "# Third-party app imports",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# Imports from your apps",
+     "from src.sdg_models.AbstractModelMLFlow import ("
+    ]
+   },
+   {
+    "file": "src/sdg_models/without_privacy_guarantes/sdv/CTGANModel.py",
+    "line": 49,
+    "text": "self.model = CTGANSynthesizer(",
+    "context": [
+     "    def _initialize_model_internal(self, input_data: pd.DataFrame):",
+     "        metadata = SingleTableMetadata()",
+     "        metadata.detect_from_dataframe(input_data)",
+     "",
+     "        self.model = CTGANSynthesizer(",
+     "            metadata=metadata,",
+     "            enforce_rounding=self.model_params.enforce_rounding,",
+     "            embedding_dim=self.model_params.embedding_dim,",
+     "            batch_size=self.model_params.batch_size,"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "src/sdg_models/without_privacy_guarantes/sdv/TVAEModel.py",
+    "line": 7,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import os",
+     "",
+     "# Third-party app imports",
+     "import pandas as pd",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# Imports from your apps",
+     "from src.sdg_models.AbstractModelMLFlow import ("
+    ]
+   },
+   {
+    "file": "src/sdg_models/without_privacy_guarantes/sdv/TVAEModel.py",
+    "line": 45,
+    "text": "self.model = TVAESynthesizer(",
+    "context": [
+     "    def _initialize_model_internal(self, input_data: pd.DataFrame):",
+     "        metadata = SingleTableMetadata()",
+     "        metadata.detect_from_dataframe(input_data)",
+     "",
+     "        self.model = TVAESynthesizer(",
+     "            metadata=metadata,",
+     "            enforce_rounding=self.model_params.enforce_rounding,",
+     "            embedding_dim=self.model_params.embedding_dim,",
+     "            batch_size=self.model_params.batch_size,"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "gc",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [
+  "src/sdg_models/without_privacy_guarantes/sdv"
+ ],
+ "dependencies": {}
+}

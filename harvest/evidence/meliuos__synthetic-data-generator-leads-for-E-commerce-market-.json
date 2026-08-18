@@ -1,0 +1,364 @@
+{
+ "repo": "meliuos/synthetic-data-generator-leads-for-E-commerce-market-",
+ "disk_kb": 669,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Lead Intelligence Platform\n\nPhase 1 bootstraps the local event backbone:\n- Redpanda (Kafka-compatible broker)\n- ClickHouse (analytics store)\n- RudderStack data plane\n- Streamlit dashboard shell\n\n## Quickstart\n\n1. Copy the environment template:\n   ```bash\n   cp .env.example .env\n   ```\n2. Validate Docker Compose:\n   ```bash\n   make validate\n   ```\n3. Start the stack:\n   ```bash\n   make up\n   ```\n4. Apply ClickHouse schema:\n   ```bash\n   make schema\n   ```\n4. Verify containers are healthy:\n   ```bash\n   make ps\n   ```\n5. Verify ingestion tables:\n   ```bash\n   docker compose exec -T clickhouse clickhouse-client --query \"SHOW TABLES FROM analytics\"\n   ```\n6. Run end-to-end smoke test (manual produce -> MergeTree row):\n   ```bash\n   make smoke-test\n   ```\n7. Stop the stack when done:\n   ```bash\n   make down\n   ```\n\n## Exposed Services\n\n- Redpanda Kafka: localhost:19092\n- Redpanda HTTP proxy: localhost:8082\n- ClickHouse HTTP: localhost:8123\n- RudderStack gateway: localhost:8080\n- Streamlit app: localhost:8501\n\n## Notes\n\n- ClickHouse async inserts are enabled in `infra/clickhouse/users.d/async_insert.xml`.\n- RudderStack file-based config is in `infra/rudderstack/workspaceConfig.json` and forwards events to topic `lead-events`.\n- ClickHouse ingestion schema is defined in `infra/clickhouse/sql/001_events_schema.sql` and creates `events_queue`, `events_mv`, and `click_events`.\n- Smoke test script is `scripts/smoke-test.sh`; it publishes one JSON event to Redpanda and verifies ingestion in under 5 seconds.\n- [Schema v1.1 (e-commerce events)](docs/schema-v1.1.md) — 8 new Nullable columns on `analytics.click_events`, per-line-item `purchase_items` table, server-side `orders` dedup, GA4 alias view. Apply via `make schema-v11`; verify via `make smoke-test-v11`.\n- Phase 6 tracker APIs are available in `src/tracker/index.js`: `productView`, `addToCart`, `removeFromCart`, `purchase`, `search`; all methods inherit consent gating.\n- The demo shop at `src/test-spa-page.html` exercises all 5 e-commerce APIs with product cards, cart controls, checkout, and search.\n- `search` emits only on explicit submit (Search button / Enter), never on keystroke input.\n- Retailrocket import (Phase 7):\n   1. Run `make retailrocket-setup` once (creates `.venv-retailrocket`, installs `kaggle` + importer deps; avoids system pip/PEP 668 issues).\n   2. Optional but recommended: add Kaggle API credentials at `~/.kaggle/kaggle.json` (permissions `chmod 600 ~/.kaggle/kaggle.json`). For this public dataset, the CLI can also download without local credentials.\n   3. Run `make retailrocket-download` (downloads exactly 4 CSV files into `data/retailrocket/`).\n   4. Run `make schema-retailrocket` to create `retailrocket_raw.*` tables and helper views.\n   5. Run `make retailrocket-import` then `make retailrocket-smoke`.\n   6. Re-running `make retailrocket-import` is idempotent (load batch short-circuit + insert dedup tokens).\n",
+ "hits": {
+  "ct": [
+   {
+    "file": "docs/ctgan_evaluation.md",
+    "line": 32,
+    "text": "- `models/ctgan_sessions.pkl` — trained CTGANSynthesizer (gitignored)",
+    "context": [
+     "Tested top-5 categories. All returned rows: YES.",
+     "",
+     "## Files",
+     "",
+     "- `models/ctgan_sessions.pkl` — trained CTGANSynthesizer (gitignored)",
+     "- `data/session_features.parquet` — training corpus (gitignored)",
+     "- `docs/ctgan_kde_plots.png` — marginal distribution plots",
+     "",
+     "## Regeneration"
+    ]
+   },
+   {
+    "file": "scripts/quick_train_ctgan.py",
+    "line": 102,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "",
+     "def train(df: pd.DataFrame) -> None:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "",
+     "    log.info(\"Building SDV metadata …\")",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(df)"
+    ]
+   },
+   {
+    "file": "scripts/quick_train_ctgan.py",
+    "line": 125,
+    "text": "log.info(\"Training CTGANSynthesizer (%d epochs, %d rows) …\", EPOCHS, len(df))",
+    "context": [
+     "",
+     "    if CATEGORY_COL in df.columns:",
+     "        metadata.update_column(CATEGORY_COL, sdtype=\"categorical\")",
+     "",
+     "    log.info(\"Training CTGANSynthesizer (%d epochs, %d rows) …\", EPOCHS, len(df))",
+     "    synth = CTGANSynthesizer(",
+     "        metadata,",
+     "        epochs=EPOCHS,",
+     "        batch_size=500,"
+    ]
+   },
+   {
+    "file": "scripts/quick_train_ctgan.py",
+    "line": 126,
+    "text": "synth = CTGANSynthesizer(",
+    "context": [
+     "    if CATEGORY_COL in df.columns:",
+     "        metadata.update_column(CATEGORY_COL, sdtype=\"categorical\")",
+     "",
+     "    log.info(\"Training CTGANSynthesizer (%d epochs, %d rows) …\", EPOCHS, len(df))",
+     "    synth = CTGANSynthesizer(",
+     "        metadata,",
+     "        epochs=EPOCHS,",
+     "        batch_size=500,",
+     "        verbose=True,"
+    ]
+   },
+   {
+    "file": "scripts/quick_train_ctgan.py",
+    "line": 136,
+    "text": "log.info(\"Saved CTGANSynthesizer to %s\", OUT_PATH)",
+    "context": [
+     "    synth.fit(df)",
+     "",
+     "    OUT_PATH.parent.mkdir(parents=True, exist_ok=True)",
+     "    joblib.dump(synth, OUT_PATH)",
+     "    log.info(\"Saved CTGANSynthesizer to %s\", OUT_PATH)",
+     "",
+     "    # Quick smoke-test",
+     "    log.info(\"Smoke-testing: sampling 100 rows …\")",
+     "    sample = synth.sample(100)"
+    ]
+   },
+   {
+    "file": "scripts/generate_synthetic_sessions.py",
+    "line": 4,
+    "text": "Loads a trained SDV CTGANSynthesizer from disk, samples N sessions (optionally",
+    "context": [
+     "\"\"\"",
+     "Synthetic session generator — Phase 13.",
+     "",
+     "Loads a trained SDV CTGANSynthesizer from disk, samples N sessions (optionally",
+     "conditioned on a specific category), applies the Phase 11 MLScorer to tag each",
+     "row with ml_lead_score / ml_score_tier, and inserts the result into",
+     "analytics.synthetic_sessions.",
+     ""
+    ]
+   },
+   {
+    "file": "scripts/generate_synthetic_sessions.py",
+    "line": 316,
+    "text": "help=\"Path to trained CTGANSynthesizer (joblib). Default: models/ctgan_sessions.pkl\",",
+    "context": [
+     "    parser.add_argument(",
+     "        \"--model\",",
+     "        type=Path,",
+     "        default=Path(\"models/ctgan_sessions.pkl\"),",
+     "        help=\"Path to trained CTGANSynthesizer (joblib). Default: models/ctgan_sessions.pkl\",",
+     "    )",
+     "    parser.add_argument(",
+     "        \"--dry-run\",",
+     "        action=\"store_true\","
+    ]
+   },
+   {
+    "file": "scripts/predict_product.py",
+    "line": 87,
+    "text": "help=\"Path to trained CTGANSynthesizer pkl.\")",
+    "context": [
+     "    parser.add_argument(\"--keywords\", default=\"\", help=\"Comma-separated keywords.\")",
+     "    parser.add_argument(\"--n-sessions\", type=int, default=1_000,",
+     "                        help=\"Number of synthetic sessions to sample (default: 1000).\")",
+     "    parser.add_argument(\"--model\", type=Path, default=Path(\"models/ctgan_sessions.pkl\"),",
+     "                        help=\"Path to trained CTGANSynthesizer pkl.\")",
+     "    return parser.parse_args()",
+     "",
+     "",
+     "def main() -> int:"
+    ]
+   },
+   {
+    "file": ".planning/RISKS.md",
+    "line": 96,
+    "text": "- Use SDV's `CTGANSynthesizer` with the recommended defaults before tuning. The SDV library",
+    "context": [
+     "usefully and may degrade ML model quality.",
+     "**Mitigation:**",
+     "- Evaluate synthetic data quality with Jensen-Shannon divergence (< 0.1 threshold per feature)",
+     "  before using it for ML augmentation.",
+     "- Use SDV's `CTGANSynthesizer` with the recommended defaults before tuning. The SDV library",
+     "  provides built-in quality report generation — use it.",
+     "- Checkpoint the model every 50 epochs. If quality plateaus, stop early rather than overfitting.",
+     "",
+     "---"
+    ]
+   },
+   {
+    "file": ".planning/MILESTONES.md",
+    "line": 111,
+    "text": "- **Phase 13 — CTGAN Behavioral Simulator** — `CTGANSynthesizer` (SDV) trained on `analytics.session_features` with top-50 category cardinality cap to avoid OHE memory error. Exports `models/ctgan_sessions.pkl`. `analytics.synthetic_sessions` ClickHouse table (mirrors session_features schema + `is_s",
+    "context": [
+     "**Phases:** 13–14",
+     "",
+     "### What Shipped",
+     "",
+     "- **Phase 13 — CTGAN Behavioral Simulator** — `CTGANSynthesizer` (SDV) trained on `analytics.session_features` with top-50 category cardinality cap to avoid OHE memory error. Exports `models/ctgan_ses",
+     "- **Phase 14 — Simulation Engine (Mesa)** — Mesa 3.x agent-based simulator with `BrowserAgent`, `BuyerAgent`, `AbandonerAgent`. Kafka/Redpanda event emission bridge. `scripts/run_simulation.py` CLI. M",
+     "",
+     "### Key Decisions",
+     ""
+    ]
+   },
+   {
+    "file": ".planning/phases/13-ctgan-behavioral-simulator/PLANS.md",
+    "line": 34,
+    "text": "train `CTGANSynthesizer` for 300 epochs, save checkpoint every 50 epochs",
+    "context": [
+     "  - Cell 2: export `analytics.retailrocket_session_features` enriched with `primary_category`",
+     "    (derived via `retailrocket_raw.item_properties` JOIN) and `score_tier` (derived from",
+     "    Phase 10 rule weights in SQL); saves to `data/session_features.parquet`",
+     "  - Cell 3: define `SingleTableMetadata` with continuous/categorical column types;",
+     "    train `CTGANSynthesizer` for 300 epochs, save checkpoint every 50 epochs",
+     "    (`models/ctgan_checkpoint_N.pkl`); save final to `models/ctgan_sessions.pkl`",
+     "  - Cell 4: evaluate marginal distributions — KDE plots for all continuous features,",
+     "    JSD per feature (target < 0.10); saves `docs/ctgan_kde_plots.png`",
+     "  - Cell 5: verify conditional sampling for top-5 categories"
+    ]
+   },
+   {
+    "file": ".planning/phases/13-ctgan-behavioral-simulator/PLANS.md",
+    "line": 48,
+    "text": "- Loads `models/ctgan_sessions.pkl` (CTGANSynthesizer via joblib); fails with clear message if missing",
+    "context": [
+     "### 13-03: Generation script + smoke test ✓",
+     "- [x] `scripts/generate_synthetic_sessions.py`:",
+     "  - CLI: `--n-sessions INT` (default 10,000), `--category-filter STR` (optional), `--overwrite`,",
+     "    `--model PATH`, `--dry-run`",
+     "  - Loads `models/ctgan_sessions.pkl` (CTGANSynthesizer via joblib); fails with clear message if missing",
+     "  - Samples unconditionally or via `sample_from_conditions` with fallback to unconditional on failure",
+     "  - Applies Phase 11 `MLScorer` to tag each row with `ml_lead_score` / `ml_score_tier`",
+     "  - Coerces dtypes (rounds floats to ints for count columns, clips to valid ranges)",
+     "  - Assigns synthetic `session_id` (`syn_<hex12>`) and `anonymous_user_id` (`syn_user_<hex8>`)"
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "scripts/quick_train_ctgan.py",
+    "line": 102,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "",
+     "def train(df: pd.DataFrame) -> None:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "",
+     "    log.info(\"Building SDV metadata …\")",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(df)"
+    ]
+   },
+   {
+    "file": "notebooks/ctgan_trainer.ipynb",
+    "line": 75,
+    "text": "\"source\": \"# Cell 3 — Define SDV Metadata and train CTGANSynthesizer\\n#\\n# Continuous columns: numeric features with a natural real-valued domain.\\n# Categorical columns: discrete labels and flags.\\n#\\n# Training: 100 epochs on a stratified 200K-row sample.\\n# Full 1.6M-row corpus takes >12h on CPU;",
+    "context": [
+     "   \"cell_type\": \"code\",",
+     "   \"execution_count\": null,",
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": \"# Cell 3 — Define SDV Metadata and train CTGANSynthesizer\\n#\\n# Continuous columns: numeric features with a natural real-valued domain.\\n# Categorical columns: discrete labels and flags.",
+     "  },",
+     "  {",
+     "   \"cell_type\": \"code\",",
+     "   \"execution_count\": null,"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "scripts/quick_train_ctgan.py",
+    "line": 101,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    return df",
+     "",
+     "",
+     "def train(df: pd.DataFrame) -> None:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "",
+     "    log.info(\"Building SDV metadata …\")",
+     "    metadata = SingleTableMetadata()"
+    ]
+   },
+   {
+    "file": "notebooks/ctgan_trainer.ipynb",
+    "line": 75,
+    "text": "\"source\": \"# Cell 3 — Define SDV Metadata and train CTGANSynthesizer\\n#\\n# Continuous columns: numeric features with a natural real-valued domain.\\n# Categorical columns: discrete labels and flags.\\n#\\n# Training: 100 epochs on a stratified 200K-row sample.\\n# Full 1.6M-row corpus takes >12h on CPU;",
+    "context": [
+     "   \"cell_type\": \"code\",",
+     "   \"execution_count\": null,",
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": \"# Cell 3 — Define SDV Metadata and train CTGANSynthesizer\\n#\\n# Continuous columns: numeric features with a natural real-valued domain.\\n# Categorical columns: discrete labels and flags.",
+     "  },",
+     "  {",
+     "   \"cell_type\": \"code\",",
+     "   \"execution_count\": null,"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "scripts/quick_train_ctgan.py",
+    "line": 101,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    return df",
+     "",
+     "",
+     "def train(df: pd.DataFrame) -> None:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "",
+     "    log.info(\"Building SDV metadata …\")",
+     "    metadata = SingleTableMetadata()"
+    ]
+   },
+   {
+    "file": "scripts/quick_train_ctgan.py",
+    "line": 102,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "",
+     "def train(df: pd.DataFrame) -> None:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "",
+     "    log.info(\"Building SDV metadata …\")",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(df)"
+    ]
+   },
+   {
+    "file": "scripts/generate_synthetic_sessions.py",
+    "line": 146,
+    "text": "from sdv.sampling import Condition",
+    "context": [
+     "def _sample(synthesizer, n_sessions: int, category_filter: str | None) -> pd.DataFrame:",
+     "    if category_filter:",
+     "        log.info(\"Conditional sampling: n=%d, category=%s\", n_sessions, category_filter)",
+     "        try:",
+     "            from sdv.sampling import Condition",
+     "            condition = Condition(",
+     "                num_rows=n_sessions,",
+     "                column_values={\"primary_category\": category_filter},",
+     "            )"
+    ]
+   },
+   {
+    "file": "notebooks/ctgan_trainer.ipynb",
+    "line": 96,
+    "text": "\"from sdv.sampling import Condition\\n\",",
+    "context": [
+     "    \"# Phase 17 requires CTGAN to condition on primary_category.\\n\",",
+     "    \"# This cell verifies that sample_from_conditions works for the top-5 categories\\n\",",
+     "    \"# and that the sampled rows respect the condition.\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.sampling import Condition\\n\",",
+     "    \"\\n\",",
+     "    \"top_categories = df_for_training['primary_category'].value_counts().head(5).index.tolist()\\n\",",
+     "    \"log.info('Testing conditional sampling for categories: %s', top_categories)\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "src/prediction/product_predictor.py",
+    "line": 135,
+    "text": "from sdv.sampling import Condition",
+    "context": [
+     "    Try conditional sampling on category; fall back to unconditional on failure.",
+     "    Returns (dataframe, used_conditional).",
+     "    \"\"\"",
+     "    try:",
+     "        from sdv.sampling import Condition",
+     "",
+     "        condition = Condition(",
+     "            num_rows=n_sessions,",
+     "            column_values={\"primary_category\": category},"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "# SDV/CTGAN (requirements-synth.txt) are not needed for tests — they are mocked."
+  ]
+ }
+}

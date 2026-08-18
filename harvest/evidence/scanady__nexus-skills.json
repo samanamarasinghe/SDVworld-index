@@ -1,0 +1,121 @@
+{
+ "repo": "scanady/nexus-skills",
+ "disk_kb": 19228,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "\n> Agentic skills, prompts, and instructions for AI coding platforms — GitHub Copilot, Claude Code, and Codex.\n\n[![Skills](https://img.shields.io/badge/skills-141-blue.svg)](skills/)\n\n## Table of Contents\n\n- [Overview](#overview)\n- [Features \\& Capabilities](#features--capabilities)\n- [Architecture Overview](#architecture-overview)\n- [Key Concepts](#key-concepts)\n- [Project Structure](#project-structure)\n- [Prerequisites \\& Requirements](#prerequisites--requirements)\n- [Installation](#installation)\n- [Usage](#usage)\n- [Skills Reference](#skills-reference)\n- [Additional Resources](#additional-resources)\n\n## Overview\n\nCurated collection of agent skills, reusable prompts, and coding instructions for AI development platforms. Skills are self-contained behavior packages that give AI agents specialized capabilities — from drafting PRDs and writing SOPs, to building MCP servers and running TDD workflows.\n\nInstall any skill once and invoke it in your AI agent by name. Skills work with GitHub Copilot, Claude Code, and Codex.\n\n## Features & Capabilities\n\n- **141 production-ready skills** organized by domain: marketing, strategy, product, design, tech, and more\n- **Multi-platform support** — install to GitHub Copilot, Claude Code, or Codex\n- **Project or global scope** — install skills for a single project or system-wide\n- **CLI installer** — install, list, and upgrade skills from the command line\n- **VS Code agents** — pre-built Copilot agent `.agent.md` configurations\n- **Instruction files** — path-scoped coding guidelines for consistent AI behavior across teams\n- **Reusable prompts** — 25+ structured `.prompt.md` files for common engineering and product workflows\n\n## Architecture Overview\n\n**Distribution layer** (`skills/`, `bin/`, `src/`)\nThe `skills/` folder is the source-of-truth skill registry. Each skill is a self-contained folder with a `SKILL.md` file and optional `references/` materials. The CLI (`bin/nxa.js`) copies skills from this registry into AI agent config directories on the local machine, with implementation code in `src/`.\n\n**VS Code Copilot customization layer** (`.github/`)\nThe `.github/` folder contains VS Code Copilot customizations: agent definitions (`.github/agents/`), path-scoped instruction files (`.github/instructions/`), reusable prompts (`.github/prompts/`), and global Copilot instructions (`.github/copilot-instructions.md`). These files are picked up automatically by VS Code Copilot and are not installed via the CLI.\n\n## Key Concepts\n\n### Skills\n\nA **skill** is a `SKILL.md` file that gives an AI agent a specialized behavior or workflow. Skills use YAML frontmatter to declare their `name`, `description`, and `metadata`. The description is the search trigger — the agent routes to a skill when the user's request matches it.\n\nSkills are installed into an AI agent's config directory (e.g., `.agents/skills/` for GitHub Copilot). Once installed, skills are invoked by name in chat.\n\n### Agents\n\n**Agents** (`.github/agents/*.agent.md`) are VS Code Copilot custom agent modes. Each agent has a role, system prompt, and optional handoffs to other agents.\n\n### Instructions\n\n**Instructions** (`.github/instructions/*.instructions.md`) are scoped coding guidelines automatically injected by VS Code Copilot for matching file paths. For example, `java-backend.instructions.md` applies to `backend/**/*.java` files.\n\n### Prompts\n\n**Prompts** (`.github/prompts/*.prompt.md`) are reusable task templates invoked with `#` in VS Code Copilot Chat. Examples: `nexus-document-readme.prompt.md`, `nexus-quality-tdd.prompt.md`.\n\n## Project Structure\n\n```\n{root}/\n├── bin/\n│   └── nxa.js                  # Published CLI executable\n├── src/\n│   ├── cli/                    # CLI parsing, help, and command handlers\n│   ├── core/                   # Skill discovery, validation, plugins, and file utilities\n│   ├── sources/                # Local, git, and GitHub skill sources\n│   └── audit/                  # Skill overlap analysis engine\n├── scripts/\n│   ├── build/                  # Plugin and GitHub Pages builders\n│   ├── catalog/                # Skill catalog scan/rebuild scripts\n│   ├── export/                 # Manual skill zip export scripts\n│   └── validation/             # Repository validation scripts\n├── skills/                     # Source skill registry\n│   ├── agents-copilot-instructions/\n│   ├── content-copy-humanizer/\n│   ├── engineering-quality-tdd/\n│   ├── product-spec-prd-generator/\n│   └── ...                     # 145 skills total\n├── plugin-packages/            # Plugin definitions (manifest + membership + optional MCP)\n│   ├── content/\n│   ├── data/\n│   └── ...                     # 12 plugins total\n├── docs/                       # Project documentation\n├── .github/\n│   ├── copilot-instructions.md # Global Copilot instructions\n│   ├── agents/                 # Copilot agent definitions\n│   ├── instructions/           # Path-scoped instruction files\n│   └── prompts/                # Reusable Copilot prompt files\n\n```\n\n## Prerequisites & Requirements\n\n- **Node.js** v16 or later\n- **npm** (included with Node.js)\n- One or more supported AI agents installed:\n  - [GitHub Copilot](https://github.com/features/copilot) (VS Code extension)\n  - [Claude Code](https://claude.ai/code)\n  - [Codex CLI](https://github.com/openai/codex)\n\n## Installation\n\n### From a cloned repo\n\nFrom the project root, install all skills to the current project (default agent: GitHub Copilot):\n\n```bash\nnode bin/nxa.js install\n```\n\nInstall a specific skill to a specific agent:\n\n```bash\nnode bin/nxa.js install --skill content-copy-humanizer -a github-copilot\n```\n\nInstall to multiple agents at once:\n\n```bash\nnode bin/nxa.js install -a github-copilot\n```\n\nInstall globally instead of project-scoped:\n\n```bash\nnode bin/nxa.js install --skill product-spec-prd-generator --global\n```\n\n### CLI Reference\n\n| Command | Short | Description |\n|---------|-------|-------------|\n| `install` | | Install skills |\n| `list` | | List available skills |\n| `audit-overlap` | | Find duplicate and overlapping skills |\n| `--skill <name>` | `-s` | Install a specific skill (repeatable) |\n| `--plugin <name>` | `-P` | Install all skills in a named plugin (repeatable) |\n| `--agent <name>` | `-a` | Target agent (repeatable, default: `agent-skills`) |\n| `--global` | `-g` | Install globally (default: project) |\n| `--project` | `-p` | Install to project (explicit) |\n| `--upgrade` | `-u` | Upgrade existing skills (prompts for confirmation) |\n| `--overwrite` | `-o` | Skip confirmation when upgrading |\n| `--source-url <url>` |  | Clone skills from a git repository instead of the bundled skills |\n| `--source-ref <ref>` |  | Branch, tag, or commit to clone with `--source-url` |\n| `--full` | `-f` | List skills with descriptions |\n| `--names` | `-n` | List skill names only |\n| `--count` | `-c` | Print skill count only |\n\n**`audit-overlap` options:**\n\n| Option | Short | Description |\n|--------|-------|-------------|\n| `--threshold <n>` | `-t` | Minimum overlap score to report (default: 0.20) |\n| `--top <n>` | | Limit output to top N pairs |\n| `--json-only` | | Write JSON report only |\n| `--md-only` | | Write Markdown report only |\n| `--output <dir>` | `-o` | Output directory (default: `output/`) |\n\n### Supported agents\n\n| Agent | Global path | Project path |\n|-------|-------------|--------------|\n| `agent-skills` (default) | `~/.agents/skills/` | `.agents/skills/` |\n| `github-copilot` | `~/.github/skills/` | `.github/skills/` |\n| `claude-code` | `~/.claude/skills/` | `.claude/skills/` |\n| `codex` | `~/.codex/skills/` | `.agents/skills/` |\n\n## Usage\n\nAfter installation, invoke a skill in your AI agent chat by describing what you want to do. The agent matches your request to the closest skill by description.\n\nFor repeatable team installs, pin a branch, tag, or commit in the git package spec or pass `--source-ref` so every project pulls the same skill set.\n\n**Examples:**\n\n```\n/skill-architect create a new skill for drafting weekly status updates\n```\n\n```\n/engineering-api-mcp-builder build an MCP server for the GitHub API with issues and PR tools\n```\n\n```\n/product-spec-prd-generator generate a PRD for a mobile expense tracking app\n```\n\n```\n/engineering-quality-tdd implement a user authentication service\n```\n\nSkill names map directly to the folder names in `skills/`. Use `node bin/nxa.js list --full` to see all available skills with their descriptions.\n\n## Skills Reference\n\nReview the [skills catalog](skill-catalog.html) viewer and [skill catalog detail](skill-catalog.json).  \nSkills are organized by domain prefix.  \n\n## Adding Skills\n\n### Skill structure\n\n```\nskills/\n└── your-skill-name/\n    ├── SKILL.md          # Required: skill definition with YAML frontmatter\n    └── references/       # Optional: reference materials loaded by the skill\n```\n\nA valid `SKILL.md` requires at minimum:\n\n```yaml\n---\nname: your-skill-name\ndescription: Use when [trigger condition] — [what it does]\n---\n\n# Skill Title\n\n[Skill instructions here]\n```\n\n## Additional Resources\n\n- [Skill authoring guide](skills/skill-architect/SKILL.md)\n- [Project docs](docs/)\n- [Changelog](CHANGELOG.md)\n\n## Automated build pipeline\n\nThe repo ships an end-to-end automation that keeps the catalog, plugins, and\ndistribution site consistent with `skills/`. The same scripts run locally and\nin CI, so a local build matches what gets published.\n\n### Local build\n\n```bash\nnpm run validate        # spec checks against every skills/<skill>/SKILL.md\nnpm run scan            # writes skill-catalog-scan.json (mechanical metadata)\nnpm run catalog         # rebuilds skill-catalog.json (merges scan + evaluations + plugins)\nnpm run build:plugins   # regenerates .claude-plugin/marketplace.json + per-plugin bundles in dist/plugins/\nnpm run build:site      # assembles GitHub Pages site in dist/site/ (catalog browser, plugin manager, per-plugin zips)\nnpm run check:artifacts # fails if committed generated artifacts are stale\n\nnpm run build           # all of the above in order\nnpm run prepr           # build, then verify committed artifacts match generated output\n```\n\nBefore opening a pull request, run `npm run prepr` and commit any changes to\n`skill-catalog.json`, `.claude-plugin/marketplace.json`, or\n`.claude-plugin/plugin.json`. To install the same check as a local pre-push hook,\nrun `npm run hooks:install` once in your clone.\n\nOutputs:\n\n| Path | Source of truth | Committed? |\n|------|------|------|\n| `skill-catalog-scan.json` | `npm run scan` | no |\n| `skill-catalog.json` | `npm run catalog` (merges scan + `skill-catalog-evaluations.json`) | yes |\n| `.claude-plugin/marketplace.json` | `npm run build:plugins` (from `plugin-packages/`) | yes |\n| `.claude-plugin/plugin.json` | `npm run build:plugins` (umbrella `nexus-all`) | yes |\n| `dist/plugins/<plugin>/` | `npm run build:plugins` (self-contained plugin bundles) | no |\n| `dist/site/` | `npm run build:site` (GitHub Pages root) | no |\n\n### CI workflows\n\n| Workflow | Trigger | Purpose |\n|---|---|---|\n| [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | PR + push to `main` | Validate skills, rebuild catalog, generate plugins, build site; warns if committed catalog/marketplace drifts from source. |\n| [`.github/workflows/release.yml`](.github/workflows/release.yml) | push to `main` | release-please opens a release PR with bumped version + changelog from Conventional Commits. On merge, tags a release and attaches per-plugin zips, `skill-catalog.json`, and `marketplace.json` as release assets. |\n| [`.github/workflows/pages.yml`](.github/workflows/pages.yml) | release published (or manual) | Builds `dist/site/` and deploys it to GitHub Pages. |\n\n### Releases and changelog\n\nVersioning is driven by [Conventional Commits](https://www.conventionalcommits.org/).\nUse the following prefixes so release-please can categorize commits into the\n[CHANGELOG](CHANGELOG.md):\n\n| Prefix | Bump | Changelog section |\n|---|---|---|\n| `feat:` | minor | ✨ Features |\n| `fix:` | patch | 🐛 Bug Fixes |\n| `perf:` | patch | ⚡ Performance |\n| `skill:` | patch | 🧠 New / Updated Skills |\n| `plugin:` | patch | 📦 Plugin Changes |\n| `docs:` | patch | 📝 Documentation |\n| `build:` / `ci:` | patch | 🛠️ Build / 🤖 CI |\n| `chore:` / `refactor:` / `test:` / `style:` | none | hidden |\n| `feat!:` or `BREAKING CHANGE:` footer | major | top of release notes |\n\nrelease-please maintains a long-lived PR titled `chore(main): release X.Y.Z`.\nMerging that PR cuts the release; nothing else needs to be tagged manually.\n\n### Adding a plugin\n\nA plugin is defined by a directory under `plugin-packages/`:\n\n| File | Required | Contents |\n|---|---|---|\n| `plugin.json` | yes | [Agent Plugins](https://agent-plugins.org/) manifest fields. Its schema is closed, so only `$schema`, `name`, `version`, `description`, `author`, `homepage`, `repository`, `license`, `keywords`, and `extensions` are allowed. Name it `nexus-<directory>`. |\n| `skills.json` | yes | `{ \"skills\": [...] }` — literal skill names or `prefix-*` globs. Build-only; it is never shipped. |\n| `mcp.json` | yes | `{ \"mcpServers\": {...} }`. Every plugin carries one; new plugins start from an empty stub. Declared servers are copied into the bundle and inlined into the marketplace entry, which is where Claude Code reads them. An empty stub ships nothing. |\n\n1. Create the directory and its files.\n2. Run `npm run build` locally and commit the regenerated catalog and plugin\n   manifests. Do not commit `skill-catalog-scan.json`.\n   Validation fails if any skill belongs to no plugin, so add new skills to a\n   plugin in the same change.\n3. Open a PR. CI verifies everything compiles; on merge, release-please will\n   pick the change up in the next release.\n\n",
+ "hits": {
+  "st": [
+   {
+    "file": "skills/data-ai-autoresearch/references/data-pipeline.md",
+    "line": 104,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "```",
+     "",
+     "```python",
+     "# Example: CTGAN for privacy-preserving synthetic tabular data",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "synthesizer = CTGANSynthesizer(metadata)",
+     "synthesizer.fit(real_data)",
+     "synthetic_data = synthesizer.sample(num_rows=10000)"
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "skills/data-ai-autoresearch/references/data-pipeline.md",
+    "line": 111,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "synthesizer.fit(real_data)",
+     "synthetic_data = synthesizer.sample(num_rows=10000)",
+     "",
+     "# Validate: run diagnostic report",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "quality_report = evaluate_quality(real_data, synthetic_data, metadata)",
+     "```",
+     "",
+     "### Data Understanding & Profiling"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "skills/data-ai-autoresearch/references/data-pipeline.md",
+    "line": 104,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "```",
+     "",
+     "```python",
+     "# Example: CTGAN for privacy-preserving synthetic tabular data",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "synthesizer = CTGANSynthesizer(metadata)",
+     "synthesizer.fit(real_data)",
+     "synthetic_data = synthesizer.sample(num_rows=10000)"
+    ]
+   },
+   {
+    "file": "skills/data-ai-autoresearch/references/data-pipeline.md",
+    "line": 111,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "synthesizer.fit(real_data)",
+     "synthetic_data = synthesizer.sample(num_rows=10000)",
+     "",
+     "# Validate: run diagnostic report",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "quality_report = evaluate_quality(real_data, synthetic_data, metadata)",
+     "```",
+     "",
+     "### Data Understanding & Profiling"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "skills/data-ai-autoresearch/references/data-pipeline.md",
+    "line": 104,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "```",
+     "",
+     "```python",
+     "# Example: CTGAN for privacy-preserving synthetic tabular data",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "synthesizer = CTGANSynthesizer(metadata)",
+     "synthesizer.fit(real_data)",
+     "synthetic_data = synthesizer.sample(num_rows=10000)"
+    ]
+   },
+   {
+    "file": "skills/data-ai-autoresearch/references/data-pipeline.md",
+    "line": 106,
+    "text": "synthesizer = CTGANSynthesizer(metadata)",
+    "context": [
+     "```python",
+     "# Example: CTGAN for privacy-preserving synthetic tabular data",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "synthesizer = CTGANSynthesizer(metadata)",
+     "synthesizer.fit(real_data)",
+     "synthetic_data = synthesizer.sample(num_rows=10000)",
+     "",
+     "# Validate: run diagnostic report"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ev",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

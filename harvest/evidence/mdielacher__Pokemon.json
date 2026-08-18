@@ -1,0 +1,541 @@
+{
+ "repo": "mdielacher/Pokemon",
+ "disk_kb": 397833,
+ "method": "partial_clone",
+ "tree_files": 24,
+ "status": "ok",
+ "readme": "# Pokemon - GAI\n**Group 1:** Lisa Rost, Merna Zaher, Lena Huber, Marcel Dielacher\n\n## Präsentation:\nDie Präsentation heißt **\"gruppe1_präsentation.pdf\"** und befindet sich im Ordner.\n\n## Use Case:\n\nFür unser Projekt haben wir drei spezifische Anwendungsfälle definiert:\n\n**Generierung von Daten mit CTGAN:** Wir nutzen Conditional Generative Adversarial Networks (CTGAN), um synthetische Daten zu erstellen. Dies hilft uns, Muster und Szenarien zu simulieren, die in den ursprünglichen Daten nicht ausreichend vertreten sind.\n\n**Mit Tensforflow ein eigenes GAN zu programmieren:** Dieser Output wird dann mit dem CTGAN Daten verglichen und evaluiert.\n\n**Generierung von Namen mit einem LLM:** Auf Basis der durch CTGAN generierten Daten verwenden wir ein Large Language Model (LLM), um Namen für die synthetischen Pokémon-Daten zu erstellen. Dieser Prozess ermöglicht es, kreative und realistisch klingende Namen automatisiert zu generieren.\n\n## Data Description:\n**Source:**: https://www.kaggle.com/datasets/abcsds/pokemon\n\n**Datenqualität:** \nDie Datenqualität des Rohdatensatzes war generell gut, jedoch waren die Namen der Einträge sehr inkonsistent. Weitere Details dazu finden Sie im Kapitel zur Datenvorbereitung.\n\n**Llama 2 7b:** https://huggingface.co/TheBloke/Llama-2-7B-Chat-GGUF --> Geben Sie dieses Modell in den Ordner **\"llm\"**\n\n## Process:\nIn diesem Kapitel werden die Data Preperation, Data Understanding, die GAN's, dass LLM für die Namensgenerierung und die Evaluation behandelt.\n\n## 1. Data Preperation:\nIm Rahmen der Datenvorbereitung wurde zunächst der Rohdatensatz eingelesen. Um die Daten übersichtlicher und effizienter für die weitere Analyse zu gestalten, haben wir uns entschieden, bestimmte Spalten zu entfernen. Insbesondere die Spalten Total und #, welche für unsere Analysezwecke nicht relevant waren, wurden aus dem Datensatz entfernt.\n\nEin weiterer wichtiger Schritt in der Datenvorbereitung war die Bearbeitung der Pokémon-Namen. Viele Namen im ursprünglichen Kaggle-Datensatz waren inkonsistent formatiert, enthielten unnötige Wiederholungen oder Abkürzungen, die nicht standardisiert waren. Um dieses Problem zu adressieren, wurden die Namen mithilfe von Funktionen automatisiert bereinigt. Zusätzlich wurde eine manuelle Nachbearbeitung durchgeführt, um spezielle Fälle zu korrigieren, die nicht vollständig durch die automatisierten Prozesse abgedeckt werden konnten.\n\nDiese Schritte stellen sicher, dass der Datensatz sauber, konsistent und bereit für die nachfolgende Analyse ist. Der vorbereitete Datensatz wird in der Datei **preprocessed_pokemon.csv** gespeichert, die für alle weiteren Analyseschritte verwendet wird. \nZu finden ist dieses Kapitel unter: **\"00_data_prep_cleaning_understanding.ipynb\"**\n\nEin zusätzlicher Aspekt unseres Projekts war die Zusammenführung der Evolutionsstufen der Pokémon, was sich als besonders herausfordernd erwies. Der Versuch, die Daten mit ChatGPT 4 zu erfassen, führte nicht zum gewünschten Erfolg. Wir experimentierten auch mit dem Notebook **[EINFÜGEEN !!!!!!!!!]** und setzten CoPilot ein, um die Daten zu rekonstruieren, was überraschend gut gelang. Allerdings gab es Formatierungsprobleme bei einigen Pokémon. Anschließend haben wir die Daten mit einer weiteren Datei **einfügen !!!!!!!!** zusammengeführt um die richtigen Evolutionsstufen zu mergen.\n\n## 2. Data Understanding:\nIn diesem Kapitel widmen wir uns der eingehenden Analyse der Rohdaten. Ziel ist es, ein tiefes Verständnis für die vorhandenen Datenstrukturen und die in den Daten enthaltenen Informationen zu entwickeln. Dies umfasst die Untersuchung von Datenverteilungen, das Erkennen von Mustern und das Identifizieren von Zusammenhängen zwischen verschiedenen Datenpunkten. Zu finden ist dieses Kapitel unter: **\"00_data_prep_cleaning_understanding.ipynb\"**\n\n**Hauptaktivitäten:**\n\n**1. Deskriptive Statistik:** Wir berechnen grundlegende statistische Kennzahlen wie Mittelwert, Median, Modus, Standardabweichung usw., um ein Gefühl für die Verteilung der Daten zu bekommen.\nVisualisierung: Durch den Einsatz verschiedener Diagramme und Plots (z.B. Histogramme, Boxplots, Scatterplots) visualisieren wir die Daten, um Trends, Ausreißer und Gruppierungen besser erkennen zu können.\n\n**2. Korrelationsanalyse:** Wir untersuchen die Beziehungen zwischen verschiedenen Variablen, um zu verstehen, welche Merkmale miteinander korrelieren. Dies hilft uns, Hypothesen für weitergehende Analysen zu formulieren.\n\n**3. Erkennung von Anomalien:** Eventuelle Datenanomalien oder ungewöhnliche Muster werden identifiziert, die spezielle Aufmerksamkeit erfordern oder auf Datenbereinigungsbedarf hinweisen könnten.\nErgebnisse dieses Kapitels:\n\nZu finden ist dieses Kapitel unter: **\"00_data_prep_cleaning_understanding.ipynb\"**\n\n## 3. Model:\n### SDV:\n#### GaussianCopulaSynthesizer:\nDer GaussianCopulaSynthesizer verwendet eine Gaussian Copula-basierte Methode, die eine flexible und leistungsfähige Option für die Modellierung der Abhängigkeiten zwischen den Variablen bietet. Er eignet sich hervorragend zur Erstellung von Datensätzen, die die strukturellen Beziehungen und Korrelationen der Originaldaten widerspiegeln.\n\n#### CTGANSynthesizer:\nDer CTGANSynthesizer basiert auf der Conditional Generative Adversarial Network (CTGAN) Technologie, die speziell für die Herausforderungen bei der Synthese tabellarischer Daten entwickelt wurde. Dieses Modell ist besonders effektiv bei der Handhabung von kategorischen Daten und ungleich verteilten Daten.\n\n#### Schlussfolgerung: \nDurch den Einsatz von CTGANSynthesizer und GaussianCopulaSynthesizer bieten wir eine robuste Lösung zur Erzeugung von qualitativ hochwertigen synthetischen Daten, die die Privatsphäre schützen und gleichzeitig wertvolle Einblicke in die zugrundeliegenden Datenmuster ermöglichen.\n\n### Tensorflow GAN:\nIn diesem Projekt haben wir auch ein Generative Adversarial Network (GAN) mit TensorFlow entwickelt und umfangreiche Experimente mit verschiedenen Parametern durchgeführt, um die Leistung und die Möglichkeiten dieser Technologie für Tabulare Daten zu erforschen.\n\n#### Aufbau:\nDas von uns verwendete GAN besteht aus einem Generator und einem Diskriminator, beide sind mit TensorFlow implementiert. Der Generator ist darauf trainiert, neue Daten zu erzeugen, die nicht von echten Daten zu unterscheiden sind, während der Diskriminator versucht, echte von generierten Daten zu unterscheiden.\n\n## 4. Namensgenerierung der Pokemons:\n### GPT-3.5-turbo:\nDieses Modell wurde aufgrund seiner neuesten Architektur und optimierten Performance für die Generierung kreativer und konsistenter Pokemon-Namen ausgewählt. Die Basis der Namensgenerierung bilden die statistischen Daten der Pokemon, wie Typ, Angriffswerte, Verteidigungswerte usw.\n\n### Llama 2 7b:\nDas LLaMA 2 7B Modell wurde ebenfalls eingesetzt, um die Ergebnisse zu vergleichen. Obwohl es hochentwickelt ist, zeigten unsere Tests, dass das Prompting mit LLaMA 2 7B nicht immer effektiv funktionierte. Teilweise wurden passende Namen generiert, während in anderen Fällen keine sinnvollen Ergebnisse produziert wurden.\n\n### Ergebnisse und Diskussion:\nDie durchgeführten Experimente zeigten, dass GPT-3.5-turbo konsistentere und kreativere Namen lieferte im Vergleich zu LLaMA 2 7B. Die Herausforderungen bei der Verwendung von LLaMA 2 7B könnten auf verschiedene Faktoren zurückzuführen sein, einschließlich der Art des Prompting und der Modellkonfiguration. Diese Ergebnisse betonen die Wichtigkeit der Modellauswahl und -anpassung für spezifische Aufgaben im Bereich des Natural Language Processing.\n\nZu finden ist dieses Kapitel unter: **\"pokemon_namen_generierung.ipynb\"**\n\n## 5. Evaluation:\n### Generierung von Pokemon Stats:\nWie bereits erwähnt haben wir in diesem Projekt drei verschiedene Typen von Generative Adversarial Networks (GANs) implementiert und getestet: \n\nCTGAN, Gaussian GAN und ein GAN basierend auf TensorFlow. Unsere Analysen zeigen, dass CTGAN und Gaussian GAN hervorragende Ergebnisse liefern, während das TensorFlow GAN im Vergleich weniger zufriedenstellende Leistungen zeigt. \n\n**Problem beim TF GAN:**\nDer Mode Collapse ist ein bekanntes Problem in der Entwicklung von GANs und kann durch verschiedene Faktoren verursacht werden, einschließlich der Wahl der Loss-Funktion, des Optimierungsalgorithmus und der Netzwerkarchitektur. Dieses Problem zeigt die Grenzen des TensorFlow GANs unter aktuellen Einstellungen und betont die Notwendigkeit für weiterführende Forschung und Anpassungen.\n\n### Generierung von Pokemon Namen:\nIm Vergleich dazu lieferte das LLaMA 2 7B Modell weniger zufriedenstellende Ergebnisse. Die von diesem Modell generierten Namen waren oft repetitiv und mangelten an Kreativität. Es schien Schwierigkeiten zu haben, die komplexen Anforderungen der Aufgabe zu verstehen und umzusetzen, was zu einer begrenzten Vielfalt in den Ergebnissen führte.\n\n**Problem beim LLama 2 7B Modell:**\nDie Unterschiede in der Leistung der beiden Modelle können auf die Architektur und das Training der Modelle zurückgeführt werden. GPT-3.5 Turbo, das speziell für kreative und kontextabhängige Aufgaben optimiert ist, konnte seine Stärken in dieser speziellen Aufgabe ausspielen. LLaMA 2 7B, obwohl leistungsfähig in vielen Bereichen, scheint nicht so effektiv bei Aufgaben zu sein, die ein hohes Maß an Kreativität und spezifischem Kontextverständnis erfordern.\n\n\n\n\n",
+ "hits": {
+  "st": [
+   {
+    "file": "03_CT-GAN_with_basic_evaluation_real_vs_syntetic_data.ipynb",
+    "line": 112,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "      \"source\": [",
+     "        \"!pip install sdv\\n\",",
+     "        \"import sdv\\n\",",
+     "        \"\\n\",",
+     "        \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"\\n\",",
+     "        \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "        \"from sdv.evaluation.single_table import run_diagnostic\\n\","
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "03_CT-GAN_with_basic_evaluation_real_vs_syntetic_data.ipynb",
+    "line": 113,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "        \"!pip install sdv\\n\",",
+     "        \"import sdv\\n\",",
+     "        \"\\n\",",
+     "        \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"\\n\",",
+     "        \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "        \"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+     "        \"\\n\","
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "03_CT-GAN_with_basic_evaluation_real_vs_syntetic_data.ipynb",
+    "line": 115,
+    "text": "\"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+    "context": [
+     "        \"\\n\",",
+     "        \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"\\n\",",
+     "        \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "        \"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+     "        \"\\n\",",
+     "        \"from sdv.evaluation.single_table import get_column_plot\\n\",",
+     "        \"from sdv.evaluation.single_table import get_column_pair_plot\\n\","
+    ]
+   },
+   {
+    "file": "03_CT-GAN_with_basic_evaluation_real_vs_syntetic_data.ipynb",
+    "line": 116,
+    "text": "\"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+    "context": [
+     "        \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"\\n\",",
+     "        \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "        \"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+     "        \"\\n\",",
+     "        \"from sdv.evaluation.single_table import get_column_plot\\n\",",
+     "        \"from sdv.evaluation.single_table import get_column_pair_plot\\n\",",
+     "        \"!pip install table_evaluator\\n\","
+    ]
+   },
+   {
+    "file": "03_CT-GAN_with_basic_evaluation_real_vs_syntetic_data.ipynb",
+    "line": 118,
+    "text": "\"from sdv.evaluation.single_table import get_column_plot\\n\",",
+    "context": [
+     "        \"\\n\",",
+     "        \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "        \"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+     "        \"\\n\",",
+     "        \"from sdv.evaluation.single_table import get_column_plot\\n\",",
+     "        \"from sdv.evaluation.single_table import get_column_pair_plot\\n\",",
+     "        \"!pip install table_evaluator\\n\",",
+     "        \"from table_evaluator import load_data, TableEvaluator\\n\"",
+     "      ]"
+    ]
+   },
+   {
+    "file": "03_CT-GAN_with_basic_evaluation_real_vs_syntetic_data.ipynb",
+    "line": 119,
+    "text": "\"from sdv.evaluation.single_table import get_column_pair_plot\\n\",",
+    "context": [
+     "        \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "        \"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+     "        \"\\n\",",
+     "        \"from sdv.evaluation.single_table import get_column_plot\\n\",",
+     "        \"from sdv.evaluation.single_table import get_column_pair_plot\\n\",",
+     "        \"!pip install table_evaluator\\n\",",
+     "        \"from table_evaluator import load_data, TableEvaluator\\n\"",
+     "      ]",
+     "    },"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "03_CT-GAN_with_basic_evaluation_real_vs_syntetic_data.ipynb",
+    "line": 32,
+    "text": "\"Requirement already satisfied: boto3>=1.28 in /usr/local/lib/python3.10/dist-packages (from sdv) (1.34.91)\\n\",",
+    "context": [
+     "          \"output_type\": \"stream\",",
+     "          \"name\": \"stdout\",",
+     "          \"text\": [",
+     "            \"Requirement already satisfied: sdv in /usr/local/lib/python3.10/dist-packages (1.12.1)\\n\",",
+     "            \"Requirement already satisfied: boto3>=1.28 in /usr/local/lib/python3.10/dist-packages (from sdv) (1.34.91)\\n\",",
+     "            \"Requirement already satisfied: botocore>=1.31 in /usr/local/lib/python3.10/dist-packages (from sdv) (1.34.91)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (2.2.1)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.20.3)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.10/dist-packages (from sdv) (4.66.2)\\n\","
+    ]
+   },
+   {
+    "file": "03_CT-GAN_with_basic_evaluation_real_vs_syntetic_data.ipynb",
+    "line": 33,
+    "text": "\"Requirement already satisfied: botocore>=1.31 in /usr/local/lib/python3.10/dist-packages (from sdv) (1.34.91)\\n\",",
+    "context": [
+     "          \"name\": \"stdout\",",
+     "          \"text\": [",
+     "            \"Requirement already satisfied: sdv in /usr/local/lib/python3.10/dist-packages (1.12.1)\\n\",",
+     "            \"Requirement already satisfied: boto3>=1.28 in /usr/local/lib/python3.10/dist-packages (from sdv) (1.34.91)\\n\",",
+     "            \"Requirement already satisfied: botocore>=1.31 in /usr/local/lib/python3.10/dist-packages (from sdv) (1.34.91)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (2.2.1)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.20.3)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.10/dist-packages (from sdv) (4.66.2)\\n\",",
+     "            \"Requirement already satisfied: copulas>=0.11.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.11.0)\\n\","
+    ]
+   },
+   {
+    "file": "03_CT-GAN_with_basic_evaluation_real_vs_syntetic_data.ipynb",
+    "line": 34,
+    "text": "\"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (2.2.1)\\n\",",
+    "context": [
+     "          \"text\": [",
+     "            \"Requirement already satisfied: sdv in /usr/local/lib/python3.10/dist-packages (1.12.1)\\n\",",
+     "            \"Requirement already satisfied: boto3>=1.28 in /usr/local/lib/python3.10/dist-packages (from sdv) (1.34.91)\\n\",",
+     "            \"Requirement already satisfied: botocore>=1.31 in /usr/local/lib/python3.10/dist-packages (from sdv) (1.34.91)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (2.2.1)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.20.3)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.10/dist-packages (from sdv) (4.66.2)\\n\",",
+     "            \"Requirement already satisfied: copulas>=0.11.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.11.0)\\n\",",
+     "            \"Requirement already satisfied: ctgan>=0.10.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.10.0)\\n\","
+    ]
+   },
+   {
+    "file": "03_CT-GAN_with_basic_evaluation_real_vs_syntetic_data.ipynb",
+    "line": 35,
+    "text": "\"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.20.3)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: sdv in /usr/local/lib/python3.10/dist-packages (1.12.1)\\n\",",
+     "            \"Requirement already satisfied: boto3>=1.28 in /usr/local/lib/python3.10/dist-packages (from sdv) (1.34.91)\\n\",",
+     "            \"Requirement already satisfied: botocore>=1.31 in /usr/local/lib/python3.10/dist-packages (from sdv) (1.34.91)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (2.2.1)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.20.3)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.10/dist-packages (from sdv) (4.66.2)\\n\",",
+     "            \"Requirement already satisfied: copulas>=0.11.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.11.0)\\n\",",
+     "            \"Requirement already satisfied: ctgan>=0.10.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.10.0)\\n\",",
+     "            \"Requirement already satisfied: deepecho>=0.6.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.6.0)\\n\","
+    ]
+   },
+   {
+    "file": "03_CT-GAN_with_basic_evaluation_real_vs_syntetic_data.ipynb",
+    "line": 36,
+    "text": "\"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.10/dist-packages (from sdv) (4.66.2)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: boto3>=1.28 in /usr/local/lib/python3.10/dist-packages (from sdv) (1.34.91)\\n\",",
+     "            \"Requirement already satisfied: botocore>=1.31 in /usr/local/lib/python3.10/dist-packages (from sdv) (1.34.91)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (2.2.1)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.20.3)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.10/dist-packages (from sdv) (4.66.2)\\n\",",
+     "            \"Requirement already satisfied: copulas>=0.11.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.11.0)\\n\",",
+     "            \"Requirement already satisfied: ctgan>=0.10.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.10.0)\\n\",",
+     "            \"Requirement already satisfied: deepecho>=0.6.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.6.0)\\n\",",
+     "            \"Requirement already satisfied: rdt>=1.12.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (1.12.0)\\n\","
+    ]
+   },
+   {
+    "file": "03_CT-GAN_with_basic_evaluation_real_vs_syntetic_data.ipynb",
+    "line": 37,
+    "text": "\"Requirement already satisfied: copulas>=0.11.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.11.0)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: botocore>=1.31 in /usr/local/lib/python3.10/dist-packages (from sdv) (1.34.91)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (2.2.1)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.20.3)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.10/dist-packages (from sdv) (4.66.2)\\n\",",
+     "            \"Requirement already satisfied: copulas>=0.11.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.11.0)\\n\",",
+     "            \"Requirement already satisfied: ctgan>=0.10.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.10.0)\\n\",",
+     "            \"Requirement already satisfied: deepecho>=0.6.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.6.0)\\n\",",
+     "            \"Requirement already satisfied: rdt>=1.12.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (1.12.0)\\n\",",
+     "            \"Requirement already satisfied: sdmetrics>=0.14.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.14.0)\\n\","
+    ]
+   },
+   {
+    "file": "03_CT-GAN_with_basic_evaluation_real_vs_syntetic_data.ipynb",
+    "line": 38,
+    "text": "\"Requirement already satisfied: ctgan>=0.10.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.10.0)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (2.2.1)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.20.3)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.10/dist-packages (from sdv) (4.66.2)\\n\",",
+     "            \"Requirement already satisfied: copulas>=0.11.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.11.0)\\n\",",
+     "            \"Requirement already satisfied: ctgan>=0.10.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.10.0)\\n\",",
+     "            \"Requirement already satisfied: deepecho>=0.6.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.6.0)\\n\",",
+     "            \"Requirement already satisfied: rdt>=1.12.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (1.12.0)\\n\",",
+     "            \"Requirement already satisfied: sdmetrics>=0.14.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.14.0)\\n\",",
+     "            \"Requirement already satisfied: pandas>=1.3.4 in /usr/local/lib/python3.10/dist-packages (from sdv) (2.0.3)\\n\","
+    ]
+   },
+   {
+    "file": "03_CT-GAN_with_basic_evaluation_real_vs_syntetic_data.ipynb",
+    "line": 39,
+    "text": "\"Requirement already satisfied: deepecho>=0.6.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.6.0)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.20.3)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.10/dist-packages (from sdv) (4.66.2)\\n\",",
+     "            \"Requirement already satisfied: copulas>=0.11.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.11.0)\\n\",",
+     "            \"Requirement already satisfied: ctgan>=0.10.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.10.0)\\n\",",
+     "            \"Requirement already satisfied: deepecho>=0.6.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.6.0)\\n\",",
+     "            \"Requirement already satisfied: rdt>=1.12.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (1.12.0)\\n\",",
+     "            \"Requirement already satisfied: sdmetrics>=0.14.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.14.0)\\n\",",
+     "            \"Requirement already satisfied: pandas>=1.3.4 in /usr/local/lib/python3.10/dist-packages (from sdv) (2.0.3)\\n\",",
+     "            \"Requirement already satisfied: numpy<2,>=1.23.3 in /usr/local/lib/python3.10/dist-packages (from sdv) (1.25.2)\\n\","
+    ]
+   },
+   {
+    "file": "03_CT-GAN_with_basic_evaluation_real_vs_syntetic_data.ipynb",
+    "line": 40,
+    "text": "\"Requirement already satisfied: rdt>=1.12.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (1.12.0)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.10/dist-packages (from sdv) (4.66.2)\\n\",",
+     "            \"Requirement already satisfied: copulas>=0.11.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.11.0)\\n\",",
+     "            \"Requirement already satisfied: ctgan>=0.10.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.10.0)\\n\",",
+     "            \"Requirement already satisfied: deepecho>=0.6.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.6.0)\\n\",",
+     "            \"Requirement already satisfied: rdt>=1.12.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (1.12.0)\\n\",",
+     "            \"Requirement already satisfied: sdmetrics>=0.14.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.14.0)\\n\",",
+     "            \"Requirement already satisfied: pandas>=1.3.4 in /usr/local/lib/python3.10/dist-packages (from sdv) (2.0.3)\\n\",",
+     "            \"Requirement already satisfied: numpy<2,>=1.23.3 in /usr/local/lib/python3.10/dist-packages (from sdv) (1.25.2)\\n\",",
+     "            \"Requirement already satisfied: jmespath<2.0.0,>=0.7.1 in /usr/local/lib/python3.10/dist-packages (from boto3>=1.28->sdv) (1.0.1)\\n\","
+    ]
+   },
+   {
+    "file": "03_CT-GAN_with_basic_evaluation_real_vs_syntetic_data.ipynb",
+    "line": 41,
+    "text": "\"Requirement already satisfied: sdmetrics>=0.14.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.14.0)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: copulas>=0.11.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.11.0)\\n\",",
+     "            \"Requirement already satisfied: ctgan>=0.10.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.10.0)\\n\",",
+     "            \"Requirement already satisfied: deepecho>=0.6.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.6.0)\\n\",",
+     "            \"Requirement already satisfied: rdt>=1.12.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (1.12.0)\\n\",",
+     "            \"Requirement already satisfied: sdmetrics>=0.14.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.14.0)\\n\",",
+     "            \"Requirement already satisfied: pandas>=1.3.4 in /usr/local/lib/python3.10/dist-packages (from sdv) (2.0.3)\\n\",",
+     "            \"Requirement already satisfied: numpy<2,>=1.23.3 in /usr/local/lib/python3.10/dist-packages (from sdv) (1.25.2)\\n\",",
+     "            \"Requirement already satisfied: jmespath<2.0.0,>=0.7.1 in /usr/local/lib/python3.10/dist-packages (from boto3>=1.28->sdv) (1.0.1)\\n\",",
+     "            \"Requirement already satisfied: s3transfer<0.11.0,>=0.10.0 in /usr/local/lib/python3.10/dist-packages (from boto3>=1.28->sdv) (0.10.1)\\n\","
+    ]
+   },
+   {
+    "file": "03_CT-GAN_with_basic_evaluation_real_vs_syntetic_data.ipynb",
+    "line": 42,
+    "text": "\"Requirement already satisfied: pandas>=1.3.4 in /usr/local/lib/python3.10/dist-packages (from sdv) (2.0.3)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: ctgan>=0.10.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.10.0)\\n\",",
+     "            \"Requirement already satisfied: deepecho>=0.6.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.6.0)\\n\",",
+     "            \"Requirement already satisfied: rdt>=1.12.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (1.12.0)\\n\",",
+     "            \"Requirement already satisfied: sdmetrics>=0.14.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.14.0)\\n\",",
+     "            \"Requirement already satisfied: pandas>=1.3.4 in /usr/local/lib/python3.10/dist-packages (from sdv) (2.0.3)\\n\",",
+     "            \"Requirement already satisfied: numpy<2,>=1.23.3 in /usr/local/lib/python3.10/dist-packages (from sdv) (1.25.2)\\n\",",
+     "            \"Requirement already satisfied: jmespath<2.0.0,>=0.7.1 in /usr/local/lib/python3.10/dist-packages (from boto3>=1.28->sdv) (1.0.1)\\n\",",
+     "            \"Requirement already satisfied: s3transfer<0.11.0,>=0.10.0 in /usr/local/lib/python3.10/dist-packages (from boto3>=1.28->sdv) (0.10.1)\\n\",",
+     "            \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /usr/local/lib/python3.10/dist-packages (from botocore>=1.31->sdv) (2.8.2)\\n\","
+    ]
+   },
+   {
+    "file": "03_CT-GAN_with_basic_evaluation_real_vs_syntetic_data.ipynb",
+    "line": 43,
+    "text": "\"Requirement already satisfied: numpy<2,>=1.23.3 in /usr/local/lib/python3.10/dist-packages (from sdv) (1.25.2)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: deepecho>=0.6.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.6.0)\\n\",",
+     "            \"Requirement already satisfied: rdt>=1.12.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (1.12.0)\\n\",",
+     "            \"Requirement already satisfied: sdmetrics>=0.14.0 in /usr/local/lib/python3.10/dist-packages (from sdv) (0.14.0)\\n\",",
+     "            \"Requirement already satisfied: pandas>=1.3.4 in /usr/local/lib/python3.10/dist-packages (from sdv) (2.0.3)\\n\",",
+     "            \"Requirement already satisfied: numpy<2,>=1.23.3 in /usr/local/lib/python3.10/dist-packages (from sdv) (1.25.2)\\n\",",
+     "            \"Requirement already satisfied: jmespath<2.0.0,>=0.7.1 in /usr/local/lib/python3.10/dist-packages (from boto3>=1.28->sdv) (1.0.1)\\n\",",
+     "            \"Requirement already satisfied: s3transfer<0.11.0,>=0.10.0 in /usr/local/lib/python3.10/dist-packages (from boto3>=1.28->sdv) (0.10.1)\\n\",",
+     "            \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /usr/local/lib/python3.10/dist-packages (from botocore>=1.31->sdv) (2.8.2)\\n\",",
+     "            \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /usr/local/lib/python3.10/dist-packages (from botocore>=1.31->sdv) (2.0.7)\\n\","
+    ]
+   }
+  ],
+  "ctgan_mod": [
+   {
+    "file": "03_CT-GAN_with_basic_evaluation_real_vs_syntetic_data.ipynb",
+    "line": 50,
+    "text": "\"Requirement already satisfied: torch>=1.11.0 in /usr/local/lib/python3.10/dist-packages (from ctgan>=0.10.0->sdv) (2.2.1+cu121)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /usr/local/lib/python3.10/dist-packages (from botocore>=1.31->sdv) (2.8.2)\\n\",",
+     "            \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /usr/local/lib/python3.10/dist-packages (from botocore>=1.31->sdv) (2.0.7)\\n\",",
+     "            \"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.10/dist-packages (from copulas>=0.11.0->sdv) (5.21.0)\\n\",",
+     "            \"Requirement already satisfied: scipy>=1.9.2 in /usr/local/lib/python3.10/dist-packages (from copulas>=0.11.0->sdv) (1.11.4)\\n\",",
+     "            \"Requirement already satisfied: torch>=1.11.0 in /usr/local/lib/python3.10/dist-packages (from ctgan>=0.10.0->sdv) (2.2.1+cu121)\\n\",",
+     "            \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.10/dist-packages (from pandas>=1.3.4->sdv) (2023.4)\\n\",",
+     "            \"Requirement already satisfied: tzdata>=2022.1 in /usr/local/lib/python3.10/dist-packages (from pandas>=1.3.4->sdv) (2024.1)\\n\",",
+     "            \"Requirement already satisfied: Faker>=17 in /usr/local/lib/python3.10/dist-packages (from rdt>=1.12.0->sdv) (24.11.0)\\n\",",
+     "            \"Requirement already satisfied: scikit-learn>=1.1.0 in /usr/local/lib/python3.10/dist-packages (from rdt>=1.12.0->sdv) (1.2.2)\\n\","
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "03_CT-GAN_with_basic_evaluation_real_vs_syntetic_data.ipynb",
+    "line": 112,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "      \"source\": [",
+     "        \"!pip install sdv\\n\",",
+     "        \"import sdv\\n\",",
+     "        \"\\n\",",
+     "        \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"\\n\",",
+     "        \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "        \"from sdv.evaluation.single_table import run_diagnostic\\n\","
+    ]
+   },
+   {
+    "file": "03_CT-GAN_with_basic_evaluation_real_vs_syntetic_data.ipynb",
+    "line": 411,
+    "text": "\"synthesizer = CTGANSynthesizer(metadata,epochs=1800,batch_size=80,discriminator_steps=3,discriminator_lr=0.001,generator_lr=0.002,verbose=True)\\n\",",
+    "context": [
+     "          ]",
+     "        }",
+     "      ],",
+     "      \"source\": [",
+     "        \"synthesizer = CTGANSynthesizer(metadata,epochs=1800,batch_size=80,discriminator_steps=3,discriminator_lr=0.001,generator_lr=0.002,verbose=True)\\n\",",
+     "        \"synthesizer.fit(df)\\n\",",
+     "        \"#---> 91 %\\n\"",
+     "      ]",
+     "    },"
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 58,
+    "text": "#### CTGANSynthesizer:",
+    "context": [
+     "### SDV:",
+     "#### GaussianCopulaSynthesizer:",
+     "Der GaussianCopulaSynthesizer verwendet eine Gaussian Copula-basierte Methode, die eine flexible und leistungsfähige Option für die Modellierung der Abhängigkeiten zwischen den Variablen bietet. Er ei",
+     "",
+     "#### CTGANSynthesizer:",
+     "Der CTGANSynthesizer basiert auf der Conditional Generative Adversarial Network (CTGAN) Technologie, die speziell für die Herausforderungen bei der Synthese tabellarischer Daten entwickelt wurde. Dies",
+     "",
+     "#### Schlussfolgerung: ",
+     "Durch den Einsatz von CTGANSynthesizer und GaussianCopulaSynthesizer bieten wir eine robuste Lösung zur Erzeugung von qualitativ hochwertigen synthetischen Daten, die die Privatsphäre schützen und gle"
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 59,
+    "text": "Der CTGANSynthesizer basiert auf der Conditional Generative Adversarial Network (CTGAN) Technologie, die speziell für die Herausforderungen bei der Synthese tabellarischer Daten entwickelt wurde. Dieses Modell ist besonders effektiv bei der Handhabung von kategorischen Daten und ungleich verteilten ",
+    "context": [
+     "#### GaussianCopulaSynthesizer:",
+     "Der GaussianCopulaSynthesizer verwendet eine Gaussian Copula-basierte Methode, die eine flexible und leistungsfähige Option für die Modellierung der Abhängigkeiten zwischen den Variablen bietet. Er ei",
+     "",
+     "#### CTGANSynthesizer:",
+     "Der CTGANSynthesizer basiert auf der Conditional Generative Adversarial Network (CTGAN) Technologie, die speziell für die Herausforderungen bei der Synthese tabellarischer Daten entwickelt wurde. Dies",
+     "",
+     "#### Schlussfolgerung: ",
+     "Durch den Einsatz von CTGANSynthesizer und GaussianCopulaSynthesizer bieten wir eine robuste Lösung zur Erzeugung von qualitativ hochwertigen synthetischen Daten, die die Privatsphäre schützen und gle",
+     ""
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 62,
+    "text": "Durch den Einsatz von CTGANSynthesizer und GaussianCopulaSynthesizer bieten wir eine robuste Lösung zur Erzeugung von qualitativ hochwertigen synthetischen Daten, die die Privatsphäre schützen und gleichzeitig wertvolle Einblicke in die zugrundeliegenden Datenmuster ermöglichen.",
+    "context": [
+     "#### CTGANSynthesizer:",
+     "Der CTGANSynthesizer basiert auf der Conditional Generative Adversarial Network (CTGAN) Technologie, die speziell für die Herausforderungen bei der Synthese tabellarischer Daten entwickelt wurde. Dies",
+     "",
+     "#### Schlussfolgerung: ",
+     "Durch den Einsatz von CTGANSynthesizer und GaussianCopulaSynthesizer bieten wir eine robuste Lösung zur Erzeugung von qualitativ hochwertigen synthetischen Daten, die die Privatsphäre schützen und gle",
+     "",
+     "### Tensorflow GAN:",
+     "In diesem Projekt haben wir auch ein Generative Adversarial Network (GAN) mit TensorFlow entwickelt und umfangreiche Experimente mit verschiedenen Parametern durchgeführt, um die Leistung und die Mögl",
+     ""
+    ]
+   }
+  ],
+  "rdt": [
+   {
+    "file": "03_CT-GAN_with_basic_evaluation_real_vs_syntetic_data.ipynb",
+    "line": 53,
+    "text": "\"Requirement already satisfied: Faker>=17 in /usr/local/lib/python3.10/dist-packages (from rdt>=1.12.0->sdv) (24.11.0)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: scipy>=1.9.2 in /usr/local/lib/python3.10/dist-packages (from copulas>=0.11.0->sdv) (1.11.4)\\n\",",
+     "            \"Requirement already satisfied: torch>=1.11.0 in /usr/local/lib/python3.10/dist-packages (from ctgan>=0.10.0->sdv) (2.2.1+cu121)\\n\",",
+     "            \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.10/dist-packages (from pandas>=1.3.4->sdv) (2023.4)\\n\",",
+     "            \"Requirement already satisfied: tzdata>=2022.1 in /usr/local/lib/python3.10/dist-packages (from pandas>=1.3.4->sdv) (2024.1)\\n\",",
+     "            \"Requirement already satisfied: Faker>=17 in /usr/local/lib/python3.10/dist-packages (from rdt>=1.12.0->sdv) (24.11.0)\\n\",",
+     "            \"Requirement already satisfied: scikit-learn>=1.1.0 in /usr/local/lib/python3.10/dist-packages (from rdt>=1.12.0->sdv) (1.2.2)\\n\",",
+     "            \"Requirement already satisfied: tenacity>=6.2.0 in /usr/local/lib/python3.10/dist-packages (from plotly>=5.10.0->copulas>=0.11.0->sdv) (8.2.3)\\n\",",
+     "            \"Requirement already satisfied: packaging in /usr/local/lib/python3.10/dist-packages (from plotly>=5.10.0->copulas>=0.11.0->sdv) (24.0)\\n\",",
+     "            \"Requirement already satisfied: six>=1.5 in /usr/local/lib/python3.10/dist-packages (from python-dateutil<3.0.0,>=2.1->botocore>=1.31->sdv) (1.16.0)\\n\","
+    ]
+   },
+   {
+    "file": "03_CT-GAN_with_basic_evaluation_real_vs_syntetic_data.ipynb",
+    "line": 54,
+    "text": "\"Requirement already satisfied: scikit-learn>=1.1.0 in /usr/local/lib/python3.10/dist-packages (from rdt>=1.12.0->sdv) (1.2.2)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: torch>=1.11.0 in /usr/local/lib/python3.10/dist-packages (from ctgan>=0.10.0->sdv) (2.2.1+cu121)\\n\",",
+     "            \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.10/dist-packages (from pandas>=1.3.4->sdv) (2023.4)\\n\",",
+     "            \"Requirement already satisfied: tzdata>=2022.1 in /usr/local/lib/python3.10/dist-packages (from pandas>=1.3.4->sdv) (2024.1)\\n\",",
+     "            \"Requirement already satisfied: Faker>=17 in /usr/local/lib/python3.10/dist-packages (from rdt>=1.12.0->sdv) (24.11.0)\\n\",",
+     "            \"Requirement already satisfied: scikit-learn>=1.1.0 in /usr/local/lib/python3.10/dist-packages (from rdt>=1.12.0->sdv) (1.2.2)\\n\",",
+     "            \"Requirement already satisfied: tenacity>=6.2.0 in /usr/local/lib/python3.10/dist-packages (from plotly>=5.10.0->copulas>=0.11.0->sdv) (8.2.3)\\n\",",
+     "            \"Requirement already satisfied: packaging in /usr/local/lib/python3.10/dist-packages (from plotly>=5.10.0->copulas>=0.11.0->sdv) (24.0)\\n\",",
+     "            \"Requirement already satisfied: six>=1.5 in /usr/local/lib/python3.10/dist-packages (from python-dateutil<3.0.0,>=2.1->botocore>=1.31->sdv) (1.16.0)\\n\",",
+     "            \"Requirement already satisfied: joblib>=1.1.1 in /usr/local/lib/python3.10/dist-packages (from scikit-learn>=1.1.0->rdt>=1.12.0->sdv) (1.4.0)\\n\","
+    ]
+   }
+  ],
+  "copulas": [
+   {
+    "file": "03_CT-GAN_with_basic_evaluation_real_vs_syntetic_data.ipynb",
+    "line": 48,
+    "text": "\"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.10/dist-packages (from copulas>=0.11.0->sdv) (5.21.0)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: jmespath<2.0.0,>=0.7.1 in /usr/local/lib/python3.10/dist-packages (from boto3>=1.28->sdv) (1.0.1)\\n\",",
+     "            \"Requirement already satisfied: s3transfer<0.11.0,>=0.10.0 in /usr/local/lib/python3.10/dist-packages (from boto3>=1.28->sdv) (0.10.1)\\n\",",
+     "            \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /usr/local/lib/python3.10/dist-packages (from botocore>=1.31->sdv) (2.8.2)\\n\",",
+     "            \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /usr/local/lib/python3.10/dist-packages (from botocore>=1.31->sdv) (2.0.7)\\n\",",
+     "            \"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.10/dist-packages (from copulas>=0.11.0->sdv) (5.21.0)\\n\",",
+     "            \"Requirement already satisfied: scipy>=1.9.2 in /usr/local/lib/python3.10/dist-packages (from copulas>=0.11.0->sdv) (1.11.4)\\n\",",
+     "            \"Requirement already satisfied: torch>=1.11.0 in /usr/local/lib/python3.10/dist-packages (from ctgan>=0.10.0->sdv) (2.2.1+cu121)\\n\",",
+     "            \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.10/dist-packages (from pandas>=1.3.4->sdv) (2023.4)\\n\",",
+     "            \"Requirement already satisfied: tzdata>=2022.1 in /usr/local/lib/python3.10/dist-packages (from pandas>=1.3.4->sdv) (2024.1)\\n\","
+    ]
+   },
+   {
+    "file": "03_CT-GAN_with_basic_evaluation_real_vs_syntetic_data.ipynb",
+    "line": 49,
+    "text": "\"Requirement already satisfied: scipy>=1.9.2 in /usr/local/lib/python3.10/dist-packages (from copulas>=0.11.0->sdv) (1.11.4)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: s3transfer<0.11.0,>=0.10.0 in /usr/local/lib/python3.10/dist-packages (from boto3>=1.28->sdv) (0.10.1)\\n\",",
+     "            \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /usr/local/lib/python3.10/dist-packages (from botocore>=1.31->sdv) (2.8.2)\\n\",",
+     "            \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /usr/local/lib/python3.10/dist-packages (from botocore>=1.31->sdv) (2.0.7)\\n\",",
+     "            \"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.10/dist-packages (from copulas>=0.11.0->sdv) (5.21.0)\\n\",",
+     "            \"Requirement already satisfied: scipy>=1.9.2 in /usr/local/lib/python3.10/dist-packages (from copulas>=0.11.0->sdv) (1.11.4)\\n\",",
+     "            \"Requirement already satisfied: torch>=1.11.0 in /usr/local/lib/python3.10/dist-packages (from ctgan>=0.10.0->sdv) (2.2.1+cu121)\\n\",",
+     "            \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.10/dist-packages (from pandas>=1.3.4->sdv) (2023.4)\\n\",",
+     "            \"Requirement already satisfied: tzdata>=2022.1 in /usr/local/lib/python3.10/dist-packages (from pandas>=1.3.4->sdv) (2024.1)\\n\",",
+     "            \"Requirement already satisfied: Faker>=17 in /usr/local/lib/python3.10/dist-packages (from rdt>=1.12.0->sdv) (24.11.0)\\n\","
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "README.md",
+    "line": 55,
+    "text": "#### GaussianCopulaSynthesizer:",
+    "context": [
+     "Zu finden ist dieses Kapitel unter: **\"00_data_prep_cleaning_understanding.ipynb\"**",
+     "",
+     "## 3. Model:",
+     "### SDV:",
+     "#### GaussianCopulaSynthesizer:",
+     "Der GaussianCopulaSynthesizer verwendet eine Gaussian Copula-basierte Methode, die eine flexible und leistungsfähige Option für die Modellierung der Abhängigkeiten zwischen den Variablen bietet. Er ei",
+     "",
+     "#### CTGANSynthesizer:",
+     "Der CTGANSynthesizer basiert auf der Conditional Generative Adversarial Network (CTGAN) Technologie, die speziell für die Herausforderungen bei der Synthese tabellarischer Daten entwickelt wurde. Dies"
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 56,
+    "text": "Der GaussianCopulaSynthesizer verwendet eine Gaussian Copula-basierte Methode, die eine flexible und leistungsfähige Option für die Modellierung der Abhängigkeiten zwischen den Variablen bietet. Er eignet sich hervorragend zur Erstellung von Datensätzen, die die strukturellen Beziehungen und Korrela",
+    "context": [
+     "",
+     "## 3. Model:",
+     "### SDV:",
+     "#### GaussianCopulaSynthesizer:",
+     "Der GaussianCopulaSynthesizer verwendet eine Gaussian Copula-basierte Methode, die eine flexible und leistungsfähige Option für die Modellierung der Abhängigkeiten zwischen den Variablen bietet. Er ei",
+     "",
+     "#### CTGANSynthesizer:",
+     "Der CTGANSynthesizer basiert auf der Conditional Generative Adversarial Network (CTGAN) Technologie, die speziell für die Herausforderungen bei der Synthese tabellarischer Daten entwickelt wurde. Dies",
+     ""
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 62,
+    "text": "Durch den Einsatz von CTGANSynthesizer und GaussianCopulaSynthesizer bieten wir eine robuste Lösung zur Erzeugung von qualitativ hochwertigen synthetischen Daten, die die Privatsphäre schützen und gleichzeitig wertvolle Einblicke in die zugrundeliegenden Datenmuster ermöglichen.",
+    "context": [
+     "#### CTGANSynthesizer:",
+     "Der CTGANSynthesizer basiert auf der Conditional Generative Adversarial Network (CTGAN) Technologie, die speziell für die Herausforderungen bei der Synthese tabellarischer Daten entwickelt wurde. Dies",
+     "",
+     "#### Schlussfolgerung: ",
+     "Durch den Einsatz von CTGANSynthesizer und GaussianCopulaSynthesizer bieten wir eine robuste Lösung zur Erzeugung von qualitativ hochwertigen synthetischen Daten, die die Privatsphäre schützen und gle",
+     "",
+     "### Tensorflow GAN:",
+     "In diesem Projekt haben wir auch ein Generative Adversarial Network (GAN) mit TensorFlow entwickelt und umfangreiche Experimente mit verschiedenen Parametern durchgeführt, um die Leistung und die Mögl",
+     ""
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "copulas",
+  "ct",
+  "ctgan_mod",
+  "ev",
+  "gc",
+  "md",
+  "rdt",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv"
+  ]
+ }
+}

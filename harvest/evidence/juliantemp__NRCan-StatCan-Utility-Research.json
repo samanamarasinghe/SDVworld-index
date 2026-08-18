@@ -1,0 +1,375 @@
+{
+ "repo": "juliantemp/NRCan-StatCan-Utility-Research",
+ "disk_kb": 36863,
+ "method": "partial_clone",
+ "tree_files": 31,
+ "status": "ok",
+ "readme": "([Français](#NRcan-StatCan-Service-Recherche))\n# NRCan-StatCan-Utility-Research\n\n\n## About\nThis repository contains code for generating synthetic data (SD). This is the directory structure:\n- `Data`: holds the real and synthetic datasets. The script `download.py` downloads the original data.\n- `docker`: contains `Dockerfiles` to create images with popular synthetic data generators repositories.\n- `notebooks`: the notebooks mocking a pipeline can be found here.\n\n## Docker\nTwo images have to be built.\n\nFirst cd into `minimal_python` directory and run:\n\n    docker build --network=host -t minimal_python:latest .\n\nSecond cd into `sdgen` and run:\n\n     docker build --network=host -t sdgen:latest .\n\nThe option `--network=host` allows to share the network between host and container, so no need to specify the ports to forward from container to host.\n\nIn order to run the notebooks a running container based on `sdgen` image is needed. The following command will create and run the container `sdtest`:\n\n    docker run --name sdtest --gpus all --network=host -it --mount type=bind,source={host directory},target=/home/synthcity/utility --entrypoint bash sdgen:latest\n\nThe option `--gpus all` is needed to let the container access the GPU.\nWhere `{host directory}` is the local directory on the host machine meant to hold all the project code and assets. In other words, this is the shared space and in this `directory` **this repository** has to be cloned:\n\n    cd utility\n    git clone https://github.com/juliantemp/NRCan-StatCan-Utility-Research.git\n\nFinally, we must download the data\n\n    cd NRCan-StatCan-Utility-Research/data\n    python3 download.py\n\nThese two last steps do not need to be necessarily run inside the container, but they have to be run on a directory reachable by the container, i.e., under `{host directory}`.\n\n## Notebooks\nThe notebooks helps to understand the steps needed for building a pipeline to generate synthetic data.\n\n#### `1_Preprocessing.ipynb`\nThis notebook is to be used after downloading the original data using the script `download.py` in the `data` folder.\nIt runs all the preprocessing and cleaning steps and dumps the `real data` file, i.e., the data to synthesize.\n\nNext steps depend on the generators used.\n\n### CPAR model\nTo use this model we have to switch to `notebooks/PAR_model` directory.\n\n#### `2a_cpar_training.ipynb`\n\nTrains and samples synthetic data using the CPAR model and previously postprocessed `real data` (see step [above](#1_Preprocessing.ipynb)). The inputs are:\n\n- Number of days or datafilename\n- Number of epochs\n- Optional, size of sampled synthetic data.\n\nAs output, the trained model is saved along with the synthetic data generated.\n\n#### `2b_cpar_training.ipynb`\n\nAlternative postprocessing of the `real data` considering the peaks and valleys of individual time series. If you ran [the previous notebook](#2a_cpar_training.ipynb) you do not need to run this to pass to the next step, evaluation.\n\n#### `2c_cpar_training.ipynb`\n\nThe peaks and valleys for each time series are kept as static features along with its timestamp. \n\n#### `3_Evaluation.ipynb`\n\nThis notebook can sample new SD using a saved model or simply load SD data generated in the last step for evaluation. It outputs a series of metrics and plots.\n\n## License\n\nUnless otherwise noted, the source code of this project is covered under Crown Copyright, Government of Canada, and is distributed under the [MIT License](LICENSE).\n\n---\n# NRcan-StatCan-Service-Recherche\n\n## À Propos\n...\n\n## Licence\n\nSauf indication contraire, le code source de ce projet est protégé par le droit d'auteur de la Couronne du gouvernement du Canada et distribué sous la [licence MIT](LICENSE).\n\n",
+ "hits": {
+  "sq": [
+   {
+    "file": "notebooks/PAR_model/3_Evaluation.ipynb",
+    "line": 50,
+    "text": "\"from sdv.sequential import PARSynthesizer\"",
+    "context": [
+     "   \"id\": \"de5cca99-61d1-4c18-b05e-f424117f3ee6\",",
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"from sdv.sequential import PARSynthesizer\"",
+     "   ]",
+     "  },",
+     "  {",
+     "   \"cell_type\": \"markdown\","
+    ]
+   },
+   {
+    "file": "notebooks/PAR_model/2c_cpar_training.ipynb",
+    "line": 62,
+    "text": "\"from sdv.sequential import PARSynthesizer\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import sdv\\n\",",
+     "    \"from sdv.sequential import PARSynthesizer\\n\",",
+     "    \"#from sdv.constraints import Unique\"",
+     "   ]",
+     "  },",
+     "  {"
+    ]
+   },
+   {
+    "file": "notebooks/PAR_model/2b_cpar_training.ipynb",
+    "line": 51,
+    "text": "\"from sdv.sequential import PARSynthesizer\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import sdv\\n\",",
+     "    \"from sdv.sequential import PARSynthesizer\\n\",",
+     "    \"#from sdv.constraints import Unique\"",
+     "   ]",
+     "  },",
+     "  {"
+    ]
+   },
+   {
+    "file": "notebooks/PAR_model/2a_cpar_training.ipynb",
+    "line": 51,
+    "text": "\"from sdv.sequential import PARSynthesizer\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import sdv\\n\",",
+     "    \"from sdv.sequential import PARSynthesizer\\n\",",
+     "    \"#from sdv.constraints import Unique\"",
+     "   ]",
+     "  },",
+     "  {"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "notebooks/PAR_model/3_Evaluation.ipynb",
+    "line": 50,
+    "text": "\"from sdv.sequential import PARSynthesizer\"",
+    "context": [
+     "   \"id\": \"de5cca99-61d1-4c18-b05e-f424117f3ee6\",",
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"from sdv.sequential import PARSynthesizer\"",
+     "   ]",
+     "  },",
+     "  {",
+     "   \"cell_type\": \"markdown\","
+    ]
+   },
+   {
+    "file": "notebooks/PAR_model/2c_cpar_training.ipynb",
+    "line": 61,
+    "text": "\"import sdv\\n\",",
+    "context": [
+     "   \"id\": \"2965868a-c9a3-4354-b9ca-bd7b41e64c54\",",
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import sdv\\n\",",
+     "    \"from sdv.sequential import PARSynthesizer\\n\",",
+     "    \"#from sdv.constraints import Unique\"",
+     "   ]",
+     "  },"
+    ]
+   },
+   {
+    "file": "notebooks/PAR_model/2c_cpar_training.ipynb",
+    "line": 62,
+    "text": "\"from sdv.sequential import PARSynthesizer\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import sdv\\n\",",
+     "    \"from sdv.sequential import PARSynthesizer\\n\",",
+     "    \"#from sdv.constraints import Unique\"",
+     "   ]",
+     "  },",
+     "  {"
+    ]
+   },
+   {
+    "file": "notebooks/PAR_model/2c_cpar_training.ipynb",
+    "line": 63,
+    "text": "\"#from sdv.constraints import Unique\"",
+    "context": [
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import sdv\\n\",",
+     "    \"from sdv.sequential import PARSynthesizer\\n\",",
+     "    \"#from sdv.constraints import Unique\"",
+     "   ]",
+     "  },",
+     "  {",
+     "   \"cell_type\": \"markdown\","
+    ]
+   },
+   {
+    "file": "notebooks/PAR_model/2b_cpar_training.ipynb",
+    "line": 50,
+    "text": "\"import sdv\\n\",",
+    "context": [
+     "   \"id\": \"2965868a-c9a3-4354-b9ca-bd7b41e64c54\",",
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import sdv\\n\",",
+     "    \"from sdv.sequential import PARSynthesizer\\n\",",
+     "    \"#from sdv.constraints import Unique\"",
+     "   ]",
+     "  },"
+    ]
+   },
+   {
+    "file": "notebooks/PAR_model/2b_cpar_training.ipynb",
+    "line": 51,
+    "text": "\"from sdv.sequential import PARSynthesizer\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import sdv\\n\",",
+     "    \"from sdv.sequential import PARSynthesizer\\n\",",
+     "    \"#from sdv.constraints import Unique\"",
+     "   ]",
+     "  },",
+     "  {"
+    ]
+   },
+   {
+    "file": "notebooks/PAR_model/2b_cpar_training.ipynb",
+    "line": 52,
+    "text": "\"#from sdv.constraints import Unique\"",
+    "context": [
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import sdv\\n\",",
+     "    \"from sdv.sequential import PARSynthesizer\\n\",",
+     "    \"#from sdv.constraints import Unique\"",
+     "   ]",
+     "  },",
+     "  {",
+     "   \"cell_type\": \"markdown\","
+    ]
+   },
+   {
+    "file": "notebooks/PAR_model/2a_cpar_training.ipynb",
+    "line": 50,
+    "text": "\"import sdv\\n\",",
+    "context": [
+     "   \"id\": \"2965868a-c9a3-4354-b9ca-bd7b41e64c54\",",
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import sdv\\n\",",
+     "    \"from sdv.sequential import PARSynthesizer\\n\",",
+     "    \"#from sdv.constraints import Unique\"",
+     "   ]",
+     "  },"
+    ]
+   },
+   {
+    "file": "notebooks/PAR_model/2a_cpar_training.ipynb",
+    "line": 51,
+    "text": "\"from sdv.sequential import PARSynthesizer\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import sdv\\n\",",
+     "    \"from sdv.sequential import PARSynthesizer\\n\",",
+     "    \"#from sdv.constraints import Unique\"",
+     "   ]",
+     "  },",
+     "  {"
+    ]
+   },
+   {
+    "file": "notebooks/PAR_model/2a_cpar_training.ipynb",
+    "line": 52,
+    "text": "\"#from sdv.constraints import Unique\"",
+    "context": [
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import sdv\\n\",",
+     "    \"from sdv.sequential import PARSynthesizer\\n\",",
+     "    \"#from sdv.constraints import Unique\"",
+     "   ]",
+     "  },",
+     "  {",
+     "   \"cell_type\": \"markdown\","
+    ]
+   }
+  ],
+  "par": [
+   {
+    "file": "notebooks/PAR_model/3_Evaluation.ipynb",
+    "line": 50,
+    "text": "\"from sdv.sequential import PARSynthesizer\"",
+    "context": [
+     "   \"id\": \"de5cca99-61d1-4c18-b05e-f424117f3ee6\",",
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"from sdv.sequential import PARSynthesizer\"",
+     "   ]",
+     "  },",
+     "  {",
+     "   \"cell_type\": \"markdown\","
+    ]
+   },
+   {
+    "file": "notebooks/PAR_model/3_Evaluation.ipynb",
+    "line": 90,
+    "text": "\"    synthesizer = PARSynthesizer.load(f\\\"quick_test_PAR_full_cols_{days}_days.pkl\\\")\\n\",",
+    "context": [
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"%%time\\n\",",
+     "    \"if generate:\\n\",",
+     "    \"    synthesizer = PARSynthesizer.load(f\\\"quick_test_PAR_full_cols_{days}_days.pkl\\\")\\n\",",
+     "    \"    #synthesizer.verbose = False\\n\",",
+     "    \"    with io.capture_output() as captured:\\n\",",
+     "    \"        synthetic_data = synthesizer.sample(num_sequences=num_seq);\\n\",",
+     "    \"    synthetic_data.to_csv(f\\\"synthetic_data_sdv_{days}_days.csv\\\")\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/PAR_model/2c_cpar_training.ipynb",
+    "line": 62,
+    "text": "\"from sdv.sequential import PARSynthesizer\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import sdv\\n\",",
+     "    \"from sdv.sequential import PARSynthesizer\\n\",",
+     "    \"#from sdv.constraints import Unique\"",
+     "   ]",
+     "  },",
+     "  {"
+    ]
+   },
+   {
+    "file": "notebooks/PAR_model/2c_cpar_training.ipynb",
+    "line": 533,
+    "text": "\"synthesizer = PARSynthesizer(\\n\",",
+    "context": [
+     "   \"id\": \"c36dfb8b-ef6a-44d0-a751-48d163384513\",",
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"synthesizer = PARSynthesizer(\\n\",",
+     "    \"    metadata,\\n\",",
+     "    \"    context_columns=context_cols,\\n\",",
+     "    \"    verbose=True,\\n\",",
+     "    \"    epochs=epochs)\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/PAR_model/2b_cpar_training.ipynb",
+    "line": 51,
+    "text": "\"from sdv.sequential import PARSynthesizer\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import sdv\\n\",",
+     "    \"from sdv.sequential import PARSynthesizer\\n\",",
+     "    \"#from sdv.constraints import Unique\"",
+     "   ]",
+     "  },",
+     "  {"
+    ]
+   },
+   {
+    "file": "notebooks/PAR_model/2b_cpar_training.ipynb",
+    "line": 418,
+    "text": "\"synthesizer = PARSynthesizer(\\n\",",
+    "context": [
+     "   \"id\": \"c36dfb8b-ef6a-44d0-a751-48d163384513\",",
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"synthesizer = PARSynthesizer(\\n\",",
+     "    \"    metadata,\\n\",",
+     "    \"    context_columns=context_cols,\\n\",",
+     "    \"    verbose=True,\\n\",",
+     "    \"    epochs=epochs)\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/PAR_model/2a_cpar_training.ipynb",
+    "line": 51,
+    "text": "\"from sdv.sequential import PARSynthesizer\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import sdv\\n\",",
+     "    \"from sdv.sequential import PARSynthesizer\\n\",",
+     "    \"#from sdv.constraints import Unique\"",
+     "   ]",
+     "  },",
+     "  {"
+    ]
+   },
+   {
+    "file": "notebooks/PAR_model/2a_cpar_training.ipynb",
+    "line": 319,
+    "text": "\"synthesizer = PARSynthesizer(\\n\",",
+    "context": [
+     "   \"id\": \"c36dfb8b-ef6a-44d0-a751-48d163384513\",",
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"synthesizer = PARSynthesizer(\\n\",",
+     "    \"    metadata,\\n\",",
+     "    \"    context_columns=context_cols,\\n\",",
+     "    \"    verbose=True,\\n\",",
+     "    \"    epochs=epochs)\\n\","
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "par",
+  "sdv_any",
+  "sq"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

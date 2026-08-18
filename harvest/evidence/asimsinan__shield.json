@@ -1,0 +1,161 @@
+{
+ "repo": "asimsinan/shield",
+ "disk_kb": 125,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# SHIELD: Knowledge-Driven Synthetic Data Generation for Network Intrusion Detection\n\n## Overview\n\nSHIELD (Synthetic High-quality Intrusion Enhanced Learning Data) is a knowledge-driven framework for generating high-quality synthetic network attack samples using Large Language Models. Unlike traditional statistical methods (SMOTE, CTGAN), SHIELD addresses two fundamental challenges:\n\n1. **Heterogeneous class imbalance**: Existing methods treat all minority classes uniformly, despite vastly different rarity levels (e.g., U2R: 52 samples vs. DoS: 45,927 samples in NSL-KDD).\n\n2. **Semantically invalid samples**: Statistical approaches generate invalid samples from sparse training data (invalid protocol configurations, impossible TCP flag combinations).\n\nSHIELD leverages semantic understanding of attack behaviors to generate protocol-compliant, attack-consistent samples from as few as 50 training examples.\n\n**Key Feature: Dataset-Independent Design** - SHIELD automatically detects feature types (integers, ports, flags, etc.) from training data, making it work seamlessly across different network intrusion detection datasets without hardcoded constraints.\n\n## Key Innovations\n\n1. **Adaptive Rare Attack Prioritization**: Allocates generation budget proportionally to class imbalance ratio, concentrating resources on the rarest attacks.\n\n2. **Attack-Semantic Prompting**: Encodes domain knowledge about attack behaviors into LLM prompts, enabling semantically-consistent generation.\n\n3. **Template-Based Mutation**: Addresses the zero-value problem by reframing generation from scratch-based synthesis to semantic variation of real attack samples.\n\n4. **Protocol-Aware Validation**: Enforces network protocol constraints through multi-stage validation (schema, protocol, temporal, signature, statistical).\n\n5. **Multi-Objective Sample Selection**: Applies Pareto-optimal scoring to balance diversity, detection difficulty, and validity.\n\n## Architecture\n\n```\nSHIELD Framework\n├── Phase 1: Attack Profiling\n│   ├── TrafficAnalyzer (statistical profiles, discriminative features)\n│   ├── AttackSignatureExtractor (behavioral descriptions)\n│   ├── ProtocolConstraintExtractor (validity rules)\n│   └── FeatureTypeDetector (automatic feature type detection - dataset-independent)\n├── Phase 2: Adaptive Rare Attack Prioritization\n│   └── RareAttackPrioritizer (priority-based budget allocation)\n├── Phase 3: Semantic Generation\n│   ├── AttackSemanticTemplates (prompt construction with data type requirements)\n│   ├── TemplateSelector (diverse template selection)\n│   └── AttackGenerator (LLM-based generation with immediate sanitization)\n└── Phase 4: Protocol Validation and Selection\n    ├── ProtocolValidator (multi-stage validation with dataset-independent sanitization)\n    └── AttackSampleSelector (multi-objective selection)\n```\n\n## Installation\n\n```bash\n# Install dependencies\npip install -r src/shield/requirements.txt\n\n# Set up environment variables (if using cloud LLM)\nexport OPENAI_API_KEY=\"your-key-here\"\nexport OPENROUTER_API_KEY=\"your-key-here\"  # For OpenRouter\nexport GROQ_API_KEY=\"your-key-here\"  # For Groq (fast inference)\n\n# Or use Ollama (local, free)\nexport OPENAI_API_BASE=\"http://localhost:11434/v1\"\n```\n\n## Running Experiments\n\n```bash\n# Run SHIELD experiments with OpenRouter (free tier available)\npython scripts/run_shield_openrouter.py \\\n    --datasets nsl_kdd \\\n    --seeds 42 123 456 \\\n    --max-iterations 20\n\n# Run SHIELD experiments with Groq (fast inference)\npython scripts/run_shield_groq.py \\\n    --datasets nsl_kdd \\\n    --seeds 42 123 456 \\\n    --max-iterations 20\n\n# Run SHIELD experiments with Ollama (local, free)\n./scripts/run_shield_with_ollama.sh \\\n    --datasets nsl_kdd \\\n    --seeds 42 \\\n    --max-iterations 20 \\\n    --model gemma3:27b\n```\n\n## Quick Start\n\n```python\nfrom src.shield.core import ShieldWorkflow, ShieldConfig\nfrom src.shield.data.loaders import load_nsl_kdd\nimport pandas as pd\n\n# Load dataset (NSL-KDD, CICIDS2017, or UNSW-NB15)\ndata = load_nsl_kdd()\nX_train, y_train, attack_types = data['X_train'], data['y_train'], data['attack_types_train']\n\n# Configure SHIELD\nconfig = ShieldConfig(\n    model_name=\"google/gemma-3-27b-it:free\",  # or use Ollama locally\n    temperature=1.1,\n    batch_size=0,  # auto-calculate based on feature count\n    use_template_mutation=True,  # Enable template-based mutation\n    enable_statistical_validation=True,\n    verbose=True\n)\n\n# Initialize SHIELD workflow\nshield = ShieldWorkflow(config=config)\n\n# Generate synthetic attack samples (automatically prioritizes rare attacks)\nresult = shield.generate_attacks(\n    X_train=X_train,\n    y_train=y_train,\n    attack_types=attack_types\n)\n\n# Access generated samples\nX_generated = result.X_generated\nprint(f\"Generated {len(X_generated)} validated samples\")\nprint(f\"Validation pass rate: {result.validation_pass_rate:.1%}\")\n```\n\n## Components\n\n### Phase 1: Attack Profiling\n- **`TrafficAnalyzer`**: Computes per-attack-type statistical profiles (mean, std, percentiles) and identifies discriminative features using Cohen's $d$ effect size.\n- **`AttackSignatureExtractor`**: Combines domain knowledge with data-driven patterns to construct behavioral descriptions (e.g., U2R attacks require prior authentication).\n- **`ProtocolConstraintExtractor`**: Extracts validity rules dynamically from training data (valid categorical values, numerical bounds, temporal consistency).\n- **`FeatureTypeDetector`**: Automatically detects feature types (integers, ports, binary flags, categorical flags, non-negative) from training data. Enables dataset-independent operation without hardcoded constraints.\n\n### Phase 2: Adaptive Rare Attack Prioritization\n- **`RareAttackPrioritizer`**: Assigns priority levels (Critical/High/Medium/Low) based on imbalance ratio thresholds and computes generation targets. Concentrates resources on rarest attacks (e.g., U2R with IR > 1000 gets 2000 samples, DoS with IR < 5 gets 0).\n\n### Phase 3: Semantic Generation\n- **`AttackSemanticTemplates`**: Constructs two-part prompts (system + user) encoding attack behavior knowledge, protocol constraints, feature statistics, and explicit data type requirements based on detected feature types.\n- **`TemplateSelector`**: Selects diverse real attack samples as templates using farthest-first traversal to ensure feature space coverage.\n- **`AttackGenerator`**: Generates samples using LLM with dynamic batch sizing (CSV format for >50 features, KEY=VALUE for smaller datasets). Applies immediate type-based sanitization after parsing to fix common LLM generation errors.\n\n### Phase 4: Protocol Validation and Selection\n- **`ProtocolValidator`**: Six-stage validation pipeline (dataset-independent):\n  - Data sanitization (fix integer constraints, port ranges, negative values using detected feature types)\n  - Schema validation (required fields, valid types)\n  - Protocol validation (valid categorical combinations, non-negative counts)\n  - Temporal validation (duration vs. bytes consistency)\n  - Attack signature validation (behavioral pattern matching)\n  - Statistical validation (attack-type-aware, adaptive 12σ threshold)\n- **`AttackSampleSelector`**: Multi-objective selection balancing:\n  - Diversity (minimum distance to training data)\n  - Difficulty (proximity to decision boundary)\n  - Validity (protocol compliance score)\n\n## Experimental Results\n\nOn the **NSL-KDD** benchmark:\n- **Overall F1**: 0.801 (best baseline: 0.796)\n- **U2R F1**: 0.409 (+5.4% over best baseline, despite 44.8% novel attacks in test set)\n- **R2L F1**: 0.184 (+3.0% over best baseline)\n- **ROC-AUC**: 0.948\n\nKey strength: Semantic understanding enables generalization to novel attack variants—a capability that purely statistical methods lack.\n\n## Configuration\n\nKey configuration parameters in `ShieldConfig`:\n\n- **`use_template_mutation`**: Enable template-based mutation (default: `True`) - addresses zero-value problem for high-dimensional datasets\n- **`n_templates`**: Number of templates per attack type (default: `5`)\n- **`adaptive_std_threshold`**: Statistical validation threshold (default: `12.0`)\n- **`enable_statistical_validation`**: Enable statistical validation (default: `True`)\n- **`min_training_for_stats`**: Minimum training samples required to enable stats validation per attack type (default: `50`)\n- **`batch_size`**: Samples per LLM call (default: `0` = auto-calculate based on feature count)\n- **`temperature`**: LLM temperature (default: `1.1`)\n\n## Datasets\n\nSHIELD supports three benchmark datasets:\n\n- **NSL-KDD**: 148,517 samples, 41 features, 4 attack types (extreme imbalance: U2R has only 52 samples)\n- **CICIDS2017**: 2.8M samples, 79 features, 14 attack types\n- **UNSW-NB15**: 2.5M samples, 49 features, 9 attack types\n\nData loaders are available in `src/shield/data/loaders/`.\n\n\n## Recent Improvements\n\n- **Dataset Independence**: Automatic feature type detection eliminates need for hardcoded dataset-specific constraints. Works seamlessly across NSL-KDD, CICIDS2017, UNSW-NB15, and future datasets.\n- **Groq API Support**: Added fast inference support via Groq API alongside OpenRouter and Ollama.\n- **Enhanced Validation**: Attack-type-aware statistical validation and improved data sanitization using detected feature types.\n- **Immediate Sanitization**: Type-based fixes applied right after LLM response parsing to catch errors early.\n\n## Future Work\n\n- **TextGrad Integration**: Exploring automatic prompt optimization using TextGrad to improve validation pass rates.\n\n## Status\n\n✅ **Production Ready** - Fully implemented and tested on NSL-KDD, CICIDS2017, and UNSW-NB15 datasets. Dataset-independent design enables easy extension to new datasets.\n\n## License\n\nMIT\n\n## Author\n\nAsim Sinan Yüksel\n\n",
+ "hits": {
+  "st": [
+   {
+    "file": "src/shield/experiments/shield_experiment_runner.py",
+    "line": 718,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "        attack_types_train: pd.Series,",
+     "        seed: int",
+     "    ) -> Tuple[pd.DataFrame, pd.Series, pd.Series, Dict[str, Any]]:",
+     "        \"\"\"Apply TVAE oversampling.\"\"\"",
+     "        from sdv.single_table import TVAESynthesizer",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        ",
+     "        # Set global seeds for reproducibility (TVAE uses torch internally)",
+     "        _set_global_seed(seed)"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "src/shield/experiments/shield_experiment_runner.py",
+    "line": 719,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "        seed: int",
+     "    ) -> Tuple[pd.DataFrame, pd.Series, pd.Series, Dict[str, Any]]:",
+     "        \"\"\"Apply TVAE oversampling.\"\"\"",
+     "        from sdv.single_table import TVAESynthesizer",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        ",
+     "        # Set global seeds for reproducibility (TVAE uses torch internally)",
+     "        _set_global_seed(seed)",
+     "        "
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "src/shield/experiments/shield_experiment_runner.py",
+    "line": 718,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "        attack_types_train: pd.Series,",
+     "        seed: int",
+     "    ) -> Tuple[pd.DataFrame, pd.Series, pd.Series, Dict[str, Any]]:",
+     "        \"\"\"Apply TVAE oversampling.\"\"\"",
+     "        from sdv.single_table import TVAESynthesizer",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        ",
+     "        # Set global seeds for reproducibility (TVAE uses torch internally)",
+     "        _set_global_seed(seed)"
+    ]
+   },
+   {
+    "file": "src/shield/experiments/shield_experiment_runner.py",
+    "line": 719,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "        seed: int",
+     "    ) -> Tuple[pd.DataFrame, pd.Series, pd.Series, Dict[str, Any]]:",
+     "        \"\"\"Apply TVAE oversampling.\"\"\"",
+     "        from sdv.single_table import TVAESynthesizer",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        ",
+     "        # Set global seeds for reproducibility (TVAE uses torch internally)",
+     "        _set_global_seed(seed)",
+     "        "
+    ]
+   }
+  ],
+  "ctgan_mod": [
+   {
+    "file": "src/shield/experiments/shield_experiment_runner.py",
+    "line": 643,
+    "text": "from ctgan import CTGAN",
+    "context": [
+     "        attack_types_train: pd.Series,",
+     "        seed: int",
+     "    ) -> Tuple[pd.DataFrame, pd.Series, pd.Series, Dict[str, Any]]:",
+     "        \"\"\"Apply CTGAN oversampling.\"\"\"",
+     "        from ctgan import CTGAN",
+     "        ",
+     "        # Set global seeds for reproducibility (CTGAN uses torch internally)",
+     "        _set_global_seed(seed)",
+     "        "
+    ]
+   },
+   {
+    "file": "src/shield/experiments/shield_experiment_runner.py",
+    "line": 782,
+    "text": "from ctgan import CTGAN",
+    "context": [
+     "        Unlike CTGAN which trains on all minority samples together, cGAN conditions",
+     "        on the attack type label, generating samples for each attack type separately.",
+     "        This is the fair comparison for SHIELD's per-attack generation.",
+     "        \"\"\"",
+     "        from ctgan import CTGAN",
+     "        ",
+     "        # Set global seeds for reproducibility (CTGAN uses torch internally)",
+     "        _set_global_seed(seed)",
+     "        "
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "src/shield/experiments/shield_experiment_runner.py",
+    "line": 718,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "        attack_types_train: pd.Series,",
+     "        seed: int",
+     "    ) -> Tuple[pd.DataFrame, pd.Series, pd.Series, Dict[str, Any]]:",
+     "        \"\"\"Apply TVAE oversampling.\"\"\"",
+     "        from sdv.single_table import TVAESynthesizer",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        ",
+     "        # Set global seeds for reproducibility (TVAE uses torch internally)",
+     "        _set_global_seed(seed)"
+    ]
+   },
+   {
+    "file": "src/shield/experiments/shield_experiment_runner.py",
+    "line": 746,
+    "text": "tvae = TVAESynthesizer(metadata, epochs=epochs, verbose=False)",
+    "context": [
+     "        metadata.detect_from_dataframe(X_minority)",
+     "        ",
+     "        # Train TVAE on minority class (reduce epochs for faster training)",
+     "        epochs = min(100, max(20, n_needed // 50))  # Scale epochs with data size",
+     "        tvae = TVAESynthesizer(metadata, epochs=epochs, verbose=False)",
+     "        tvae.fit(X_minority)",
+     "        ",
+     "        # Generate samples",
+     "        X_generated = tvae.sample(num_rows=n_needed)"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ctgan_mod",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "src/shield/requirements.txt": [
+   "ctgan>=0.7.0  # For CTGAN baseline",
+   "sdv>=1.0.0    # For TVAE baseline"
+  ]
+ }
+}

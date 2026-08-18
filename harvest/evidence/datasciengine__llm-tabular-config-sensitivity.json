@@ -1,0 +1,179 @@
+{
+ "repo": "datasciengine/llm-tabular-config-sensitivity",
+ "disk_kb": 2416,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Configuration Sensitivity of LLM-Based Synthetic Tabular Data Generators\n\nThis repository contains the code and experimental configuration for an empirical\nstudy of how **task-irrelevant configuration choices** — the serialization template,\ncolumn order, and numeric formatting used to present tabular rows to a language model —\naffect the **fidelity and utility** of LLM-based synthetic tabular data generators,\nand whether such choices **change the ranking** of generators.\n\nNon-LLM generators (CTGAN, TVAE) never see serialized text and are config-invariant by\nconstruction; their seed-only variance provides a noise floor against which the\nLLM generators' configuration-induced variance is measured.\n\n## Research questions\n- **RQ1** — How much do task-irrelevant configuration changes move standard fidelity/utility metrics?\n- **RQ2** — Do these changes flip the ranking of generators (i.e., are single-configuration comparisons safe)?\n- **RQ3** — How is total variance distributed across {configuration, seed, generator, dataset}?\n\n## Experiment matrix\n`config.yaml` is the single source of truth for every setting below.\n\n| Axis | Values |\n|---|---|\n| Datasets | UCI Adult, Pima Indians Diabetes, UCI Student Performance (Math) |\n| LLM generators | `great` (fine-tuned, base `distilgpt2`), `icl` (few-shot, no training) |\n| Control generators | `ctgan`, `tvae` (via SDV) |\n| Configuration axes (LLM only, one-factor-at-a-time) | serialization ×3, column order ×4, numeric format ×2 → 7 points |\n| Seeds | 5 (`0–4`) |\n| Metrics | KS (numeric marginals), TVD (categorical marginals), correlation-matrix difference (Frobenius), classifier two-sample test AUC, train-on-synthetic/test-on-real ROC-AUC |\n\nTotal: 240 generation runs (LLM 105 + 105, controls 30), with the five metrics computed on each.\n\n### Extended runs\nBeyond the base grid above (`config.yaml`), two extensions back the main analysis:\n- **Primary case study (`config_reseed.yaml`):** the diabetes cell is re-run at **15 seeds**\n  for adequate statistical power (variance components, ranking stability, treatment\n  validation, memorization/dedup, privacy).\n- **Scale probe:** the in-context arm is additionally run with **`Qwen2.5-7B-Instruct`**\n  across all three datasets to test how verbatim copying and valid-row yield change with\n  model scale. (GReaT remains `distilgpt2`.)\n\nThe `scripts/` directory holds the analysis and figure code (variance decomposition with a\ngenerator×configuration interaction, dedup with a size-matched control, treatment\nvalidation against an independent reference, DCR/NNDR privacy indicators, classifier\nsensitivity, and figure generation).\n\n## Repository layout\n```\nconfig.yaml              # frozen settings (single source of truth)\nsrc/data.py              # dataset loading, preprocessing, fixed train/holdout splits\nsrc/configs.py           # serialization / column-order / numeric-format transforms\nsrc/generators/          # base interface + great, icl, controls (CTGAN/TVAE)\nsrc/metrics.py           # the five fidelity/utility metrics\nsrc/runner.py            # dataset × generator × config × seed loop; caching + resume\nsrc/analysis.py          # variance components, ranking stability, CSI, figures\nscripts/run_all.py       # entry point\n```\n\n## Setup\nThe LLM and SDV stacks are installed in two isolated environments to avoid dependency\nconflicts; analysis runs in a neutral environment.\n\n```bash\n# LLM generators (great, icl)\npython3 -m venv env-llm && env-llm/bin/pip install transformers accelerate be-great torch\n# SDV controls (ctgan, tvae)\npython3 -m venv env-sdv && env-sdv/bin/pip install sdv\n# analysis (neutral)\npip install pandas numpy scipy scikit-learn statsmodels pyyaml matplotlib\n```\n\nRaw datasets are placed under `data/` (git-ignored); `src/data.py` prepares them and\nwrites one fixed train/holdout split per dataset.\n\n## Running\n```bash\npython scripts/run_all.py --smoke                     # small sanity run first\npython scripts/run_all.py                             # full frozen grid (240 runs)\npython scripts/run_all.py --generators ctgan,tvae     # optional: run a subset\n```\nThe runner caches each generated table and its metrics under `results/` and resumes\nwithout recomputation. After the grid completes:\n```bash\npython src/analysis.py --results-dir results          # tables + figures -> results/analysis/\n```\n\n## Reproducibility\n- Every run takes an explicit integer seed; all randomness (Python, NumPy, PyTorch,\n  generator-internal) is seeded.\n- Library versions are logged to `results/env.json`.\n- Metrics are always computed on the canonical column order; the column-order\n  perturbation reaches only the model during fitting, never the evaluation.\n\n## Statistics\nMetrics are reported as mean ± 95% CI across seeds. Multiple comparisons are\nHolm-corrected within separate families (configuration effects; generator-pair\nrankings). Variance components are estimated with an ANOVA decomposition\n(`statsmodels`), with a mixed-model cross-check.\n",
+ "hits": {
+  "st": [
+   {
+    "file": "src/generators/controls.py",
+    "line": 58,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "",
+     "class CTGANGenerator(_SDVControl):",
+     "    def _build(self, metadata, epochs):",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "        return CTGANSynthesizer(metadata, epochs=epochs, cuda=_use_cuda(), verbose=False)",
+     "",
+     "",
+     "class TVAEGenerator(_SDVControl):"
+    ]
+   },
+   {
+    "file": "src/generators/controls.py",
+    "line": 64,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "",
+     "",
+     "class TVAEGenerator(_SDVControl):",
+     "    def _build(self, metadata, epochs):",
+     "        from sdv.single_table import TVAESynthesizer",
+     "        return TVAESynthesizer(metadata, epochs=epochs, cuda=_use_cuda())"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "src/generators/controls.py",
+    "line": 41,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "                f\"{type(self).__name__} is config-invariant; ignoring config \"",
+     "                f\"{config.get('id')!r} (the project spec sec 3).\"",
+     "            )",
+     "        set_all_seeds(seed)",
+     "        from sdv.metadata import SingleTableMetadata",
+     "",
+     "        metadata = SingleTableMetadata()",
+     "        metadata.detect_from_dataframe(train_df)",
+     "        epochs = int(self.params.get(\"epochs\", 300))"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "src/generators/controls.py",
+    "line": 41,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "                f\"{type(self).__name__} is config-invariant; ignoring config \"",
+     "                f\"{config.get('id')!r} (the project spec sec 3).\"",
+     "            )",
+     "        set_all_seeds(seed)",
+     "        from sdv.metadata import SingleTableMetadata",
+     "",
+     "        metadata = SingleTableMetadata()",
+     "        metadata.detect_from_dataframe(train_df)",
+     "        epochs = int(self.params.get(\"epochs\", 300))"
+    ]
+   },
+   {
+    "file": "src/generators/controls.py",
+    "line": 58,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "",
+     "class CTGANGenerator(_SDVControl):",
+     "    def _build(self, metadata, epochs):",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "        return CTGANSynthesizer(metadata, epochs=epochs, cuda=_use_cuda(), verbose=False)",
+     "",
+     "",
+     "class TVAEGenerator(_SDVControl):"
+    ]
+   },
+   {
+    "file": "src/generators/controls.py",
+    "line": 64,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "",
+     "",
+     "class TVAEGenerator(_SDVControl):",
+     "    def _build(self, metadata, epochs):",
+     "        from sdv.single_table import TVAESynthesizer",
+     "        return TVAESynthesizer(metadata, epochs=epochs, cuda=_use_cuda())"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "src/generators/controls.py",
+    "line": 58,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "",
+     "class CTGANGenerator(_SDVControl):",
+     "    def _build(self, metadata, epochs):",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "        return CTGANSynthesizer(metadata, epochs=epochs, cuda=_use_cuda(), verbose=False)",
+     "",
+     "",
+     "class TVAEGenerator(_SDVControl):"
+    ]
+   },
+   {
+    "file": "src/generators/controls.py",
+    "line": 59,
+    "text": "return CTGANSynthesizer(metadata, epochs=epochs, cuda=_use_cuda(), verbose=False)",
+    "context": [
+     "",
+     "class CTGANGenerator(_SDVControl):",
+     "    def _build(self, metadata, epochs):",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "        return CTGANSynthesizer(metadata, epochs=epochs, cuda=_use_cuda(), verbose=False)",
+     "",
+     "",
+     "class TVAEGenerator(_SDVControl):",
+     "    def _build(self, metadata, epochs):"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "src/generators/controls.py",
+    "line": 64,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "",
+     "",
+     "class TVAEGenerator(_SDVControl):",
+     "    def _build(self, metadata, epochs):",
+     "        from sdv.single_table import TVAESynthesizer",
+     "        return TVAESynthesizer(metadata, epochs=epochs, cuda=_use_cuda())"
+    ]
+   },
+   {
+    "file": "src/generators/controls.py",
+    "line": 65,
+    "text": "return TVAESynthesizer(metadata, epochs=epochs, cuda=_use_cuda())",
+    "context": [
+     "",
+     "class TVAEGenerator(_SDVControl):",
+     "    def _build(self, metadata, epochs):",
+     "        from sdv.single_table import TVAESynthesizer",
+     "        return TVAESynthesizer(metadata, epochs=epochs, cuda=_use_cuda())"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv                 # CTGAN, TVAE (controls)"
+  ]
+ }
+}

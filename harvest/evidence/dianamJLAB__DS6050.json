@@ -1,0 +1,1025 @@
+{
+ "repo": "dianamJLAB/DS6050",
+ "disk_kb": 1438213,
+ "method": "partial_clone",
+ "tree_files": 380,
+ "status": "ok",
+ "readme": "# DS6050: discGAN: distributed, tabular GAN\n\nRepository contains all files related to our DS6050 project on generating healthcare data using our distributed, conditional GAN (discGAN) as well as files associated with distributing CTGAN\n\nMain folder structure of interest:\n\n1) **eICU_gan**: \n\n**contains files associated with the discGAN implementation**\nFolders include:\n- data: contains eICU datasets, including different cuts of data we created for our experiments\n- data_evaluation: contains our discGAN evaluation notebooks and output\n- dataprep: precessing files for the eICU data\n- discGAN_models: TF models output for discGAN at different number of epochs and with/without distribution\n- dist_output: discGAN generated data results with distribution\n- gan_work: *our main GAN files, in which the discGAN Jupyter NB is located*\n- non_dist_output: discGAN generated data results without distribution\n\n2) **CTGAN_distribution**:\n\n**contains code for distributing CTGAN, and evaluating both distributed and single-GPU CTGAN**\n\n- ctgan/synthesizers/ctgan.py was updated.\n    - the DataParallel library from torch.nn is used\n    - CTGANSynthesizer class added two additional arguments:\n    - distribute_g: indicator to distribute the generator. This will only work if more than 1 GPU has been provisioned.\n    - distribute_d: indicator to distribute the discriminator. This will only work if more than 1 GPU has been provisioned.\n    - if more than one GPU is provisions, AND the distribute flag has been set for the generator and/or discriminator, then the generator and/or discriminator is set the DataParallel version of the model.\n- test_CTGAN_eICU.ipynb, eval_figs directory, examples/csv/CTGAN_eval.csv, and examples/csv/generated directory were created to evaluate CTGAN on the eICU dataset\n\n",
+ "hits": {
+  "ct": [
+   {
+    "file": "README.md",
+    "line": 25,
+    "text": "- CTGANSynthesizer class added two additional arguments:",
+    "context": [
+     "**contains code for distributing CTGAN, and evaluating both distributed and single-GPU CTGAN**",
+     "",
+     "- ctgan/synthesizers/ctgan.py was updated.",
+     "    - the DataParallel library from torch.nn is used",
+     "    - CTGANSynthesizer class added two additional arguments:",
+     "    - distribute_g: indicator to distribute the generator. This will only work if more than 1 GPU has been provisioned.",
+     "    - distribute_d: indicator to distribute the discriminator. This will only work if more than 1 GPU has been provisioned.",
+     "    - if more than one GPU is provisions, AND the distribute flag has been set for the generator and/or discriminator, then the generator and/or discriminator is set the DataParallel version of the mo",
+     "- test_CTGAN_eICU.ipynb, eval_figs directory, examples/csv/CTGAN_eval.csv, and examples/csv/generated directory were created to evaluate CTGAN on the eICU dataset"
+    ]
+   },
+   {
+    "file": "CTGAN_Distribution/test_CTGAN_eICU.ipynb",
+    "line": 30,
+    "text": "\"from ctgan import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"import numpy as np\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"import sys\\n\",",
+     "    \"import ctgan\\n\",",
+     "    \"from ctgan import CTGANSynthesizer\\n\",",
+     "    \"#from ctgan import load_demo\\n\",",
+     "    \"\\n\",",
+     "    \"# hide warnings\\n\",",
+     "    \"import warnings\\n\","
+    ]
+   },
+   {
+    "file": "CTGAN_Distribution/test_CTGAN_eICU.ipynb",
+    "line": 968,
+    "text": "\"            ctgan = CTGANSynthesizer(epochs=e, verbose=False, distribute_g=dis, distribute_d=dis)\\n\",",
+    "context": [
+     "    \"            print(\\\"distributed: \\\", dis)\\n\",",
+     "    \"            print(\\\"num samples: \\\", ns)\\n\",",
+     "    \"\\n\",",
+     "    \"            # initialze the CTGAN for 10 epochs, verbose, and both the generator and discriminator distributed\\n\",",
+     "    \"            ctgan = CTGANSynthesizer(epochs=e, verbose=False, distribute_g=dis, distribute_d=dis)\\n\",",
+     "    \"\\n\",",
+     "    \"            # start the timer\\n\",",
+     "    \"            start_time = time.time()\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "CTGAN_Distribution/README.md",
+    "line": 32,
+    "text": "1. CTGANSynthesizer class added two additional arguments:",
+    "context": [
+     "Tutorial: https://pytorch.org/tutorials/beginner/blitz/data_parallel_tutorial.html",
+     "",
+     "* ctgan/synthesizers/ctgan.py was updated.",
+     "  1. the DataParallel library from torch.nn is used",
+     "  1. CTGANSynthesizer class added two additional arguments:",
+     "    1. distribute_g: indicator to distribute the generator. This will only work if more than 1 GPU has been provisioned.",
+     "    1. distribute_d: indicator to distribute the discriminator. This will only work if more than 1 GPU has been provisioned.",
+     "  1. if more than one GPU is provisions, AND the distribute flag has been set for the generator and/or discriminator, then the generator and/or discriminator is set the DataParallel version of the mod",
+     ""
+    ]
+   },
+   {
+    "file": "CTGAN_Distribution/README.md",
+    "line": 44,
+    "text": "from ctgan import CTGANSynthesizer",
+    "context": [
+     "import os",
+     "import numpy as np",
+     "import sys",
+     "import ctgan",
+     "from ctgan import CTGANSynthesizer",
+     "from ctgan import load_demo",
+     "",
+     "# load the CTGAN demo data",
+     "data = load_demo()"
+    ]
+   },
+   {
+    "file": "CTGAN_Distribution/README.md",
+    "line": 64,
+    "text": "ctgan = CTGANSynthesizer(epochs=10, verbose=True, distribute_g=True, distribute_d=True)",
+    "context": [
+     "    'income'",
+     "]",
+     "",
+     "# initialze the CTGAN for 10 epochs, verbose, and both the generator and discriminator distributed",
+     "ctgan = CTGANSynthesizer(epochs=10, verbose=True, distribute_g=True, distribute_d=True)",
+     "",
+     "# fit the data",
+     "ctgan.fit(data, discrete_columns)",
+     "# create some samples"
+    ]
+   },
+   {
+    "file": "CTGAN_Distribution/README.md",
+    "line": 146,
+    "text": "In this example we load the [Adult Census Dataset](https://archive.ics.uci.edu/ml/datasets/adult) which is a built-in demo dataset. We then model it using the **CTGANSynthesizer** and generate a synthetic copy of it.",
+    "context": [
+     "",
+     "* **Continuous Columns**: can contain any numerical value.",
+     "* **Discrete Columns**: contain a finite number values, whether these are string values or not.",
+     "",
+     "In this example we load the [Adult Census Dataset](https://archive.ics.uci.edu/ml/datasets/adult) which is a built-in demo dataset. We then model it using the **CTGANSynthesizer** and generate a synth",
+     "",
+     "",
+     "```python3",
+     "from ctgan import CTGANSynthesizer"
+    ]
+   },
+   {
+    "file": "CTGAN_Distribution/README.md",
+    "line": 150,
+    "text": "from ctgan import CTGANSynthesizer",
+    "context": [
+     "In this example we load the [Adult Census Dataset](https://archive.ics.uci.edu/ml/datasets/adult) which is a built-in demo dataset. We then model it using the **CTGANSynthesizer** and generate a synth",
+     "",
+     "",
+     "```python3",
+     "from ctgan import CTGANSynthesizer",
+     "from ctgan import load_demo",
+     "",
+     "data = load_demo()",
+     ""
+    ]
+   },
+   {
+    "file": "CTGAN_Distribution/README.md",
+    "line": 168,
+    "text": "ctgan = CTGANSynthesizer(epochs=10)",
+    "context": [
+     "    'native-country',",
+     "    'income'",
+     "]",
+     "",
+     "ctgan = CTGANSynthesizer(epochs=10)",
+     "ctgan.fit(data, discrete_columns)",
+     "",
+     "# Synthetic copy",
+     "samples = ctgan.sample(1000)"
+    ]
+   },
+   {
+    "file": "CTGAN_Distribution/ctgan/__init__.py",
+    "line": 10,
+    "text": "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+    "context": [
+     "__email__ = 'dailabmit@gmail.com'",
+     "__version__ = '0.5.2.dev0'",
+     "",
+     "from ctgan.demo import load_demo",
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+     "from ctgan.synthesizers.tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    'CTGANSynthesizer',"
+    ]
+   },
+   {
+    "file": "CTGAN_Distribution/ctgan/__init__.py",
+    "line": 14,
+    "text": "'CTGANSynthesizer',",
+    "context": [
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+     "from ctgan.synthesizers.tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    'CTGANSynthesizer',",
+     "    'TVAESynthesizer',",
+     "    'load_demo'",
+     ")"
+    ]
+   },
+   {
+    "file": "CTGAN_Distribution/ctgan/__main__.py",
+    "line": 6,
+    "text": "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+    "context": [
+     "",
+     "import argparse",
+     "",
+     "from ctgan.data import read_csv, read_tsv, write_tsv",
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+     "",
+     "",
+     "def _parse_args():",
+     "    parser = argparse.ArgumentParser(description='CTGAN Command Line Interface')"
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "CTGAN_Distribution/test_CTGAN_eICU.ipynb",
+    "line": 945,
+    "text": "\"from sdv.evaluation import evaluate\\n\",",
+    "context": [
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"import time\\n\",",
+     "    \"from sdv.evaluation import evaluate\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"import numpy as np\\n\",",
+     "    \"import seaborn as sns\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\","
+    ]
+   },
+   {
+    "file": "eICU_gan/data_evaluation/data_eval_exploration.ipynb",
+    "line": 42,
+    "text": "\"from sdv.evaluation import evaluate\\n\",",
+    "context": [
+     "   \"execution_count\": 3,",
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"from sdv.evaluation import evaluate\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"import numpy as np\\n\",",
+     "    \"import seaborn as sns\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\","
+    ]
+   },
+   {
+    "file": "eICU_gan/data_evaluation/discGAN_eval.ipynb",
+    "line": 18,
+    "text": "\"from sdv.evaluation import evaluate\\n\",",
+    "context": [
+     "   \"execution_count\": 22,",
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"from sdv.evaluation import evaluate\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"import numpy as np\\n\",",
+     "    \"import seaborn as sns\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\","
+    ]
+   },
+   {
+    "file": "eICU_gan/data_evaluation/discGAN_eval.ipynb",
+    "line": 26,
+    "text": "\"from sdv.evaluation import evaluate\\n\",",
+    "context": [
+     "    \"import matplotlib.pyplot as plt\\n\",",
+     "    \"import os\\n\",",
+     "    \"\\n\",",
+     "    \"import time\\n\",",
+     "    \"from sdv.evaluation import evaluate\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"import numpy as np\\n\",",
+     "    \"import seaborn as sns\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\","
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "CTGAN_Distribution/test_CTGAN_eICU.ipynb",
+    "line": 945,
+    "text": "\"from sdv.evaluation import evaluate\\n\",",
+    "context": [
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"import time\\n\",",
+     "    \"from sdv.evaluation import evaluate\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"import numpy as np\\n\",",
+     "    \"import seaborn as sns\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\","
+    ]
+   },
+   {
+    "file": "CTGAN_Distribution/test_CTGAN_eICU.ipynb",
+    "line": 950,
+    "text": "\"from sdv.metrics.tabular import MulticlassDecisionTreeClassifier, MulticlassMLPClassifier\\n\",",
+    "context": [
+     "    \"import pandas as pd\\n\",",
+     "    \"import numpy as np\\n\",",
+     "    \"import seaborn as sns\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\",",
+     "    \"from sdv.metrics.tabular import MulticlassDecisionTreeClassifier, MulticlassMLPClassifier\\n\",",
+     "    \"from sklearn.model_selection import train_test_split\\n\",",
+     "    \"\\n\",",
+     "    \"lst_num_epochs = [10,1000,5000,10000,15000,20000,25000]\\n\",",
+     "    \"#lst_num_epochs = [5]\\n\","
+    ]
+   },
+   {
+    "file": "eICU_gan/gan_work/ctgan_DF.ipynb",
+    "line": 20,
+    "text": "\"Requirement already satisfied: numpy<2,>=1.20.0 in /usr/local/lib/python3.7/dist-packages (from sdv) (1.21.5)\\n\",",
+    "context": [
+     "          \"output_type\": \"stream\",",
+     "          \"name\": \"stdout\",",
+     "          \"text\": [",
+     "            \"Requirement already satisfied: sdv in /usr/local/lib/python3.7/dist-packages (0.14.0)\\n\",",
+     "            \"Requirement already satisfied: numpy<2,>=1.20.0 in /usr/local/lib/python3.7/dist-packages (from sdv) (1.21.5)\\n\",",
+     "            \"Requirement already satisfied: pandas<2,>=1.1.3 in /usr/local/lib/python3.7/dist-packages (from sdv) (1.3.5)\\n\",",
+     "            \"Requirement already satisfied: sdmetrics<0.5,>=0.4.1 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.4.1)\\n\",",
+     "            \"Requirement already satisfied: deepecho<0.4,>=0.3.0.post1 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.3.0.post1)\\n\",",
+     "            \"Requirement already satisfied: graphviz<1,>=0.13.2 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.19.2)\\n\","
+    ]
+   },
+   {
+    "file": "eICU_gan/gan_work/ctgan_DF.ipynb",
+    "line": 21,
+    "text": "\"Requirement already satisfied: pandas<2,>=1.1.3 in /usr/local/lib/python3.7/dist-packages (from sdv) (1.3.5)\\n\",",
+    "context": [
+     "          \"name\": \"stdout\",",
+     "          \"text\": [",
+     "            \"Requirement already satisfied: sdv in /usr/local/lib/python3.7/dist-packages (0.14.0)\\n\",",
+     "            \"Requirement already satisfied: numpy<2,>=1.20.0 in /usr/local/lib/python3.7/dist-packages (from sdv) (1.21.5)\\n\",",
+     "            \"Requirement already satisfied: pandas<2,>=1.1.3 in /usr/local/lib/python3.7/dist-packages (from sdv) (1.3.5)\\n\",",
+     "            \"Requirement already satisfied: sdmetrics<0.5,>=0.4.1 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.4.1)\\n\",",
+     "            \"Requirement already satisfied: deepecho<0.4,>=0.3.0.post1 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.3.0.post1)\\n\",",
+     "            \"Requirement already satisfied: graphviz<1,>=0.13.2 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.19.2)\\n\",",
+     "            \"Requirement already satisfied: ctgan<0.6,>=0.5.1 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.5.1)\\n\","
+    ]
+   },
+   {
+    "file": "eICU_gan/gan_work/ctgan_DF.ipynb",
+    "line": 22,
+    "text": "\"Requirement already satisfied: sdmetrics<0.5,>=0.4.1 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.4.1)\\n\",",
+    "context": [
+     "          \"text\": [",
+     "            \"Requirement already satisfied: sdv in /usr/local/lib/python3.7/dist-packages (0.14.0)\\n\",",
+     "            \"Requirement already satisfied: numpy<2,>=1.20.0 in /usr/local/lib/python3.7/dist-packages (from sdv) (1.21.5)\\n\",",
+     "            \"Requirement already satisfied: pandas<2,>=1.1.3 in /usr/local/lib/python3.7/dist-packages (from sdv) (1.3.5)\\n\",",
+     "            \"Requirement already satisfied: sdmetrics<0.5,>=0.4.1 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.4.1)\\n\",",
+     "            \"Requirement already satisfied: deepecho<0.4,>=0.3.0.post1 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.3.0.post1)\\n\",",
+     "            \"Requirement already satisfied: graphviz<1,>=0.13.2 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.19.2)\\n\",",
+     "            \"Requirement already satisfied: ctgan<0.6,>=0.5.1 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.5.1)\\n\",",
+     "            \"Requirement already satisfied: Faker<10,>=3.0.0 in /usr/local/lib/python3.7/dist-packages (from sdv) (9.9.1)\\n\","
+    ]
+   },
+   {
+    "file": "eICU_gan/gan_work/ctgan_DF.ipynb",
+    "line": 23,
+    "text": "\"Requirement already satisfied: deepecho<0.4,>=0.3.0.post1 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.3.0.post1)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: sdv in /usr/local/lib/python3.7/dist-packages (0.14.0)\\n\",",
+     "            \"Requirement already satisfied: numpy<2,>=1.20.0 in /usr/local/lib/python3.7/dist-packages (from sdv) (1.21.5)\\n\",",
+     "            \"Requirement already satisfied: pandas<2,>=1.1.3 in /usr/local/lib/python3.7/dist-packages (from sdv) (1.3.5)\\n\",",
+     "            \"Requirement already satisfied: sdmetrics<0.5,>=0.4.1 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.4.1)\\n\",",
+     "            \"Requirement already satisfied: deepecho<0.4,>=0.3.0.post1 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.3.0.post1)\\n\",",
+     "            \"Requirement already satisfied: graphviz<1,>=0.13.2 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.19.2)\\n\",",
+     "            \"Requirement already satisfied: ctgan<0.6,>=0.5.1 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.5.1)\\n\",",
+     "            \"Requirement already satisfied: Faker<10,>=3.0.0 in /usr/local/lib/python3.7/dist-packages (from sdv) (9.9.1)\\n\",",
+     "            \"Requirement already satisfied: rdt<0.7,>=0.6.2 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.6.4)\\n\","
+    ]
+   },
+   {
+    "file": "eICU_gan/gan_work/ctgan_DF.ipynb",
+    "line": 24,
+    "text": "\"Requirement already satisfied: graphviz<1,>=0.13.2 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.19.2)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: numpy<2,>=1.20.0 in /usr/local/lib/python3.7/dist-packages (from sdv) (1.21.5)\\n\",",
+     "            \"Requirement already satisfied: pandas<2,>=1.1.3 in /usr/local/lib/python3.7/dist-packages (from sdv) (1.3.5)\\n\",",
+     "            \"Requirement already satisfied: sdmetrics<0.5,>=0.4.1 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.4.1)\\n\",",
+     "            \"Requirement already satisfied: deepecho<0.4,>=0.3.0.post1 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.3.0.post1)\\n\",",
+     "            \"Requirement already satisfied: graphviz<1,>=0.13.2 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.19.2)\\n\",",
+     "            \"Requirement already satisfied: ctgan<0.6,>=0.5.1 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.5.1)\\n\",",
+     "            \"Requirement already satisfied: Faker<10,>=3.0.0 in /usr/local/lib/python3.7/dist-packages (from sdv) (9.9.1)\\n\",",
+     "            \"Requirement already satisfied: rdt<0.7,>=0.6.2 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.6.4)\\n\",",
+     "            \"Requirement already satisfied: tqdm<5,>=4.15 in /usr/local/lib/python3.7/dist-packages (from sdv) (4.63.0)\\n\","
+    ]
+   },
+   {
+    "file": "eICU_gan/gan_work/ctgan_DF.ipynb",
+    "line": 25,
+    "text": "\"Requirement already satisfied: ctgan<0.6,>=0.5.1 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.5.1)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: pandas<2,>=1.1.3 in /usr/local/lib/python3.7/dist-packages (from sdv) (1.3.5)\\n\",",
+     "            \"Requirement already satisfied: sdmetrics<0.5,>=0.4.1 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.4.1)\\n\",",
+     "            \"Requirement already satisfied: deepecho<0.4,>=0.3.0.post1 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.3.0.post1)\\n\",",
+     "            \"Requirement already satisfied: graphviz<1,>=0.13.2 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.19.2)\\n\",",
+     "            \"Requirement already satisfied: ctgan<0.6,>=0.5.1 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.5.1)\\n\",",
+     "            \"Requirement already satisfied: Faker<10,>=3.0.0 in /usr/local/lib/python3.7/dist-packages (from sdv) (9.9.1)\\n\",",
+     "            \"Requirement already satisfied: rdt<0.7,>=0.6.2 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.6.4)\\n\",",
+     "            \"Requirement already satisfied: tqdm<5,>=4.15 in /usr/local/lib/python3.7/dist-packages (from sdv) (4.63.0)\\n\",",
+     "            \"Requirement already satisfied: copulas<0.7,>=0.6.1 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.6.1)\\n\","
+    ]
+   },
+   {
+    "file": "eICU_gan/gan_work/ctgan_DF.ipynb",
+    "line": 26,
+    "text": "\"Requirement already satisfied: Faker<10,>=3.0.0 in /usr/local/lib/python3.7/dist-packages (from sdv) (9.9.1)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: sdmetrics<0.5,>=0.4.1 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.4.1)\\n\",",
+     "            \"Requirement already satisfied: deepecho<0.4,>=0.3.0.post1 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.3.0.post1)\\n\",",
+     "            \"Requirement already satisfied: graphviz<1,>=0.13.2 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.19.2)\\n\",",
+     "            \"Requirement already satisfied: ctgan<0.6,>=0.5.1 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.5.1)\\n\",",
+     "            \"Requirement already satisfied: Faker<10,>=3.0.0 in /usr/local/lib/python3.7/dist-packages (from sdv) (9.9.1)\\n\",",
+     "            \"Requirement already satisfied: rdt<0.7,>=0.6.2 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.6.4)\\n\",",
+     "            \"Requirement already satisfied: tqdm<5,>=4.15 in /usr/local/lib/python3.7/dist-packages (from sdv) (4.63.0)\\n\",",
+     "            \"Requirement already satisfied: copulas<0.7,>=0.6.1 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.6.1)\\n\",",
+     "            \"Requirement already satisfied: matplotlib<4,>=3.4.0 in /usr/local/lib/python3.7/dist-packages (from copulas<0.7,>=0.6.1->sdv) (3.5.1)\\n\","
+    ]
+   },
+   {
+    "file": "eICU_gan/gan_work/ctgan_DF.ipynb",
+    "line": 27,
+    "text": "\"Requirement already satisfied: rdt<0.7,>=0.6.2 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.6.4)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: deepecho<0.4,>=0.3.0.post1 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.3.0.post1)\\n\",",
+     "            \"Requirement already satisfied: graphviz<1,>=0.13.2 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.19.2)\\n\",",
+     "            \"Requirement already satisfied: ctgan<0.6,>=0.5.1 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.5.1)\\n\",",
+     "            \"Requirement already satisfied: Faker<10,>=3.0.0 in /usr/local/lib/python3.7/dist-packages (from sdv) (9.9.1)\\n\",",
+     "            \"Requirement already satisfied: rdt<0.7,>=0.6.2 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.6.4)\\n\",",
+     "            \"Requirement already satisfied: tqdm<5,>=4.15 in /usr/local/lib/python3.7/dist-packages (from sdv) (4.63.0)\\n\",",
+     "            \"Requirement already satisfied: copulas<0.7,>=0.6.1 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.6.1)\\n\",",
+     "            \"Requirement already satisfied: matplotlib<4,>=3.4.0 in /usr/local/lib/python3.7/dist-packages (from copulas<0.7,>=0.6.1->sdv) (3.5.1)\\n\",",
+     "            \"Requirement already satisfied: scipy<2,>=1.5.4 in /usr/local/lib/python3.7/dist-packages (from copulas<0.7,>=0.6.1->sdv) (1.7.3)\\n\","
+    ]
+   },
+   {
+    "file": "eICU_gan/gan_work/ctgan_DF.ipynb",
+    "line": 28,
+    "text": "\"Requirement already satisfied: tqdm<5,>=4.15 in /usr/local/lib/python3.7/dist-packages (from sdv) (4.63.0)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: graphviz<1,>=0.13.2 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.19.2)\\n\",",
+     "            \"Requirement already satisfied: ctgan<0.6,>=0.5.1 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.5.1)\\n\",",
+     "            \"Requirement already satisfied: Faker<10,>=3.0.0 in /usr/local/lib/python3.7/dist-packages (from sdv) (9.9.1)\\n\",",
+     "            \"Requirement already satisfied: rdt<0.7,>=0.6.2 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.6.4)\\n\",",
+     "            \"Requirement already satisfied: tqdm<5,>=4.15 in /usr/local/lib/python3.7/dist-packages (from sdv) (4.63.0)\\n\",",
+     "            \"Requirement already satisfied: copulas<0.7,>=0.6.1 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.6.1)\\n\",",
+     "            \"Requirement already satisfied: matplotlib<4,>=3.4.0 in /usr/local/lib/python3.7/dist-packages (from copulas<0.7,>=0.6.1->sdv) (3.5.1)\\n\",",
+     "            \"Requirement already satisfied: scipy<2,>=1.5.4 in /usr/local/lib/python3.7/dist-packages (from copulas<0.7,>=0.6.1->sdv) (1.7.3)\\n\",",
+     "            \"Requirement already satisfied: scikit-learn<2,>=0.24 in /usr/local/lib/python3.7/dist-packages (from ctgan<0.6,>=0.5.1->sdv) (1.0.2)\\n\","
+    ]
+   },
+   {
+    "file": "eICU_gan/gan_work/ctgan_DF.ipynb",
+    "line": 29,
+    "text": "\"Requirement already satisfied: copulas<0.7,>=0.6.1 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.6.1)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: ctgan<0.6,>=0.5.1 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.5.1)\\n\",",
+     "            \"Requirement already satisfied: Faker<10,>=3.0.0 in /usr/local/lib/python3.7/dist-packages (from sdv) (9.9.1)\\n\",",
+     "            \"Requirement already satisfied: rdt<0.7,>=0.6.2 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.6.4)\\n\",",
+     "            \"Requirement already satisfied: tqdm<5,>=4.15 in /usr/local/lib/python3.7/dist-packages (from sdv) (4.63.0)\\n\",",
+     "            \"Requirement already satisfied: copulas<0.7,>=0.6.1 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.6.1)\\n\",",
+     "            \"Requirement already satisfied: matplotlib<4,>=3.4.0 in /usr/local/lib/python3.7/dist-packages (from copulas<0.7,>=0.6.1->sdv) (3.5.1)\\n\",",
+     "            \"Requirement already satisfied: scipy<2,>=1.5.4 in /usr/local/lib/python3.7/dist-packages (from copulas<0.7,>=0.6.1->sdv) (1.7.3)\\n\",",
+     "            \"Requirement already satisfied: scikit-learn<2,>=0.24 in /usr/local/lib/python3.7/dist-packages (from ctgan<0.6,>=0.5.1->sdv) (1.0.2)\\n\",",
+     "            \"Requirement already satisfied: torch<2,>=1.8.0 in /usr/local/lib/python3.7/dist-packages (from ctgan<0.6,>=0.5.1->sdv) (1.10.0+cu111)\\n\","
+    ]
+   }
+  ],
+  "ctgan_mod": [
+   {
+    "file": "CTGAN_Distribution/test_CTGAN_eICU.ipynb",
+    "line": 29,
+    "text": "\"import ctgan\\n\",",
+    "context": [
+     "    \"import os\\n\",",
+     "    \"import numpy as np\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"import sys\\n\",",
+     "    \"import ctgan\\n\",",
+     "    \"from ctgan import CTGANSynthesizer\\n\",",
+     "    \"#from ctgan import load_demo\\n\",",
+     "    \"\\n\",",
+     "    \"# hide warnings\\n\","
+    ]
+   },
+   {
+    "file": "CTGAN_Distribution/test_CTGAN_eICU.ipynb",
+    "line": 30,
+    "text": "\"from ctgan import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"import numpy as np\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"import sys\\n\",",
+     "    \"import ctgan\\n\",",
+     "    \"from ctgan import CTGANSynthesizer\\n\",",
+     "    \"#from ctgan import load_demo\\n\",",
+     "    \"\\n\",",
+     "    \"# hide warnings\\n\",",
+     "    \"import warnings\\n\","
+    ]
+   },
+   {
+    "file": "CTGAN_Distribution/test_CTGAN_eICU.ipynb",
+    "line": 31,
+    "text": "\"#from ctgan import load_demo\\n\",",
+    "context": [
+     "    \"import pandas as pd\\n\",",
+     "    \"import sys\\n\",",
+     "    \"import ctgan\\n\",",
+     "    \"from ctgan import CTGANSynthesizer\\n\",",
+     "    \"#from ctgan import load_demo\\n\",",
+     "    \"\\n\",",
+     "    \"# hide warnings\\n\",",
+     "    \"import warnings\\n\",",
+     "    \"warnings.filterwarnings(\\\"ignore\\\")\""
+    ]
+   },
+   {
+    "file": "CTGAN_Distribution/README.md",
+    "line": 43,
+    "text": "import ctgan",
+    "context": [
+     "```python3",
+     "import os",
+     "import numpy as np",
+     "import sys",
+     "import ctgan",
+     "from ctgan import CTGANSynthesizer",
+     "from ctgan import load_demo",
+     "",
+     "# load the CTGAN demo data"
+    ]
+   },
+   {
+    "file": "CTGAN_Distribution/README.md",
+    "line": 44,
+    "text": "from ctgan import CTGANSynthesizer",
+    "context": [
+     "import os",
+     "import numpy as np",
+     "import sys",
+     "import ctgan",
+     "from ctgan import CTGANSynthesizer",
+     "from ctgan import load_demo",
+     "",
+     "# load the CTGAN demo data",
+     "data = load_demo()"
+    ]
+   },
+   {
+    "file": "CTGAN_Distribution/README.md",
+    "line": 45,
+    "text": "from ctgan import load_demo",
+    "context": [
+     "import numpy as np",
+     "import sys",
+     "import ctgan",
+     "from ctgan import CTGANSynthesizer",
+     "from ctgan import load_demo",
+     "",
+     "# load the CTGAN demo data",
+     "data = load_demo()",
+     ""
+    ]
+   },
+   {
+    "file": "CTGAN_Distribution/README.md",
+    "line": 150,
+    "text": "from ctgan import CTGANSynthesizer",
+    "context": [
+     "In this example we load the [Adult Census Dataset](https://archive.ics.uci.edu/ml/datasets/adult) which is a built-in demo dataset. We then model it using the **CTGANSynthesizer** and generate a synth",
+     "",
+     "",
+     "```python3",
+     "from ctgan import CTGANSynthesizer",
+     "from ctgan import load_demo",
+     "",
+     "data = load_demo()",
+     ""
+    ]
+   },
+   {
+    "file": "CTGAN_Distribution/README.md",
+    "line": 151,
+    "text": "from ctgan import load_demo",
+    "context": [
+     "",
+     "",
+     "```python3",
+     "from ctgan import CTGANSynthesizer",
+     "from ctgan import load_demo",
+     "",
+     "data = load_demo()",
+     "",
+     "# Names of the columns that are discrete"
+    ]
+   },
+   {
+    "file": "CTGAN_Distribution/ctgan/__init__.py",
+    "line": 9,
+    "text": "from ctgan.demo import load_demo",
+    "context": [
+     "__author__ = 'MIT Data To AI Lab'",
+     "__email__ = 'dailabmit@gmail.com'",
+     "__version__ = '0.5.2.dev0'",
+     "",
+     "from ctgan.demo import load_demo",
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+     "from ctgan.synthesizers.tvae import TVAESynthesizer",
+     "",
+     "__all__ = ("
+    ]
+   },
+   {
+    "file": "CTGAN_Distribution/ctgan/__init__.py",
+    "line": 10,
+    "text": "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+    "context": [
+     "__email__ = 'dailabmit@gmail.com'",
+     "__version__ = '0.5.2.dev0'",
+     "",
+     "from ctgan.demo import load_demo",
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+     "from ctgan.synthesizers.tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    'CTGANSynthesizer',"
+    ]
+   },
+   {
+    "file": "CTGAN_Distribution/ctgan/__init__.py",
+    "line": 11,
+    "text": "from ctgan.synthesizers.tvae import TVAESynthesizer",
+    "context": [
+     "__version__ = '0.5.2.dev0'",
+     "",
+     "from ctgan.demo import load_demo",
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+     "from ctgan.synthesizers.tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    'CTGANSynthesizer',",
+     "    'TVAESynthesizer',"
+    ]
+   },
+   {
+    "file": "CTGAN_Distribution/ctgan/__main__.py",
+    "line": 5,
+    "text": "from ctgan.data import read_csv, read_tsv, write_tsv",
+    "context": [
+     "\"\"\"CLI.\"\"\"",
+     "",
+     "import argparse",
+     "",
+     "from ctgan.data import read_csv, read_tsv, write_tsv",
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+     "",
+     "",
+     "def _parse_args():"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "CTGAN_Distribution/ctgan/__init__.py",
+    "line": 11,
+    "text": "from ctgan.synthesizers.tvae import TVAESynthesizer",
+    "context": [
+     "__version__ = '0.5.2.dev0'",
+     "",
+     "from ctgan.demo import load_demo",
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+     "from ctgan.synthesizers.tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    'CTGANSynthesizer',",
+     "    'TVAESynthesizer',"
+    ]
+   },
+   {
+    "file": "CTGAN_Distribution/ctgan/__init__.py",
+    "line": 15,
+    "text": "'TVAESynthesizer',",
+    "context": [
+     "from ctgan.synthesizers.tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    'CTGANSynthesizer',",
+     "    'TVAESynthesizer',",
+     "    'load_demo'",
+     ")"
+    ]
+   },
+   {
+    "file": "CTGAN_Distribution/ctgan/synthesizers/__init__.py",
+    "line": 4,
+    "text": "from ctgan.synthesizers.tvae import TVAESynthesizer",
+    "context": [
+     "\"\"\"Synthesizers module.\"\"\"",
+     "",
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+     "from ctgan.synthesizers.tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    'CTGANSynthesizer',",
+     "    'TVAESynthesizer'"
+    ]
+   },
+   {
+    "file": "CTGAN_Distribution/ctgan/synthesizers/__init__.py",
+    "line": 8,
+    "text": "'TVAESynthesizer'",
+    "context": [
+     "from ctgan.synthesizers.tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    'CTGANSynthesizer',",
+     "    'TVAESynthesizer'",
+     ")",
+     "",
+     "",
+     "def get_all_synthesizers():"
+    ]
+   },
+   {
+    "file": "CTGAN_Distribution/ctgan/synthesizers/tvae.py",
+    "line": 1,
+    "text": "\"\"\"TVAESynthesizer module.\"\"\"",
+    "context": [
+     "\"\"\"TVAESynthesizer module.\"\"\"",
+     "",
+     "import numpy as np",
+     "import torch",
+     "from torch.nn import Linear, Module, Parameter, ReLU, Sequential"
+    ]
+   },
+   {
+    "file": "CTGAN_Distribution/ctgan/synthesizers/tvae.py",
+    "line": 15,
+    "text": "\"\"\"Encoder for the TVAESynthesizer.",
+    "context": [
+     "from ctgan.synthesizers.base import BaseSynthesizer, random_state",
+     "",
+     "",
+     "class Encoder(Module):",
+     "    \"\"\"Encoder for the TVAESynthesizer.",
+     "",
+     "    Args:",
+     "        data_dim (int):",
+     "            Dimensions of the data."
+    ]
+   },
+   {
+    "file": "CTGAN_Distribution/ctgan/synthesizers/tvae.py",
+    "line": 51,
+    "text": "\"\"\"Decoder for the TVAESynthesizer.",
+    "context": [
+     "        return mu, std, logvar",
+     "",
+     "",
+     "class Decoder(Module):",
+     "    \"\"\"Decoder for the TVAESynthesizer.",
+     "",
+     "    Args:",
+     "        embedding_dim (int):",
+     "            Size of the input vector."
+    ]
+   },
+   {
+    "file": "CTGAN_Distribution/ctgan/synthesizers/tvae.py",
+    "line": 103,
+    "text": "class TVAESynthesizer(BaseSynthesizer):",
+    "context": [
+     "    KLD = -0.5 * torch.sum(1 + logvar - mu**2 - logvar.exp())",
+     "    return sum(loss) * factor / x.size()[0], KLD / x.size()[0]",
+     "",
+     "",
+     "class TVAESynthesizer(BaseSynthesizer):",
+     "    \"\"\"TVAESynthesizer.\"\"\"",
+     "",
+     "    def __init__(",
+     "        self,"
+    ]
+   },
+   {
+    "file": "CTGAN_Distribution/ctgan/synthesizers/tvae.py",
+    "line": 104,
+    "text": "\"\"\"TVAESynthesizer.\"\"\"",
+    "context": [
+     "    return sum(loss) * factor / x.size()[0], KLD / x.size()[0]",
+     "",
+     "",
+     "class TVAESynthesizer(BaseSynthesizer):",
+     "    \"\"\"TVAESynthesizer.\"\"\"",
+     "",
+     "    def __init__(",
+     "        self,",
+     "        embedding_dim=128,"
+    ]
+   },
+   {
+    "file": "CTGAN_Distribution/tests/unit/synthesizer/test_tvae.py",
+    "line": 1,
+    "text": "\"\"\"TVAESynthesizer unit testing module.\"\"\"",
+    "context": [
+     "\"\"\"TVAESynthesizer unit testing module.\"\"\"",
+     "",
+     "from unittest import TestCase",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "CTGAN_Distribution/tests/unit/synthesizer/test_tvae.py",
+    "line": 99,
+    "text": "class TestTVAESynthesizer(TestCase):",
+    "context": [
+     "            kld loss = scalar = f(logvar, mu)",
+     "        \"\"\"",
+     "",
+     "",
+     "class TestTVAESynthesizer(TestCase):",
+     "",
+     "    def test_set_device(self):",
+     "        \"\"\"Test 'set_device' if a GPU is available.",
+     ""
+    ]
+   },
+   {
+    "file": "CTGAN_Distribution/tests/integration/synthesizer/test_tvae.py",
+    "line": 16,
+    "text": "from ctgan.synthesizers.tvae import TVAESynthesizer",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "from sklearn import datasets",
+     "",
+     "from ctgan.synthesizers.tvae import TVAESynthesizer",
+     "",
+     "",
+     "def test_tvae(tmpdir):",
+     "    \"\"\"Test the TVAESynthesizer load/save methods.\"\"\""
+    ]
+   }
+  ],
+  "rdt": [
+   {
+    "file": "CTGAN_Distribution/ctgan/data_transformer.py",
+    "line": 7,
+    "text": "from rdt.transformers import BayesGMMTransformer, OneHotEncodingTransformer",
+    "context": [
+     "from collections import namedtuple",
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from rdt.transformers import BayesGMMTransformer, OneHotEncodingTransformer",
+     "",
+     "SpanInfo = namedtuple('SpanInfo', ['dim', 'activation_fn'])",
+     "ColumnTransformInfo = namedtuple(",
+     "    'ColumnTransformInfo', ["
+    ]
+   },
+   {
+    "file": "eICU_gan/gan_work/ctgan_DF.ipynb",
+    "line": 46,
+    "text": "\"Requirement already satisfied: pyyaml<6,>=5.4.1 in /usr/local/lib/python3.7/dist-packages (from rdt<0.7,>=0.6.2->sdv) (5.4.1)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: kiwisolver>=1.0.1 in /usr/local/lib/python3.7/dist-packages (from matplotlib<4,>=3.4.0->copulas<0.7,>=0.6.1->sdv) (1.4.0)\\n\",",
+     "            \"Requirement already satisfied: fonttools>=4.22.0 in /usr/local/lib/python3.7/dist-packages (from matplotlib<4,>=3.4.0->copulas<0.7,>=0.6.1->sdv) (4.32.0)\\n\",",
+     "            \"Requirement already satisfied: pytz>=2017.3 in /usr/local/lib/python3.7/dist-packages (from pandas<2,>=1.1.3->sdv) (2018.9)\\n\",",
+     "            \"Requirement already satisfied: six>=1.5 in /usr/local/lib/python3.7/dist-packages (from python-dateutil>=2.4->Faker<10,>=3.0.0->sdv) (1.15.0)\\n\",",
+     "            \"Requirement already satisfied: pyyaml<6,>=5.4.1 in /usr/local/lib/python3.7/dist-packages (from rdt<0.7,>=0.6.2->sdv) (5.4.1)\\n\",",
+     "            \"Requirement already satisfied: psutil<6,>=5.7 in /usr/local/lib/python3.7/dist-packages (from rdt<0.7,>=0.6.2->sdv) (5.9.0)\\n\",",
+     "            \"Requirement already satisfied: joblib>=0.11 in /usr/local/lib/python3.7/dist-packages (from scikit-learn<2,>=0.24->ctgan<0.6,>=0.5.1->sdv) (1.1.0)\\n\",",
+     "            \"Requirement already satisfied: threadpoolctl>=2.0.0 in /usr/local/lib/python3.7/dist-packages (from scikit-learn<2,>=0.24->ctgan<0.6,>=0.5.1->sdv) (3.1.0)\\n\",",
+     "            \"Requirement already satisfied: pyts<0.13.0,>=0.12.0 in /usr/local/lib/python3.7/dist-packages (from sdmetrics<0.5,>=0.4.1->sdv) (0.12.0)\\n\","
+    ]
+   },
+   {
+    "file": "eICU_gan/gan_work/ctgan_DF.ipynb",
+    "line": 47,
+    "text": "\"Requirement already satisfied: psutil<6,>=5.7 in /usr/local/lib/python3.7/dist-packages (from rdt<0.7,>=0.6.2->sdv) (5.9.0)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: fonttools>=4.22.0 in /usr/local/lib/python3.7/dist-packages (from matplotlib<4,>=3.4.0->copulas<0.7,>=0.6.1->sdv) (4.32.0)\\n\",",
+     "            \"Requirement already satisfied: pytz>=2017.3 in /usr/local/lib/python3.7/dist-packages (from pandas<2,>=1.1.3->sdv) (2018.9)\\n\",",
+     "            \"Requirement already satisfied: six>=1.5 in /usr/local/lib/python3.7/dist-packages (from python-dateutil>=2.4->Faker<10,>=3.0.0->sdv) (1.15.0)\\n\",",
+     "            \"Requirement already satisfied: pyyaml<6,>=5.4.1 in /usr/local/lib/python3.7/dist-packages (from rdt<0.7,>=0.6.2->sdv) (5.4.1)\\n\",",
+     "            \"Requirement already satisfied: psutil<6,>=5.7 in /usr/local/lib/python3.7/dist-packages (from rdt<0.7,>=0.6.2->sdv) (5.9.0)\\n\",",
+     "            \"Requirement already satisfied: joblib>=0.11 in /usr/local/lib/python3.7/dist-packages (from scikit-learn<2,>=0.24->ctgan<0.6,>=0.5.1->sdv) (1.1.0)\\n\",",
+     "            \"Requirement already satisfied: threadpoolctl>=2.0.0 in /usr/local/lib/python3.7/dist-packages (from scikit-learn<2,>=0.24->ctgan<0.6,>=0.5.1->sdv) (3.1.0)\\n\",",
+     "            \"Requirement already satisfied: pyts<0.13.0,>=0.12.0 in /usr/local/lib/python3.7/dist-packages (from sdmetrics<0.5,>=0.4.1->sdv) (0.12.0)\\n\",",
+     "            \"Requirement already satisfied: numba>=0.48.0 in /usr/local/lib/python3.7/dist-packages (from pyts<0.13.0,>=0.12.0->sdmetrics<0.5,>=0.4.1->sdv) (0.51.2)\\n\","
+    ]
+   },
+   {
+    "file": "eICU_gan/gan_work/ctgan_DF.ipynb",
+    "line": 66,
+    "text": "\"Requirement already satisfied: pyyaml<6,>=5.4.1 in /usr/local/lib/python3.7/dist-packages (from rdt<0.7,>=0.6.2->ctgan) (5.4.1)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: pyparsing!=3.0.5,>=2.0.2 in /usr/local/lib/python3.7/dist-packages (from packaging<22,>=20->ctgan) (3.0.7)\\n\",",
+     "            \"Requirement already satisfied: pytz>=2017.3 in /usr/local/lib/python3.7/dist-packages (from pandas<2,>=1.1.3->ctgan) (2018.9)\\n\",",
+     "            \"Requirement already satisfied: python-dateutil>=2.7.3 in /usr/local/lib/python3.7/dist-packages (from pandas<2,>=1.1.3->ctgan) (2.8.2)\\n\",",
+     "            \"Requirement already satisfied: six>=1.5 in /usr/local/lib/python3.7/dist-packages (from python-dateutil>=2.7.3->pandas<2,>=1.1.3->ctgan) (1.15.0)\\n\",",
+     "            \"Requirement already satisfied: pyyaml<6,>=5.4.1 in /usr/local/lib/python3.7/dist-packages (from rdt<0.7,>=0.6.2->ctgan) (5.4.1)\\n\",",
+     "            \"Requirement already satisfied: scipy<1.8,>=1.5.4 in /usr/local/lib/python3.7/dist-packages (from rdt<0.7,>=0.6.2->ctgan) (1.7.3)\\n\",",
+     "            \"Requirement already satisfied: psutil<6,>=5.7 in /usr/local/lib/python3.7/dist-packages (from rdt<0.7,>=0.6.2->ctgan) (5.9.0)\\n\",",
+     "            \"Requirement already satisfied: threadpoolctl>=2.0.0 in /usr/local/lib/python3.7/dist-packages (from scikit-learn<2,>=0.24->ctgan) (3.1.0)\\n\",",
+     "            \"Requirement already satisfied: joblib>=0.11 in /usr/local/lib/python3.7/dist-packages (from scikit-learn<2,>=0.24->ctgan) (1.1.0)\\n\","
+    ]
+   },
+   {
+    "file": "eICU_gan/gan_work/ctgan_DF.ipynb",
+    "line": 67,
+    "text": "\"Requirement already satisfied: scipy<1.8,>=1.5.4 in /usr/local/lib/python3.7/dist-packages (from rdt<0.7,>=0.6.2->ctgan) (1.7.3)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: pytz>=2017.3 in /usr/local/lib/python3.7/dist-packages (from pandas<2,>=1.1.3->ctgan) (2018.9)\\n\",",
+     "            \"Requirement already satisfied: python-dateutil>=2.7.3 in /usr/local/lib/python3.7/dist-packages (from pandas<2,>=1.1.3->ctgan) (2.8.2)\\n\",",
+     "            \"Requirement already satisfied: six>=1.5 in /usr/local/lib/python3.7/dist-packages (from python-dateutil>=2.7.3->pandas<2,>=1.1.3->ctgan) (1.15.0)\\n\",",
+     "            \"Requirement already satisfied: pyyaml<6,>=5.4.1 in /usr/local/lib/python3.7/dist-packages (from rdt<0.7,>=0.6.2->ctgan) (5.4.1)\\n\",",
+     "            \"Requirement already satisfied: scipy<1.8,>=1.5.4 in /usr/local/lib/python3.7/dist-packages (from rdt<0.7,>=0.6.2->ctgan) (1.7.3)\\n\",",
+     "            \"Requirement already satisfied: psutil<6,>=5.7 in /usr/local/lib/python3.7/dist-packages (from rdt<0.7,>=0.6.2->ctgan) (5.9.0)\\n\",",
+     "            \"Requirement already satisfied: threadpoolctl>=2.0.0 in /usr/local/lib/python3.7/dist-packages (from scikit-learn<2,>=0.24->ctgan) (3.1.0)\\n\",",
+     "            \"Requirement already satisfied: joblib>=0.11 in /usr/local/lib/python3.7/dist-packages (from scikit-learn<2,>=0.24->ctgan) (1.1.0)\\n\",",
+     "            \"Requirement already satisfied: typing-extensions in /usr/local/lib/python3.7/dist-packages (from torch<2,>=1.8.0->ctgan) (3.10.0.2)\\n\","
+    ]
+   },
+   {
+    "file": "eICU_gan/gan_work/ctgan_DF.ipynb",
+    "line": 68,
+    "text": "\"Requirement already satisfied: psutil<6,>=5.7 in /usr/local/lib/python3.7/dist-packages (from rdt<0.7,>=0.6.2->ctgan) (5.9.0)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: python-dateutil>=2.7.3 in /usr/local/lib/python3.7/dist-packages (from pandas<2,>=1.1.3->ctgan) (2.8.2)\\n\",",
+     "            \"Requirement already satisfied: six>=1.5 in /usr/local/lib/python3.7/dist-packages (from python-dateutil>=2.7.3->pandas<2,>=1.1.3->ctgan) (1.15.0)\\n\",",
+     "            \"Requirement already satisfied: pyyaml<6,>=5.4.1 in /usr/local/lib/python3.7/dist-packages (from rdt<0.7,>=0.6.2->ctgan) (5.4.1)\\n\",",
+     "            \"Requirement already satisfied: scipy<1.8,>=1.5.4 in /usr/local/lib/python3.7/dist-packages (from rdt<0.7,>=0.6.2->ctgan) (1.7.3)\\n\",",
+     "            \"Requirement already satisfied: psutil<6,>=5.7 in /usr/local/lib/python3.7/dist-packages (from rdt<0.7,>=0.6.2->ctgan) (5.9.0)\\n\",",
+     "            \"Requirement already satisfied: threadpoolctl>=2.0.0 in /usr/local/lib/python3.7/dist-packages (from scikit-learn<2,>=0.24->ctgan) (3.1.0)\\n\",",
+     "            \"Requirement already satisfied: joblib>=0.11 in /usr/local/lib/python3.7/dist-packages (from scikit-learn<2,>=0.24->ctgan) (1.1.0)\\n\",",
+     "            \"Requirement already satisfied: typing-extensions in /usr/local/lib/python3.7/dist-packages (from torch<2,>=1.8.0->ctgan) (3.10.0.2)\\n\",",
+     "            \"Requirement already satisfied: pillow!=8.3.0,>=5.3.0 in /usr/local/lib/python3.7/dist-packages (from torchvision<1,>=0.9.0->ctgan) (7.1.2)\\n\""
+    ]
+   }
+  ],
+  "sm": [
+   {
+    "file": "eICU_gan/gan_work/ctgan_DF.ipynb",
+    "line": 50,
+    "text": "\"Requirement already satisfied: pyts<0.13.0,>=0.12.0 in /usr/local/lib/python3.7/dist-packages (from sdmetrics<0.5,>=0.4.1->sdv) (0.12.0)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: pyyaml<6,>=5.4.1 in /usr/local/lib/python3.7/dist-packages (from rdt<0.7,>=0.6.2->sdv) (5.4.1)\\n\",",
+     "            \"Requirement already satisfied: psutil<6,>=5.7 in /usr/local/lib/python3.7/dist-packages (from rdt<0.7,>=0.6.2->sdv) (5.9.0)\\n\",",
+     "            \"Requirement already satisfied: joblib>=0.11 in /usr/local/lib/python3.7/dist-packages (from scikit-learn<2,>=0.24->ctgan<0.6,>=0.5.1->sdv) (1.1.0)\\n\",",
+     "            \"Requirement already satisfied: threadpoolctl>=2.0.0 in /usr/local/lib/python3.7/dist-packages (from scikit-learn<2,>=0.24->ctgan<0.6,>=0.5.1->sdv) (3.1.0)\\n\",",
+     "            \"Requirement already satisfied: pyts<0.13.0,>=0.12.0 in /usr/local/lib/python3.7/dist-packages (from sdmetrics<0.5,>=0.4.1->sdv) (0.12.0)\\n\",",
+     "            \"Requirement already satisfied: numba>=0.48.0 in /usr/local/lib/python3.7/dist-packages (from pyts<0.13.0,>=0.12.0->sdmetrics<0.5,>=0.4.1->sdv) (0.51.2)\\n\",",
+     "            \"Requirement already satisfied: llvmlite<0.35,>=0.34.0.dev0 in /usr/local/lib/python3.7/dist-packages (from numba>=0.48.0->pyts<0.13.0,>=0.12.0->sdmetrics<0.5,>=0.4.1->sdv) (0.34.0)\\n\",",
+     "            \"Requirement already satisfied: setuptools in /usr/local/lib/python3.7/dist-packages (from numba>=0.48.0->pyts<0.13.0,>=0.12.0->sdmetrics<0.5,>=0.4.1->sdv) (57.4.0)\\n\",",
+     "            \"Requirement already satisfied: ctgan in /usr/local/lib/python3.7/dist-packages (0.5.1)\\n\","
+    ]
+   }
+  ],
+  "copulas": [
+   {
+    "file": "eICU_gan/gan_work/ctgan_DF.ipynb",
+    "line": 30,
+    "text": "\"Requirement already satisfied: matplotlib<4,>=3.4.0 in /usr/local/lib/python3.7/dist-packages (from copulas<0.7,>=0.6.1->sdv) (3.5.1)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: Faker<10,>=3.0.0 in /usr/local/lib/python3.7/dist-packages (from sdv) (9.9.1)\\n\",",
+     "            \"Requirement already satisfied: rdt<0.7,>=0.6.2 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.6.4)\\n\",",
+     "            \"Requirement already satisfied: tqdm<5,>=4.15 in /usr/local/lib/python3.7/dist-packages (from sdv) (4.63.0)\\n\",",
+     "            \"Requirement already satisfied: copulas<0.7,>=0.6.1 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.6.1)\\n\",",
+     "            \"Requirement already satisfied: matplotlib<4,>=3.4.0 in /usr/local/lib/python3.7/dist-packages (from copulas<0.7,>=0.6.1->sdv) (3.5.1)\\n\",",
+     "            \"Requirement already satisfied: scipy<2,>=1.5.4 in /usr/local/lib/python3.7/dist-packages (from copulas<0.7,>=0.6.1->sdv) (1.7.3)\\n\",",
+     "            \"Requirement already satisfied: scikit-learn<2,>=0.24 in /usr/local/lib/python3.7/dist-packages (from ctgan<0.6,>=0.5.1->sdv) (1.0.2)\\n\",",
+     "            \"Requirement already satisfied: torch<2,>=1.8.0 in /usr/local/lib/python3.7/dist-packages (from ctgan<0.6,>=0.5.1->sdv) (1.10.0+cu111)\\n\",",
+     "            \"Requirement already satisfied: packaging<22,>=20 in /usr/local/lib/python3.7/dist-packages (from ctgan<0.6,>=0.5.1->sdv) (21.3)\\n\","
+    ]
+   },
+   {
+    "file": "eICU_gan/gan_work/ctgan_DF.ipynb",
+    "line": 31,
+    "text": "\"Requirement already satisfied: scipy<2,>=1.5.4 in /usr/local/lib/python3.7/dist-packages (from copulas<0.7,>=0.6.1->sdv) (1.7.3)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: rdt<0.7,>=0.6.2 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.6.4)\\n\",",
+     "            \"Requirement already satisfied: tqdm<5,>=4.15 in /usr/local/lib/python3.7/dist-packages (from sdv) (4.63.0)\\n\",",
+     "            \"Requirement already satisfied: copulas<0.7,>=0.6.1 in /usr/local/lib/python3.7/dist-packages (from sdv) (0.6.1)\\n\",",
+     "            \"Requirement already satisfied: matplotlib<4,>=3.4.0 in /usr/local/lib/python3.7/dist-packages (from copulas<0.7,>=0.6.1->sdv) (3.5.1)\\n\",",
+     "            \"Requirement already satisfied: scipy<2,>=1.5.4 in /usr/local/lib/python3.7/dist-packages (from copulas<0.7,>=0.6.1->sdv) (1.7.3)\\n\",",
+     "            \"Requirement already satisfied: scikit-learn<2,>=0.24 in /usr/local/lib/python3.7/dist-packages (from ctgan<0.6,>=0.5.1->sdv) (1.0.2)\\n\",",
+     "            \"Requirement already satisfied: torch<2,>=1.8.0 in /usr/local/lib/python3.7/dist-packages (from ctgan<0.6,>=0.5.1->sdv) (1.10.0+cu111)\\n\",",
+     "            \"Requirement already satisfied: packaging<22,>=20 in /usr/local/lib/python3.7/dist-packages (from ctgan<0.6,>=0.5.1->sdv) (21.3)\\n\",",
+     "            \"Requirement already satisfied: torchvision<1,>=0.9.0 in /usr/local/lib/python3.7/dist-packages (from ctgan<0.6,>=0.5.1->sdv) (0.11.1+cu111)\\n\","
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "copulas",
+  "ct",
+  "ctgan_mod",
+  "ev",
+  "rdt",
+  "sdv_any",
+  "sm",
+  "tvae"
+ ],
+ "vendored_dirs": [
+  "CTGAN_Distribution/ctgan"
+ ],
+ "dependencies": {
+  "CTGAN_Distribution/setup.py": [
+   "    'rdt>=0.6.2,<0.7',",
+   "            'ctgan=ctgan.__main__:main'",
+   "    keywords='ctgan CTGAN',",
+   "    name='ctgan',",
+   "    packages=find_packages(include=['ctgan', 'ctgan.*']),",
+   "    url='https://github.com/sdv-dev/CTGAN',"
+  ],
+  "CTGAN_Distribution/setup.cfg": [
+   "[bumpversion:file:ctgan/__init__.py]",
+   "\tctgan/data.py:T001"
+  ],
+  "CTGAN_Distribution/conda/meta.yaml": [
+   "{% set name = 'ctgan' %}",
+   "    - ctgan=ctgan.__main__:main",
+   "    - rdt >=0.6.2,<0.7",
+   "    - rdt >=0.6.2,<0.7",
+   "  home: \"https://github.com/sdv-dev/CTGAN\"",
+   "    - sdv-dev"
+  ]
+ }
+}

@@ -1,0 +1,613 @@
+{
+ "repo": "tabkde/tabkde-main",
+ "disk_kb": 42918,
+ "method": "partial_clone",
+ "tree_files": 294,
+ "status": "ok",
+ "readme": "# TabKDE and Hybrid Models\n\n---\n\n🚨 **Important:**  This repository extends the [TabSyn](https://github.com/amazon-science/tabsyn) codebase by adding:\n\n- **TabKDE** methods\n- **Hybrid models** that combine TabKDE and VAE/Diffusion approaches\n\n---\n\n\n\n## ⚙️ Environment Setup\n\nCreate the required Conda environment using the provided YAML file:\n\n```bash\nconda env create -f tabkde.yml\nconda activate tabkde\n```\n\n[📄 View tabkde.yml](./tabkde.yml)\n\n---\n\n\n## 📦 Dataset Preparation\n\n1. **Download the Dataset**\n\n   Run:\n   ```bash\n   python download_dataset.py \n   ```\n*For the IBM dataset, use the link — [credit_card_transactions-ibm_v2.csv](https://www.kaggle.com/code/yichenzhang1226/ibm-credit-card-fraud-detection-eda-random-forest/input?select=credit_card_transactions-ibm_v2.csv). to download and follow the instruction in the paper to create the tran/test split.*\n\n\n3. **Process the Dataset**\n\n   Run:\n   ```bash\n   python process_dataset.py --dataname \"$dataname\"\n   ```\n\n---\n\n## 🧱 TabKDE / Simple KDE\n\n**TabKDE:**\n```bash\npython main.py --dataname \"$dataname\"  --method TabKDE --mode train\npython main.py --dataname \"$dataname\"  --method TabKDE --mode sample\n```\n\n**Simple_KDE (sampling only):**\n```bash\npython main.py --dataname \"$dataname\" --method simple_KDE --mode sample\n```\n\n---\n\n## 🎯 Coreset Sampling\n\nRequires **TabKDE** training first (uses copula embedding).\n\n```bash\npython coreset.py --dataname \"$dataname\"\npython coreset_random.py --dataname \"$dataname\"\n```\n\n---\n\n## 🌐 CopulaDiff\n\n1. **Train Copula Embedding**\n```bash\npython main.py --dataname \"$dataname\" --method copula_diff_encoding --mode train\n```\n\n2. **Train TabSyn with Copula Encoding**\n```bash\npython main.py --dataname \"$dataname\" --method tabsyn --mode train --latent_encoding copula_diff_encoding --num_epochs \"$n_epochs\"\n```\n\n3. **Sample**\n```bash\npython main.py --dataname \"$dataname\" --method tabsyn --mode sample --latent_encoding copula_diff_encoding\n```\n\n---\n\n## 🔄 TabSyn (Vanilla)\n\n1. **Train VAE**\n```bash\npython main.py --dataname \"$dataname\" --method vae --mode train --num_epochs \"$n_epochs\"\n```\n\n2. **Train TabSyn**\n```bash\npython main.py --dataname \"$dataname\" --method tabsyn --mode train --num_epochs \"$n_epochs\"\n```\n\n3. **Sample**\n```bash\npython main.py --dataname \"$dataname\" --method tabsyn --mode sample\n```\n\n---\n\n## 📈 VAE-TabKDE\n\nRequires VAE training (via TabSyn).\n\n```bash\npython main.py --dataname \"$dataname\" --method KDE_VAE_encoding --mode sample\n```\n\n---\n\n## 📉 VAE-SimpleKDE\n\n```bash\npython main.py --dataname \"$dataname\" --method simple_KDE_VAE_encoding --mode sample\n```\n\n---\n\n## 🔬 Baselines (excluding TabSyn)\n\n```bash\npython main.py --dataname \"$dataname\" --method \"$baseline\" --mode train\npython main.py --dataname \"$dataname\" --method \"$baseline\" --mode sample\n```\n---\n\n## 🧪 Evaluation\n\nWe evaluate the quality of synthetic data using metrics from various aspects.\n\n### 📊 Density Estimation (Univariate + Pairwise Correlation)\n\n```bash\npython eval/eval_density.py --dataname [NAME_OF_DATASET] --model [METHOD_NAME] --path [PATH_TO_SYNTHETIC_DATA]\n```\n\n### 🤖 Machine Learning Efficiency\n\n```bash\npython eval/eval_mle.py --dataname \"$dataname\" --model \"$method\"\n```\n\n### 🔒 Privacy Protection: Distance to Closest Record (DCR)\n\n```bash\npython eval/eval_dcr.py --dataname \"$dataname\" --model \"$method\"\n```\n\n*Note:  To achieve an optimal score of 50%, the training and testing sets should be of equal size.*\n\n### 🕵️ Detection: Classifier Two Sample Test (C2ST)\n\n```bash\npython eval/eval_detection.py --dataname \"$dataname\" --model \"$method\"\n```\n\n### 🧮  Alpha Precision and Beta Recall\n\n- **α-Precision**: Fidelity of synthetic data  \n- **β-Recall**: Diversity of synthetic data\n\n```bash\npython eval/eval_quality.py --dataname \"$dataname\" --model \"$method\"\n```\n",
+ "hits": {
+  "st": [
+   {
+    "file": "tabkde/tools.py",
+    "line": 33,
+    "text": "# from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "",
+     "",
+     "",
+     "# from sdv.single_table import GaussianCopulaSynthesizer",
+     "# from sdv.metadata import SingleTableMetadata",
+     "# from sdv.metadata import Metadata",
+     "# from sdv.evaluation.single_table import get_column_plot",
+     "# from rfm import LaplaceRFM"
+    ]
+   },
+   {
+    "file": "tabkde/.ipynb_checkpoints/tools-checkpoint.py",
+    "line": 33,
+    "text": "# from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "",
+     "",
+     "",
+     "# from sdv.single_table import GaussianCopulaSynthesizer",
+     "# from sdv.metadata import SingleTableMetadata",
+     "# from sdv.metadata import Metadata",
+     "# from sdv.evaluation.single_table import get_column_plot",
+     "# from rfm import LaplaceRFM"
+    ]
+   },
+   {
+    "file": "info_extract/tools.py",
+    "line": 26,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "import random",
+     "from sklearn.preprocessing import StandardScaler",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.metadata import Metadata",
+     "",
+     ""
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "tabkde/tools.py",
+    "line": 34,
+    "text": "# from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "",
+     "",
+     "# from sdv.single_table import GaussianCopulaSynthesizer",
+     "# from sdv.metadata import SingleTableMetadata",
+     "# from sdv.metadata import Metadata",
+     "# from sdv.evaluation.single_table import get_column_plot",
+     "# from rfm import LaplaceRFM",
+     ""
+    ]
+   },
+   {
+    "file": "tabkde/tools.py",
+    "line": 35,
+    "text": "# from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "",
+     "# from sdv.single_table import GaussianCopulaSynthesizer",
+     "# from sdv.metadata import SingleTableMetadata",
+     "# from sdv.metadata import Metadata",
+     "# from sdv.evaluation.single_table import get_column_plot",
+     "# from rfm import LaplaceRFM",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "tabkde/.ipynb_checkpoints/tools-checkpoint.py",
+    "line": 34,
+    "text": "# from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "",
+     "",
+     "# from sdv.single_table import GaussianCopulaSynthesizer",
+     "# from sdv.metadata import SingleTableMetadata",
+     "# from sdv.metadata import Metadata",
+     "# from sdv.evaluation.single_table import get_column_plot",
+     "# from rfm import LaplaceRFM",
+     ""
+    ]
+   },
+   {
+    "file": "tabkde/.ipynb_checkpoints/tools-checkpoint.py",
+    "line": 35,
+    "text": "# from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "",
+     "# from sdv.single_table import GaussianCopulaSynthesizer",
+     "# from sdv.metadata import SingleTableMetadata",
+     "# from sdv.metadata import Metadata",
+     "# from sdv.evaluation.single_table import get_column_plot",
+     "# from rfm import LaplaceRFM",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "info_extract/tools.py",
+    "line": 27,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import random",
+     "from sklearn.preprocessing import StandardScaler",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.metadata import Metadata",
+     "",
+     "",
+     "from scipy.stats import gaussian_kde"
+    ]
+   },
+   {
+    "file": "info_extract/tools.py",
+    "line": 28,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "from sklearn.preprocessing import StandardScaler",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.metadata import Metadata",
+     "",
+     "",
+     "from scipy.stats import gaussian_kde",
+     "from collections import Counter"
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "tabkde/tools.py",
+    "line": 36,
+    "text": "# from sdv.evaluation.single_table import get_column_plot",
+    "context": [
+     "",
+     "# from sdv.single_table import GaussianCopulaSynthesizer",
+     "# from sdv.metadata import SingleTableMetadata",
+     "# from sdv.metadata import Metadata",
+     "# from sdv.evaluation.single_table import get_column_plot",
+     "# from rfm import LaplaceRFM",
+     "",
+     "",
+     "import plotly.graph_objects as go"
+    ]
+   },
+   {
+    "file": "tabkde/.ipynb_checkpoints/tools-checkpoint.py",
+    "line": 36,
+    "text": "# from sdv.evaluation.single_table import get_column_plot",
+    "context": [
+     "",
+     "# from sdv.single_table import GaussianCopulaSynthesizer",
+     "# from sdv.metadata import SingleTableMetadata",
+     "# from sdv.metadata import Metadata",
+     "# from sdv.evaluation.single_table import get_column_plot",
+     "# from rfm import LaplaceRFM",
+     "",
+     "",
+     "import plotly.graph_objects as go"
+    ]
+   },
+   {
+    "file": "info_extract/tools.py",
+    "line": 35,
+    "text": "from sdv.evaluation.single_table import get_column_plot",
+    "context": [
+     "from scipy.stats import gaussian_kde",
+     "from collections import Counter",
+     "",
+     "from scipy.stats import entropy",
+     "from sdv.evaluation.single_table import get_column_plot",
+     "",
+     "from rfm import LaplaceRFM",
+     "import plotly.graph_objects as go",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "tabkde/tools.py",
+    "line": 33,
+    "text": "# from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "",
+     "",
+     "",
+     "# from sdv.single_table import GaussianCopulaSynthesizer",
+     "# from sdv.metadata import SingleTableMetadata",
+     "# from sdv.metadata import Metadata",
+     "# from sdv.evaluation.single_table import get_column_plot",
+     "# from rfm import LaplaceRFM"
+    ]
+   },
+   {
+    "file": "tabkde/tools.py",
+    "line": 34,
+    "text": "# from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "",
+     "",
+     "# from sdv.single_table import GaussianCopulaSynthesizer",
+     "# from sdv.metadata import SingleTableMetadata",
+     "# from sdv.metadata import Metadata",
+     "# from sdv.evaluation.single_table import get_column_plot",
+     "# from rfm import LaplaceRFM",
+     ""
+    ]
+   },
+   {
+    "file": "tabkde/tools.py",
+    "line": 35,
+    "text": "# from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "",
+     "# from sdv.single_table import GaussianCopulaSynthesizer",
+     "# from sdv.metadata import SingleTableMetadata",
+     "# from sdv.metadata import Metadata",
+     "# from sdv.evaluation.single_table import get_column_plot",
+     "# from rfm import LaplaceRFM",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "tabkde/tools.py",
+    "line": 36,
+    "text": "# from sdv.evaluation.single_table import get_column_plot",
+    "context": [
+     "",
+     "# from sdv.single_table import GaussianCopulaSynthesizer",
+     "# from sdv.metadata import SingleTableMetadata",
+     "# from sdv.metadata import Metadata",
+     "# from sdv.evaluation.single_table import get_column_plot",
+     "# from rfm import LaplaceRFM",
+     "",
+     "",
+     "import plotly.graph_objects as go"
+    ]
+   },
+   {
+    "file": "tabkde/.ipynb_checkpoints/tools-checkpoint.py",
+    "line": 33,
+    "text": "# from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "",
+     "",
+     "",
+     "# from sdv.single_table import GaussianCopulaSynthesizer",
+     "# from sdv.metadata import SingleTableMetadata",
+     "# from sdv.metadata import Metadata",
+     "# from sdv.evaluation.single_table import get_column_plot",
+     "# from rfm import LaplaceRFM"
+    ]
+   },
+   {
+    "file": "tabkde/.ipynb_checkpoints/tools-checkpoint.py",
+    "line": 34,
+    "text": "# from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "",
+     "",
+     "# from sdv.single_table import GaussianCopulaSynthesizer",
+     "# from sdv.metadata import SingleTableMetadata",
+     "# from sdv.metadata import Metadata",
+     "# from sdv.evaluation.single_table import get_column_plot",
+     "# from rfm import LaplaceRFM",
+     ""
+    ]
+   },
+   {
+    "file": "tabkde/.ipynb_checkpoints/tools-checkpoint.py",
+    "line": 35,
+    "text": "# from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "",
+     "# from sdv.single_table import GaussianCopulaSynthesizer",
+     "# from sdv.metadata import SingleTableMetadata",
+     "# from sdv.metadata import Metadata",
+     "# from sdv.evaluation.single_table import get_column_plot",
+     "# from rfm import LaplaceRFM",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "tabkde/.ipynb_checkpoints/tools-checkpoint.py",
+    "line": 36,
+    "text": "# from sdv.evaluation.single_table import get_column_plot",
+    "context": [
+     "",
+     "# from sdv.single_table import GaussianCopulaSynthesizer",
+     "# from sdv.metadata import SingleTableMetadata",
+     "# from sdv.metadata import Metadata",
+     "# from sdv.evaluation.single_table import get_column_plot",
+     "# from rfm import LaplaceRFM",
+     "",
+     "",
+     "import plotly.graph_objects as go"
+    ]
+   },
+   {
+    "file": "info_extract/tools.py",
+    "line": 26,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "import random",
+     "from sklearn.preprocessing import StandardScaler",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.metadata import Metadata",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "info_extract/tools.py",
+    "line": 27,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import random",
+     "from sklearn.preprocessing import StandardScaler",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.metadata import Metadata",
+     "",
+     "",
+     "from scipy.stats import gaussian_kde"
+    ]
+   },
+   {
+    "file": "info_extract/tools.py",
+    "line": 28,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "from sklearn.preprocessing import StandardScaler",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.metadata import Metadata",
+     "",
+     "",
+     "from scipy.stats import gaussian_kde",
+     "from collections import Counter"
+    ]
+   },
+   {
+    "file": "info_extract/tools.py",
+    "line": 35,
+    "text": "from sdv.evaluation.single_table import get_column_plot",
+    "context": [
+     "from scipy.stats import gaussian_kde",
+     "from collections import Counter",
+     "",
+     "from scipy.stats import entropy",
+     "from sdv.evaluation.single_table import get_column_plot",
+     "",
+     "from rfm import LaplaceRFM",
+     "import plotly.graph_objects as go",
+     ""
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "tabkde/tools.py",
+    "line": 33,
+    "text": "# from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "",
+     "",
+     "",
+     "# from sdv.single_table import GaussianCopulaSynthesizer",
+     "# from sdv.metadata import SingleTableMetadata",
+     "# from sdv.metadata import Metadata",
+     "# from sdv.evaluation.single_table import get_column_plot",
+     "# from rfm import LaplaceRFM"
+    ]
+   },
+   {
+    "file": "tabkde/tools.py",
+    "line": 421,
+    "text": "- synthesizer (GaussianCopulaSynthesizer): An initialized synthesizer with the generated metadata.",
+    "context": [
+     "    - table_name (str): The name to assign to the table in metadata.",
+     "    - metadata_file_path (str): Path to the metadata JSON file.",
+     "    ",
+     "    Returns:",
+     "    - synthesizer (GaussianCopulaSynthesizer): An initialized synthesizer with the generated metadata.",
+     "    \"\"\"",
+     "    # Check if the metadata file already exists and delete it if it does",
+     "    if os.path.exists(metadata_file_path):",
+     "        os.remove(metadata_file_path)  # Delete the existing metadata file"
+    ]
+   },
+   {
+    "file": "tabkde/.ipynb_checkpoints/tools-checkpoint.py",
+    "line": 33,
+    "text": "# from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "",
+     "",
+     "",
+     "# from sdv.single_table import GaussianCopulaSynthesizer",
+     "# from sdv.metadata import SingleTableMetadata",
+     "# from sdv.metadata import Metadata",
+     "# from sdv.evaluation.single_table import get_column_plot",
+     "# from rfm import LaplaceRFM"
+    ]
+   },
+   {
+    "file": "tabkde/.ipynb_checkpoints/tools-checkpoint.py",
+    "line": 421,
+    "text": "- synthesizer (GaussianCopulaSynthesizer): An initialized synthesizer with the generated metadata.",
+    "context": [
+     "    - table_name (str): The name to assign to the table in metadata.",
+     "    - metadata_file_path (str): Path to the metadata JSON file.",
+     "    ",
+     "    Returns:",
+     "    - synthesizer (GaussianCopulaSynthesizer): An initialized synthesizer with the generated metadata.",
+     "    \"\"\"",
+     "    # Check if the metadata file already exists and delete it if it does",
+     "    if os.path.exists(metadata_file_path):",
+     "        os.remove(metadata_file_path)  # Delete the existing metadata file"
+    ]
+   },
+   {
+    "file": "info_extract/tools.py",
+    "line": 26,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "import random",
+     "from sklearn.preprocessing import StandardScaler",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.metadata import Metadata",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "info_extract/tools.py",
+    "line": 379,
+    "text": "- synthesizer (GaussianCopulaSynthesizer): An initialized synthesizer with the generated metadata.",
+    "context": [
+     "    - table_name (str): The name to assign to the table in metadata.",
+     "    - metadata_file_path (str): Path to the metadata JSON file.",
+     "    ",
+     "    Returns:",
+     "    - synthesizer (GaussianCopulaSynthesizer): An initialized synthesizer with the generated metadata.",
+     "    \"\"\"",
+     "    # Check if the metadata file already exists and delete it if it does",
+     "    if os.path.exists(metadata_file_path):",
+     "        os.remove(metadata_file_path)  # Delete the existing metadata file"
+    ]
+   }
+  ],
+  "sm": [
+   {
+    "file": "eval/eval_density.py",
+    "line": 8,
+    "text": "from sdmetrics.reports.single_table import QualityReport, DiagnosticReport",
+    "context": [
+     "",
+     "import json",
+     "",
+     "# Metrics",
+     "from sdmetrics.reports.single_table import QualityReport, DiagnosticReport",
+     "",
+     "",
+     "import argparse",
+     ""
+    ]
+   },
+   {
+    "file": "eval/eval_detection.py",
+    "line": 11,
+    "text": "from sdmetrics import load_demo",
+    "context": [
+     "import json",
+     "import pickle",
+     "",
+     "# Metrics",
+     "from sdmetrics import load_demo",
+     "from sdmetrics.single_table import LogisticDetection",
+     "",
+     "from matplotlib import pyplot as plt",
+     ""
+    ]
+   },
+   {
+    "file": "eval/eval_detection.py",
+    "line": 12,
+    "text": "from sdmetrics.single_table import LogisticDetection",
+    "context": [
+     "import pickle",
+     "",
+     "# Metrics",
+     "from sdmetrics import load_demo",
+     "from sdmetrics.single_table import LogisticDetection",
+     "",
+     "from matplotlib import pyplot as plt",
+     "",
+     "import argparse"
+    ]
+   },
+   {
+    "file": "eval/.ipynb_checkpoints/eval_detection-checkpoint.py",
+    "line": 11,
+    "text": "from sdmetrics import load_demo",
+    "context": [
+     "import json",
+     "import pickle",
+     "",
+     "# Metrics",
+     "from sdmetrics import load_demo",
+     "from sdmetrics.single_table import LogisticDetection",
+     "",
+     "from matplotlib import pyplot as plt",
+     ""
+    ]
+   },
+   {
+    "file": "eval/.ipynb_checkpoints/eval_detection-checkpoint.py",
+    "line": 12,
+    "text": "from sdmetrics.single_table import LogisticDetection",
+    "context": [
+     "import pickle",
+     "",
+     "# Metrics",
+     "from sdmetrics import load_demo",
+     "from sdmetrics.single_table import LogisticDetection",
+     "",
+     "from matplotlib import pyplot as plt",
+     "",
+     "import argparse"
+    ]
+   },
+   {
+    "file": "eval/.ipynb_checkpoints/eval_density-checkpoint.py",
+    "line": 8,
+    "text": "from sdmetrics.reports.single_table import QualityReport, DiagnosticReport",
+    "context": [
+     "",
+     "import json",
+     "",
+     "# Metrics",
+     "from sdmetrics.reports.single_table import QualityReport, DiagnosticReport",
+     "",
+     "",
+     "import argparse",
+     ""
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ev",
+  "gc",
+  "md",
+  "sdv_any",
+  "sm",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdmetrics==0.11.1",
+   "rdt"
+  ]
+ }
+}

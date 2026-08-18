@@ -1,0 +1,351 @@
+{
+ "repo": "fenago/InverseProfiling",
+ "disk_kb": 826,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# QMU.io\n\n**Quantified Mind Understanding** - A privacy-first, browser-based psychometric profiling application that builds a psychological profile through natural conversation. All processing happens locally on your device using WebGPU-accelerated AI models.\n\n---\n\n# Complete System Overview\n\n> *Everything you need to understand how QMU.io builds your psychological profile automatically.*\n\n---\n\n## What Is QMU.io?\n\nQMU.io is a **privacy-first psychological profiling system** that runs entirely in your browser. Unlike traditional psychometric tests that use questionnaires, QMU.io uses **inverse profiling** - analyzing your natural conversations to build a comprehensive psychological profile across **39 research-backed domains**.\n\n**Key Value Propositions:**\n- **100% Private**: All data stays on your device. Zero server calls. Zero tracking.\n- **Automatic Learning**: Just chat naturally - the system learns about you continuously.\n- **Comprehensive**: 39 psychological domains from Big Five personality to cognitive styles.\n- **Multimodal**: Analyzes both text AND voice for richer insights.\n- **Adaptive AI**: The assistant adapts its communication style based on your profile.\n\n---\n\n## The Automatic Learning Pipeline\n\n### How Does It Learn About Me?\n\nEvery time you interact with QMU.io, multiple analysis systems work together automatically:\n\n```\n┌─────────────────────────────────────────────────────────────────┐\n│                     USER INPUT                                   │\n│  ┌──────────┐  ┌──────────────┐  ┌─────────────────────────┐   │\n│  │   Text   │  │    Voice     │  │    Context Detection    │   │\n│  │ Message  │  │  Recording   │  │ (work/social/intimate)  │   │\n│  └────┬─────┘  └──────┬───────┘  └───────────┬─────────────┘   │\n│       │               │                      │                  │\n└───────┼───────────────┼──────────────────────┼──────────────────┘\n        │               │                      │\n        ▼               ▼                      ▼\n┌───────────────────────────────────────────────────────────────────┐\n│                    THREE-SIGNAL ANALYSIS                           │\n│                                                                    │\n│   ┌────────────────┐ ┌────────────────┐ ┌────────────────────┐   │\n│   │  LIWC Signal   │ │ Embedding      │ │   LLM Signal       │   │\n│   │    (20%)       │ │ Signal (30%)   │ │     (50%)          │   │\n│   │                │ │                │ │                    │   │\n│   │  Word-matching │ │ Semantic       │ │  Deep semantic     │   │\n│   │  against psych │ │ similarity to  │ │  analysis via      │   │\n│   │  dictionaries  │ │ 39 trait       │ │  Gemma 3n          │   │\n│   │                │ │ prototypes     │ │  (batched)         │   │\n│   │  ⚡ INSTANT    │ │  🔄 FAST       │ │  🧠 EVERY 5 MSGS  │   │\n│   └───────┬────────┘ └───────┬────────┘ └──────────┬─────────┘   │\n│           │                  │                     │              │\n│           └──────────────────┼─────────────────────┘              │\n│                              ▼                                    │\n│                   ┌────────────────────┐                          │\n│                   │ HYBRID AGGREGATOR  │                          │\n│                   │ Weighted Fusion    │                          │\n│                   │ Confidence Scoring │                          │\n│                   └─────────┬──────────┘                          │\n│                             │                                     │\n└─────────────────────────────┼─────────────────────────────────────┘\n                              ▼\n┌─────────────────────────────────────────────────────────────────┐\n│                    STORAGE & ADAPTATION                          │\n│                                                                  │\n│   ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐ │\n│   │  39 Domain   │  │  Knowledge   │  │  Adaptive Response   │ │\n│   │    Scores    │  │    Graph     │  │      Generator       │ │\n│   │  (SQL.js)    │  │ (LevelGraph) │  │                      │ │\n│   └──────────────┘  └──────────────┘  └──────────────────────┘ │\n│                                                                  │\n└─────────────────────────────────────────────────────────────────┘\n```\n\n### Step-by-Step: What Happens When You Send a Message\n\n1. **You type/speak a message** → \"I really enjoyed leading that project meeting yesterday. It was stressful but rewarding.\"\n\n2. **Context Detection** → System recognizes: `work` context, `stressful` sub-context\n\n3. **Three signals fire simultaneously:**\n\n   | Signal | What It Does | Speed | Example Output |\n   |--------|--------------|-------|----------------|\n   | **LIWC** | Scans for keywords: \"enjoyed\" (positive emotion), \"leading\" (power), \"stressful\" (anxiety) | Instant | `extraversion: 0.7, neuroticism: 0.4` |\n   | **Embedding** | Computes semantic similarity to 39 trait prototypes | ~100ms | `conscientiousness: 0.75, achievement: 0.8` |\n   | **LLM** | After 5 messages, deeply analyzes patterns | Batched | `leadership_style: assertive, stress_coping: active` |\n\n4. **Hybrid Aggregation** → Weighted combination: `final_score = 0.2×LIWC + 0.3×Embedding + 0.5×LLM`\n\n5. **Storage** → Scores saved to SQL database, relationships added to knowledge graph\n\n6. **Adaptation** → Next AI response is tailored to your emerging profile\n\n---\n\n## The Three Analysis Signals (Deep Dive)\n\n### Signal 1: LIWC Analysis (20% weight)\n\n**Linguistic Inquiry and Word Count** - Fast pattern matching against psychological dictionaries.\n\n```\nInput: \"I'm so excited about this new opportunity!\"\n                    │\n                    ▼\n┌─────────────────────────────────────────┐\n│          LIWC DICTIONARY SCAN           │\n│                                         │\n│  \"excited\" → positive_emotion (+1)      │\n│  \"I'm\" → first_person_singular (+1)     │\n│  \"new\" → novelty (+1)                   │\n│  \"opportunity\" → achievement (+1)       │\n│                                         │\n│  Mapped Domains:                        │\n│  • big_five_extraversion: 0.7           │\n│  • big_five_openness: 0.65              │\n│  • achievement_motivation: 0.7          │\n└─────────────────────────────────────────┘\n```\n\n**What it catches:** Emotional words, pronouns (I/we), certainty language, cognitive complexity markers.\n\n### Signal 2: Embedding Similarity (30% weight)\n\n**Semantic similarity** using BGE-small-en transformer model.\n\n```\nInput: \"I prefer to plan everything meticulously before starting\"\n                    │\n                    ▼\n┌─────────────────────────────────────────────────────────────┐\n│              EMBEDDING SIMILARITY ENGINE                     │\n│                                                             │\n│  1. Convert input → 384-dimensional vector                  │\n│                                                             │\n│  2. Compare to 39 prototype vectors:                        │\n│                                                             │\n│     Prototype: \"I am organized, systematic, and thorough\"   │\n│     Similarity: 0.89 → conscientiousness                    │\n│                                                             │\n│     Prototype: \"I embrace change and new experiences\"       │\n│     Similarity: 0.31 → openness                             │\n│                                                             │\n│  Output: { conscientiousness: 0.89, openness: 0.31, ... }   │\n└─────────────────────────────────────────────────────────────┘\n```\n\n**What it catches:** Semantic meaning, conceptual similarity, nuanced expressions that keyword matching would miss.\n\n### Signal 3: LLM Deep Analysis (50% weight)\n\n**Gemma 3n** (running locally via WebGPU) performs deep semantic analysis every 5 messages.\n\n```\nInput: Last 5 messages accumulated\n                    │\n                    ▼\n┌─────────────────────────────────────────────────────────────┐\n│              LLM BATCH ANALYSIS                              │\n│                                                             │\n│  System Prompt: \"Analyze these messages for psychological   │\n│  traits. Output JSON scores for each domain.\"               │\n│                                                             │\n│  LLM reasoning:                                             │\n│  - User consistently uses structured language               │\n│  - Shows preference for detailed explanations               │\n│  - Expresses anxiety about ambiguity                        │\n│  - Values achievement and recognition                       │\n│                                                             │\n│  Output JSON:                                               │\n│  {                                                          │\n│    \"big_five_conscientiousness\": 0.82,                      │\n│    \"big_five_neuroticism\": 0.45,                            │\n│    \"achievement_motivation\": 0.78,                          │\n│    \"decision_style\": \"rational\",                            │\n│    \"confidence\": 0.85                                       │\n│  }                                                          │\n└─────────────────────────────────────────────────────────────┘\n```\n\n**What it catches:** Complex patterns, contradictions, implicit traits, reasoning styles, deeper motivations.\n\n---\n\n## Voice Analysis (Optional Multimodal)\n\nWhen you use voice input, additional prosodic features are extracted:\n\n```\nVoice Recording\n      │\n      ▼\n┌─────────────────────────────────────────────────────────────┐\n│              PROSODIC FEATURE EXTRACTION                     │\n│                                                             │\n│  Pitch Analysis:                                            │\n│  • Mean pitch (Hz) → baseline emotional arousal             │\n│  • Pitch variability → emotional expressiveness             │\n│  • Pitch contour → statement vs. question patterns          │\n│                                                             │\n│  Tempo Analysis:                                            │\n│  • Speech rate (words/min) → extraversion, anxiety          │\n│  • Pause ratio → cognitive load, uncertainty                │\n│  • Articulation rate → confidence level                     │\n│                                                             │\n│  Energy Analysis:                                           │\n│  • Loudness mean → dominance, enthusiasm                    │\n│  • Energy variation → emotional engagement                  │\n│                                                             │\n│  Voice Quality:                                             │\n│  • Jitter (pitch instability) → stress, arousal             │\n│  • Shimmer (amplitude instability) → fatigue, emotion       │\n│  • Harmonic-to-noise ratio → voice clarity                  │\n└─────────────────────────────────────────────────────────────┘\n```\n\n**Domain Mapping Examples:**\n| Prosodic Feature | High Value Indicates |\n|------------------|---------------------|\n| High speech rate | Extraversion, anxiety |\n| High pitch variability | Emotional expressiveness |\n| Long pauses | Thoughtfulness, uncertainty |\n| High jitter | Stress, emotional arousal |\n| Low HNR | Fatigue, negative affect |\n\n---\n\n## Strategic Questioning Engine (Active Learning)\n\nThe system doesn't just passively analyze - it **actively guides conversations** to learn more efficiently.\n\n### Three-Phase Approach:\n\n```\n┌───────────────────────────────────────────────────────────────────┐\n│                    ACTIVE LEARNING PHASES                          │\n├───────────────────────────────────────────────────────────────────┤\n│                                                                   │\n│  Phase 1: DIAGNOSTIC (Sessions 0-10)                              │\n│  ┌─────────────────────────────────────────────────────────────┐ │\n│  │ Goal: Establish baseline across all domains                 │ │\n│  │                                                             │ │\n│  │ Question Types:                                             │ │\n│  │ • \"Tell me about a time when you faced a challenge...\"      │ │\n│  │ • \"How do you typically spend your weekends?\"               │ │\n│  │ • \"What matters most to you in relationships?\"              │ │\n│  │                                                             │ │\n│  │ Strategy: Broad, open-ended questions to cast a wide net    │ │\n│  └─────────────────────────────────────────────────────────────┘ │\n│                              │                                    │\n│                              ▼                                    │\n│  Phase 2: TARGETED (Sessions 11-30)                               │\n│  ┌─────────────────────────────────────────────────────────────┐ │\n│  │ Goal: Fill gaps in low-confidence domains                   │ │\n│  │                                                             │ │\n│  │ System identifies: \"big_five_neuroticism confidence: 0.3\"   │ │\n│  │                                                             │ │\n│  │ Targeted Questions:                                         │ │\n│  │ • \"How do you handle unexpected changes to your plans?\"     │ │\n│  │ • \"When you're stressed, what does that look like for you?\" │ │\n│  │ • \"How long does it take you to recover from setbacks?\"     │ │\n│  │                                                             │ │\n│  │ Strategy: Probe specific domains needing more data          │ │\n│  └─────────────────────────────────────────────────────────────┘ │\n│                              │                                    │\n│                              ▼                                    │\n│  Phase 3: VALIDATION (Sessions 31+)                               │\n│  ┌─────────────────────────────────────────────────────────────┐ │\n│  │ Goal: Verify and refine existing profile                    │ │\n│  │                                                             │ │\n│  │ Hypothesis Testing:                                         │ │\n│  │ • \"You mentioned enjoying leadership - does that extend     │ │\n│  │    to social situations outside work?\"                      │ │\n│  │ • \"I noticed you value efficiency - how does that affect    │ │\n│  │    your personal relationships?\"                            │ │\n│  │                                                             │ │\n│  │ Strategy: Cross-validate and find nuances/contradictions    │ │\n│  └─────────────────────────────────────────────────────────────┘ │\n│                                                                   │\n└───────────────────────────────────────────────────────────────────┘\n```\n\nThe AI naturally weaves these questions into conversation - you won't feel like you're taking a test.\n\n---\n\n## The 39 Psychological Domains\n\nOrganized into 8 research-backed categories:\n\n### Category A: Core Personality (Big Five) - NEO-FFI Based\n| Domain ID | Trait | What It Measures |\n|-----------|-------|------------------|\n| `big_five_openness` | Openness | Curiosity, creativity, preference for novelty |\n| `big_five_conscientiousness` | Conscientiousness | Organization, dependability, self-discipline |\n| `big_five_extraversion` | Extraversion | Sociability, assertiveness, positive emotions |\n| `big_five_agreeableness` | Agreeableness | Cooperation, trust, empathy |\n| `big_five_neuroticism` | Neuroticism | Emotional instability, anxiety, moodiness |\n\n### Category B: Dark Personality - SD3 Based\n| Domain ID | Trait | What It Measures |\n|-----------|-------|------------------|\n| `dark_triad_narcissism` | Narcissism | Grandiosity, need for admiration |\n| `dark_triad_machiavellianism` | Machiavellianism | Strategic manipulation, cynicism |\n| `dark_triad_psychopathy` | Psychopathy | Impulsivity, callousness, thrill-seeking |\n\n### Category C: Emotional Intelligence - EQ/MSCEIT Based\n| Domain ID | Trait | What It Measures |\n|-----------|-------|------------------|\n| `emotional_empathy` | Empathy | Ability to understand others' feelings |\n| `emotional_intelligence` | EQ | Emotional perception, regulation, use |\n| `attachment_style` | Attachment | Secure, anxious, avoidant patterns |\n| `love_languages` | Love Languages | How you give/receive love |\n| `communication_style` | Communication | DISC-based interaction patterns |\n\n### Category D: Decision Making & Motivation\n| Domain ID | Trait | What It Measures |\n|-----------|-------|------------------|\n| `risk_tolerance` | Risk Tolerance | Comfort with uncertainty and risk |\n| `decision_style` | Decision Style | Rational vs. intuitive processing |\n| `time_orientation` | Time Orientation | Past, present, or future focus |\n| `achievement_motivation` | Achievement | Need for accomplishment |\n| `self_efficacy` | Self-Efficacy | Belief in your capabilities |\n| `locus_of_control` | Locus of Control | Internal vs. external attribution |\n| `growth_mindset` | Growth Mindset | Fixed vs. growth beliefs about ability |\n\n### Category E: Values & Wellbeing - Schwartz PVQ Based\n| Domain ID | Trait | What It Measures |\n|-----------|-------|------------------|\n| `personal_values` | Values | Core value priorities |\n| `interests` | Interests | RIASEC career/interest types |\n| `life_satisfaction` | Life Satisfaction | Overall wellbeing assessment |\n| `stress_coping` | Stress Coping | Coping strategy preferences |\n| `social_support` | Social Support | Perceived support network |\n| `authenticity` | Authenticity | Alignment between true/presented self |\n\n### Category F: Cognitive & Learning Styles\n| Domain ID | Trait | What It Measures |\n|-----------|-------|------------------|\n| `cognitive_abilities` | Cognitive Style | Verbal, numerical, spatial preferences |\n| `creativity` | Creativity | Divergent thinking, originality |\n| `learning_styles` | Learning Styles | VARK preferences |\n| `information_processing` | Info Processing | Deep vs. shallow processing |\n| `metacognition` | Metacognition | Awareness of own thinking |\n| `executive_functions` | Executive Functions | Planning, inhibition, flexibility |\n\n### Category G: Social & Cultural Values\n| Domain ID | Trait | What It Measures |\n|-----------|-------|------------------|\n| `social_cognition` | Social Cognition | Theory of mind, social perception |\n| `political_ideology` | Political Values | Political orientation |\n| `cultural_values` | Cultural Values | Hofstede cultural dimensions |\n| `moral_reasoning` | Moral Reasoning | Moral foundations preferences |\n| `work_career_style` | Career Style | Career anchors, work values |\n\n### Category H: Sensory & Aesthetic\n| Domain ID | Trait | What It Measures |\n|-----------|-------|------------------|\n| `sensory_processing` | Sensory Sensitivity | HSP-based sensitivity |\n| `aesthetic_preferences` | Aesthetic Preferences | Art, beauty, design preferences |\n\n---\n\n## Context-Aware Profiling\n\nYour personality isn't static - you act differently in different contexts. QMU.io tracks this:\n\n```\nContext Detection → Automatic keyword/pattern recognition\n\n┌─────────────────────────────────────────────────────────────┐\n│  10 CONTEXT TYPES                                           │\n│                                                             │\n│  work       │ Professional, career discussions              │\n│  social     │ Casual interactions with friends              │\n│  intimate   │ Close relationships, vulnerability            │\n│  creative   │ Art, music, creative projects                 │\n│  stressful  │ High-pressure situations                      │\n│  leisure    │ Relaxation, hobbies                           │\n│  intellectual │ Learning, academic discussions              │\n│  physical   │ Health, fitness, body-related                 │\n│  spiritual  │ Meaning, purpose, existential topics          │\n│  financial  │ Money, economics, financial decisions         │\n└─────────────────────────────────────────────────────────────┘\n\nExample Output:\n  big_five_extraversion@work: 0.8\n  big_five_extraversion@intimate: 0.4\n  → \"",
+ "hits": {
+  "st": [
+   {
+    "file": "research/Fine-Tuned-Psychometrics.md",
+    "line": 42,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "pip install sdv",
+     "```",
+     "",
+     "```python",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "```",
+     "",
+     "### Training Data Schema"
+    ]
+   },
+   {
+    "file": "research/Fine-Tuned-Psychometrics.md",
+    "line": 1703,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "### GaussianCopulaSynthesizer (Recommended for Psychometric Data)",
+     "",
+     "```python",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# Load seed data from real datasets",
+     "seed_data = load_pandora_dataset()  # ~10,000 labeled samples"
+    ]
+   },
+   {
+    "file": "research/Fine-Tuned-Psychometrics.md",
+    "line": 1749,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "### CTGAN for Complex Distributions",
+     "",
+     "```python",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "# Use CTGAN for rare trait combinations",
+     "ctgan = CTGANSynthesizer(",
+     "    metadata,"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "research/Fine-Tuned-Psychometrics.md",
+    "line": 43,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "```",
+     "",
+     "```python",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "```",
+     "",
+     "### Training Data Schema",
+     ""
+    ]
+   },
+   {
+    "file": "research/Fine-Tuned-Psychometrics.md",
+    "line": 1704,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "### GaussianCopulaSynthesizer (Recommended for Psychometric Data)",
+     "",
+     "```python",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# Load seed data from real datasets",
+     "seed_data = load_pandora_dataset()  # ~10,000 labeled samples",
+     ""
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "research/Fine-Tuned-Psychometrics.md",
+    "line": 1816,
+    "text": "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality",
+    "context": [
+     "",
+     "### Quality Validation",
+     "",
+     "```python",
+     "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality",
+     "",
+     "# Run diagnostic checks",
+     "diagnostic = run_diagnostic(",
+     "    real_data=seed_data,"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "research/Fine-Tuned-Psychometrics.md",
+    "line": 42,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "pip install sdv",
+     "```",
+     "",
+     "```python",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "```",
+     "",
+     "### Training Data Schema"
+    ]
+   },
+   {
+    "file": "research/Fine-Tuned-Psychometrics.md",
+    "line": 43,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "```",
+     "",
+     "```python",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "```",
+     "",
+     "### Training Data Schema",
+     ""
+    ]
+   },
+   {
+    "file": "research/Fine-Tuned-Psychometrics.md",
+    "line": 1703,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "### GaussianCopulaSynthesizer (Recommended for Psychometric Data)",
+     "",
+     "```python",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# Load seed data from real datasets",
+     "seed_data = load_pandora_dataset()  # ~10,000 labeled samples"
+    ]
+   },
+   {
+    "file": "research/Fine-Tuned-Psychometrics.md",
+    "line": 1704,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "### GaussianCopulaSynthesizer (Recommended for Psychometric Data)",
+     "",
+     "```python",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# Load seed data from real datasets",
+     "seed_data = load_pandora_dataset()  # ~10,000 labeled samples",
+     ""
+    ]
+   },
+   {
+    "file": "research/Fine-Tuned-Psychometrics.md",
+    "line": 1725,
+    "text": "from sdv.constraints import ScalarInequality, FixedCombinations",
+    "context": [
+     "    }",
+     ")",
+     "",
+     "# Add domain-specific constraints",
+     "from sdv.constraints import ScalarInequality, FixedCombinations",
+     "",
+     "synthesizer.add_constraints([",
+     "    # High neuroticism correlates with high negative emotion words",
+     "    ScalarInequality("
+    ]
+   },
+   {
+    "file": "research/Fine-Tuned-Psychometrics.md",
+    "line": 1749,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "### CTGAN for Complex Distributions",
+     "",
+     "```python",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "# Use CTGAN for rare trait combinations",
+     "ctgan = CTGANSynthesizer(",
+     "    metadata,"
+    ]
+   },
+   {
+    "file": "research/Fine-Tuned-Psychometrics.md",
+    "line": 1816,
+    "text": "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality",
+    "context": [
+     "",
+     "### Quality Validation",
+     "",
+     "```python",
+     "from sdv.evaluation.single_table import run_diagnostic, evaluate_quality",
+     "",
+     "# Run diagnostic checks",
+     "diagnostic = run_diagnostic(",
+     "    real_data=seed_data,"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "research/Fine-Tuned-Psychometrics.md",
+    "line": 42,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "pip install sdv",
+     "```",
+     "",
+     "```python",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "```",
+     "",
+     "### Training Data Schema"
+    ]
+   },
+   {
+    "file": "research/Fine-Tuned-Psychometrics.md",
+    "line": 1749,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "### CTGAN for Complex Distributions",
+     "",
+     "```python",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "# Use CTGAN for rare trait combinations",
+     "ctgan = CTGANSynthesizer(",
+     "    metadata,"
+    ]
+   },
+   {
+    "file": "research/Fine-Tuned-Psychometrics.md",
+    "line": 1752,
+    "text": "ctgan = CTGANSynthesizer(",
+    "context": [
+     "```python",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "# Use CTGAN for rare trait combinations",
+     "ctgan = CTGANSynthesizer(",
+     "    metadata,",
+     "    epochs=500,",
+     "    batch_size=500,",
+     "    generator_dim=(256, 256),"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "research/Fine-Tuned-Psychometrics.md",
+    "line": 42,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "pip install sdv",
+     "```",
+     "",
+     "```python",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "```",
+     "",
+     "### Training Data Schema"
+    ]
+   },
+   {
+    "file": "research/Fine-Tuned-Psychometrics.md",
+    "line": 1700,
+    "text": "### GaussianCopulaSynthesizer (Recommended for Psychometric Data)",
+    "context": [
+     "---",
+     "",
+     "## 1.2 SDV Synthesizer Configuration",
+     "",
+     "### GaussianCopulaSynthesizer (Recommended for Psychometric Data)",
+     "",
+     "```python",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata"
+    ]
+   },
+   {
+    "file": "research/Fine-Tuned-Psychometrics.md",
+    "line": 1703,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "### GaussianCopulaSynthesizer (Recommended for Psychometric Data)",
+     "",
+     "```python",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# Load seed data from real datasets",
+     "seed_data = load_pandora_dataset()  # ~10,000 labeled samples"
+    ]
+   },
+   {
+    "file": "research/Fine-Tuned-Psychometrics.md",
+    "line": 1714,
+    "text": "synthesizer = GaussianCopulaSynthesizer(",
+    "context": [
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(seed_data)",
+     "",
+     "# Configure synthesizer",
+     "synthesizer = GaussianCopulaSynthesizer(",
+     "    metadata,",
+     "    enforce_min_max_values=True,",
+     "    enforce_rounding=False,",
+     "    numerical_distributions={"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ev",
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

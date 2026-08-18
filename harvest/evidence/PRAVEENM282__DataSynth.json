@@ -1,0 +1,227 @@
+{
+ "repo": "PRAVEENM282/DataSynth",
+ "disk_kb": 141,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# DataSynth\n\n**AI-Powered Synthetic Data Generation Platform**\n\nDataSynth is a full-stack platform for generating synthetic datasets across **tabular**, **text**, and **image** modalities using state-of-the-art AI models.\n\n## ✨ Features\n\n- **Multi-Modal Generation** — Tabular (CTGAN/TVAE), Text (OpenAI/Anthropic/Groq), Image (Stable Diffusion)\n- **Async Workers** — Celery with modality-specific queues (`queue_tabular`, `queue_text`, `queue_image`)\n- **Quality Metrics** — KS-Test, Chi-squared for tabular; token stats for text\n- **Real-Time Updates** — WebSocket + React Query polling on the dashboard\n- **S3 Storage** — MinIO-backed artifact storage with presigned download URLs\n- **Production Ready** — Rate limiting, retry policies, structured logging, Prometheus metrics, Sentry\n\n## 🏗 Architecture\n\n```\nFrontend (Next.js) → Backend (FastAPI) → Celery Workers → MinIO (S3)\n                          ↕                    ↕\n                     PostgreSQL              Redis\n```\n\nSee [ARCHITECTURE.md](ARCHITECTURE.md) for full system design.\n\n## 🚀 Quick Start\n\n### Prerequisites\n\n- Docker & Docker Compose\n- (Optional) Node.js 20+, Python 3.11+ for local dev\n\n### Run with Docker\n\n```bash\n# 1. Clone and configure\ncp infrastructure/env/.env.example .env\n\n# 2. Add your API keys to .env\n#    OPENAI_API_KEY=sk-...\n\n# 3. Start all services\ndocker-compose up --build\n```\n\n| Service     | URL                          |\n|-------------|------------------------------|\n| Frontend    | http://localhost:3000         |\n| Backend API | http://localhost:8000/api/v1/docs |\n| MinIO Console | http://localhost:9001      |\n| Prometheus  | http://localhost:8000/metrics |\n\n### Local Development\n\n**Backend:**\n```bash\ncd backend\npip install -r requirements.txt\nuvicorn app.main:app --reload\n```\n\n**Frontend:**\n```bash\ncd frontend\nnpm install\nnpm run dev\n```\n\n**Celery Worker:**\n```bash\ncd backend\ncelery -A app.workers.celery_app worker --loglevel=info -Q queue_tabular,queue_text,queue_image\n```\n\n## 📡 API Endpoints\n\n| Method | Endpoint | Description |\n|--------|----------|-------------|\n| `POST` | `/api/v1/jobs` | Create generation job |\n| `GET` | `/api/v1/jobs` | List jobs (paginated) |\n| `GET` | `/api/v1/jobs/{id}` | Get job details |\n| `GET` | `/api/v1/jobs/{id}/preview` | Preview generated data |\n| `GET` | `/api/v1/jobs/{id}/download` | Presigned download URL |\n| `DELETE` | `/api/v1/jobs/{id}` | Delete job + artifacts |\n| `WS` | `/ws/jobs` | Real-time status updates |\n\n### Example Request\n\n```bash\ncurl -X POST http://localhost:8000/api/v1/jobs \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"data_type\": \"tabular\",\n    \"parameters\": {\n      \"columns\": [\n        {\"name\": \"age\", \"type\": \"integer\"},\n        {\"name\": \"city\", \"type\": \"categorical\", \"values\": [\"NYC\", \"LA\", \"SF\"]}\n      ],\n      \"num_rows\": 1000,\n      \"model_type\": \"ctgan\"\n    }\n  }'\n```\n\n## 🧪 Testing\n\n```bash\ncd backend\npython -m pytest tests/ -v --cov=app\n```\n\n## 🔧 Environment Variables\n\n| Variable | Description | Default |\n|----------|-------------|---------|\n| `DATABASE_URL` | PostgreSQL connection (async) | `postgresql+asyncpg://...` |\n| `REDIS_URL` | Redis connection | `redis://localhost:6379/0` |\n| `S3_ENDPOINT_URL` | MinIO endpoint | `http://localhost:9000` |\n| `OPENAI_API_KEY` | OpenAI API key | — |\n| `SENTRY_DSN` | Sentry error tracking | — |\n| `RATE_LIMIT` | API rate limit | `20/minute` |\n\nSee `infrastructure/env/.env.example` for the full list.\n\n## 📁 Project Structure\n\n```\ndatasynth/\n├── backend/\n│   ├── app/\n│   │   ├── api/v1/          # Versioned REST + WebSocket endpoints\n│   │   ├── core/            # Config, DB, logging, security, metrics\n│   │   ├── models/          # SQLAlchemy ORM (Job, Artifact)\n│   │   ├── schemas/         # Pydantic validation\n│   │   ├── services/        # Business logic layer\n│   │   ├── generators/      # AI plugin system (tabular, text, image)\n│   │   ├── workers/         # Celery tasks + app config\n│   │   ├── storage/         # S3/MinIO client\n│   │   └── main.py\n│   ├── alembic/             # Database migrations\n│   ├── tests/               # pytest test suite\n│   └── requirements.txt\n├── frontend/\n│   ├── app/                 # Next.js pages (landing, create, dashboard, results)\n│   ├── components/          # Reusable UI components\n│   ├── hooks/               # React Query + WebSocket hooks\n│   ├── services/            # API client\n│   └── types/               # TypeScript definitions\n├── infrastructure/\n│   ├── docker/              # Dockerfiles\n│   └── env/                 # Environment templates\n├── docker-compose.yml\n├── ARCHITECTURE.md\n└── README.md\n```\n\n## 📜 License\n\nMIT\n",
+ "hits": {
+  "st": [
+   {
+    "file": "backend/app/generators/tabular_generator.py",
+    "line": 50,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "",
+     "        # ── Train SDV model and generate ─────────────────────",
+     "        try:",
+     "            from sdv.metadata import SingleTableMetadata",
+     "            from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "",
+     "            metadata = SingleTableMetadata()",
+     "            metadata.detect_from_dataframe(reference_df)",
+     ""
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "backend/app/generators/tabular_generator.py",
+    "line": 49,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "        reference_df = self._build_reference_dataframe(columns, sample_size=1000)",
+     "",
+     "        # ── Train SDV model and generate ─────────────────────",
+     "        try:",
+     "            from sdv.metadata import SingleTableMetadata",
+     "            from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "",
+     "            metadata = SingleTableMetadata()",
+     "            metadata.detect_from_dataframe(reference_df)"
+    ]
+   },
+   {
+    "file": "backend/app/generators/tabular_generator.py",
+    "line": 208,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    def _compute_metrics(self, real_df: pd.DataFrame, synthetic_df: pd.DataFrame) -> dict[str, Any]:",
+     "        \"\"\"Compute quality metrics with SDV evaluation, with fallback statistical metrics.\"\"\"",
+     "        try:",
+     "            from sdv.evaluation.single_table import evaluate_quality",
+     "            from sdv.metadata import SingleTableMetadata",
+     "",
+     "            metadata = SingleTableMetadata()",
+     "            metadata.detect_from_dataframe(real_df)",
+     ""
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "backend/app/generators/tabular_generator.py",
+    "line": 207,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "",
+     "    def _compute_metrics(self, real_df: pd.DataFrame, synthetic_df: pd.DataFrame) -> dict[str, Any]:",
+     "        \"\"\"Compute quality metrics with SDV evaluation, with fallback statistical metrics.\"\"\"",
+     "        try:",
+     "            from sdv.evaluation.single_table import evaluate_quality",
+     "            from sdv.metadata import SingleTableMetadata",
+     "",
+     "            metadata = SingleTableMetadata()",
+     "            metadata.detect_from_dataframe(real_df)"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "backend/app/generators/tabular_generator.py",
+    "line": 49,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "        reference_df = self._build_reference_dataframe(columns, sample_size=1000)",
+     "",
+     "        # ── Train SDV model and generate ─────────────────────",
+     "        try:",
+     "            from sdv.metadata import SingleTableMetadata",
+     "            from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "",
+     "            metadata = SingleTableMetadata()",
+     "            metadata.detect_from_dataframe(reference_df)"
+    ]
+   },
+   {
+    "file": "backend/app/generators/tabular_generator.py",
+    "line": 50,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "",
+     "        # ── Train SDV model and generate ─────────────────────",
+     "        try:",
+     "            from sdv.metadata import SingleTableMetadata",
+     "            from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "",
+     "            metadata = SingleTableMetadata()",
+     "            metadata.detect_from_dataframe(reference_df)",
+     ""
+    ]
+   },
+   {
+    "file": "backend/app/generators/tabular_generator.py",
+    "line": 207,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "",
+     "    def _compute_metrics(self, real_df: pd.DataFrame, synthetic_df: pd.DataFrame) -> dict[str, Any]:",
+     "        \"\"\"Compute quality metrics with SDV evaluation, with fallback statistical metrics.\"\"\"",
+     "        try:",
+     "            from sdv.evaluation.single_table import evaluate_quality",
+     "            from sdv.metadata import SingleTableMetadata",
+     "",
+     "            metadata = SingleTableMetadata()",
+     "            metadata.detect_from_dataframe(real_df)"
+    ]
+   },
+   {
+    "file": "backend/app/generators/tabular_generator.py",
+    "line": 208,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    def _compute_metrics(self, real_df: pd.DataFrame, synthetic_df: pd.DataFrame) -> dict[str, Any]:",
+     "        \"\"\"Compute quality metrics with SDV evaluation, with fallback statistical metrics.\"\"\"",
+     "        try:",
+     "            from sdv.evaluation.single_table import evaluate_quality",
+     "            from sdv.metadata import SingleTableMetadata",
+     "",
+     "            metadata = SingleTableMetadata()",
+     "            metadata.detect_from_dataframe(real_df)",
+     ""
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "backend/app/generators/tabular_generator.py",
+    "line": 50,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "",
+     "        # ── Train SDV model and generate ─────────────────────",
+     "        try:",
+     "            from sdv.metadata import SingleTableMetadata",
+     "            from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "",
+     "            metadata = SingleTableMetadata()",
+     "            metadata.detect_from_dataframe(reference_df)",
+     ""
+    ]
+   },
+   {
+    "file": "backend/app/generators/tabular_generator.py",
+    "line": 58,
+    "text": "synthesizer = CTGANSynthesizer(metadata, epochs=300)",
+    "context": [
+     "",
+     "            if model_type == \"tvae\":",
+     "                synthesizer = TVAESynthesizer(metadata, epochs=150)",
+     "            else:",
+     "                synthesizer = CTGANSynthesizer(metadata, epochs=300)",
+     "",
+     "            synthesizer.fit(reference_df)",
+     "            synthetic_df = synthesizer.sample(num_rows=num_rows)",
+     ""
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "backend/app/generators/tabular_generator.py",
+    "line": 50,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "",
+     "        # ── Train SDV model and generate ─────────────────────",
+     "        try:",
+     "            from sdv.metadata import SingleTableMetadata",
+     "            from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "",
+     "            metadata = SingleTableMetadata()",
+     "            metadata.detect_from_dataframe(reference_df)",
+     ""
+    ]
+   },
+   {
+    "file": "backend/app/generators/tabular_generator.py",
+    "line": 56,
+    "text": "synthesizer = TVAESynthesizer(metadata, epochs=150)",
+    "context": [
+     "            metadata = SingleTableMetadata()",
+     "            metadata.detect_from_dataframe(reference_df)",
+     "",
+     "            if model_type == \"tvae\":",
+     "                synthesizer = TVAESynthesizer(metadata, epochs=150)",
+     "            else:",
+     "                synthesizer = CTGANSynthesizer(metadata, epochs=300)",
+     "",
+     "            synthesizer.fit(reference_df)"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ev",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "backend/requirements.txt": [
+   "sdv==1.10.0"
+  ]
+ }
+}

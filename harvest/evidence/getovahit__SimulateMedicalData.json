@@ -1,0 +1,71 @@
+{
+ "repo": "getovahit/SimulateMedicalData",
+ "disk_kb": 11,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# SimulateMedicalData\n# Tabular GAN for Medical Data Synthesis\n\n## Table of Contents\n1. [Introduction](#introduction)\n2. [Prerequisites](#prerequisites)\n3. [Installation](#installation)\n4. [Usage](#usage)\n5. [Configuration](#configuration)\n6. [Output](#output)\n7. [Interpretation of Results](#interpretation-of-results)\n8. [Troubleshooting](#troubleshooting)\n9. [Privacy and Ethical Considerations](#privacy-and-ethical-considerations)\n10. [Contributing](#contributing)\n11. [License](#license)\n\n## Introduction\n\nThis project implements a Tabular Generative Adversarial Network (TGAN) for synthesizing medical data. It's designed to generate realistic, synthetic medical data based on real input data in tabular format. The primary goal is to create high-quality synthetic data that maintains the statistical properties and relationships of the original data while ensuring patient privacy.\n\nKey features:\n- Data preprocessing and encoding\n- CTGAN model training and synthetic data generation\n- Comprehensive quality assessment of synthetic data\n- Visualization of data distributions and correlations\n- Machine learning utility testing\n\n## Prerequisites\n\nBefore you begin, ensure you have met the following requirements:\n- Python 3.7 or higher\n- pip (Python package installer)\n- Access to a command-line interface\n- Basic understanding of Python and machine learning concepts\n\n## Installation\n\nFollow these steps to set up the project environment:\n\n1. Clone the repository or download the script:\n   ```\n   git clone [repository-url]\n   cd [repository-name]\n   ```\n2. Automatically create the environment (if this is done, skip the next 2 steps) (only compatible with Ubuntu)\n   ```\n   source ./create_env.sh\n   ```\n\n3. (Optional but recommended) Create a virtual environment:\n   ```\n   python -m venv ganvenv\n   source ganvenv/bin/activate  # On Windows, use `ganvenv\\Scripts\\activate`\n   ```\n\n4. Install the required packages:\n   ```\n   pip install -r gan_requirements.txt\n   ```\n\n   Detailed package versions:\n   - pandas (1.2.0 or higher)\n   - numpy (1.19.0 or higher)\n   - scikit-learn (0.24.0 or higher)\n   - seaborn (0.11.0 or higher)\n   - matplotlib (3.3.0 or higher)\n   - sdv (0.13.1 or higher)\n\n5. If you plan to use GPU acceleration, ensure you have CUDA installed and install the appropriate PyTorch version.\n\n## Usage\n\nTo run the script:\n\n1. Prepare your input data:\n   - Ensure your data is in CSV format with tab separation.\n   - The file should include columns for 'set/split' and 'finalsplit'.\n   - Remove any direct patient identifiers.\n\n2. Update the script:\n   - Open `tabular_gan_medical_data.py` in a text editor.\n   - Replace `'your_data.csv'` with the path to your input data file.\n   - If your target column is not 'AD', replace 'AD' in the `machine_learning_utility_test` function call with your target column name.\n\n3. Place splits files\n   - Place splits files (new_split_*) inside the same directory with the main script\n\n4. Select phenotype\n   - Change the \"PHENOTYPE\" variable in line 29 of the main script with the phenotype of interest to make the splits accordingly\n\n5. Create results directory\n   - Make sure there is a diretory called \"distribution_comparison_Degree\" in the same directory as the main script to be used for some of the results outputs, and if it doesn't exist, create one with the same name before proceeding to next step\n\n6. Activate and run (if this is done, skip the next 2 steps) (only compatible with Ubuntu)\n   - Run the following script to activate the virtual environment and use it to automatically run the script by running:\n   source activate_run_env.sh\n\n7. Activate the environment\n   - activate the virtual environment by running:\n   source venv/bin/activate  # On Windows, use `ganvenv\\Scripts\\activate`\n\n8. Run the script:\n   ```\n   python tabular_gan_medical_data.py\n   ```\n\n9. Review the output files and console messages for results and any error messages.\n\n## Configuration\n\nYou can adjust the CTGAN model parameters at the top of the script:\n\n- `EPOCHS`: Number of training epochs\n- `BATCH_SIZE`: Number of samples per batch during training\n- `GENERATOR_DIM`: Dimensions of the generator network\n- `DISCRIMINATOR_DIM`: Dimensions of the discriminator network\n- `GENERATOR_LR` and `DISCRIMINATOR_LR`: Learning rates\n- `DISCRIMINATOR_STEPS`: Number of discriminator updates per generator update\n- `EMBEDDING_DIM`: Size of the random sample passed to the generator\n- `COMPRESS_DIMS` and `DECOMPRESS_DIMS`: Dimensions of the encoder and decoder\n- `CUDA`: Whether to use GPU acceleration (if available)\n\nAdjust these parameters based on your data size, complexity, and computational resources.\n\n## Output\n\nThe script generates several output files:\n\n1. `synthetic_medical_data.csv`: The generated synthetic data\n2. `combined_medical_data.csv`: Combined original and synthetic data\n3. `ctgan_medical_model.pkl`: Saved CTGAN model for future use\n4. Distribution comparison plots: PNG files for each numerical column\n5. `correlation_difference.png`: Heatmap of correlation differences\n\nConsole output includes:\n- SDV evaluation results\n- Machine learning utility test results\n\n## Interpretation of Results\n\n1. SDV Evaluation Results:\n   - Provides metrics on how well the synthetic data matches the statistical properties of the real data.\n   - Look for high scores (closer to 1.0) indicating better quality.\n\n2. Distribution Comparison Plots:\n   - Compare the shapes of real and synthetic data distributions.\n   - Look for similar overall shapes and ranges.\n\n3. Correlation Difference Heatmap:\n   - Areas closer to white indicate well-preserved correlations.\n   - Red or blue areas show over- or under-represented correlations in synthetic data.\n\n4. Machine Learning Utility Test:\n   - Compare accuracy and F1 scores between real and synthetic data.\n   - Synthetic data performance should ideally be close to real data performance.\n\n## Troubleshooting\n\nCommon issues and solutions:\n\n1. MemoryError: Reduce batch size or use a smaller subset of your data.\n2. CUDA out of memory: Reduce model dimensions or switch to CPU (set CUDA = False).\n3. Poor synthetic data quality: Try increasing epochs, adjusting network dimensions, or preprocessing data differently.\n\n## Privacy and Ethical Considerations\n\nWhile this method helps create synthetic data, it's crucial to ensure:\n\n1. No personal identifiers are included in the input data.\n2. The synthetic data doesn't inadvertently reveal real patient information.\n3. Compliance with relevant data protection regulations (e.g., HIPAA, GDPR).\n4. Ethical use of the synthetic data, maintaining the same standards as for real patient data.\n\n## Contributing\n\nContributions to improve the script or documentation are welcome. Please follow these steps:\n\n1. Fork the repository.\n2. Create a new branch for your feature.\n3. Commit your changes.\n4. Push to the branch.\n5. Create a new Pull Request.\n\n## License\n\n[Specify the license under which this project is released, e.g., MIT, Apache 2.0, etc.]\n\n---\n\nFor any questions or issues, please [open an issue](link-to-issue-tracker) in the project repository.\n",
+ "hits": {
+  "ev": [
+   {
+    "file": "tabular-gan-medical-data.py",
+    "line": 4,
+    "text": "from sdv.evaluation import evaluate",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.tabular import CTGAN",
+     "from sdv.evaluation import evaluate",
+     "from sklearn.preprocessing import OneHotEncoder",
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.ensemble import RandomForestClassifier",
+     "from sklearn.metrics import accuracy_score, f1_score"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "tabular-gan-medical-data.py",
+    "line": 3,
+    "text": "from sdv.tabular import CTGAN",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.tabular import CTGAN",
+     "from sdv.evaluation import evaluate",
+     "from sklearn.preprocessing import OneHotEncoder",
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.ensemble import RandomForestClassifier"
+    ]
+   },
+   {
+    "file": "tabular-gan-medical-data.py",
+    "line": 4,
+    "text": "from sdv.evaluation import evaluate",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.tabular import CTGAN",
+     "from sdv.evaluation import evaluate",
+     "from sklearn.preprocessing import OneHotEncoder",
+     "from sklearn.model_selection import train_test_split",
+     "from sklearn.ensemble import RandomForestClassifier",
+     "from sklearn.metrics import accuracy_score, f1_score"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ev",
+  "sdv_any"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "gan_requirements.txt": [
+   "copulas==0.8.0",
+   "ctgan==0.7.5",
+   "rdt==1.7.0",
+   "sdmetrics==0.9.3",
+   "sdv==0.18.0"
+  ]
+ }
+}

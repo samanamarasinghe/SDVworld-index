@@ -1,0 +1,797 @@
+{
+ "repo": "dayav/pipeline_synthetic_tabular_data",
+ "disk_kb": 40416,
+ "method": "partial_clone",
+ "tree_files": 251,
+ "status": "ok",
+ "readme": "# PipelineTabularDataSynth\n\n## Table of Contents\n- [Project Overview](#project-overview)\n- [Related Paper](#related-paper)\n- [Documentation](#documentation)\n- [Repository Structure](#repository-structure)\n- [Quick Start](#quick-start)\n- [Results & Large Artifacts](#results--large-artifacts)\n- [License & Citation](#license--citation)\n\n\n![Mode-patching stage](docs/images/iterative_freezing.png)\n\n*Stage 1 of the pipeline: iterative layer-frozen mode-patching to restore dropped categorical modes. The full pipeline also includes a HEOM–kNN privacy filter and a three-layer evaluation protocol (fidelity, utility, privacy) — see the [paper (arXiv preprint)](https://arxiv.org/abs/2602.06390) or the thesis for full details.*\n\n\n## Project Overview\nPipelineTabularDataSynth is the experimental and evaluation artifact for the paper \"Generating High-quality Privacy-preserving Synthetic Data.\" It provides a modular pipeline to generate synthetic tabular data (CTGAN/TVAE variants), apply model-agnostic post-processing, and evaluate fidelity, utility, and privacy across the Credit, Adult, and Cardio datasets. The core library lives in `src/`, and `PipelineBuilder` composes generation, post-processing, sampling/rejection, and evaluation tasks into repeatable workflows.\n\nPost-processing components implemented here:\n- Layer-frozen mode-patching for missing categorical levels.\n- HEOM-kNN εANY rejection-with-replacement privacy filtering with threshold τANY.\n\nEvaluation dimensions:\n- Fidelity: JS distance, Cohen's d, dependence matrices.\n- Utility: TSTR (train on synthetic, test on real).\n- Privacy: DCR, RPR, CAP, AIA, Anonymeter (or equivalent).\n\nPrimary audience: researchers and engineers running synthetic-data experiments, plus reviewers who need to verify results without pulling all artifacts.\n\nHeavy experiment artifacts are separated into the `pipeline_tabular_data_results/` submodule (Git LFS) hosted on Hugging Face to keep the codebase lightweight.\n\n## Related Paper\n**Title:** Generating High-quality Privacy-preserving Synthetic Data  \n**Authors:** David Yavo, Richard Khoury, Christophe Pere, Sadoune Ait Kaci Azzou\n\nThis repository contains the experimental pipeline and evaluation artifacts for the paper, available as a preprint on [arXiv (arXiv:2602.06390)](https://arxiv.org/abs/2602.06390).\n\n## Documentation\n- [Setup & Reproducibility](docs/SETUP.md)\n- [Reproduce the Paper](docs/REPRODUCE_PAPER.md)\n- [Metrics Reference](docs/METRICS.md)\n- [Datasets](docs/DATASETS.md)\n- [Results & Git LFS](docs/RESULTS.md)\n- [Results Storage Format](RESULTS_STORAGE.md)\n- [GitHub Repository](https://github.com/dayav/pipeline_synthetic_tabular_data)\n- [Hugging Face Results Dataset](https://huggingface.co/datasets/dayav/pipeline_tabular_data_results)\n\n## Repository Structure\n```\n.\n|-- docs/                          # Setup and reproducibility guidance\n|-- src/                           # Core pipeline + evaluators\n|-- experiments/                   # Scripts and notebooks (entry points)\n|-- scripts/                       # Smoke tests and helper scripts\n|-- tests/                         # Unit tests\n|-- pipeline_tabular_data_results/ # Submodule: large artifacts (Git LFS)\n|-- requirements.txt               # Python dependencies\n|-- setup.py                       # Package metadata\n|-- RESULTS_STORAGE.md             # Results storage format + safety notes\n|-- LICENSE                        # MIT License\n`-- CITATION.cff                   # Citation metadata\n```\n\nLightweight vs. heavy content:\n- **Lightweight code:** `docs/`, `src/`, `experiments/`, `scripts/`, `tests/`, `requirements.txt`, `setup.py`, `RESULTS_STORAGE.md`, `LICENSE`, `CITATION.cff`.\n- **Heavy artifacts:** `pipeline_tabular_data_results/` (submodule; Git LFS; do not auto-download).\n\n## Quick Start\n> **Note**\n> This quick start avoids large Git LFS downloads. For full setup, reproduction steps, and troubleshooting, see `docs/SETUP.md` and `docs/REPRODUCE_PAPER.md`.\n\n```bash\nGIT_LFS_SKIP_SMUDGE=1 git clone --recurse-submodules https://github.com/dayav/pipeline_synthetic_tabular_data.git\ncd pipeline_synthetic_tabular_data\nGIT_LFS_SKIP_SMUDGE=1 git submodule update --init --recursive\npython3 -m venv .venv\n. .venv/bin/activate\npython -m pip install --upgrade pip\npython -m pip install -r requirements.txt\npython -m pip install -e .\n./scripts/smoke_test.sh\n```\n\n## Results & Large Artifacts\nAll heavy experiment outputs live in the `pipeline_tabular_data_results/` Git submodule (Git LFS), pinned to a specific commit for reproducibility and hosted on Hugging Face. By default you will only have pointer files until you selectively pull the artifacts you need. See `docs/SETUP.md` for the full LFS workflow and the auto-generated task-to-results mapping.\n\n\n## License & Citation\n\nThis project is released under the MIT License — see `LICENSE`.\n\nFor citations, use `CITATION.cff` (includes the paper citation, repository citation guidance, and results-submodule reference).\n\nCitation guidance (research use):\n- Cite the code repository by name (`PipelineTabularDataSynth`) and include the exact code commit SHA.\n- Cite the results dataset submodule and include its commit SHA.\n- Cite the related paper: \"Generating High-quality Privacy-preserving Synthetic Data\" (David Yavo, Richard Khoury, Christophe Pere, Sadoune Ait Kaci Azzou) - [arXiv:2602.06390](https://arxiv.org/abs/2602.06390)\n- Submodule dataset URL (for reference): https://huggingface.co/datasets/dayav/pipeline_tabular_data_results\n",
+ "hits": {
+  "md": [
+   {
+    "file": "experiments/pipeline_experiment/epsilon_comparison_privacy_evaluation.ipynb",
+    "line": 3495,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"from sdmetrics.single_table import DCROverfittingProtection\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"synthetic_table = dict_results_credit_ctgan_heom_any['credit CTGAN']['generation_results']['synthetic_data']\\n\",",
+     "    \"synthetic_table = DataLoader.align_categoricals(synthetic_table, df_real_credit_card_train, cat_list_credit_card)\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "experiments/scripts/credit/ctgan_eps_heom_any_weighted_5/credit_ctgan.py",
+    "line": 32,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import argparse",
+     "from pathlib import Path",
+     "from typing import Optional",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from data_loader import DataLoader",
+     "from data_evaluator import ClassifierType",
+     "from data_synthesizer.pipeline import PipelineBuilder"
+    ]
+   },
+   {
+    "file": "experiments/scripts/credit/ctgan_eps_heom_any_weighted_k/credit_ctgan.py",
+    "line": 32,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import argparse",
+     "from pathlib import Path",
+     "from typing import Optional",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from data_loader import DataLoader",
+     "from data_evaluator import ClassifierType",
+     "from data_synthesizer.pipeline import PipelineBuilder"
+    ]
+   },
+   {
+    "file": "experiments/scripts/credit/tvae_eps_heom_any/credit_tvae.py",
+    "line": 32,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import argparse",
+     "from pathlib import Path",
+     "from typing import Optional",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from data_loader import DataLoader",
+     "from data_evaluator import ClassifierType",
+     "from data_synthesizer.pipeline import PipelineBuilder"
+    ]
+   },
+   {
+    "file": "experiments/scripts/credit/tvae_eps_heom_any_weighted_5/credit_tvae.py",
+    "line": 32,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import argparse",
+     "from pathlib import Path",
+     "from typing import Optional",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from data_loader import DataLoader",
+     "from data_evaluator import ClassifierType",
+     "from data_synthesizer.pipeline import PipelineBuilder"
+    ]
+   },
+   {
+    "file": "experiments/scripts/credit/tvae_eps_heom_any_weighted_k/credit_tvae.py",
+    "line": 32,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import argparse",
+     "from pathlib import Path",
+     "from typing import Optional",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from data_loader import DataLoader",
+     "from data_evaluator import ClassifierType",
+     "from data_synthesizer.pipeline import PipelineBuilder"
+    ]
+   },
+   {
+    "file": "experiments/scripts/credit/ctgan_eps_heom_any/credit_ctgan.py",
+    "line": 35,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import argparse",
+     "from pathlib import Path",
+     "from typing import Optional",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from data_loader import DataLoader",
+     "from data_evaluator import ClassifierType",
+     "from data_synthesizer.pipeline import PipelineBuilder"
+    ]
+   },
+   {
+    "file": "experiments/scripts/credit/disclosure_protection/credit_ctgan_dcr.py",
+    "line": 14,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from data_synthesizer.pipeline.storages.evaluation_results_storage import load_all_results",
+     "",
+     "from sdmetrics.single_table import DisclosureProtection",
+     "from sdmetrics.single_table import DCROverfittingProtection",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "",
+     "# ──────────────────────────────────────────────────────────────────────────────",
+     "# Dataset-specific configuration"
+    ]
+   },
+   {
+    "file": "experiments/scripts/generator_optimization/adult_tvae_.py",
+    "line": 7,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from data_loader import DataLoader",
+     "from data_synthesizer.sdv import SDVCTGAN_, SDVTVAE_",
+     "from data_evaluator import ClassifierType",
+     "from data_synthesizer.pipeline import PipelineBuilder",
+     "from sdv.metadata import SingleTableMetadata",
+     "import pickle",
+     "",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "experiments/scripts/generator_optimization/cardio_ctgan_.py",
+    "line": 7,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from data_loader import DataLoader",
+     "from data_synthesizer.sdv import SDVCTGAN_, SDVTVAE_",
+     "from data_evaluator import ClassifierType",
+     "from data_synthesizer.pipeline import PipelineBuilder",
+     "from sdv.metadata import SingleTableMetadata",
+     "import pickle",
+     "",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "experiments/scripts/generator_optimization/credit_ctgan_optimized.py",
+    "line": 7,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from data_loader import DataLoader",
+     "from data_synthesizer.sdv import SDVCTGAN_, SDVTVAE_",
+     "from data_evaluator import ClassifierType",
+     "from data_synthesizer.pipeline import PipelineBuilder",
+     "from sdv.metadata import SingleTableMetadata",
+     "import pickle",
+     "",
+     "",
+     "def main():"
+    ]
+   },
+   {
+    "file": "experiments/scripts/generator_optimization/credit_ctgan_utility_test.py",
+    "line": 7,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from data_loader import DataLoader",
+     "from data_synthesizer.sdv import SDVCTGAN_, SDVTVAE_",
+     "from data_evaluator import ClassifierType",
+     "from data_synthesizer.pipeline import PipelineBuilder",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sklearn.model_selection import StratifiedKFold",
+     "import pickle",
+     "import pandas as pd",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "experiments/pipeline_experiment/epsilon_comparison_privacy_evaluation.ipynb",
+    "line": 3495,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"from sdmetrics.single_table import DCROverfittingProtection\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"synthetic_table = dict_results_credit_ctgan_heom_any['credit CTGAN']['generation_results']['synthetic_data']\\n\",",
+     "    \"synthetic_table = DataLoader.align_categoricals(synthetic_table, df_real_credit_card_train, cat_list_credit_card)\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "experiments/scripts/credit/ctgan_eps_heom_any_weighted_5/credit_ctgan.py",
+    "line": 32,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import argparse",
+     "from pathlib import Path",
+     "from typing import Optional",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from data_loader import DataLoader",
+     "from data_evaluator import ClassifierType",
+     "from data_synthesizer.pipeline import PipelineBuilder"
+    ]
+   },
+   {
+    "file": "experiments/scripts/credit/ctgan_eps_heom_any_weighted_k/credit_ctgan.py",
+    "line": 32,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import argparse",
+     "from pathlib import Path",
+     "from typing import Optional",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from data_loader import DataLoader",
+     "from data_evaluator import ClassifierType",
+     "from data_synthesizer.pipeline import PipelineBuilder"
+    ]
+   },
+   {
+    "file": "experiments/scripts/credit/tvae_eps_heom_any/credit_tvae.py",
+    "line": 32,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import argparse",
+     "from pathlib import Path",
+     "from typing import Optional",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from data_loader import DataLoader",
+     "from data_evaluator import ClassifierType",
+     "from data_synthesizer.pipeline import PipelineBuilder"
+    ]
+   },
+   {
+    "file": "experiments/scripts/credit/tvae_eps_heom_any_weighted_5/credit_tvae.py",
+    "line": 32,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import argparse",
+     "from pathlib import Path",
+     "from typing import Optional",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from data_loader import DataLoader",
+     "from data_evaluator import ClassifierType",
+     "from data_synthesizer.pipeline import PipelineBuilder"
+    ]
+   },
+   {
+    "file": "experiments/scripts/credit/tvae_eps_heom_any_weighted_k/credit_tvae.py",
+    "line": 32,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import argparse",
+     "from pathlib import Path",
+     "from typing import Optional",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from data_loader import DataLoader",
+     "from data_evaluator import ClassifierType",
+     "from data_synthesizer.pipeline import PipelineBuilder"
+    ]
+   },
+   {
+    "file": "experiments/scripts/credit/ctgan_eps_heom_any/credit_ctgan.py",
+    "line": 35,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import argparse",
+     "from pathlib import Path",
+     "from typing import Optional",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from data_loader import DataLoader",
+     "from data_evaluator import ClassifierType",
+     "from data_synthesizer.pipeline import PipelineBuilder"
+    ]
+   },
+   {
+    "file": "experiments/scripts/credit/disclosure_protection/credit_ctgan_dcr.py",
+    "line": 14,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from data_synthesizer.pipeline.storages.evaluation_results_storage import load_all_results",
+     "",
+     "from sdmetrics.single_table import DisclosureProtection",
+     "from sdmetrics.single_table import DCROverfittingProtection",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "",
+     "# ──────────────────────────────────────────────────────────────────────────────",
+     "# Dataset-specific configuration"
+    ]
+   },
+   {
+    "file": "experiments/scripts/generator_optimization/adult_tvae_.py",
+    "line": 7,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from data_loader import DataLoader",
+     "from data_synthesizer.sdv import SDVCTGAN_, SDVTVAE_",
+     "from data_evaluator import ClassifierType",
+     "from data_synthesizer.pipeline import PipelineBuilder",
+     "from sdv.metadata import SingleTableMetadata",
+     "import pickle",
+     "",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "experiments/scripts/generator_optimization/cardio_ctgan_.py",
+    "line": 7,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from data_loader import DataLoader",
+     "from data_synthesizer.sdv import SDVCTGAN_, SDVTVAE_",
+     "from data_evaluator import ClassifierType",
+     "from data_synthesizer.pipeline import PipelineBuilder",
+     "from sdv.metadata import SingleTableMetadata",
+     "import pickle",
+     "",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "experiments/scripts/generator_optimization/credit_ctgan_optimized.py",
+    "line": 7,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from data_loader import DataLoader",
+     "from data_synthesizer.sdv import SDVCTGAN_, SDVTVAE_",
+     "from data_evaluator import ClassifierType",
+     "from data_synthesizer.pipeline import PipelineBuilder",
+     "from sdv.metadata import SingleTableMetadata",
+     "import pickle",
+     "",
+     "",
+     "def main():"
+    ]
+   },
+   {
+    "file": "experiments/scripts/generator_optimization/credit_ctgan_utility_test.py",
+    "line": 7,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from data_loader import DataLoader",
+     "from data_synthesizer.sdv import SDVCTGAN_, SDVTVAE_",
+     "from data_evaluator import ClassifierType",
+     "from data_synthesizer.pipeline import PipelineBuilder",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sklearn.model_selection import StratifiedKFold",
+     "import pickle",
+     "import pandas as pd",
+     ""
+    ]
+   }
+  ],
+  "sm": [
+   {
+    "file": "experiments/pipeline_experiment/epsilon_comparison_privacy_evaluation.ipynb",
+    "line": 3494,
+    "text": "\"from sdmetrics.single_table import DCROverfittingProtection\\n\",",
+    "context": [
+     "   \"id\": \"58012839\",",
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"from sdmetrics.single_table import DCROverfittingProtection\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"synthetic_table = dict_results_credit_ctgan_heom_any['credit CTGAN']['generation_results']['synthetic_data']\\n\",",
+     "    \"synthetic_table = DataLoader.align_categoricals(synthetic_table, df_real_credit_card_train, cat_list_credit_card)\\n\","
+    ]
+   },
+   {
+    "file": "experiments/scripts/credit/disclosure_protection/credit_ctgan.py",
+    "line": 12,
+    "text": "from sdmetrics.single_table import DisclosureProtection",
+    "context": [
+     "from data_loader import DataLoader",
+     "from data_synthesizer.fit_aia_gard import fit_aia_guard_strong",
+     "from data_synthesizer.pipeline.storages.evaluation_results_storage import load_all_results",
+     "",
+     "from sdmetrics.single_table import DisclosureProtection",
+     "",
+     "",
+     "# ──────────────────────────────────────────────────────────────────────────────",
+     "# Dataset-specific configuration"
+    ]
+   },
+   {
+    "file": "experiments/scripts/credit/disclosure_protection/credit_ctgan_dcr.py",
+    "line": 12,
+    "text": "from sdmetrics.single_table import DisclosureProtection",
+    "context": [
+     "from data_loader import DataLoader",
+     "from data_synthesizer.fit_aia_gard import fit_aia_guard_strong",
+     "from data_synthesizer.pipeline.storages.evaluation_results_storage import load_all_results",
+     "",
+     "from sdmetrics.single_table import DisclosureProtection",
+     "from sdmetrics.single_table import DCROverfittingProtection",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "experiments/scripts/credit/disclosure_protection/credit_ctgan_dcr.py",
+    "line": 13,
+    "text": "from sdmetrics.single_table import DCROverfittingProtection",
+    "context": [
+     "from data_synthesizer.fit_aia_gard import fit_aia_guard_strong",
+     "from data_synthesizer.pipeline.storages.evaluation_results_storage import load_all_results",
+     "",
+     "from sdmetrics.single_table import DisclosureProtection",
+     "from sdmetrics.single_table import DCROverfittingProtection",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "",
+     "# ──────────────────────────────────────────────────────────────────────────────"
+    ]
+   },
+   {
+    "file": "experiments/scripts/credit/disclosure_protection_weighted/credit_ctgan.py",
+    "line": 12,
+    "text": "from sdmetrics.single_table import DisclosureProtection",
+    "context": [
+     "from data_loader import DataLoader",
+     "from data_synthesizer.fit_aia_gard import fit_aia_guard_strong",
+     "from data_synthesizer.pipeline.storages.evaluation_results_storage import load_all_results",
+     "",
+     "from sdmetrics.single_table import DisclosureProtection",
+     "",
+     "",
+     "# ──────────────────────────────────────────────────────────────────────────────",
+     "# Dataset-specific configuration"
+    ]
+   },
+   {
+    "file": "experiments/scripts/cardio/disclosure_protection/cardio_ctgan_dcr.py",
+    "line": 12,
+    "text": "from sdmetrics.single_table import DCROverfittingProtection",
+    "context": [
+     "from data_loader import DataLoader",
+     "from data_synthesizer.fit_aia_gard import fit_aia_guard_strong",
+     "from data_synthesizer.pipeline.storages.evaluation_results_storage import load_all_results",
+     "",
+     "from sdmetrics.single_table import DCROverfittingProtection",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "",
+     "# ──────────────────────────────────────────────────────────────────────────────"
+    ]
+   },
+   {
+    "file": "experiments/scripts/cardio/disclosure_protection/cardio_ctgan.py",
+    "line": 12,
+    "text": "from sdmetrics.single_table import DisclosureProtection",
+    "context": [
+     "from data_loader import DataLoader",
+     "from data_synthesizer.fit_aia_gard import fit_aia_guard_strong",
+     "from data_synthesizer.pipeline.storages.evaluation_results_storage import load_all_results",
+     "",
+     "from sdmetrics.single_table import DisclosureProtection",
+     "",
+     "",
+     "# ──────────────────────────────────────────────────────────────────────────────",
+     "# Dataset-specific configuration"
+    ]
+   },
+   {
+    "file": "experiments/scripts/cardio/disclosure_protection_weighted/cardio_ctgan.py",
+    "line": 12,
+    "text": "from sdmetrics.single_table import DisclosureProtection",
+    "context": [
+     "from data_loader import DataLoader",
+     "from data_synthesizer.fit_aia_gard import fit_aia_guard_strong",
+     "from data_synthesizer.pipeline.storages.evaluation_results_storage import load_all_results",
+     "",
+     "from sdmetrics.single_table import DisclosureProtection",
+     "",
+     "",
+     "# ──────────────────────────────────────────────────────────────────────────────",
+     "# Dataset-specific configuration"
+    ]
+   },
+   {
+    "file": "experiments/scripts/adult/disclosure_protection/adult_ctgan.py",
+    "line": 12,
+    "text": "from sdmetrics.single_table import DisclosureProtection",
+    "context": [
+     "from data_loader import DataLoader",
+     "from data_synthesizer.fit_aia_gard import fit_aia_guard_strong",
+     "from data_synthesizer.pipeline.storages.evaluation_results_storage import load_all_results",
+     "",
+     "from sdmetrics.single_table import DisclosureProtection",
+     "",
+     "",
+     "# ──────────────────────────────────────────────────────────────────────────────",
+     "# Dataset-specific configuration"
+    ]
+   },
+   {
+    "file": "experiments/scripts/adult/disclosure_protection/adult_ctgan_dcr.py",
+    "line": 12,
+    "text": "from sdmetrics.single_table import DCROverfittingProtection",
+    "context": [
+     "from data_loader import DataLoader",
+     "from data_synthesizer.fit_aia_gard import fit_aia_guard_strong",
+     "from data_synthesizer.pipeline.storages.evaluation_results_storage import load_all_results",
+     "",
+     "from sdmetrics.single_table import DCROverfittingProtection",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "",
+     "# ──────────────────────────────────────────────────────────────────────────────"
+    ]
+   },
+   {
+    "file": "experiments/scripts/adult/disclosure_protection_weighted/adult_ctgan.py",
+    "line": 12,
+    "text": "from sdmetrics.single_table import DisclosureProtection",
+    "context": [
+     "from data_loader import DataLoader",
+     "from data_synthesizer.fit_aia_gard import fit_aia_guard_strong",
+     "from data_synthesizer.pipeline.storages.evaluation_results_storage import load_all_results",
+     "",
+     "from sdmetrics.single_table import DisclosureProtection",
+     "",
+     "",
+     "# ──────────────────────────────────────────────────────────────────────────────",
+     "# Dataset-specific configuration"
+    ]
+   }
+  ],
+  "ctgan_mod": [
+   {
+    "file": "src/data_synthesizer/sdv/ctgan/ctgan_modified.py",
+    "line": 6,
+    "text": "from ctgan import CTGAN",
+    "context": [
+     "import numpy as np",
+     "from tqdm import tqdm",
+     "import warnings",
+     "",
+     "from ctgan import CTGAN",
+     "from torch.nn import BatchNorm1d, Dropout, LeakyReLU, Linear, Module, ReLU, Sequential",
+     "import torch",
+     "from torch import optim",
+     "from ctgan.data_sampler import DataSampler"
+    ]
+   },
+   {
+    "file": "src/data_synthesizer/sdv/ctgan/ctgan_modified.py",
+    "line": 10,
+    "text": "from ctgan.data_sampler import DataSampler",
+    "context": [
+     "from ctgan import CTGAN",
+     "from torch.nn import BatchNorm1d, Dropout, LeakyReLU, Linear, Module, ReLU, Sequential",
+     "import torch",
+     "from torch import optim",
+     "from ctgan.data_sampler import DataSampler",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.synthesizers.base import random_state",
+     "",
+     "class EarlyStopping:"
+    ]
+   },
+   {
+    "file": "src/data_synthesizer/sdv/ctgan/ctgan_modified.py",
+    "line": 11,
+    "text": "from ctgan.data_transformer import DataTransformer",
+    "context": [
+     "from torch.nn import BatchNorm1d, Dropout, LeakyReLU, Linear, Module, ReLU, Sequential",
+     "import torch",
+     "from torch import optim",
+     "from ctgan.data_sampler import DataSampler",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.synthesizers.base import random_state",
+     "",
+     "class EarlyStopping:",
+     "    def __init__(self, patience=10, delta=0):"
+    ]
+   },
+   {
+    "file": "src/data_synthesizer/sdv/ctgan/ctgan_modified.py",
+    "line": 12,
+    "text": "from ctgan.synthesizers.base import random_state",
+    "context": [
+     "import torch",
+     "from torch import optim",
+     "from ctgan.data_sampler import DataSampler",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.synthesizers.base import random_state",
+     "",
+     "class EarlyStopping:",
+     "    def __init__(self, patience=10, delta=0):",
+     "        \"\"\""
+    ]
+   },
+   {
+    "file": "src/data_synthesizer/sdv/tvae/tvae_modified.py",
+    "line": 2,
+    "text": "from ctgan.synthesizers.tvae import *",
+    "context": [
+     "",
+     "from ctgan.synthesizers.tvae import *",
+     "from ctgan.synthesizers.tvae import _loss_function ",
+     "",
+     "class ModifiedTVAE(TVAE) :",
+     ""
+    ]
+   },
+   {
+    "file": "src/data_synthesizer/sdv/tvae/tvae_modified.py",
+    "line": 3,
+    "text": "from ctgan.synthesizers.tvae import _loss_function",
+    "context": [
+     "",
+     "from ctgan.synthesizers.tvae import *",
+     "from ctgan.synthesizers.tvae import _loss_function ",
+     "",
+     "class ModifiedTVAE(TVAE) :",
+     "",
+     "    def __init__("
+    ]
+   },
+   {
+    "file": "src/data_synthesizer/sdv/tvae/tvae_synthesizer_modified.py",
+    "line": 4,
+    "text": "from ctgan.synthesizers.tvae import *",
+    "context": [
+     "import pandas as pd",
+     "import json",
+     "from sdv.single_table import TVAESynthesizer",
+     "from ctgan.synthesizers.tvae import *",
+     "from sdv.single_table.utils import detect_discrete_columns",
+     "",
+     "from data_synthesizer.sdv.tvae.tvae_modified import ModifiedTVAE",
+     ""
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "src/data_synthesizer/sdv/ctgan/ctgan_synthesizer_modified.py",
+    "line": 3,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import json",
+     "",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from .ctgan_modified import ModifiedCTGAN",
+     "from sdv.single_table.utils import detect_discrete_columns",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "src/data_synthesizer/sdv/tvae/tvae_synthesizer_modified.py",
+    "line": 3,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import json",
+     "from sdv.single_table import TVAESynthesizer",
+     "from ctgan.synthesizers.tvae import *",
+     "from sdv.single_table.utils import detect_discrete_columns",
+     "",
+     "from data_synthesizer.sdv.tvae.tvae_modified import ModifiedTVAE"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "src/data_synthesizer/sdv/ctgan/ctgan_synthesizer_modified.py",
+    "line": 3,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import json",
+     "",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from .ctgan_modified import ModifiedCTGAN",
+     "from sdv.single_table.utils import detect_discrete_columns",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "src/data_synthesizer/sdv/ctgan/ctgan_synthesizer_modified.py",
+    "line": 9,
+    "text": "class SDVCTGAN_(CTGANSynthesizer) :",
+    "context": [
+     "from sdv.single_table.utils import detect_discrete_columns",
+     "",
+     "",
+     "",
+     "class SDVCTGAN_(CTGANSynthesizer) :",
+     "",
+     "    def __init__(self, metadata, data, enforce_min_max_values=True, enforce_rounding=True, locales=None,",
+     "                 embedding_dim=128, generator_dim=(256, 256), discriminator_dim=(256, 256),",
+     "                 generator_lr=2e-4, generator_decay=1e-6, discriminator_lr=2e-4,"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "src/data_synthesizer/sdv/tvae/tvae_synthesizer_modified.py",
+    "line": 3,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import json",
+     "from sdv.single_table import TVAESynthesizer",
+     "from ctgan.synthesizers.tvae import *",
+     "from sdv.single_table.utils import detect_discrete_columns",
+     "",
+     "from data_synthesizer.sdv.tvae.tvae_modified import ModifiedTVAE"
+    ]
+   },
+   {
+    "file": "src/data_synthesizer/sdv/tvae/tvae_synthesizer_modified.py",
+    "line": 10,
+    "text": "class SDVTVAE_(TVAESynthesizer) :",
+    "context": [
+     "",
+     "from data_synthesizer.sdv.tvae.tvae_modified import ModifiedTVAE",
+     "",
+     "",
+     "class SDVTVAE_(TVAESynthesizer) :",
+     "",
+     "    def __init__(self, metadata, data, enforce_min_max_values=True, enforce_rounding=True,",
+     "                 embedding_dim=128, compress_dims=(128, 128), decompress_dims=(128, 128), ",
+     "                 l2scale=1e-5, batch_size=500, epochs=300,  loss_factor=2, cuda=True) :"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ctgan_mod",
+  "md",
+  "sdv_any",
+  "sm",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [
+  "src/data_synthesizer/sdv"
+ ],
+ "dependencies": {
+  "pyproject.toml": [
+   "    \"sdv==1.24.0\",",
+   "    \"ctgan\",",
+   "    \"sdmetrics\","
+  ]
+ }
+}

@@ -1,0 +1,121 @@
+{
+ "repo": "GithinKumar/Scenario_Based_Sales_Forecasting_with_Synthetic_Evaluations",
+ "disk_kb": 1279,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "## 📈 Scenario Based Sales Forecasting with Synthetic Evaluations\n\nA modular ML framework that combines predictive modeling with simulation-based evaluation using synthetic future data.\n\nThis project is designed to model sales and profit using real historical data (left side) and assess model performance under various hypothetical scenarios using synthetic data (right side). This dual-model approach enables robust, forecasting when actual future outcomes are unavailable.\n\n---\n\n## 🧠 Key Features\n- 🔄 **Synthetic Data Generation**\n   Learn market dynamics by simulating future delivery, pricing, or supply chain disruptions.\n\n- 📊 **ML Forecasting Model**\n   Predict sales and profit using structured temporal, categorical, and financial features.\n\n- 🧪 **Scenario Based Simulation**\n   Evaluate model sensitivity under user-defined market shocks (e.g., bullwhip effect, overstock, supply disruption).\n\n- 🔁 **Retraining Loop**\n   Improve model reliability using simulation-driven retraining on synthetic deviations.\n\n---\n\n## 🔬 ML & Simulation Process Flow\n\n```\n              [ Historical Data Ingestion (2018–2021) ]\n                                 ↓\n[ Left-Side Forecasting Model (EGA Core)-Feature Engineering & Cleaning ]\n           - Temporal (lag, rolling, DOW, month)\n           - Normalization, outlier removal\n           - Categorical & interaction terms\n                           ↓\n    [ Train RandomForestRegressor on X_train / Y_train ]\n                        ↓\n ┌─────────────────────────────┬────────────────────────────────┐\n │                             │                                │\n[ Predict on Test Set (2022+) ]    [ Right-Side Synthetic Data Generation- Generate Synthetic Future Scenarios ]\n (→ X_test → Y_pred)               (→ generate_scenario_input() for:\n                                     - bullwhip\n                                     - market clash\n                                     - overstock\n                                     - supply disruption)\n                                            ↓\n                                   [ Predict Y_synthetic_scenario using trained model ]\n └──────────────┬───────────────────────────────┬────────────────────────┘\n                ↓                               ↓\n   [ Evaluate model performance ]     [ Compare scenario forecasts ]\n     - MSE, R² on base Y_test           - Visualize sensitivity\n     - Residuals vs actual              - Line plots across conditions\n                ↓                               ↓\n ┌─────────────────────────────────────────────────────────────────────┐\n │         [ Augment Training Set with Synthetic & Scenario Data ]     │\n │    X_combined = X_train + X_synthetic + X_synthetic_scenario        │\n │    Y_combined = Y_train + Y_synthetic + Y_synthetic_scenario        │\n └─────────────────────────────────────────────────────────────────────┘\n                                  ↓\n  [ Error Feedback & Retraining- Retrain RandomForest on Combined Dataset ]\n\n```\n\n1. **Historical Data Ingestion**\n   - Real data from 4 years used to train baseline models.\n   - Preprocessing includes:\n     - Temporal feature engineering (lag, rolling means, day of week, month)\n     - Z-score normalization & outlier handling\n     - Categorical encoding and interaction features\n\n2. **Left Side Forecasting Model (EGA Core)**\n   - Model: RandomForestRegressor\n   - Target Variables: Sales (log-transformed), Profit\n   - Features:\n     - Order & shipment dates\n     - Discount levels, state/month interactions\n     - Rolling sales, lag features, log-sales\n   - Train/Test Split: Based on time (<= 2021 vs >= 2022)\n   - Evaluation Metrics: MSE, R²\n\n3. **Right Side Synthetic Data Generation**\n   - Purpose: Simulate future trends (e.g., 2022–2023) using a “what-if” logic\n   - Scenarios Supported:\n     - 🟠 Bullwhip (demand spikes)\n     - 🔵 Market Clash (sudden drops)\n     - 🟣 Overstock (delay + excess)\n     - 🔴 Supply Chain Disruption (shipment delays)\n   - Method:\n     - Apply multipliers or shocks to test set features (e.g., lag sales, delay, volume)\n     - Use same feature schema as left-side model\n\n4. **Scenario Evaluation & Visualization**\n   - Predict performance under each scenario\n   - Visualize actual vs simulated predictions:\n     - Sales & profit line charts\n     - Scenario overlays\n   - Compare model sensitivity across extreme conditions\n\n5. **Error Feedback & Retraining**\n   - Expanding the training dataset to include:\n     - Real historical data (X_train, Y_train)\n     - Synthetic baseline data (X_synthetic, Y_synthetic)\n     - Scenario-simulated stress data (X_synthetic_scenario, Y_synthetic_scenario)\n\t- Retraining the model on this augmented, multi-condition dataset.\n  \n\n",
+ "hits": {
+  "st": [
+   {
+    "file": "Synthetic Data 2022-23.ipynb",
+    "line": 56,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    {",
+     "      \"source\": [",
+     "        \"!pip install sdv>=1.20.0\\n\",",
+     "        \"\\n\",",
+     "        \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata # Import the metadata class\\n\",",
+     "        \"import pandas as pd\\n\",",
+     "        \"\\n\",",
+     "        \"df = pd.read_csv(\\\"EGA_data.csv\\\", sep=';', parse_dates=['OrderDate','ShipDate'])\\n\","
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "Synthetic Data 2022-23.ipynb",
+    "line": 57,
+    "text": "\"from sdv.metadata import SingleTableMetadata # Import the metadata class\\n\",",
+    "context": [
+     "      \"source\": [",
+     "        \"!pip install sdv>=1.20.0\\n\",",
+     "        \"\\n\",",
+     "        \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata # Import the metadata class\\n\",",
+     "        \"import pandas as pd\\n\",",
+     "        \"\\n\",",
+     "        \"df = pd.read_csv(\\\"EGA_data.csv\\\", sep=';', parse_dates=['OrderDate','ShipDate'])\\n\",",
+     "        \"df = df.drop(columns=['OrderID'])  # drop ID col\\n\","
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "Synthetic Data 2022-23.ipynb",
+    "line": 56,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    {",
+     "      \"source\": [",
+     "        \"!pip install sdv>=1.20.0\\n\",",
+     "        \"\\n\",",
+     "        \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata # Import the metadata class\\n\",",
+     "        \"import pandas as pd\\n\",",
+     "        \"\\n\",",
+     "        \"df = pd.read_csv(\\\"EGA_data.csv\\\", sep=';', parse_dates=['OrderDate','ShipDate'])\\n\","
+    ]
+   },
+   {
+    "file": "Synthetic Data 2022-23.ipynb",
+    "line": 57,
+    "text": "\"from sdv.metadata import SingleTableMetadata # Import the metadata class\\n\",",
+    "context": [
+     "      \"source\": [",
+     "        \"!pip install sdv>=1.20.0\\n\",",
+     "        \"\\n\",",
+     "        \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata # Import the metadata class\\n\",",
+     "        \"import pandas as pd\\n\",",
+     "        \"\\n\",",
+     "        \"df = pd.read_csv(\\\"EGA_data.csv\\\", sep=';', parse_dates=['OrderDate','ShipDate'])\\n\",",
+     "        \"df = df.drop(columns=['OrderID'])  # drop ID col\\n\","
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "Synthetic Data 2022-23.ipynb",
+    "line": 56,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    {",
+     "      \"source\": [",
+     "        \"!pip install sdv>=1.20.0\\n\",",
+     "        \"\\n\",",
+     "        \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata # Import the metadata class\\n\",",
+     "        \"import pandas as pd\\n\",",
+     "        \"\\n\",",
+     "        \"df = pd.read_csv(\\\"EGA_data.csv\\\", sep=';', parse_dates=['OrderDate','ShipDate'])\\n\","
+    ]
+   },
+   {
+    "file": "Synthetic Data 2022-23.ipynb",
+    "line": 70,
+    "text": "\"synth = CTGANSynthesizer(metadata=metadata, epochs=500, verbose=True)\\n\",",
+    "context": [
+     "        \"# Detect metadata from the DataFrame\\n\",",
+     "        \"metadata.detect_from_dataframe(data=df)\\n\",",
+     "        \"\\n\",",
+     "        \"# Instantiate the synthesizer with the generated metadata\\n\",",
+     "        \"synth = CTGANSynthesizer(metadata=metadata, epochs=500, verbose=True)\\n\",",
+     "        \"synth.fit(df)\\n\",",
+     "        \"fake = synth.sample(1000)\"",
+     "      ],",
+     "      \"cell_type\": \"code\","
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

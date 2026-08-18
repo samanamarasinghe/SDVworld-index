@@ -1,0 +1,90 @@
+{
+ "repo": "gianghitran/OpenCore_Distilled-but-Not-Private-Investigating-Model-Inversion-Attacks",
+ "disk_kb": 484,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# OpenCore_Distilled-but-Not-Private-Investigating-Model-Inversion-Attacks\nThis repository contains the open-core implementation and experimental framework for the paper: 'Distilled but Not Private: Investigating Model Inversion Attacks on IoT Intrusion Detection Systems.' It explores how the knowledge distillation (KD) technique impacts training-data leakage.\n## Disclaimer & Proprietary Notice\n> Please note that this repository contains the **Open Core** version of the research framework. Due to the sensitive nature of security research and intellectual property (IP) agreements, certain critical modules and proprietary algorithms have been **selectively redacted or omitted**. \n> \n> The provided code is intended for academic demonstration and reproducibility of the core findings, rather than a full-scale production deployment.\n\n\n## Project Overview\nThis project evaluates the data privacy risks of Knowledge Distillation (KD) in IoT-based Network Intrusion Detection Systems (NIDS). We utilize Model Inversion Attacks (MIA) to demonstrate that sensitive training data can be reconstructed from distilled student models, even when the teacher model remains protected.\n\n### Under this setting, we investigate the following research questions (RQs):\n- RQ1: How effective are MIA methods against different MLP models?\n- RQ2: How effective are MIA methods against different KD methods?\n- RQ3: What is the impact of teacher--student architectures on MIA effectiveness?\n\n\n### Key Contributions\n- Unified R&D Framework: Architected a modular system using Software Design Patterns to decouple training, distillation, and attack logic. This ensures high extensibility for integrating new architectures or threat models.\n- Scalable Configuration Management (Hydra): Integrated Hydra to manage complex hierarchical configurations. This enables seamless switching between datasets, model variants, and attack strategies via CLI, and leverages Hydra Sweepers for automated, large-scale hyperparameter optimization.\n- End-to-End MLOps Pipeline (W&B): Systematized experiment tracking using Weights & Biases. This allows for real-time monitoring of attack convergence, logging of reconstruction fidelity, and visualization of high-dimensional feature distributions across hundreds of runs.\n- MIA Benchmarking: Conducted a comprehensive comparative study between Posterior-based and Logit-based inversion methods across 4 public tabular IDS datasets, providing a robust security baseline for IoT NIDS.\n- Privacy Insights: Delivered empirical evidence that ground-truth supervision in traditional KD is a primary driver of data leakage, advocating for the adoption of privacy-aware distillation objectives.\n\n## System Architecture\nThe repository is structured for high extensibility and reproducibility:\n> - KD/: Logic for Knowledge Distillation variants (Traditional KD, Teacher-Only KD).\n> - attack/: Optimization-based Model Inversion methods (Traditional, Improved).\n> - configs/: Centralized experiment management using Hydra YAML files.\n> - model/: Architecture definitions\n> - training/: Pipelines for Teacher and Student model training.\n> - evaluation/: Metrics computation (Attack Accuracy, KNN Distance, Downstream Utility).\n> - utils/: Data Loader, Tracker, Report processing.\n\n## Getting Started\n### 1. Installation\n```Bash\npip install -r requirements.txt\nwandb login\n```\n### 2. Experiment Management with Hydra\nSwitch between models, datasets, and attack methods seamlessly via CLI without modifying the source code.\n- Run a single experiment:\n\n```Bash\n# Execute with default parameters from config.yaml\npython main.py\n\n# Override configurations for specific scenarios\npython main.py model.type=ResNet dataset.name=cicids2017 kd.temperature=5\n```\n\n- Run large-scale benchmarks (Multirun):\nUtilize the built-in Hydra Sweeper to automatically iterate through all combinations of models, KD methods, and attacks:\n\n```Bash\npython main.py --multirun\n```\n\n## Experiment Tracking (W&B)\nAll experiments are logged to Weights & Biases. We monitor: Attack convergence (Inversion Loss), Reconstruction fidelity (High-dimensional feature distributions), Statistical benchmarking across multiple privacy metrics.\n...\n\n## Citation\n```Code snippet\n@inproceedings{tran2026distillednprivate,\n  title     = {Distilled but Not Private: Investigating Model Inversion Attacks on IoT Intrusion Detection Systems},\n  author    = {Tran, Gia-Nghi and Nguyen, Da-Vit and Nguyen, Dat-Thinh and Le-Khac, Nhien-An and Le, Kim-Hung},\n  booktitle = {Proceedings of the 18th International Conference on Computational Collective Intelligence (ICCCI 2026)},\n  publisher = {Springer},\n  year      = {2026},\n  note       = {Accepted for publication}\n}\n```\n<img width=\"1065\" height=\"720\" alt=\"Screenshot 2026-07-06 031009\" src=\"https://github.com/user-attachments/assets/43cb7c0c-63ec-4233-9c93-933738d2f63c\" />\n\n",
+ "hits": {
+  "md": [
+   {
+    "file": "evaluation/qualityreport.py",
+    "line": 7,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "import wandb",
+     "import logging",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from utils.saveReport import save_report",
+     "",
+     "logging.getLogger(\"sdv\").setLevel(logging.WARNING)"
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "evaluation/qualityreport.py",
+    "line": 8,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "import numpy as np",
+     "import wandb",
+     "import logging",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from utils.saveReport import save_report",
+     "",
+     "logging.getLogger(\"sdv\").setLevel(logging.WARNING)",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "evaluation/qualityreport.py",
+    "line": 7,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "import wandb",
+     "import logging",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from utils.saveReport import save_report",
+     "",
+     "logging.getLogger(\"sdv\").setLevel(logging.WARNING)"
+    ]
+   },
+   {
+    "file": "evaluation/qualityreport.py",
+    "line": 8,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "import numpy as np",
+     "import wandb",
+     "import logging",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from utils.saveReport import save_report",
+     "",
+     "logging.getLogger(\"sdv\").setLevel(logging.WARNING)",
+     ""
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ev",
+  "md",
+  "sdv_any"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv"
+  ]
+ }
+}

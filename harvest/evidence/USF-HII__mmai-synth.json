@@ -1,0 +1,418 @@
+{
+ "repo": "USF-HII/mmai-synth",
+ "disk_kb": 1558,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "\n## MAI-T1D Synthetic Data Generation Framework\n\nPrivacy-Preserving Infrastructure for Multimodal AI in Type 1 Diabetes Research\n\nThe MAI-T1D Synthetic Data Generation Framework serves as a core enabling infrastructure for the NIH-funded Multimodal AI for Type 1 Diabetes (MAI-T1D) collaborative project. Developed within the consortium and released as open-source software, the framework supports privacy-preserving analytic development across institutions while maintaining strict separation from protected participant data. Recent development efforts have focused on genomic synthesis components, with continued expansion to additional modalities.\n\n## Authors:\t\t\n- Kenneth Young, PhD (USF)\n- Dena Tewey, MPH (USF)\n\n## The MAI-T1D consortium includes investigators from:\t\n- University of Michigan\n- UCLA\n- Vanderbilt University\n- Weill Cornell Medicine\n- University of South Florida (USF)\n\n---\n## Overview\n\nThe framework is implemented as a modular, phase-gated pipeline designed for reproducibility, traceability, and interoperability. Execution proceeds through configurable stages so that genomic, tabular, and sequencing-related components can be synthesized independently or jointly. This repository contains the synthetic data generation pipeline developed for\nthe MAI-T1D project using data from the TEDDY (The Environmental Determinants of\nDiabetes in the Young) study. The pipeline produces privacy-preserving synthetic datasets that retain the\nstatistical and structural properties of the original data while preventing\nre-identification of study participants.\n\nThe system supports genome-scale genotype synthesis, tabular clinical and\nenvironmental data synthesis, and cross-modal linkage validation.\n\n---\n\n## Architecture\n\n![MAI-T1D Synthetic Data Generator Architecture](docs/mai-sdg.png)\n\n- `synthesize_all.py` is an orchestration layer only\n- Genome-scale synthesis is owned by `synth_wgs_minimal`\n- CSV and FASTQ operations are modularized into utility modules\n- Cross-modal linkage is enabled through a global synthetic ID map\n\nExecution is deterministic and phase-gated.\n- example_data/                # directory for input data\n- synthetic_data/\n    - synthetic_id_map.csv       # canonical cumulative map\n    - run_YYYYMMDD_HHMMSS/       # snapshot per execution\n\n---\n## Genomic Data Handling\n\nGenomic inputs are ingested in standard PLINK formats (BED, BIM, FAM). Synthetic\ngenotype matrices preserve allele dosage encodings and variant metadata, including\nchromosome, position, and allele definitions. SNP ordering is explicitly enforced\nacross all outputs, including PLINK, VCF, PED, and tabular genotype matrices, ensuring\ncompatibility with standard population genetics and association analysis workflows.\n\n## WGS Synthesis \nGenotype data are ingested in standard PLINK binary format, consisting of BED, BIM, and FAM files. Variant metadata such as chromosome, base-pair position, genetic map position, and allele definitions are preserved and explicitly aligned with genotype matrices throughout the pipeline. Schema invariants are enforced to ensure consistent SNP ordering across all output formats.\n\nSynthetic genotype matrices are generated using Gaussian Copula modeling implemented through the Synthetic Data Vault framework. This approach provides robust modeling of allele frequencies and multivariate dependencies (such as linkage disequilibrium and population structure), which is well suited to discrete dosage values in high-dimensional genomic data. Adversarial models such as CopulaGAN or CTGAN are supported within the framework for tabular and clinical data synthesis, while Gaussian Copula remains the stable default for genotype matrices. PLINK binary outputs are generated deterministically to preserve interoperability. Variant metadata in the BIM file are retained directly from the source dataset, including chromosome codes, positions, and allele definitions. Synthetic genotype matrices are sampled and normalized to valid dosage states {0,1,2}, and the FAM file is reconstructed using deterministically mapped synthetic identifiers with consistent sex assignment. Outputs include PLINK binary (BED/BIM/FAM), PED, tabular genotype matrix, and VCF formats, with explicit alignment checks ensuring direct compatibility with tools such as PLINK, Hail, or GCTA. Synthetic participant identifiers are assigned deterministically within a reserved numeric range (typically 100000 to 199999) and tracked through a cumulative mapping file to ensure consistent linkage across all generated modalities.\n\n- BIM is preserved from source PLINK input\n- FAM is authoritative and derived from masked IDs\n- No dummy PLINK IDs are generated\n- Synthetic IIDs are reserved within 100000–199999\n- Family IDs are masked as FAM000001...\n- PED uses FAM metadata (not default placeholders)\n- VCF contains GT-only minimal representation\n- synthetic_id_map.csv is updated deterministically\n\n- --max-snps truncates the genotype matrix and BIM consistently.\nAll downstream outputs (PLINK, PED, VCF, QC, matrix) reflect the truncated SNP set.\n\n\n## FASTQ Files\n\nFASTQ files are not synthesized at the read level. Instead, original FASTQ files are\nretained and filenames are deterministically rewritten to use synthetic participant\nidentifiers. This approach preserves workflow realism and cross-modal linkage while\navoiding the substantial technical and privacy risks associated with raw sequencing\ndata synthesis.\n\nSynthetic genotype and phenotype data provide the primary analytic substrate, while\nFASTQ renaming supports integration testing and pipeline validation.\n\n## Cross-Modal Integration and Sequencing Support\nA shared synthetic identifier namespace links genomic and clinical outputs consistently across modalities. For sequencing workflows, FASTQ files are not regenerated synthetically. Instead, filenames are deterministically remapped to synthetic participant identifiers. This approach supports end-to-end workflow validation while avoiding the technical and privacy complexities associated with synthetic read-level generation. The pipeline executes deterministically and can produce intermediate artifacts for auditing and reproducibility when required.\n\n\n## Additional Documentation\n\nDetailed descriptions of the generative models, schema integrity guarantees, quality\ncontrol procedures, and supporting literature are provided in:\n\n- `docs/methods.md`\n- `docs/privacy.md`\n\n---\n\n## Supported Modalities\n\n1. **Genome-scale WGS synthesis**\n   - PLINK (.bed/.bim/.fam)\n   - VCF\n   - Tabular genotype matrices\n\n2. **Tabular CSV synthesis**\n   - SDV-based generative models (CopulaGAN, CTGAN, Gaussian Copula)\n\n3. **FASTQ renaming**\n   - Filename-level identifier replacement for linkage validation\n\n---\n\n## Installation\n\n```bash\npip install -r requirements.txt\n```\n---\n\n## License\n\nMIT License\n\nCopyright (c) 2026 Kenneth Young, PhD and Dena Tewey, MPH\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n",
+ "hits": {
+  "st": [
+   {
+    "file": "mmai/synth/tabular.py",
+    "line": 17,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "from pathlib import Path",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "",
+     "def _as_str_columns(df: pd.DataFrame) -> pd.DataFrame:",
+     "    out = df.copy()"
+    ]
+   },
+   {
+    "file": "mmai/synth/csv_utils.py",
+    "line": 18,
+    "text": "from sdv.single_table import (",
+    "context": [
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    CopulaGANSynthesizer,",
+     "    GaussianCopulaSynthesizer,",
+     ")"
+    ]
+   },
+   {
+    "file": "scripts/make_schema_yaml.py",
+    "line": 72,
+    "text": "from sdv.single_table import (",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "",
+     "# --- SDV synthesizers (single-table) ---",
+     "from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    CopulaGANSynthesizer,",
+     "    GaussianCopulaSynthesizer,",
+     ")"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "mmai/synth/tabular.py",
+    "line": 16,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from pathlib import Path",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "",
+     "def _as_str_columns(df: pd.DataFrame) -> pd.DataFrame:"
+    ]
+   },
+   {
+    "file": "mmai/synth/csv_utils.py",
+    "line": 17,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from typing import Optional, Tuple",
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    CopulaGANSynthesizer,",
+     "    GaussianCopulaSynthesizer,"
+    ]
+   },
+   {
+    "file": "scripts/make_schema_yaml.py",
+    "line": 79,
+    "text": "from sdv.metadata import Metadata, SingleTableMetadata",
+    "context": [
+     "    GaussianCopulaSynthesizer,",
+     ")",
+     "",
+     "# New API + legacy fallback for metadata",
+     "from sdv.metadata import Metadata, SingleTableMetadata",
+     "",
+     "# PLINK BED reader (optional)",
+     "try:",
+     "    from bed_reader import open_bed  # pip install bed-reader"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "mmai/synth/tabular.py",
+    "line": 16,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from pathlib import Path",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "",
+     "def _as_str_columns(df: pd.DataFrame) -> pd.DataFrame:"
+    ]
+   },
+   {
+    "file": "mmai/synth/tabular.py",
+    "line": 17,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "from pathlib import Path",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "",
+     "def _as_str_columns(df: pd.DataFrame) -> pd.DataFrame:",
+     "    out = df.copy()"
+    ]
+   },
+   {
+    "file": "mmai/synth/csv_utils.py",
+    "line": 17,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from typing import Optional, Tuple",
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    CopulaGANSynthesizer,",
+     "    GaussianCopulaSynthesizer,"
+    ]
+   },
+   {
+    "file": "mmai/synth/csv_utils.py",
+    "line": 18,
+    "text": "from sdv.single_table import (",
+    "context": [
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    CopulaGANSynthesizer,",
+     "    GaussianCopulaSynthesizer,",
+     ")"
+    ]
+   },
+   {
+    "file": "scripts/make_schema_yaml.py",
+    "line": 72,
+    "text": "from sdv.single_table import (",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "",
+     "# --- SDV synthesizers (single-table) ---",
+     "from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    CopulaGANSynthesizer,",
+     "    GaussianCopulaSynthesizer,",
+     ")"
+    ]
+   },
+   {
+    "file": "scripts/make_schema_yaml.py",
+    "line": 79,
+    "text": "from sdv.metadata import Metadata, SingleTableMetadata",
+    "context": [
+     "    GaussianCopulaSynthesizer,",
+     ")",
+     "",
+     "# New API + legacy fallback for metadata",
+     "from sdv.metadata import Metadata, SingleTableMetadata",
+     "",
+     "# PLINK BED reader (optional)",
+     "try:",
+     "    from bed_reader import open_bed  # pip install bed-reader"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "mmai/synth/tabular.py",
+    "line": 17,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "from pathlib import Path",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "",
+     "def _as_str_columns(df: pd.DataFrame) -> pd.DataFrame:",
+     "    out = df.copy()"
+    ]
+   },
+   {
+    "file": "mmai/synth/tabular.py",
+    "line": 60,
+    "text": "def _build_sdv_synth(meta: Metadata, seed: int) -> GaussianCopulaSynthesizer:",
+    "context": [
+     "    med = x.median(axis=0, skipna=True).fillna(0.0)",
+     "    return x.fillna(med)",
+     "",
+     "",
+     "def _build_sdv_synth(meta: Metadata, seed: int) -> GaussianCopulaSynthesizer:",
+     "    try:",
+     "        return GaussianCopulaSynthesizer(metadata=meta, enforce_rounding=True, random_state=seed)",
+     "    except TypeError:",
+     "        return GaussianCopulaSynthesizer(metadata=meta, enforce_rounding=True)"
+    ]
+   },
+   {
+    "file": "mmai/synth/tabular.py",
+    "line": 62,
+    "text": "return GaussianCopulaSynthesizer(metadata=meta, enforce_rounding=True, random_state=seed)",
+    "context": [
+     "",
+     "",
+     "def _build_sdv_synth(meta: Metadata, seed: int) -> GaussianCopulaSynthesizer:",
+     "    try:",
+     "        return GaussianCopulaSynthesizer(metadata=meta, enforce_rounding=True, random_state=seed)",
+     "    except TypeError:",
+     "        return GaussianCopulaSynthesizer(metadata=meta, enforce_rounding=True)",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "mmai/synth/tabular.py",
+    "line": 64,
+    "text": "return GaussianCopulaSynthesizer(metadata=meta, enforce_rounding=True)",
+    "context": [
+     "def _build_sdv_synth(meta: Metadata, seed: int) -> GaussianCopulaSynthesizer:",
+     "    try:",
+     "        return GaussianCopulaSynthesizer(metadata=meta, enforce_rounding=True, random_state=seed)",
+     "    except TypeError:",
+     "        return GaussianCopulaSynthesizer(metadata=meta, enforce_rounding=True)",
+     "",
+     "",
+     "def _postprocess_genotypes(syn: pd.DataFrame, clamp_genotypes: bool) -> pd.DataFrame:",
+     "    if not clamp_genotypes or syn.empty:"
+    ]
+   },
+   {
+    "file": "mmai/synth/csv_utils.py",
+    "line": 21,
+    "text": "GaussianCopulaSynthesizer,",
+    "context": [
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    CopulaGANSynthesizer,",
+     "    GaussianCopulaSynthesizer,",
+     ")",
+     "",
+     "from mmai.synth.id_utils import detect_id_column",
+     ""
+    ]
+   },
+   {
+    "file": "mmai/synth/csv_utils.py",
+    "line": 39,
+    "text": "return GaussianCopulaSynthesizer(metadata=metadata, enforce_rounding=False)",
+    "context": [
+     "        return CopulaGANSynthesizer(metadata=metadata, enforce_rounding=False)",
+     "    if model == \"ctgan\":",
+     "        return CTGANSynthesizer(metadata=metadata, enforce_rounding=False)",
+     "    if model == \"gaussian\":",
+     "        return GaussianCopulaSynthesizer(metadata=metadata, enforce_rounding=False)",
+     "    raise ValueError(f\"Unknown model: {model}\")",
+     "",
+     "",
+     "def synthesize_csv_table("
+    ]
+   },
+   {
+    "file": "scripts/make_schema_yaml.py",
+    "line": 75,
+    "text": "GaussianCopulaSynthesizer,",
+    "context": [
+     "# --- SDV synthesizers (single-table) ---",
+     "from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    CopulaGANSynthesizer,",
+     "    GaussianCopulaSynthesizer,",
+     ")",
+     "",
+     "# New API + legacy fallback for metadata",
+     "from sdv.metadata import Metadata, SingleTableMetadata"
+    ]
+   },
+   {
+    "file": "scripts/make_schema_yaml.py",
+    "line": 353,
+    "text": "\"gaussian\": GaussianCopulaSynthesizer,",
+    "context": [
+     "    model = model.lower()",
+     "    synth_cls = {",
+     "        \"ctgan\": CTGANSynthesizer,",
+     "        \"copulagan\": CopulaGANSynthesizer,",
+     "        \"gaussian\": GaussianCopulaSynthesizer,",
+     "    }.get(model)",
+     "",
+     "    if synth_cls is None:",
+     "        raise ValueError(f\"Unknown model: {model}\")"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "mmai/synth/csv_utils.py",
+    "line": 19,
+    "text": "CTGANSynthesizer,",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    CopulaGANSynthesizer,",
+     "    GaussianCopulaSynthesizer,",
+     ")",
+     ""
+    ]
+   },
+   {
+    "file": "mmai/synth/csv_utils.py",
+    "line": 37,
+    "text": "return CTGANSynthesizer(metadata=metadata, enforce_rounding=False)",
+    "context": [
+     "    model = model.lower()",
+     "    if model == \"copulagan\":",
+     "        return CopulaGANSynthesizer(metadata=metadata, enforce_rounding=False)",
+     "    if model == \"ctgan\":",
+     "        return CTGANSynthesizer(metadata=metadata, enforce_rounding=False)",
+     "    if model == \"gaussian\":",
+     "        return GaussianCopulaSynthesizer(metadata=metadata, enforce_rounding=False)",
+     "    raise ValueError(f\"Unknown model: {model}\")",
+     ""
+    ]
+   },
+   {
+    "file": "scripts/make_schema_yaml.py",
+    "line": 73,
+    "text": "CTGANSynthesizer,",
+    "context": [
+     "import pandas as pd",
+     "",
+     "# --- SDV synthesizers (single-table) ---",
+     "from sdv.single_table import (",
+     "    CTGANSynthesizer,",
+     "    CopulaGANSynthesizer,",
+     "    GaussianCopulaSynthesizer,",
+     ")",
+     ""
+    ]
+   },
+   {
+    "file": "scripts/make_schema_yaml.py",
+    "line": 351,
+    "text": "\"ctgan\": CTGANSynthesizer,",
+    "context": [
+     "    - Otherwise, assume legacy SingleTableMetadata and omit table_name.",
+     "    \"\"\"",
+     "    model = model.lower()",
+     "    synth_cls = {",
+     "        \"ctgan\": CTGANSynthesizer,",
+     "        \"copulagan\": CopulaGANSynthesizer,",
+     "        \"gaussian\": GaussianCopulaSynthesizer,",
+     "    }.get(model)",
+     ""
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv>=1.26,<2.0",
+   "ctgan>=0.7",
+   "copulas>=0.9"
+  ]
+ }
+}

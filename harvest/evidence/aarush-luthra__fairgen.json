@@ -1,0 +1,205 @@
+{
+ "repo": "aarush-luthra/fairgen",
+ "disk_kb": 349,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# de.bias\n\n**Generate synthetic credit data. Remove bias. Prove it worked.**\n\nde.bias is a Google Cloud-native fairness engineering platform for synthetic credit datasets. It generates realistic lending data, applies a four-layer bias mitigation pipeline, evaluates fairness at both the **data level** and the **model level**, and produces Gemini-authored compliance reports — all in a single pipeline.\n\n\n\n---\n\n## Architecture\n\n```\n┌─────────────────────────────────────────────────────────┐\n│                   Firebase Hosting                       │\n│                 React + Vite Frontend                    │\n└──────────────────────┬──────────────────────────────────┘\n                       │ REST\n┌──────────────────────▼──────────────────────────────────┐\n│                     Cloud Run                            │\n│                   FastAPI Backend                        │\n│                                                          │\n│  ┌─────────────┐  ┌──────────────────┐  ┌────────────┐  │\n│  │  SDV Engine │→ │ Mitigation Engine│→ │ Fairness   │  │\n│  │ (synthetic  │  │  4 layers:       │  │ Metrics    │  │\n│  │  data gen)  │  │  • Resampling    │  │ DPD/DIR/   │  │\n│  └─────────────┘  │  • Feature Dis.  │  │ LCS/REI    │  │\n│                   │  • Threshold Adj.│  └─────┬──────┘  │\n│                   │  • Adversarial   │        │         │\n│                   └──────────────────┘        │         │\n│                                               │         │\n│  ┌────────────────────────────────────────────▼───────┐ │\n│  │                  Google AI Layer                    │ │\n│  │  • Gemini 1.5 Flash — constraint parsing           │ │\n│  │  • Gemini 1.5 Flash — schema suggestions           │ │\n│  │  • Gemini 1.5 Flash — compliance report generation │ │\n│  └─────────────────────────────────────────────────── ┘ │\n│                                                          │\n│  ┌─────────────────────────────────────────────────────┐ │\n│  │            Model-Level Fairness Evaluator            │ │\n│  │  Trains classifiers on before/after datasets         │ │\n│  │  Returns DIR + approval rate by protected group      │ │\n│  │  (Upgrade path: Vertex AI AutoML + fairness slicing) │ │\n│  └─────────────────────────────────────────────────────┘ │\n└──────────────────────┬──────────────────────────────────┘\n                       │\n┌──────────────────────▼──────────────────────────────────┐\n│                Google Cloud Services                     │\n│  • Firestore    — experiment session persistence         │\n│  • Cloud Storage — dataset exports (upgrade path)       │\n│  • Artifact Registry — container images                  │\n│  • ADC — keyless auth (no service account JSON)          │\n└─────────────────────────────────────────────────────────┘\n```\n\n---\n\n## What It Does\n\n### Pipeline\n\n```\nBuild Schema → Configure Bias → Generate Data → Mitigate → Evaluate → Report\n```\n\n1. **Schema Builder** — compose a credit dataset schema: choose protected attributes, financial features, and the `loan_approved` outcome column. Gemini suggests columns based on your use case.\n2. **Bias Injection** — SDV `GaussianCopulaSynthesizer` generates a realistic baseline, then a configurable bias engine injects realistic historical lending disparities.\n3. **Four Mitigation Layers**:\n\n| Layer | What It Does |\n|---|---|\n| **Resampling** | Over-represents denied majority-group and approved minority-group applicants to balance the training distribution |\n| **Feature Disentanglement** | Removes correlation between protected attributes and credit-relevant features via orthogonal projection |\n| **Threshold Adjustment** | Sets group-specific approval thresholds that equalize selection rates across groups |\n| **Adversarial Debiasing** | Adds a penalty that reduces the model's ability to predict the protected attribute from credit features |\n\n4. **Data Fairness Metrics** — computed before and after mitigation:\n\n| Metric | Description | Threshold |\n|---|---|---|\n| **DPD** (≈ SPD) | Approval rate gap between protected groups | < 0.05 = fair |\n| **DIR** | Disparate Impact Ratio — min/max approval rate | ≥ 0.8 = EEOC compliant |\n| **LCS** (≈ EOD) | Borderline label consistency across groups | > 0.95 = fair |\n| **REI** | Representation equity across groups | > 0.9 = fair |\n| **OFS** | Overall Fairness Score — weighted composite | ≥ 80 = strong |\n\n5. **Model-Level Fairness** — classifiers trained on before/after datasets using *financial features only* (no protected attributes), revealing proxy bias. Returns DIR and approval rate by protected group per model.\n\n6. **Gemini Compliance Report** — 4-paragraph plain-English report for risk officers:\n   - Overall finding\n   - Specific metric changes (SPD, DIR, EOD deltas)\n   - Remaining concerns\n   - Recommendation\n\n7. **Gemini Constraint Parser** — type fairness requirements in plain English:\n   > \"Ensure approval rates are within 5 percentage points across all racial groups\"\n   \n   Gemini translates this into config deltas that the mitigation engine executes.\n\n---\n\n## Google Cloud Stack\n\n| Service | Role |\n|---|---|\n| **Gemini 1.5 Flash** | Constraint parsing, schema suggestions, compliance report generation |\n| **Cloud Run** | Backend deployment — containerized FastAPI, auto-scales to zero |\n| **Firebase Hosting** | Frontend deployment — CDN-backed, SPA rewrite rules |\n| **Firestore** | Experiment session persistence — schema, config, metrics, narrative per run |\n| **Application Default Credentials** | Keyless auth — no service account JSON required |\n| **Vertex AI** | Upgrade path: AutoML tabular training + fairness slicing via `model.evaluate(slicing_specs=[...])` |\n\n### Auth Modes\n\nThe backend auto-detects credentials:\n\n| Env Var Set | Mode | Used When |\n|---|---|---|\n| `GOOGLE_API_KEY` | AI Studio key | Local development |\n| `GOOGLE_CLOUD_PROJECT` | Application Default Credentials | Cloud Run / GCP |\n\nOn Cloud Run, ADC is automatic — no secrets to manage.\n\n---\n\n## Local Development\n\n### Backend\n\n```bash\ncd backend\npython3 -m venv .venv\nsource .venv/bin/activate\npip install -r requirements.txt\n\n# Copy and fill in your API key\ncp .env.example .env\n# Edit .env: set GOOGLE_API_KEY=your_gemini_key\n\nuvicorn main:app --reload --host 0.0.0.0 --port 8000\n```\n\nGet a Gemini API key at [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey).\n\n### Frontend\n\n```bash\ncd frontend\nnpm install\nnpm run dev\n```\n\nFrontend runs at `http://localhost:5173`. Backend must be running at `http://localhost:8000`.\n\n### Environment Variables\n\n**Backend (`backend/.env`):**\n\n```bash\n# Local dev — AI Studio key\nGOOGLE_API_KEY=your_gemini_api_key_here\n\n# GCP deployment — ADC mode (replaces GOOGLE_API_KEY)\n# GOOGLE_CLOUD_PROJECT=your-gcp-project-id\n# GOOGLE_CLOUD_LOCATION=us-central1\n```\n\n---\n\n## Cloud Deployment\n\n### One-shot deploy (Cloud Run + Firebase Hosting)\n\n```bash\n# Authenticate\ngcloud auth login\ngcloud auth application-default login\nfirebase login\n\n# Enable required APIs\ngcloud services enable run.googleapis.com \\\n  artifactregistry.googleapis.com \\\n  firestore.googleapis.com \\\n  --project YOUR_PROJECT_ID\n\n# Deploy backend (Cloud Run) + frontend (Firebase Hosting)\nGCP_PROJECT=your-project-id ./deploy.sh\n```\n\nThe script:\n1. Builds and deploys the FastAPI backend to Cloud Run (via `gcloud run deploy --source`)\n2. Reads the Cloud Run URL\n3. Builds the Vite frontend with `VITE_API_BASE` set to the Cloud Run URL\n4. Deploys the frontend to Firebase Hosting\n\n### Manual Cloud Run Deploy\n\n```bash\ngcloud run deploy debias-api \\\n  --source ./backend \\\n  --project YOUR_PROJECT_ID \\\n  --region us-central1 \\\n  --allow-unauthenticated \\\n  --set-env-vars \"GOOGLE_CLOUD_PROJECT=YOUR_PROJECT_ID\" \\\n  --memory 2Gi \\\n  --cpu 2\n```\n\n---\n\n## Project Structure\n\n```\nde.bias/\n├── backend/\n│   ├── main.py              # FastAPI app — all routes\n│   ├── gemini_client.py     # Gemini 1.5 Flash — constraint parser, schema advisor, report gen\n│   ├── vertex_trainer.py    # Model-level fairness evaluator (sklearn fast-path / Vertex AI upgrade)\n│   ├── firestore_client.py  # Session persistence via Firestore + ADC\n│   ├── generator.py         # SDV synthetic data generation\n│   ├── bias_layers.py       # Four mitigation layers\n│   ├── fairness.py          # DPD / DIR / LCS / REI / OFS metrics\n│   ├── schemas.py           # Pydantic request/response models\n│   ├── Dockerfile           # Cloud Run container\n│   ├── requirements.txt\n│   └── .env.example\n├── frontend/\n│   ├── src/\n│   │   ├── App.jsx                          # Main app shell + state\n│   │   ├── components/\n│   │   │   ├── VertexPanel.jsx              # Model-level fairness UI\n│   │   │   ├── FairnessReport.jsx           # Metrics + Gemini narrative\n│   │   │   ├── AIPromptBox.jsx              # Gemini constraint input\n│   │   │   ├── SchemaBuilder.jsx            # Column selector + AI suggestions\n│   │   │   ├── ConfigPanel.jsx              # Mitigation controls\n│   │   │   ├── DistributionCharts.jsx       # Before/after approval charts\n│   │   │   └── DownloadPanel.jsx            # CSV / JSON / Sheets export\n│   │   └── api/\n│   │       ├── generate.js                  # POST /generate\n│   │       ├── openai.js                    # Gemini routes (prompt, suggest, health)\n│   │       └── export.js                    # Export routes\n│   └── firebase.json                        # Firebase Hosting config\n├── deploy.sh                # One-shot Cloud Run + Firebase deploy\n├── docs/                    # Architecture and phase docs\n├── notebooks/               # Jupyter walkthroughs\n└── examples/                # Sample outputs\n```\n\n---\n\n## API Reference\n\n| Method | Route | Description |\n|---|---|---|\n| `GET` | `/health` | Gemini connectivity + auth mode |\n| `POST` | `/generate` | Generate dataset, run mitigation, get fairness metrics + Gemini narrative |\n| `POST` | `/suggest-columns` | Gemini schema column suggestions |\n| `POST` | `/prompt` | Gemini fairness constraint → config delta |\n| `POST` | `/model/evaluate` | Train before/after classifiers, return model-level DIR |\n| `GET` | `/sessions` | List recent experiment sessions (Firestore) |\n| `GET` | `/sessions/{id}` | Retrieve a specific session |\n| `POST` | `/export/googlesheets` | Push dataset to Google Sheets |\n| `POST` | `/export/huggingface` | Push dataset to HuggingFace Hub |\n\n---\n\n## Vertex AI Upgrade Path\n\nThe model fairness evaluator currently uses a local sklearn `LogisticRegression` (fast, no billing, <5s response). Swapping to real Vertex AI AutoML + Google's native fairness slicing is a documented drop-in:\n\n```python\n# vertex_trainer.py — see generate_fairness_narrative() docstring\nmodel.evaluate(\n    slicing_specs=[aiplatform.slices.Slice(spec=\"race\")],\n    explanation_specs=[aiplatform.explain.ExplanationSpec()]\n)\n```\n\nThis gives two independent fairness evaluations on the same model — your metrics + Google's official slicing — which is a strong signal of thoroughness.\n\n---\n\n## Built On\n\n| Project | Used For | License |\n|---|---|---|\n| [SDV](https://github.com/sdv-dev/SDV) | Statistical data generation backbone | Business Source |\n| [MOSTLY AI](https://github.com/mostly-ai/mostlyai) | Seed-based conditional generation concept | Apache 2.0 |\n| [LLM-Dataset-Builder](https://github.com/dmeldrum6/LLM-Dataset-Builder) | Save/load config + API test UX | MIT |\n\nde.bias's bias mitigation engine, fairness metrics, Gemini integration, model-level fairness evaluator, and compliance report generation are original contributions not present in the above projects.\n",
+ "hits": {
+  "gc": [
+   {
+    "file": "README.md",
+    "line": 67,
+    "text": "2. **Bias Injection** — SDV `GaussianCopulaSynthesizer` generates a realistic baseline, then a configurable bias engine injects realistic historical lending disparities.",
+    "context": [
+     "Build Schema → Configure Bias → Generate Data → Mitigate → Evaluate → Report",
+     "```",
+     "",
+     "1. **Schema Builder** — compose a credit dataset schema: choose protected attributes, financial features, and the `loan_approved` outcome column. Gemini suggests columns based on your use case.",
+     "2. **Bias Injection** — SDV `GaussianCopulaSynthesizer` generates a realistic baseline, then a configurable bias engine injects realistic historical lending disparities.",
+     "3. **Four Mitigation Layers**:",
+     "",
+     "| Layer | What It Does |",
+     "|---|---|"
+    ]
+   },
+   {
+    "file": "backend/generator.py",
+    "line": 14,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "from schemas import ColumnConfig, DeBiasConfig, SchemaColumn",
+     "",
+     "try:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "    SDV_AVAILABLE = True",
+     "except Exception:",
+     "    SingleTableMetadata = None"
+    ]
+   },
+   {
+    "file": "backend/generator.py",
+    "line": 19,
+    "text": "GaussianCopulaSynthesizer = None",
+    "context": [
+     "",
+     "    SDV_AVAILABLE = True",
+     "except Exception:",
+     "    SingleTableMetadata = None",
+     "    GaussianCopulaSynthesizer = None",
+     "    SDV_AVAILABLE = False",
+     "",
+     "",
+     "SDV_VERSION = \"unavailable\""
+    ]
+   },
+   {
+    "file": "backend/generator.py",
+    "line": 282,
+    "text": "if SDV_AVAILABLE and GaussianCopulaSynthesizer is not None:",
+    "context": [
+     "def sample_base_dataset(config: DeBiasConfig, schema: list[SchemaColumn]) -> GenerationArtifacts:",
+     "    seed_df = create_seed_dataframe(schema)",
+     "    fit_df = seed_df.drop(columns=[\"approval_score\"], errors=\"ignore\")",
+     "",
+     "    if SDV_AVAILABLE and GaussianCopulaSynthesizer is not None:",
+     "        try:",
+     "            metadata = create_metadata(schema)",
+     "            synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "            synthesizer.fit(fit_df)"
+    ]
+   },
+   {
+    "file": "backend/generator.py",
+    "line": 285,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "",
+     "    if SDV_AVAILABLE and GaussianCopulaSynthesizer is not None:",
+     "        try:",
+     "            metadata = create_metadata(schema)",
+     "            synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "            synthesizer.fit(fit_df)",
+     "            sampled = synthesizer.sample(num_rows=config.datasetSize)",
+     "            sampled[\"approval_score\"] = 0.5",
+     "            return GenerationArtifacts(base_dataset=sampled, source=\"sdv\")"
+    ]
+   },
+   {
+    "file": "docs/phases/PHASE_2_BACKEND_PIPELINE.md",
+    "line": 9,
+    "text": "- SDV `GaussianCopulaSynthesizer`",
+    "context": [
+     "Implement the full synthetic generation pipeline with SDV integration and bias mitigation layers.",
+     "",
+     "## Scope",
+     "",
+     "- SDV `GaussianCopulaSynthesizer`",
+     "- Single table metadata",
+     "- Historical bias layer",
+     "- Representation layer",
+     "- Label correction layer"
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "backend/generator.py",
+    "line": 14,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "from schemas import ColumnConfig, DeBiasConfig, SchemaColumn",
+     "",
+     "try:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "    SDV_AVAILABLE = True",
+     "except Exception:",
+     "    SingleTableMetadata = None"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "backend/generator.py",
+    "line": 13,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from schema_catalog import CATEGORICAL_DEFAULTS",
+     "from schemas import ColumnConfig, DeBiasConfig, SchemaColumn",
+     "",
+     "try:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "    SDV_AVAILABLE = True",
+     "except Exception:"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "backend/generator.py",
+    "line": 13,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from schema_catalog import CATEGORICAL_DEFAULTS",
+     "from schemas import ColumnConfig, DeBiasConfig, SchemaColumn",
+     "",
+     "try:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "    SDV_AVAILABLE = True",
+     "except Exception:"
+    ]
+   },
+   {
+    "file": "backend/generator.py",
+    "line": 14,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "from schemas import ColumnConfig, DeBiasConfig, SchemaColumn",
+     "",
+     "try:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "    SDV_AVAILABLE = True",
+     "except Exception:",
+     "    SingleTableMetadata = None"
+    ]
+   },
+   {
+    "file": "backend/generator.py",
+    "line": 26,
+    "text": "import sdv",
+    "context": [
+     "",
+     "SDV_VERSION = \"unavailable\"",
+     "if SDV_AVAILABLE:",
+     "    try:",
+     "        import sdv",
+     "",
+     "        SDV_VERSION = sdv.__version__",
+     "    except Exception:",
+     "        SDV_VERSION = \"installed\""
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "backend/requirements.txt": [
+   "sdv>=1.17.0"
+  ]
+ }
+}

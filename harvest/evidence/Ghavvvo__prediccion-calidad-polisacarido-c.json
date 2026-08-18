@@ -1,0 +1,208 @@
+{
+ "repo": "Ghavvvo/prediccion-calidad-polisacarido-c",
+ "disk_kb": 23,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Pipeline Predictivo para Control de Calidad del IFA\n\nEste repositorio contiene el pipeline de aprendizaje automatizado desarrollado en la tesis **\"Sistema Predictivo para el Control de la Calidad del IFA Polisacárido Capsular Purificado de *Neisseria meningitidis* serogrupo C cepa C11\"** (Gabriel Herrera, Universidad de La Habana, 2025).\n\n## Estructura\n\n```\nsrc/\n├── main.py                  # Orquestador del pipeline\n├── eda.py                   # Análisis exploratorio de datos\n├── core/\n│   ├── config.py            # Configuración (semilla, CV, bootstrap, MLJAR)\n│   ├── logger.py            # Logger\n│   └── seeding.py           # Reproducibilidad\n├── data/\n│   ├── loader.py            # Carga de CSVs + verificación\n│   └── features.py          # Ingeniería de características\n├── models/\n│   ├── classifiers.py       # Definición de clasificadores con grids\n│   └── mljar_wrapper.py     # Wrapper para MLJAR AutoML\n├── pipelines/\n│   ├── classification.py    # Clasificación (nested CV + sintéticos + tests)\n│   └── regression.py        # Regresión (MLJAR + bootstrap + tests)\n├── stats/\n│   ├── bootstrap.py         # Intervalos de confianza bootstrap\n│   ├── tests.py             # Tests estadísticos (Holm-Bonferroni, Cohen's d)\n│   └── thresholds.py        # Optimización de umbral F2\n├── synth/\n│   └── generators.py        # Generación sintética (SMOTE, Cópula Gaussiana)\n└── viz/\n    └── plots.py             # Visualizaciones (curvas PR/ROC, SHAP, etc.)\n```\n\n## Pipeline\n\nEl pipeline ejecuta tres etapas:\n\n1. **EDA**: análisis exploratorio (balance de clases, PCA, distribución de targets)\n2. **Clasificación**: nested CV 5×5 con 4 modelos (LR, RF, SVM, XGBoost) bajo 3 condiciones (sin aumento, SMOTE, Cópula Gaussiana), optimización de threshold F2, tests Wilcoxon pareado + Shapiro-Wilk\n3. **Regresión**: MLJAR AutoML modo *Perform* para 6 atributos de calidad (ácido siálico, ácidos nucleicos, endotoxinas, O-acetilo, proteínas, tamaño molecular), bootstrap de métricas, SHAP, tests Mann-Whitney U\n\n## Requisitos\n\n- Python 3.12\n- Dependencias en `src/requirements.txt`\n\n## Uso\n\n```bash\ncd src\npython main.py\n```\n\nLos resultados se guardan en `resultados/` \n\n## Configuración\n\n| Parámetro | Valor | Descripción |\n|-----------|-------|-------------|\n| `SEED` | 44 | Semilla global |\n| `N_OUTER` | 5 | Pliegues externos (nested CV) |\n| `N_INNER` | 3 | Pliegues internos (nested CV) |\n| `N_REP` | 5 | Repeticiones de CV |\n| `N_BOOT` | 1000 | Iteraciones bootstrap |\n| `MLJAR_TIME_LIMIT` | 600 | Límite de tiempo por target (s) |\n\n",
+ "hits": {
+  "md": [
+   {
+    "file": "src/pipelines/classification.py",
+    "line": 54,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "from stats.bootstrap import bootstrap_metric",
+     "from stats.thresholds import find_threshold_f2",
+     "from stats.tests import holm_bonferroni, cohens_d_paired",
+     "",
+     "from sdv.metadata import Metadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "from synth.generators import generar_sinteticos",
+     ""
+    ]
+   },
+   {
+    "file": "src/synth/generators.py",
+    "line": 11,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from imblearn.over_sampling import SMOTE",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "from core.config import SEED",
+     ""
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "src/pipelines/classification.py",
+    "line": 55,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "from stats.thresholds import find_threshold_f2",
+     "from stats.tests import holm_bonferroni, cohens_d_paired",
+     "",
+     "from sdv.metadata import Metadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "from synth.generators import generar_sinteticos",
+     "",
+     "warnings.filterwarnings(\"ignore\")"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "src/pipelines/classification.py",
+    "line": 54,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "from stats.bootstrap import bootstrap_metric",
+     "from stats.thresholds import find_threshold_f2",
+     "from stats.tests import holm_bonferroni, cohens_d_paired",
+     "",
+     "from sdv.metadata import Metadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "from synth.generators import generar_sinteticos",
+     ""
+    ]
+   },
+   {
+    "file": "src/pipelines/classification.py",
+    "line": 55,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "from stats.thresholds import find_threshold_f2",
+     "from stats.tests import holm_bonferroni, cohens_d_paired",
+     "",
+     "from sdv.metadata import Metadata",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "",
+     "from synth.generators import generar_sinteticos",
+     "",
+     "warnings.filterwarnings(\"ignore\")"
+    ]
+   },
+   {
+    "file": "src/synth/generators.py",
+    "line": 11,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from imblearn.over_sampling import SMOTE",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "from core.config import SEED",
+     ""
+    ]
+   },
+   {
+    "file": "src/synth/generators.py",
+    "line": 12,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "from imblearn.over_sampling import SMOTE",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "from core.config import SEED",
+     "",
+     "log = logging.getLogger(__name__)"
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "src/synth/generators.py",
+    "line": 12,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "from imblearn.over_sampling import SMOTE",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "from core.config import SEED",
+     "",
+     "log = logging.getLogger(__name__)"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "src/synth/generators.py",
+    "line": 12,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "from imblearn.over_sampling import SMOTE",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "from core.config import SEED",
+     "",
+     "log = logging.getLogger(__name__)"
+    ]
+   },
+   {
+    "file": "src/synth/generators.py",
+    "line": 57,
+    "text": "copula = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "        return pd.DataFrame(columns=X_train.columns), pd.Series(dtype=y_train.dtype, name=y_train.name)",
+     "",
+     "    X_minority = X_train[y_train == 1].reset_index(drop=True)",
+     "    metadata = Metadata.detect_from_dataframe(data=X_minority)",
+     "    copula = GaussianCopulaSynthesizer(metadata)",
+     "    copula.fit(X_minority)",
+     "    copula._set_random_state(SEED)",
+     "    X_synth = copula.sample(num_rows=n_to_generate).reset_index(drop=True)",
+     "    X_synth = X_synth.reindex(columns=X_train.columns)"
+    ]
+   },
+   {
+    "file": "src/synth/generators.py",
+    "line": 98,
+    "text": "syn = GaussianCopulaSynthesizer(meta)",
+    "context": [
+     "            X_min = X_df[y_np == 1]",
+     "            if len(X_min) < 2:",
+     "                return X_train, y_train, np.empty((0, X_train.shape[1]))",
+     "            meta = Metadata.detect_from_dataframe(data=X_min)",
+     "            syn = GaussianCopulaSynthesizer(meta)",
+     "            syn.fit(X_min)",
+     "            syn._set_random_state(SEED + seed_offset)",
+     "            X_syn = syn.sample(num_rows=n_synth).reset_index(drop=True)",
+     "            cols = X_train.columns if hasattr(X_train, \"columns\") else None"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ev",
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "src/requirements.txt": [
+   "sdv==1.36.3"
+  ]
+ }
+}

@@ -1,0 +1,1410 @@
+{
+ "repo": "multitel-ai/nsw-certification",
+ "disk_kb": 67528,
+ "method": "partial_clone",
+ "tree_files": 210,
+ "status": "ok",
+ "readme": "# Nantes Workshop Certification\n\n## Description du projet\n\n### Contexte\nCe projet fait partie d'un summer workshop organisé par TRAIL ([Trusted AI Labs](https://trail.ac/)), un institut qui rassemble  des chercheurs travaillant sur l’IA au sein des universités de la Fédération Wallonie-Bruxelles et des Centres de Recherche Agréés.  L’Institut TRAIL souhaite faire avancer la recherche sur des sujets stratégiques tels que les interactions homme-machine, l’intelligence artificielle explicable (XAI), ou l’IA de confiance protégeant les données privées.\n\n### But\nLe but de ce projet est de **CERTIFIER** un système estimant la puissance instantanée utilisée par un drone durant son vol. Ce système a été développé dans le cadre du projet [WINGS](https://www.multitel.be/projets/wings/) par [Multitel](https://www.multitel.be/). L'objectif est maintenant de garantir l'utilisation d'une IA digne de confiance. Ceci passe par la **Certification** de l'ensemble du processus permettant d'obtenir et maintenir le composant IA/ML du système proposé. Cette certification couvre un grand nombre d'aspect, allant de la collecte des données au monitoring du système une fois celui-ci mis en production. Parmi les aspects certifiables de l'IA, nous nous sommes concentrés sur la **qualité des données (biais)** ainsi que **l'explicabilité, la robustesse et la gestion de l'incertitude** de nos modèles.\n\n## Code \n\n#### Modèles IA\nPour répondre à la problématique de prédiction de puissance instantanée consomée par un drone durant son vol, nous avons utilisé deux modèles :\n- Histogram gradient boosting regressor (HGBR), de la librairie [scikit-learn](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.HistGradientBoostingRegressor.html#sklearn.ensemble.HistGradientBoostingRegressor)\n- Un ensemble de Multi Layers Perceptron avec Monte Carlo Dropout, inspiré du [Shift Challenge](https://github.com/Shifts-Project/shifts/tree/main/vpower) sur la prédiction de puissance instantanée d'un paquebot. \n\nLeur code est disponible dans le dossier *code preparation*.\n\n#### Data quality\nPour évaluer la qualité des données, nous souhaitons savoir si elles contiennent des biais. Le code *mlp biais* met en valeur les différences de distributions au sein d'une variable (comme le poids par exemple), et les différences de performances du modèle selon cette variable ; cela évalue la **fairness**. \n\nLe code *violin plots* montre les différences de distributions de la puissance au sein de différents sous jeux de données. Cela permet de définir un sous jeu de données comme \"Out Of Distribution\" (OOD) et de voir si le modèle performe aussi bien sur ce dernier ; cela évalue la **robustesse**. \n\n#### Data Augmentation\n\nIl est possible de générer des données synthétiques à partir de données réelles afin d'augmenter notre base de données et ainsi de tester notre modèle sur des données nouvelles et parfois différentes.\nPour se faire, différentes librairies ont été testées:\n\n- Synthetic Data Vault ([SDV](https://sdv.dev/SDV/)), permet la génération de données synthétiques en considérant les données soit comme des tableaux (*SDV_SingleTable*), soit comme des time series (*SDV_sequential*).\n- [AugmentTS](https://github.com/DrSasanBarak/AugmentTS/tree/main) utilise des Deep Generative Models pour permettre l'augmentation des données mais peut également être utilisée pour la prédiction dans les time series.\n- [Tsaug](https://tsaug.readthedocs.io/en/stable/) exploite les données sous forme de time series.\n\nLes codes de ces librairies sont disponibles dans le dossier *DA*.\nLe dossier *Models* contient les sauvegardes des modèles entrainés et utilisés pour la data augmentation.\n\n#### Uncertainty\nPour le modèle de Deep Learning (l'ensemble de MLP), 400 inférences sont réalisées pour une entrée (20 modèles initialisés 20 fois). Le modèle sort la moyenne et la déviation standard de la gaussienne représentant la distribution de probabilité de la prédiction. Pour évaluer l'incertitude, les courbes de rétention sont calculées.\n\nPour le modèle Machine Learning (le HGBR), l'incertitude est quantifiée à l'aide de méthodes formelles implémentées dans la librairie [PUNCC](https://github.com/deel-ai/puncc). Elle permet de calculer la marginal coverage (le pourcentage de valeurs réelles contenues dans l'intervalle de prediction) et la largeur moyenne d'intervalle. \\\nLa librairie [MAPIE](https://mapie.readthedocs.io/en/latest/index.html) est aussi utilisée, plus particulièrement le time series regressor pour estimer les intervalles de prédiction avec la méthode EnbPI. \n\n## Installation\nLe projet contient différent [dockers](https://www.docker.com/) pour éxécuter le code contenu dans des notebooks jupyter. Nous avons utilisé [VSCode](https://code.visualstudio.com/) et son extension [Jupyter](https://code.visualstudio.com/docs/datascience/jupyter-notebooks) pour les ouvrir dans le container directement. \\\nLes notes [Obsidian](https://obsidian.md/) peuvent être chargées dans l'application.\n\n## Usage \nLes données doivent être placées dans un dossier *Data*. \n\nExemple de graphe obtenu avec la locally adaptive Ensemble Batch Prediction Intervals method de la librairie Puncc (dans *Uncertainty/ML/test puncc new data*) :\n![output](https://github.com/multitel-ai/nsw-certification/assets/144004765/1d6feda5-c9bb-4d2a-a1e8-7571afb8eb41)\n\n## Auteurs\n- Emmanuel Jean (jean@multitel.be)\n- Bérangère Burgunder (burgunder@multitel.be)\n- Florian Facchin \n\n## Statut du projet\nLe projet est terminé.\n",
+ "hits": {
+  "st": [
+   {
+    "file": "Data_Augmentation/DA/SDV_SingleTable.ipynb",
+    "line": 93,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import sdv\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.lite import SingleTablePreset\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.single_table import CopulaGANSynthesizer\"",
+     "   ]"
+    ]
+   },
+   {
+    "file": "Data_Augmentation/DA/SDV_SingleTable.ipynb",
+    "line": 95,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"import sdv\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.lite import SingleTablePreset\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.single_table import CopulaGANSynthesizer\"",
+     "   ]",
+     "  },",
+     "  {"
+    ]
+   },
+   {
+    "file": "Data_Augmentation/DA/SDV_SingleTable.ipynb",
+    "line": 96,
+    "text": "\"from sdv.single_table import CopulaGANSynthesizer\"",
+    "context": [
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.lite import SingleTablePreset\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.single_table import CopulaGANSynthesizer\"",
+     "   ]",
+     "  },",
+     "  {",
+     "   \"cell_type\": \"code\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/DA/SDV_Sequential.ipynb",
+    "line": 91,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import sdv\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.lite import SingleTablePreset\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.single_table import CopulaGANSynthesizer\\n\",",
+     "    \"from sdv.sequential import PARSynthesizer\""
+    ]
+   },
+   {
+    "file": "Data_Augmentation/DA/SDV_Sequential.ipynb",
+    "line": 93,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"import sdv\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.lite import SingleTablePreset\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.single_table import CopulaGANSynthesizer\\n\",",
+     "    \"from sdv.sequential import PARSynthesizer\"",
+     "   ]",
+     "  },"
+    ]
+   },
+   {
+    "file": "Data_Augmentation/DA/SDV_Sequential.ipynb",
+    "line": 94,
+    "text": "\"from sdv.single_table import CopulaGANSynthesizer\\n\",",
+    "context": [
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.lite import SingleTablePreset\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.single_table import CopulaGANSynthesizer\\n\",",
+     "    \"from sdv.sequential import PARSynthesizer\"",
+     "   ]",
+     "  },",
+     "  {"
+    ]
+   },
+   {
+    "file": "Data_Augmentation/References/Data augmentation - SDV.ipynb",
+    "line": 41,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import sdv\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.lite import SingleTablePreset\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.single_table import CopulaGANSynthesizer\"",
+     "   ]"
+    ]
+   },
+   {
+    "file": "Data_Augmentation/References/Data augmentation - SDV.ipynb",
+    "line": 43,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"import sdv\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.lite import SingleTablePreset\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.single_table import CopulaGANSynthesizer\"",
+     "   ]",
+     "  },",
+     "  {"
+    ]
+   },
+   {
+    "file": "Data_Augmentation/References/Data augmentation - SDV.ipynb",
+    "line": 44,
+    "text": "\"from sdv.single_table import CopulaGANSynthesizer\"",
+    "context": [
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.lite import SingleTablePreset\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.single_table import CopulaGANSynthesizer\"",
+     "   ]",
+     "  },",
+     "  {",
+     "   \"cell_type\": \"markdown\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/Tests/DataAugmentation_SDV.ipynb",
+    "line": 85,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import sdv\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.lite import SingleTablePreset\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.single_table import CopulaGANSynthesizer\"",
+     "   ]"
+    ]
+   },
+   {
+    "file": "Data_Augmentation/Tests/DataAugmentation_SDV.ipynb",
+    "line": 87,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"import sdv\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.lite import SingleTablePreset\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.single_table import CopulaGANSynthesizer\"",
+     "   ]",
+     "  },",
+     "  {"
+    ]
+   },
+   {
+    "file": "Data_Augmentation/Tests/DataAugmentation_SDV.ipynb",
+    "line": 88,
+    "text": "\"from sdv.single_table import CopulaGANSynthesizer\"",
+    "context": [
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.lite import SingleTablePreset\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.single_table import CopulaGANSynthesizer\"",
+     "   ]",
+     "  },",
+     "  {",
+     "   \"cell_type\": \"code\","
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "Data_Augmentation/DA/SDV_SingleTable.ipynb",
+    "line": 92,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import sdv\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.lite import SingleTablePreset\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.single_table import CopulaGANSynthesizer\""
+    ]
+   },
+   {
+    "file": "Data_Augmentation/DA/SDV_Sequential.ipynb",
+    "line": 90,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import sdv\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.lite import SingleTablePreset\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.single_table import CopulaGANSynthesizer\\n\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/References/Data augmentation - SDV.ipynb",
+    "line": 40,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import sdv\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.lite import SingleTablePreset\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.single_table import CopulaGANSynthesizer\""
+    ]
+   },
+   {
+    "file": "Data_Augmentation/Tests/DataAugmentation_SDV.ipynb",
+    "line": 84,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import sdv\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.lite import SingleTablePreset\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.single_table import CopulaGANSynthesizer\""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "Data_Augmentation/DA/SDV_SingleTable.ipynb",
+    "line": 21,
+    "text": "\"Requirement already satisfied: ctgan<0.8,>=0.7.4 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (0.7.4)\\n\",",
+    "context": [
+     "     \"output_type\": \"stream\",",
+     "     \"text\": [",
+     "      \"Defaulting to user installation because normal site-packages is not writeable\\n\",",
+     "      \"Requirement already satisfied: sdv==1.3.0 in /home/user/.local/lib/python3.8/site-packages (1.3.0)\\n\",",
+     "      \"Requirement already satisfied: ctgan<0.8,>=0.7.4 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (0.7.4)\\n\",",
+     "      \"Requirement already satisfied: tqdm<5,>=4.15 in /opt/conda/lib/python3.8/site-packages (from sdv==1.3.0) (4.43.0)\\n\",",
+     "      \"Requirement already satisfied: rdt<2,>=1.6.1 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (1.7.0)\\n\",",
+     "      \"Requirement already satisfied: boto3<2,>=1.15.0 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (1.28.42)\\n\",",
+     "      \"Requirement already satisfied: numpy<1.25.0,>=1.20.0 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (1.24.4)\\n\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/DA/SDV_SingleTable.ipynb",
+    "line": 22,
+    "text": "\"Requirement already satisfied: tqdm<5,>=4.15 in /opt/conda/lib/python3.8/site-packages (from sdv==1.3.0) (4.43.0)\\n\",",
+    "context": [
+     "     \"text\": [",
+     "      \"Defaulting to user installation because normal site-packages is not writeable\\n\",",
+     "      \"Requirement already satisfied: sdv==1.3.0 in /home/user/.local/lib/python3.8/site-packages (1.3.0)\\n\",",
+     "      \"Requirement already satisfied: ctgan<0.8,>=0.7.4 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (0.7.4)\\n\",",
+     "      \"Requirement already satisfied: tqdm<5,>=4.15 in /opt/conda/lib/python3.8/site-packages (from sdv==1.3.0) (4.43.0)\\n\",",
+     "      \"Requirement already satisfied: rdt<2,>=1.6.1 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (1.7.0)\\n\",",
+     "      \"Requirement already satisfied: boto3<2,>=1.15.0 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (1.28.42)\\n\",",
+     "      \"Requirement already satisfied: numpy<1.25.0,>=1.20.0 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (1.24.4)\\n\",",
+     "      \"Requirement already satisfied: pandas>=1.1.3 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (1.1.3)\\n\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/DA/SDV_SingleTable.ipynb",
+    "line": 23,
+    "text": "\"Requirement already satisfied: rdt<2,>=1.6.1 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (1.7.0)\\n\",",
+    "context": [
+     "      \"Defaulting to user installation because normal site-packages is not writeable\\n\",",
+     "      \"Requirement already satisfied: sdv==1.3.0 in /home/user/.local/lib/python3.8/site-packages (1.3.0)\\n\",",
+     "      \"Requirement already satisfied: ctgan<0.8,>=0.7.4 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (0.7.4)\\n\",",
+     "      \"Requirement already satisfied: tqdm<5,>=4.15 in /opt/conda/lib/python3.8/site-packages (from sdv==1.3.0) (4.43.0)\\n\",",
+     "      \"Requirement already satisfied: rdt<2,>=1.6.1 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (1.7.0)\\n\",",
+     "      \"Requirement already satisfied: boto3<2,>=1.15.0 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (1.28.42)\\n\",",
+     "      \"Requirement already satisfied: numpy<1.25.0,>=1.20.0 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (1.24.4)\\n\",",
+     "      \"Requirement already satisfied: pandas>=1.1.3 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (1.1.3)\\n\",",
+     "      \"Requirement already satisfied: sdmetrics<0.12,>=0.11.0 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (0.11.0)\\n\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/DA/SDV_SingleTable.ipynb",
+    "line": 24,
+    "text": "\"Requirement already satisfied: boto3<2,>=1.15.0 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (1.28.42)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: sdv==1.3.0 in /home/user/.local/lib/python3.8/site-packages (1.3.0)\\n\",",
+     "      \"Requirement already satisfied: ctgan<0.8,>=0.7.4 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (0.7.4)\\n\",",
+     "      \"Requirement already satisfied: tqdm<5,>=4.15 in /opt/conda/lib/python3.8/site-packages (from sdv==1.3.0) (4.43.0)\\n\",",
+     "      \"Requirement already satisfied: rdt<2,>=1.6.1 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (1.7.0)\\n\",",
+     "      \"Requirement already satisfied: boto3<2,>=1.15.0 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (1.28.42)\\n\",",
+     "      \"Requirement already satisfied: numpy<1.25.0,>=1.20.0 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (1.24.4)\\n\",",
+     "      \"Requirement already satisfied: pandas>=1.1.3 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (1.1.3)\\n\",",
+     "      \"Requirement already satisfied: sdmetrics<0.12,>=0.11.0 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (0.11.0)\\n\",",
+     "      \"Requirement already satisfied: cloudpickle<3.0,>=2.1.0 in /opt/conda/lib/python3.8/site-packages (from sdv==1.3.0) (2.2.1)\\n\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/DA/SDV_SingleTable.ipynb",
+    "line": 25,
+    "text": "\"Requirement already satisfied: numpy<1.25.0,>=1.20.0 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (1.24.4)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: ctgan<0.8,>=0.7.4 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (0.7.4)\\n\",",
+     "      \"Requirement already satisfied: tqdm<5,>=4.15 in /opt/conda/lib/python3.8/site-packages (from sdv==1.3.0) (4.43.0)\\n\",",
+     "      \"Requirement already satisfied: rdt<2,>=1.6.1 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (1.7.0)\\n\",",
+     "      \"Requirement already satisfied: boto3<2,>=1.15.0 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (1.28.42)\\n\",",
+     "      \"Requirement already satisfied: numpy<1.25.0,>=1.20.0 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (1.24.4)\\n\",",
+     "      \"Requirement already satisfied: pandas>=1.1.3 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (1.1.3)\\n\",",
+     "      \"Requirement already satisfied: sdmetrics<0.12,>=0.11.0 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (0.11.0)\\n\",",
+     "      \"Requirement already satisfied: cloudpickle<3.0,>=2.1.0 in /opt/conda/lib/python3.8/site-packages (from sdv==1.3.0) (2.2.1)\\n\",",
+     "      \"Requirement already satisfied: graphviz<1,>=0.13.2 in /opt/conda/lib/python3.8/site-packages (from sdv==1.3.0) (0.20.1)\\n\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/DA/SDV_SingleTable.ipynb",
+    "line": 26,
+    "text": "\"Requirement already satisfied: pandas>=1.1.3 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (1.1.3)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: tqdm<5,>=4.15 in /opt/conda/lib/python3.8/site-packages (from sdv==1.3.0) (4.43.0)\\n\",",
+     "      \"Requirement already satisfied: rdt<2,>=1.6.1 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (1.7.0)\\n\",",
+     "      \"Requirement already satisfied: boto3<2,>=1.15.0 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (1.28.42)\\n\",",
+     "      \"Requirement already satisfied: numpy<1.25.0,>=1.20.0 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (1.24.4)\\n\",",
+     "      \"Requirement already satisfied: pandas>=1.1.3 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (1.1.3)\\n\",",
+     "      \"Requirement already satisfied: sdmetrics<0.12,>=0.11.0 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (0.11.0)\\n\",",
+     "      \"Requirement already satisfied: cloudpickle<3.0,>=2.1.0 in /opt/conda/lib/python3.8/site-packages (from sdv==1.3.0) (2.2.1)\\n\",",
+     "      \"Requirement already satisfied: graphviz<1,>=0.13.2 in /opt/conda/lib/python3.8/site-packages (from sdv==1.3.0) (0.20.1)\\n\",",
+     "      \"Requirement already satisfied: copulas<0.10,>=0.9.0 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (0.9.1)\\n\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/DA/SDV_SingleTable.ipynb",
+    "line": 27,
+    "text": "\"Requirement already satisfied: sdmetrics<0.12,>=0.11.0 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (0.11.0)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: rdt<2,>=1.6.1 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (1.7.0)\\n\",",
+     "      \"Requirement already satisfied: boto3<2,>=1.15.0 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (1.28.42)\\n\",",
+     "      \"Requirement already satisfied: numpy<1.25.0,>=1.20.0 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (1.24.4)\\n\",",
+     "      \"Requirement already satisfied: pandas>=1.1.3 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (1.1.3)\\n\",",
+     "      \"Requirement already satisfied: sdmetrics<0.12,>=0.11.0 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (0.11.0)\\n\",",
+     "      \"Requirement already satisfied: cloudpickle<3.0,>=2.1.0 in /opt/conda/lib/python3.8/site-packages (from sdv==1.3.0) (2.2.1)\\n\",",
+     "      \"Requirement already satisfied: graphviz<1,>=0.13.2 in /opt/conda/lib/python3.8/site-packages (from sdv==1.3.0) (0.20.1)\\n\",",
+     "      \"Requirement already satisfied: copulas<0.10,>=0.9.0 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (0.9.1)\\n\",",
+     "      \"Requirement already satisfied: Faker<15,>=10 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (14.2.1)\\n\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/DA/SDV_SingleTable.ipynb",
+    "line": 28,
+    "text": "\"Requirement already satisfied: cloudpickle<3.0,>=2.1.0 in /opt/conda/lib/python3.8/site-packages (from sdv==1.3.0) (2.2.1)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: boto3<2,>=1.15.0 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (1.28.42)\\n\",",
+     "      \"Requirement already satisfied: numpy<1.25.0,>=1.20.0 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (1.24.4)\\n\",",
+     "      \"Requirement already satisfied: pandas>=1.1.3 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (1.1.3)\\n\",",
+     "      \"Requirement already satisfied: sdmetrics<0.12,>=0.11.0 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (0.11.0)\\n\",",
+     "      \"Requirement already satisfied: cloudpickle<3.0,>=2.1.0 in /opt/conda/lib/python3.8/site-packages (from sdv==1.3.0) (2.2.1)\\n\",",
+     "      \"Requirement already satisfied: graphviz<1,>=0.13.2 in /opt/conda/lib/python3.8/site-packages (from sdv==1.3.0) (0.20.1)\\n\",",
+     "      \"Requirement already satisfied: copulas<0.10,>=0.9.0 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (0.9.1)\\n\",",
+     "      \"Requirement already satisfied: Faker<15,>=10 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (14.2.1)\\n\",",
+     "      \"Requirement already satisfied: botocore<2,>=1.18 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (1.31.42)\\n\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/DA/SDV_SingleTable.ipynb",
+    "line": 29,
+    "text": "\"Requirement already satisfied: graphviz<1,>=0.13.2 in /opt/conda/lib/python3.8/site-packages (from sdv==1.3.0) (0.20.1)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: numpy<1.25.0,>=1.20.0 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (1.24.4)\\n\",",
+     "      \"Requirement already satisfied: pandas>=1.1.3 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (1.1.3)\\n\",",
+     "      \"Requirement already satisfied: sdmetrics<0.12,>=0.11.0 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (0.11.0)\\n\",",
+     "      \"Requirement already satisfied: cloudpickle<3.0,>=2.1.0 in /opt/conda/lib/python3.8/site-packages (from sdv==1.3.0) (2.2.1)\\n\",",
+     "      \"Requirement already satisfied: graphviz<1,>=0.13.2 in /opt/conda/lib/python3.8/site-packages (from sdv==1.3.0) (0.20.1)\\n\",",
+     "      \"Requirement already satisfied: copulas<0.10,>=0.9.0 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (0.9.1)\\n\",",
+     "      \"Requirement already satisfied: Faker<15,>=10 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (14.2.1)\\n\",",
+     "      \"Requirement already satisfied: botocore<2,>=1.18 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (1.31.42)\\n\",",
+     "      \"Requirement already satisfied: deepecho<0.5,>=0.4.2 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (0.4.2)\\n\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/DA/SDV_SingleTable.ipynb",
+    "line": 30,
+    "text": "\"Requirement already satisfied: copulas<0.10,>=0.9.0 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (0.9.1)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: pandas>=1.1.3 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (1.1.3)\\n\",",
+     "      \"Requirement already satisfied: sdmetrics<0.12,>=0.11.0 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (0.11.0)\\n\",",
+     "      \"Requirement already satisfied: cloudpickle<3.0,>=2.1.0 in /opt/conda/lib/python3.8/site-packages (from sdv==1.3.0) (2.2.1)\\n\",",
+     "      \"Requirement already satisfied: graphviz<1,>=0.13.2 in /opt/conda/lib/python3.8/site-packages (from sdv==1.3.0) (0.20.1)\\n\",",
+     "      \"Requirement already satisfied: copulas<0.10,>=0.9.0 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (0.9.1)\\n\",",
+     "      \"Requirement already satisfied: Faker<15,>=10 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (14.2.1)\\n\",",
+     "      \"Requirement already satisfied: botocore<2,>=1.18 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (1.31.42)\\n\",",
+     "      \"Requirement already satisfied: deepecho<0.5,>=0.4.2 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (0.4.2)\\n\",",
+     "      \"Requirement already satisfied: jmespath<2.0.0,>=0.7.1 in /home/user/.local/lib/python3.8/site-packages (from boto3<2,>=1.15.0->sdv==1.3.0) (1.0.1)\\n\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/DA/SDV_SingleTable.ipynb",
+    "line": 31,
+    "text": "\"Requirement already satisfied: Faker<15,>=10 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (14.2.1)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: sdmetrics<0.12,>=0.11.0 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (0.11.0)\\n\",",
+     "      \"Requirement already satisfied: cloudpickle<3.0,>=2.1.0 in /opt/conda/lib/python3.8/site-packages (from sdv==1.3.0) (2.2.1)\\n\",",
+     "      \"Requirement already satisfied: graphviz<1,>=0.13.2 in /opt/conda/lib/python3.8/site-packages (from sdv==1.3.0) (0.20.1)\\n\",",
+     "      \"Requirement already satisfied: copulas<0.10,>=0.9.0 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (0.9.1)\\n\",",
+     "      \"Requirement already satisfied: Faker<15,>=10 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (14.2.1)\\n\",",
+     "      \"Requirement already satisfied: botocore<2,>=1.18 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (1.31.42)\\n\",",
+     "      \"Requirement already satisfied: deepecho<0.5,>=0.4.2 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (0.4.2)\\n\",",
+     "      \"Requirement already satisfied: jmespath<2.0.0,>=0.7.1 in /home/user/.local/lib/python3.8/site-packages (from boto3<2,>=1.15.0->sdv==1.3.0) (1.0.1)\\n\",",
+     "      \"Requirement already satisfied: s3transfer<0.7.0,>=0.6.0 in /home/user/.local/lib/python3.8/site-packages (from boto3<2,>=1.15.0->sdv==1.3.0) (0.6.2)\\n\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/DA/SDV_SingleTable.ipynb",
+    "line": 32,
+    "text": "\"Requirement already satisfied: botocore<2,>=1.18 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (1.31.42)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: cloudpickle<3.0,>=2.1.0 in /opt/conda/lib/python3.8/site-packages (from sdv==1.3.0) (2.2.1)\\n\",",
+     "      \"Requirement already satisfied: graphviz<1,>=0.13.2 in /opt/conda/lib/python3.8/site-packages (from sdv==1.3.0) (0.20.1)\\n\",",
+     "      \"Requirement already satisfied: copulas<0.10,>=0.9.0 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (0.9.1)\\n\",",
+     "      \"Requirement already satisfied: Faker<15,>=10 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (14.2.1)\\n\",",
+     "      \"Requirement already satisfied: botocore<2,>=1.18 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (1.31.42)\\n\",",
+     "      \"Requirement already satisfied: deepecho<0.5,>=0.4.2 in /home/user/.local/lib/python3.8/site-packages (from sdv==1.3.0) (0.4.2)\\n\",",
+     "      \"Requirement already satisfied: jmespath<2.0.0,>=0.7.1 in /home/user/.local/lib/python3.8/site-packages (from boto3<2,>=1.15.0->sdv==1.3.0) (1.0.1)\\n\",",
+     "      \"Requirement already satisfied: s3transfer<0.7.0,>=0.6.0 in /home/user/.local/lib/python3.8/site-packages (from boto3<2,>=1.15.0->sdv==1.3.0) (0.6.2)\\n\",",
+     "      \"Requirement already satisfied: urllib3<1.27,>=1.25.4 in /opt/conda/lib/python3.8/site-packages (from botocore<2,>=1.18->sdv==1.3.0) (1.26.7)\\n\","
+    ]
+   }
+  ],
+  "ctgan_mod": [
+   {
+    "file": "Data_Augmentation/DA/SDV_SingleTable.ipynb",
+    "line": 40,
+    "text": "\"Requirement already satisfied: torch>=1.8.0 in /opt/conda/lib/python3.8/site-packages (from ctgan<0.8,>=0.7.4->sdv==1.3.0) (1.11.0)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: urllib3<1.27,>=1.25.4 in /opt/conda/lib/python3.8/site-packages (from botocore<2,>=1.18->sdv==1.3.0) (1.26.7)\\n\",",
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /opt/conda/lib/python3.8/site-packages (from botocore<2,>=1.18->sdv==1.3.0) (2.8.2)\\n\",",
+     "      \"Requirement already satisfied: matplotlib<4,>=3.4.0 in /home/user/.local/lib/python3.8/site-packages (from copulas<0.10,>=0.9.0->sdv==1.3.0) (3.7.2)\\n\",",
+     "      \"Requirement already satisfied: scipy<2,>=1.5.4 in /opt/conda/lib/python3.8/site-packages (from copulas<0.10,>=0.9.0->sdv==1.3.0) (1.10.1)\\n\",",
+     "      \"Requirement already satisfied: torch>=1.8.0 in /opt/conda/lib/python3.8/site-packages (from ctgan<0.8,>=0.7.4->sdv==1.3.0) (1.11.0)\\n\",",
+     "      \"Requirement already satisfied: kiwisolver>=1.0.1 in /opt/conda/lib/python3.8/site-packages (from matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv==1.3.0) (1.4.5)\\n\",",
+     "      \"Requirement already satisfied: importlib-resources>=3.2.0 in /opt/conda/lib/python3.8/site-packages (from matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv==1.3.0) (6.0.1)\\n\",",
+     "      \"Requirement already satisfied: fonttools>=4.22.0 in /home/user/.local/lib/python3.8/site-packages (from matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv==1.3.0) (4.42.1)\\n\",",
+     "      \"Requirement already satisfied: cycler>=0.10 in /opt/conda/lib/python3.8/site-packages (from matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv==1.3.0) (0.11.0)\\n\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/DA/SDV_Sequential.ipynb",
+    "line": 40,
+    "text": "\"Requirement already satisfied: torch>=1.8.0 in /opt/conda/lib/python3.8/site-packages (from ctgan<0.8,>=0.7.4->sdv==1.3.0) (1.11.0)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: urllib3<1.27,>=1.25.4 in /opt/conda/lib/python3.8/site-packages (from botocore<2,>=1.18->sdv==1.3.0) (1.26.7)\\n\",",
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /opt/conda/lib/python3.8/site-packages (from botocore<2,>=1.18->sdv==1.3.0) (2.8.2)\\n\",",
+     "      \"Requirement already satisfied: matplotlib<4,>=3.4.0 in /home/user/.local/lib/python3.8/site-packages (from copulas<0.10,>=0.9.0->sdv==1.3.0) (3.7.2)\\n\",",
+     "      \"Requirement already satisfied: scipy<2,>=1.5.4 in /opt/conda/lib/python3.8/site-packages (from copulas<0.10,>=0.9.0->sdv==1.3.0) (1.10.1)\\n\",",
+     "      \"Requirement already satisfied: torch>=1.8.0 in /opt/conda/lib/python3.8/site-packages (from ctgan<0.8,>=0.7.4->sdv==1.3.0) (1.11.0)\\n\",",
+     "      \"Requirement already satisfied: packaging>=20.0 in /opt/conda/lib/python3.8/site-packages (from matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv==1.3.0) (23.1)\\n\",",
+     "      \"Requirement already satisfied: kiwisolver>=1.0.1 in /opt/conda/lib/python3.8/site-packages (from matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv==1.3.0) (1.4.5)\\n\",",
+     "      \"Requirement already satisfied: cycler>=0.10 in /opt/conda/lib/python3.8/site-packages (from matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv==1.3.0) (0.11.0)\\n\",",
+     "      \"Requirement already satisfied: pillow>=6.2.0 in /opt/conda/lib/python3.8/site-packages (from matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv==1.3.0) (9.0.1)\\n\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/Tests/DataAugmentation_SDV.ipynb",
+    "line": 50,
+    "text": "\"Requirement already satisfied: torch>=1.8.0 in /opt/conda/lib/python3.8/site-packages (from ctgan<0.8,>=0.7.4->sdv==1.3.0) (1.11.0)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /opt/conda/lib/python3.8/site-packages (from botocore<2,>=1.18->sdv==1.3.0) (2.8.2)\\n\",",
+     "      \"Requirement already satisfied: urllib3<1.27,>=1.25.4 in /opt/conda/lib/python3.8/site-packages (from botocore<2,>=1.18->sdv==1.3.0) (1.26.7)\\n\",",
+     "      \"Requirement already satisfied: scipy<2,>=1.5.4 in /opt/conda/lib/python3.8/site-packages (from copulas<0.10,>=0.9.0->sdv==1.3.0) (1.10.1)\\n\",",
+     "      \"Requirement already satisfied: matplotlib<4,>=3.4.0 in /home/user/.local/lib/python3.8/site-packages (from copulas<0.10,>=0.9.0->sdv==1.3.0) (3.7.2)\\n\",",
+     "      \"Requirement already satisfied: torch>=1.8.0 in /opt/conda/lib/python3.8/site-packages (from ctgan<0.8,>=0.7.4->sdv==1.3.0) (1.11.0)\\n\",",
+     "      \"Requirement already satisfied: importlib-resources>=3.2.0 in /opt/conda/lib/python3.8/site-packages (from matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv==1.3.0) (6.0.1)\\n\",",
+     "      \"Requirement already satisfied: fonttools>=4.22.0 in /home/user/.local/lib/python3.8/site-packages (from matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv==1.3.0) (4.42.1)\\n\",",
+     "      \"Requirement already satisfied: contourpy>=1.0.1 in /home/user/.local/lib/python3.8/site-packages (from matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv==1.3.0) (1.1.0)\\n\",",
+     "      \"Requirement already satisfied: pyparsing<3.1,>=2.3.1 in /home/user/.local/lib/python3.8/site-packages (from matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv==1.3.0) (3.0.9)\\n\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/Tests/Test_SDV.ipynb",
+    "line": 33,
+    "text": "\"Requirement already satisfied: torch>=1.8.0 in /opt/conda/lib/python3.8/site-packages (from ctgan<0.8,>=0.7.4->sdv) (1.11.0)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /opt/conda/lib/python3.8/site-packages (from botocore<2,>=1.18->sdv) (2.8.2)\\n\",",
+     "      \"Requirement already satisfied: urllib3<1.27,>=1.25.4 in /opt/conda/lib/python3.8/site-packages (from botocore<2,>=1.18->sdv) (1.26.7)\\n\",",
+     "      \"Requirement already satisfied: matplotlib<4,>=3.4.0 in /home/user/.local/lib/python3.8/site-packages (from copulas<0.10,>=0.9.0->sdv) (3.7.2)\\n\",",
+     "      \"Requirement already satisfied: scipy<2,>=1.5.4 in /opt/conda/lib/python3.8/site-packages (from copulas<0.10,>=0.9.0->sdv) (1.10.1)\\n\",",
+     "      \"Requirement already satisfied: torch>=1.8.0 in /opt/conda/lib/python3.8/site-packages (from ctgan<0.8,>=0.7.4->sdv) (1.11.0)\\n\",",
+     "      \"Requirement already satisfied: packaging>=20.0 in /opt/conda/lib/python3.8/site-packages (from matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv) (23.1)\\n\",",
+     "      \"Requirement already satisfied: pyparsing<3.1,>=2.3.1 in /home/user/.local/lib/python3.8/site-packages (from matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv) (3.0.9)\\n\",",
+     "      \"Requirement already satisfied: pillow>=6.2.0 in /opt/conda/lib/python3.8/site-packages (from matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv) (9.0.1)\\n\",",
+     "      \"Requirement already satisfied: kiwisolver>=1.0.1 in /opt/conda/lib/python3.8/site-packages (from matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv) (1.4.5)\\n\","
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "Data_Augmentation/DA/SDV_SingleTable.ipynb",
+    "line": 95,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"import sdv\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.lite import SingleTablePreset\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.single_table import CopulaGANSynthesizer\"",
+     "   ]",
+     "  },",
+     "  {"
+    ]
+   },
+   {
+    "file": "Data_Augmentation/DA/SDV_Sequential.ipynb",
+    "line": 93,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"import sdv\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.lite import SingleTablePreset\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.single_table import CopulaGANSynthesizer\\n\",",
+     "    \"from sdv.sequential import PARSynthesizer\"",
+     "   ]",
+     "  },"
+    ]
+   },
+   {
+    "file": "Data_Augmentation/References/Data augmentation - SDV.ipynb",
+    "line": 43,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"import sdv\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.lite import SingleTablePreset\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.single_table import CopulaGANSynthesizer\"",
+     "   ]",
+     "  },",
+     "  {"
+    ]
+   },
+   {
+    "file": "Data_Augmentation/Tests/DataAugmentation_SDV.ipynb",
+    "line": 87,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"import sdv\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.lite import SingleTablePreset\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.single_table import CopulaGANSynthesizer\"",
+     "   ]",
+     "  },",
+     "  {"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "Data_Augmentation/DA/SDV_SingleTable.ipynb",
+    "line": 93,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import sdv\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.lite import SingleTablePreset\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.single_table import CopulaGANSynthesizer\"",
+     "   ]"
+    ]
+   },
+   {
+    "file": "Data_Augmentation/DA/SDV_SingleTable.ipynb",
+    "line": 819,
+    "text": "\"# A: GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "   \"execution_count\": 12,",
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"# A: GaussianCopulaSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"# Step 1.A: Create the synthesizer\\n\",",
+     "    \"synthesizer_Gaussian = GaussianCopulaSynthesizer(metadata)\"",
+     "   ]"
+    ]
+   },
+   {
+    "file": "Data_Augmentation/DA/SDV_SingleTable.ipynb",
+    "line": 822,
+    "text": "\"synthesizer_Gaussian = GaussianCopulaSynthesizer(metadata)\"",
+    "context": [
+     "   \"source\": [",
+     "    \"# A: GaussianCopulaSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"# Step 1.A: Create the synthesizer\\n\",",
+     "    \"synthesizer_Gaussian = GaussianCopulaSynthesizer(metadata)\"",
+     "   ]",
+     "  },",
+     "  {",
+     "   \"cell_type\": \"code\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/DA/SDV_SingleTable.ipynb",
+    "line": 894,
+    "text": "\"synthesizer_Gaussian.save(filepath='../Models/my_GaussianCopulaSynthesizer.pkl')\"",
+    "context": [
+     "   ],",
+     "   \"source\": [",
+     "    \"# Step 2.A: Train the synthesizer\\n\",",
+     "    \"synthesizer_Gaussian.fit(real_data)\\n\",",
+     "    \"synthesizer_Gaussian.save(filepath='../Models/my_GaussianCopulaSynthesizer.pkl')\"",
+     "   ]",
+     "  },",
+     "  {",
+     "   \"cell_type\": \"code\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/DA/SDV_SingleTable.ipynb",
+    "line": 1684,
+    "text": "\"#GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "     ]",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"#GaussianCopulaSynthesizer\\n\",",
+     "    \"# Step 1: Create the synthesizer\\n\",",
+     "    \"synthesizer_Gaussian_flight1 = GaussianCopulaSynthesizer(metadata_flight1)\\n\",",
+     "    \"\\n\",",
+     "    \"# Step 2: Train the synthesizer\\n\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/DA/SDV_SingleTable.ipynb",
+    "line": 1686,
+    "text": "\"synthesizer_Gaussian_flight1 = GaussianCopulaSynthesizer(metadata_flight1)\\n\",",
+    "context": [
+     "   ],",
+     "   \"source\": [",
+     "    \"#GaussianCopulaSynthesizer\\n\",",
+     "    \"# Step 1: Create the synthesizer\\n\",",
+     "    \"synthesizer_Gaussian_flight1 = GaussianCopulaSynthesizer(metadata_flight1)\\n\",",
+     "    \"\\n\",",
+     "    \"# Step 2: Train the synthesizer\\n\",",
+     "    \"synthesizer_Gaussian_flight1.fit(real_data_flight1)\\n\",",
+     "    \"synthesizer_Gaussian_flight1.save(filepath='../Models/my_GaussianCopulaSynthesizer_flight1.pkl')\\n\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/DA/SDV_SingleTable.ipynb",
+    "line": 1690,
+    "text": "\"synthesizer_Gaussian_flight1.save(filepath='../Models/my_GaussianCopulaSynthesizer_flight1.pkl')\\n\",",
+    "context": [
+     "    \"synthesizer_Gaussian_flight1 = GaussianCopulaSynthesizer(metadata_flight1)\\n\",",
+     "    \"\\n\",",
+     "    \"# Step 2: Train the synthesizer\\n\",",
+     "    \"synthesizer_Gaussian_flight1.fit(real_data_flight1)\\n\",",
+     "    \"synthesizer_Gaussian_flight1.save(filepath='../Models/my_GaussianCopulaSynthesizer_flight1.pkl')\\n\",",
+     "    \"\\n\",",
+     "    \"# Step 3: Generate synthetic data - Gaussian\\n\",",
+     "    \"synthetic_data_Gaussian_flight1 = synthesizer_Gaussian_flight1.sample(num_rows=815)\\n\",",
+     "    \"print(len(synthetic_data_Gaussian_flight1))\""
+    ]
+   },
+   {
+    "file": "Data_Augmentation/DA/SDV_SingleTable.ipynb",
+    "line": 2408,
+    "text": "\"#GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "     ]",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"#GaussianCopulaSynthesizer\\n\",",
+     "    \"# Step 1: Create the synthesizer\\n\",",
+     "    \"synthesizer_Gaussian_flight1_shorted = GaussianCopulaSynthesizer(metadata_flight1_shorted)\\n\",",
+     "    \"\\n\",",
+     "    \"# Step 2: Train the synthesizer\\n\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/DA/SDV_SingleTable.ipynb",
+    "line": 2410,
+    "text": "\"synthesizer_Gaussian_flight1_shorted = GaussianCopulaSynthesizer(metadata_flight1_shorted)\\n\",",
+    "context": [
+     "   ],",
+     "   \"source\": [",
+     "    \"#GaussianCopulaSynthesizer\\n\",",
+     "    \"# Step 1: Create the synthesizer\\n\",",
+     "    \"synthesizer_Gaussian_flight1_shorted = GaussianCopulaSynthesizer(metadata_flight1_shorted)\\n\",",
+     "    \"\\n\",",
+     "    \"# Step 2: Train the synthesizer\\n\",",
+     "    \"synthesizer_Gaussian_flight1_shorted.fit(real_data_flight1_shorted)\\n\",",
+     "    \"synthesizer_Gaussian_flight1_shorted.save(filepath='../Models/my_GaussianCopulaSynthesizer_flight1_shorted.pkl')\\n\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/DA/SDV_SingleTable.ipynb",
+    "line": 2414,
+    "text": "\"synthesizer_Gaussian_flight1_shorted.save(filepath='../Models/my_GaussianCopulaSynthesizer_flight1_shorted.pkl')\\n\",",
+    "context": [
+     "    \"synthesizer_Gaussian_flight1_shorted = GaussianCopulaSynthesizer(metadata_flight1_shorted)\\n\",",
+     "    \"\\n\",",
+     "    \"# Step 2: Train the synthesizer\\n\",",
+     "    \"synthesizer_Gaussian_flight1_shorted.fit(real_data_flight1_shorted)\\n\",",
+     "    \"synthesizer_Gaussian_flight1_shorted.save(filepath='../Models/my_GaussianCopulaSynthesizer_flight1_shorted.pkl')\\n\",",
+     "    \"\\n\",",
+     "    \"# Step 3: Generate synthetic data - Gaussian\\n\",",
+     "    \"synthetic_data_Gaussian_flight1_shorted = synthesizer_Gaussian_flight1_shorted.sample(num_rows=2*len(real_data_flight1_shorted))\\n\",",
+     "    \"print(len(synthetic_data_Gaussian_flight1_shorted))\""
+    ]
+   },
+   {
+    "file": "Data_Augmentation/DA/SDV_Sequential.ipynb",
+    "line": 91,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import sdv\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.lite import SingleTablePreset\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.single_table import CopulaGANSynthesizer\\n\",",
+     "    \"from sdv.sequential import PARSynthesizer\""
+    ]
+   },
+   {
+    "file": "Data_Augmentation/DA/SDV_Sequential.ipynb",
+    "line": 824,
+    "text": "\"# A: GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "   \"execution_count\": 12,",
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"# A: GaussianCopulaSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"# Step 1.A: Create the synthesizer\\n\",",
+     "    \"synthesizer_PAR = PARSynthesizer(metadata, verbose=True, cuda=True)\"",
+     "   ]"
+    ]
+   }
+  ],
+  "sm": [
+   {
+    "file": "Data_Augmentation/DA/SDV_SingleTable.ipynb",
+    "line": 56,
+    "text": "\"Requirement already satisfied: plotly<6,>=5.10.0 in /opt/conda/lib/python3.8/site-packages (from sdmetrics<0.12,>=0.11.0->sdv==1.3.0) (5.16.1)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: scikit-learn<2,>=0.24 in /opt/conda/lib/python3.8/site-packages (from rdt<2,>=1.6.1->sdv==1.3.0) (0.24.2)\\n\",",
+     "      \"Requirement already satisfied: psutil<6,>=5.7 in /opt/conda/lib/python3.8/site-packages (from rdt<2,>=1.6.1->sdv==1.3.0) (5.8.0)\\n\",",
+     "      \"Requirement already satisfied: joblib>=0.11 in /opt/conda/lib/python3.8/site-packages (from scikit-learn<2,>=0.24->rdt<2,>=1.6.1->sdv==1.3.0) (1.3.2)\\n\",",
+     "      \"Requirement already satisfied: threadpoolctl>=2.0.0 in /opt/conda/lib/python3.8/site-packages (from scikit-learn<2,>=0.24->rdt<2,>=1.6.1->sdv==1.3.0) (3.2.0)\\n\",",
+     "      \"Requirement already satisfied: plotly<6,>=5.10.0 in /opt/conda/lib/python3.8/site-packages (from sdmetrics<0.12,>=0.11.0->sdv==1.3.0) (5.16.1)\\n\",",
+     "      \"Requirement already satisfied: tenacity>=6.2.0 in /opt/conda/lib/python3.8/site-packages (from plotly<6,>=5.10.0->sdmetrics<0.12,>=0.11.0->sdv==1.3.0) (8.2.3)\\n\",",
+     "      \"Requirement already satisfied: typing_extensions in /opt/conda/lib/python3.8/site-packages (from torch>=1.8.0->ctgan<0.8,>=0.7.4->sdv==1.3.0) (4.5.0)\\n\"",
+     "     ]",
+     "    }"
+    ]
+   },
+   {
+    "file": "Data_Augmentation/DA/SDV_Sequential.ipynb",
+    "line": 56,
+    "text": "\"Requirement already satisfied: plotly<6,>=5.10.0 in /opt/conda/lib/python3.8/site-packages (from sdmetrics<0.12,>=0.11.0->sdv==1.3.0) (5.16.1)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: psutil<6,>=5.7 in /opt/conda/lib/python3.8/site-packages (from rdt<2,>=1.6.1->sdv==1.3.0) (5.8.0)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn<2,>=0.24 in /opt/conda/lib/python3.8/site-packages (from rdt<2,>=1.6.1->sdv==1.3.0) (0.24.2)\\n\",",
+     "      \"Requirement already satisfied: threadpoolctl>=2.0.0 in /opt/conda/lib/python3.8/site-packages (from scikit-learn<2,>=0.24->rdt<2,>=1.6.1->sdv==1.3.0) (3.2.0)\\n\",",
+     "      \"Requirement already satisfied: joblib>=0.11 in /opt/conda/lib/python3.8/site-packages (from scikit-learn<2,>=0.24->rdt<2,>=1.6.1->sdv==1.3.0) (1.3.2)\\n\",",
+     "      \"Requirement already satisfied: plotly<6,>=5.10.0 in /opt/conda/lib/python3.8/site-packages (from sdmetrics<0.12,>=0.11.0->sdv==1.3.0) (5.16.1)\\n\",",
+     "      \"Requirement already satisfied: tenacity>=6.2.0 in /opt/conda/lib/python3.8/site-packages (from plotly<6,>=5.10.0->sdmetrics<0.12,>=0.11.0->sdv==1.3.0) (8.2.3)\\n\",",
+     "      \"Requirement already satisfied: typing_extensions in /opt/conda/lib/python3.8/site-packages (from torch>=1.8.0->ctgan<0.8,>=0.7.4->sdv==1.3.0) (4.5.0)\\n\"",
+     "     ]",
+     "    }"
+    ]
+   },
+   {
+    "file": "Data_Augmentation/Tests/DataAugmentation_SDV.ipynb",
+    "line": 66,
+    "text": "\"Requirement already satisfied: plotly<6,>=5.10.0 in /opt/conda/lib/python3.8/site-packages (from sdmetrics<0.12,>=0.11.0->sdv==1.3.0) (5.16.1)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: scikit-learn<2,>=0.24 in /opt/conda/lib/python3.8/site-packages (from rdt<2,>=1.6.1->sdv==1.3.0) (0.24.2)\\n\",",
+     "      \"Requirement already satisfied: psutil<6,>=5.7 in /opt/conda/lib/python3.8/site-packages (from rdt<2,>=1.6.1->sdv==1.3.0) (5.8.0)\\n\",",
+     "      \"Requirement already satisfied: threadpoolctl>=2.0.0 in /opt/conda/lib/python3.8/site-packages (from scikit-learn<2,>=0.24->rdt<2,>=1.6.1->sdv==1.3.0) (3.2.0)\\n\",",
+     "      \"Requirement already satisfied: joblib>=0.11 in /opt/conda/lib/python3.8/site-packages (from scikit-learn<2,>=0.24->rdt<2,>=1.6.1->sdv==1.3.0) (1.3.2)\\n\",",
+     "      \"Requirement already satisfied: plotly<6,>=5.10.0 in /opt/conda/lib/python3.8/site-packages (from sdmetrics<0.12,>=0.11.0->sdv==1.3.0) (5.16.1)\\n\",",
+     "      \"Requirement already satisfied: tenacity>=6.2.0 in /opt/conda/lib/python3.8/site-packages (from plotly<6,>=5.10.0->sdmetrics<0.12,>=0.11.0->sdv==1.3.0) (8.2.3)\\n\",",
+     "      \"Requirement already satisfied: typing_extensions in /opt/conda/lib/python3.8/site-packages (from torch>=1.8.0->ctgan<0.8,>=0.7.4->sdv==1.3.0) (4.5.0)\\n\"",
+     "     ]",
+     "    }"
+    ]
+   },
+   {
+    "file": "Data_Augmentation/Tests/DataAugmentation_SDV.ipynb",
+    "line": 4533,
+    "text": "\"from sdmetrics.reports.single_table import DiagnosticReport\\n\",",
+    "context": [
+     "   \"execution_count\": 73,",
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"from sdmetrics.reports.single_table import DiagnosticReport\\n\",",
+     "    \"\\n\",",
+     "    \"report = DiagnosticReport()\"",
+     "   ]",
+     "  },"
+    ]
+   },
+   {
+    "file": "Data_Augmentation/Tests/Test_SDV.ipynb",
+    "line": 50,
+    "text": "\"Requirement already satisfied: plotly<6,>=5.10.0 in /opt/conda/lib/python3.8/site-packages (from sdmetrics<0.12,>=0.11.0->sdv) (5.16.1)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: scikit-learn<2,>=0.24 in /opt/conda/lib/python3.8/site-packages (from rdt<2,>=1.7.0->sdv) (0.24.2)\\n\",",
+     "      \"Requirement already satisfied: psutil<6,>=5.7 in /opt/conda/lib/python3.8/site-packages (from rdt<2,>=1.7.0->sdv) (5.8.0)\\n\",",
+     "      \"Requirement already satisfied: threadpoolctl>=2.0.0 in /opt/conda/lib/python3.8/site-packages (from scikit-learn<2,>=0.24->rdt<2,>=1.7.0->sdv) (3.2.0)\\n\",",
+     "      \"Requirement already satisfied: joblib>=0.11 in /opt/conda/lib/python3.8/site-packages (from scikit-learn<2,>=0.24->rdt<2,>=1.7.0->sdv) (1.3.2)\\n\",",
+     "      \"Requirement already satisfied: plotly<6,>=5.10.0 in /opt/conda/lib/python3.8/site-packages (from sdmetrics<0.12,>=0.11.0->sdv) (5.16.1)\\n\",",
+     "      \"Requirement already satisfied: tenacity>=6.2.0 in /opt/conda/lib/python3.8/site-packages (from plotly<6,>=5.10.0->sdmetrics<0.12,>=0.11.0->sdv) (8.2.3)\\n\",",
+     "      \"Requirement already satisfied: typing_extensions in /opt/conda/lib/python3.8/site-packages (from torch>=1.8.0->ctgan<0.8,>=0.7.4->sdv) (4.5.0)\\n\"",
+     "     ]",
+     "    }"
+    ]
+   }
+  ],
+  "rdt": [
+   {
+    "file": "Data_Augmentation/DA/SDV_SingleTable.ipynb",
+    "line": 52,
+    "text": "\"Requirement already satisfied: scikit-learn<2,>=0.24 in /opt/conda/lib/python3.8/site-packages (from rdt<2,>=1.6.1->sdv==1.3.0) (0.24.2)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: pyparsing<3.1,>=2.3.1 in /home/user/.local/lib/python3.8/site-packages (from matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv==1.3.0) (3.0.9)\\n\",",
+     "      \"Requirement already satisfied: zipp>=3.1.0 in /opt/conda/lib/python3.8/site-packages (from importlib-resources>=3.2.0->matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv==1.3.0) (3.16.2)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2017.2 in /opt/conda/lib/python3.8/site-packages (from pandas>=1.1.3->sdv==1.3.0) (2021.3)\\n\",",
+     "      \"Requirement already satisfied: six>=1.5 in /opt/conda/lib/python3.8/site-packages (from python-dateutil<3.0.0,>=2.1->botocore<2,>=1.18->sdv==1.3.0) (1.16.0)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn<2,>=0.24 in /opt/conda/lib/python3.8/site-packages (from rdt<2,>=1.6.1->sdv==1.3.0) (0.24.2)\\n\",",
+     "      \"Requirement already satisfied: psutil<6,>=5.7 in /opt/conda/lib/python3.8/site-packages (from rdt<2,>=1.6.1->sdv==1.3.0) (5.8.0)\\n\",",
+     "      \"Requirement already satisfied: joblib>=0.11 in /opt/conda/lib/python3.8/site-packages (from scikit-learn<2,>=0.24->rdt<2,>=1.6.1->sdv==1.3.0) (1.3.2)\\n\",",
+     "      \"Requirement already satisfied: threadpoolctl>=2.0.0 in /opt/conda/lib/python3.8/site-packages (from scikit-learn<2,>=0.24->rdt<2,>=1.6.1->sdv==1.3.0) (3.2.0)\\n\",",
+     "      \"Requirement already satisfied: plotly<6,>=5.10.0 in /opt/conda/lib/python3.8/site-packages (from sdmetrics<0.12,>=0.11.0->sdv==1.3.0) (5.16.1)\\n\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/DA/SDV_SingleTable.ipynb",
+    "line": 53,
+    "text": "\"Requirement already satisfied: psutil<6,>=5.7 in /opt/conda/lib/python3.8/site-packages (from rdt<2,>=1.6.1->sdv==1.3.0) (5.8.0)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: zipp>=3.1.0 in /opt/conda/lib/python3.8/site-packages (from importlib-resources>=3.2.0->matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv==1.3.0) (3.16.2)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2017.2 in /opt/conda/lib/python3.8/site-packages (from pandas>=1.1.3->sdv==1.3.0) (2021.3)\\n\",",
+     "      \"Requirement already satisfied: six>=1.5 in /opt/conda/lib/python3.8/site-packages (from python-dateutil<3.0.0,>=2.1->botocore<2,>=1.18->sdv==1.3.0) (1.16.0)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn<2,>=0.24 in /opt/conda/lib/python3.8/site-packages (from rdt<2,>=1.6.1->sdv==1.3.0) (0.24.2)\\n\",",
+     "      \"Requirement already satisfied: psutil<6,>=5.7 in /opt/conda/lib/python3.8/site-packages (from rdt<2,>=1.6.1->sdv==1.3.0) (5.8.0)\\n\",",
+     "      \"Requirement already satisfied: joblib>=0.11 in /opt/conda/lib/python3.8/site-packages (from scikit-learn<2,>=0.24->rdt<2,>=1.6.1->sdv==1.3.0) (1.3.2)\\n\",",
+     "      \"Requirement already satisfied: threadpoolctl>=2.0.0 in /opt/conda/lib/python3.8/site-packages (from scikit-learn<2,>=0.24->rdt<2,>=1.6.1->sdv==1.3.0) (3.2.0)\\n\",",
+     "      \"Requirement already satisfied: plotly<6,>=5.10.0 in /opt/conda/lib/python3.8/site-packages (from sdmetrics<0.12,>=0.11.0->sdv==1.3.0) (5.16.1)\\n\",",
+     "      \"Requirement already satisfied: tenacity>=6.2.0 in /opt/conda/lib/python3.8/site-packages (from plotly<6,>=5.10.0->sdmetrics<0.12,>=0.11.0->sdv==1.3.0) (8.2.3)\\n\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/DA/SDV_Sequential.ipynb",
+    "line": 52,
+    "text": "\"Requirement already satisfied: psutil<6,>=5.7 in /opt/conda/lib/python3.8/site-packages (from rdt<2,>=1.6.1->sdv==1.3.0) (5.8.0)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: pyparsing<3.1,>=2.3.1 in /home/user/.local/lib/python3.8/site-packages (from matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv==1.3.0) (3.0.9)\\n\",",
+     "      \"Requirement already satisfied: zipp>=3.1.0 in /opt/conda/lib/python3.8/site-packages (from importlib-resources>=3.2.0->matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv==1.3.0) (3.16.2)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2017.2 in /opt/conda/lib/python3.8/site-packages (from pandas>=1.1.3->sdv==1.3.0) (2021.3)\\n\",",
+     "      \"Requirement already satisfied: six>=1.5 in /opt/conda/lib/python3.8/site-packages (from python-dateutil<3.0.0,>=2.1->botocore<2,>=1.18->sdv==1.3.0) (1.16.0)\\n\",",
+     "      \"Requirement already satisfied: psutil<6,>=5.7 in /opt/conda/lib/python3.8/site-packages (from rdt<2,>=1.6.1->sdv==1.3.0) (5.8.0)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn<2,>=0.24 in /opt/conda/lib/python3.8/site-packages (from rdt<2,>=1.6.1->sdv==1.3.0) (0.24.2)\\n\",",
+     "      \"Requirement already satisfied: threadpoolctl>=2.0.0 in /opt/conda/lib/python3.8/site-packages (from scikit-learn<2,>=0.24->rdt<2,>=1.6.1->sdv==1.3.0) (3.2.0)\\n\",",
+     "      \"Requirement already satisfied: joblib>=0.11 in /opt/conda/lib/python3.8/site-packages (from scikit-learn<2,>=0.24->rdt<2,>=1.6.1->sdv==1.3.0) (1.3.2)\\n\",",
+     "      \"Requirement already satisfied: plotly<6,>=5.10.0 in /opt/conda/lib/python3.8/site-packages (from sdmetrics<0.12,>=0.11.0->sdv==1.3.0) (5.16.1)\\n\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/DA/SDV_Sequential.ipynb",
+    "line": 53,
+    "text": "\"Requirement already satisfied: scikit-learn<2,>=0.24 in /opt/conda/lib/python3.8/site-packages (from rdt<2,>=1.6.1->sdv==1.3.0) (0.24.2)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: zipp>=3.1.0 in /opt/conda/lib/python3.8/site-packages (from importlib-resources>=3.2.0->matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv==1.3.0) (3.16.2)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2017.2 in /opt/conda/lib/python3.8/site-packages (from pandas>=1.1.3->sdv==1.3.0) (2021.3)\\n\",",
+     "      \"Requirement already satisfied: six>=1.5 in /opt/conda/lib/python3.8/site-packages (from python-dateutil<3.0.0,>=2.1->botocore<2,>=1.18->sdv==1.3.0) (1.16.0)\\n\",",
+     "      \"Requirement already satisfied: psutil<6,>=5.7 in /opt/conda/lib/python3.8/site-packages (from rdt<2,>=1.6.1->sdv==1.3.0) (5.8.0)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn<2,>=0.24 in /opt/conda/lib/python3.8/site-packages (from rdt<2,>=1.6.1->sdv==1.3.0) (0.24.2)\\n\",",
+     "      \"Requirement already satisfied: threadpoolctl>=2.0.0 in /opt/conda/lib/python3.8/site-packages (from scikit-learn<2,>=0.24->rdt<2,>=1.6.1->sdv==1.3.0) (3.2.0)\\n\",",
+     "      \"Requirement already satisfied: joblib>=0.11 in /opt/conda/lib/python3.8/site-packages (from scikit-learn<2,>=0.24->rdt<2,>=1.6.1->sdv==1.3.0) (1.3.2)\\n\",",
+     "      \"Requirement already satisfied: plotly<6,>=5.10.0 in /opt/conda/lib/python3.8/site-packages (from sdmetrics<0.12,>=0.11.0->sdv==1.3.0) (5.16.1)\\n\",",
+     "      \"Requirement already satisfied: tenacity>=6.2.0 in /opt/conda/lib/python3.8/site-packages (from plotly<6,>=5.10.0->sdmetrics<0.12,>=0.11.0->sdv==1.3.0) (8.2.3)\\n\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/Tests/DataAugmentation_SDV.ipynb",
+    "line": 62,
+    "text": "\"Requirement already satisfied: scikit-learn<2,>=0.24 in /opt/conda/lib/python3.8/site-packages (from rdt<2,>=1.6.1->sdv==1.3.0) (0.24.2)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: packaging>=20.0 in /opt/conda/lib/python3.8/site-packages (from matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv==1.3.0) (23.1)\\n\",",
+     "      \"Requirement already satisfied: zipp>=3.1.0 in /opt/conda/lib/python3.8/site-packages (from importlib-resources>=3.2.0->matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv==1.3.0) (3.16.2)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2017.2 in /opt/conda/lib/python3.8/site-packages (from pandas>=1.1.3->sdv==1.3.0) (2021.3)\\n\",",
+     "      \"Requirement already satisfied: six>=1.5 in /opt/conda/lib/python3.8/site-packages (from python-dateutil<3.0.0,>=2.1->botocore<2,>=1.18->sdv==1.3.0) (1.16.0)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn<2,>=0.24 in /opt/conda/lib/python3.8/site-packages (from rdt<2,>=1.6.1->sdv==1.3.0) (0.24.2)\\n\",",
+     "      \"Requirement already satisfied: psutil<6,>=5.7 in /opt/conda/lib/python3.8/site-packages (from rdt<2,>=1.6.1->sdv==1.3.0) (5.8.0)\\n\",",
+     "      \"Requirement already satisfied: threadpoolctl>=2.0.0 in /opt/conda/lib/python3.8/site-packages (from scikit-learn<2,>=0.24->rdt<2,>=1.6.1->sdv==1.3.0) (3.2.0)\\n\",",
+     "      \"Requirement already satisfied: joblib>=0.11 in /opt/conda/lib/python3.8/site-packages (from scikit-learn<2,>=0.24->rdt<2,>=1.6.1->sdv==1.3.0) (1.3.2)\\n\",",
+     "      \"Requirement already satisfied: plotly<6,>=5.10.0 in /opt/conda/lib/python3.8/site-packages (from sdmetrics<0.12,>=0.11.0->sdv==1.3.0) (5.16.1)\\n\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/Tests/DataAugmentation_SDV.ipynb",
+    "line": 63,
+    "text": "\"Requirement already satisfied: psutil<6,>=5.7 in /opt/conda/lib/python3.8/site-packages (from rdt<2,>=1.6.1->sdv==1.3.0) (5.8.0)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: zipp>=3.1.0 in /opt/conda/lib/python3.8/site-packages (from importlib-resources>=3.2.0->matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv==1.3.0) (3.16.2)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2017.2 in /opt/conda/lib/python3.8/site-packages (from pandas>=1.1.3->sdv==1.3.0) (2021.3)\\n\",",
+     "      \"Requirement already satisfied: six>=1.5 in /opt/conda/lib/python3.8/site-packages (from python-dateutil<3.0.0,>=2.1->botocore<2,>=1.18->sdv==1.3.0) (1.16.0)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn<2,>=0.24 in /opt/conda/lib/python3.8/site-packages (from rdt<2,>=1.6.1->sdv==1.3.0) (0.24.2)\\n\",",
+     "      \"Requirement already satisfied: psutil<6,>=5.7 in /opt/conda/lib/python3.8/site-packages (from rdt<2,>=1.6.1->sdv==1.3.0) (5.8.0)\\n\",",
+     "      \"Requirement already satisfied: threadpoolctl>=2.0.0 in /opt/conda/lib/python3.8/site-packages (from scikit-learn<2,>=0.24->rdt<2,>=1.6.1->sdv==1.3.0) (3.2.0)\\n\",",
+     "      \"Requirement already satisfied: joblib>=0.11 in /opt/conda/lib/python3.8/site-packages (from scikit-learn<2,>=0.24->rdt<2,>=1.6.1->sdv==1.3.0) (1.3.2)\\n\",",
+     "      \"Requirement already satisfied: plotly<6,>=5.10.0 in /opt/conda/lib/python3.8/site-packages (from sdmetrics<0.12,>=0.11.0->sdv==1.3.0) (5.16.1)\\n\",",
+     "      \"Requirement already satisfied: tenacity>=6.2.0 in /opt/conda/lib/python3.8/site-packages (from plotly<6,>=5.10.0->sdmetrics<0.12,>=0.11.0->sdv==1.3.0) (8.2.3)\\n\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/Tests/Test_SDV.ipynb",
+    "line": 46,
+    "text": "\"Requirement already satisfied: scikit-learn<2,>=0.24 in /opt/conda/lib/python3.8/site-packages (from rdt<2,>=1.7.0->sdv) (0.24.2)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: zipp>=3.1.0 in /opt/conda/lib/python3.8/site-packages (from importlib-resources>=3.2.0->matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv) (3.16.2)\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.1 in /home/user/.local/lib/python3.8/site-packages (from pandas>=1.1.3->sdv) (2023.3)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /opt/conda/lib/python3.8/site-packages (from pandas>=1.1.3->sdv) (2021.3)\\n\",",
+     "      \"Requirement already satisfied: six>=1.5 in /opt/conda/lib/python3.8/site-packages (from python-dateutil<3.0.0,>=2.1->botocore<2,>=1.18->sdv) (1.16.0)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn<2,>=0.24 in /opt/conda/lib/python3.8/site-packages (from rdt<2,>=1.7.0->sdv) (0.24.2)\\n\",",
+     "      \"Requirement already satisfied: psutil<6,>=5.7 in /opt/conda/lib/python3.8/site-packages (from rdt<2,>=1.7.0->sdv) (5.8.0)\\n\",",
+     "      \"Requirement already satisfied: threadpoolctl>=2.0.0 in /opt/conda/lib/python3.8/site-packages (from scikit-learn<2,>=0.24->rdt<2,>=1.7.0->sdv) (3.2.0)\\n\",",
+     "      \"Requirement already satisfied: joblib>=0.11 in /opt/conda/lib/python3.8/site-packages (from scikit-learn<2,>=0.24->rdt<2,>=1.7.0->sdv) (1.3.2)\\n\",",
+     "      \"Requirement already satisfied: plotly<6,>=5.10.0 in /opt/conda/lib/python3.8/site-packages (from sdmetrics<0.12,>=0.11.0->sdv) (5.16.1)\\n\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/Tests/Test_SDV.ipynb",
+    "line": 47,
+    "text": "\"Requirement already satisfied: psutil<6,>=5.7 in /opt/conda/lib/python3.8/site-packages (from rdt<2,>=1.7.0->sdv) (5.8.0)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: tzdata>=2022.1 in /home/user/.local/lib/python3.8/site-packages (from pandas>=1.1.3->sdv) (2023.3)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /opt/conda/lib/python3.8/site-packages (from pandas>=1.1.3->sdv) (2021.3)\\n\",",
+     "      \"Requirement already satisfied: six>=1.5 in /opt/conda/lib/python3.8/site-packages (from python-dateutil<3.0.0,>=2.1->botocore<2,>=1.18->sdv) (1.16.0)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn<2,>=0.24 in /opt/conda/lib/python3.8/site-packages (from rdt<2,>=1.7.0->sdv) (0.24.2)\\n\",",
+     "      \"Requirement already satisfied: psutil<6,>=5.7 in /opt/conda/lib/python3.8/site-packages (from rdt<2,>=1.7.0->sdv) (5.8.0)\\n\",",
+     "      \"Requirement already satisfied: threadpoolctl>=2.0.0 in /opt/conda/lib/python3.8/site-packages (from scikit-learn<2,>=0.24->rdt<2,>=1.7.0->sdv) (3.2.0)\\n\",",
+     "      \"Requirement already satisfied: joblib>=0.11 in /opt/conda/lib/python3.8/site-packages (from scikit-learn<2,>=0.24->rdt<2,>=1.7.0->sdv) (1.3.2)\\n\",",
+     "      \"Requirement already satisfied: plotly<6,>=5.10.0 in /opt/conda/lib/python3.8/site-packages (from sdmetrics<0.12,>=0.11.0->sdv) (5.16.1)\\n\",",
+     "      \"Requirement already satisfied: tenacity>=6.2.0 in /opt/conda/lib/python3.8/site-packages (from plotly<6,>=5.10.0->sdmetrics<0.12,>=0.11.0->sdv) (8.2.3)\\n\","
+    ]
+   }
+  ],
+  "copulas": [
+   {
+    "file": "Data_Augmentation/DA/SDV_SingleTable.ipynb",
+    "line": 38,
+    "text": "\"Requirement already satisfied: matplotlib<4,>=3.4.0 in /home/user/.local/lib/python3.8/site-packages (from copulas<0.10,>=0.9.0->sdv==1.3.0) (3.7.2)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: jmespath<2.0.0,>=0.7.1 in /home/user/.local/lib/python3.8/site-packages (from boto3<2,>=1.15.0->sdv==1.3.0) (1.0.1)\\n\",",
+     "      \"Requirement already satisfied: s3transfer<0.7.0,>=0.6.0 in /home/user/.local/lib/python3.8/site-packages (from boto3<2,>=1.15.0->sdv==1.3.0) (0.6.2)\\n\",",
+     "      \"Requirement already satisfied: urllib3<1.27,>=1.25.4 in /opt/conda/lib/python3.8/site-packages (from botocore<2,>=1.18->sdv==1.3.0) (1.26.7)\\n\",",
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /opt/conda/lib/python3.8/site-packages (from botocore<2,>=1.18->sdv==1.3.0) (2.8.2)\\n\",",
+     "      \"Requirement already satisfied: matplotlib<4,>=3.4.0 in /home/user/.local/lib/python3.8/site-packages (from copulas<0.10,>=0.9.0->sdv==1.3.0) (3.7.2)\\n\",",
+     "      \"Requirement already satisfied: scipy<2,>=1.5.4 in /opt/conda/lib/python3.8/site-packages (from copulas<0.10,>=0.9.0->sdv==1.3.0) (1.10.1)\\n\",",
+     "      \"Requirement already satisfied: torch>=1.8.0 in /opt/conda/lib/python3.8/site-packages (from ctgan<0.8,>=0.7.4->sdv==1.3.0) (1.11.0)\\n\",",
+     "      \"Requirement already satisfied: kiwisolver>=1.0.1 in /opt/conda/lib/python3.8/site-packages (from matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv==1.3.0) (1.4.5)\\n\",",
+     "      \"Requirement already satisfied: importlib-resources>=3.2.0 in /opt/conda/lib/python3.8/site-packages (from matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv==1.3.0) (6.0.1)\\n\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/DA/SDV_SingleTable.ipynb",
+    "line": 39,
+    "text": "\"Requirement already satisfied: scipy<2,>=1.5.4 in /opt/conda/lib/python3.8/site-packages (from copulas<0.10,>=0.9.0->sdv==1.3.0) (1.10.1)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: s3transfer<0.7.0,>=0.6.0 in /home/user/.local/lib/python3.8/site-packages (from boto3<2,>=1.15.0->sdv==1.3.0) (0.6.2)\\n\",",
+     "      \"Requirement already satisfied: urllib3<1.27,>=1.25.4 in /opt/conda/lib/python3.8/site-packages (from botocore<2,>=1.18->sdv==1.3.0) (1.26.7)\\n\",",
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /opt/conda/lib/python3.8/site-packages (from botocore<2,>=1.18->sdv==1.3.0) (2.8.2)\\n\",",
+     "      \"Requirement already satisfied: matplotlib<4,>=3.4.0 in /home/user/.local/lib/python3.8/site-packages (from copulas<0.10,>=0.9.0->sdv==1.3.0) (3.7.2)\\n\",",
+     "      \"Requirement already satisfied: scipy<2,>=1.5.4 in /opt/conda/lib/python3.8/site-packages (from copulas<0.10,>=0.9.0->sdv==1.3.0) (1.10.1)\\n\",",
+     "      \"Requirement already satisfied: torch>=1.8.0 in /opt/conda/lib/python3.8/site-packages (from ctgan<0.8,>=0.7.4->sdv==1.3.0) (1.11.0)\\n\",",
+     "      \"Requirement already satisfied: kiwisolver>=1.0.1 in /opt/conda/lib/python3.8/site-packages (from matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv==1.3.0) (1.4.5)\\n\",",
+     "      \"Requirement already satisfied: importlib-resources>=3.2.0 in /opt/conda/lib/python3.8/site-packages (from matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv==1.3.0) (6.0.1)\\n\",",
+     "      \"Requirement already satisfied: fonttools>=4.22.0 in /home/user/.local/lib/python3.8/site-packages (from matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv==1.3.0) (4.42.1)\\n\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/DA/SDV_Sequential.ipynb",
+    "line": 38,
+    "text": "\"Requirement already satisfied: matplotlib<4,>=3.4.0 in /home/user/.local/lib/python3.8/site-packages (from copulas<0.10,>=0.9.0->sdv==1.3.0) (3.7.2)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: jmespath<2.0.0,>=0.7.1 in /home/user/.local/lib/python3.8/site-packages (from boto3<2,>=1.15.0->sdv==1.3.0) (1.0.1)\\n\",",
+     "      \"Requirement already satisfied: s3transfer<0.7.0,>=0.6.0 in /home/user/.local/lib/python3.8/site-packages (from boto3<2,>=1.15.0->sdv==1.3.0) (0.6.2)\\n\",",
+     "      \"Requirement already satisfied: urllib3<1.27,>=1.25.4 in /opt/conda/lib/python3.8/site-packages (from botocore<2,>=1.18->sdv==1.3.0) (1.26.7)\\n\",",
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /opt/conda/lib/python3.8/site-packages (from botocore<2,>=1.18->sdv==1.3.0) (2.8.2)\\n\",",
+     "      \"Requirement already satisfied: matplotlib<4,>=3.4.0 in /home/user/.local/lib/python3.8/site-packages (from copulas<0.10,>=0.9.0->sdv==1.3.0) (3.7.2)\\n\",",
+     "      \"Requirement already satisfied: scipy<2,>=1.5.4 in /opt/conda/lib/python3.8/site-packages (from copulas<0.10,>=0.9.0->sdv==1.3.0) (1.10.1)\\n\",",
+     "      \"Requirement already satisfied: torch>=1.8.0 in /opt/conda/lib/python3.8/site-packages (from ctgan<0.8,>=0.7.4->sdv==1.3.0) (1.11.0)\\n\",",
+     "      \"Requirement already satisfied: packaging>=20.0 in /opt/conda/lib/python3.8/site-packages (from matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv==1.3.0) (23.1)\\n\",",
+     "      \"Requirement already satisfied: kiwisolver>=1.0.1 in /opt/conda/lib/python3.8/site-packages (from matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv==1.3.0) (1.4.5)\\n\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/DA/SDV_Sequential.ipynb",
+    "line": 39,
+    "text": "\"Requirement already satisfied: scipy<2,>=1.5.4 in /opt/conda/lib/python3.8/site-packages (from copulas<0.10,>=0.9.0->sdv==1.3.0) (1.10.1)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: s3transfer<0.7.0,>=0.6.0 in /home/user/.local/lib/python3.8/site-packages (from boto3<2,>=1.15.0->sdv==1.3.0) (0.6.2)\\n\",",
+     "      \"Requirement already satisfied: urllib3<1.27,>=1.25.4 in /opt/conda/lib/python3.8/site-packages (from botocore<2,>=1.18->sdv==1.3.0) (1.26.7)\\n\",",
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /opt/conda/lib/python3.8/site-packages (from botocore<2,>=1.18->sdv==1.3.0) (2.8.2)\\n\",",
+     "      \"Requirement already satisfied: matplotlib<4,>=3.4.0 in /home/user/.local/lib/python3.8/site-packages (from copulas<0.10,>=0.9.0->sdv==1.3.0) (3.7.2)\\n\",",
+     "      \"Requirement already satisfied: scipy<2,>=1.5.4 in /opt/conda/lib/python3.8/site-packages (from copulas<0.10,>=0.9.0->sdv==1.3.0) (1.10.1)\\n\",",
+     "      \"Requirement already satisfied: torch>=1.8.0 in /opt/conda/lib/python3.8/site-packages (from ctgan<0.8,>=0.7.4->sdv==1.3.0) (1.11.0)\\n\",",
+     "      \"Requirement already satisfied: packaging>=20.0 in /opt/conda/lib/python3.8/site-packages (from matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv==1.3.0) (23.1)\\n\",",
+     "      \"Requirement already satisfied: kiwisolver>=1.0.1 in /opt/conda/lib/python3.8/site-packages (from matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv==1.3.0) (1.4.5)\\n\",",
+     "      \"Requirement already satisfied: cycler>=0.10 in /opt/conda/lib/python3.8/site-packages (from matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv==1.3.0) (0.11.0)\\n\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/Tests/DataAugmentation_SDV.ipynb",
+    "line": 48,
+    "text": "\"Requirement already satisfied: scipy<2,>=1.5.4 in /opt/conda/lib/python3.8/site-packages (from copulas<0.10,>=0.9.0->sdv==1.3.0) (1.10.1)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: jmespath<2.0.0,>=0.7.1 in /home/user/.local/lib/python3.8/site-packages (from boto3<2,>=1.15.0->sdv==1.3.0) (1.0.1)\\n\",",
+     "      \"Requirement already satisfied: s3transfer<0.7.0,>=0.6.0 in /home/user/.local/lib/python3.8/site-packages (from boto3<2,>=1.15.0->sdv==1.3.0) (0.6.2)\\n\",",
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /opt/conda/lib/python3.8/site-packages (from botocore<2,>=1.18->sdv==1.3.0) (2.8.2)\\n\",",
+     "      \"Requirement already satisfied: urllib3<1.27,>=1.25.4 in /opt/conda/lib/python3.8/site-packages (from botocore<2,>=1.18->sdv==1.3.0) (1.26.7)\\n\",",
+     "      \"Requirement already satisfied: scipy<2,>=1.5.4 in /opt/conda/lib/python3.8/site-packages (from copulas<0.10,>=0.9.0->sdv==1.3.0) (1.10.1)\\n\",",
+     "      \"Requirement already satisfied: matplotlib<4,>=3.4.0 in /home/user/.local/lib/python3.8/site-packages (from copulas<0.10,>=0.9.0->sdv==1.3.0) (3.7.2)\\n\",",
+     "      \"Requirement already satisfied: torch>=1.8.0 in /opt/conda/lib/python3.8/site-packages (from ctgan<0.8,>=0.7.4->sdv==1.3.0) (1.11.0)\\n\",",
+     "      \"Requirement already satisfied: importlib-resources>=3.2.0 in /opt/conda/lib/python3.8/site-packages (from matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv==1.3.0) (6.0.1)\\n\",",
+     "      \"Requirement already satisfied: fonttools>=4.22.0 in /home/user/.local/lib/python3.8/site-packages (from matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv==1.3.0) (4.42.1)\\n\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/Tests/DataAugmentation_SDV.ipynb",
+    "line": 49,
+    "text": "\"Requirement already satisfied: matplotlib<4,>=3.4.0 in /home/user/.local/lib/python3.8/site-packages (from copulas<0.10,>=0.9.0->sdv==1.3.0) (3.7.2)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: s3transfer<0.7.0,>=0.6.0 in /home/user/.local/lib/python3.8/site-packages (from boto3<2,>=1.15.0->sdv==1.3.0) (0.6.2)\\n\",",
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /opt/conda/lib/python3.8/site-packages (from botocore<2,>=1.18->sdv==1.3.0) (2.8.2)\\n\",",
+     "      \"Requirement already satisfied: urllib3<1.27,>=1.25.4 in /opt/conda/lib/python3.8/site-packages (from botocore<2,>=1.18->sdv==1.3.0) (1.26.7)\\n\",",
+     "      \"Requirement already satisfied: scipy<2,>=1.5.4 in /opt/conda/lib/python3.8/site-packages (from copulas<0.10,>=0.9.0->sdv==1.3.0) (1.10.1)\\n\",",
+     "      \"Requirement already satisfied: matplotlib<4,>=3.4.0 in /home/user/.local/lib/python3.8/site-packages (from copulas<0.10,>=0.9.0->sdv==1.3.0) (3.7.2)\\n\",",
+     "      \"Requirement already satisfied: torch>=1.8.0 in /opt/conda/lib/python3.8/site-packages (from ctgan<0.8,>=0.7.4->sdv==1.3.0) (1.11.0)\\n\",",
+     "      \"Requirement already satisfied: importlib-resources>=3.2.0 in /opt/conda/lib/python3.8/site-packages (from matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv==1.3.0) (6.0.1)\\n\",",
+     "      \"Requirement already satisfied: fonttools>=4.22.0 in /home/user/.local/lib/python3.8/site-packages (from matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv==1.3.0) (4.42.1)\\n\",",
+     "      \"Requirement already satisfied: contourpy>=1.0.1 in /home/user/.local/lib/python3.8/site-packages (from matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv==1.3.0) (1.1.0)\\n\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/Tests/Test_SDV.ipynb",
+    "line": 31,
+    "text": "\"Requirement already satisfied: matplotlib<4,>=3.4.0 in /home/user/.local/lib/python3.8/site-packages (from copulas<0.10,>=0.9.0->sdv) (3.7.2)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: s3transfer<0.7.0,>=0.6.0 in /home/user/.local/lib/python3.8/site-packages (from boto3<2,>=1.15.0->sdv) (0.6.2)\\n\",",
+     "      \"Requirement already satisfied: jmespath<2.0.0,>=0.7.1 in /home/user/.local/lib/python3.8/site-packages (from boto3<2,>=1.15.0->sdv) (1.0.1)\\n\",",
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /opt/conda/lib/python3.8/site-packages (from botocore<2,>=1.18->sdv) (2.8.2)\\n\",",
+     "      \"Requirement already satisfied: urllib3<1.27,>=1.25.4 in /opt/conda/lib/python3.8/site-packages (from botocore<2,>=1.18->sdv) (1.26.7)\\n\",",
+     "      \"Requirement already satisfied: matplotlib<4,>=3.4.0 in /home/user/.local/lib/python3.8/site-packages (from copulas<0.10,>=0.9.0->sdv) (3.7.2)\\n\",",
+     "      \"Requirement already satisfied: scipy<2,>=1.5.4 in /opt/conda/lib/python3.8/site-packages (from copulas<0.10,>=0.9.0->sdv) (1.10.1)\\n\",",
+     "      \"Requirement already satisfied: torch>=1.8.0 in /opt/conda/lib/python3.8/site-packages (from ctgan<0.8,>=0.7.4->sdv) (1.11.0)\\n\",",
+     "      \"Requirement already satisfied: packaging>=20.0 in /opt/conda/lib/python3.8/site-packages (from matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv) (23.1)\\n\",",
+     "      \"Requirement already satisfied: pyparsing<3.1,>=2.3.1 in /home/user/.local/lib/python3.8/site-packages (from matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv) (3.0.9)\\n\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/Tests/Test_SDV.ipynb",
+    "line": 32,
+    "text": "\"Requirement already satisfied: scipy<2,>=1.5.4 in /opt/conda/lib/python3.8/site-packages (from copulas<0.10,>=0.9.0->sdv) (1.10.1)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: jmespath<2.0.0,>=0.7.1 in /home/user/.local/lib/python3.8/site-packages (from boto3<2,>=1.15.0->sdv) (1.0.1)\\n\",",
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /opt/conda/lib/python3.8/site-packages (from botocore<2,>=1.18->sdv) (2.8.2)\\n\",",
+     "      \"Requirement already satisfied: urllib3<1.27,>=1.25.4 in /opt/conda/lib/python3.8/site-packages (from botocore<2,>=1.18->sdv) (1.26.7)\\n\",",
+     "      \"Requirement already satisfied: matplotlib<4,>=3.4.0 in /home/user/.local/lib/python3.8/site-packages (from copulas<0.10,>=0.9.0->sdv) (3.7.2)\\n\",",
+     "      \"Requirement already satisfied: scipy<2,>=1.5.4 in /opt/conda/lib/python3.8/site-packages (from copulas<0.10,>=0.9.0->sdv) (1.10.1)\\n\",",
+     "      \"Requirement already satisfied: torch>=1.8.0 in /opt/conda/lib/python3.8/site-packages (from ctgan<0.8,>=0.7.4->sdv) (1.11.0)\\n\",",
+     "      \"Requirement already satisfied: packaging>=20.0 in /opt/conda/lib/python3.8/site-packages (from matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv) (23.1)\\n\",",
+     "      \"Requirement already satisfied: pyparsing<3.1,>=2.3.1 in /home/user/.local/lib/python3.8/site-packages (from matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv) (3.0.9)\\n\",",
+     "      \"Requirement already satisfied: pillow>=6.2.0 in /opt/conda/lib/python3.8/site-packages (from matplotlib<4,>=3.4.0->copulas<0.10,>=0.9.0->sdv) (9.0.1)\\n\","
+    ]
+   }
+  ],
+  "sq": [
+   {
+    "file": "Data_Augmentation/DA/SDV_Sequential.ipynb",
+    "line": 95,
+    "text": "\"from sdv.sequential import PARSynthesizer\"",
+    "context": [
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.lite import SingleTablePreset\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.single_table import CopulaGANSynthesizer\\n\",",
+     "    \"from sdv.sequential import PARSynthesizer\"",
+     "   ]",
+     "  },",
+     "  {",
+     "   \"cell_type\": \"code\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/Tests/Test_SDV.ipynb",
+    "line": 72,
+    "text": "\"from sdv.sequential import PARSynthesizer\"",
+    "context": [
+     "    \"import sys\\n\",",
+     "    \"sys.path.append(\\\"..\\\")\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.datasets.demo import download_demo\\n\",",
+     "    \"from sdv.sequential import PARSynthesizer\"",
+     "   ]",
+     "  },",
+     "  {",
+     "   \"cell_type\": \"code\","
+    ]
+   }
+  ],
+  "par": [
+   {
+    "file": "Data_Augmentation/DA/SDV_Sequential.ipynb",
+    "line": 95,
+    "text": "\"from sdv.sequential import PARSynthesizer\"",
+    "context": [
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.lite import SingleTablePreset\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.single_table import CopulaGANSynthesizer\\n\",",
+     "    \"from sdv.sequential import PARSynthesizer\"",
+     "   ]",
+     "  },",
+     "  {",
+     "   \"cell_type\": \"code\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/DA/SDV_Sequential.ipynb",
+    "line": 827,
+    "text": "\"synthesizer_PAR = PARSynthesizer(metadata, verbose=True, cuda=True)\"",
+    "context": [
+     "   \"source\": [",
+     "    \"# A: GaussianCopulaSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"# Step 1.A: Create the synthesizer\\n\",",
+     "    \"synthesizer_PAR = PARSynthesizer(metadata, verbose=True, cuda=True)\"",
+     "   ]",
+     "  },",
+     "  {",
+     "   \"cell_type\": \"code\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/DA/SDV_Sequential.ipynb",
+    "line": 838,
+    "text": "\"#synthesizer_PAR.save(filepath='../Models/my_PARSynthesizer.pkl')\\n\",",
+    "context": [
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"# Step 2.A: Train the synthesizer\\n\",",
+     "    \"#synthesizer_PAR.fit(real_data)\\n\",",
+     "    \"#synthesizer_PAR.save(filepath='../Models/my_PARSynthesizer.pkl')\\n\",",
+     "    \"synthesizer_PAR = PARSynthesizer.load(filepath='../Models/my_PARSynthesizer.pkl')\"",
+     "   ]",
+     "  },",
+     "  {"
+    ]
+   },
+   {
+    "file": "Data_Augmentation/DA/SDV_Sequential.ipynb",
+    "line": 839,
+    "text": "\"synthesizer_PAR = PARSynthesizer.load(filepath='../Models/my_PARSynthesizer.pkl')\"",
+    "context": [
+     "   \"source\": [",
+     "    \"# Step 2.A: Train the synthesizer\\n\",",
+     "    \"#synthesizer_PAR.fit(real_data)\\n\",",
+     "    \"#synthesizer_PAR.save(filepath='../Models/my_PARSynthesizer.pkl')\\n\",",
+     "    \"synthesizer_PAR = PARSynthesizer.load(filepath='../Models/my_PARSynthesizer.pkl')\"",
+     "   ]",
+     "  },",
+     "  {",
+     "   \"cell_type\": \"code\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/Tests/Test_SDV.ipynb",
+    "line": 72,
+    "text": "\"from sdv.sequential import PARSynthesizer\"",
+    "context": [
+     "    \"import sys\\n\",",
+     "    \"sys.path.append(\\\"..\\\")\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.datasets.demo import download_demo\\n\",",
+     "    \"from sdv.sequential import PARSynthesizer\"",
+     "   ]",
+     "  },",
+     "  {",
+     "   \"cell_type\": \"code\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/Tests/Test_SDV.ipynb",
+    "line": 537,
+    "text": "\"\\u001b[0;32m/tmp/ipykernel_93451/2646635789.py\\u001b[0m in \\u001b[0;36m<module>\\u001b[0;34m\\u001b[0m\\n\\u001b[1;32m      6\\u001b[0m \\u001b[0msequence_index\\u001b[0m \\u001b[0;34m=\\u001b[0m \\u001b[0;34m'time'\\u001b[0m\\u001b[0;34m\\u001b[0m\\u001b[0;34m\\u001b[0m\\u001b[0m\\n\\u001b[1;32m      7\\u001b[0m \\u0",
+    "context": [
+     "     \"output_type\": \"error\",",
+     "     \"traceback\": [",
+     "      \"\\u001b[0;31m---------------------------------------------------------------------------\\u001b[0m\",",
+     "      \"\\u001b[0;31mTypeError\\u001b[0m                                 Traceback (most recent call last)\",",
+     "      \"\\u001b[0;32m/tmp/ipykernel_93451/2646635789.py\\u001b[0m in \\u001b[0;36m<module>\\u001b[0;34m\\u001b[0m\\n\\u001b[1;32m      6\\u001b[0m \\u001b[0msequence_index\\u001b[0m \\u001b[0;34m=\\u001b[0m \\u001b",
+     "      \"\\u001b[0;31mTypeError\\u001b[0m: __init__() got an unexpected keyword argument 'entity_columns'\"",
+     "     ]",
+     "    }",
+     "   ],"
+    ]
+   },
+   {
+    "file": "Data_Augmentation/Tests/Test_SDV.ipynb",
+    "line": 550,
+    "text": "\"model = PARSynthesizer(entity_columns = entity_columns, context_columns = context_columns, sequence_index = sequence_index)\\n\",",
+    "context": [
+     "    \"context_columns = ['speed', 'payload', 'altitude', 'route']\\n\",",
+     "    \"# colonne(s) sequence index (qui peuvent être classsées selon les valeurs) \\n\",",
+     "    \"sequence_index = 'time'\\n\",",
+     "    \"\\n\",",
+     "    \"model = PARSynthesizer(entity_columns = entity_columns, context_columns = context_columns, sequence_index = sequence_index)\\n\",",
+     "    \"model.fit(data_train)\"",
+     "   ]",
+     "  },",
+     "  {"
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "Data_Augmentation/References/Data augmentation - SDV.ipynb",
+    "line": 387,
+    "text": "\"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+    "context": [
+     "     ]",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"\\n\",",
+     "    \"quality_report = evaluate_quality(\\n\",",
+     "    \"    real_data,\\n\",",
+     "    \"    synthetic_data,\\n\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/References/Data augmentation - SDV.ipynb",
+    "line": 6162,
+    "text": "\"from sdv.evaluation.single_table import get_column_plot\\n\",",
+    "context": [
+     "     \"output_type\": \"display_data\"",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdv.evaluation.single_table import get_column_plot\\n\",",
+     "    \"\\n\",",
+     "    \"fig = get_column_plot(\\n\",",
+     "    \"    real_data=real_data,\\n\",",
+     "    \"    synthetic_data=synthetic_data,\\n\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/References/Data augmentation - SDV.ipynb",
+    "line": 9107,
+    "text": "\"from sdv.evaluation.single_table import get_column_plot\\n\",",
+    "context": [
+     "     \"output_type\": \"display_data\"",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdv.evaluation.single_table import get_column_plot\\n\",",
+     "    \"\\n\",",
+     "    \"fig = get_column_plot(\\n\",",
+     "    \"    real_data=real_data,\\n\",",
+     "    \"    synthetic_data=synthetic_data,\\n\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/References/Data augmentation - SDV.ipynb",
+    "line": 1121466,
+    "text": "\"from sdv.evaluation.single_table import get_column_pair_plot\\n\",",
+    "context": [
+     "     \"output_type\": \"display_data\"",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdv.evaluation.single_table import get_column_pair_plot\\n\",",
+     "    \"\\n\",",
+     "    \"fig = get_column_pair_plot(\\n\",",
+     "    \"    real_data=real_data,\\n\",",
+     "    \"    synthetic_data=synthetic_data,\\n\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/References/Data augmentation - SDV.ipynb",
+    "line": 2233825,
+    "text": "\"from sdv.evaluation.single_table import get_column_pair_plot\\n\",",
+    "context": [
+     "     \"output_type\": \"display_data\"",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdv.evaluation.single_table import get_column_pair_plot\\n\",",
+     "    \"\\n\",",
+     "    \"fig = get_column_pair_plot(\\n\",",
+     "    \"    real_data=real_data,\\n\",",
+     "    \"    synthetic_data=synthetic_data,\\n\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/Tests/DataAugmentation_SDV.ipynb",
+    "line": 1574,
+    "text": "\"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+    "context": [
+     "     ]",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"\\n\",",
+     "    \"quality_report = evaluate_quality(\\n\",",
+     "    \"    real_data_flight1,\\n\",",
+     "    \"    synthesizer_Gaussian_flight1,\\n\","
+    ]
+   },
+   {
+    "file": "Data_Augmentation/Tests/DataAugmentation_SDV.ipynb",
+    "line": 4515,
+    "text": "\"from sdv.evaluation.single_table import get_column_plot\\n\",",
+    "context": [
+     "     \"output_type\": \"display_data\"",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdv.evaluation.single_table import get_column_plot\\n\",",
+     "    \"\\n\",",
+     "    \"fig = get_column_plot(\\n\",",
+     "    \"    real_data=real_data_flight1,\\n\",",
+     "    \"    synthetic_data=synthetic_data_Gaussian_flight1,\\n\","
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "copulas",
+  "ct",
+  "ctgan_mod",
+  "ev",
+  "gc",
+  "md",
+  "par",
+  "rdt",
+  "sdv_any",
+  "sm",
+  "sq",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

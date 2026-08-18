@@ -1,0 +1,48 @@
+{
+ "repo": "wpi-lemurs/lemurs-ml",
+ "disk_kb": 13879,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Lemurs Machine Learning Repository\n\nThis repository contains the data extraction, processing, feature engineering, and modeling workflows used for LEMURS analysis. It is designed to support reproducible experiments on passive behavioral data (screentime, health metrics, audio metadata) and survey-derived labels (PHQ-9, suicide risk, self-harm risk, and sleep risk).\n\n## What This Repo Does\n\n- Connects to PostgreSQL and extracts raw study data\n- Cleans and standardizes passive data into analysis-ready tables\n- Merges time-windowed passive features with survey labels\n- Trains and evaluates baseline ML models (e.g., Logistic Regression, Random Forest)\n- Supports PyTorch MLP experimentation on the same processed feature sets\n- Produces confusion matrices and visualizations for model comparison\n\n## Repository Structure\n\n```text\nlemurs-ml/\n  README.md\n  requirements.txt\n  requirements-gpu.txt\n  data/                         # Generated outputs, plots, merged datasets, cache artifacts\n  src/\n    config.py                   # Shared config/constants/path utilities\n    database_service.py         # PostgreSQL extraction and DB utilities\n    analysis/                   # Analysis scripts and exploratory outputs\n    categorization/             # Daily question and app categorization logic\n    data_processing/            # Cleaning, aggregation, merging, feature engineering\n    modeling/                   # Classical ML and PyTorch training/evaluation scripts\n    pipeline/                   # Reusable sklearn-style pipeline + transformers\n    synthetic_data_generation/  # Synthetic data creation utilities (not used)\n    testing/                    # Project tests\n    visualization/              # Plotting and visualization helpers\n```\n\n## Core Workflow (End-to-End)\n\n1. Extract source tables from the database (`database_service.py`)\n2. Process passive streams into hourly/daily/weekly aggregates (`src/data_processing/`)\n3. Build supervised datasets by merging with nearest survey targets\n4. Train models across different lookback windows\n5. Evaluate via confusion matrices and summary metrics (accuracy, F1, etc.)\n6. Iterate on feature engineering (subwindows, app categories, null handling)\n\n## Setup\n\nGet the .env file from either Kevin or the previous MQP team and place it in the project root. This file should contain the necessary environment variables for database access.\n\nCreate and activate a virtual environment:\n\n```bash\npython -m venv venv\n```\n\nWindows:\n\n```bash\nvenv\\Scripts\\activate\n```\n\nmacOS/Linux:\n\n```bash\nsource venv/bin/activate\n```\n\nInstall dependencies:\n\n```bash\npip install -r requirements.txt\n```\n\nIf running GPU-enabled PyTorch workflows, use:\n\n```bash\npip install -r requirements-gpu.txt\n```\n\n## Typical Usage Patterns\n\n### 1) Data Extraction and Processing\n\n- Use modules in `src/database_service.py` and `src/data_processing/` to pull and clean raw tables.\n- Most scripts are designed for batch/offline updates when CSV/DB snapshots are refreshed.\n\n### 2) Modeling with Existing Pipelines\n\n- Use `src/pipeline/model_pipeline.py` and `src/pipeline/transformers.py` for reusable training flows.\n- Example scripts in `src/pipeline/` demonstrate end-to-end usage and window sweeps.\n\n### 3) Classical ML Experiments\n\n- Use `src/modeling/model_screentime_time_windows.py` for lookback-window experiments.\n- Compare model behavior across targets (risk labels or PHQ-9 derived labels).\n\n### 4) PyTorch Experiments\n\n- Use the PyTorch modeling scripts in `src/modeling/` to run MLP experiments with the same engineered features.\n- Keep preprocessing logic aligned with `src/pipeline/` and `src/data_processing/` for fair comparisons.\n\n## Data and Output Conventions\n\n- `data/` stores generated artifacts such as:\n  - confusion matrix images\n  - sweep plots\n  - merged modeling datasets\n  - optional app-category cache files\n- Scripts are generally built for repeatable regeneration when source data changes.\n\n## Testing\n\nRun tests from the project root:\n\n```bash\npytest\n```\n\nYou can also run a specific test file:\n\n```bash\npytest src/testing/<test_file>.py\n```\n\n## Notes for Contributors\n\n- Prefer adding new preprocessing logic in `src/data_processing/` and exposing reusable pieces in `src/pipeline/transformers.py`.\n- Keep modeling scripts thin; place shared logic in helper modules.\n- Preserve consistent naming for targets and label mappings across scripts.\n- Avoid duplicating DB extraction logic; centralize in `database_service.py` or shared utilities.\n",
+ "hits": {
+  "ct": [
+   {
+    "file": "src/synthetic_data_generation/synthetic_data.py",
+    "line": 6,
+    "text": "from sdgx.models.ml.single_table.ctgan import CTGANSynthesizerModel",
+    "context": [
+     "NOTE: sdgx is NOT compatible with python 3.13+. must use a lower version.",
+     "'''",
+     "",
+     "from sdgx.data_connectors.csv_connector import CsvConnector",
+     "from sdgx.models.ml.single_table.ctgan import CTGANSynthesizerModel",
+     "from sdgx.synthesizer import Synthesizer",
+     "from sdgx.data_loader import DataLoader",
+     "from sdgx.data_processors.formatters.datetime import DatetimeFormatter",
+     "from health_data_analysis import unique_steps"
+    ]
+   },
+   {
+    "file": "src/synthetic_data_generation/synthetic_data.py",
+    "line": 72,
+    "text": "synthesizer = Synthesizer(model=CTGANSynthesizerModel(epochs=1), data_connector=data_connector)",
+    "context": [
+     "    dataloader.load_all()  # This will read all data from csv, and cache it.",
+     "    dataloader.load_all()  # This will read all data from cache.",
+     "",
+     "    # Fit synthesizer, use CTGAN model",
+     "    synthesizer = Synthesizer(model=CTGANSynthesizerModel(epochs=1), data_connector=data_connector)",
+     "    synthesizer.fit()",
+     "",
+     "    # Sample",
+     "    sampled_data = synthesizer.sample(num_samples)"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

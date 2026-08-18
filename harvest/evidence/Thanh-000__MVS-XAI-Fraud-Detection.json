@@ -1,0 +1,157 @@
+{
+ "repo": "Thanh-000/MVS-XAI-Fraud-Detection",
+ "disk_kb": 1125,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "﻿# MVS-XAI: Multi-View Stacking with Explainable AI for Financial Fraud Detection\n\n[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)\n[![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-red.svg)](https://pytorch.org/)\n[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)\n\n## Overview\n\nMVS-XAI is a research-grade framework for **digital financial transaction fraud detection** that combines:\n\n- **Multi-View Stacking**: Three specialized feature views (Tabular, Sequential, Behavioral) processed by 6 base models, then combined via a meta-learner ensemble.\n- **Explainable AI (XAI)**: 5-level explainability framework (SHAP â†’ LIME â†’ DiCE â†’ Anchors â†’ LLM) for transparency and regulatory compliance.\n- **Human-in-the-Loop (HITL)**: 3-tier routing system (AUTO_BLOCK / HITL_REVIEW / ALLOW) for operational deployment.\n\nEvaluated through a dual-benchmark workflow spanning **IEEE-CIS Fraud Detection** (590,540 transactions, 3.5% fraud rate) and **PaySim** (6.3M mobile-money transactions), with a shared training pipeline and reviewer-facing notebook artifacts for both datasets.\n\n## Current Submission Scope\n\n- The main training entry point now supports `--dataset ieee` and `--dataset paysim`.\n- Reviewer notebook artifacts are available for both **IEEE-CIS** and **PaySim**.\n- **ULB Credit Card Fraud** is still not packaged in this repository.\n- The current reviewer notebooks are designed as **full academic experiment artifacts**:\n  - They clone the working repository revision when needed.\n  - They download IEEE-CIS and PaySim directly with `aria2c` signed URLs.\n  - They run the real datasets end to end through `main_train_pipeline.py`.\n  - They do not mount Google Drive and do not use generated-data fallbacks.\n\n## Architecture\n\n```\nâ”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”\nâ”‚  IEEE-CIS Raw Data (Transaction + Identity)             â”‚\nâ””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜\n                       â–¼\nâ”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”\nâ”‚  Feature Engineering (Kaggle Winner: Chris Deotte)       â”‚\nâ”‚  D1n = TransactionDT/86400 - D1 â†’ client fingerprint    â”‚\nâ”‚  UID = card1 + addr1 + D1n â†’ stable pseudo-client-ID    â”‚\nâ”‚  â†’ Expanding Agg (Amt, C13, M9) â†’ V-PCA â†’ Cross-feat   â”‚\nâ””â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜\n     â–¼                  â–¼                  â–¼\nâ”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”     â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”     â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”\nâ”‚ View 1  â”‚     â”‚   View 2    â”‚     â”‚   View 3     â”‚\nâ”‚ Tabular â”‚     â”‚ Sequential  â”‚     â”‚ Behavioral   â”‚\nâ”‚ (2D)    â”‚     â”‚ (3D tensor) â”‚     â”‚ (velocity)   â”‚\nâ””â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”˜     â””â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”˜     â””â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”˜\n     â–¼                 â–¼                   â–¼\nâ”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”     â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”        â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”\nâ”‚RF + XGB â”‚     â”‚  LSTM    â”‚        â”‚ Focal MLP    â”‚\nâ”‚LGB +CAT â”‚     â”‚(PyTorch) â”‚        â”‚ (PyTorch)    â”‚\nâ””â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”˜     â””â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”˜        â””â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”˜\n     â”‚                 â”‚                   â”‚\n     â–¼                 â–¼                   â–¼\nâ”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”\nâ”‚  OOF Predictions â†’ Confidence Gating (Ï„=0.60)            â”‚\nâ”‚  â†’ Meta-Learner: LR(L2, C=0.01) + Platt Calibration     â”‚\nâ”‚  â†’ UID Post-Processing: 70% individual + 30% UID mean   â”‚\nâ””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜\n                       â–¼\nâ”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”\nâ”‚  5-Level XAI Audit + HITL Routing + Drift Monitoring     â”‚\nâ””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜\n```\n\n## Project Structure\n\n```\nMVS_XAI/\nâ”œâ”€â”€ README.md                          # This file\nâ”œâ”€â”€ config.yaml                        # Hyperparameters & experiment config\nâ”œâ”€â”€ requirements.txt                   # Python dependencies\nâ”œâ”€â”€ main_train_pipeline.py             # End-to-end training & evaluation script\nâ”‚\nâ”œâ”€â”€ data/\nâ”‚   â””â”€â”€ README.md                      # Dataset download instructions\nâ”‚\nâ””â”€â”€ src/\n    â”œâ”€â”€ __init__.py\n    â”‚\n    â”œâ”€â”€ data_pipeline/\n    â”‚   â”œâ”€â”€ data_loader.py             # Merge Transaction + Identity tables\n    â”‚   â”œâ”€â”€ data_sampler.py            # KMeansSMOTE + CTGAN augmentation\n    â”‚   â”œâ”€â”€ time_splitter.py           # Walk-Forward CV (gap=1000)\n    â”‚   â””â”€â”€ feature_scaler.py          # StandardScaler for neural models\n    â”‚\n    â”œâ”€â”€ feature_engineering/\n    â”‚   â”œâ”€â”€ uid_features.py            # Kaggle Winner: UID + expanding agg + V-PCA\n    â”‚   â”œâ”€â”€ view_tabular.py            # View 1: Time + categorical features\n    â”‚   â”œâ”€â”€ view_behavioral.py         # View 3: Rolling velocity features\n    â”‚   â””â”€â”€ view_sequential.py         # View 2: 3D tensor for LSTM (T=10)\n    â”‚\n    â”œâ”€â”€ models/\n    â”‚   â”œâ”€â”€ base_trees.py              # RF, XGB, LGBM, CatBoost factory\n    â”‚   â”œâ”€â”€ nn_focal_mlp.py            # MLP + Focal Loss (PyTorch)\n    â”‚   â””â”€â”€ nn_lstm.py                 # LSTM + Focal Loss (PyTorch)\n    â”‚\n    â”œâ”€â”€ ensembler/\n    â”‚   â”œâ”€â”€ meta_learner.py            # LR(L2) + Platt Calibration\n    â”‚   â”œâ”€â”€ calibrator.py              # Probability calibration utilities\n    â”‚   â””â”€â”€ confidence_gating.py       # OOF gating: w = min(1, (AUC/Ï„)Â²)\n    â”‚\n    â”œâ”€â”€ evaluation/\n    â”‚   â”œâ”€â”€ metrics_eval.py            # AUC, PR-AUC, F1, optimal threshold\n    â”‚   â”œâ”€â”€ ablation.py                # Leave-One-Out ablation study\n    fairness.py                # Demographic Parity + Equalized Odds audit\n    statistical_tests.py       # McNemar / Cohen's d / paired tests\n    adwin_monitor.py           # ADWIN score-drift monitor\n    wasserstein.py             # Wasserstein distance drift\n    xai_harness.py             # Proxy XAI evaluation harness\n    psi_drift.py               # PSI drift monitoring\n    â”‚\n    â”œâ”€â”€ xai/\n    â”‚   â”œâ”€â”€ __init__.py\n    â”‚   â””â”€â”€ five_level_auditor.py      # 5-Level XAI (SHAP+LIME+DiCE+Anchors+LLM)\n    â”‚\n    â””â”€â”€ ops_pipeline/\n        â””â”€â”€ hitl_router.py             # HITL 3-tier routing\n```\n\n## Installation\n\n```bash\n# Clone repository\ngit clone <repository-url>\ncd MVS_XAI\n\n# Create virtual environment\npython -m venv venv\nsource venv/bin/activate  # Linux/Mac\nvenv\\Scripts\\activate     # Windows\n\n# Install dependencies\npip install -r requirements.txt\n```\n\nFor a local full-research setup, see [docs/local_full_experiment.md](docs/local_full_experiment.md).\n\nWindows:\n\n```powershell\n.\\scripts\\setup_local_env.ps1\n.\\scripts\\run_full_experiment.ps1\n```\n\nLinux/macOS:\n\n```bash\nbash scripts/setup_local_env.sh\nbash scripts/run_full_experiment.sh\n```\n\n## Dataset Setup\n\nDownload the supported datasets into `data/`.\n\nIEEE-CIS Fraud Detection from Kaggle:\n\n- Competition page: `https://www.kaggle.com/c/ieee-fraud-detection`\n- Data page: `https://www.kaggle.com/c/ieee-fraud-detection/data`\n- Note: Kaggle API download works only after the competition terms have been accepted on the website.\n\n```bash\n# Using Kaggle API\nkaggle competitions download -c ieee-fraud-detection\nunzip ieee-fraud-detection.zip -d data/\n```\n\nExpected files in `data/`:\n- `train_transaction.csv` (590,540 Ã— 394)\n- `train_identity.csv` (144,233 Ã— 41)\n\nPaySim:\n\n- Place one CSV under `data/` with one of these filenames:\n- `paysim.csv`\n- `PS_20174392719_1491204439457_log.csv`\n- `paysim_log.csv`\n\n## Quick Start\n\n```python\nfrom src.feature_engineering.uid_features import UIDFeatureEngineer\nfrom src.data_pipeline.data_loader import DataLoader\nfrom src.models.base_trees import TreeEnsembleFactory\nfrom src.ensembler.meta_learner import MetaEnsembler\n\n# 1. Load & engineer features\ndf = DataLoader.load_dataset('data/', dataset='ieee')\ndf = UIDFeatureEngineer.apply_all(df, dataset_name='ieee')\n\n# 2. Train base models\nxgb = TreeEnsembleFactory.get_xgboost()\nxgb.fit(X_train, y_train, eval_set=[(X_val, y_val)])\n\n# 3. Stack & calibrate\nmeta = MetaEnsembler(C=0.01)\nmeta.fit(oof_matrix, y_train)\nprobas = meta.predict_proba(test_matrix)\n```\n\nReviewer notebooks:\n\n- Colab setup helper: [notebooks/00_Colab_Quickstart.ipynb](notebooks/00_Colab_Quickstart.ipynb)\n- IEEE-CIS case-study artifact: [notebooks/06_MVS_XAI_Ultimate_IEEE_CIS.ipynb](notebooks/06_MVS_XAI_Ultimate_IEEE_CIS.ipynb)\n- PaySim case-study artifact: [notebooks/07_MVS_XAI_PaySim.ipynb](notebooks/07_MVS_XAI_PaySim.ipynb)\n\nThe Colab quickstart notebook supports both setup paths:\n\n- clone the repo directly from GitHub\n- paste direct dataset links or Google Drive share links\n- use a single IEEE-CIS bundle zip link or separate transaction/identity CSV links\n- download IEEE-CIS and PaySim into the Colab runtime `data/` folder with `aria2` for direct links\n\nIf you need clean artifacts for submission review, regenerate the notebooks after adding the datasets:\n\n```bash\npy -3.9 scripts/generate_submission_notebook.py\npy -3.9 scripts/generate_paysim_submission_notebook.py\n```\n\nThe generated notebooks include markdown that explains the current experimental scope, the IEEE-CIS and PaySim benchmark coverage, and the fact that ULB remains future work.\n\nTo run the canonical end-to-end academic experiment:\n\n```bash\npython run_academic_e2e.py\n```\n\nThis single runner performs the fixed research protocol for both IEEE-CIS and\nPaySim:\n\n- temporal holdout split first\n- walk-forward CV only on the training slice\n- in-fold KMeansSMOTE for the tree branch, with optional CTGAN synthesis\n- meta-learner fit on training OOF predictions\n- final base-model refit with an internal validation slice\n- separate holdout evaluation, drift audit, fairness audit, HITL routing, meta-level XAI, latency benchmarking, and statistical comparison\n\nThe runner intentionally has no CLI switches. The project keeps\n`main_train_pipeline.py` as the backend implementation, but the official\nexperiment path is `run_academic_e2e.py` so the submitted protocol does not\nsplit into multiple selectable configurations.\n\nGenerated holdout predictions are saved under `artifacts/`, for example:\n\n- `artifacts/academic_e2e/ieee_academic_full/seed_*/ieee_holdout_predictions.csv`\n- `artifacts/academic_e2e/paysim_academic_full/seed_*/paysim_holdout_predictions.csv`\n\n## Key Hyperparameters\n\n| Component | Parameter | Value |\n|-----------|-----------|-------|\n| XGBoost | n_estimators / lr / depth | 800 / 0.03 / 8 |\n| LightGBM | n_estimators / lr / depth | 800 / 0.03 / 8 |\n| CatBoost | iterations / lr / depth | 800 / 0.03 / 8 |\n| RandomForest | n_estimators / depth | 500 / 15 |\n| MLP (Focal) | architecture / Î³ / Î± | 256â†’128â†’64â†’1 / 2.0 / 0.75 |\n| LSTM | hidden / layers / dropout | 64 / 2 / 0.3 |\n| Meta-Learner | C / calibration | 0.01 / Platt (sigmoid) |\n| CV | n_splits / gap | 5 / 1000 samples |\n| OOF Gating | Ï„ (threshold) | 0.60 |\n| HITL | auto_block / review | â‰¥0.60 / [0.35, 0.60) |\n\n## Citation\n\n```bibtex\n@article{mvs_xai_2026,\n  title={Digital Financial Transaction Fraud Detection Using\n         Explainable Multi-Model Machine Learning},\n  year={2026}\n}\n```\n\n## License\n\nThis project is part of an academic research submission.\n",
+ "hits": {
+  "st": [
+   {
+    "file": "src/data_pipeline/data_sampler.py",
+    "line": 22,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "except ImportError:",
+     "    MiniBatchKMeans = None",
+     "",
+     "try:",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "except ImportError:",
+     "    CTGANSynthesizer = None",
+     ""
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "src/data_pipeline/data_sampler.py",
+    "line": 23,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    MiniBatchKMeans = None",
+     "",
+     "try:",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "except ImportError:",
+     "    CTGANSynthesizer = None",
+     "",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "src/data_pipeline/data_sampler.py",
+    "line": 22,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "except ImportError:",
+     "    MiniBatchKMeans = None",
+     "",
+     "try:",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "except ImportError:",
+     "    CTGANSynthesizer = None",
+     ""
+    ]
+   },
+   {
+    "file": "src/data_pipeline/data_sampler.py",
+    "line": 23,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    MiniBatchKMeans = None",
+     "",
+     "try:",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "except ImportError:",
+     "    CTGANSynthesizer = None",
+     "",
+     ""
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "src/data_pipeline/data_sampler.py",
+    "line": 22,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "except ImportError:",
+     "    MiniBatchKMeans = None",
+     "",
+     "try:",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "except ImportError:",
+     "    CTGANSynthesizer = None",
+     ""
+    ]
+   },
+   {
+    "file": "src/data_pipeline/data_sampler.py",
+    "line": 25,
+    "text": "CTGANSynthesizer = None",
+    "context": [
+     "try:",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "except ImportError:",
+     "    CTGANSynthesizer = None",
+     "",
+     "",
+     "class DataBalanceEngine:",
+     "    \"\"\"Data augmentation for imbalanced binary classification."
+    ]
+   },
+   {
+    "file": "src/data_pipeline/data_sampler.py",
+    "line": 130,
+    "text": "if CTGANSynthesizer is None:",
+    "context": [
+     "",
+     "        Returns:",
+     "            Augmented DataFrame.",
+     "        \"\"\"",
+     "        if CTGANSynthesizer is None:",
+     "            raise ImportError(\"CTGAN requires SDV: pip install sdv\")",
+     "",
+     "        print(f\"  CTGAN Synthesis (epochs={epochs}, samples={num_synthetic_samples:,})...\")",
+     "        fraud_data = df_train[df_train[target_col] == 1]"
+    ]
+   },
+   {
+    "file": "src/data_pipeline/data_sampler.py",
+    "line": 143,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "        for col_name in fraud_data.columns:",
+     "            if col_name != target_col:",
+     "                metadata.update_column(column_name=col_name, sdtype='numerical')",
+     "",
+     "        synthesizer = CTGANSynthesizer(",
+     "            metadata, epochs=epochs, verbose=True, cuda=use_gpu",
+     "        )",
+     "        synthesizer.fit(fraud_data)",
+     "        synthetic_data = synthesizer.sample(num_rows=num_synthetic_samples)"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv>=1.10"
+  ]
+ }
+}

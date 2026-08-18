@@ -1,0 +1,96 @@
+{
+ "repo": "Carson-Lu/Private-Histogram-Voting-for-Synthetic-Data-Generation",
+ "disk_kb": 100753,
+ "method": "partial_clone",
+ "tree_files": 306,
+ "status": "ok",
+ "readme": "# DP-MERF + Voting: Differentially Private Synthetic Tabular Data Generation\n\nThis project extends [DP-MERF](https://arxiv.org/abs/2002.11603) with a nearest-neighbour histogram voting post-processing step to improve the quality of differentially private synthetic tabular data. The core idea is to use private data to vote on a pool of generated candidates, retaining those closest to the real data distribution, while splitting generation into $k$ independent pipelines to improve vote signal quality.\n\n## Overview\n\nDP-MERF trains a generator by privately releasing a kernel mean embedding of the training data, after which synthetic data can be drawn at no additional privacy cost. We augment this with a voting refinement step that:\n\n- Generates candidate synthetic samples using the DP-MERF generator\n- Uses private data to vote for the nearest candidates via a noisy histogram\n- Splits generation into `k` independent pipelines, each operating on a smaller candidate pool, and unions their outputs\n- Preserves formal `(ε, δ)`-DP guarantees through sequential composition and parallel composition across classes\n\nResults show consistent improvements over DP-MERF on binary classification datasets (Adult, Census, Credit), with up to 10% improvement in downstream classification performance.\n\n---\n\n## Repository Structure\n\n```\nDP-MERF/\n├── code_tab/                          # Tabular data experiments\n│   ├── single_generator_priv_all.py   # Main training and generation script for tabular datasets\n│   ├── run_ablations_tabular.py       # Automated ablation sweeps for tabular experiments\n│   └── utils/\n│       └── histogram_voting.py        # Core voting utilities (shared across all scripts)\n│\n└── code_balanced/                     # 2D Gaussian mixture experiments\n    ├── gen_balanced.py                # Training and generation script for Gaussian data\n    └── run_ablations.py               # Automated ablation sweeps for Gaussian experiments\n```\n\n---\n\n## Key Files\n\n### `utils/histogram_voting.py`\nThe core shared library. Contains all voting logic used by both the tabular and Gaussian experiments:\n- `run_voting_pipeline()` — outer wrapper managing splits, noise calibration, and unioning results\n- `run_voting()` — core voting loop for one split across all classes\n- `generate_samples()` — mixes generator and random candidates according to `generator_fraction`\n- `generate_random()` — uniform random candidate generation over the feature space\n- `vote()` — nearest-neighbour histogram voting with Gaussian noise\n- `find_required_noise_multiplier()` — calibrates noise `σ` to achieve target `ε_vote`\n- `build_columns_info()` — builds column metadata for mixed numerical/categorical tabular data\n- `features_to_samples()` / `samples_to_features()` — conversion utilities between numpy arrays and the list format used by the voting functions\n\n### `code_tab/single_generator_priv_all.py`\nMain script for tabular data experiments. Handles:\n- Data loading and preprocessing for Adult, Census, Credit, Covtype, and Intrusion datasets\n- DP-MERF generator training with configurable privacy budget `ε_gen`\n- Model saving and loading to avoid retraining across ablation runs\n- Voting post-processing via `run_voting_pipeline()`\n- Evaluation across 12 downstream classifiers (ROC, PRC, F1)\n\nKey arguments:\n```\n--dataset          Dataset to use (adult, census, credit, covtype, intrusion)\n--private          Enable DP training (1 = yes)\n--epsilon_gen      Privacy budget for generator training\n--skip_vote        Skip voting, use raw generator output\n--vote_rounds      Number of iterative voting rounds (T)\n--k_splits         Number of independent pipelines to union (K)\n--oversample_factor  Extra candidates per round relative to n_per_split (ρ)\n--generator_fraction  Fraction of candidates from generator vs random (α)\n--epsilon_vote     Privacy budget for voting\n--num_synth_factor  Size of synthetic dataset relative to training set (η)\n--model_dir        Directory to save/load trained models\n```\n\n### `code_tab/run_ablations_tabular.py`\nAutomated sweep runner for tabular experiments. Runs multiple configurations sequentially, captures logs, parses ROC/PRC/F1 scores, and generates bar charts and summary JSON files.\n\n```bash\n# Run k_splits sweep on Adult (recommended first sweep)\npython run_ablations_tabular.py --dataset adult --sweep B1 --baseline\n\n# Run vote_rounds sweep using best k_splits\npython run_ablations_tabular.py --dataset adult --sweep A --best_k_splits 25\n\n# Run best config across all datasets\npython run_ablations_tabular.py --sweep BEST_ALL\n```\n\n### `code_balanced/gen_balanced.py`\nTraining and generation script for 2D Gaussian mixture experiments. Uses `FCCondGen`/`ConvCondGen` as the generator and integrates the same voting pipeline.\n\n### `code_balanced/run_ablations.py`\nAutomated sweep runner for Gaussian experiments. Produces visual comparison grids and NLL score summaries across configurations.\n\n---\n\n## Reproducing Results\n\n### Tabular Datasets\n\n**1. Train baseline (no voting):**\n```bash\npython single_generator_priv_all.py --dataset adult --private 1 \\\n    --epsilon_gen 1.0 --skip_vote --epochs 8000 --num_features 1000 \\\n    --batch 0.1 --undersample 0.4 --repeat 3\n```\n\n**2. Train with voting:**\n```bash\npython single_generator_priv_all.py --dataset adult --private 1 \\\n    --epsilon_gen 0.75 --epsilon_vote 0.25 \\\n    --vote_rounds 5 --k_splits 25 --oversample_factor 0.25 \\\n    --generator_fraction 1.0 --epochs 8000 --num_features 1000 \\\n    --batch 0.1 --undersample 0.4 --repeat 3\n```\n\n**3. Run real data baseline:**\n```bash\npython single_generator_priv_all.py --dataset adult --data_type real \\\n    --undersample 0.4 --epochs 200 --num_features 2000 --repeat 3\n```\n\n### Gaussian Data\n\n**1. Train baseline:**\n```bash\npython gen_balanced.py --data 2d --skip_vote --noise-factor 5.0 \\\n    --epochs 50 --model_path pt_models/epsilon_1.0/gen.pt\n```\n\n**2. Train with voting:**\n```bash\npython gen_balanced.py --data 2d --noise-factor 5.0 --epochs 50 \\\n    --model_path pt_models/epsilon_1.0/gen.pt \\\n    --vote_rounds 5 --k_splits 50 --oversample_factor 0.5 \\\n    --generator_fraction 1.0 --epsilon_vote 0.9\n```\n\n---\n\n## Privacy Accounting\n\nThe total privacy budget is split between the generator and voting step:\n\n```\nε = ε_gen + ε_vote\nδ = δ_gen + δ_vote = 1e-5 + 1/(n log n)\n```\n\nThe voting step uses `T × K` histogram releases. Since each training point belongs to exactly one class, parallel composition applies across classes and the total cost is `T × K` rather than `T × K × |C|`. Noise `σ` is calibrated using `find_required_noise_multiplier()` to ensure the total voting cost does not exceed `ε_vote`.\n\n---\n\n## Best Hyperparameters (Adult Dataset)\n\n| Parameter | Value |\n|---|---|\n| `k_splits` (K) | 25 |\n| `vote_rounds` (T) | 5 |\n| `oversample_factor` (ρ) | 0.25 |\n| `generator_fraction` (α) | 1.0 |\n| `num_synth_factor` (η) | 1.0 |\n| `ε_gen` | 0.75 |\n| `ε_vote` | 0.25 |\n\n---\n\n## Dependencies\n\n```\ntorch\nnumpy\npandas\nscikit-learn\nautodp\nsdgym\nxgboost\nscipy\nmatplotlib\nseaborn\n```\n",
+ "hits": {
+  "gym": [
+   {
+    "file": "DP-MERF/data/tab_dataloader.py",
+    "line": 9,
+    "text": "import sdgym",
+    "context": [
+     "from sklearn.model_selection import train_test_split",
+     "import math",
+     "",
+     "if sys.version_info[0] > 2:",
+     "    import sdgym",
+     "import xgboost",
+     "",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "DP-MERF/code_tab/single_generator_priv_all.py",
+    "line": 14,
+    "text": "from sdgym.datasets import load_dataset",
+    "context": [
+     "import torch.optim as optim",
+     "import util",
+     "import random",
+     "import socket",
+     "from sdgym.datasets import load_dataset",
+     "import argparse",
+     "import sys",
+     "",
+     ""
+    ]
+   }
+  ],
+  "rdt": [
+   {
+    "file": "tabpe/src/model/baselines/method/GEM/Util/gan/ctgan/transformer.py",
+    "line": 5,
+    "text": "# from rdt.transformers import OneHotEncodingTransformer",
+    "context": [
+     "import pickle",
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "# from rdt.transformers import OneHotEncodingTransformer",
+     "from sklearn.preprocessing import OneHotEncoder",
+     "from sklearn.mixture import BayesianGaussianMixture",
+     "# from sklearn.exceptions import ConvergenceWarning",
+     "# from sklearn.utils.testing import ignore_warnings"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "tabpe/src/model/baselines/method/GEM/Util/gan/ctgan/synthesizer.py",
+    "line": 12,
+    "text": "class CTGANSynthesizer(object):",
+    "context": [
+     "from gan.ctgan.sampler import Sampler",
+     "from gan.ctgan.transformer import DataTransformer",
+     "",
+     "",
+     "class CTGANSynthesizer(object):",
+     "    \"\"\"Conditional Table GAN Synthesizer.",
+     "",
+     "    This is the core class of the CTGAN project, where the different components",
+     "    are orchestrated together."
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "gym",
+  "rdt"
+ ],
+ "vendored_dirs": [
+  "tabpe/src/model/baselines/method/GEM/Util/gan/ctgan"
+ ],
+ "dependencies": {
+  "DP-MERF/requirements.txt": [
+   "sdgym"
+  ],
+  "tabpe/src/model/baselines/method/GEM/requirements.txt": [
+   "rdt==0.4.0"
+  ]
+ }
+}

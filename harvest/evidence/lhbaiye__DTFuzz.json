@@ -1,0 +1,53 @@
+{
+ "repo": "lhbaiye/DTFuzz",
+ "disk_kb": 26484,
+ "method": "partial_clone",
+ "tree_files": 339,
+ "status": "ok",
+ "readme": "# 面向深度学习表格数据模型的回归缺陷检测和缓解研究项目\n\n## 项目介绍\n本仓库包含了面向深度学习表格数据模型的回归缺陷检测和缓解研究项目的代码。该项目旨在解决深度学习表格数据模型中可能出现的回归缺陷问题，通过一系列的算法和技术来检测和缓解这些缺陷，以提高模型的性能和可靠性。\n\n## 项目结构\n本项目的主要目录结构如下：\n- `DTFuzz/`\n  - `dtfuzz/`：包含主要的代码模块和功能实现。\n    - `autoencoder/`：自编码器相关代码。\n      - `ctgan/`：CTGAN（条件生成对抗网络）相关代码。\n        - `ctgan.py`：CTGAN 模型的实现。\n        - `data.py`：数据处理相关函数，如 `read_csv` 和 `read_tsv`。\n    - `src/`：核心源代码目录。\n      - `DrFuzz.py`：DrFuzz 相关功能实现。\n      - `experiment_builder.py`：实验构建相关代码。\n    - `utils/`：工具函数目录。\n      - `param_util.py`：参数处理相关函数，如 `load_params` 和 `get_params`。\n      - `logger.py`：日志记录相关代码。\n      - `struct_util.py`：数据结构处理相关代码。\n      - `expect_grad_ops_util.py`：期望梯度操作相关代码。\n  - `TRFMitigator/`：TRF 缓解器相关代码。\n    - `src/`：核心源代码目录。\n      - `DrFuzz.py`：DrFuzz 相关功能实现。\n    - `test.py`：测试代码。\n    - `utils/`：工具函数目录。\n      - `param_util.py`：参数处理相关函数，如 `load_params` 和 `get_params`。\n  - `params/`：参数配置文件目录。\n    - `change.py`：参数配置文件。\n\n## 安装与依赖\n本项目基于 Python 开发，主要依赖以下库：\n- `tensorflow`：深度学习框架。\n- `numpy`：数值计算库。\n- `pandas`：数据处理库。\n- `scipy`：科学计算库。\n- `argparse`：命令行参数解析库。\n- `importlib`：模块导入库。\n\n你可以使用以下命令安装所需的依赖：\n~~~\nconda create -n Feaproct python=3.8\nconda install numpy=1.21.5\nconda install tensorflow==2.3.0\nconda install matplotlib\nconda install pandas\npip install minepy\nconda install pytorch==1.13.0 torchvision==0.14.0 torchaudio==0.13.0 pytorch-cuda=11.7 -c pytorch -c nvidia\nconda install -c conda-forge rdt\n~~~\n# 使用方法\n## 运行测试代码\n### Running DTFuzz\n\n~~~\npython main.py --dataset mobile_price --model mobile_price --params_set Dnn mobilePrice change drfuzz --output_name price_range --dataset_col sc_h-talk_time-touch_screen-battery_power-four_g-three_g --terminate_type time --choose_col_type random --time 360 --update_col_num 3\n~~~\n\nmain.py contains all the configurations for our experimentation.\n\nYou can refer to Drfuzz for configuration. \n\n`--update_col_num` refers to the number of columns selected\n\n`--output_name` refers to the label column of the dataset\n\n`--dataset_col` refers to scenarios\n\n`--choose_col_type` refers to the selection strategy for the number of columns selected\n\n### Running TRFMitigator\n\n~~~\npython test.py --dataset mobile_price --model mobile_price --num_classes 4 --dataset_col sc_h-talk_time-touch_screen-battery_power-four_g-three_g --fix_type eg_discrt_fea_sel_1 --rf  --need_eg --need_fea_Sel\n~~~\n\n从 RQ2 消融实验中获得的模型分别是`eg_1`, `eg_2`, `eg_3`, `discrt_fea_sel_1`, `discrt_fea_sel_2`, and `discrt_fea_sel_3`\n~~~\npython test.py --dataset mobile_price --model mobile_price --num_classes 4 --dataset_col sc_h-talk_time-touch_screen-battery_power-four_g-three_g --fix_type eg_1 --rf --need_eg\n~~~\n\n~~~\npython test.py --dataset mobile_price --model mobile_price --num_classes 4 --dataset_col sc_h-talk_time-touch_screen-battery_power-four_g-three_g --fix_type discrt_fea_sel_1 --rf  --need_fea_Sel\n~~~\n\n----- \n如果研究人员需要对我们的方法进行实验，他们可以简单地使用以下命令运行`TRFMitigator`.\n\n~~~\npython main.py --dataset <datasetname> --model <datasetname> --num_classes <number of class> --dataset_col <scenarios> --fix_type eg_discrt_fea_sel --need_eg --need_fea_Sel --lamb 0.5\n~~~\n\n\nmain.py 文件包含了我们实验的所有配置。\n\n`--num_classes` 指的是数据集的类别数量。\n\n`--dataset_col` 指的是实验场景。\n\n`--fix_type` 指的是保存路径。\n\n`--rf` 指的是是否使用回归误差。如果为 True，你可以使用这些参数来计算回归误差修复率。\n\n`--need_eg` 指的是是否使用期望梯度。\n\n`--need_fea_Sel` 指的是是否使用特征选择。\n\n同样，你可以使用我们提供的 shell 脚本来进行实验。\n\n",
+ "hits": {
+  "ctgan_mod": [
+   {
+    "file": "dtfuzz/autoencoder/train_tvae.py",
+    "line": 4,
+    "text": "from ctgan.tvae import TVAE",
+    "context": [
+     "import torch",
+     "import os",
+     "os.environ['CUDA_VISIBLE_DEVICES'] = '1,2,3'",
+     "from ctgan.tvae import TVAE",
+     "from util.struct_util import *",
+     "import pandas as pd",
+     "from sklearn.preprocessing import StandardScaler, LabelEncoder",
+     "def get_tave(params):"
+    ]
+   }
+  ],
+  "rdt": [
+   {
+    "file": "dtfuzz/autoencoder/ctgan/data_transformer.py",
+    "line": 8,
+    "text": "from rdt.transformers import ClusterBasedNormalizer, OneHotEncoder",
+    "context": [
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from joblib import Parallel, delayed",
+     "from rdt.transformers import ClusterBasedNormalizer, OneHotEncoder",
+     "",
+     "SpanInfo = namedtuple('SpanInfo', ['dim', 'activation_fn'])",
+     "ColumnTransformInfo = namedtuple(",
+     "    'ColumnTransformInfo', ["
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ctgan_mod",
+  "rdt"
+ ],
+ "vendored_dirs": [
+  "dtfuzz/autoencoder/ctgan"
+ ],
+ "dependencies": {}
+}

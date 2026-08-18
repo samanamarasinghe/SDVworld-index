@@ -1,0 +1,127 @@
+{
+ "repo": "wanjingluo/financial_data_synthesizer",
+ "disk_kb": 2081,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Financial Data Synthesizer\n\nA **synthetic data generator** for financial-style workloads. It supports derive a data model from a business scenario and generate configurable row counts from a given schema: SQLite DDL, internal JSON, or built-in scenarios, while aiming for plausible distributions, referential integrity, and semi-structured field shapes.\n\n## Architecture\n\n```\nfinancial_data_synthesizer/\n├── schema_from_scenario.py   # Scenario → DataSchema (multi-table, PK/FK)\n├── parsers.py                # SQLite DDL / JSON schema parsing\n├── ddl.py                    # DataSchema → SQLite DDL (topological create order)\n├── topology.py               # Table dependency order (FK-safe generation)\n├── synthesis.py              # Row generation (distributions, FK sampling, semi-structured)\n├── json_values.py            # Domain-style JSON column templates\n├── faker_bridge.py           # Optional Faker: names, contacts, categories\n├── sdv_integration.py        # Optional SDV HMA: multi-table fit & resample\n├── business_rules/           # engine.py + trading/credit_risk; CRM/banking/RM-KYC in crm_rules.py\n├── exporters.py              # SQLite / Parquet / Delta (optional)\n└── cli.py                    # CLI entry point\n```\n\n## Schema generation\n\n- **Built-in scenario templates** (aligned with Example Data Scenarios): `crm` — full **unified** retail + relationship dataset: `customers`, `accounts`, `transactions`, `customer_interactions`, `relationship_managers`, `client_accounts` (KYC + Primary RM; PK `serving_account_id`, FK `customer_id` → `customers`), `coverage_assignments` (FK `serving_account_id` → `client_accounts`). The same schema is also registered as **`client_coverage`** (alias). Other scenarios: `trading` (portfolios, instruments, orders, executions), `credit_risk` (borrowers, loans, repayments, risk snapshots), `banking` (customers, `bank_accounts`, `account_status_history` chain).\n- Each table declares **primary** and **foreign keys** and mixes **numeric**, **categorical**, **timestamp**, and **JSON** columns.\n- Extensions: map free-text scenarios to templates (aliases), or feed an LLM-produced JSON schema into the same pipeline.\n\n## Synthetic data pipeline\n\n1. **Input**: one of `--schema-sql`, `--schema-json`, or `--scenario`.\n2. **Topological order**: `topology.table_generation_order` ensures parents are generated before dependents.\n3. **Rows**: FK columns sample uniformly from the parent PK pool; amounts use lognormal / skewed draws; categoricals use weights or `categorical_values`.\n4. **JSON**: `json_values.synthetic_json_for_column` builds stable nested payloads from column/table hints (e.g. profile, metadata, transaction details).\n5. **Output** (only if you pass the matching CLI flags): `export_sqlite` (batched inserts), `export_parquet_dir` (per-table files), `export_delta` (optional: `pip install deltalake`). See **CLI output** below.\n\n## Distributions and relationships\n\n- **Referential integrity**: child FK values come only from generated parent PKs; SQLite exports can be checked with `PRAGMA foreign_key_check` (see tests).\n- **Categoricals**: optional `categorical_values`; otherwise name-based heuristics (e.g. `country`, `currency`) with weights.\n- **Numeric shapes**: balances/exposure use lognormal-style draws; transaction amounts use a skewed variant; ages are clipped to 18–95.\n\n## Semi-structured data (JSON / XML)\n\n- JSON is stored mainly as **JSON strings** (SQLite/Parquet friendly); columns like `details_json` / `profile_json` include nested fields and arrays.\n- For XML, extend `json_values` with `*_xml` branches or emit fragments into `text` columns.\n\n## Scale and performance\n\n- SQLite export uses **10k-row batches** with `executemany`.\n- For very large runs, use `SyntheticDataGenerator.iter_batches` per table (you must keep parent PK pools consistent yourself).\n\n## Faker and SDV\n\nInstall: `pip install -e \".[faker]\"` or `pip install -e \".[sdv]\"` (includes `sdv` and `faker`).\n\n### Faker (`--use-faker`)\n\nProduces **readable single-column values** before the default RNG, driven by column names (see `faker_bridge.py`).\n\n**Suggested priority columns (by scenario)**\n\n| Scenario | Priority tables | Example columns |\n|----------|-----------------|-----------------|\n| CRM | `customers` | `name`, `country` (or any categorical with `categorical_values`) |\n| CRM | `transactions` | `transaction_time` (ISO timestamps), `currency` |\n| Trading | `instruments` | `ticker` |\n| Trading | `portfolios` | `name` (company/portfolio-style labels) |\n| Credit risk | `borrowers` | `profile_json` still uses JSON templates; prefer SDV for heavy numerics |\n| Credit risk | `loan_contracts` | `rate` / `principal` (Faker only lightly touches `rate`; large amounts fit SDV better) |\n\n**Do not** replace with Faker: `*_id` primary/foreign keys, or whole JSON columns (keep `json_values`).\n\n### SDV HMA (`--sdv-bootstrap` or `--sdv-train-sqlite`)\n\n**HMA** learns cross-table dependencies and samples jointly—good for **relationships plus column joint distributions**.\n\n**Suggested priority tables (fit together)**\n\n1. **CRM**: `customers` → `accounts` → `transactions`; include `customer_interactions` with `customers` in one HMA run.  \n2. **Trading**: `portfolios` and `instruments` together with `trade_orders` and `trade_executions`.  \n3. **Credit risk**: `borrowers` → `loan_contracts` → `repayment_history` / `risk_indicators`.\n\n**High-signal columns for training**\n\n- Numeric: `amount`, `balance`, `principal`, `pd`, `lgd`, `fill_price`\n- Categorical: `account_type`, `currency`, `channel`, `status`, `side`\n- Time: `transaction_time`, `execution_time`, `due_date`\n- Text / JSON: modeled as strings in SDV; for strict structure, keep rule-based JSON or engineer features (hash/truncate) before modeling.\n\n**Examples**\n\n```bash\n# Bootstrap a training sample with the built-in engine, then HMA resample (scale ≈ multiplier vs training sizes)\nfds generate --scenario crm --rows 80 --sdv-bootstrap --sdv-scale 1.5 --sqlite out/sdv.db\n\n# Train from an existing SQLite database\nfds generate --scenario crm --sdv-train-sqlite out/sdv.db --sdv-scale 2 --sqlite out/sdv2.db\n```\n\n## Dependencies\n\n- **Core**: `pandas`, `pyarrow` (Parquet).\n- **Optional**: `faker`; `sdv` (multi-table HMA); `deltalake` (Delta Lake).\n\n## Install and test\n\n```bash\npip install -e \".[dev]\"\npython -m pytest tests -q\n# Skip slower SDV integration test:\npython -m pytest tests -q -m \"not slow\"\n```\n\n## CLI output (`--sqlite` and `--parquet-dir`)\n\n- **`--sqlite PATH`**: optional. If omitted, **no `.db` file is written**—data exists only in memory for that run.\n- **`--parquet-dir DIR`**: optional. If omitted, **no Parquet files are written**—previous files in that folder are **not** updated.\n- The two flags are **independent**: use **both** in one command if you want a SQLite database **and** per-table Parquet under `DIR`. Passing only one writes only that format.\n- If **neither** `--sqlite` nor `--parquet-dir` is given, the CLI **only prints** each table’s row count to the terminal (**nothing is saved** to disk).\n\nParent directories (e.g. `out/`) are created automatically when writing.\n\n- With **`--scenario`**, the **business rule engine** runs before export unless **`--no-business-rules`** is set (see [Business rule engine](#business-rule-engine-built-in-scenarios) at the end of this file).\n\n## CLI examples\n\n```bash\n# Built-in CRM scenario — SQLite + Parquet\nfds generate --scenario crm --rows 200 --sqlite out/crm.db --parquet-dir out/pq\n\n# Faker — same: add --parquet-dir if you want Parquet updated (SQLite alone does not write Parquet)\nfds generate --scenario crm --rows 100 --use-faker --sqlite out/crm_faker.db --parquet-dir out/pq\n\n# sample_schema.sql (includes transactions) + CRM business rules (optional)\nfds generate --schema-sql data/sample_schema.sql --business-rules-as crm --rows 500 --sqlite out/sample.db --parquet-dir out/pq_schema\n\n# sample_schema_full.json (FK metadata)\nfds generate --schema-json data/sample_schema_full.json --rows 1000 --parquet-dir out/pq\n\n# No files — only print row counts to stdout\nfds generate --scenario crm --rows 50\n\n# Banking (ordered status history) — separate scenario\nfds generate --scenario banking --rows 100 --seed 42 --sqlite out/banking.db\n# `client_coverage` is the same schema as `crm` (alias); use `crm` for “all user tables” in one run\nfds generate --scenario crm --rows 200 --sqlite out/crm.db --parquet-dir out/pq\n```\n\n## Example outputs\n\nWith `--sqlite` / `--parquet-dir`, outputs go to the paths you pass (e.g. `out/*.db` and `out/pq/*.parquet`).\n\n---\n\n## Business rule engine (built-in scenarios)\n\nWhen you pass **`--scenario`**, a **deterministic rule engine** runs after base generation (and after SDV, if used). It rewrites / enriches fields so rows reflect **entity identity**, **lifecycle**, **cross-field**, **product**, and (where defined) **coverage / KYC** logic—without changing primary/foreign keys (referential integrity is preserved).\n\n**CLI**\n\n- **Default**: rules **on** when you use **`--scenario crm|trading|credit_risk|banking|client_coverage`**.\n- **`--business-rules-as crm|trading|credit_risk|banking|client_coverage`**: apply the same engine when using **`--schema-sql` or `--schema-json`** (no `--scenario`). Example: `--schema-sql data/sample_schema.sql --business-rules-as crm`.\n- **`--no-business-rules`**: skip the engine and keep raw generator (± Faker) output only.\n\n**Where it lives**\n\n- `financial_data_synthesizer/business_rules/engine.py` — dispatches by scenario.\n- `crm_rules.py` — **CRM** (including **Primary RM** + `is_servicing_eligible` when `client_accounts` + `relationship_managers` are present; always true for `--scenario crm` / `client_coverage`), and **banking** (status history when `bank_accounts` is present); trading/credit are separate.\n- `trading_rules.py`, `credit_risk_rules.py` — trading and credit-risk-only logic.\n\n**Implementation vs. checking exports**\n\n- **Enforcing rules in-process:** `cli.py` calls `apply_business_rules(...)` after `generate_tables` (unless `--no-business-rules`). CRM / RM+KYC logic is implemented in `business_rules/crm_rules.py` (e.g. `_apply_client_coverage_kyc`, `_compute_is_servicing_eligible`), not as DB CHECK constraints.\n- **Re-validating Parquet (or any export) after the fact:** `scripts/validate_pq_crm.py` reads `client_accounts.parquet` and `coverage_assignments.parquet` and checks the same Primary-RM and `is_servicing_eligible` predicates. **`tests/test_business_rules.py`** covers the engine on in-memory dicts. **`notebooks/pq_crm_quicklook.ipynb`** is for ad-hoc Pandas checks.\n\n### CRM (`crm`) — includes retail + RM / KYC (same as alias `client_coverage`)\n\n| Theme | Rules (summary) |\n|--------|-------------------|\n| **Entity identity** | Each customer gets `entity_type` ∈ {retail, corporate} and `segment` in `profile_json`; corporate skews toward higher tiers. |\n| **Customer lifecycle** | `lifecycle_stage` ∈ {onboarding, active, growth, at_risk, dormant}; drives balance scaling and interaction channel mix. (KYC for servicing is on `client_accounts`, not in `profile_json`.) |\n| **Cross-field** | `account_type` and `balance` depend on entity + lifecycle + tier; `metadata_json` carries `product_line` (commercial vs retail) and `fee_tier`. |\n| **Transactions** | `amount` scales with account balance and lifecycle (e.g. stress in at_risk); `currency` mix differs for corporate vs retail; `details_json` adds posting/risk flags. |\n| **Interactions** | `channel` distribution shifts by lifecycle (e.g. more phone when at_risk); `summary_json` adds intent/priority. |\n| **Primary RM** | `client_accounts` + `coverage_assignments`: for `account_status = Active`, exactly one **Primary** row; `coverage_owner_id` matches. Optional `Product_Shared` / `Regional_Shared`. **IDs:** `serving_account_id` (serving/relationship line) vs `accounts.account_id` (retail product accounts). |\n| **Servicing eligibility** | `is_servicing_eligible` on `client_accounts` from KYC + `kyc_expiry_date` + `sanctions_status` (as-of: env **`FDS_AS_OF_DATE`** or UTC today). |\n\n### Banking (`banking`) — also implemented in `crm_rules.py`\n\n| Theme | Rules (summary) |\n|--------|-------------------|\n| **Status history** | `account_status_history` is **rebuilt** with a time-ordered Markov chain per `account_id` (first event `opened`; each next status depends on the previous). |\n| **Current state** | `bank_accounts.current_status` = last event; `metadata_json` flags terminal `closed` when applicable. |\n\n### Trading (`trading`)\n\n| Theme | Rules (summary) |\n|--------|-------------------|\n| **Product / instrument** | `quantity` and `limit_price` ranges depend on `asset_class` (equity vs fx vs bond vs commodity). |\n| **Portfolio** | `attrs_json` includes routing hint; execution currency context uses portfolio `base_currency`. |\n| **Executions** | `fill_price` stays near order `limit_price`; `fill_qty` ≤ order quantity; `details_json` adds slippage_bps. |\n\n### Credit risk (`credit_risk`)\n\n| Theme | Rules (summary) |\n|--------|-------------------|\n| **Borrower** | `profile_json` adds employment stability; mild regional income floor for selected regions. |\n| **Loan contracts** | Principal capped vs annual income (rough DTI-style); rate nudges up when leverage is high; `contract_json` adds product_family and underwriting_band. |\n| **Repayment** | Paid amount bounded by principal; status may move missed→late; collections_stage in `details_json`. |\n| **Risk indicators** | `pd` / `lgd` adjusted with payment-to-income proxy; `features_json` stores `pti` and model tag. |\n\n**Extending**\n\n- Add or edit rules in `crm_rules.py` (shared CRM / banking / client-coverage paths) or in `trading_rules.py` / `credit_risk_rules.py`; register new scenario keys in `business_rules/engine.py`.\n- For **AI / LLM**-driven logic later, keep the same post-process hook: call your model from a rule function and merge outputs into row dicts (still subject to schema types).\n\n**Note**: With only `--schema-sql` / `--schema-json` and **no** `--scenario`, rules **do not** run unless you add **`--business-rules-as`** with a known scenario (`crm`, `trading`, `credit_risk`, `banking`, `client_coverage`, …). You can also call `apply_business_rules(name, tables, seed)` from Python.\n\n**DDL / TEXT columns**: SQLite `TEXT` columns such as `currency` and `account_type` are parsed as `STRING`s. The generator maps known code-like column names to **ISO codes / account types** (not random letters). **`ticker` / `symbol`** (e.g. on `instruments`) are filled with **uppercase ticker-like symbols** (pool of stylized names + random A–Z runs), not mixed-case gibberish. Use **`--use-faker`** for similar semantics on those fields.\n\n---\n\n*Last updated: 2026-04 — Documented “implementation vs. post-export validation” (`crm_rules` vs `scripts/validate_pq_crm.py` / tests / notebook). `--scenario crm` = unified schema; `client_coverage` = alias; `engine` dispatches to `apply_crm_rules` for `crm` / `client_coverage` / `banking` as applicable.*\n",
+ "hits": {
+  "md": [
+   {
+    "file": "financial_data_synthesizer/sdv_integration.py",
+    "line": 72,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "    dfs: dict[str, pd.DataFrame],",
+     "    *,",
+     "    seed: int = 0,",
+     "):",
+     "    from sdv.metadata import Metadata",
+     "    from sdv.multi_table import HMASynthesizer",
+     "",
+     "    random.seed(seed)",
+     "    np.random.seed(seed % (2**32 - 1))"
+    ]
+   }
+  ],
+  "mt": [
+   {
+    "file": "financial_data_synthesizer/sdv_integration.py",
+    "line": 73,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "    *,",
+     "    seed: int = 0,",
+     "):",
+     "    from sdv.metadata import Metadata",
+     "    from sdv.multi_table import HMASynthesizer",
+     "",
+     "    random.seed(seed)",
+     "    np.random.seed(seed % (2**32 - 1))",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "financial_data_synthesizer/sdv_integration.py",
+    "line": 72,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "    dfs: dict[str, pd.DataFrame],",
+     "    *,",
+     "    seed: int = 0,",
+     "):",
+     "    from sdv.metadata import Metadata",
+     "    from sdv.multi_table import HMASynthesizer",
+     "",
+     "    random.seed(seed)",
+     "    np.random.seed(seed % (2**32 - 1))"
+    ]
+   },
+   {
+    "file": "financial_data_synthesizer/sdv_integration.py",
+    "line": 73,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "    *,",
+     "    seed: int = 0,",
+     "):",
+     "    from sdv.metadata import Metadata",
+     "    from sdv.multi_table import HMASynthesizer",
+     "",
+     "    random.seed(seed)",
+     "    np.random.seed(seed % (2**32 - 1))",
+     ""
+    ]
+   }
+  ],
+  "hma": [
+   {
+    "file": "financial_data_synthesizer/sdv_integration.py",
+    "line": 73,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "    *,",
+     "    seed: int = 0,",
+     "):",
+     "    from sdv.metadata import Metadata",
+     "    from sdv.multi_table import HMASynthesizer",
+     "",
+     "    random.seed(seed)",
+     "    np.random.seed(seed % (2**32 - 1))",
+     ""
+    ]
+   },
+   {
+    "file": "financial_data_synthesizer/sdv_integration.py",
+    "line": 80,
+    "text": "synth = HMASynthesizer(metadata)",
+    "context": [
+     "    np.random.seed(seed % (2**32 - 1))",
+     "",
+     "    data = prepare_dataframes_for_sdv(dfs)",
+     "    metadata = Metadata.detect_from_dataframes(data)",
+     "    synth = HMASynthesizer(metadata)",
+     "    synth.fit(data)",
+     "    return synth",
+     "",
+     ""
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "hma",
+  "md",
+  "mt",
+  "sdv_any"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "pyproject.toml": [
+   "sdv = [\"sdv>=1.12\", \"faker>=20\"]",
+   "dev = [\"pytest>=8\", \"faker>=20\", \"sdv>=1.12\"]",
+   "markers = [\"slow: SDV fit/sample integration (seconds)\"]"
+  ]
+ }
+}

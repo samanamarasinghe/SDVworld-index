@@ -1,0 +1,271 @@
+{
+ "repo": "mohamedfouda1810/SythnticGenerator",
+ "disk_kb": 236,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "<p align=\"center\">\n  <img src=\"https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white\" />\n  <img src=\"https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white\" />\n  <img src=\"https://img.shields.io/badge/React_19-61DAFB?style=for-the-badge&logo=react&logoColor=black\" />\n  <img src=\"https://img.shields.io/badge/Tailwind_CSS_v4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white\" />\n  <img src=\"https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white\" />\n  <img src=\"https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white\" />\n  <img src=\"https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge\" />\n</p>\n\n# 🧬 SynthGen — AI-Powered Synthetic Data Generator\n\n> An enterprise-grade synthetic data generation platform combining **CTGAN deep learning** and **Mimesis rule-based** engines to produce high-fidelity tabular data — complete with quality evaluation, job history, admin controls, and real-time email verification.\n\n**Faculty of Computers and Information Technology — Academic Year 2025-2026**\n\n---\n\n## 📋 Table of Contents\n\n- [Overview](#-overview)\n- [Key Features](#-key-features)\n- [Tech Stack](#-tech-stack)\n- [Architecture](#-architecture)\n- [Getting Started](#-getting-started)\n- [API Reference](#-api-reference)\n- [Testing](#-testing)\n- [Docker Deployment](#-docker-deployment)\n- [Security](#-security)\n- [Roadmap](#-roadmap)\n- [Team](#-team)\n- [License](#-license)\n\n---\n\n## 🔍 Overview\n\nSynthGen provides two complementary approaches to synthetic data generation:\n\n| Engine | Method | Use Case | Speed |\n|--------|--------|----------|-------|\n| **CTGAN** | Deep learning (Conditional GAN) | Learn distributions from uploaded CSV/XLSX datasets | Minutes (training-based) |\n| **Mimesis** | Rule-based schema generation | Generate data from a defined column schema | Instant |\n\nBoth engines include automatic **quality evaluation** (KS statistics, total variation distance, correlation analysis) and produce downloadable CSV/XLSX outputs.\n\n---\n\n## ✨ Key Features\n\n### 🤖 AI-Powered Data Generation\n\n- **CTGAN Pipeline**: Upload CSV/XLSX → Auto-preprocess → Train SDV CTGAN model → Sample synthetic rows → Evaluate quality → Download\n- **Mimesis Generator**: Define a column schema → Generate up to 1M rows instantly → Evaluate → Download\n- **Live Preview**: Real-time Mimesis preview endpoint for quick sample rows before full generation\n- **Background Processing**: Generation jobs run asynchronously via FastAPI BackgroundTasks with status polling\n- **Download Formats**: CSV (default) and XLSX support\n\n### 🧠 AI Engine Intelligence\n\n- **Smart Type Detection**: Automatically classifies columns as continuous, categorical, datetime, boolean, or ID-like\n- **Missing Value Handling**: Type-aware imputation strategies\n- **Optional PII Removal**: Detects and removes personally identifiable information before CTGAN training\n- **SDV Metadata Creation**: Automatic metadata generation for CTGAN compatibility\n- **Quality Scoring (0–100)**:\n  - KS statistic for numeric distributions\n  - Total variation distance for categorical distributions\n  - Correlation matrix (Frobenius norm) comparison\n  - Missing value rate analysis\n  - Rule-based Mimesis scoring (schema completeness, null rates, type checks)\n\n### 📊 25 Mimesis Field Types\n\n| Category | Fields |\n|----------|--------|\n| **Personal** | `name`, `first_name`, `last_name`, `email`, `phone`, `address`, `country`, `city`, `age`, `gender` |\n| **Temporal** | `date`, `datetime` |\n| **Numeric** | `integer`, `float` |\n| **Categorical** | `category`, `boolean`, `uuid`, `id` |\n| **Medical** | `diagnosis`, `blood_type`, `medication`, `symptom` |\n| **Financial** | `salary`, `currency`, `iban` |\n\n### 🔐 Authentication & Security\n\n- **JWT Authentication**: Access + Refresh token flow with configurable expiry\n- **Email Verification**: Real SMTP email delivery (Gmail) with styled HTML templates, resend support, and expired-link recovery\n- **Password Recovery**: Forgot/reset password flow with secure hashed reset tokens\n- **Token Blocklist**: Immediate token revocation on logout\n- **Role-Based Access Control**: `USER` and `ADMIN` roles with route-level enforcement\n- **Graceful Logout**: Server accepts expired tokens on logout without 401 errors\n\n### 👤 User Profile Management\n\n- View and update username\n- Change password with current-password verification\n- Upload and serve custom avatars\n- Delete account with password confirmation (cascades to all user data)\n\n### 🛡️ Admin Dashboard\n\n- **User Management**: List, search, filter, paginate all users with generation counts\n- **User Actions**: Block/unblock, change roles, delete users + associated data\n- **Platform Statistics**: Total users, generation counts, completion/failure rates, average quality scores, recent activity\n- **Activity Logs**: Full audit trail of all critical actions (login, register, generate, admin actions)\n- **Error Tracking**: View failed generation errors for debugging\n- **Storage Management**: In-memory storage cleanup endpoint\n\n### 📱 Frontend Experience\n\n- **Premium Dark UI**: Glassmorphism, gradient animations, micro-interactions powered by Framer Motion\n- **Route-Level Code Splitting**: Lazy-loaded pages for optimal performance\n- **Responsive Design**: Mobile-first layouts across all pages\n- **Real-Time Feedback**: Toast notifications, loading states, progress indicators\n- **Smart Error Handling**: Field-level validation, friendly conflict messages with action links\n\n### 📈 Job History & Tracking\n\n- **Full History**: Every generation job recorded with metadata (mode, status, rows, quality score, columns, created date)\n- **Job Details**: View sample rows, quality breakdown, download generated files\n- **Filters**: Filter by mode (CTGAN/Mimesis) and status (completed/failed/running)\n- **Pagination**: Efficient paginated history browsing\n\n---\n\n## 🛠️ Tech Stack\n\n### Backend\n| Technology | Purpose |\n|-----------|---------|\n| **FastAPI** | Async REST API framework |\n| **SQLAlchemy 2.0** | Async ORM (AsyncPG for PostgreSQL) |\n| **Pydantic v2** | Request/response validation |\n| **Alembic** | Database migrations |\n| **python-jose** | JWT token creation/validation |\n| **bcrypt** | Password hashing |\n| **SDV (CTGAN)** | Deep learning synthetic data |\n| **Mimesis** | Rule-based synthetic data |\n| **Pandas** | Data manipulation |\n| **SciPy** | Statistical quality evaluation |\n\n### Frontend\n| Technology | Purpose |\n|-----------|---------|\n| **React 19** | UI framework |\n| **Vite 8** | Build tool & dev server |\n| **Tailwind CSS v4** | Utility-first styling |\n| **Zustand** | Global state management |\n| **Framer Motion** | Animations & transitions |\n| **React Router v7** | Client-side routing |\n| **Recharts** | Admin dashboard charts |\n| **Lucide React** | Icon library |\n| **React Hot Toast** | Notification system |\n\n### Infrastructure\n| Technology | Purpose |\n|-----------|---------|\n| **PostgreSQL 15+** | Production database |\n| **Docker Compose** | Container orchestration |\n| **Nginx** | Frontend serving (production) |\n\n---\n\n## 🏗️ Architecture\n\n```text\n┌─────────────────────────────────────────────────────────────────┐\n│                         Frontend (React 19)                     │\n│  Vite 8 • Tailwind v4 • Zustand • Framer Motion • React Router │\n├─────────────────────────────────────────────────────────────────┤\n│                        Vite Proxy / Nginx                       │\n├─────────────────────────────────────────────────────────────────┤\n│                       Backend (FastAPI)                          │\n│  ┌──────────┐ ┌─────────┐ ┌──────────┐ ┌─────────┐ ┌─────────┐│\n│  │ Auth API │ │ Gen API │ │ History  │ │ Profile │ │  Admin  ││\n│  └────┬─────┘ └────┬────┘ └────┬─────┘ └────┬────┘ └────┬────┘│\n│       │            │           │             │           │      │\n│  ┌────┴────────────┴───────────┴─────────────┴───────────┴────┐│\n│  │                     Service Layer                          ││\n│  │  auth_service • email_service • ctgan_service              ││\n│  │  mimesis_service • storage_service • logger_service        ││\n│  └────────────────────────────┬───────────────────────────────┘│\n├───────────────────────────────┼─────────────────────────────────┤\n│                    AI Engine Layer                               │\n│  ┌─────────────┐ ┌───────────┐ ┌────────────┐ ┌──────────────┐│\n│  │ Preprocessor│ │  CTGAN    │ │  Mimesis   │ │  Evaluator   ││\n│  │  (PII, NaN) │ │ (SDV Lib) │ │ (Providers)│ │ (KS, TVD)    ││\n│  └─────────────┘ └───────────┘ └────────────┘ └──────────────┘│\n├─────────────────────────────────────────────────────────────────┤\n│  PostgreSQL (Production) / SQLite (Development)                 │\n│  Users • Jobs • Tokens • Logs • Password Resets                 │\n└─────────────────────────────────────────────────────────────────┘\n```\n\n### API Route Groups\n\n| Prefix | Purpose | Auth Required |\n|--------|---------|---------------|\n| `GET /health` | Health check | No |\n| `/api/auth/*` | Register, login, logout, refresh, verify email, reset password | Varies |\n| `/api/profile/*` | View/update profile, avatar, password, delete account | Yes |\n| `/api/generate/*` | CTGAN upload, Mimesis generate, preview, download | Yes |\n| `/api/history/*` | Job listing, details, deletion | Yes |\n| `/api/admin/*` | User management, stats, logs, errors, cleanup | Admin only |\n\n---\n\n## 🚀 Getting Started\n\n### Prerequisites\n\n- **Python 3.11+**\n- **Node.js 18+**\n- **PostgreSQL 15+** (or Docker)\n\n### 1. Clone the Repository\n\n```bash\ngit clone https://github.com/mohamedfouda1810/SythnticGenerator.git\ncd SythnticGenerator\n```\n\n### 2. Environment Setup\n\n```bash\ncp .env.example .env\n```\n\nEdit `.env` with your configuration:\n\n```env\n# Database\nDATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/synthgen\n\n# Auth\nSECRET_KEY=your-secure-secret-key-min-32-chars\nACCESS_TOKEN_EXPIRE_HOURS=24\nREFRESH_TOKEN_EXPIRE_DAYS=7\n\n# App\nMAX_FILE_SIZE_MB=10\nMAX_ROWS=50000\nDEFAULT_EPOCHS=100\nCORS_ORIGINS=[\"http://localhost:5173\",\"http://localhost:3000\"]\n\n# Email (Gmail SMTP — requires App Password)\nMAIL_SERVER=smtp.gmail.com\nMAIL_PORT=587\nMAIL_USE_TLS=true\nMAIL_USERNAME=your-email@gmail.com\nMAIL_PASSWORD=your-gmail-app-password\nMAIL_FROM=your-email@gmail.com\nFRONTEND_URL=http://localhost:3000\n```\n\n> **📧 Gmail Setup**: Enable 2FA on your Google account → Go to Security → App Passwords → Generate one for \"Mail\".\n\n### 3. Backend Setup\n\n```bash\npython -m venv venv\n\n# Windows\nvenv\\Scripts\\activate\n# macOS/Linux\nsource venv/bin/activate\n\npip install -r backend/requirements.txt\nalembic -c backend/alembic.ini upgrade head\nuvicorn backend.main:app --reload --port 8000\n```\n\nAPI documentation: **http://localhost:8000/docs**\n\n### 4. Frontend Setup\n\n```bash\ncd frontend\nnpm install\nnpm run dev\n```\n\nApplication: **http://localhost:3000**\n\n---\n\n## 📡 API Reference\n\nFull interactive documentation available at `/docs` (Swagger UI) when the backend is running.\n\n### Auth Endpoints\n\n| Method | Endpoint | Description |\n|--------|----------|-------------|\n| `POST` | `/api/auth/register` | Create account with email verification |\n| `POST` | `/api/auth/login` | Authenticate and receive JWT tokens |\n| `POST` | `/api/auth/logout` | Revoke current token (accepts expired tokens) |\n| `POST` | `/api/auth/refresh` | Exchange refresh token for new access token |\n| `GET` | `/api/auth/me` | Get current user profile |\n| `GET` | `/api/auth/verify-email` | Verify email via token link |\n| `POST` | `/api/auth/resend-verification` | Resend verification email |\n| `POST` | `/api/auth/forgot-password` | Request password reset |\n| `POST` | `/api/auth/reset-password` | Reset password with token |\n\n### Generation Endpoints\n\n| Method | Endpoint | Description |\n|--------|----------|-------------|\n| `POST` | `/api/generate/ctgan` | Upload dataset and generate synthetic data |\n| `POST` | `/api/generate/mimesis` | Generate from schema definition |\n| `POST` | `/api/generate/mimesis/preview` | Preview 3 sample rows |\n| `GET` | `/api/generate/download/{token}` | Download generated file (CSV/XLSX) |\n| `GET` | `/api/generate/supported-fields` | List all Mimesis field types |\n\n### History, Profile & Admin\n\n| Method | Endpoint | Description |\n|--------|----------|-------------|\n| `GET` | `/api/history` | Paginated job history with filters |\n| `GET/DELETE` | `/api/history/{id}` | Job details / delete job |\n| `GET/PATCH` | `/api/profile` | View / update profile |\n| `PATCH` | `/api/profile/password` | Change password |\n| `DELETE` | `/api/profile` | Delete account |\n| `POST` | `/api/profile/avatar` | Upload avatar |\n| `GET` | `/api/admin/users` | List users (admin) |\n| `GET` | `/api/admin/stats` | Platform statistics (admin) |\n| `GET` | `/api/admin/logs` | Activity audit logs (admin) |\n\n---\n\n## 🧪 Testing\n\n### Backend Tests\n\n```bash\npython -m pytest backend/tests ai_engine/tests -q\n```\n\n### Frontend Quality Checks\n\n```bash\ncd frontend\nnpm run lint    # ESLint\nnpm run build   # Production build verification\n```\n\n> **Note**: On Windows PowerShell, if `npm run` is blocked by execution policy, use `npm.cmd run lint` instead.\n\n**Current Status**: ✅ `npm run lint` passes clean | ✅ `npm run build` passes with route-level code splitting\n\n---\n\n## 🐳 Docker Deployment\n\n```bash\ndocker-compose up --build\n```\n\n| Service | URL |\n|---------|-----|\n| Frontend | http://localhost |\n| Backend API | http://localhost:8000 |\n| API Docs | http://localhost:8000/docs |\n| PostgreSQL | localhost:5432 |\n\n---\n\n## 🔒 Security\n\n| Area | Implementation |\n|------|----------------|\n| **Passwords** | bcrypt hashing with salt |\n| **Tokens** | JWT (HS256) with JTI-based blocklist |\n| **Email Verification** | Mandatory before login, SMTP with HTML templates |\n| **RBAC** | Route-level `USER` / `ADMIN` enforcement |\n| **CORS** | Configurable allowed origins |\n| **Input Validation** | Pydantic v2 schemas on all endpoints |\n\n> ⚠️ **Production Checklist**:\n> - Replace `SECRET_KEY` with a cryptographically random value\n> - Never commit `.env` files (already in `.gitignore`)\n> - Replace default seeded admin accounts\n> - Add rate limiting for auth and generation endpoints\n> - Consider HttpOnly cookies for JWT storage\n\n---\n\n## 🗺️ Roadmap\n\n- [ ] **Persistent Storage**: Migrate from in-memory to S3/disk storage for generated files\n- [ ] **Worker Queue**: Move CTGAN training to Celery/Redis for production scalability\n- [ ] **Frontend Tests**: Vitest + React Testing Library for auth, generation, and admin flows\n- [ ] **Rate Limiting**: Per-endpoint rate limits before public deployment\n- [ ] **Password Reset Email**: Send reset links via SMTP (currently generates token only)\n- [ ] **Export Formats**: Add JSON and Parquet export options\n\n---\n\n## 👥 Team\n\n| Name | Role |\n|------|------|\n| **Mohamed Ebrahim** | Developer |\n| **Mohamed Wael** | Developer |\n| **Habiba Khalil** | Developer |\n| **Abdelrahman Hussein** | Developer |\n| **Amr Sayed** | Developer |\n\n**Supervisor**: Dr. Yasser Kamal\n\n---\n\n## 📄 License\n\nThis project is licensed under the **MIT License**.\n\n---\n\n<p align=\"center\">\n  <sub>Built with ❤️ at Faculty of Computers and Information Technology — 2025/2026</sub>\n</p>\n",
+ "hits": {
+  "ct": [
+   {
+    "file": "TECHNICAL_DOCUMENTATION.md",
+    "line": 103,
+    "text": "─→ CTGANSynthesizer(metadata, epochs=N).fit(clean_df)",
+    "context": [
+     "           · Remove PII columns",
+     "           · Auto-detect column types",
+     "           · Fill missing values",
+     "           · Build SDV metadata",
+     "        ─→ CTGANSynthesizer(metadata, epochs=N).fit(clean_df)",
+     "           · PyTorch Conditional GAN training",
+     "        ─→ CTGANSynthesizer.sample(num_rows=N)",
+     "           · Generate synthetic rows",
+     "        ─→ DataEvaluator.evaluate(real_df, synthetic_df)"
+    ]
+   },
+   {
+    "file": "TECHNICAL_DOCUMENTATION.md",
+    "line": 105,
+    "text": "─→ CTGANSynthesizer.sample(num_rows=N)",
+    "context": [
+     "           · Fill missing values",
+     "           · Build SDV metadata",
+     "        ─→ CTGANSynthesizer(metadata, epochs=N).fit(clean_df)",
+     "           · PyTorch Conditional GAN training",
+     "        ─→ CTGANSynthesizer.sample(num_rows=N)",
+     "           · Generate synthetic rows",
+     "        ─→ DataEvaluator.evaluate(real_df, synthetic_df)",
+     "           · KS tests, TVD, Frobenius norm",
+     "           · Compute quality score 0–100"
+    ]
+   },
+   {
+    "file": "TECHNICAL_DOCUMENTATION.md",
+    "line": 177,
+    "text": "5. **Train**: `CTGANSynthesizer.fit(clean_df)` — runs the GAN training loop",
+    "context": [
+     "1. **Receive** a Pandas DataFrame (from uploaded CSV/XLSX)",
+     "2. **Preprocess**: run `DataPreprocessor.fit_transform()` (PII removal, type detection, missing value fill)",
+     "3. **Build SDV Metadata**: convert preprocessing results to SDV column type dictionary; detect primary key from ID-like columns",
+     "4. **Validate Metadata**: `metadata.validate()` ensures SDV compatibility",
+     "5. **Train**: `CTGANSynthesizer.fit(clean_df)` — runs the GAN training loop",
+     "6. **Sample**: `CTGANSynthesizer.sample(num_rows=N)` — generates synthetic rows",
+     "7. **Return**: a `pd.DataFrame` of synthetic data",
+     "",
+     "**Why torch.set_num_threads(1)?**"
+    ]
+   },
+   {
+    "file": "TECHNICAL_DOCUMENTATION.md",
+    "line": 178,
+    "text": "6. **Sample**: `CTGANSynthesizer.sample(num_rows=N)` — generates synthetic rows",
+    "context": [
+     "2. **Preprocess**: run `DataPreprocessor.fit_transform()` (PII removal, type detection, missing value fill)",
+     "3. **Build SDV Metadata**: convert preprocessing results to SDV column type dictionary; detect primary key from ID-like columns",
+     "4. **Validate Metadata**: `metadata.validate()` ensures SDV compatibility",
+     "5. **Train**: `CTGANSynthesizer.fit(clean_df)` — runs the GAN training loop",
+     "6. **Sample**: `CTGANSynthesizer.sample(num_rows=N)` — generates synthetic rows",
+     "7. **Return**: a `pd.DataFrame` of synthetic data",
+     "",
+     "**Why torch.set_num_threads(1)?**",
+     "CTGAN uses PyTorch internally. When running inside FastAPI's `BackgroundTasks` (which uses a thread pool), allowing PyTorch to spawn many threads leads to CPU over-parallelization and potential deadlo"
+    ]
+   },
+   {
+    "file": "TECHNICAL_DOCUMENTATION.md",
+    "line": 1020,
+    "text": "| **SDV (sdv)** | >=1.0.0 | AI | CTGANSynthesizer — deep learning synthetic data |",
+    "context": [
+     "| **pydantic-settings** | >=2.0.0 | Config | Type-safe .env file parsing |",
+     "| **python-jose** | >=3.3.0 | JWT | JWT creation and validation (HS256) |",
+     "| **bcrypt** | >=4.0.0 | Security | Password hashing |",
+     "| **python-multipart** | >=0.0.20 | File Upload | Multipart form data parsing for CSV uploads |",
+     "| **SDV (sdv)** | >=1.0.0 | AI | CTGANSynthesizer — deep learning synthetic data |",
+     "| **PyTorch** | >=2.0.0 | AI | Neural network framework used internally by SDV/CTGAN |",
+     "| **Mimesis** | >=19.0.0 | AI | Rule-based realistic fake data generation |",
+     "| **Pandas** | >=2.0.0 | Data | DataFrame manipulation for CSV parsing and processing |",
+     "| **NumPy** | >=1.26.0 | Data | Numerical computations in evaluator |"
+    ]
+   },
+   {
+    "file": "ai_engine/ctgan_generator.py",
+    "line": 4,
+    "text": "Uses the SDV library's CTGANSynthesizer to learn the joint distribution",
+    "context": [
+     "\"\"\"",
+     "CTGAN-based Synthetic Data Generator.",
+     "",
+     "Uses the SDV library's CTGANSynthesizer to learn the joint distribution",
+     "of a real tabular dataset and produce synthetic rows that preserve",
+     "statistical properties of the original data.",
+     "\"\"\"",
+     ""
+    ]
+   },
+   {
+    "file": "ai_engine/ctgan_generator.py",
+    "line": 81,
+    "text": "self._synthesizer: Any = None  # will hold CTGANSynthesizer after fit",
+    "context": [
+     "",
+     "    def __init__(self) -> None:",
+     "        \"\"\"Initialise the CTGAN generator.\"\"\"",
+     "        self._preprocessor = DataPreprocessor(remove_pii=True)",
+     "        self._synthesizer: Any = None  # will hold CTGANSynthesizer after fit",
+     "",
+     "    # ------------------------------------------------------------------",
+     "    # Public API",
+     "    # ------------------------------------------------------------------"
+    ]
+   },
+   {
+    "file": "ai_engine/ctgan_generator.py",
+    "line": 125,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "        try:",
+     "            # Lazy import so the module can be loaded even without SDV",
+     "            import torch",
+     "            from sdv.metadata import Metadata",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "            ",
+     "            # Optimization: limit torch threads to 1 to prevent over-parallelization ",
+     "            # and potential hangs in background thread pools.",
+     "            torch.set_num_threads(1)"
+    ]
+   },
+   {
+    "file": "ai_engine/ctgan_generator.py",
+    "line": 203,
+    "text": "self._synthesizer = CTGANSynthesizer(",
+    "context": [
+     "            ",
+     "            # Optimization: ",
+     "            # 1. Force enable_gpu=False for stability in background threads on CPU.",
+     "            # 2. Set verbose=False to disable TQDM which can hang in some environments.",
+     "            self._synthesizer = CTGANSynthesizer(",
+     "                metadata,",
+     "                epochs=epochs,",
+     "                batch_size=actual_batch_size,",
+     "                generator_dim=tuple(generator_dim),"
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "ai_engine/ctgan_generator.py",
+    "line": 125,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "        try:",
+     "            # Lazy import so the module can be loaded even without SDV",
+     "            import torch",
+     "            from sdv.metadata import Metadata",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "            ",
+     "            # Optimization: limit torch threads to 1 to prevent over-parallelization ",
+     "            # and potential hangs in background thread pools.",
+     "            torch.set_num_threads(1)"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "ai_engine/ctgan_generator.py",
+    "line": 124,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "        try:",
+     "            # Lazy import so the module can be loaded even without SDV",
+     "            import torch",
+     "            from sdv.metadata import Metadata",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "            ",
+     "            # Optimization: limit torch threads to 1 to prevent over-parallelization ",
+     "            # and potential hangs in background thread pools."
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "ai_engine/ctgan_generator.py",
+    "line": 124,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "        try:",
+     "            # Lazy import so the module can be loaded even without SDV",
+     "            import torch",
+     "            from sdv.metadata import Metadata",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "            ",
+     "            # Optimization: limit torch threads to 1 to prevent over-parallelization ",
+     "            # and potential hangs in background thread pools."
+    ]
+   },
+   {
+    "file": "ai_engine/ctgan_generator.py",
+    "line": 125,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "        try:",
+     "            # Lazy import so the module can be loaded even without SDV",
+     "            import torch",
+     "            from sdv.metadata import Metadata",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "            ",
+     "            # Optimization: limit torch threads to 1 to prevent over-parallelization ",
+     "            # and potential hangs in background thread pools.",
+     "            torch.set_num_threads(1)"
+    ]
+   }
+  ],
+  "ctgan_mod": [
+   {
+    "file": "backend/routers/generation.py",
+    "line": 36,
+    "text": "from backend.services import ctgan_service, mimesis_service",
+    "context": [
+     "",
+     "from backend.config import settings",
+     "from backend.database import get_db",
+     "from backend.models import GenerationJob, GenerationMode, JobStatus, User",
+     "from backend.services import ctgan_service, mimesis_service",
+     "from backend.services.auth_service import get_client_ip, get_current_user_optional",
+     "from backend.services.logger_service import log_activity",
+     "",
+     "logger = logging.getLogger(__name__)"
+    ]
+   },
+   {
+    "file": "backend/tests/test_generation_endpoints.py",
+    "line": 338,
+    "text": "from backend.services import ctgan_service",
+    "context": [
+     "async def test_ctgan_without_privacy_flag_reaches_pipeline(",
+     "    client: AsyncClient, monkeypatch: pytest.MonkeyPatch",
+     ") -> None:",
+     "    \"\"\"POST /api/generate/ctgan with remove_pii=false keeps privacy disabled.\"\"\"",
+     "    from backend.services import ctgan_service",
+     "",
+     "    captured = {}",
+     "",
+     "    def fake_pipeline(real_df, num_rows, epochs, remove_pii):"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ctgan_mod",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "backend/requirements.txt": [
+   "sdv>=1.0.0"
+  ]
+ }
+}

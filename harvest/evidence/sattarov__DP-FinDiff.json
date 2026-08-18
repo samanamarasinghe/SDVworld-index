@@ -1,0 +1,122 @@
+{
+ "repo": "sattarov/DP-FinDiff",
+ "disk_kb": 1284,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# DP-FinDiff\n\n[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sattarov/DP-FinDiff/blob/master/examples/compact.ipynb)\n\nImplementation of the paper: **\"Privacy Preserving Diffusion Models for Mixed-Type Tabular Data Generation\"** [link](https://arxiv.org/abs/2512.00638).\n\nDP-FinDiff is an extension of FinDiff that integrates **Differential Privacy (DP)** for generating privacy-preserving synthetic tabular data. It is a PyTorch-based framework specifically designed to handle the complexities of financial datasets (e.g., mixtures of continuous and categorical variables). It leverages diffusion models with swappable neural network backbones to synthesize realistic records while providing formal privacy guarantees.\n\n## Features\n\n- **Differential Privacy**: Easy-to-use integration with Opacus to enable training with differential privacy for provable privacy guarantees.\n- **Efficient Categorical Handling**: Learnable embeddings for categorical data, with support for decoding via distance-based matching or direct logit prediction.\n- **Conditional Generation**: Support for label-conditioned synthetic data generation using Classifier-Free Guidance.\n- **Multiple Neural Backbones**: Choose between MLP, Transformer, and U-Net backbones for the diffusion process.\n- **Robust Data Transformation**: Built-in `DataTransformer` handles standardizing numerical features (Standard, MinMax, Robust, Power, Quantile) and encoding categorical features.\n- **Customizable Diffusion Schedulers**: Configurable noise schedules including linear, quadratic, sigmoid, and exponential.\n\n## Examples\n\nYou can explore DP-FinDiff's capabilities using our example notebooks on Google Colab:\n\n- [Compact Example](./examples/compact.ipynb): A quick-start guide to get you up and running (examples/compact.ipynb).\n  \n\n## Architecture\n\nThe framework is highly modular and broken down into four core components:\n\n1. **The Orchestrator (`findiff/model.py`)**\n   - **`FinDiff`**: The main user-facing class. It acts as the central orchestrator that wires together data transformations, diffusion mathematics, and the neural network. It handles the complete lifecycle, including the training loop (`fit()`), synthetic data generation (`sample()`), and the integration of differential privacy via Opacus.\n\n2. **Data Processing Pipeline (`findiff/data.py`)**\n   - **`DataTransformer`**: A robust preprocessing pipeline built specifically for tabular data. It scales numerical features and encodes categorical variables. Importantly, it manages the `inverse_transform` to accurately convert raw diffusion outputs back into a readable pandas DataFrame.\n   - **`FinDiffDataset`**: A standard PyTorch dataset wrapper to feed transformed tensors into dataloaders.\n\n3. **Neural Network Backbones (`findiff/backbones.py`)**\n   - **`FinDiffSynthesizer`**: The core predictive model that takes numerical data, embedded categorical data, and time-step embeddings to predict the noise during the reverse diffusion step.\n   - **Interchangeable Architectures**: The framework implements three separate architectures that can be swapped based on data complexity:\n     - `MLPBackbone`: Uses residual blocks for standard, lightweight tabular generation.\n     - `TransformerBackbone`: An attention-based tabular model.\n     - `UNetBackbone`: Adapts U-Net principles (typically used in image generation) for tabular representations.\n\n4. **Diffusion Mathematics (`findiff/diffusion.py`)**\n   - **`BaseDiffuser`**: Handles the underlying math for the diffusion process. It manages noise schedulers (Linear, Quadratic, Sigmoid, Exponential) and computes the parameters required to gradually add noise during the forward pass and iteratively denoise during generation.\n\n## Usage Example\n\nBelow is a minimal example demonstrating how to train a DP-FinDiff model and generate privacy-preserving synthetic tabular data.\n\n```python\nimport pandas as pd\nimport torch\nfrom torch.utils.data import DataLoader\nfrom findiff.data import DataTransformer, FinDiffDataset\nfrom findiff.model import FinDiff\n\n# 1. Prepare and transform your data\ndf = pd.DataFrame({\n    \"cat_col\": [\"A\", \"B\", \"A\", \"C\"],\n    \"num_col\": [1.5, 2.3, 0.9, 3.1]\n})\n\ntransformer = DataTransformer(\n    categorical_cols=[\"cat_col\"], \n    numerical_cols=[\"num_col\"],\n    numerical_scaler=\"standard\"\n)\ntransformed_data = transformer.fit_transform(df)\n\n# 2. Create a DataLoader\ndataset = FinDiffDataset(\n    cat_dataset=torch.tensor(transformed_data.get(\"cat\")),\n    num_dataset=torch.tensor(transformed_data.get(\"num\"), dtype=torch.float32)\n)\ndataloader = DataLoader(dataset, batch_size=2, shuffle=True)\n\n# 3. Initialize and train the DP-FinDiff model\n# To enable Differential Privacy, provide the dp_params dictionary.\n# To train without DP, simply omit the dp_params argument.\ndp_parameters = {\n    \"target_epsilon\": 10.0,\n    \"target_delta\": 1e-5,\n    \"max_grad_norm\": 1.0,\n}\n\nmodel = FinDiff(\n    data_transformer=transformer,\n    backbone_type=\"mlp\",  # Try 'transformer' or 'unet'\n    diffusion_total_steps=1000,\n    num_epochs=10,\n    device=\"cuda\" if torch.cuda.is_available() else \"cpu\",\n    dp_params=dp_parameters, # Omit for non-private training\n    train_dataloader=dataloader # Required for DP\n)\n\nmodel.fit(dataloader)\n\n# 4. Generate synthetic data\nsynthetic_df = model.sample(n_samples=5)\nprint(synthetic_df)\n```\n\n## Citation\n\nIf this project helped your research, please consider giving it a star and citing it in your work. It helps keep the project alive.\n\n```bibtex\n@article{sattarov2025privacy,\n  title={Privacy Preserving Diffusion Models for Mixed-Type Tabular Data Generation},\n  author={Sattarov, Timur and Schreyer, Marco and Borth, Damian},\n  journal={arXiv preprint arXiv:2512.00638},\n  year={2025}\n}\n```\n\n## License\n\nThis project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.\n",
+ "hits": {
+  "md": [
+   {
+    "file": "examples/compact.ipynb",
+    "line": 80,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "        \"import torch\\n\",",
+     "        \"from torch.utils.data import DataLoader\\n\",",
+     "        \"\\n\",",
+     "        \"# import synthetic data vault libraries\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"import sdv.evaluation.single_table as sdv_st\\n\",",
+     "        \"from sdmetrics.visualization import get_column_plot\\n\",",
+     "        \"\\n\",",
+     "        \"# import visualisation libraries\\n\","
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "examples/compact.ipynb",
+    "line": 80,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "        \"import torch\\n\",",
+     "        \"from torch.utils.data import DataLoader\\n\",",
+     "        \"\\n\",",
+     "        \"# import synthetic data vault libraries\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"import sdv.evaluation.single_table as sdv_st\\n\",",
+     "        \"from sdmetrics.visualization import get_column_plot\\n\",",
+     "        \"\\n\",",
+     "        \"# import visualisation libraries\\n\","
+    ]
+   },
+   {
+    "file": "examples/compact.ipynb",
+    "line": 81,
+    "text": "\"import sdv.evaluation.single_table as sdv_st\\n\",",
+    "context": [
+     "        \"from torch.utils.data import DataLoader\\n\",",
+     "        \"\\n\",",
+     "        \"# import synthetic data vault libraries\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"import sdv.evaluation.single_table as sdv_st\\n\",",
+     "        \"from sdmetrics.visualization import get_column_plot\\n\",",
+     "        \"\\n\",",
+     "        \"# import visualisation libraries\\n\",",
+     "        \"import matplotlib.pyplot as plt\\n\","
+    ]
+   }
+  ],
+  "sm": [
+   {
+    "file": "examples/compact.ipynb",
+    "line": 64,
+    "text": "\"  from sdmetrics.reports.single_table.diagnostic_report import DiagnosticReport\\n\",",
+    "context": [
+     "          \"output_type\": \"stream\",",
+     "          \"name\": \"stderr\",",
+     "          \"text\": [",
+     "            \"/usr/local/lib/python3.12/dist-packages/sdv/evaluation/single_table.py:6: FutureWarning: The single table diagnostic report is deprecated. Please use the DiagnosticReport from 'sdmetrics.",
+     "            \"  from sdmetrics.reports.single_table.diagnostic_report import DiagnosticReport\\n\",",
+     "            \"/usr/local/lib/python3.12/dist-packages/sdv/evaluation/single_table.py:7: FutureWarning: The single table quality report is deprecated. Please use the QualityReport from 'sdmetrics.report",
+     "            \"  from sdmetrics.reports.single_table.quality_report import QualityReport\\n\"",
+     "          ]",
+     "        }"
+    ]
+   },
+   {
+    "file": "examples/compact.ipynb",
+    "line": 66,
+    "text": "\"  from sdmetrics.reports.single_table.quality_report import QualityReport\\n\"",
+    "context": [
+     "          \"text\": [",
+     "            \"/usr/local/lib/python3.12/dist-packages/sdv/evaluation/single_table.py:6: FutureWarning: The single table diagnostic report is deprecated. Please use the DiagnosticReport from 'sdmetrics.",
+     "            \"  from sdmetrics.reports.single_table.diagnostic_report import DiagnosticReport\\n\",",
+     "            \"/usr/local/lib/python3.12/dist-packages/sdv/evaluation/single_table.py:7: FutureWarning: The single table quality report is deprecated. Please use the QualityReport from 'sdmetrics.report",
+     "            \"  from sdmetrics.reports.single_table.quality_report import QualityReport\\n\"",
+     "          ]",
+     "        }",
+     "      ],",
+     "      \"source\": ["
+    ]
+   },
+   {
+    "file": "examples/compact.ipynb",
+    "line": 82,
+    "text": "\"from sdmetrics.visualization import get_column_plot\\n\",",
+    "context": [
+     "        \"\\n\",",
+     "        \"# import synthetic data vault libraries\\n\",",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"import sdv.evaluation.single_table as sdv_st\\n\",",
+     "        \"from sdmetrics.visualization import get_column_plot\\n\",",
+     "        \"\\n\",",
+     "        \"# import visualisation libraries\\n\",",
+     "        \"import matplotlib.pyplot as plt\\n\",",
+     "        \"import seaborn as sns\\n\","
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "md",
+  "sdv_any",
+  "sm"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "pyproject.toml": [
+   "    \"sdv>=1.32.1\","
+  ]
+ }
+}

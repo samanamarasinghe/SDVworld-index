@@ -1,0 +1,207 @@
+{
+ "repo": "JustineBijuPaul/Novelle",
+ "disk_kb": 84640,
+ "method": "partial_clone",
+ "tree_files": 284,
+ "status": "ok",
+ "readme": "# Novelle — AI-Powered Maternal Health Risk Support Platform\n\n**Empowering mothers with intelligent, compassionate pregnancy health monitoring**\n\n> **Disclaimer:** Novelle is a risk-prediction support tool, not a diagnostic system. All outputs are statistical risk likelihood estimates. Always consult qualified healthcare professionals for medical decisions.\n\n---\n\n## Overview\n\nNovelle is a full-stack platform for maternal health. It combines **patient** self-monitoring (health logs, mental health, AI insights, appointments), **doctor** clinical workflows (patients, appointments, escalations, notes, telehealth), **hospital administrator** operations (staff, patients, appointments, resources, communication), and **platform administrator** oversight (organizations, billing, security, analytics, global escalations). Core domains remain **mental**, **physical**, and **fetal** risk awareness, with escalation paths into clinical workflows.\n\n### Key features\n\n| Feature | Description |\n| -------- | ----------- |\n| **3-domain risk assessment** | Mental (screeners, mood), physical (vitals, symptoms), fetal risk signals |\n| **Patient portal** | Dashboard, pregnancy timeline, AI insights, symptoms, appointments, teleconsultation, daily goals, wellness, risk reports, emergency info |\n| **Doctor portal** | Dashboard, patients, appointments (newest first), escalations, monitoring, clinical notes, prescriptions, telehealth, AI copilot, reports, communication, tasks, settings |\n| **Hospital admin** | Command center, patients & doctor assignment, appointments, escalations (routing), staff & workload, resources, communication, analytics, AI insights, reports, hospital records, settings |\n| **Platform admin** | Overview, organizations, hospitals, users & provisioning, AI control center, analytics, global escalations, billing, infrastructure, security, communication, audit logs, integrations, support, reports, settings |\n| **AI companion & journal** | Conversational support, journaling (Features routes) |\n| **Telemedicine** | Session-oriented API + in-app telehealth views |\n| **ML & MLOps** | Risk models plus optional v2 operational models (forecasts, engagement, no-show, etc.); training scripts in `backend/app/ml/` |\n| **Event & notifications** | Background ingestion worker; clinical event bus wiring at startup |\n\n---\n\n## Documentation map\n\n| Document | Purpose |\n| -------- | ------- |\n| **README.md** (this file) | Quick orientation, setup, routes, environment |\n| [BACKEND_GUIDE.md](./BACKEND_GUIDE.md) | Databases, datasets, training pipelines, deployment detail |\n| [docs/PREGNANCY_EXPERT_AND_DATASETS.md](./docs/PREGNANCY_EXPERT_AND_DATASETS.md) | **Pregnancy Expert** LLM mode (`/api/companion/expert-chat`) + dataset links for research & training |\n| [prd.md](./prd.md) | Product requirements and vision |\n| [ml/notebooks/README.md](./ml/notebooks/README.md) | Jupyter training workflow for core risk models |\n\n---\n\n## Tech stack\n\n### Backend\n\n- **Framework:** FastAPI (async), Python 3.11+\n- **Data:** PostgreSQL (SQLAlchemy 2 async), MongoDB (Motor), Redis\n- **Auth:** JWT (`python-jose`), bcrypt/password hashing (`SECRET_KEY`, `ALGORITHM` in settings)\n- **ML:** scikit-learn, XGBoost, LightGBM, imbalanced-learn, SHAP; optional DistilBERT / sentiment stack in `requirements.txt`\n- **Companion / LLM:** Configurable providers (see `backend/app/core/config.py` — use env vars, never commit real keys)\n\n### Frontend\n\n- **React 18** + **TypeScript** + **Vite**\n- **Tailwind CSS**, **Zustand** (auth), **Axios**, **Recharts**, **Framer Motion**, **Lucide**, **react-hot-toast**\n\n### DevOps\n\n- Docker Compose for local full stack (see `docker-compose.yml`)\n- Optional Nginx for production frontend (`frontend/nginx.conf`)\n\n---\n\n## Repository layout\n\n```\npregency-friend/          # repo root (name may vary locally)\n├── backend/\n│   ├── main.py                    # FastAPI entry; route registration, lifespan\n│   ├── requirements.txt\n│   ├── Dockerfile\n│   ├── .env.example\n│   └── app/\n│       ├── core/                  # config, database, security\n│       ├── models/                # SQLAlchemy ORM\n│       ├── schemas/               # Pydantic schemas\n│       ├── api/routes/            # auth, patient, doctor, hospital_admin, platform_admin, …\n│       ├── services/              # risk engine, NLP, notifications, hospital ops, …\n│       └── ml/                    # train_*.py, pipelines/, models/\n├── frontend/\n│   ├── package.json\n│   ├── vite.config.ts\n│   └── src/\n│       ├── App.tsx                # Role-aware routes\n│       ├── components/layout/     # AppLayout, Sidebar, Header\n│       ├── pages/                 # Patient, doctor, admin, hospital-admin pages\n│       ├── services/endpoints.ts  # API client helpers\n│       ├── stores/\n│       └── utils/\n├── ml/notebooks/                  # Jupyter model development\n├── docker-compose.yml\n├── README.md\n├── BACKEND_GUIDE.md\n└── prd.md\n```\n\n---\n\n## Getting started\n\n### Prerequisites\n\n- Python 3.11+\n- Node.js 20+\n- PostgreSQL 14+ (16 recommended)\n- MongoDB 6/7+\n- Redis 6/7+\n- Docker & Docker Compose (optional)\n\n### Environment files\n\n```bash\ncp backend/.env.example backend/.env\n# Edit DATABASE_URL, MONGODB_URL, REDIS_URL, SECRET_KEY, optional LLM keys\n```\n\n### Databases only (Docker)\n\n```bash\ndocker compose up -d mongodb redis postgres   # use whatever services exist in compose\n```\n\n### Backend\n\n```bash\ncd backend\npython -m venv venv\nsource venv/bin/activate   # Windows: venv\\Scripts\\activate\npip install -r requirements.txt\npython main.py             # serves http://0.0.0.0:8000 (see main for PORT)\n# Or: uvicorn main:app --reload --port 8000\n```\n\n- **Swagger UI:** http://localhost:8000/docs  \n- **OpenAPI JSON:** http://localhost:8000/openapi.json  \n\n### Frontend\n\n```bash\ncd frontend\nnpm install\nnpm run dev      # http://localhost:3000 (or Vite default port)\n```\n\n### Full stack (Docker)\n\n```bash\ndocker compose up --build\n# Frontend: http://localhost:3000\n# API: http://localhost:8000\n```\n\n---\n\n## Roles, login, and main URLs\n\nAfter login, users are redirected by role. Primary shells:\n\n| Role | Default area | Example paths |\n| ---- | ------------ | ------------- |\n| Patient | `/patient` | `/patient/appointments`, `/patient/health-log`, … |\n| Doctor | `/doctor` | `/doctor/appointments`, `/doctor/patients`, … |\n| Hospital admin | `/hospital-admin` | `/hospital-admin/patients`, `/hospital-admin/escalations`, … |\n| Platform admin | `/admin` | `/admin/users`, `/admin/escalations`, … |\n\n### Test credentials (seed / dev; change in production)\n\n| Role | Email | Password |\n| ---- | ----- | -------- |\n| Patient (pregnant) | `patient@novelle.com` | `Password123` |\n| Patient (postpartum) | `postpartum@novelle.com` | `Password123` |\n| Doctor | `doctor@novelle.com` | `Password123` |\n| Hospital admin | `hadmin@novelle.com` | `Password123` |\n| Platform admin | `admin@novelle.com` | `Password123` |\n\n---\n\n## HTTP API overview\n\nGlobal prefix: **`/api`** (see `backend/main.py`).\n\n| Prefix | Router | Typical use |\n| ------ | ------ | ----------- |\n| `/api/auth`, `/api/profile`, `/api/health`, `/api/mental-health`, `/api/risk`, `/api/features` | Core + features | Patient and shared flows |\n| `/api/patient` | Patient portal | Dashboard-style aggregates, appointments, doctors, daily goals, wellness, … |\n| `/api/doctor` | Doctor portal | Patients, appointments, escalations, notes, prescriptions, tasks, … |\n| `/api/admin` | Admin (legacy/aux) | Older `/admin` tag routes if used |\n| `/api/hospital-admin` | Hospital admin | Staff, patients, appointments, escalations, resources, settings, … |\n| `/api/platform-admin` | Platform admin | Organizations, hospitals, users, billing, analytics, security, … |\n| `/api/ingestion` | Ingestion | Data ingestion pipeline |\n| `/api/telemedicine` | Telemedicine | Sessions |\n| `/api/mlops` | MLOps | Model / pipeline operations |\n| `/api/compliance` | Compliance tooling | Compliance-related endpoints |\n\nCore auth examples:\n\n| Method | Path | Description |\n| ------ | ---- | ----------- |\n| POST | `/api/auth/register` | Registration |\n| POST | `/api/auth/login` | JWT login |\n| GET | `/api/auth/me` | Current user |\n\nFull detail: **Swagger** at `/docs`.\n\n---\n\n## Machine learning\n\n- **Authoritative reference:** **[`docs/ML_MODELS_AND_DATASETS.md`](./docs/ML_MODELS_AND_DATASETS.md)** — every model file, training script, **dataset source**, **evaluation metrics printed during training** (CV, test accuracy, classification reports, MAE/R²), and runtime usage.\n- **Default artifact directory:** `backend/app/ml/models/` (configurable via `ML_MODEL_DIR`).\n- **Core risk training:** `python -m app.ml.train_risk_models` (from `backend/` with venv active).\n- **Operational / v2 models (synthetic):** `python -m app.ml.train_v2_models`.\n- **v2 on real/sourced data:** `python -m app.ml.train_v2_real_data` when CSVs exist under `ml/datasets/` (see doc §5 for paths).\n- **Notebooks:** `ml/notebooks/` — mental, physical, fetal pipelines; artifacts copied to `backend/app/ml/models/`.\n\n**Metrics:** The repo does not commit a frozen `metrics.json` for every run. After training, capture console output (e.g. `tee ml_training_report.txt`) for model cards. Synthetic runs produce **illustrative** accuracy/F1; external CSV runs reflect those files’ domains.\n\nThe app starts even if some `.joblib` files are missing; features that depend on them may degrade gracefully. Check startup logs for `ML Model [name]` lines.\n\n---\n\n## Risk scoring (summary)\n\n- **Mental:** Screeners, mood, sleep, optional journal sentiment; tiered LOW / MEDIUM / HIGH with crisis keyword handling.\n- **Physical:** Thresholds on BP, glucose, BMI, symptoms, trends.\n- **Fetal:** CTG / growth-related signals via trained models where available.\n- **Escalation:** High-risk signals feed hospital and doctor escalation workflows (see PRD clinical flow).\n\n---\n\n## Environment variables (reference)\n\nAlign with `backend/app/core/settings` and `.env.example`:\n\n| Variable | Description |\n| -------- | ----------- |\n| `DATABASE_URL` | Async PostgreSQL URL (`postgresql+asyncpg://…`) |\n| `DATABASE_URL_SYNC` | Sync URL for scripts if needed |\n| `MONGODB_URL` | MongoDB connection |\n| `MONGODB_DB_NAME` | Database name |\n| `REDIS_URL` | Redis |\n| `SECRET_KEY` | JWT signing secret |\n| `ALGORITHM` | JWT algorithm (default `HS256`) |\n| `ACCESS_TOKEN_EXPIRE_MINUTES` | Access token TTL |\n| `CORS_ORIGINS` | Allowed browser origins (list in config) |\n| `ML_MODEL_DIR` | Relative model directory |\n| `RISK_CONFIDENCE_THRESHOLD` | Risk decision threshold |\n| `ESCALATION_*` | Escalation timers |\n\nOptional: `OPENAI_API_KEY`, `GEMINI_API_KEY`, `GROQ_API_KEY`, `GOOGLE_MAPS_API_KEY`, SMTP fields.\n\n---\n\n## Safety and ethics\n\n- Does not diagnose; surfaces **risk likelihood** and educational context.\n- Disclaimers on AI surfaces; crisis / emergency pathways in product copy.\n- Doctor and hospital workflows are part of oversight, not a replacement for local protocol.\n- Use **BACKEND_GUIDE** and **prd** for compliance and data-handling expectations.\n\n---\n\n## Roadmap (high level)\n\nShipped in tree: multi-role web app, hospital and platform admin APIs, doctor/patient appointment flows, ML training scripts (risk + v2 operational), telemedicine and MLOps routes, event/ingestion hooks.\n\nOngoing / future: deeper wearable integration, mobile clients, real-time channels, broader localization, federated or privacy-preserving training — see `prd.md` roadmap table.\n\n---\n\n## License\n\nEducational and research use. **Not** approved for clinical deployment without appropriate regulatory review.\n\n---\n\n*Built for mothers everywhere.*\n",
+ "hits": {
+  "st": [
+   {
+    "file": "backend/app/ml/train_risk_models.py",
+    "line": 57,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "def _try_sdv_augment(df: pd.DataFrame, n_target: int) -> pd.DataFrame:",
+     "    \"\"\"Attempt SDV augmentation; fall back to bootstrap if unavailable.\"\"\"",
+     "    try:",
+     "        from sdv.metadata import Metadata",
+     "        from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "        sdv_metadata = Metadata.detect_from_dataframe(data=df)",
+     "        ",
+     "        synth = GaussianCopulaSynthesizer(sdv_metadata, enforce_min_max_values=True)"
+    ]
+   },
+   {
+    "file": "ml/notebooks/README.md",
+    "line": 174,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "# Install SDV",
+     "pip install sdv",
+     "",
+     "# Generate synthetic data",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "import pandas as pd",
+     "",
+     "# Load existing data as template",
+     "real_data = pd.read_csv('datasets/synthetic_health_logs.csv')"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "backend/app/ml/train_risk_models.py",
+    "line": 56,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "def _try_sdv_augment(df: pd.DataFrame, n_target: int) -> pd.DataFrame:",
+     "    \"\"\"Attempt SDV augmentation; fall back to bootstrap if unavailable.\"\"\"",
+     "    try:",
+     "        from sdv.metadata import Metadata",
+     "        from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "        sdv_metadata = Metadata.detect_from_dataframe(data=df)",
+     "        "
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "backend/app/ml/train_risk_models.py",
+    "line": 56,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "def _try_sdv_augment(df: pd.DataFrame, n_target: int) -> pd.DataFrame:",
+     "    \"\"\"Attempt SDV augmentation; fall back to bootstrap if unavailable.\"\"\"",
+     "    try:",
+     "        from sdv.metadata import Metadata",
+     "        from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "        sdv_metadata = Metadata.detect_from_dataframe(data=df)",
+     "        "
+    ]
+   },
+   {
+    "file": "backend/app/ml/train_risk_models.py",
+    "line": 57,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "def _try_sdv_augment(df: pd.DataFrame, n_target: int) -> pd.DataFrame:",
+     "    \"\"\"Attempt SDV augmentation; fall back to bootstrap if unavailable.\"\"\"",
+     "    try:",
+     "        from sdv.metadata import Metadata",
+     "        from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "        sdv_metadata = Metadata.detect_from_dataframe(data=df)",
+     "        ",
+     "        synth = GaussianCopulaSynthesizer(sdv_metadata, enforce_min_max_values=True)"
+    ]
+   },
+   {
+    "file": "ml/notebooks/README.md",
+    "line": 174,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "# Install SDV",
+     "pip install sdv",
+     "",
+     "# Generate synthetic data",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "import pandas as pd",
+     "",
+     "# Load existing data as template",
+     "real_data = pd.read_csv('datasets/synthetic_health_logs.csv')"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "backend/app/ml/train_risk_models.py",
+    "line": 57,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "def _try_sdv_augment(df: pd.DataFrame, n_target: int) -> pd.DataFrame:",
+     "    \"\"\"Attempt SDV augmentation; fall back to bootstrap if unavailable.\"\"\"",
+     "    try:",
+     "        from sdv.metadata import Metadata",
+     "        from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "        sdv_metadata = Metadata.detect_from_dataframe(data=df)",
+     "        ",
+     "        synth = GaussianCopulaSynthesizer(sdv_metadata, enforce_min_max_values=True)"
+    ]
+   },
+   {
+    "file": "backend/app/ml/train_risk_models.py",
+    "line": 61,
+    "text": "synth = GaussianCopulaSynthesizer(sdv_metadata, enforce_min_max_values=True)",
+    "context": [
+     "        from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "        sdv_metadata = Metadata.detect_from_dataframe(data=df)",
+     "        ",
+     "        synth = GaussianCopulaSynthesizer(sdv_metadata, enforce_min_max_values=True)",
+     "        synth.fit(df)",
+     "        synthetic = synth.sample(num_rows=n_target)",
+     "        print(f\"  ✅ SDV GaussianCopula generated {len(synthetic)} rows\")",
+     "        return synthetic"
+    ]
+   },
+   {
+    "file": "docs/ML_MODELS_AND_DATASETS.md",
+    "line": 51,
+    "text": "- Optional expansion: **SDV** `GaussianCopulaSynthesizer` fit on the small seed frame, or bootstrap to `N_SAMPLES`.",
+    "context": [
+     "**Target:** `risk_level` ∈ {LOW, MEDIUM, HIGH}.",
+     "",
+     "**Data source:**",
+     "- **No external CSV.** Rows are simulated from Normal distributions with class-conditional means (PHQ-9, GAD-7, mood, stress, social support, age, `pregnancy_week`, `previous_pregnancies`).",
+     "- Optional expansion: **SDV** `GaussianCopulaSynthesizer` fit on the small seed frame, or bootstrap to `N_SAMPLES`.",
+     "",
+     "**Features (after engineering):** PHQ-9/GAD-7, mood, stress, social support, combined scores, severity bins, trimester, age, parity (see `engineer_mental_features`).",
+     "",
+     "**Training / evaluation:**"
+    ]
+   },
+   {
+    "file": "ml/notebooks/README.md",
+    "line": 174,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "# Install SDV",
+     "pip install sdv",
+     "",
+     "# Generate synthetic data",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "import pandas as pd",
+     "",
+     "# Load existing data as template",
+     "real_data = pd.read_csv('datasets/synthetic_health_logs.csv')"
+    ]
+   },
+   {
+    "file": "ml/notebooks/README.md",
+    "line": 181,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "# Load existing data as template",
+     "real_data = pd.read_csv('datasets/synthetic_health_logs.csv')",
+     "",
+     "# Train synthesizer",
+     "synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "synthesizer.fit(real_data)",
+     "",
+     "# Generate 10,000 synthetic records",
+     "synthetic_data = synthesizer.sample(num_rows=10000)"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "backend/requirements.txt": [
+   "# Synthetic Data (SDV)",
+   "sdv>=1.10.0"
+  ]
+ }
+}

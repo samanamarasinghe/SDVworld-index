@@ -1,0 +1,209 @@
+{
+ "repo": "pruittcolon/Vox_Amelior",
+ "disk_kb": 25774,
+ "method": "partial_clone",
+ "tree_files": 1026,
+ "status": "ok",
+ "readme": "# Vox Amelior\n\nA **Local-First, Privacy-Focused AI Platform** demonstrating enterprise-grade architecture on consumer hardware. This project implements a complete microservices ecosystem with real-time speech recognition, large language model inference, and 22 specialized machine learning engines - all running offline without cloud dependencies.\n\n---\n\n## Technical Overview\n\n| Metric | Value |\n|--------|-------|\n| **Microservices** | 13 containerized services |\n| **ML Engines** | 22 specialized prediction models |\n| **Frontend** | ESM-based SPA with real-time visualizations |\n| **Mobile** | Flutter companion app with voice control |\n| **Infrastructure** | Docker Compose + Kubernetes manifests |\n\n---\n\n## Architecture\n\nThe system implements a Hub-and-Spoke pattern with custom GPU orchestration for running multiple AI workloads on a single consumer GPU (6GB VRAM).\n\n```\n                    +------------------+\n                    |   Nginx (TLS)    |\n                    +--------+---------+\n                             |\n                    +--------v---------+\n                    |   API Gateway    |\n                    |  (Auth, Routing) |\n                    +--------+---------+\n                             |\n        +--------------------+--------------------+\n        |                    |                    |\n+-------v-------+    +-------v-------+    +-------v-------+\n|  Gemma LLM    |    | Transcription |    |  ML Service   |\n|  (4-bit Q)    |    |   (ASR+Diar)  |    | (22 Engines)  |\n+---------------+    +---------------+    +---------------+\n        |                    |                    |\n        +--------------------+--------------------+\n                             |\n                    +--------v---------+\n                    | GPU Coordinator  |\n                    | (Redis Semaphore)|\n                    +------------------+\n```\n\n### Core Services\n\n| Service | Technology | Purpose |\n|---------|------------|---------|\n| **API Gateway** | FastAPI | JWT auth, rate limiting, request routing |\n| **Gemma Service** | llama.cpp | Quantized LLM inference (Gemma 3-4B) |\n| **Transcription** | NeMo Parakeet | Real-time ASR with speaker diarization |\n| **ML Service** | Scikit-Learn, XGBoost | 22 predictive engines (see below) |\n| **RAG Service** | FAISS | Vector search and semantic memory |\n| **Emotion Service** | DistilRoBERTa | Sentiment and emotion classification |\n| **Insights Service** | Pandas | Business analytics aggregation |\n| **GPU Coordinator** | Redis | VRAM allocation via semaphore protocol |\n\n---\n\n## ML Engine Suite\n\nThe platform includes 22 specialized engines grouped by domain:\n\n**Financial Analysis**\n- Pricing Optimization, Cash Flow Forecasting, Inventory Management\n- Resource Utilization, Market Basket Analysis, Cost Analysis\n\n**Predictive Intelligence**\n- Titan (ensemble), Mirror (comparative), Chronos (time-series)\n- Causality, Correlation, Clustering\n\n**Advanced Analytics**\n- Anomaly Detection, Statistical Regression, Survival Analysis\n- Sentiment, Risk, Monte Carlo Simulation\n\n**System 2 Verification**\n- Cross-validation layer that verifies LLM outputs against deterministic ML predictions\n\n---\n\n## Security Implementation\n\n| Layer | Implementation |\n|-------|----------------|\n| **Transport** | TLS 1.2+ with HSTS, modern cipher suites |\n| **Authentication** | JWT with key rotation, Redis-backed replay protection |\n| **Service Mesh** | Mutual JWT for service-to-service communication |\n| **Secrets** | Docker secrets mounted at `/run/secrets/` (600 permissions) |\n| **Containers** | Read-only root filesystem, dropped capabilities, non-root user |\n\nSee [SECURITY.md](SECURITY.md) for the complete security policy.\n\n---\n\n## Deployment\n\n### Prerequisites\n- Linux (Ubuntu 22.04+) or WSL2\n- NVIDIA GPU with 6GB+ VRAM\n- Docker 24.0+ with NVIDIA Container Toolkit\n- CUDA 12.6+\n\n### Quick Start\n\n```bash\n# Clone repository\ngit clone https://github.com/pruittcolon/Vox_Amelior.git\ncd Vox_Amelior\n\n# Initialize secrets and certificates\n./scripts/setup_secrets.sh\n./scripts/generate_certs.sh\n\n# Launch all services\n./scripts/start.sh\n\n# Access: https://localhost (accept self-signed certificate)\n```\n\n---\n\n## Project Structure\n\n```\nVox_Amelior/\n├── services/           # 13 Python/FastAPI microservices\n├── frontend/           # No-build ESM frontend\n├── mobile-app/         # Flutter companion app\n├── shared/             # Common libraries (auth, security, logging)\n├── docker/             # Docker Compose configuration\n├── k8s/                # Kubernetes manifests\n├── scripts/            # Automation and deployment scripts\n├── tests/              # Unit, integration, and E2E tests\n└── docs/               # Architecture and API documentation\n```\n\n---\n\n## Documentation\n\n- [Architecture Design](docs/ARCHITECTURE.md) - System diagrams and port mappings\n- [API Specification](docs/api/openapi.yaml) - OpenAPI 3.0 spec\n- [Service Level Objectives](docs/SLO.md) - Availability and latency targets\n\n---\n\n## Technology Stack\n\n**Backend**: Python 3.12, FastAPI, Redis, PostgreSQL\n\n**ML/AI**: PyTorch, Transformers, Scikit-Learn, XGBoost, FAISS, llama.cpp\n\n**Infrastructure**: Docker, Kubernetes, Nginx, Prometheus\n\n**Frontend**: Vanilla JavaScript (ESM), Chart.js, D3.js\n\n**Mobile**: Flutter/Dart\n\n---\n\n## License\n\nMIT License - See [LICENSE](LICENSE) for details.",
+ "hits": {
+  "ct": [
+   {
+    "file": "services/ml-service/GPU_ACCELERATION.md",
+    "line": 75,
+    "text": "- Modified `CTGANSynthesizer` to use dynamic `cuda=` parameter",
+    "context": [
+     "   - Added dependency on gpu-coordinator service",
+     "",
+     "5. **`services/ml-service/src/engines/mirror_engine.py`**",
+     "   - Added async GPU client integration",
+     "   - Modified `CTGANSynthesizer` to use dynamic `cuda=` parameter",
+     "   - Added `analyze_async()` method with GPU coordination",
+     "   - Updated insights to show GPU acceleration indicator",
+     "",
+     "6. **`services/ml-service/src/engines/galileo_engine.py`**"
+    ]
+   },
+   {
+    "file": "services/ml-service/GPU_ACCELERATION.md",
+    "line": 120,
+    "text": "| Mirror (CTGAN) | PyTorch | `cuda=True` in CTGANSynthesizer |",
+    "context": [
+     "## GPU Support by Engine",
+     "",
+     "| Engine | GPU Library | Method |",
+     "|--------|-------------|--------|",
+     "| Mirror (CTGAN) | PyTorch | `cuda=True` in CTGANSynthesizer |",
+     "| Galileo (GCN) | PyTorch Geometric | `.to(device)` for model and data |",
+     "| Titan (XGBoost) | XGBoost | `tree_method='gpu_hist'` |",
+     "",
+     "## Usage Example"
+    ]
+   },
+   {
+    "file": "services/ml-service/src/core/gpu_client.py",
+    "line": 360,
+    "text": "synthesizer = CTGANSynthesizer(cuda=True)",
+    "context": [
+     "",
+     "        Example:",
+     "            async with gpu_client.gpu_context(\"mirror\") as acquired:",
+     "                if acquired:",
+     "                    synthesizer = CTGANSynthesizer(cuda=True)",
+     "                else:",
+     "                    synthesizer = CTGANSynthesizer(cuda=False)",
+     "        \"\"\"",
+     "        result = await self.request_gpu(engine_name, priority)"
+    ]
+   },
+   {
+    "file": "services/ml-service/src/core/gpu_client.py",
+    "line": 362,
+    "text": "synthesizer = CTGANSynthesizer(cuda=False)",
+    "context": [
+     "            async with gpu_client.gpu_context(\"mirror\") as acquired:",
+     "                if acquired:",
+     "                    synthesizer = CTGANSynthesizer(cuda=True)",
+     "                else:",
+     "                    synthesizer = CTGANSynthesizer(cuda=False)",
+     "        \"\"\"",
+     "        result = await self.request_gpu(engine_name, priority)",
+     "",
+     "        try:"
+    ]
+   },
+   {
+    "file": "services/ml-service/src/engines/mirror_engine.py",
+    "line": 47,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "    Variant,",
+     ")",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "# GPU Client for coordinated GPU access",
+     "try:",
+     "    from core.gpu_client import GPUClient, get_gpu_client"
+    ]
+   },
+   {
+    "file": "services/ml-service/src/engines/mirror_engine.py",
+    "line": 360,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "            batch_size: Training batch size",
+     "            use_cuda: Whether to use GPU acceleration",
+     "        \"\"\"",
+     "        # Create synthesizer with GPU support",
+     "        synthesizer = CTGANSynthesizer(",
+     "            metadata,",
+     "            epochs=epochs,",
+     "            batch_size=batch_size,",
+     "            cuda=use_cuda,  # Dynamic GPU/CPU selection"
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "services/ml-service/src/engines/mirror_engine.py",
+    "line": 47,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "    Variant,",
+     ")",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "# GPU Client for coordinated GPU access",
+     "try:",
+     "    from core.gpu_client import GPUClient, get_gpu_client"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "services/ml-service/src/engines/mirror_engine.py",
+    "line": 46,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    TechnicalExplanation,",
+     "    Variant,",
+     ")",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "# GPU Client for coordinated GPU access",
+     "try:"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "services/ml-service/src/engines/mirror_engine.py",
+    "line": 46,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    TechnicalExplanation,",
+     "    Variant,",
+     ")",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "# GPU Client for coordinated GPU access",
+     "try:"
+    ]
+   },
+   {
+    "file": "services/ml-service/src/engines/mirror_engine.py",
+    "line": 47,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "    Variant,",
+     ")",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "# GPU Client for coordinated GPU access",
+     "try:",
+     "    from core.gpu_client import GPUClient, get_gpu_client"
+    ]
+   }
+  ],
+  "sm": [
+   {
+    "file": "services/ml-service/src/engines/mirror_engine.py",
+    "line": 45,
+    "text": "from sdmetrics.reports.single_table import QualityReport",
+    "context": [
+     "    TaskType,",
+     "    TechnicalExplanation,",
+     "    Variant,",
+     ")",
+     "from sdmetrics.reports.single_table import QualityReport",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "# GPU Client for coordinated GPU access"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "sm",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "services/ml-service/requirements.txt": [
+   "sdv>=1.10.0"
+  ]
+ }
+}

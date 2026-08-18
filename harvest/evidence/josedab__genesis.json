@@ -1,0 +1,780 @@
+{
+ "repo": "josedab/genesis",
+ "disk_kb": 1462,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Genesis: Synthetic Data Generation Platform\n\n[![PyPI version](https://badge.fury.io/py/genesis-synth.svg)](https://badge.fury.io/py/genesis-synth)\n[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)\n[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)\n[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)\n[![CI](https://github.com/genesis-synth/genesis/actions/workflows/ci.yml/badge.svg)](https://github.com/genesis-synth/genesis/actions/workflows/ci.yml)\n[![codecov](https://codecov.io/gh/genesis-synth/genesis/branch/main/graph/badge.svg)](https://codecov.io/gh/genesis-synth/genesis)\n[![Documentation](https://img.shields.io/badge/docs-mkdocs-blue.svg)](https://genesis-synth.github.io/genesis)\n\n**Genesis** is a comprehensive synthetic data generation platform that creates realistic, privacy-safe data for ML training, testing, and development.\n\n## 🌟 Features\n\n### Core Capabilities\n- **Multiple Data Types**: Tabular, time series, and text data generation\n- **Privacy Guarantees**: Differential privacy, k-anonymity metrics\n- **Statistical Fidelity**: Preserves correlations and distributions\n- **ML Utility Focus**: Generated data works for model training\n- **Easy to Use**: Pandas in, pandas out\n\n### v1.2.0 Features (New!)\n- **🔌 Plugin System**: Extend Genesis with custom generators, transformers, and evaluators\n- **⚡ Auto-Tuning**: Automatic hyperparameter optimization with Optuna\n- **📜 Privacy Certificates**: GDPR, HIPAA, CCPA compliance reports\n- **📊 Drift Detection**: Monitor data quality drift over time\n- **🔍 Synthetic Debugger**: Diagnose quality issues with actionable suggestions\n- **🎯 Anomaly Synthesis**: Generate realistic anomalies for ML training\n- **🚀 Distributed Training**: Scale across GPUs with Ray or Dask\n- **🔗 Cross-Modal Generation**: Generate paired tabular + text data\n- **📝 Schema Editor**: Visual schema editing backend\n- **🏪 Marketplace**: Synthetic data marketplace backend\n\n### v1.3.0 Features\n- **🎯 Guided Conditional Generation**: Smart sampling with ConditionBuilder for rare scenarios\n- **💬 Natural Language Interface**: Chat-based data generation with LLM integration\n- **📊 Interactive Dashboard**: Plotly-powered quality visualization with PDF export\n- **🌊 Streaming Generation**: Real-time synthetic data via Kafka and WebSocket\n- **🔐 Federated Learning**: Privacy-preserving distributed training across data silos\n- **🔗 Data Lineage Tracking**: Blockchain-style immutable audit trails\n\n### v1.4.0 Features (Latest!)\n- **🤖 AutoML Synthesis**: Automatic method selection based on data characteristics\n- **⚖️ Synthetic Augmentation**: Balance imbalanced datasets with intelligent augmentation\n- **🛡️ Privacy Attack Testing**: Membership inference, attribute inference, re-identification attacks\n- **🧠 LLM Schema Inference**: Auto-detect column semantics from names and samples\n- **📈 Drift-Aware Generation**: Detect and adapt to distribution shifts\n- **📦 Dataset Versioning**: Git-like versioning with branches, tags, and diffs\n- **⚡ GPU Acceleration**: Batched and multi-GPU generation for large datasets\n- **🏥 Domain Generators**: Healthcare, finance, and retail-specific generators\n- **🔧 Pipeline Builder**: Visual workflow builder for complex generation pipelines\n\n## 📦 Installation\n\n```bash\n# Basic installation\npip install genesis-synth\n\n# With PyTorch backend (recommended)\npip install genesis-synth[pytorch]\n\n# With TensorFlow backend\npip install genesis-synth[tensorflow]\n\n# With text generation support\npip install genesis-synth[llm]\n\n# Full installation with all features\npip install genesis-synth[all]\n```\n\n## 🚀 Quick Start\n\n```python\nfrom genesis import SyntheticGenerator, PrivacyConfig\n\n# Simple generation with smart defaults\ngenerator = SyntheticGenerator(\n    method='auto',  # Automatically selects best method\n    privacy=PrivacyConfig(\n        enable_differential_privacy=True,\n        epsilon=1.0\n    )\n)\n\n# Fit to real data\ngenerator.fit(real_data)\n\n# Generate synthetic data\nsynthetic_data = generator.generate(n_samples=10000)\n\n# Get comprehensive quality report\nreport = generator.quality_report()\nprint(report.summary())\n# Statistical Fidelity: 94.2%\n# ML Utility: 97.1%\n# Privacy Score: 99.8%\n```\n\n## 📊 Supported Generators\n\n### Tabular Data\n- **CTGAN**: Conditional Tabular GAN for mixed-type data\n- **TVAE**: Variational Autoencoder for tabular data\n- **Gaussian Copula**: Statistical method for preserving correlations\n\n### Time Series\n- **TimeGAN**: Generative Adversarial Network for time series\n- **Statistical**: ARIMA-based methods with trend/seasonality preservation\n\n### Text Data\n- **LLM-based**: OpenAI and HuggingFace transformer backends\n- **Privacy-aware**: Prevents PII leakage in generated text\n\n## 🔒 Privacy Features\n\n```python\nfrom genesis import PrivacyConfig\n\nprivacy = PrivacyConfig(\n    enable_differential_privacy=True,\n    epsilon=1.0,              # Privacy budget\n    delta=1e-5,\n    k_anonymity=5,            # Minimum group size\n    suppress_rare_categories=True,\n    rare_threshold=0.01\n)\n\ngenerator = SyntheticGenerator(privacy=privacy)\n```\n\n## 📏 Quality Evaluation\n\n```python\nfrom genesis import QualityEvaluator\n\nevaluator = QualityEvaluator(\n    real_data=real_df,\n    synthetic_data=synthetic_df\n)\n\nreport = evaluator.evaluate()\nprint(report.statistical_fidelity)  # Distribution matching scores\nprint(report.ml_utility)            # Model performance comparison\nprint(report.privacy_metrics)       # Re-identification risk\n```\n\n## 🔧 Constraints\n\n```python\nfrom genesis import Constraint\n\ngenerator.fit(\n    data=real_df,\n    discrete_columns=['gender', 'city'],\n    constraints=[\n        Constraint.positive('age'),\n        Constraint.range('age', 0, 120),\n        Constraint.unique('customer_id')\n    ]\n)\n```\n\n## 💻 CLI\n\n```bash\n# Generate synthetic data\ngenesis generate --input data.csv --output synthetic.csv --method ctgan --samples 10000\n\n# Evaluate quality\ngenesis evaluate --real data.csv --synthetic synthetic.csv --output report.html\n\n# Analyze dataset\ngenesis analyze --input data.csv --output analysis.json\n\n# AutoML - auto-select best method\ngenesis automl -i data.csv -o synthetic.csv -n 1000\n\n# Augment imbalanced data\ngenesis augment -i imbalanced.csv -o balanced.csv -t label\n\n# Privacy audit\ngenesis privacy-audit -r original.csv -s synthetic.csv --sensitive ssn,income\n\n# Detect drift\ngenesis drift -b baseline.csv -c current.csv\n\n# Domain-specific generation\ngenesis domain healthcare -t patient_cohort -n 1000 -o patients.csv\ngenesis domain finance -t transactions -n 10000 -o transactions.csv\n```\n\n## 🆕 v1.2.0 Features\n\n### Plugin System\n```python\nfrom genesis.plugins import register_generator, get_generator\n\n@register_generator(\"my_generator\", description=\"Custom generator\")\nclass MyGenerator(BaseGenerator):\n    def _fit_impl(self, data, discrete_columns, progress_callback):\n        pass\n    def _generate_impl(self, n_samples, conditions, progress_callback):\n        return data.sample(n_samples, replace=True)\n\n# Use it\ngen = get_generator(\"my_generator\")()\n```\n\n### Auto-Tuning\n```python\nfrom genesis.tuning import AutoTuner, TuningPreset\n\ntuner = AutoTuner.from_preset(TuningPreset.BALANCED)\nresult = tuner.tune(data, method='ctgan')\nprint(f\"Best score: {result.best_score}\")\n\n# Use optimized config\ngen = SyntheticGenerator(config=result.best_config)\n```\n\n### Privacy Certificates\n```python\nfrom genesis.compliance import PrivacyCertificate, ComplianceFramework\n\ncert = PrivacyCertificate(real_data, synthetic_data)\nreport = cert.generate(framework=ComplianceFramework.GDPR)\n\nprint(f\"Compliant: {report.is_compliant}\")\nreport.to_html(\"privacy_certificate.html\")\n```\n\n### Drift Detection\n```python\nfrom genesis.monitoring import DriftDetector\n\ndetector = DriftDetector(reference_data=baseline)\nreport = detector.check(current_data=new_data)\n\nif report.has_drift:\n    print(f\"Drift detected in: {report.drifted_columns}\")\n```\n\n### Anomaly Synthesis\n```python\nfrom genesis.anomaly import AnomalyGenerator, AnomalyType\n\ngen = AnomalyGenerator(normal_data)\nanomalies = gen.generate(100, anomaly_type=AnomalyType.STATISTICAL)\n```\n\n### Distributed Training\n```python\nfrom genesis.distributed import DistributedTrainer, DistributedConfig\n\ntrainer = DistributedTrainer(\n    config=DistributedConfig(backend='ray', n_workers=4, use_gpu=True)\n)\ntrainer.fit(data, method='ctgan')\n```\n\n## 📚 Documentation\n\n- [Installation Guide](docs/installation.md)\n- [Quick Start](docs/quickstart.md)\n- [User Guide](docs/user_guide/)\n- [API Reference](docs/api/reference.md)\n- [v1.2.0 Features](docs/api/v120_features.md)\n- [v1.3.0 Features](docs/api/v130_features.md)\n- [v1.4.0 Features](docs/api/v140_features.md)\n- [Architecture Overview](docs/architecture/overview.md)\n- [Architecture Decision Records](docs/adr/README.md)\n- [Examples](examples/)\n\n## 🤝 Contributing\n\nWe welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.\n\n## 📄 License\n\nThis project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.\n\n## 🙏 Acknowledgments\n\nGenesis builds upon foundational work in synthetic data generation:\n- [CTGAN](https://arxiv.org/abs/1907.00503) - Modeling Tabular data using Conditional GAN\n- [TVAE](https://arxiv.org/abs/1907.00503) - Variational Autoencoder for Tabular Data\n- [TimeGAN](https://arxiv.org/abs/1906.02691) - Time-series Generative Adversarial Networks\n",
+ "hits": {
+  "st": [
+   {
+    "file": "website/docs/why-genesis.md",
+    "line": 58,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "### Code Comparison",
+     "",
+     "```python",
+     "# SDV",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(data)"
+    ]
+   },
+   {
+    "file": "website/docs/why-genesis.md",
+    "line": 201,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "### Migrating from SDV",
+     "",
+     "```python",
+     "# Before (SDV)",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(df)"
+    ]
+   },
+   {
+    "file": "website/docs/migration/from-sdv.md",
+    "line": 40,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "### Single Table Generation",
+     "",
+     "```python",
+     "# ❌ SDV (before)",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# Create and configure metadata",
+     "metadata = SingleTableMetadata()"
+    ]
+   },
+   {
+    "file": "website/docs/migration/from-sdv.md",
+    "line": 153,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "### CTGAN",
+     "",
+     "```python",
+     "# SDV",
+     "from sdv.single_table import CTGANSynthesizer",
+     "synth = CTGANSynthesizer(metadata, epochs=300)",
+     "",
+     "# Genesis",
+     "from genesis import SyntheticGenerator"
+    ]
+   },
+   {
+    "file": "website/docs/migration/from-sdv.md",
+    "line": 165,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "### TVAE",
+     "",
+     "```python",
+     "# SDV",
+     "from sdv.single_table import TVAESynthesizer",
+     "synth = TVAESynthesizer(metadata, epochs=300)",
+     "",
+     "# Genesis",
+     "gen = SyntheticGenerator(method='tvae', config={'epochs': 300})"
+    ]
+   },
+   {
+    "file": "website/docs/migration/from-sdv.md",
+    "line": 176,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "### Gaussian Copula",
+     "",
+     "```python",
+     "# SDV",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "synth = GaussianCopulaSynthesizer(metadata)",
+     "",
+     "# Genesis",
+     "gen = SyntheticGenerator(method='gaussian_copula')"
+    ]
+   },
+   {
+    "file": "website/docs/migration/from-sdv.md",
+    "line": 187,
+    "text": "from sdv.single_table import CopulaGANSynthesizer",
+    "context": [
+     "### CopulaGAN",
+     "",
+     "```python",
+     "# SDV",
+     "from sdv.single_table import CopulaGANSynthesizer",
+     "synth = CopulaGANSynthesizer(metadata)",
+     "",
+     "# Genesis (use CTGAN with copula preprocessing)",
+     "gen = SyntheticGenerator("
+    ]
+   },
+   {
+    "file": "website/docs/migration/index.md",
+    "line": 70,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "## Quick Comparison",
+     "",
+     "```python",
+     "# SDV (before)",
+     "from sdv.single_table import CTGANSynthesizer",
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(df)",
+     "synth = CTGANSynthesizer(metadata)",
+     "synth.fit(df)"
+    ]
+   },
+   {
+    "file": "genesis/benchmarking.py",
+    "line": 1181,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "        self, dataset: BenchmarkDataset, metrics: BenchmarkMetrics",
+     "    ) -> BenchmarkResult:",
+     "        \"\"\"Run SDV benchmark.\"\"\"",
+     "        try:",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "            from sdv.metadata import SingleTableMetadata",
+     "",
+     "            start = time.time()",
+     "            metadata = SingleTableMetadata()"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "website/docs/why-genesis.md",
+    "line": 59,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "```python",
+     "# SDV",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(data)",
+     "synthesizer = CTGANSynthesizer(metadata)"
+    ]
+   },
+   {
+    "file": "website/docs/why-genesis.md",
+    "line": 202,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "```python",
+     "# Before (SDV)",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(df)",
+     "metadata.update_column('category', sdtype='categorical')"
+    ]
+   },
+   {
+    "file": "website/docs/migration/from-sdv.md",
+    "line": 41,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "```python",
+     "# ❌ SDV (before)",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# Create and configure metadata",
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(data)"
+    ]
+   },
+   {
+    "file": "website/docs/migration/from-sdv.md",
+    "line": 206,
+    "text": "from sdv.metadata import MultiTableMetadata",
+    "context": [
+     "",
+     "```python",
+     "# ❌ SDV (before)",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.metadata import MultiTableMetadata",
+     "",
+     "metadata = MultiTableMetadata()",
+     "metadata.detect_from_dataframes(tables)",
+     "metadata.update_column('customers', 'customer_id', sdtype='id')"
+    ]
+   },
+   {
+    "file": "genesis/benchmarking.py",
+    "line": 1182,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    ) -> BenchmarkResult:",
+     "        \"\"\"Run SDV benchmark.\"\"\"",
+     "        try:",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "            from sdv.metadata import SingleTableMetadata",
+     "",
+     "            start = time.time()",
+     "            metadata = SingleTableMetadata()",
+     "            metadata.detect_from_dataframe(dataset.data)"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "website/docs/why-genesis.md",
+    "line": 58,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "### Code Comparison",
+     "",
+     "```python",
+     "# SDV",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(data)"
+    ]
+   },
+   {
+    "file": "website/docs/why-genesis.md",
+    "line": 59,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "```python",
+     "# SDV",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(data)",
+     "synthesizer = CTGANSynthesizer(metadata)"
+    ]
+   },
+   {
+    "file": "website/docs/why-genesis.md",
+    "line": 201,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "### Migrating from SDV",
+     "",
+     "```python",
+     "# Before (SDV)",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(df)"
+    ]
+   },
+   {
+    "file": "website/docs/why-genesis.md",
+    "line": 202,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "```python",
+     "# Before (SDV)",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(df)",
+     "metadata.update_column('category', sdtype='categorical')"
+    ]
+   },
+   {
+    "file": "website/docs/migration/from-sdv.md",
+    "line": 40,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "### Single Table Generation",
+     "",
+     "```python",
+     "# ❌ SDV (before)",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# Create and configure metadata",
+     "metadata = SingleTableMetadata()"
+    ]
+   },
+   {
+    "file": "website/docs/migration/from-sdv.md",
+    "line": 41,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "```python",
+     "# ❌ SDV (before)",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# Create and configure metadata",
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(data)"
+    ]
+   },
+   {
+    "file": "website/docs/migration/from-sdv.md",
+    "line": 153,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "### CTGAN",
+     "",
+     "```python",
+     "# SDV",
+     "from sdv.single_table import CTGANSynthesizer",
+     "synth = CTGANSynthesizer(metadata, epochs=300)",
+     "",
+     "# Genesis",
+     "from genesis import SyntheticGenerator"
+    ]
+   },
+   {
+    "file": "website/docs/migration/from-sdv.md",
+    "line": 165,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "### TVAE",
+     "",
+     "```python",
+     "# SDV",
+     "from sdv.single_table import TVAESynthesizer",
+     "synth = TVAESynthesizer(metadata, epochs=300)",
+     "",
+     "# Genesis",
+     "gen = SyntheticGenerator(method='tvae', config={'epochs': 300})"
+    ]
+   },
+   {
+    "file": "website/docs/migration/from-sdv.md",
+    "line": 176,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "### Gaussian Copula",
+     "",
+     "```python",
+     "# SDV",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "synth = GaussianCopulaSynthesizer(metadata)",
+     "",
+     "# Genesis",
+     "gen = SyntheticGenerator(method='gaussian_copula')"
+    ]
+   },
+   {
+    "file": "website/docs/migration/from-sdv.md",
+    "line": 187,
+    "text": "from sdv.single_table import CopulaGANSynthesizer",
+    "context": [
+     "### CopulaGAN",
+     "",
+     "```python",
+     "# SDV",
+     "from sdv.single_table import CopulaGANSynthesizer",
+     "synth = CopulaGANSynthesizer(metadata)",
+     "",
+     "# Genesis (use CTGAN with copula preprocessing)",
+     "gen = SyntheticGenerator("
+    ]
+   },
+   {
+    "file": "website/docs/migration/from-sdv.md",
+    "line": 205,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "### SDV HMA (Hierarchical Modeling)",
+     "",
+     "```python",
+     "# ❌ SDV (before)",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.metadata import MultiTableMetadata",
+     "",
+     "metadata = MultiTableMetadata()",
+     "metadata.detect_from_dataframes(tables)"
+    ]
+   },
+   {
+    "file": "website/docs/migration/from-sdv.md",
+    "line": 206,
+    "text": "from sdv.metadata import MultiTableMetadata",
+    "context": [
+     "",
+     "```python",
+     "# ❌ SDV (before)",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.metadata import MultiTableMetadata",
+     "",
+     "metadata = MultiTableMetadata()",
+     "metadata.detect_from_dataframes(tables)",
+     "metadata.update_column('customers', 'customer_id', sdtype='id')"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "website/docs/why-genesis.md",
+    "line": 58,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "### Code Comparison",
+     "",
+     "```python",
+     "# SDV",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(data)"
+    ]
+   },
+   {
+    "file": "website/docs/why-genesis.md",
+    "line": 63,
+    "text": "synthesizer = CTGANSynthesizer(metadata)",
+    "context": [
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(data)",
+     "synthesizer = CTGANSynthesizer(metadata)",
+     "synthesizer.fit(data)",
+     "synthetic = synthesizer.sample(num_rows=1000)",
+     "",
+     "# Genesis - simpler API"
+    ]
+   },
+   {
+    "file": "website/docs/why-genesis.md",
+    "line": 201,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "### Migrating from SDV",
+     "",
+     "```python",
+     "# Before (SDV)",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(df)"
+    ]
+   },
+   {
+    "file": "website/docs/why-genesis.md",
+    "line": 208,
+    "text": "synth = CTGANSynthesizer(metadata, epochs=300)",
+    "context": [
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(df)",
+     "metadata.update_column('category', sdtype='categorical')",
+     "",
+     "synth = CTGANSynthesizer(metadata, epochs=300)",
+     "synth.fit(df)",
+     "synthetic = synth.sample(1000)",
+     "",
+     "# After (Genesis)"
+    ]
+   },
+   {
+    "file": "website/docs/migration/from-sdv.md",
+    "line": 40,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "### Single Table Generation",
+     "",
+     "```python",
+     "# ❌ SDV (before)",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "# Create and configure metadata",
+     "metadata = SingleTableMetadata()"
+    ]
+   },
+   {
+    "file": "website/docs/migration/from-sdv.md",
+    "line": 50,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "metadata.update_column('category', sdtype='categorical')",
+     "metadata.update_column('amount', sdtype='numerical')",
+     "",
+     "# Create synthesizer",
+     "synthesizer = CTGANSynthesizer(",
+     "    metadata,",
+     "    epochs=300,",
+     "    batch_size=500,",
+     "    verbose=True"
+    ]
+   },
+   {
+    "file": "website/docs/migration/from-sdv.md",
+    "line": 153,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "### CTGAN",
+     "",
+     "```python",
+     "# SDV",
+     "from sdv.single_table import CTGANSynthesizer",
+     "synth = CTGANSynthesizer(metadata, epochs=300)",
+     "",
+     "# Genesis",
+     "from genesis import SyntheticGenerator"
+    ]
+   },
+   {
+    "file": "website/docs/migration/from-sdv.md",
+    "line": 154,
+    "text": "synth = CTGANSynthesizer(metadata, epochs=300)",
+    "context": [
+     "",
+     "```python",
+     "# SDV",
+     "from sdv.single_table import CTGANSynthesizer",
+     "synth = CTGANSynthesizer(metadata, epochs=300)",
+     "",
+     "# Genesis",
+     "from genesis import SyntheticGenerator",
+     "gen = SyntheticGenerator(method='ctgan', config={'epochs': 300})"
+    ]
+   },
+   {
+    "file": "website/docs/migration/from-sdv.md",
+    "line": 328,
+    "text": "synth = CTGANSynthesizer.load('model.pkl')",
+    "context": [
+     "",
+     "```python",
+     "# SDV",
+     "synth.save('model.pkl')",
+     "synth = CTGANSynthesizer.load('model.pkl')",
+     "```",
+     "",
+     "### Genesis",
+     ""
+    ]
+   },
+   {
+    "file": "website/docs/migration/index.md",
+    "line": 70,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "## Quick Comparison",
+     "",
+     "```python",
+     "# SDV (before)",
+     "from sdv.single_table import CTGANSynthesizer",
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(df)",
+     "synth = CTGANSynthesizer(metadata)",
+     "synth.fit(df)"
+    ]
+   },
+   {
+    "file": "website/docs/migration/index.md",
+    "line": 73,
+    "text": "synth = CTGANSynthesizer(metadata)",
+    "context": [
+     "# SDV (before)",
+     "from sdv.single_table import CTGANSynthesizer",
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(df)",
+     "synth = CTGANSynthesizer(metadata)",
+     "synth.fit(df)",
+     "synthetic = synth.sample(1000)",
+     "",
+     "# Genesis (after) - simpler!"
+    ]
+   },
+   {
+    "file": "genesis/benchmarking.py",
+    "line": 1181,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "        self, dataset: BenchmarkDataset, metrics: BenchmarkMetrics",
+     "    ) -> BenchmarkResult:",
+     "        \"\"\"Run SDV benchmark.\"\"\"",
+     "        try:",
+     "            from sdv.single_table import CTGANSynthesizer",
+     "            from sdv.metadata import SingleTableMetadata",
+     "",
+     "            start = time.time()",
+     "            metadata = SingleTableMetadata()"
+    ]
+   }
+  ],
+  "mt": [
+   {
+    "file": "website/docs/migration/from-sdv.md",
+    "line": 205,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "### SDV HMA (Hierarchical Modeling)",
+     "",
+     "```python",
+     "# ❌ SDV (before)",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.metadata import MultiTableMetadata",
+     "",
+     "metadata = MultiTableMetadata()",
+     "metadata.detect_from_dataframes(tables)"
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "website/docs/migration/from-sdv.md",
+    "line": 297,
+    "text": "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+    "context": [
+     "### SDV Evaluation",
+     "",
+     "```python",
+     "# SDV",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "",
+     "quality_report = evaluate_quality(real, synthetic, metadata)",
+     "diagnostic = run_diagnostic(real, synthetic, metadata)",
+     "```"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "website/docs/migration/from-sdv.md",
+    "line": 176,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "### Gaussian Copula",
+     "",
+     "```python",
+     "# SDV",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "synth = GaussianCopulaSynthesizer(metadata)",
+     "",
+     "# Genesis",
+     "gen = SyntheticGenerator(method='gaussian_copula')"
+    ]
+   },
+   {
+    "file": "website/docs/migration/from-sdv.md",
+    "line": 177,
+    "text": "synth = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "",
+     "```python",
+     "# SDV",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "synth = GaussianCopulaSynthesizer(metadata)",
+     "",
+     "# Genesis",
+     "gen = SyntheticGenerator(method='gaussian_copula')",
+     "```"
+    ]
+   }
+  ],
+  "hma": [
+   {
+    "file": "website/docs/migration/from-sdv.md",
+    "line": 205,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "### SDV HMA (Hierarchical Modeling)",
+     "",
+     "```python",
+     "# ❌ SDV (before)",
+     "from sdv.multi_table import HMASynthesizer",
+     "from sdv.metadata import MultiTableMetadata",
+     "",
+     "metadata = MultiTableMetadata()",
+     "metadata.detect_from_dataframes(tables)"
+    ]
+   },
+   {
+    "file": "website/docs/migration/from-sdv.md",
+    "line": 219,
+    "text": "synth = HMASynthesizer(metadata)",
+    "context": [
+     "    parent_primary_key='customer_id',",
+     "    child_foreign_key='customer_id'",
+     ")",
+     "",
+     "synth = HMASynthesizer(metadata)",
+     "synth.fit(tables)",
+     "synthetic_tables = synth.sample(scale=1.0)",
+     "```",
+     ""
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "website/docs/migration/from-sdv.md",
+    "line": 165,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "### TVAE",
+     "",
+     "```python",
+     "# SDV",
+     "from sdv.single_table import TVAESynthesizer",
+     "synth = TVAESynthesizer(metadata, epochs=300)",
+     "",
+     "# Genesis",
+     "gen = SyntheticGenerator(method='tvae', config={'epochs': 300})"
+    ]
+   },
+   {
+    "file": "website/docs/migration/from-sdv.md",
+    "line": 166,
+    "text": "synth = TVAESynthesizer(metadata, epochs=300)",
+    "context": [
+     "",
+     "```python",
+     "# SDV",
+     "from sdv.single_table import TVAESynthesizer",
+     "synth = TVAESynthesizer(metadata, epochs=300)",
+     "",
+     "# Genesis",
+     "gen = SyntheticGenerator(method='tvae', config={'epochs': 300})",
+     "```"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ev",
+  "gc",
+  "hma",
+  "md",
+  "mt",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "pyproject.toml": [
+   "    \"ctgan\","
+  ]
+ }
+}

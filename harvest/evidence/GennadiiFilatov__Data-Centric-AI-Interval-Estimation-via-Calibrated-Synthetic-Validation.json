@@ -1,0 +1,240 @@
+{
+ "repo": "GennadiiFilatov/Data-Centric-AI-Interval-Estimation-via-Calibrated-Synthetic-Validation",
+ "disk_kb": 21439,
+ "method": "partial_clone",
+ "tree_files": 25,
+ "status": "ok",
+ "readme": "# Data-Centric-AI-Interval-Estimation-via-Calibrated-Synthetic-Validation\n\n[![Python](https://img.shields.io/badge/Python-3.8%2B-blue)](https://www.python.org/)\n[![Research](https://img.shields.io/badge/Research-Master's%20Thesis-orange)](https://github.com/GennadiiFilatov/Data-Centric-AI-Interval-Estimation-via-Calibrated-Synthetic-Validation)\n\n---\n\n## Overview\n\nThis repository contains the implementation and experimental framework for my master's research work on **calibrated synthetic data validation for machine learning model selection**. The core problem we tackle: **how can we reliably select ML models when we have limited labeled validation data?**\n\n### The Problem\n\nIn tabular data domains (healthcare, finance, science), getting labeled validation data is expensive and time-consuming. Synthetic data could be a solution, but current approaches lack theoretical guarantees and often produce misleading model rankings. This leads to:\n- Poor model selection decisions\n- Wasted computational resources\n- Unreliable performance estimates\n\n### Our Solution\n\nWe develop a framework based on **ridge regression calibration for tabular data with interpretability** that:\n1. Generates synthetic validation data using multiple generators (CTGAN, TVAE, TabPFN, Gaussian Copula)\n2. Calibrates synthetic data by learning per-sample weights that align synthetic errors with real validation errors\n3. Provides theoretical guarantees on rank preservation through total variation analysis\n4. Delivers confidence intervals for model performance estimates\n\n**Key Results:**\n- Rank preservation: **6.7% → 72.7%** after calibration (Mushroom dataset, CTGAN)\n- Spearman correlation: **≥0.75** between synthetic and real model rankings across most setups\n- Works across **44 model architectures** (ensemble, linear, SVM, neural networks, etc.)\n- Validated on **5 UCI datasets** (Mushroom, Obesity, German Credit, Heart Disease, Diabetes)\n\n---\n\n## Repository Structure\n\n```\n├── Synthetic_Data_for_Validation.ipynb  # Main experimental notebook\n├── README.md                             # This file\n└── ganmodels/                           # Cached trained GAN models (gitignored)\n```\n\n### Key Components in Notebook\n\n1. **Theoretical Framework** (`TheoreticalFramework` class)\n   - Disagreement region computation\n   - Risk difference calculation\n   - Total variation estimation\n   - Rank preservation checks\n\n2. **Data Loading** (`DataLoader` class)\n   - UCI dataset loaders (Adult, Diabetes, Mushroom, etc.)\n   - Preprocessing pipeline\n   - Train/test splitting with stratification\n\n3. **Synthetic Generators** (`SyntheticDataGenerator` class)\n   - CTGAN, TVAE, Gaussian Copula (via SDV library)\n   - TabPFN (pre-trained foundation model)\n   - TabDDPM (diffusion-based, via synthcity - optional)\n   - Optuna-based hyperparameter tuning\n   - Quality metrics (SWD, KS, correlation MAE)\n\n4. **Calibration** (`SyntheticDataCalibrator` class)\n   - Ridge regression per class\n   - Sample weight computation\n   - Calibrated error estimation\n\n5. **Evaluation** (`EvaluationMetrics`, `ConfidenceIntervalEstimator`)\n   - Spearman rank correlation\n   - Bootstrap confidence intervals\n   - Rank preservation rate\n   - Total variation diagnostics\n\n6. **Experiment Runner** (`ExperimentRunner` class)\n   - End-to-end pipeline orchestration\n   - GAN caching and loading\n   - SHAP-based weight analysis\n   - Comprehensive visualization\n\n7. **SHAP Analysis** (`ShapWeightAnalyzer` class)\n   - Feature importance for calibration weights\n   - Dependence plots\n   - Waterfall explanations\n\n---\n\n## Quick Start\n\n### Prerequisites\n\n- Python 3.8+\n- CUDA-capable GPU recommended for CTGAN/TVAE training (but not required)\n\n### Installation\n\n```bash\n# Clone the repository\ngit clone https://github.com/GennadiiFilatov/Data-Centric-AI-Interval-Estimation-via-Calibrated-Synthetic-Validation.git\ncd Data-Centric-AI-Interval-Estimation-via-Calibrated-Synthetic-Validation\n\n# Create virtual environment (recommended)\npython -m venv venv\nsource venv/bin/activate  # On Windows: venv\\Scripts\\activate\n\n# Install dependencies\npip install numpy pandas torch scikit-learn scipy matplotlib seaborn\npip install sdv  # Synthetic Data Vault (CTGAN, TVAE)\npip install optuna  # Hyperparameter optimization\npip install shap lightgbm  # Interpretability\npip install tabpfn  # TabPFN foundation model (optional but recommended)\n```\n\n### Basic Usage\n\n**Run the Full Experiment (Notebook)**\n\n1. Open `Synthetic_Data_for_Validation.ipynb` in Jupyter\n2. Execute cells sequentially (or run all)\n3. The notebook is self-contained with:\n   - Data loading\n   - GAN training/tuning\n   - Calibration\n   - Evaluation\n   - Visualization\n\n---\n\n## Methodology Details\n\n### Calibration Algorithm (Ridge Regression)\n\n**Input:**\n- M calibration models {h₁, ..., h_M}\n- Synthetic data (X_synth, y_synth)\n- Real validation data (X_real, y_real)\n- Regularization λ = 0.5\n\n**Per-Class Optimization:**\n\nFor each class c:\n\n1. **Build Misclassification Matrix Q** (N × M):\n   - Q[i, m] = 1 if model h_m misclassifies synthetic sample i of class c\n   - Q[i, m] = 0 otherwise\n\n2. **Compute Real Error Vector ε_r** (M × 1):\n   - ε_r[m] = error rate of model h_m on real data of class c\n\n3. **Solve Ridge Regression**:\n   ```\n   w* = argmin_w ||ε_r - Q^T w||² + λ||w||²\n   ```\n   Closed-form solution: `w = (Q Q^T + λI)^{-1} Q ε_r`\n\n4. **Calibrated Error Estimation**:\n   For new model h:\n   - Build misclassification vector q_h (N × 1)\n   - Estimated error: `ε_h ≈ (1/N) Σ w_i * q_h[i]`\n\n**Output:** Weights w for all synthetic samples, calibrated error estimates\n\n---\n\n### Custom Model Architectures\n\nAdd your own models to `ModelSelectionFramework.get_model_architectures()`:\n\n```python\nfrom sklearn.ensemble import VotingClassifier\nfrom dataclasses import dataclass\n\n@dataclass\nclass ModelConfig:\n    name: str\n    model_class: Any\n    params: Dict[str, Any]\n\n# Custom ensemble\ncustom_config = ModelConfig(\n    name='CustomEnsemble',\n    model_class=VotingClassifier,\n    params={\n        'estimators': [\n            ('rf', RandomForestClassifier(n_estimators=100)),\n            ('gb', GradientBoostingClassifier(n_estimators=100)),\n            ('lr', LogisticRegression(max_iter=1000))\n        ],\n        'voting': 'soft'\n    }\n)\n\n# Add to evaluation\narchitectures.append(custom_config)\n```\n\n### SHAP Weight Analysis\n\n```python\n# After running experiments with analyze_shap=True\nshap_analyzer = results['shap_analyzer']\n\n# Feature importance\nimportance_df = shap_analyzer.get_feature_importance()\nprint(importance_df.head(10))\n\n# Dependence plot for specific feature\nshap_analyzer.plot_dependence('Age', interaction_feature='Weight')\n\n# Waterfall explanation for a specific sample\nshap_analyzer.plot_waterfall(sample_idx=0)\n\n# Summary report\nshap_analyzer.summary_report()\n```\n\n---\n\n## Documentation\n\n### Key Classes\n\n#### `ExperimentRunner`\n**Purpose:** Orchestrates complete experimental pipeline\n\n**Key Methods:**\n- `run_rss_with_intervals()`: Main experiment entry point\n- `save_gan_model()`: Cache trained GAN\n- `load_gan_model()`: Restore cached GAN\n- `visualize_intervals()`: Generate all plots\n- `print_summary_table()`: Print numerical results\n\n#### `SyntheticDataGenerator`\n**Purpose:** Generate and tune synthetic data\n\n**Supported Methods:**\n- `ctgan`: Conditional GAN\n- `tvae`: Tabular VAE\n- `gaussiancopula`: Statistical copula\n- `tabpfn`: Foundation model (pre-trained)\n\n**Key Methods:**\n- `fit()`: Train generator with optional Optuna tuning\n- `generate()`: Sample synthetic data\n- `evaluate_synthetic_quality()`: Compute SWD, KS, correlation MAE\n\n#### `SyntheticDataCalibrator`\n**Purpose:** Calibrate synthetic samples via ridge regression\n\n**Key Methods:**\n- `fit()`: Solve ridge regression per class\n- `get_sample_weights()`: Retrieve learned weights\n- `evaluate_calibrated_error()`: Estimate model error on calibrated synthetic data\n\n#### `EvaluationMetrics`\n**Purpose:** Compute rank preservation and correlation metrics\n\n**Key Methods:**\n- `compute_rank_preservation_with_guarantees()`: Empirical + theoretical rank preservation\n- `compute_spearman()`: Spearman correlation with p-value\n\n#### `ShapWeightAnalyzer`\n**Purpose:** Interpret calibration weights via SHAP\n\n**Key Methods:**\n- `explain()`: Compute SHAP values\n- `plot_summary()`: Feature importance plot\n- `plot_dependence()`: Feature interaction plot\n- `get_feature_importance()`: Sorted feature importance table\n\n---\n\n**Related Papers:**\n- Shoshan et al. (2023). \"Synthetic Data for Model Selection.\" ICML.\n- Hu et al. (2023). \"Synthetic Data as Validation.\" IEEE Trans. Medical Imaging.\n\n---\n\n\n## Contact\n\n**Gennadii Filatov**  \nMaster's Student, ITMO University  \nEmail: filatovgwork@gmail.com \n\n---\n\n**Last Updated:** January 2026  \n**Status:** Active Development (Master's Research work)\n",
+ "hits": {
+  "st": [
+   {
+    "file": "Synthetic_Data_for_Validation.ipynb",
+    "line": 171,
+    "text": "\"from sdv.single_table import (\\n\",",
+    "context": [
+     "    \"# Configure Optuna logging\\n\",",
+     "    \"logging.getLogger('optuna').setLevel(logging.WARNING)\\n\",",
+     "    \"\\n\",",
+     "    \"# SDV - Synthetic Data Vault\\n\",",
+     "    \"from sdv.single_table import (\\n\",",
+     "    \"    CTGANSynthesizer,\\n\",",
+     "    \"    TVAESynthesizer,\\n\",",
+     "    \"    GaussianCopulaSynthesizer\\n\",",
+     "    \")\\n\","
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "Synthetic_Data_for_Validation.ipynb",
+    "line": 194,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"except (ImportError, AttributeError) as e:\\n\",",
+     "    \"    SYNTHCITY_AVAILABLE = False\\n\",",
+     "    \"    warnings.warn(f\\\"synthcity not available or incompatible: {str(e)[:100]}. TabDDPM method will be disabled.\\\")\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"import shap\\n\",",
+     "    \"import lightgbm as lgb\\n\",",
+     "    \"\\n\","
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "Synthetic_Data_for_Validation.ipynb",
+    "line": 171,
+    "text": "\"from sdv.single_table import (\\n\",",
+    "context": [
+     "    \"# Configure Optuna logging\\n\",",
+     "    \"logging.getLogger('optuna').setLevel(logging.WARNING)\\n\",",
+     "    \"\\n\",",
+     "    \"# SDV - Synthetic Data Vault\\n\",",
+     "    \"from sdv.single_table import (\\n\",",
+     "    \"    CTGANSynthesizer,\\n\",",
+     "    \"    TVAESynthesizer,\\n\",",
+     "    \"    GaussianCopulaSynthesizer\\n\",",
+     "    \")\\n\","
+    ]
+   },
+   {
+    "file": "Synthetic_Data_for_Validation.ipynb",
+    "line": 194,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"except (ImportError, AttributeError) as e:\\n\",",
+     "    \"    SYNTHCITY_AVAILABLE = False\\n\",",
+     "    \"    warnings.warn(f\\\"synthcity not available or incompatible: {str(e)[:100]}. TabDDPM method will be disabled.\\\")\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"import shap\\n\",",
+     "    \"import lightgbm as lgb\\n\",",
+     "    \"\\n\","
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "Synthetic_Data_for_Validation.ipynb",
+    "line": 172,
+    "text": "\"    CTGANSynthesizer,\\n\",",
+    "context": [
+     "    \"logging.getLogger('optuna').setLevel(logging.WARNING)\\n\",",
+     "    \"\\n\",",
+     "    \"# SDV - Synthetic Data Vault\\n\",",
+     "    \"from sdv.single_table import (\\n\",",
+     "    \"    CTGANSynthesizer,\\n\",",
+     "    \"    TVAESynthesizer,\\n\",",
+     "    \"    GaussianCopulaSynthesizer\\n\",",
+     "    \")\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "Synthetic_Data_for_Validation.ipynb",
+    "line": 1137,
+    "text": "\"            self.synthesizer = CTGANSynthesizer(\\n\",",
+    "context": [
+     "    \"            default_pac=pac\\n\",",
+     "    \"        )\\n\",",
+     "    \"\\n\",",
+     "    \"        if self.method == 'ctgan':\\n\",",
+     "    \"            self.synthesizer = CTGANSynthesizer(\\n\",",
+     "    \"                metadata=metadata,\\n\",",
+     "    \"                enforce_min_max_values=True,\\n\",",
+     "    \"                enforce_rounding=False,\\n\",",
+     "    \"                epochs=hyperparams['epochs'],\\n\","
+    ]
+   },
+   {
+    "file": "Synthetic_Data_for_Validation.ipynb",
+    "line": 1381,
+    "text": "\"            synthesizer = CTGANSynthesizer(\\n\",",
+    "context": [
+     "    \"        \\n\",",
+     "    \"        cuda_available = torch.cuda.is_available()\\n\",",
+     "    \"        \\n\",",
+     "    \"        if self.method == 'ctgan':\\n\",",
+     "    \"            synthesizer = CTGANSynthesizer(\\n\",",
+     "    \"                metadata=metadata,\\n\",",
+     "    \"                enforce_min_max_values=True,\\n\",",
+     "    \"                enforce_rounding=False,\\n\",",
+     "    \"                \\n\","
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "Synthetic_Data_for_Validation.ipynb",
+    "line": 174,
+    "text": "\"    GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "    \"# SDV - Synthetic Data Vault\\n\",",
+     "    \"from sdv.single_table import (\\n\",",
+     "    \"    CTGANSynthesizer,\\n\",",
+     "    \"    TVAESynthesizer,\\n\",",
+     "    \"    GaussianCopulaSynthesizer\\n\",",
+     "    \")\\n\",",
+     "    \"\\n\",",
+     "    \"# TabPFN - Original package from PriorLabs (https://github.com/PriorLabs/TabPFN)\\n\",",
+     "    \"# This is the clean, original implementation without wrapper complexity\\n\","
+    ]
+   },
+   {
+    "file": "Synthetic_Data_for_Validation.ipynb",
+    "line": 1168,
+    "text": "\"            self.synthesizer = GaussianCopulaSynthesizer(metadata=metadata)\\n\",",
+    "context": [
+     "    \"                decompress_dims=hyperparams['discriminator_dim']\\n\",",
+     "    \"            )\\n\",",
+     "    \"\\n\",",
+     "    \"        elif self.method == 'gaussian_copula':\\n\",",
+     "    \"            self.synthesizer = GaussianCopulaSynthesizer(metadata=metadata)\\n\",",
+     "    \"            \\n\",",
+     "    \"        else:\\n\",",
+     "    \"            raise ValueError(f\\\"Unknown method: {self.method}\\\")\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "Synthetic_Data_for_Validation.ipynb",
+    "line": 1432,
+    "text": "\"            synthesizer = GaussianCopulaSynthesizer(metadata=metadata)\\n\",",
+    "context": [
+     "    \"                )\\n\",",
+     "    \"            )\\n\",",
+     "    \"        \\n\",",
+     "    \"        elif self.method == 'gaussian_copula':\\n\",",
+     "    \"            synthesizer = GaussianCopulaSynthesizer(metadata=metadata)\\n\",",
+     "    \"        \\n\",",
+     "    \"        else:\\n\",",
+     "    \"            raise ValueError(f\\\"Unknown method for _train_with_hyperparams: {self.method}\\\")\\n\",",
+     "    \"        \\n\","
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "Synthetic_Data_for_Validation.ipynb",
+    "line": 173,
+    "text": "\"    TVAESynthesizer,\\n\",",
+    "context": [
+     "    \"\\n\",",
+     "    \"# SDV - Synthetic Data Vault\\n\",",
+     "    \"from sdv.single_table import (\\n\",",
+     "    \"    CTGANSynthesizer,\\n\",",
+     "    \"    TVAESynthesizer,\\n\",",
+     "    \"    GaussianCopulaSynthesizer\\n\",",
+     "    \")\\n\",",
+     "    \"\\n\",",
+     "    \"# TabPFN - Original package from PriorLabs (https://github.com/PriorLabs/TabPFN)\\n\","
+    ]
+   },
+   {
+    "file": "Synthetic_Data_for_Validation.ipynb",
+    "line": 1154,
+    "text": "\"            self.synthesizer = TVAESynthesizer(\\n\",",
+    "context": [
+     "    \"                pac=hyperparams['pac']\\n\",",
+     "    \"            )\\n\",",
+     "    \"\\n\",",
+     "    \"        elif self.method == 'tvae':\\n\",",
+     "    \"            self.synthesizer = TVAESynthesizer(\\n\",",
+     "    \"                metadata=metadata,\\n\",",
+     "    \"                enforce_min_max_values=True,\\n\",",
+     "    \"                enforce_rounding=False,\\n\",",
+     "    \"                epochs=hyperparams['epochs'],\\n\","
+    ]
+   },
+   {
+    "file": "Synthetic_Data_for_Validation.ipynb",
+    "line": 1412,
+    "text": "\"            synthesizer = TVAESynthesizer(\\n\",",
+    "context": [
+     "    \"                cuda=cuda_available\\n\",",
+     "    \"            )\\n\",",
+     "    \"        \\n\",",
+     "    \"        elif self.method == 'tvae':\\n\",",
+     "    \"            synthesizer = TVAESynthesizer(\\n\",",
+     "    \"                metadata=metadata,\\n\",",
+     "    \"                enforce_min_max_values=True,\\n\",",
+     "    \"                enforce_rounding=False,\\n\",",
+     "    \"                epochs=hyperparams.get('epochs', 300),\\n\","
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "gc",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

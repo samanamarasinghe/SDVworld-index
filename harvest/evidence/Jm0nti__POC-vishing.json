@@ -1,0 +1,138 @@
+{
+ "repo": "Jm0nti/POC-vishing",
+ "disk_kb": 44049,
+ "method": "partial_clone",
+ "tree_files": 30,
+ "status": "ok",
+ "readme": "# Vishing Detection with Synthetic Behavioral Biometrics\n\n## General Context\n\nThis project is a **machine learning pipeline for detecting vishing sessions** (voice phishing) in a banking application, using synthetic behavioral biometrics generated with the help of generative AI.\n\nThe original dataset was built based on assumptions from the vendor **BioCatch**, which specializes in behavioral data for banking fraud detection. BioCatch captures signals such as keystroke dynamics, touch pressure, device motion and navigation patterns to identify anomalous behavior during banking sessions.\n\nThe goal is to detect whether a user is being victim of vishing: a phone call in which an attacker guides them into performing a fraudulent transfer while they are active in the banking app. The structural difficulty of the problem is that the user is legitimately operating their app, from their own device and with their own credentials; the only thing that differs is **how** they interact: they type slower, pause while listening to instructions, correct more fields, and tend to transfer larger amounts.\n\n---\n\n## Original Dataset\n\n| Attribute | Value |\n|---|---|\n| Source | Synthetic dataset generated with generative AI (Claude) |\n| Total sessions | 50,000 |\n| Legitimate sessions | 47,500 (95%) |\n| Vishing (fraud) sessions | 2,500 (5%) |\n| Unique customers | 19,782 |\n| Sessions per customer (average) | 2.53 |\n| Total variables | 61 columns |\n| Simulated period | June 2024 – May 2025 |\n| File | `raw_data/biocatch_sinthetic_data.csv` |\n\nThe full data dictionary is available at `raw_data/diccionario_datos_biocatch_sintetico.md`.\n\n### How was the dataset built?\n\nBioCatch publishes general information about the behavioral vectors it uses to detect banking fraud, but **does not disclose the exact variables nor how they are computed**. Based on the public documentation about its risk indicators (particularly for vishing and social engineering), we designed a set of 61 variables covering eight functional groups and generated a synthetic dataset in which sessions simulate both legitimate and fraudulent behavior, using generative AI (Claude) as an assistant in the construction process.\n\n### Variable Groups\n\n1. **Keystroke dynamics (5 variables).** Typing speed, inter-key latency, variability and segmented typing ratio. In vishing sessions the user types slower and in a segmented manner because they are dictating what the attacker is telling them over the phone.\n\n2. **Touch dynamics (5 variables).** Pressure, touch size, swipe speed and directional variance. In vishing they tend to be more erratic.\n\n3. **Device motion (5 variables).** Tilt angle, gyroscope, accelerometer, motion events. Greater variability in fraudulent sessions due to the user's state of tension.\n\n4. **Hesitation signals (3 variables).** Number and duration of pauses. One of the strongest indicators: the user in vishing hesitates before executing actions because they are waiting for instructions.\n\n5. **Dead time / inactivity (3 variables).** Periods with no interaction. Capture the time the user spends listening to the attacker on the phone.\n\n6. **In-app navigation (3 variables).** Screens visited, back-navigation count, transition time. In vishing the user may navigate unusually while following instructions.\n\n7. **Errors and corrections (4 variables).** Input errors, corrections in amount and beneficiary fields, copy/paste events. High frequency in vishing because the user is transcribing dictated data.\n\n8. **Session context (5 variables).** Duration, hour of day, whether a phone call is active, remote access tool detection, suspicious apps detected.\n\n9. **Transaction data (4 variables).** Amount, whether the beneficiary is new, time to transaction. Vishing sessions tend to have higher amounts and new beneficiaries.\n\n10. **Derived and BioCatch features (excluded from modeling).** `biocatch_risk_score`, `biocatch_genuine_score` and similar are excluded because they would cause data leakage. `session_id`, `customer_id`, `session_timestamp` and other identifiers are also dropped.\n\n**Final variables for modeling: 44**\n\n---\n\n## Pipeline Structure\n\nThe project is organized in three main phases, plus an exploratory branch with AutoML:\n\n```\n┌────────────────────────────────────────────────────────────────┐\n│ PHASE 1 — Original dataset (50K sessions, local execution)     │\n└────────────────────────────────────────────────────────────────┘\n        ↓\n  1_EDA.ipynb\n  2_Data_Balancing_Pipeline.ipynb\n  3_Modeling_Vishing_Pipeline.ipynb\n\n┌────────────────────────────────────────────────────────────────┐\n│ PHASE 2 — CTGAN data augmentation and re-training              │\n│          (AWS SageMaker)                                       │\n└────────────────────────────────────────────────────────────────┘\n        ↓\n  4_Biocatch_data_augmentation_CTGAN.ipynb\n  5_EDA_augmented_data.ipynb\n  6_Data_Balancing_AD_Pipeline.ipynb\n  7_Modeling_Vishing_AD.ipynb\n\n┌────────────────────────────────────────────────────────────────┐\n│ PHASE 3 — Focused XGBoost experimentation (AWS SageMaker)      │\n└────────────────────────────────────────────────────────────────┘\n        ↓\n  8_XGBoost_training.ipynb\n\n┌────────────────────────────────────────────────────────────────┐\n│ EXPLORATORY BRANCH — AutoML with AutoGluon                     │\n│                     (AWS SageMaker, not adopted)               │\n└────────────────────────────────────────────────────────────────┘\n        ↓\n  AutoML_Vishing_AutoGluon_EN.ipynb\n```\n\n---\n\n## Notebook-by-Notebook Description\n\n### 1. `1_EDA.ipynb` — Exploratory Analysis (local)\n\n**Input:** `raw_data/biocatch_sinthetic_data.csv` (50K sessions)\n\nComprehensive exploratory analysis of the original dataset. Covers:\n\n- Integrity validation: nulls, duplicates, types, per-variable ranges. No nulls, no duplicates, all ranges within expected bounds.\n- Target and categorical variable distribution (device, claim category, hour of day, month).\n- Per-class univariate analysis with histograms for the physical (keystroke, touch), cognitive (hesitation, familiarity) and session (corrections, navigation) groups.\n- Statistical separability tests: Mann-Whitney U, Cohen's d, point-biserial correlation and per-variable univariate AUC.\n- Binary variable analysis with chi-square and odds ratio.\n- Comparative boxplots by class for the Top 12 features by AUC.\n- Correlation analysis (heatmap and detection of pairs with |r| > 0.7).\n- Comparative behavioral profile (radar chart and per-class median table).\n- Transaction analysis (amount distribution, new beneficiary, time to transaction).\n- 10-component PCA: scree plot, 2D projection and analysis of loadings on PC1/PC2.\n- IQR-based outlier detection with enrichment vs. vishing rate.\n- Quick Random Forest with cross-validation as a preliminary importance estimator (CV AUC ≈ 0.88).\n\n**Key findings.** The most discriminative features by univariate AUC are `phone_call_active`, `segmented_typing_ratio`, `hesitation_count`, `data_familiarity_score` and `input_correction_count`. Vishing sessions exhibit slower and more segmented typing, more hesitations and corrections, and transaction amounts 2–3× higher (median 384K COP vs. 136K COP in legitimate sessions). Chi-square and odds ratio confirm that `phone_call_active` (OR≈2.01), `remote_access_tool_detected` (OR≈2.57), `suspicious_app_detected` (OR≈2.05) and `is_new_beneficiary` (OR≈1.76) are significant at 99.9%.\n\n---\n\n### 2. `2_Data_Balancing_Pipeline.ipynb` — Balancing the original dataset (local)\n\n**Input:** `raw_data/biocatch_sinthetic_data.csv` (95%:5% imbalance)\n**Output:** 12 balanced datasets in `data/balanced/original/{technique}/{ratio}.csv`\n\nApplies four resampling techniques with three target vishing ratios (10%, 20%, 25%):\n\n| Technique | Description |\n|---|---|\n| **Random Oversampling** | Duplicates observations from the minority class. |\n| **SMOTE** | Generates synthetic samples via k-NN interpolation. |\n| **Borderline SMOTE** | SMOTE focused on decision-boundary examples. |\n| **SMOTE + Undersampling** | Hybrid: reduces the majority class by ~10% and applies SMOTE on the minority class. |\n\nThis produces 12 variants (4 techniques × 3 ratios) that feed the modeling stage.\n\n---\n\n### 3. `3_Modeling_Vishing_Pipeline.ipynb` — Modeling on the original data (local)\n\n**Input:** 12 balanced datasets + 20% holdout (10K unbalanced sessions).\n**Output:** Comparative metrics table and confusion matrix of the best model.\n\nTrains four algorithms on each of the 12 balanced datasets:\n\n| Model | Hyperparameters |\n|---|---|\n| Logistic Regression | `max_iter=1000` |\n| Random Forest | `n_estimators=150`, `max_depth=10` |\n| XGBoost | `max_depth=6`, `learning_rate=0.1`, `eval_metric='logloss'` |\n| MLP (neural network) | Hidden layers 64→32, 300 iterations |\n\nEvaluated on the imbalanced holdout (9,500 legitimate + 500 vishing) using Recall, Precision, F1, ROC-AUC and PR-AUC.\n\n**Best result.** XGBoost with SMOTE + Undersampling at 10% on the holdout:\n\n| Metric | Value |\n|---|---|\n| Recall | 0.9400 |\n| Precision | 0.9419 |\n| F1 | 0.9409 |\n| ROC-AUC | 0.9988 |\n| PR-AUC | 0.9848 |\n\nTN = 9,471 · FP = 29 · FN = 30 · TP = 470. The very high quality is explained in part by the statistical homogeneity of the synthetic dataset; Phases 2 and 3 raise the bar with more data and realistic imbalance.\n\n---\n\n### 4. `4_Biocatch_data_augmentation_CTGAN.ipynb` — CTGAN augmentation (AWS SageMaker)\n\n**Input:** `raw_data/biocatch_sinthetic_data.csv` (50K sessions).\n**Output:** `data/augmented_data/dataset_1M_vishing_ctgan.parquet` (1M sessions).\n\nThis is the most technical step of the pipeline. Generates 1 million synthetic sessions preserving the statistical structure of the original dataset using **CTGAN** (Conditional Tabular GAN), the state of the art for generating mixed tabular data with numerical and categorical features.\n\n**Motivation.** A previous implementation based on a Gaussian copula with quantile matching and additive jitter was trivially distinguishable: a simple classifier on originals vs. synthetics reached AUC = 1.00 because the copula failed to capture nonlinear dependencies and the jitter on positively skewed features left a detectable fingerprint in the tails. CTGAN directly learns the dependencies via adversarial training with mode-specific conditioning, and in practice reduces the distinguishability AUC to the 0.55–0.70 range.\n\n**Strategy.** One CTGAN per class (legit and vishing) using data filtered to `mobile` devices (42,579 sessions: 40,452 legitimate + 2,127 vishing) because some attributes do not apply to desktop devices and, in the context of the problem, only behavior on mobile devices is of interest. The minority class has only 2,127 samples and requires class-specific hyperparameters.\n\n**CTGAN hyperparameters (SDV 1.5, trained on Tesla T4 GPU):**\n\n| Class | epochs | batch_size | pac | generator_dim | discriminator_dim | embedding_dim | lr |\n|---|---|---|---|---|---|---|---|\n| Legit   | 300 | 500 | 10 | (256, 256) | (256, 256) | 128 | 2e-4 |\n| Vishing | 800 | 250 |  5 | (128, 128) | (128, 128) |  64 | 1e-4 |\n\nThe vishing configuration is more conservative: smaller network (less overfitting with scarce samples), lower `pac` (packing of fewer rows per critic evaluation), smaller batch and more epochs to reach stable convergence with fewer steps per epoch.\n\n**SDV metadata.** Binary variables (`phone_call_active`, `remote_access_tool_detected`, `suspicious_app_detected`, `transaction_attempted`, `is_new_beneficiary`) are declared as `categorical` so CTGAN uses the discrete conditional mechanism (much more stable than treating them as continuous).\n\n**Post-processing after generation.** CTGAN produces reasonable marginals but does not respect logical consistencies nor domain constraints, so a post-generation pipeline is applied:\n\n- **Domain constraints:** clip ratios to [0,1], round non-negative integers, binaries in {0,1}, `hour_of_day` in [0,23], `device_tilt_angle_mean` in [0,90].\n- **Logical consistencies:** `is_atypical_hour` derived by rule from `hour_of_day` ∈ {22,23,0,1,2,3,4,5}; `unique_screens_visited ≤ screens_visited`; `call_overlap_duration_s = 0` if `phone_call_active = 0`; `transaction_amount_cop`, `time_to_transaction_s` and `is_new_beneficiary` set to 0 if `transaction_attempted = 0`; `avg_hesitation_duration_s` and `max_hesitation_duration_s` set to 0 if `hesitation_count = 0`; `total_dead_time_s` and `dead_time_ratio` set to 0 if `dead_time_periods = 0`.\n- **BioCatch indicators by empirical conditioning** (`biocatch_ato_indicator`, `biocatch_social_eng_indicator`, `biocatch_bot_indicator`): probability tables per decile of `biocatch_risk_score`, estimated on the original dataset.\n- **Derived features recomputed** from the generated variables: `errors_per_minute`, `interactions_per_s`, `hesitation_composite`.\n- **Session metadata** (`session_id`, `customer_id`, `session_timestamp`, `device_type='mobile'`, `os_type`, `app_version`, `days_to_claim` and `claim_category`): attached after generation using sampled distributions from the original dataset for the corresponding class.\n- **`is_synthetic` flag:** all rows generated by CTGAN are marked with 1 and retained originals with 0 (enables auditing and controlled splits).\n\n**Composition of the augmented dataset (1M):**\n\n- 40,452 legitimate original sessions (retained intact).\n- 944,548 legitimate sessions generated by CTGAN.\n- 2,127 vishing original sessions (retained intact).\n- 12,873 vishing sessions generated by CTGAN.\n- **Resulting imbalance:** 1.5% vishing (closer to production reality than the original 5%), 62 columns (61 original + `is_synthetic`).\n\nThe trained CTGAN synthesizers are serialized and uploaded to S3 (`s3://poc-fraude-vishing/models/ctgan_legit.pkl` and `ctgan_vishing.pkl`) so data can be regenerated without re-training.\n\n---\n\n### 5. `5_EDA_augmented_data.ipynb` — EDA on the augmented data (local)\n\n**Input:** `data/augmented_data/dataset_1M_vishing_ctgan.parquet` + original 50K dataset for comparison.\n\nValidates the quality of the CTGAN augmentation and characterizes the new dataset:\n\n- **Integrity:** no nulls, no duplicated `session_id`, 89,999 unique customers, temporal range 2024-06-01 → 2025-05-31.\n- **`is_synthetic` analysis:** global proportion 95.74% synthetic vs. 4.26% original. Contingency with `is_vishing`: chi² = 3,675, OR = 0.259.\n- **Ranges:** all variables within their valid ranges after post-processing.\n- **Per-class distributions** (subsampled to 50K legitimate + all vishing): physical, cognitive and session behavior.\n- **Statistical separability on a 115K subsample:** 3 features with large effect (|d| ≥ 0.8), 10 medium (≥ 0.5), 23 small (≥ 0.2), 17 negligible. Significance: 52 out of 54 with p < 0.001.\n- **Binary variables.** `is_new_beneficiary` OR = 2.24, `phone_call_active` OR = 1.63, `suspicious_app_detected` OR = 1.53, `transaction_attempted` OR = 1.36, `remote_access_tool_detected` OR = 1.28. `is_atypical_hour` reverses direction to OR = 0.82 (counterintuitive but explained by the noise CTGAN introduces in the rule-derived variable).\n- **Correlation.** 4 pairs with |r| > 0.7 (multicollinearity with derived features): `input_error_count` ↔ `errors_per_minute` (1.00), `hesitation_count` ↔ `hesitation_composite` (0.99), and two with `interactions_per_s`.\n- **Comparative behavioral profile** by median: same pattern as in the original, with `transaction_amount_cop` in vishing ≈ 379K vs 167K in legitimate.\n- **PCA:** first 5 components explain 36.8% of variance; 10 components explain 48.3%. PC1 is dominated by cognitive signals (`interactions_per_s`, `hesitation_count`, `hesitation_composite`, `dead_time_periods`, `segmented_typing_ratio`); PC2 by transaction signals (`time_to_transaction_s`, `transaction_attempted`, `is_new_beneficiary`).\n- **IQR outliers:** `errors_per_minute` enriches vishing to 12.9% (vs. 1.5% global); `interactions_per_s` to 4.8%.\n- **Preliminary feature importance.** Random Forest on a stratified subsample (155K rows: 15K vishing + 140K legitimate) with CV-AUC = 1.0000 ± 0.0000, confirming extreme separability in the augmented dataset.\n\n**Validation vs. original (Kolmogorov-Smirnov test on a 50K subsample):**\n\n| Feature | KS | Interpretation |\n|---|---|---|\n| `session_duration_s` | 0.0000 | Identical |\n| `avg_keyhold_ms` | 0.047 | Excellent preservation |\n| `hesitation_count` | 0.048 | Excellent |\n| `unusual_screen_visits` | 0.051 | Excellent |\n| `input_correction_count` | 0.070 | Very good |\n| `transaction_amount_cop` | 0.071 | Very good |\n| `segmented_typing_ratio` | 0.078 | Good |\n| `typing_speed_cps` | 0.079 | Good |\n| `total_dead_time_s` | 0.086 | Good |\n| `data_familiarity_score` | 0.127 | Mild drift |\n\nCTGAN preserves the marginal distributions within the expected fidelity range; only `data_familiarity_score` exhibits mild drift (KS > 0.10). The deltas in Cohen's d and univariate AUC between original and augmented are moderate and do not change the sign of the effect in any relevant variable.\n\n---\n\n### 6. `6_Data_Balancing_AD_Pipeline.ipynb` — Balancing on the augmented data (local)\n\n**Input:** `data/augmented_data/dataset_1M_vishing_ctgan.parquet` (1M, 98.5%:1.5% imbalance).\n**Output:** 12 balanced datasets in `data/balanced/augmented/{technique}/{ratio}.parquet`.\n\nApplies the same four resampling techniques at the same three target ratios (10%, 20%, 25%) as Notebook 2, but now on the 1M-session dataset. Uses parquet format for greater efficiency at this scale.\n\n| Technique | Approx. resulting size |\n|---|---|\n| Random Oversampling | 1.09M – 1.31M rows |\n| SMOTE | 1.09M – 1.31M rows |\n| Borderline SMOTE | 1.09M – 1.31M rows |\n| SMOTE + Undersampling | 985K – 1.18M rows |\n\n---\n\n### 7. `7_Modeling_Vishing_AD.ipynb` — Multi-algorithm modeling on augmented data (AWS SageMaker)\n\n**Input:** 12 balanced datasets from Notebook 6 (S3) + raw 1M dataset as the 13th dataset + 200K-session holdout extracted from the 1M with `stratify` and realistic imbalance (~1.5% vishing).\n**Output:** 52 models serialized to S3 as `VishingModelWrapper`.\n\nTrains four algorithms on each of the 13 datasets (12 balanced + 1 raw), with the MLP re-written in PyTorch to leverage CUDA GPU.\n\n| Model | Hyperparameters |\n|---|---|\n| Logistic Regression | `max_iter=1000` |\n| Random Forest | `n_estimators=150`, `max_depth=10`, `n_jobs=-1` |\n| XGBoost | `tree_method='hist'`, `device='cuda'`, `max_depth=6`, `lr=0.1` |\n| MLP (PyTorch) | 64→32, `max_iter=30`, `batch_size=4096`, GPU |\n\n**Optimal threshold.** For each model the threshold that maximizes F1 on the holdout's Precision-Recall curve is computed, instead of using the default 0.5.\n\n**Engineering innovation — `VishingModelWrapper`.** Packaging class that solves the inference reproducibility problem. Encapsulates in a single artifact serialized with `joblib`:\n\n- The trained model.\n- The `StandardScaler` (only for Logistic Regression and MLP; tree-based models are stored without a scaler).\n- The exact feature list in the correct order.\n- The optimal classification threshold computed by F1 maximization.\n- Metadata: model name, technique and ratio.\n\nExposes three methods:\n\n- `predict(json)` → binary label 0/1.\n- `predict_proba_raw(json)` → `{legitimate: float, vishing: float}`.\n- `predict_full(json)` → full dict with label, probabilities and threshold used.\n\nAccepts as input a Python dict, JSON string or a list of dicts (batch). Validates missing features and raises an explicit `ValueError`, with no silent failures. Models are stored in `s3://poc-fraude-vishing/proyecto/modelos/{technique}/{ratio}/{model}.pkl`.\n\n**Best result — XGBoost + Random Oversampling 10%:**\n\n| Metric | Value |\n|---|---|\n| PR-AUC | 0.7511 |\n| Recall | 0.6530 |\n| Precision | 0.7572 |\n| F1 | 0.7013 |\n| ROC-AUC | 0.9784 |\n| Optimal threshold | 0.5921 |\n\nTN = 196,372 · FP = 628 · FN = 1,041 · TP = 1,959 on a 200K holdout.\n\n**Feature importance (Top 15 XGBoost by Gain).** The order changes with respect to the origin",
+ "hits": {
+  "st": [
+   {
+    "file": "4_Biocatch_data_augmentation_CTGAN.ipynb",
+    "line": 88,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"warnings.filterwarnings('ignore')\\n\",",
+     "    \"from scipy import stats as scipy_stats\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"import torch\\n\",",
+     "    \"\\n\",",
+     "    \"plt.rcParams.update({\\n\","
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "4_Biocatch_data_augmentation_CTGAN.ipynb",
+    "line": 87,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"import warnings\\n\",",
+     "    \"warnings.filterwarnings('ignore')\\n\",",
+     "    \"from scipy import stats as scipy_stats\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"import torch\\n\",",
+     "    \"\\n\","
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "4_Biocatch_data_augmentation_CTGAN.ipynb",
+    "line": 87,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"import warnings\\n\",",
+     "    \"warnings.filterwarnings('ignore')\\n\",",
+     "    \"from scipy import stats as scipy_stats\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"import torch\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "4_Biocatch_data_augmentation_CTGAN.ipynb",
+    "line": 88,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"warnings.filterwarnings('ignore')\\n\",",
+     "    \"from scipy import stats as scipy_stats\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"import torch\\n\",",
+     "    \"\\n\",",
+     "    \"plt.rcParams.update({\\n\","
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "4_Biocatch_data_augmentation_CTGAN.ipynb",
+    "line": 88,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"warnings.filterwarnings('ignore')\\n\",",
+     "    \"from scipy import stats as scipy_stats\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"import torch\\n\",",
+     "    \"\\n\",",
+     "    \"plt.rcParams.update({\\n\","
+    ]
+   },
+   {
+    "file": "4_Biocatch_data_augmentation_CTGAN.ipynb",
+    "line": 460,
+    "text": "\"synth_legit = CTGANSynthesizer(\\n\",",
+    "context": [
+     "     ]",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"synth_legit = CTGANSynthesizer(\\n\",",
+     "    \"    metadata_legit,\\n\",",
+     "    \"    epochs=300,\\n\",",
+     "    \"    batch_size=500,\\n\",",
+     "    \"    generator_dim=(256, 256),\\n\","
+    ]
+   },
+   {
+    "file": "4_Biocatch_data_augmentation_CTGAN.ipynb",
+    "line": 534,
+    "text": "\"synth_vishing = CTGANSynthesizer(\\n\",",
+    "context": [
+     "     ]",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"synth_vishing = CTGANSynthesizer(\\n\",",
+     "    \"    metadata_vishing,\\n\",",
+     "    \"    epochs=800,\\n\",",
+     "    \"    batch_size=250,\\n\",",
+     "    \"    generator_dim=(128, 128),\\n\","
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

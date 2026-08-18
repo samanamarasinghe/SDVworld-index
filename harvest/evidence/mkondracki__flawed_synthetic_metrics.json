@@ -1,0 +1,134 @@
+{
+ "repo": "mkondracki/flawed_synthetic_metrics",
+ "disk_kb": 1470,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Flawed_synthetic_metrics\n\nIn this repository, building on Räisä et al. [2025], we first evaluate whether statistical metrics—such as I-Precision, I-Recall, Density, and Diversity [Naeem et al., 2020]—meet essential desiderata using two sanity checks: Gaussian Mean Difference with Outlier and Mode Collapse. We also introduce a machine-learning efficiency-based metric, AUC-Ratio Efficiency, and assess its performance with the same tests.\n\nIn the second part, following van Breugel et al. [2023], we compare a naive approach—training a model directly on synthetic data for a downstream binary classification task—with the Deep Generative Ensemble (DGE) framework. Experiments are conducted on the Dresses Sales dataset, which contains both numerical and categorical features and is designed for binary recommendation prediction.\n\n- **Goal:** Assess whether statistical metrics meet essential desiderata.\n- **Synthesizer:** TVAE (`build_fit_TVAE` helper).\n- **Model:** Gradient Boosting + `OneHotEncoder` (categoricals) + `StandardScaler` (numerics) in a scikit-learn `Pipeline`.\n- **Protocols:** Oracle (train on real), Naive (one synthetic set), DGE (mean of K models), Concat (pool K synthetic sets).\n- **Metrics:** `accuracy`, `f1`, `roc_auc`.\n\n  \n## Data\n\n**OpenML “Dresses Sales”** (`dresses-sales.arff`). \n\n- **Target:** `class` (values are `{1,2}`).\n- **Categoricals:** `cat_cols` — `V2, V3, V5, V6, V7, V8, V9, V10, V11, V12, V13`\n- **Numerics:** `num_cols` — `V4`\n\n## Environment\n\n| Package           | Version  | \n|-------------------|----------|\n| python            | 3.10     |\n| numpy             | 1.26.4   |\n| pandas            | 2.1.1    | \n| scikit-learn      | 1.3.2    | \n| scipy             | 1.11.2   | \n| sdv               | 1.1.0    |\n| torch             | 2.2.0    |\n| torchvision       | 0.18.1   | \n| seaborn           | 0.12.3   | \n| matplotlib        | 3.10.5   | \n",
+ "hits": {
+  "st": [
+   {
+    "file": "models/model_loader.py",
+    "line": 1,
+    "text": "from sdv.single_table import TVAESynthesizer, CTGANSynthesizer",
+    "context": [
+     "from sdv.single_table import TVAESynthesizer, CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "",
+     "from sklearn.ensemble import GradientBoostingClassifier",
+     "from sklearn.linear_model import LogisticRegression"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "models/model_loader.py",
+    "line": 2,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "from sdv.single_table import TVAESynthesizer, CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "",
+     "from sklearn.ensemble import GradientBoostingClassifier",
+     "from sklearn.linear_model import LogisticRegression",
+     "from sklearn.pipeline import Pipeline"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "models/model_loader.py",
+    "line": 1,
+    "text": "from sdv.single_table import TVAESynthesizer, CTGANSynthesizer",
+    "context": [
+     "from sdv.single_table import TVAESynthesizer, CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "",
+     "from sklearn.ensemble import GradientBoostingClassifier",
+     "from sklearn.linear_model import LogisticRegression"
+    ]
+   },
+   {
+    "file": "models/model_loader.py",
+    "line": 2,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "from sdv.single_table import TVAESynthesizer, CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "",
+     "from sklearn.ensemble import GradientBoostingClassifier",
+     "from sklearn.linear_model import LogisticRegression",
+     "from sklearn.pipeline import Pipeline"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "models/model_loader.py",
+    "line": 1,
+    "text": "from sdv.single_table import TVAESynthesizer, CTGANSynthesizer",
+    "context": [
+     "from sdv.single_table import TVAESynthesizer, CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "",
+     "from sklearn.ensemble import GradientBoostingClassifier",
+     "from sklearn.linear_model import LogisticRegression"
+    ]
+   },
+   {
+    "file": "models/model_loader.py",
+    "line": 33,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "def build_fit_CTGAN(df_real, epochs=250, batch_size=20, plot_loss=False):",
+     "    metadata = Metadata.detect_from_dataframe(",
+     "        data=df_real)",
+     "",
+     "    synthesizer = CTGANSynthesizer(",
+     "        metadata=metadata,",
+     "        epochs=epochs,",
+     "        batch_size=batch_size,",
+     "        enforce_min_max_values=True,"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "models/model_loader.py",
+    "line": 1,
+    "text": "from sdv.single_table import TVAESynthesizer, CTGANSynthesizer",
+    "context": [
+     "from sdv.single_table import TVAESynthesizer, CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "",
+     "from sklearn.ensemble import GradientBoostingClassifier",
+     "from sklearn.linear_model import LogisticRegression"
+    ]
+   },
+   {
+    "file": "models/model_loader.py",
+    "line": 16,
+    "text": "synthesizer = TVAESynthesizer(",
+    "context": [
+     "def build_fit_TVAE(df_real, epochs=400, batch_size=20, plot_loss=False):",
+     "    metadata = Metadata.detect_from_dataframe(",
+     "        data=df_real)",
+     "",
+     "    synthesizer = TVAESynthesizer(",
+     "        metadata=metadata,",
+     "        epochs=epochs,                ",
+     "        batch_size=batch_size,    # default is 500",
+     "        enforce_min_max_values=True,"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

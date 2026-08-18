@@ -1,0 +1,478 @@
+{
+ "repo": "nikhileshnr/hotel_revenue",
+ "disk_kb": 18348,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Hotel Revenue Management Simulation Game\n\nA web-based educational simulation game for hotel revenue management, powered by ML models trained on 261K+ real hotel booking records.\n\n## Architecture\n\n```\ndemand_model/       → Python ML training pipeline (LightGBM, CTGAN, statsmodels)\nprofile-service/    → FastAPI microservice for CTGAN guest generation\nhotel-game/\n  ├── backend/      → Node.js + Express + Socket.io + MySQL + Redis\n  └── frontend/     → React 19 + Vite 8 + Zustand + Nivo Charts\n```\n\n## Setup After Cloning\n\n### Prerequisites\n\n| Requirement | Version | Purpose |\n|---|---|---|\n| Node.js | ≥ 18 | Backend + Frontend |\n| MySQL | 8.0+ | Game database |\n| Redis | Latest | Session state + room inventory |\n| Python | 3.10+ | Profile service (CTGAN inference) |\n\n### Step 1: MySQL Database\n\n```sql\nCREATE DATABASE hotel_game CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;\n```\n\n### Step 2: Redis\n\nMake sure Redis is running before starting the backend:\n\n```bash\n# Windows (if installed as service):\nredis-server\n\n# Docker:\ndocker run -d -p 6379:6379 redis\n```\n\n### Step 3: Profile Service (Python — one-time setup)\n\n```bash\ncd profile-service\n\n# Create virtual environment\npython -m venv venv\n\n# Activate it\n# Windows:\nvenv\\Scripts\\activate\n# macOS/Linux:\nsource venv/bin/activate\n\n# Install dependencies\npip install -r requirements.txt\n\n# Create .env from example\ncp .env.example .env\n```\n\n> You do **not** need to start the profile service manually — the backend launches it automatically (see Step 4).\n\n### Step 4: Backend\n\n```bash\ncd hotel-game/backend\n\n# Create .env from example\ncp .env.example .env\n# Edit .env — set your MySQL password and a secure JWT secret\n\n# Install dependencies\nnpm install\n\n# Run database migrations (creates all tables)\nnpm run migrate\n\n# Start backend + profile service together\nnpm run dev\n# → [profile-service] Uvicorn running on http://0.0.0.0:8000\n# → [backend] Server listening on http://localhost:3000\n```\n\n`npm run dev` runs `start-all.js` which:\n1. Spawns the Python profile service (`uvicorn`) from `profile-service/venv/`\n2. Waits for the `/health` endpoint to respond (up to 30 retries)\n3. Then starts the Node.js backend with `nodemon`\n\n> If the profile service fails to start, the backend continues using the ONNX fallback sampler.\n\n### Step 5: Frontend\n\n```bash\ncd hotel-game/frontend\n\n# Install dependencies\nnpm install\n\n# Create .env from example (points to backend)\ncp .env.example .env\n\n# Start dev server\nnpm run dev\n# → Frontend on http://localhost:5173\n```\n\n### Step 6: Start Playing\n\n1. Open `http://localhost:5173` in your browser\n2. Register a new account\n3. Click **New Session** on the Dashboard\n4. Choose hotel type (City/Resort), game mode (Classic/Pricing), and week count\n5. Click **Launch** — the game starts immediately\n\n## Project Structure\n\n```\n.\n├── demand_model/                  # ML Training Pipeline\n│   ├── src/                       # 10 Python training scripts\n│   │   ├── 01_clean.py            # Data cleaning (261K → 199K records)\n│   │   ├── 02_features.py         # Feature engineering (32 features)\n│   │   ├── 03_volume.py           # Demand volume (Negative Binomial)\n│   │   ├── 04_profiles.py         # Guest profile distributions\n│   │   ├── 05_adr.py              # ADR prediction (LightGBM)\n│   │   ├── 06_cancel.py           # Cancellation model (LightGBM + Platt)\n│   │   ├── 07_noshow.py           # No-show model (LightGBM)\n│   │   ├── 08_export.py           # Export to ONNX + JSON\n│   │   └── 10_validate.py         # End-to-end validation\n│   ├── models/                    # Trained model artifacts (included)\n│   │   ├── ctgan_model.pkl        # CTGAN generator (~20MB)\n│   │   ├── cancel_model.pkl       # Calibrated cancellation model\n│   │   ├── adr_model_city.pkl     # City hotel ADR predictor\n│   │   ├── adr_model_resort.pkl   # Resort hotel ADR predictor\n│   │   ├── *.onnx                 # ONNX fallback models\n│   │   └── *.json                 # Config + parameters\n│   ├── 09_train_ctgan_colab.ipynb # Colab notebook for GPU training\n│   └── requirements.txt\n│\n├── hotel-game/\n│   ├── backend/                   # Node.js Game Server\n│   │   ├── src/\n│   │   │   ├── config/            # DB + Redis connections\n│   │   │   ├── db/migrations/     # Sequelize migrations\n│   │   │   ├── demand/            # ML inference (ONNX + statistical)\n│   │   │   ├── game/              # Game logic (weekOrchestrator, guestFactory)\n│   │   │   ├── services/          # Business logic layer\n│   │   │   ├── routes/            # REST API endpoints\n│   │   │   ├── socket/            # Socket.io event handlers\n│   │   │   └── middleware/        # JWT auth middleware\n│   │   ├── models/                # ONNX model files for Node.js inference\n│   │   ├── scripts/start-all.js   # Launches profile-service + backend\n│   │   └── .env.example\n│   │\n│   └── frontend/                  # React SPA\n│       ├── src/\n│       │   ├── pages/             # 8 page components\n│       │   ├── components/        # Shared UI components\n│       │   ├── stores/            # Zustand state management\n│       │   └── lib/               # API + Socket.io clients\n│       └── .env.example\n│\n├── profile-service/               # Python FastAPI Microservice\n│   ├── main.py                    # FastAPI app + /generate endpoint\n│   ├── generator.py               # CTGAN-based guest generation\n│   ├── adr_predictor.py           # LightGBM ADR inference\n│   ├── risk_predictor.py          # Cancel + no-show prediction\n│   ├── postprocess.py             # Guest object assembly\n│   └── requirements.txt\n│\n├── BTP_PROJECT_REPORT.tex         # LaTeX project report\n└── README.md\n```\n\n## ML Models\n\nAll trained model files are included in the repository. No retraining needed.\n\n| Model | File | Method | Key Metric |\n|---|---|---|---|\n| Demand Volume | `volume_params.json` | Negative Binomial | Seasonal [5–20] guests/week |\n| Guest Profiles | `ctgan_model.pkl` | CTGAN (SDV) | 87.84% quality score |\n| ADR (City) | `adr_model_city.pkl` | LightGBM | R² = 0.641 |\n| ADR (Resort) | `adr_model_resort.pkl` | LightGBM | R² = 0.614 |\n| Cancellation | `cancel_model.pkl` | LightGBM + Platt | AUC-ROC = 0.887 |\n| No-Show | `noshow_model.onnx` | LightGBM | AUC-ROC = 0.822 |\n\n## Game Modes\n\n- **Classic Mode** — Guests arrive one-by-one with 30-second timers. Accept or reject each booking based on revenue, risk, and room availability.\n- **Pricing Mode** — Set prices per room tier. The ML engine auto-books guests based on price sensitivity and simulates the week.\n\n## Tech Stack\n\n| Layer | Technology |\n|---|---|\n| ML Training | Python, LightGBM, SDV CTGAN, statsmodels |\n| Inference Service | Python FastAPI + uvicorn |\n| Backend | Node.js, Express 5, Socket.io 4.8 |\n| Database | MySQL 8.0 (Sequelize ORM), Redis (ioredis) |\n| Frontend | React 19, Vite 8, Zustand, Nivo Charts |\n| Auth | JWT (jsonwebtoken + bcryptjs) |\n",
+ "hits": {
+  "ct": [
+   {
+    "file": "demand_model/TRAINING_REPORT.md",
+    "line": 89,
+    "text": "| Synthetic data | SDV (CTGANSynthesizer) |",
+    "context": [
+     "| Component | Technology |",
+     "|---|---|",
+     "| Training language | Python 3.14 |",
+     "| ML framework | LightGBM 4.3.0, statsmodels 0.14.2 |",
+     "| Synthetic data | SDV (CTGANSynthesizer) |",
+     "| Distribution fitting | SciPy 1.13.0 |",
+     "| ML model export format | joblib (`.pkl`) — replaces ONNX as of v1.2.0 |",
+     "| Distribution model format | JSON |",
+     "| Inference runtime | Python FastAPI microservice (primary) / Node.js ONNX fallback |"
+    ]
+   },
+   {
+    "file": "demand_model/TRAINING_REPORT.md",
+    "line": 127,
+    "text": "│   └── 09_train_ctgan.py                    ← NEW: trains CTGANSynthesizer",
+    "context": [
+     "│   ├── 05_train_adr_model.py                ← exports .pkl (joblib), no ONNX",
+     "│   ├── 06_train_cancel_model.py             ← exports .pkl (CalibratedClassifierCV)",
+     "│   ├── 07_train_upgrade_model.py",
+     "│   ├── 08_validate_pipeline.py",
+     "│   └── 09_train_ctgan.py                    ← NEW: trains CTGANSynthesizer",
+     "├── 09_train_ctgan_colab.ipynb               ← Colab notebook (GPU-accelerated training)",
+     "├── venv/",
+     "└── requirements.txt",
+     "```"
+    ]
+   },
+   {
+    "file": "demand_model/TRAINING_REPORT.md",
+    "line": 605,
+    "text": "**Model:** SDV CTGANSynthesizer (150 epochs, batch_size=500, generator_dim=(256,256), pac=10)",
+    "context": [
+     "",
+     "## 8.5 Sub-Model 6: CTGAN Guest Profile Generator (v1.2.0)",
+     "",
+     "**Script:** `src/09_train_ctgan.py` (local) / `09_train_ctgan_colab.ipynb` (GPU)  ",
+     "**Model:** SDV CTGANSynthesizer (150 epochs, batch_size=500, generator_dim=(256,256), pac=10)  ",
+     "**Training:** 219,199 rows × 13 profile columns, trained on Google Colab T4 GPU (33 minutes)  ",
+     "**Purpose:** Generates correlated synthetic guest profiles conditioned on hotel type and month, replacing independent statistical sampling.",
+     "",
+     "**Evaluation script:** `src/10_evaluate_ctgan.py` — uses SDV's `evaluate_quality()` and `run_diagnostic()` plus custom distribution comparisons."
+    ]
+   },
+   {
+    "file": "demand_model/09_train_ctgan_colab.ipynb",
+    "line": 51,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"import json\\n\",",
+     "    \"from datetime import date\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"# Column definitions\\n\",",
+     "    \"PROFILE_COLUMNS = [\\n\",",
+     "    \"    'hotel_encoded', 'month_num', 'room_tier', 'los',\\n\","
+    ]
+   },
+   {
+    "file": "demand_model/09_train_ctgan_colab.ipynb",
+    "line": 137,
+    "text": "\"synthesizer = CTGANSynthesizer(\\n\",",
+    "context": [
+     "    \"print(f'CUDA available: {torch.cuda.is_available()}')\\n\",",
+     "    \"if torch.cuda.is_available():\\n\",",
+     "    \"    print(f'GPU: {torch.cuda.get_device_name(0)}')\\n\",",
+     "    \"\\n\",",
+     "    \"synthesizer = CTGANSynthesizer(\\n\",",
+     "    \"    metadata,\\n\",",
+     "    \"    epochs=150,\\n\",",
+     "    \"    batch_size=500,\\n\",",
+     "    \"    generator_dim=(256, 256),\\n\","
+    ]
+   },
+   {
+    "file": "demand_model/src/09_train_ctgan.py",
+    "line": 3,
+    "text": "Trains a CTGANSynthesizer on guest profile features from df_featured.csv.",
+    "context": [
+     "\"\"\"",
+     "09_train_ctgan.py",
+     "Trains a CTGANSynthesizer on guest profile features from df_featured.csv.",
+     "Outputs: models/ctgan_model.pkl, models/ctgan_metadata.json",
+     "\"\"\"",
+     "",
+     "import pandas as pd"
+    ]
+   },
+   {
+    "file": "demand_model/src/09_train_ctgan.py",
+    "line": 14,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import os",
+     "from datetime import date",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "# Paths",
+     "BASE_DIR = os.path.dirname(os.path.dirname(__file__))",
+     "DATA_DIR = os.path.join(BASE_DIR, 'data')"
+    ]
+   },
+   {
+    "file": "demand_model/src/09_train_ctgan.py",
+    "line": 85,
+    "text": "print(\"\\nTraining CTGANSynthesizer...\")",
+    "context": [
+     "print(\"  Metadata configured\")",
+     "print(f\"  Columns: {metadata.columns}\")",
+     "",
+     "# ─── Train CTGAN ──────────────────────────────────────────────────────────────",
+     "print(\"\\nTraining CTGANSynthesizer...\")",
+     "print(\"  epochs=300, batch_size=500, generator_dim=(256,256), discriminator_dim=(256,256), pac=10\")",
+     "print(\"  This may take 30-90 minutes...\\n\")",
+     "",
+     "synthesizer = CTGANSynthesizer("
+    ]
+   },
+   {
+    "file": "demand_model/src/09_train_ctgan.py",
+    "line": 89,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "print(\"\\nTraining CTGANSynthesizer...\")",
+     "print(\"  epochs=300, batch_size=500, generator_dim=(256,256), discriminator_dim=(256,256), pac=10\")",
+     "print(\"  This may take 30-90 minutes...\\n\")",
+     "",
+     "synthesizer = CTGANSynthesizer(",
+     "    metadata,",
+     "    epochs=300,",
+     "    batch_size=500,",
+     "    generator_dim=(256, 256),"
+    ]
+   },
+   {
+    "file": "demand_model/src/10_evaluate_ctgan.py",
+    "line": 13,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import json",
+     "import os",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "import torch",
+     "",
+     "# ─── Paths ─────────────────────────────────────────────────────────────────────"
+    ]
+   },
+   {
+    "file": "demand_model/src/10_evaluate_ctgan.py",
+    "line": 63,
+    "text": "synthesizer = CTGANSynthesizer.load(os.path.join(MODELS_DIR, 'ctgan_model.pkl'))",
+    "context": [
+     "print(\"\\nLoading CTGAN model...\")",
+     "_original = torch.load",
+     "torch.load = lambda *a, **kw: _original(*a, **{**kw, 'map_location': 'cpu', 'weights_only': False})",
+     "try:",
+     "    synthesizer = CTGANSynthesizer.load(os.path.join(MODELS_DIR, 'ctgan_model.pkl'))",
+     "finally:",
+     "    torch.load = _original",
+     "",
+     "N_SYNTHETIC = 10000"
+    ]
+   },
+   {
+    "file": "profile-service/generator.py",
+    "line": 9,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "import os",
+     "import json",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "_synthesizer = None",
+     "_metadata = None",
+     ""
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "demand_model/09_train_ctgan_colab.ipynb",
+    "line": 51,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"import json\\n\",",
+     "    \"from datetime import date\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"# Column definitions\\n\",",
+     "    \"PROFILE_COLUMNS = [\\n\",",
+     "    \"    'hotel_encoded', 'month_num', 'room_tier', 'los',\\n\","
+    ]
+   },
+   {
+    "file": "demand_model/src/09_train_ctgan.py",
+    "line": 14,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import os",
+     "from datetime import date",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "# Paths",
+     "BASE_DIR = os.path.dirname(os.path.dirname(__file__))",
+     "DATA_DIR = os.path.join(BASE_DIR, 'data')"
+    ]
+   },
+   {
+    "file": "demand_model/src/10_evaluate_ctgan.py",
+    "line": 13,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import json",
+     "import os",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "import torch",
+     "",
+     "# ─── Paths ─────────────────────────────────────────────────────────────────────"
+    ]
+   },
+   {
+    "file": "profile-service/generator.py",
+    "line": 9,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "import os",
+     "import json",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "_synthesizer = None",
+     "_metadata = None",
+     ""
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "demand_model/09_train_ctgan_colab.ipynb",
+    "line": 50,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"import numpy as np\\n\",",
+     "    \"import json\\n\",",
+     "    \"from datetime import date\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"# Column definitions\\n\",",
+     "    \"PROFILE_COLUMNS = [\\n\","
+    ]
+   },
+   {
+    "file": "demand_model/src/09_train_ctgan.py",
+    "line": 13,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import json",
+     "import os",
+     "from datetime import date",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "# Paths",
+     "BASE_DIR = os.path.dirname(os.path.dirname(__file__))"
+    ]
+   },
+   {
+    "file": "demand_model/src/10_evaluate_ctgan.py",
+    "line": 12,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import numpy as np",
+     "import json",
+     "import os",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "import torch",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "demand_model/09_train_ctgan_colab.ipynb",
+    "line": 50,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"import numpy as np\\n\",",
+     "    \"import json\\n\",",
+     "    \"from datetime import date\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"# Column definitions\\n\",",
+     "    \"PROFILE_COLUMNS = [\\n\","
+    ]
+   },
+   {
+    "file": "demand_model/09_train_ctgan_colab.ipynb",
+    "line": 51,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"import json\\n\",",
+     "    \"from datetime import date\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"# Column definitions\\n\",",
+     "    \"PROFILE_COLUMNS = [\\n\",",
+     "    \"    'hotel_encoded', 'month_num', 'room_tier', 'los',\\n\","
+    ]
+   },
+   {
+    "file": "demand_model/src/09_train_ctgan.py",
+    "line": 13,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import json",
+     "import os",
+     "from datetime import date",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "# Paths",
+     "BASE_DIR = os.path.dirname(os.path.dirname(__file__))"
+    ]
+   },
+   {
+    "file": "demand_model/src/09_train_ctgan.py",
+    "line": 14,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import os",
+     "from datetime import date",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "# Paths",
+     "BASE_DIR = os.path.dirname(os.path.dirname(__file__))",
+     "DATA_DIR = os.path.join(BASE_DIR, 'data')"
+    ]
+   },
+   {
+    "file": "demand_model/src/10_evaluate_ctgan.py",
+    "line": 12,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import numpy as np",
+     "import json",
+     "import os",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "import torch",
+     ""
+    ]
+   },
+   {
+    "file": "demand_model/src/10_evaluate_ctgan.py",
+    "line": 13,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import json",
+     "import os",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "import torch",
+     "",
+     "# ─── Paths ─────────────────────────────────────────────────────────────────────"
+    ]
+   },
+   {
+    "file": "demand_model/src/10_evaluate_ctgan.py",
+    "line": 14,
+    "text": "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+    "context": [
+     "import os",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "import torch",
+     "",
+     "# ─── Paths ─────────────────────────────────────────────────────────────────────",
+     "BASE_DIR = os.path.dirname(os.path.dirname(__file__))"
+    ]
+   },
+   {
+    "file": "profile-service/generator.py",
+    "line": 9,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "import os",
+     "import json",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "_synthesizer = None",
+     "_metadata = None",
+     ""
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "demand_model/src/10_evaluate_ctgan.py",
+    "line": 14,
+    "text": "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+    "context": [
+     "import os",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "import torch",
+     "",
+     "# ─── Paths ─────────────────────────────────────────────────────────────────────",
+     "BASE_DIR = os.path.dirname(os.path.dirname(__file__))"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ev",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "profile-service/requirements.txt": [
+   "sdv"
+  ]
+ }
+}

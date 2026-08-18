@@ -1,0 +1,116 @@
+{
+ "repo": "jeffreyliang-vandy/MeLD",
+ "disk_kb": 6875,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# MeLD — Medical Longitudinal Latent Diffusion\n\nThis is the implementation of the MeLD model described in the paper:\n**Generating Synthetic Multi-national Longitudinal Cohorts for Clinically Grounded HIV Research**\nby Zhuohui J Liang, Zhuohang Li, Nicholas Jackson, Yanink Caro-Vega, Ronaldo I.\nMoreiraa, Fabio Paredes, Jordany Bernadin, Diana Varela, Carina Cesar, Alessandro\nBlasimme, Jessica M. Perkins, Amir Asiaee, Stephany N. Duda, Bradley A.\nMalin, Bryan E. Shepherd, and Chao Yan\n\n\\[[Medrxiv](https://www.medrxiv.org/content/10.1101/2025.11.14.25340245v1)\\]\n\nA collection of scripts and model implementations for learning latent representations from longitudinal medical data and generating synthetic patient time series using a VAE + DiT (Diffusion Transformer) pipeline.\n\n**Update (2026-06):** \n- MeLD is now updated to support more general longitudinal data. \n- Now support CFG (Classifier-Free Guidance) generation, with CLIP as encoder to encode condtions as text embeddings.\n\n\n## Repository layout (important files)\n- `model/timeautoencoder.py` - VAE model definitions and utilities\n- `model/LightningD1T/` — Diffusion Transformer implementation and training utilities\n- `1_train_vae.py` — Train a VAE on your dataset and save model checkpoints\n- `2_sample_latent.py` — Encode data into latent representations using a trained VAE\n- `3_train_DiT.sh` — Wrapper to train LightningDiT on latent samples (requires a config in `LightningD1T/configs/`)\n- `4_sample_synthetic_data.py` — Convert generated latent samples back into original data space\n- `evaluation/` — Metrics and evaluation scripts used in the paper\n- `baseline/` — Bundled baseline models used by the pipeline\n- `0_data_preprocess.ipynb` - Example preprocess code and Pseudo data\n\n## Quickstart — run the main pipeline\n\n### Prerequisites\n\n- Python 3.8+ (conda or venv recommended)\n- PyTorch compatible with your CUDA / CPU setup (see `LightningD1T/requirements.txt`)\n\nInstall dependencies (example using a virtualenv):\n\n```bash\n# create and activate a venv\nconda create -n meld_vae -f model/environment.yaml\nconda create -n meld_dit -f model/LightningD1T/requirements.txt\n```\n\n### Pipeline (order matters)\n\n1) Train the VAE\n\n```bash\nconda run -n meld_vae \\\npython 1_train_vae.py -VM your_vae_name\n```\n\n2) Extract latent representations\n\n```bash\nconda run -n meld_vae \\\npython 2_sample_latent.py -VM your_vae_name\n```\n\n3) Train DiT on latent samples and generate latent synthetic samples\n\n```bash\n# Make sure you create or edit a config under `LightningD1T/configs/`\nconda run -n meld_dit bash 3_train_DiT.sh\n```\n\n4) Decode latent samples back into original data space\n\n```bash\nconda run -n meld_vae \\\npython 4_sample_synthetic_data.py \\\n    -VM your_vae_name \\\n    -DP path/to/dit_samples \\\n    -S path/to/output/synthetic_data \\\n    -M my_synthetic_dataset_name\n```\n\n## Configuration notes\n\n- `model/LightningD1T/configs/` contains example configs used for training the DiT model. Copy and adapt those for your dataset and compute budget.\n- Data preprocessing can be found in `0_data_preprocessing.py`, and model-specific data logic can be found under `HALO_Inpatient/`, `SynTEG/`, `TimeDiff` and `TimeAutoDiff/` — review those scripts when preparing your dataset.\n- We provide baseline models code from \n    - LLM based model `HALO_Inpatient/`, \n    - GAN based model `SynTEG/`, `\n    - diffusion based model `TimeDiff` and \n    - latent diffusion based model `TimeAutoDiff/` \n\n    in `baseline/`, detailed describhe of the baselines can be found in the paper.or the original paper.\n\n\n- In paper, MeLD variants are implemented with training the diffusion components of `MeLD-DDPM`, `MeLD-DiT`, `TimeDiff` and `TimeAutoDiff` on latent sample from `2_sample_latent.py`.\n\n## Evaluation\n\nThe `evaluation/` folder contains scripts used in the paper to compute metrics such as distributional similarity, predictive performance, and privacy analyses. Example scripts:\n\n- `5_compute_metric_dist.py`\n- `5_compute_metric_pred.py`\n- `5_evaluate_privacy.py`\n\nevaluation can be done with\n\n```bash\nconda run -n meld_vae \\\npython evaluation/5_compute_metric_xxxx.py -R path/to/real_data -T path/to/synthetic_data -M your_synthetic_dataset_name -S path/to/save_results\n```\n\nRun evaluation examples with the synthetic dataset path produced by the pipeline. See individual scripts for usage flags.\n\n\n## Acknowledgements\n\nThanks to the code contributions of:\n- TimeAutoDiff: https://github.com/namjoonsuh/TimeAutoDiff\n- LightningDiT: https://github.com/hustvl/LightningDiT\n- synthetic data benchmarking: https://github.com/yy6linda/synthetic-ehr-benchmarking\n- HALO-Inpatient: https://github.com/btheodorou99/HALO_Inpatient\n\n## Citation\nPlease cite the paper if you use this code or model in your research:\n\n```\n@article {Liang2025.11.14.25340245,\n\tauthor = {Liang, Zhuohui J. and Li, Zhuohang and Jackson, Nicholas J. and Caro-Vega, Yanink and Moreira, Ronaldo I. and Paredes, Fabio and Bernadin, Jordany and Varela, Diana and Cesar, Carina and Blasimme, Alessandro and Perkins, Jessica M. and Asiaee, Amir and Duda, Stephany N. and Malin, Bradley A. and Shepherd, Bryan E. and Yan, Chao},\n\ttitle = {Generating Synthetic Multi-national Longitudinal Cohorts for Clinically Grounded HIV Research},\n\telocation-id = {2025.11.14.25340245},\n\tyear = {2025},\n\tdoi = {10.1101/2025.11.14.25340245},\n\tURL = {https://www.medrxiv.org/content/early/2025/11/17/2025.11.14.25340245},\n\teprint = {https://www.medrxiv.org/content/early/2025/11/17/2025.11.14.25340245.full.pdf},\n\tjournal = {medRxiv}\n}\n```",
+ "hits": {
+  "st": [
+   {
+    "file": "model/gen_cohort.py",
+    "line": 1,
+    "text": "from sdv.single_table import CTGANSynthesizer as CTGAN, TVAESynthesizer as TVAE",
+    "context": [
+     "from sdv.single_table import CTGANSynthesizer as CTGAN, TVAESynthesizer as TVAE",
+     "from sdv.metadata import Metadata",
+     "from sdv.datasets.demo import download_demo",
+     "import pandas as pd",
+     "import numpy as np"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "model/gen_cohort.py",
+    "line": 2,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "from sdv.single_table import CTGANSynthesizer as CTGAN, TVAESynthesizer as TVAE",
+     "from sdv.metadata import Metadata",
+     "from sdv.datasets.demo import download_demo",
+     "import pandas as pd",
+     "import numpy as np",
+     "import torch"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "model/gen_cohort.py",
+    "line": 1,
+    "text": "from sdv.single_table import CTGANSynthesizer as CTGAN, TVAESynthesizer as TVAE",
+    "context": [
+     "from sdv.single_table import CTGANSynthesizer as CTGAN, TVAESynthesizer as TVAE",
+     "from sdv.metadata import Metadata",
+     "from sdv.datasets.demo import download_demo",
+     "import pandas as pd",
+     "import numpy as np"
+    ]
+   },
+   {
+    "file": "model/gen_cohort.py",
+    "line": 2,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "from sdv.single_table import CTGANSynthesizer as CTGAN, TVAESynthesizer as TVAE",
+     "from sdv.metadata import Metadata",
+     "from sdv.datasets.demo import download_demo",
+     "import pandas as pd",
+     "import numpy as np",
+     "import torch"
+    ]
+   },
+   {
+    "file": "model/gen_cohort.py",
+    "line": 3,
+    "text": "from sdv.datasets.demo import download_demo",
+    "context": [
+     "from sdv.single_table import CTGANSynthesizer as CTGAN, TVAESynthesizer as TVAE",
+     "from sdv.metadata import Metadata",
+     "from sdv.datasets.demo import download_demo",
+     "import pandas as pd",
+     "import numpy as np",
+     "import torch",
+     "import argparse"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "model/gen_cohort.py",
+    "line": 1,
+    "text": "from sdv.single_table import CTGANSynthesizer as CTGAN, TVAESynthesizer as TVAE",
+    "context": [
+     "from sdv.single_table import CTGANSynthesizer as CTGAN, TVAESynthesizer as TVAE",
+     "from sdv.metadata import Metadata",
+     "from sdv.datasets.demo import download_demo",
+     "import pandas as pd",
+     "import numpy as np"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "model/gen_cohort.py",
+    "line": 1,
+    "text": "from sdv.single_table import CTGANSynthesizer as CTGAN, TVAESynthesizer as TVAE",
+    "context": [
+     "from sdv.single_table import CTGANSynthesizer as CTGAN, TVAESynthesizer as TVAE",
+     "from sdv.metadata import Metadata",
+     "from sdv.datasets.demo import download_demo",
+     "import pandas as pd",
+     "import numpy as np"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

@@ -1,0 +1,177 @@
+{
+ "repo": "BrookesLab/SynthenticDataset",
+ "disk_kb": 33,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Synthetic Dataset Generation Pipeline\n\nA production-grade, memory-safe pipeline for generating **privacy-preserving, relationally consistent synthetic clinical datasets** from **SystmOne** primary care records.\n\nThe pipeline is designed to process very large healthcare datasets efficiently while preserving longitudinal relationships between tables. It removes direct patient identifiers, converts absolute timestamps into relative age-based features, and applies post-generation privacy auditing to reduce the risk of synthetic data memorization.\n\n---\n\n# Project Structure\n\n```\n.\n├── SRPatient.csv                    # Raw patient demographics\n├── SRCode.csv                       # Clinical event records\n├── SRPrimaryCareMedication.csv      # Medication history\n├── SRImmunisation.csv               # Immunisation records\n├── step1_preprocess_child_tables.py # Convert dates to relative age metrics\n├── step2_preprocess_patients.py     # Anonymise patient table\n├── step3_synthetic_pipeline.py      # Train HMASynthesizer and generate synthetic data\n├── step4_filter_synthetic_clones.py # Remove potential memorised synthetic records\n├── requirements.txt                 # Python dependencies\n├── processed/                       # Intermediate anonymised datasets\n├── Trained_Models/                  # Serialized synthesizer models\n└── Synthetic_Output/                # Final privacy-filtered synthetic datasets\n```\n\n---\n\n# Installation\n\nInstall all required dependencies:\n\n```bash\npip install -r requirements.txt\n```\n\n---\n\n# Execution Pipeline\n\nRun the pipeline sequentially:\n\n```bash\npython step1_preprocess_child_tables.py\npython step2_preprocess_patients.py\npython step3_synthetic_pipeline.py\npython step4_filter_synthetic_clones.py\n```\n\n---\n\n# Pipeline Architecture\n\n## Step 1 – Preprocess Child Tables\n\nProcesses large clinical event tables in **1,000,000-row chunks** to minimise memory consumption.\n\n### Operations\n\n* Reads raw clinical datasets incrementally\n* Maps patient date of birth onto event records\n* Computes:\n\n  * `AgeAtEvent`\n  * `AgeAtMedicationStart`\n  * `AgeAtMedicationEnd`\n* Removes all absolute event timestamps\n* Writes anonymised outputs to `processed/`\n\n---\n\n## Step 2 – Preprocess Patient Table\n\nAnonymises the patient registry while preserving clinically meaningful age information.\n\n### Operations\n\n* Converts patient identifiers to nullable 64-bit integers\n* Computes:\n\n  * `AgeAtDeath` (deceased patients)\n  * `AgeIn2026` (living patients)\n* Removes:\n\n  * `DateBirth`\n  * `DateDeath`\n* Saves the processed registry to:\n\n```\nprocessed/SRPatient.csv\n```\n\n---\n\n## Step 3 – Synthetic Data Generation\n\nGenerates relationally consistent synthetic datasets using the **SDV HMASynthesizer**.\n\n### Memory Optimisation\n\nTo support datasets containing millions of records, patients are partitioned into **50 independent batches**, allowing model training within typical workstation memory limits.\n\n### Model Constraints\n\nThe synthesizer enforces logical temporal consistency, including:\n\n* `AgeAtEvent ≤ AgeAtDeath`\n* `AgeAtMedicationStart ≤ AgeAtMedicationEnd`\n\n### Outputs\n\n* Trained models stored in:\n\n```\nTrained_Models/\n```\n\n* Synthetic datasets stored in:\n\n```\nSynthetic_Output/\n```\n\n---\n\n## Step 4 – Privacy Audit and Clone Removal\n\nPerforms a final privacy validation step to reduce the likelihood of releasing memorised patient records.\n\n### Process\n\n* Compares synthetic patients with the original registry using **Manhattan Distance**\n* Removes records below the configured clone threshold:\n\n```\nCLONE_THRESHOLD = 0.001\n```\n\n* Cascades deleted patient IDs through all related child tables\n* Produces the final privacy-filtered synthetic datasets\n\nExample output:\n\n```\nSynthetic_Output/synthetic_SRPatient_secure.csv\n```\n\n---\n\n# Privacy and Security Features\n\n| Feature                | Description                                                                        |\n| ---------------------- | ---------------------------------------------------------------------------------- |\n| Absolute anonymisation | All birth dates, death dates and event timestamps are removed after preprocessing. |\n| Relational consistency | Parent-child relationships and longitudinal event structure are preserved.         |\n| Temporal privacy       | Absolute dates are replaced with relative age-based features.                      |\n| Memory-safe processing | Streaming and chunked processing enables handling of very large datasets.          |\n| Anti-memorisation      | Near-identical synthetic records are detected and removed before release.          |\n\n---\n\n# Processing Workflow\n\n```\nRaw SystmOne Tables\n        │\n        ▼\nStep 1\nChild Table Preprocessing\n        │\n        ▼\nStep 2\nPatient Table Anonymisation\n        │\n        ▼\nStep 3\nHMASynthesizer Training\n        │\n        ▼\nSynthetic Dataset Generation\n        │\n        ▼\nStep 4\nClone Detection & Privacy Audit\n        │\n        ▼\nFinal Secure Synthetic Dataset\n```\n\n---\n\n# Output\n\nThe completed pipeline produces a fully synthetic, relationally consistent clinical dataset that:\n\n* preserves statistical characteristics of the source data\n* maintains relationships between patients and clinical events\n* removes direct identifiers and absolute temporal information\n* supports scalable processing of very large datasets\n* includes post-generation privacy auditing to reduce memorisation risk\n\n---\n\n**Status:** ✅ Production-ready pipeline for scalable synthetic clinical data generation with integrated privacy preservation and relational integrity.\n",
+ "hits": {
+  "md": [
+   {
+    "file": "step3_synthetic_pipeline.py",
+    "line": 6,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import shutil",
+     "import sys",
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "",
+     "# =====================================================================",
+     "# CONFIGURATION"
+    ]
+   }
+  ],
+  "mt": [
+   {
+    "file": "step3_synthetic_pipeline.py",
+    "line": 7,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "import sys",
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "",
+     "# =====================================================================",
+     "# CONFIGURATION",
+     "# ====================================================================="
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "step3_synthetic_pipeline.py",
+    "line": 6,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import shutil",
+     "import sys",
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "",
+     "# =====================================================================",
+     "# CONFIGURATION"
+    ]
+   },
+   {
+    "file": "step3_synthetic_pipeline.py",
+    "line": 7,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "import sys",
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "",
+     "# =====================================================================",
+     "# CONFIGURATION",
+     "# ====================================================================="
+    ]
+   }
+  ],
+  "hma": [
+   {
+    "file": "step3_synthetic_pipeline.py",
+    "line": 7,
+    "text": "from sdv.multi_table import HMASynthesizer",
+    "context": [
+     "import sys",
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.metadata import Metadata",
+     "from sdv.multi_table import HMASynthesizer",
+     "",
+     "# =====================================================================",
+     "# CONFIGURATION",
+     "# ====================================================================="
+    ]
+   },
+   {
+    "file": "step3_synthetic_pipeline.py",
+    "line": 85,
+    "text": "synthesizer = HMASynthesizer(metadata)",
+    "context": [
+     "            parent_primary_key='IDPatient', child_foreign_key='IDPatient'",
+     "        )",
+     "",
+     "    # Instantiate synthesizer per batch",
+     "    synthesizer = HMASynthesizer(metadata)",
+     "    ",
+     "    # Configure timeline boundaries",
+     "    constraints_list = []",
+     "    for t_name, age_col in [('codes', 'AgeAtEvent'), ('medications', 'AgeAtMedicationStart'), ('immunisations', 'AgeAtEvent')]:"
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 19,
+    "text": "├── step3_synthetic_pipeline.py      # Train HMASynthesizer and generate synthetic data",
+    "context": [
+     "├── SRPrimaryCareMedication.csv      # Medication history",
+     "├── SRImmunisation.csv               # Immunisation records",
+     "├── step1_preprocess_child_tables.py # Convert dates to relative age metrics",
+     "├── step2_preprocess_patients.py     # Anonymise patient table",
+     "├── step3_synthetic_pipeline.py      # Train HMASynthesizer and generate synthetic data",
+     "├── step4_filter_synthetic_clones.py # Remove potential memorised synthetic records",
+     "├── requirements.txt                 # Python dependencies",
+     "├── processed/                       # Intermediate anonymised datasets",
+     "├── Trained_Models/                  # Serialized synthesizer models"
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 97,
+    "text": "Generates relationally consistent synthetic datasets using the **SDV HMASynthesizer**.",
+    "context": [
+     "---",
+     "",
+     "## Step 3 – Synthetic Data Generation",
+     "",
+     "Generates relationally consistent synthetic datasets using the **SDV HMASynthesizer**.",
+     "",
+     "### Memory Optimisation",
+     "",
+     "To support datasets containing millions of records, patients are partitioned into **50 independent batches**, allowing model training within typical workstation memory limits."
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 177,
+    "text": "HMASynthesizer Training",
+    "context": [
+     "Patient Table Anonymisation",
+     "        │",
+     "        ▼",
+     "Step 3",
+     "HMASynthesizer Training",
+     "        │",
+     "        ▼",
+     "Synthetic Dataset Generation",
+     "        │"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "hma",
+  "md",
+  "mt",
+  "sdv_any"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "copulas==0.14.1",
+   "ctgan==0.12.1",
+   "rdt==1.21.1",
+   "sdmetrics==0.28.1",
+   "sdv==1.37.3"
+  ]
+ }
+}

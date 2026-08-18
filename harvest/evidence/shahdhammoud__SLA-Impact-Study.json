@@ -1,0 +1,85 @@
+{
+ "repo": "shahdhammoud/SLA-Impact-Study",
+ "disk_kb": 2957,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Assessing the Impact of Structural Learning Algorithms on Generative Model Rankings\n\nA modular research framework for evaluating how different causal structure learning algorithms affect the ranking and evaluation of tabular generative models. This project implements the CauTabBench evaluation methodology and supports multiple state-of-the-art generative models and structure learning algorithms.\n\n## Project Overview\n\nThis framework addresses a key research question: How do structural learning algorithms impact the evaluation and ranking of generative models when the true causal structure is unknown?\n\nThe methodology:\n1. Train multiple generative models (CTGAN, TabDDPM, GMMk) on real data\n2. Generate synthetic data from each model\n3. Learn causal structures from data using various algorithms (PC, GES, FCI, cdond)\n4. Evaluate models using CauTabBench methodology with both ground truth and learned structures\n5. Compare how model rankings change across different structure learning methods\n\n## Repository Structure\n\n```\n.\n├── benchmarks_with_ground_truth/  # Input datasets\n│   ├── csv/                       # CSV data files\n│   └── txt/                       # Ground truth causal structures (edge lists)\n├── config/                        # Configuration files\n│   ├── datasets.yaml              # Dataset configurations\n│   ├── models.yaml                # Model hyperparameters\n│   └── structure_learning.yaml   # Structure learning algorithm configs\n├── data/                          # Processed data\n│   ├── preprocessed/              # Tab-ddpm format datasets\n│   └── info/                      # Dataset metadata\n├── src/                           # Source code\n│   ├── data/                      # Data loading and preprocessing\n│   ├── models/                    # Generative model wrappers\n│   ├── structure_learning/        # Causal discovery algorithms\n│   ├── evaluation/                # CauTabBench evaluation\n│   ├── tuning/                    # Optuna hyperparameter tuning\n│   └── utils/                     # Utility functions\n├── scripts/                       # CLI scripts for workflow\n│   ├── 01_preprocess_data.py      # Preprocess datasets\n│   ├── 02_train_model.py          # Train generative models\n│   ├── 03_tune_model.py           # Hyperparameter tuning\n│   ├── 04_generate_synthetic.py   # Generate synthetic data\n│   ├── 05_learn_structure.py      # Learn causal structures\n│   ├── 06_evaluate.py             # Evaluate models\n│   └── 07_compare_rankings.py     # Compare rankings\n├── outputs/                       # Generated outputs\n│   ├── models/                    # Trained models\n│   ├── synthetic/                 # Synthetic datasets\n│   ├── structures/                # Learned causal graphs\n│   ├── evaluations/               # Evaluation results\n│   └── rankings/                  # Ranking comparisons\n└── requirements.txt               # Python dependencies\n```\n\n## Installation\n\n### Prerequisites\n- Python 3.8+\n- CUDA-capable GPU (optional but recommended for TabDDPM)\n\n### Setup\n\n1. Clone the repository:\n```bash\ngit clone https://github.com/shahdhammoud/Assessing-the-impact-of-structural-learning-algorithms-on-the-results-of-comparing-generative-models.git\ncd Assessing-the-impact-of-structural-learning-algorithms-on-the-results-of-comparing-generative-models\n```\n\n2. Install dependencies:\n```bash\npip install -r requirements.txt\n```\n\n3. Add your datasets:\n   - Place CSV files in `benchmarks_with_ground_truth/csv/`\n   - Place corresponding TXT structure files in `benchmarks_with_ground_truth/txt/`\n\n### Dataset Format\n\n**CSV Files:**\n- Must have header row with column names\n- First column may be an index (will be auto-detected and removed)\n- Last column is the target feature\n- Can contain both categorical and continuous features\n\n**TXT Files:**\n- Each line represents a directed edge: `source target`\n- Example:\n  ```\n  A C\n  B C\n  D E\n  ```\n  This represents edges: A→C, B→C, D→E\n\n## Usage\n\n### Complete Workflow Example\n\n```bash\n# 1. Preprocess dataset\npython scripts/01_preprocess_data.py --dataset alarm\n\n# 2. Tune hyperparameters (optional but recommended)\npython scripts/03_tune_model.py --dataset alarm --model ctgan --trials 100\npython scripts/03_tune_model.py --dataset alarm --model gmm --trials 50\n\n# 3. Train models with best parameters\npython scripts/02_train_model.py --dataset alarm --model ctgan --use-best-params\npython scripts/02_train_model.py --dataset alarm --model gmm --use-best-params\n\n\n# 4. Generate synthetic data\npython scripts/04_generate_synthetic.py --dataset alarm --model ctgan --n-samples 1000\npython scripts/04_generate_synthetic.py --dataset alarm --model gmm --n-samples 1000\n\n\n# 5. Learn structures from synthetic data\npython scripts/05_learn_structure.py --dataset alarm --algorithm pc --data-type synthetic --model ctgan\npython scripts/05_learn_structure.py --dataset alarm --algorithm ges --data-type synthetic --model ctgan\n\n\n# 6. Evaluate models with different structures\npython scripts/06_evaluate.py --dataset alarm --model ctgan --structure ground_truth\npython scripts/06_evaluate.py --dataset alarm --model ctgan --structure pc_learned_synthetic_ctgan\npython scripts/06_evaluate.py --dataset alarm --model gmm --structure ground_truth\npython scripts/06_evaluate.py --dataset alarm --model gmm --structure ges_learned_synthetic_gmm\n\n# 7. Compare rankings across structures\npython scripts/07_compare_rankings.py --dataset alarm --structures ground_truth,pc_learned,ges_learned\n```\n\n### Quick Start Commands\n\n```bash\n# Preprocess all datasets\nfor dataset in dataset1 dataset2 dataset3; do\n    python scripts/01_preprocess_data.py --dataset $dataset\ndone\n\n# Train all models on a dataset\nfor model in ctgan gmm; do\n    python scripts/02_train_model.py --dataset alarm --model $model\ndone\n\n# Learn structures with all algorithms\nfor algo in pc ges fci lingam; do\n    python scripts/05_learn_structure.py --dataset alarm --algorithm $algo --data-type real\ndone\n```\n\n## Supported Models\n\n1. **CTGAN**: Conditional Tabular GAN (uses GPU if available)\n2. **TabDDPM**: Denoising Diffusion Probabilistic Model for tabular data (requires GPU, integration pending)\n3. **GMM**: Gaussian Mixture Model\n\n\n## Supported Structure Learning Algorithms\n\n| Algorithm | Description | GPU Support | Library |\n|-----------|-------------|-------------|---------|\n| **PC** | Peter-Clark constraint-based | No | causal-learn |\n| **GES** | Greedy Equivalence Search | No | causal-learn |\n| **FCI** | Fast Causal Inference (handles latent confounders) | No | causal-learn |\n\n## Evaluation Methodology\n\nThe framework implements the CauTabBench evaluation approach:\n\n1. Extract conditional independence (CI) constraints from causal structure\n2. Test these CI relationships on both real and synthetic data\n3. Compute agreement rate between real and synthetic CI tests\n4. Calculate violation rates for both datasets\n5. Generate overall quality score combining agreement and violations\n\n**Quality Score** = 0.6 × (Agreement Rate) + 0.4 × (1 - |Real Violation - Synthetic Violation|)\n\nHigher scores indicate better synthetic data quality.\n\n## Configuration\n\n### Model Hyperparameters\nEdit `config/models.yaml` to customize:\n- Default parameters for each model\n- Hyperparameter search spaces for tuning\n- Training settings (epochs, batch size, learning rate, etc.)\n\n### Dataset Settings\nEdit `config/datasets.yaml` to configure:\n- Categorical threshold for automatic type detection\n- Missing value strategies\n- Train/test split ratios\n\n### Structure Learning\nEdit `config/structure_learning.yaml` to adjust:\n- Algorithm-specific parameters\n- Independence test methods\n- Significance levels\n\n## GPU Support\n\n### Enabling CUDA\n\n```bash\n# Check if CUDA is available\npython -c \"import torch; print(torch.cuda.is_available())\"\n\n# Set GPU device\nexport CUDA_VISIBLE_DEVICES=0\n```\n\nModels that benefit from GPU:\n- CTGAN: Automatically uses GPU if available\n- TabDDPM: Requires GPU\n\n## Output Files\n\nAfter running the complete workflow, you'll have:\n\n- **Trained Models**: `outputs/models/{dataset}_{model}.pkl`\n- **Synthetic Data**: `outputs/synthetic/{dataset}_{model}_synthetic.csv`\n- **Learned Structures**: `outputs/structures/{dataset}_{algorithm}_{suffix}.json`\n- **Structure Visualizations**: `outputs/structures/{dataset}_{algorithm}_{suffix}.png`\n- **Evaluation Results**: `outputs/evaluations/{dataset}_{model}_{structure}_eval.json`\n- **Ranking Comparisons**: `outputs/rankings/{dataset}_ranking_comparison.json`\n\n## Key Features\n\n- **Modular Design**: Each step is independent, run in any order\n- **Flexible Configuration**: YAML configs for easy experimentation\n- **Automatic Type Detection**: Identifies categorical vs continuous features\n- **Comprehensive Evaluation**: CauTabBench methodology implementation\n- **Statistical Comparison**: Kendall's tau and Spearman's rho for ranking correlation\n- **Hyperparameter Optimization**: Optuna integration for systematic tuning\n- **GPU Acceleration**: CUDA support where applicable\n\n## Extending the Framework\n\n### Adding a New Generative Model\n\n1. Create wrapper in `src/models/your_model.py` inheriting from `BaseGenerativeModel`\n2. Implement `fit()` and `sample()` methods\n3. Add configuration to `config/models.yaml`\n4. Register in `scripts/02_train_model.py`\n\n### Adding a New Structure Learning Algorithm\n\n1. Create implementation in `src/structure_learning/your_algo.py` inheriting from `BaseStructureLearner`\n2. Implement `fit()` method returning `nx.DiGraph`\n3. Add configuration to `config/structure_learning.yaml`\n4. Register in `scripts/05_learn_structure.py`\n\n## Troubleshooting\n\n**Issue**: Out of memory errors\n- Solution: Reduce batch size in model configs or use smaller datasets\n\n**Issue**: Structure learning takes too long\n- Solution: Reduce `max_iter` or `max_cond_vars` in algorithm configs\n\n**Issue**: TabDDPM not working\n- Note: TabDDPM integration is pending. Use CTGAN, GMM instead.\n\n## Citation\n\nIf you use this framework in your research, please cite:\n\n```bibtex\n@software{structural_learning_impact,\n  title={Framework for Assessing Structural Learning Impact on Generative Model Rankings},\n  author={Your Name},\n  year={2024},\n  url={https://github.com/shahdhammoud/Assessing-the-impact-of-structural-learning-algorithms-on-the-results-of-comparing-generative-models}\n}\n```\n\n## References\n\n- CauTabBench: https://github.com/TURuibo/CauTabBench\n- tab-ddpm: https://github.com/yandex-research/tab-ddpm\n- causal-learn: https://github.com/py-why/causal-learn\n- CTGAN/SDV: https://github.com/sdv-dev/SDV\n\n## License\n\nMIT License\n\n## Contact\n\nFor questions or issues, please open a GitHub issue.\n",
+ "hits": {
+  "ctgan_mod": [
+   {
+    "file": "ctgan_patch.py",
+    "line": 1,
+    "text": "from ctgan import CTGAN",
+    "context": [
+     "from ctgan import CTGAN",
+     "import torch",
+     "",
+     "orig_train = CTGAN._train",
+     ""
+    ]
+   },
+   {
+    "file": "src/models/ctgan_wrapper.py",
+    "line": 4,
+    "text": "from ctgan import CTGAN",
+    "context": [
+     "import pandas as pd",
+     "from typing import Optional",
+     "import torch",
+     "from ctgan import CTGAN",
+     "",
+     "from .base import BaseGenerativeModel",
+     "",
+     ""
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "src/data/preprocessor.py",
+    "line": 6,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import numpy as np",
+     "import json",
+     "import os",
+     "import pickle # Added for loading transformers",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sklearn.preprocessing import StandardScaler, QuantileTransformer, OrdinalEncoder",
+     "",
+     "",
+     "class DataPreprocessor:"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "src/data/preprocessor.py",
+    "line": 6,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import numpy as np",
+     "import json",
+     "import os",
+     "import pickle # Added for loading transformers",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sklearn.preprocessing import StandardScaler, QuantileTransformer, OrdinalEncoder",
+     "",
+     "",
+     "class DataPreprocessor:"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ctgan_mod",
+  "md",
+  "sdv_any"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv>=1.0.0"
+  ]
+ }
+}

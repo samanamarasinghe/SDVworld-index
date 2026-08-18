@@ -1,0 +1,595 @@
+{
+ "repo": "prathyusha-pateel/bias-detection-mitigation",
+ "disk_kb": 4080,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Conagra Bias Project Environment Setup\n\nThis README provides instructions for setting up the **Conagra Bias Project** environment and running various components of the project. Follow these steps to set up and explore the project's different pipelines and applications.\n\n---\n\n## Environment Setup\n\nTo set up the project environment (covering all sub-projects), follow these steps:\n\n1. Clone the repository:\n   ```bash\n   git clone https://github.com/jhousteau/conagra-bias-project.git\n   cd conagra-bias-project\n   ```\n\n2. Create and activate the Conda environment:\n   ```bash\n   conda create -n conagra-bias-project python=3.9 -y\n   conda activate conagra-bias-project\n   ```\n\n3. Install the required dependencies:\n   ```bash\n   pip install -r requirements.txt\n   ```\n\n---\n\n## Testing the Pipeline for the Original Proof of Concept (POC)\n\nTo test the original POC pipeline:\n\n1. Add your OpenAI API key to the `.env` file. Specify the model you want to use.\n\n2. Run the pipeline:\n   - To ignore warnings, use:\n     ```bash\n     PYTHONWARNINGS=\"ignore::FutureWarning\" python poc-1-pipeline-prototype-bruteforce-data/pipeline.py\n     ```\n   - Otherwise, run:\n     ```bash\n     python poc-1-pipeline-prototype-bruteforce-data/pipeline.py\n     ```\n\n---\n\n## Running POC 2 (Synthetic Data Stats)\n\nNote: Only a few modules from POC 2 are functional. This approach was abandoned in favor of deep learning.\n\n- Run the following commands to execute individual modules:\n  ```bash\n  python poc-2-synthetic-data-stats/consumer_behavior_data.py\n  python poc-2-synthetic-data-stats/customer_channel_and_engagement_preference.py\n  python poc-2-synthetic-data-stats/device_shopping_behavior.py\n  ```\n\n- The following module is **not functional**:\n  ```bash\n  python poc-2-synthetic-data-stats/transaction_data_generator.py\n  ```\n\n---\n\n## Building and Analyzing the Final Dataset (Deep Learning Approach)\n\nTo build and analyze the final dataset using deep learning:\n\n1. By default, the process uses **New York (NY)** data and runs for **1 epoch**.\n2. To achieve realistic results:\n   - Edit the epoch value in `constants.py` (minimum recommended: **100**).\n   - Change the target state in `demographic.py` by modifying the `STATE_*` variable.\n\n3. Note: Running with higher epochs and more states requires significant computational resources (e.g., additional CPU/RAM).\n\n4. Generate the synthetic dataset:\n   ```bash\n   python final-synthetic_marketing_data/build_dataset.py\n   ```\n   This trains the GAN model and generates synthetic marketing data.\n   - Output location: `output/models/`\n      - Saves model checkpoints: `generator_epoch_{n}.pth`, `discriminator_epoch_{n}.pth`\n   - Output location: `output/raw/`\n      - Generates: `synthetic_data_raw.csv` - Initial synthetic dataset\n      - Generates: `training_metrics.json` - Model training history\n      - Generates: `generation_config.json` - Parameters used for generation\n\n5. Run exploratory data analysis:\n   ```bash\n   python final-synthetic_marketing_data/eda.py\n   ```\n   This will generate visualizations and statistical summaries of the synthetic data.\n   - Output location: `output/analysis/eda/`\n   - Generates: Distribution plots, correlation matrices, and summary statistics\n\n6. Evaluate fairness metrics:\n   ```bash\n   python final-synthetic_marketing_data/fairness.py\n   ```\n   This analyzes the dataset for potential biases across different demographic groups.\n   - Output location: `output/analysis/fairness/`\n   - Generates: Fairness metric reports and bias visualization plots\n\n7. Export the processed data:\n   ```bash\n   python final-synthetic_marketing_data/data_export.py [--format FORMAT] [--rows ROWS] [--compress]\n   ```\n   This creates standardized files ready for downstream analysis.\n   - Output location: `output/processed/`\n   - Generates: `synthetic_marketing_data.{format}` and `synthetic_marketing_data_metadata.json`\n\n   Arguments:\n   - `--format`: Output format (csv, parquet, json). Default: csv\n   - `--rows`: Number of rows to generate. Default: 10000\n   - `--compress`: Enable compression for output file. Default: False\n\n---\n\n## Running the Interactive Bias Pipeline Application\n\nTo run the interactive bias pipeline:\n\n1. Launch the Streamlit app:\n   ```bash\n   streamlit run interactive_pipeline/app.py\n   ```\n\n2. The application provides a user-friendly interface for uploading datasets, detecting bias, and applying mitigation techniques.\n\n3. Run it using the bank-additional-full.csv file from interactive_pipeline/data\n4. Choose target column as y and sensitive feature as age. Choose label encoding for both. And preprocess other columns as needed. \n5. Choose Classification as task. Choose High stakes, Demographic parity and equal odds in fairness notions questionnaire. Choose Reweighing, Adversarial Debiasing, Equalized odds adjustment fo rmitigation strategies. \nEven though there are other options, they are not implemented yet. \n---\n\n## Important Notes and Limitations\n\n1. **Current Data Limitations**\n   - The exported synthetic data currently lacks referential integrity between related fields\n   - While suitable for individual modeling tasks, caution should be used when analyzing relationships between entities\n\n2. **Planned Improvements**\n   - Future versions will implement HMASynthesizer (Hierarchical Multi-Agent Synthesizer) to maintain proper relationships and dependencies between data elements\n   - This will ensure generated data better reflects real-world entity relationships and constraints\n\n3. **Data Quality Enhancement**\n   - For optimal results, the deep learning model should be seeded with real marketing data samples\n   - This seeding process allows the model to:\n     - Capture authentic patterns and correlations\n     - Learn genuine customer behavior nuances\n     - Reflect realistic market dynamics\n     - Maintain proper business logic constraints\n\n4. **Current Usage Guidelines**\n   - The current synthetic dataset is best suited for:\n     - Individual feature analysis\n     - Single-entity modeling tasks\n     - Preliminary data exploration\n   - Avoid analyses that rely heavily on inter-entity relationships until the HMASynthesizer implementation is complete\n\n5. **Future Roadmap**\n   - Implementation of HMASynthesizer\n   - Integration of real data seeding capabilities\n   - Enhanced validation of relationship constraints\n   - Improved metadata tracking for data lineage\n\n---\n\n## Notes\n\n- **Warning Suppression**: If you encounter deprecation or future warnings, you can suppress them with:\n  ```bash\n  PYTHONWARNINGS=\"ignore::FutureWarning\"\n  ```\n\n- **Module Dependencies**: Each module is dependent on the previous one. Ensure they are executed in the correct order to avoid errors.\n",
+ "hits": {
+  "hma": [
+   {
+    "file": "README.md",
+    "line": 144,
+    "text": "- Future versions will implement HMASynthesizer (Hierarchical Multi-Agent Synthesizer) to maintain proper relationships and dependencies between data elements",
+    "context": [
+     "   - The exported synthetic data currently lacks referential integrity between related fields",
+     "   - While suitable for individual modeling tasks, caution should be used when analyzing relationships between entities",
+     "",
+     "2. **Planned Improvements**",
+     "   - Future versions will implement HMASynthesizer (Hierarchical Multi-Agent Synthesizer) to maintain proper relationships and dependencies between data elements",
+     "   - This will ensure generated data better reflects real-world entity relationships and constraints",
+     "",
+     "3. **Data Quality Enhancement**",
+     "   - For optimal results, the deep learning model should be seeded with real marketing data samples"
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 160,
+    "text": "- Avoid analyses that rely heavily on inter-entity relationships until the HMASynthesizer implementation is complete",
+    "context": [
+     "   - The current synthetic dataset is best suited for:",
+     "     - Individual feature analysis",
+     "     - Single-entity modeling tasks",
+     "     - Preliminary data exploration",
+     "   - Avoid analyses that rely heavily on inter-entity relationships until the HMASynthesizer implementation is complete",
+     "",
+     "5. **Future Roadmap**",
+     "   - Implementation of HMASynthesizer",
+     "   - Integration of real data seeding capabilities"
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 163,
+    "text": "- Implementation of HMASynthesizer",
+    "context": [
+     "     - Preliminary data exploration",
+     "   - Avoid analyses that rely heavily on inter-entity relationships until the HMASynthesizer implementation is complete",
+     "",
+     "5. **Future Roadmap**",
+     "   - Implementation of HMASynthesizer",
+     "   - Integration of real data seeding capabilities",
+     "   - Enhanced validation of relationship constraints",
+     "   - Improved metadata tracking for data lineage",
+     ""
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "final-synthetic_marketing_data/marketing.py",
+    "line": 13,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import numpy as np",
+     "from pathlib import Path",
+     "from typing import List, Tuple, Dict, Any",
+     "from datetime import datetime, timedelta",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "from sdv.evaluation.single_table import run_diagnostic",
+     "from utils.logging import setup_logging",
+     "from constants import ("
+    ]
+   },
+   {
+    "file": "final-synthetic_marketing_data/transaction.py",
+    "line": 15,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from datetime import datetime, timedelta",
+     "from typing import Tuple, Dict, Any",
+     "import json",
+     "import time",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "from sdv.evaluation.single_table import run_diagnostic",
+     "",
+     "from constants import ("
+    ]
+   },
+   {
+    "file": "final-synthetic_marketing_data/consumer.py",
+    "line": 12,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import numpy as np",
+     "from pathlib import Path",
+     "from datetime import datetime",
+     "from typing import Dict, Any",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "",
+     "from constants import ("
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "final-synthetic_marketing_data/marketing.py",
+    "line": 14,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "from pathlib import Path",
+     "from typing import List, Tuple, Dict, Any",
+     "from datetime import datetime, timedelta",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "from sdv.evaluation.single_table import run_diagnostic",
+     "from utils.logging import setup_logging",
+     "from constants import (",
+     "    METADATA_CONFIGURATIONS,"
+    ]
+   },
+   {
+    "file": "final-synthetic_marketing_data/transaction.py",
+    "line": 16,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "from typing import Tuple, Dict, Any",
+     "import json",
+     "import time",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "from sdv.evaluation.single_table import run_diagnostic",
+     "",
+     "from constants import (",
+     "    TRANSACTION_METRICS,"
+    ]
+   },
+   {
+    "file": "final-synthetic_marketing_data/consumer.py",
+    "line": 13,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "from pathlib import Path",
+     "from datetime import datetime",
+     "from typing import Dict, Any",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "",
+     "from constants import (",
+     "    METADATA_CONFIGURATIONS,"
+    ]
+   },
+   {
+    "file": "final-synthetic_marketing_data/demographic.py",
+    "line": 16,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import shutil",
+     "import json",
+     "from typing import Dict, Optional, Any",
+     "from datetime import datetime",
+     "from sdv.metadata import Metadata",
+     "",
+     "from constants import (",
+     "    FEATURES,",
+     "    STATES_FULL,"
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "final-synthetic_marketing_data/marketing.py",
+    "line": 15,
+    "text": "from sdv.evaluation.single_table import run_diagnostic",
+    "context": [
+     "from typing import List, Tuple, Dict, Any",
+     "from datetime import datetime, timedelta",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "from sdv.evaluation.single_table import run_diagnostic",
+     "from utils.logging import setup_logging",
+     "from constants import (",
+     "    METADATA_CONFIGURATIONS,",
+     "    MODEL_PARAMETERS,"
+    ]
+   },
+   {
+    "file": "final-synthetic_marketing_data/transaction.py",
+    "line": 17,
+    "text": "from sdv.evaluation.single_table import run_diagnostic",
+    "context": [
+     "import json",
+     "import time",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "from sdv.evaluation.single_table import run_diagnostic",
+     "",
+     "from constants import (",
+     "    TRANSACTION_METRICS,",
+     "    BUYING_PATTERNS,"
+    ]
+   },
+   {
+    "file": "final-synthetic_marketing_data/consumer.py",
+    "line": 14,
+    "text": "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+    "context": [
+     "from datetime import datetime",
+     "from typing import Dict, Any",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "",
+     "from constants import (",
+     "    METADATA_CONFIGURATIONS,",
+     "    MODEL_PARAMETERS,"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "final-synthetic_marketing_data/marketing.py",
+    "line": 13,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import numpy as np",
+     "from pathlib import Path",
+     "from typing import List, Tuple, Dict, Any",
+     "from datetime import datetime, timedelta",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "from sdv.evaluation.single_table import run_diagnostic",
+     "from utils.logging import setup_logging",
+     "from constants import ("
+    ]
+   },
+   {
+    "file": "final-synthetic_marketing_data/marketing.py",
+    "line": 14,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "from pathlib import Path",
+     "from typing import List, Tuple, Dict, Any",
+     "from datetime import datetime, timedelta",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "from sdv.evaluation.single_table import run_diagnostic",
+     "from utils.logging import setup_logging",
+     "from constants import (",
+     "    METADATA_CONFIGURATIONS,"
+    ]
+   },
+   {
+    "file": "final-synthetic_marketing_data/marketing.py",
+    "line": 15,
+    "text": "from sdv.evaluation.single_table import run_diagnostic",
+    "context": [
+     "from typing import List, Tuple, Dict, Any",
+     "from datetime import datetime, timedelta",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "from sdv.evaluation.single_table import run_diagnostic",
+     "from utils.logging import setup_logging",
+     "from constants import (",
+     "    METADATA_CONFIGURATIONS,",
+     "    MODEL_PARAMETERS,"
+    ]
+   },
+   {
+    "file": "final-synthetic_marketing_data/transaction.py",
+    "line": 15,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from datetime import datetime, timedelta",
+     "from typing import Tuple, Dict, Any",
+     "import json",
+     "import time",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "from sdv.evaluation.single_table import run_diagnostic",
+     "",
+     "from constants import ("
+    ]
+   },
+   {
+    "file": "final-synthetic_marketing_data/transaction.py",
+    "line": 16,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "from typing import Tuple, Dict, Any",
+     "import json",
+     "import time",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "from sdv.evaluation.single_table import run_diagnostic",
+     "",
+     "from constants import (",
+     "    TRANSACTION_METRICS,"
+    ]
+   },
+   {
+    "file": "final-synthetic_marketing_data/transaction.py",
+    "line": 17,
+    "text": "from sdv.evaluation.single_table import run_diagnostic",
+    "context": [
+     "import json",
+     "import time",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "from sdv.evaluation.single_table import run_diagnostic",
+     "",
+     "from constants import (",
+     "    TRANSACTION_METRICS,",
+     "    BUYING_PATTERNS,"
+    ]
+   },
+   {
+    "file": "final-synthetic_marketing_data/consumer.py",
+    "line": 12,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import numpy as np",
+     "from pathlib import Path",
+     "from datetime import datetime",
+     "from typing import Dict, Any",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "",
+     "from constants import ("
+    ]
+   },
+   {
+    "file": "final-synthetic_marketing_data/consumer.py",
+    "line": 13,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "from pathlib import Path",
+     "from datetime import datetime",
+     "from typing import Dict, Any",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "",
+     "from constants import (",
+     "    METADATA_CONFIGURATIONS,"
+    ]
+   },
+   {
+    "file": "final-synthetic_marketing_data/consumer.py",
+    "line": 14,
+    "text": "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+    "context": [
+     "from datetime import datetime",
+     "from typing import Dict, Any",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "",
+     "from constants import (",
+     "    METADATA_CONFIGURATIONS,",
+     "    MODEL_PARAMETERS,"
+    ]
+   },
+   {
+    "file": "final-synthetic_marketing_data/demographic.py",
+    "line": 16,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import shutil",
+     "import json",
+     "from typing import Dict, Optional, Any",
+     "from datetime import datetime",
+     "from sdv.metadata import Metadata",
+     "",
+     "from constants import (",
+     "    FEATURES,",
+     "    STATES_FULL,"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "final-synthetic_marketing_data/marketing.py",
+    "line": 13,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import numpy as np",
+     "from pathlib import Path",
+     "from typing import List, Tuple, Dict, Any",
+     "from datetime import datetime, timedelta",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "from sdv.evaluation.single_table import run_diagnostic",
+     "from utils.logging import setup_logging",
+     "from constants import ("
+    ]
+   },
+   {
+    "file": "final-synthetic_marketing_data/marketing.py",
+    "line": 446,
+    "text": ") -> CTGANSynthesizer:",
+    "context": [
+     "",
+     "",
+     "def train_model(",
+     "    training_data: pd.DataFrame, metadata: Metadata, data_type: str = None",
+     ") -> CTGANSynthesizer:",
+     "    \"\"\"Train CTGAN synthesizer model.\"\"\"",
+     "    logger.info(f\"Training {data_type} generation model...\")",
+     "    logger.info(f\"Training data shape: {training_data.shape}\")",
+     ""
+    ]
+   },
+   {
+    "file": "final-synthetic_marketing_data/marketing.py",
+    "line": 452,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "    logger.info(f\"Training {data_type} generation model...\")",
+     "    logger.info(f\"Training data shape: {training_data.shape}\")",
+     "",
+     "    # Initialize CTGAN synthesizer with parameters",
+     "    synthesizer = CTGANSynthesizer(",
+     "        metadata=metadata,",
+     "        epochs=MODEL_PARAMETERS[\"epochs\"],",
+     "        batch_size=MODEL_PARAMETERS[\"batch_size\"],",
+     "        log_frequency=MODEL_PARAMETERS[\"log_frequency\"],"
+    ]
+   },
+   {
+    "file": "final-synthetic_marketing_data/marketing.py",
+    "line": 471,
+    "text": "synthesizer: CTGANSynthesizer, num_samples: int, data_type: str",
+    "context": [
+     "    return synthesizer",
+     "",
+     "",
+     "def generate_synthetic_data(",
+     "    synthesizer: CTGANSynthesizer, num_samples: int, data_type: str",
+     ") -> pd.DataFrame:",
+     "    \"\"\"Generate synthetic data using trained model.\"\"\"",
+     "    logger.info(f\"Generating {num_samples:,} synthetic {data_type} records...\")",
+     ""
+    ]
+   },
+   {
+    "file": "final-synthetic_marketing_data/transaction.py",
+    "line": 15,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from datetime import datetime, timedelta",
+     "from typing import Tuple, Dict, Any",
+     "import json",
+     "import time",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "from sdv.evaluation.single_table import run_diagnostic",
+     "",
+     "from constants import ("
+    ]
+   },
+   {
+    "file": "final-synthetic_marketing_data/transaction.py",
+    "line": 381,
+    "text": ") -> CTGANSynthesizer:",
+    "context": [
+     "",
+     "",
+     "def train_model(",
+     "    initial_data: pd.DataFrame, metadata: Metadata, data_type: str",
+     ") -> CTGANSynthesizer:",
+     "    \"\"\"Train CTGAN model on initial data.\"\"\"",
+     "    logger.info(f\"\\nTraining synthetic data model for {data_type}...\")",
+     "",
+     "    # Calculate batch_size to be divisible by pac"
+    ]
+   },
+   {
+    "file": "final-synthetic_marketing_data/transaction.py",
+    "line": 392,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "    if batch_size == 0:",
+     "        batch_size = pac",
+     "",
+     "    # Initialize CTGAN with parameters from constants",
+     "    synthesizer = CTGANSynthesizer(",
+     "        metadata,",
+     "        epochs=MODEL_PARAMETERS[\"epochs\"],",
+     "        batch_size=batch_size,",
+     "        log_frequency=MODEL_PARAMETERS[\"log_frequency\"],"
+    ]
+   },
+   {
+    "file": "final-synthetic_marketing_data/transaction.py",
+    "line": 574,
+    "text": "model: CTGANSynthesizer, num_samples: int, data_type: str, logger",
+    "context": [
+     "    logger.info(f\"Saved metadata to {metadata_file}\")",
+     "",
+     "",
+     "def generate_synthetic_data(",
+     "    model: CTGANSynthesizer, num_samples: int, data_type: str, logger",
+     ") -> pd.DataFrame:",
+     "    \"\"\"Generate synthetic transactions using the trained model.\"\"\"",
+     "    logger.info(f\"Generating {num_samples} synthetic {data_type}...\")",
+     "    synthetic_data = model.sample(num_samples)"
+    ]
+   },
+   {
+    "file": "final-synthetic_marketing_data/consumer.py",
+    "line": 12,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import numpy as np",
+     "from pathlib import Path",
+     "from datetime import datetime",
+     "from typing import Dict, Any",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "from sdv.evaluation.single_table import evaluate_quality, run_diagnostic",
+     "",
+     "from constants import ("
+    ]
+   },
+   {
+    "file": "final-synthetic_marketing_data/consumer.py",
+    "line": 231,
+    "text": "synthesizer: CTGANSynthesizer,",
+    "context": [
+     "",
+     "def save_results(",
+     "    synthetic_data: pd.DataFrame,",
+     "    metadata: Metadata,",
+     "    synthesizer: CTGANSynthesizer,",
+     "    output_dir: Path,",
+     ") -> None:",
+     "    \"\"\"Save synthetic data, metadata, and model with versioning.\"\"\"",
+     "    timestamp = datetime.now().strftime(\"%Y%m%d_%H%M%S\")"
+    ]
+   },
+   {
+    "file": "final-synthetic_marketing_data/consumer.py",
+    "line": 364,
+    "text": ") -> CTGANSynthesizer:",
+    "context": [
+     "",
+     "",
+     "def train_model(",
+     "    initial_preferences: pd.DataFrame, metadata: Metadata",
+     ") -> CTGANSynthesizer:",
+     "    \"\"\"Train CTGAN model on initial preferences data.\"\"\"",
+     "    logger.info(\"\\nTraining synthetic data model...\")",
+     "",
+     "    # Calculate batch_size to be divisible by pac"
+    ]
+   },
+   {
+    "file": "final-synthetic_marketing_data/consumer.py",
+    "line": 375,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "    if batch_size == 0:",
+     "        batch_size = pac",
+     "",
+     "    # Initialize CTGAN with parameters from constants",
+     "    synthesizer = CTGANSynthesizer(",
+     "        metadata,",
+     "        epochs=MODEL_PARAMETERS[\"epochs\"],",
+     "        batch_size=batch_size,",
+     "        log_frequency=True,  # Enable detailed logging"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ev",
+  "hma",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv"
+  ]
+ }
+}

@@ -1,0 +1,127 @@
+{
+ "repo": "TanZeus/AnomalyDetection",
+ "disk_kb": 2602,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Anomaly Detection\n\nThis is my Masters Project Laboratory 2 project about anomaly detection using machine learning\n\n# Comparison of different types of anomaly detection\n\n## Statistics\n\nStatistics-based approaches work well for simpler well-defined datasets, where assumptions can be made about the data distribution (or the distribution of the data is known)  \nSome examples:\n- Percentile-based detection/Set static thresholds based on past data, where the model marks exceeding values as anomalies (most basic approach)\n- Z-Score: count number of categories that deviate from their mean by a threshold and mark samples which exceed a set number of allowed deviations as anomalies\n- Covariance Matrix: build covariance matrix from past data, values that deviate from expected covariance more than an allowed threshold are marked as anomalies\n- Grubbs Test: used with normal distributions, where the model marks samples that deviate from the normal distribution more than a threshold as outliers\n\nAdvantages:\n- Easy to implement\n- Works well when data follows a known distribution\n\nDisadvantages:\n- Requires assumptions about the data distribution\n- Doesn't work well for non-linear/high-dimensional data\n\nUsed mostly by financial institutions or healthcare providers\n\n## Machine Learning\n\nUse of machine learning is better for complex, large and variable datasets. The models tune their definition of anomalies based on a provided dataset\n\n### Supervised Learning\n\nHas access to labeled data of normal and anomalous examples  \nSome examples:\n- K-nearest neighbors\n- Linear/Polynomial regression\n- Decision trees\n- Random Forests\n- Support Vector Machines\n- Gradient Boosting\n- Neural Networks\n\nAdvantages:\n- Can be used for a wide range of datasets\n- Can learn complex relationships between features\n- Performs well when provided with large enough labeled data\n\nDisadvantages:\n- Requires labeled data, which may be expensive to obtain\n- Can struggle with rare anomalies that were not seen during training\n\nUsed when labeled data is available, for example transaction fraud detection\n\n### Unsupervised Learning\n\nWhen there is no access to labeled data, models find their own relations to determine anomalies  \nSome examples:\n- K means clustering\n- DBSCAN (Density-Based Spatial Clustering)\n- Isolation forest\n- Local Outlier Factor\n- Autoencoders (deep learning)\n\nAdvantages:\n- Doesn't require labeled data\n- Can be used for a wide range of datasets\n- Can learn complex relationships between features\n- Can detect novel anomalies\n\nDisadvantages:\n- Usually not as accurate as supervised learning\n- Can be harder to train\n\nUsed when labeled data is not available, for example network anomaly detection\n\n### Semi-supervised Learning\n\nSome labeled and unlabeled data, acts like supervised learning for labeled data, and tries to approximate for unlabeled data  \n\nUsually less accurate than supervised learning, but can be useful in cases where only a small set of labeled data is available with a lot of unlabeled data and labeling is expensive\n\n### Deep learning\n\nArtificial neural networks with a large number of layers can be useful for identifying anomalies in complex datasets, where other methods could not work well enough  \nSome examples:\n- Autoencoders\n- Generative Adversarial Networks\n\nAdvantages:\n- Can learn complex/high-dimensional relationships between features\n- Can detect novel anomalies\n- Can be used for a wide range of datasets that can be very large\n\nDisadvantages:\n- Can be harder to train and interpret\n- Can be computationally expensive\n- Requires a lot of data to train\n\nUsed for complex/high-dimensional datasets, for example when working with images\n\n## Time Series based\n\nTime series based approaches focus on patters over time, where anomalies are defined as deviations from the normal patterns, such as spikes or drops in the data  \nSome examples:\n- Autoregressive Integrated Moving Average (ARIMA)\n- Exponential Smoothing (ETS)\n- LSTM (Long Short Term Memory) based models\n\nAdvantages:\n- Effective at detecting seasonal or cyclical patterns\n\nDisadvantages:\n- Sensitive to seasonal patterns\n\nUsed for time series data, for example power consumption or network traffic\n\n## Graph based\n\nGraph based methods detect anomalies by analyzing the relationships and interactions between entities, often modeled as a graph  \nSome examples:\n- Graph Convolutional Networks (GCN)\n- PageRank\n- Random Walks\n\nAdvantages:\n- Can detect complex relationships between entities\n- Can capture both local and global patterns\n\nDisadvantages:\n- Can be computationally expensive\n- Requires well structured data\n\nUsed by social media platforms, for example to detect fake accounts or suspicious behavior\n\n---\n\n# Results of comparison\n\n## On labeled dataset\n\nUsed dataset: https://huggingface.co/datasets/pointe77/credit-card-transaction/tree/main\n\n### Isolation Forest\nTrain time: ~6 seconds\n\n|              | precision | recall | f1-score | support |\n|--------------|-----------|--------|----------|---------|\n| 0.0          | 1.00      | 0.97   | 0.98     | 553574  |\n| 1.0          | 0.02      | 0.21   | 0.04     | 2145    |\n| accuracy     |           |        | 0.96     | 555719  |\n| macro avg    | 0.51      | 0.59   | 0.51     | 555719  |\n| weighted avg | 0.99      | 0.96   | 0.98     | 555719  |\n\n![covariance matrix](images/pointe77/IFcm.png)\n\n---\n\n### Local Outlier Factor\nTrain time: ~1202 seconds\n\n|              | precision | recall | f1-score | support |\n|--------------|-----------|--------|----------|---------|\n| 0.0          | 1.00      | 0.63   | 0.77     | 553574  |\n| 1.0          | 0.00      | 0.24   | 0.00     | 2145    |\n| accuracy     |           |        | 0.63     | 555719  |\n| macro avg    | 0.50      | 0.44   | 0.39     | 555719  |\n| weighted avg | 0.99      | 0.63   | 0.77     | 555719  |\n\n![covariance matrix](images/pointe77/LOFcm.png)\n\n---\n\n### One-Class SVM\nTrain time: ~2067 seconds\n\n|              | precision | recall | f1-score | support |\n|--------------|-----------|--------|----------|---------|\n| 0.0          | 1.00      | 0.85   | 0.92     | 553574  |\n| 1.0          | 0.01      | 0.32   | 0.02     | 2145    |\n| accuracy     |           |        | 0.85     | 555719  |\n| macro avg    | 0.50      | 0.58   | 0.47     | 555719  |\n| weighted avg | 0.99      | 0.85   | 0.91     | 555719  |\n\n![covariance matrix](images/pointe77/OCSVMcm.png)\n\n---\n\n### K-Means\nTrain time: ~0 seconds\n\n|              | precision | recall | f1-score | support |\n|--------------|-----------|--------|----------|---------|\n| 0.0          | 1.00      | 0.54   | 0.70     | 553574  |\n| 1.0          | 0.00      | 0.46   | 0.01     | 2145    |\n| accuracy     |           |        | 0.54     | 555719  |\n| macro avg    | 0.50      | 0.50   | 0.35     | 555719  |\n| weighted avg | 0.99      | 0.54   | 0.70     | 555719  |\n\n![covariance matrix](images/pointe77/KMcm.png)\n\n---\n\n### Autoencoder\n\n|              | precision | recall | f1-score | support |\n|--------------|-----------|--------|----------|---------|\n| 0.0          | 1.00      | 0.98   | 0.99     | 553574  |\n| 1.0          | 0.04      | 0.19   | 0.06     | 2145    |\n| accuracy     |           |        | 0.98     | 555719  |\n| macro avg    | 0.52      | 0.59   | 0.53     | 555719  |\n| weighted avg | 0.99      | 0.98   | 0.99     | 555719  |\n\n![covariance matrix](images/pointe77/AEcm.png)\n\n---\n\n### PR + ROC Curves\n\n![PR+Roc.png](images/pointe77/PRAndRoc.png)\n\n---\n\n## On anonymized credit card fraud dataset\n\nUsed dataset: https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud/data  \nThere are 2 versions, one with SMOTE-ENN (Synthetic Minority Over-sampling Technique + Edited Nearest Neighbors) and one without.  \nThe confusion matrices are for the default model, which is the one without SMOTE-ENN. Confusion matrices for the SMOTE-ENN model are in the 'images' folder.\n\n### Isolation Forest\n\nDefault Train time: ~1 second\n\n|              | precision | recall | f1-score | support |\n|--------------|-----------|--------|----------|---------|\n| 0.0          | 1.00      | 0.98   | 0.99     | 71108   |\n| 1.0          | 0.04      | 0.60   | 0.07     | 94      |\n| accuracy     |           |        | 0.98     | 71202   |\n| macro avg    | 0.52      | 0.79   | 0.53     | 71202   |\n| weighted avg | 1.00      | 0.98   | 0.99     | 71202   |\n\nSMOTE-ENN Train time: ~0 seconds\n\n|              | precision | recall | f1-score | support |\n|--------------|-----------|--------|----------|---------|\n| 0.0          | 1.00      | 0.96   | 0.98     | 71108   |\n| 1.0          | 0.03      | 0.77   | 0.05     | 94      |\n| accuracy     |           |        | 0.96     | 71202   |\n| macro avg    | 0.51      | 0.86   | 0.52     | 71202   |\n| weighted avg | 1.00      | 0.96   | 0.98     | 71202   |\n\nCTGAN:\n\n|              | precision | recall | f1-score | support |\n|--------------|-----------|--------|----------|---------|\n| 0.0          | 1.00      | 0.96   | 0.98     | 71108   |\n| 1.0          | 0.03      | 0.74   | 0.05     | 94      |\n| accuracy     |           |        | 0.96     | 71202   |\n| macro avg    | 0.51      | 0.85   | 0.51     | 71202   |\n| weighted avg | 1.00      | 0.96   | 0.98     | 71202   |\n\n\n![covariance matrix](images/mlg-ulb/default/IFcm.png)\n\n---\n\n### Local Outlier Factor\n\nTrain time: ~42 seconds\n\n|              | precision | recall | f1-score | support |\n|--------------|-----------|--------|----------|---------|\n| 0.0          | 1.00      | 0.77   | 0.87     | 71108   |\n| 1.0          | 0.00      | 0.14   | 0.00     | 94      |\n| accuracy     |           |        | 0.77     | 71202   |\n| macro avg    | 0.50      | 0.45   | 0.44     | 71202   |\n| weighted avg | 1.00      | 0.77   | 0.87     | 71202   |\n\nSMOTE-ENN Train time: ~34 seconds\n\n|              | precision | recall | f1-score | support |\n|--------------|-----------|--------|----------|---------|\n| 0.0          | 1.00      | 0.76   | 0.86     | 71108   |\n| 1.0          | 0.00      | 0.39   | 0.00     | 94      |\n| accuracy     |           |        | 0.76     | 71202   |\n| macro avg    | 0.50      | 0.58   | 0.43     | 71202   |\n| weighted avg | 1.00      | 0.76   | 0.86     | 71202   |\n\nCTGAN:\n\n|              | precision | recall | f1-score | support |\n|--------------|-----------|--------|----------|---------|\n| 0.0          | 1.00      | 0.77   | 0.87     | 71108   |\n| 1.0          | 0.00      | 0.14   | 0.00     | 94      |\n| accuracy     |           |        | 0.77     | 71202   |\n| macro avg    | 0.50      | 0.45   | 0.43     | 71202   |\n| weighted avg | 1.00      | 0.77   | 0.87     | 71202   |\n\n![covariance matrix](images/mlg-ulb/default/LOFcm.png)\n\n---\n\n### One-Class SVM\n\nTrain time: ~97 seconds\n\n|              | precision | recall | f1-score | support |\n|--------------|-----------|--------|----------|---------|\n| 0.0          | 1.00      | 0.98   | 0.99     | 71108   |\n| 1.0          | 0.04      | 0.65   | 0.08     | 94      |\n| accuracy     |           |        | 0.98     | 71202   |\n| macro avg    | 0.52      | 0.81   | 0.54     | 71202   |\n| weighted avg | 1.00      | 0.98   | 0.99     | 71202   |\n\nSMOTE-ENN Train time: ~73 seconds\n\n|              | precision | recall | f1-score | support |\n|--------------|-----------|--------|----------|---------|\n| 0.0          | 1.00      | 0.98   | 0.99     | 71108   |\n| 1.0          | 0.05      | 0.70   | 0.10     | 94      |\n| accuracy     |           |        | 0.98     | 71202   |\n| macro avg    | 0.53      | 0.84   | 0.54     | 71202   |\n| weighted avg | 1.00      | 0.98   | 0.99     | 71202   |\n\nCTGAN:\n\n|              | precision | recall | f1-score | support |\n|--------------|-----------|--------|----------|---------|\n| 0.0          | 1.00      | 0.98   | 0.99     | 71108   |\n| 1.0          | 0.03      | 0.40   | 0.06     | 94      |\n| accuracy     |           |        | 0.98     | 71202   |\n| macro avg    | 0.52      | 0.69   | 0.52     | 71202   |\n| weighted avg | 1.00      | 0.98   | 0.99     | 71202   |\n\n![covariance matrix](images/mlg-ulb/default/OCSVMcm.png)\n\n---\n\n### K-Means\n\nTrain time: ~0 seconds\n\n|              | precision | recall | f1-score | support |\n|--------------|-----------|--------|----------|---------|\n| 0.0          | 1.00      | 0.94   | 0.97     | 71108   |\n| 1.0          | 0.00      | 0.17   | 0.01     | 94      |\n| accuracy     |           |        | 0.94     | 71202   |\n| macro avg    | 0.50      | 0.56   | 0.49     | 71202   |\n| weighted avg | 1.00      | 0.94   | 0.97     | 71202   |\n\nSMOTE-ENN Train time: ~0 seconds\n\n|              | precision | recall | f1-score | support |\n|--------------|-----------|--------|----------|---------|\n| 0.0          | 1.00      | 0.06   | 0.11     | 71108   |\n| 1.0          | 0.00      | 1.00   | 0.00     | 94      |\n| accuracy     |           |        | 0.06     | 71202   |\n| macro avg    | 0.50      | 0.53   | 0.06     | 71202   |\n| weighted avg | 1.00      | 0.06   | 0.11     | 71202   |\n\nCTGAN:\n\n|              | precision | recall | f1-score | support |\n|--------------|-----------|--------|----------|---------|\n| 0.0          | 0.00      | 0.00   | 0.00     | 71108   |\n| 1.0          | 0.00      | 0.54   | 0.00     | 94      |\n| accuracy     |           |        | 0.00     | 71202   |\n| macro avg    | 0.00      | 0.27   | 0.00     | 71202   |\n| weighted avg | 0.00      | 0.00   | 0.00     | 71202   |\n\n![covariance matrix](images/mlg-ulb/default/KMcm.png)\n\n---\n\n### Autoencoder\n\nTrain time: ~65 seconds\n\n|              | precision | recall | f1-score | support |\n|--------------|-----------|--------|----------|---------|\n| 0.0          | 1.00      | 0.98   | 0.99     | 71108   |\n| 1.0          | 0.05      | 0.70   | 0.09     | 94      |\n| accuracy     |           |        | 0.98     | 71202   |\n| macro avg    | 0.52      | 0.84   | 0.54     | 71202   |\n| weighted avg | 1.00      | 0.98   | 0.99     | 71202   |\n\nSMOTE-ENN Train time: ~54 seconds\n\n|              | precision | recall | f1-score | support |\n|--------------|-----------|--------|----------|---------|\n| 0.0          | 1.00      | 0.95   | 0.97     | 71108   |\n| 1.0          | 0.02      | 0.81   | 0.04     | 94      |\n| accuracy     |           |        | 0.95     | 71202   |\n| macro avg    | 0.51      | 0.88   | 0.51     | 71202   |\n| weighted avg | 1.00      | 0.95   | 0.97     | 71202   |\n\nCTGAN:\n\n|              | precision | recall | f1-score | support |\n|--------------|-----------|--------|----------|---------|\n| 0.0          | 1.00      | 0.95   | 0.97     | 71108   |\n| 1.0          | 0.02      | 0.82   | 0.04     | 94      |\n| accuracy     |           |        | 0.95     | 71202   |\n| macro avg    | 0.51      | 0.89   | 0.51     | 71202   |\n| weighted avg | 1.00      | 0.95   | 0.97     | 71202   |\n\n![covariance matrix](images/mlg-ulb/default/AEcm.png)\n\n---\n\n### Transformer\n\n|              | precision | recall | f1-score | support |\n|--------------|-----------|--------|----------|---------|\n| 0.0          | 1.00      | 0.99   | 1.00     | 71108   |\n| 1.0          | 0.10      | 0.68   | 0.18     | 94      |\n| accuracy     |           |        | 0.99     | 71202   |\n| macro avg    | 0.55      | 0.84   | 0.59     | 71202   |\n| weighted avg | 1.00      | 0.99   | 0.99     | 71202   |\n\nSMOTE-ENN:\n\n|              | precision | recall | f1-score | support |\n|--------------|-----------|--------|----------|---------|\n| 0.0          | 1.00      | 0.99   | 1.00     | 71108   |\n| 1.0          | 0.10      | 0.76   | 0.18     | 94      |\n| accuracy     |           |        | 0.99     | 71202   |\n| macro avg    | 0.55      | 0.87   | 0.59     | 71202   |\n| weighted avg | 1.00      | 0.99   | 0.99     | 71202   |\n\nCTGAN:\n\n|              | precision | recall | f1-score | support |\n|--------------|-----------|--------|----------|---------|\n| 0.0          | 1.00      | 0.99   | 1.00     | 71108   |\n| 1.0          | 0.10      | 0.76   | 0.18     | 94      |\n| accuracy     |           |        | 0.99     | 71202   |\n| macro avg    | 0.55      | 0.81   | 0.59     | 71202   |\n| weighted avg | 1.00      | 0.99   | 0.99     | 71202   |\n\n\n![covariance matrix](images/mlg-ulb/default/Transformercm.png)\n\n---\n\n### PR + ROC Curves\n\n![PR+Roc.png](images/mlg-ulb/default/PRAndRoc.png)\n\nSMOTE-ENN:\n\n![PR+Roc.png](images/mlg-ulb/smote/PRAndRoc.png)\n\nCTGAN:\n\n![PR+Roc.png](images/mlg-ulb/ctgan/PRAndRoc.png)\n\n---\n\n## On CIC-UNSW-NB15 network traffic dataset\n\nUsed dataset: https://www.unb.ca/cic/datasets/cic-unsw-nb15.html\n\n### Isolation Forest\n\n|              | precision | recall | f1-score | support |\n|--------------|-----------|--------|----------|---------|\n| 0.0          | 0.85      | 0.85   | 0.85     | 71666   |\n| 1.0          | 0.40      | 0.40   | 0.40     | 17917   |\n| accuracy     |           |        | 0.76     | 89583   |\n| macro avg    | 0.63      | 0.63   | 0.63     | 89583   |\n| weighted avg | 0.76      | 0.76   | 0.76     | 89583   |\n\n![covariance matrix](images/cic-unsw-nb15/IFcm.png)\n\n---\n\n### Local Outlier Factor\n\n|              | precision | recall | f1-score | support |\n|--------------|-----------|--------|----------|---------|\n| 0.0          | 0.79      | 0.78   | 0.79     | 71666   |\n| 1.0          | 0.17      | 0.18   | 0.18     | 17917   |\n| accuracy     |           |        | 0.66     | 89583   |\n| macro avg    | 0.48      | 0.48   | 0.48     | 89583   |\n| weighted avg | 0.67      | 0.66   | 0.66     | 89583   |\n\n![covariance matrix](images/cic-unsw-nb15/LOFcm.png)\n\n---\n\n### One-Class SVM\n\n|              | precision | recall | f1-score | support |\n|--------------|-----------|--------|----------|---------|\n| 0.0          | 0.80      | 1.00   | 0.89     | 71666   |\n| 1.0          | 0.68      | 0.02   | 0.03     | 17917   |\n| accuracy     |           |        | 0.80     | 89583   |\n| macro avg    | 0.74      | 0.51   | 0.46     | 89583   |\n| weighted avg | 0.78      | 0.80   | 0.72     | 89583   |\n\n![covariance matrix](images/cic-unsw-nb15/OCSVMcm.png)\n\n---\n\n### K-Means\n\n|              | precision | recall | f1-score | support |\n|--------------|-----------|--------|----------|---------|\n| 0.0          | 0.80      | 1.00   | 0.89     | 71666   |\n| 1.0          | 0.94      | 0.00   | 0.01     | 17917   |\n| accuracy     |           |        | 0.80     | 89583   |\n| macro avg    | 0.87      | 0.50   | 0.45     | 89583   |\n| weighted avg | 0.83      | 0.80   | 0.71     | 89583   |\n\n![covariance matrix](images/cic-unsw-nb15/KMcm.png)\n\n---\n\n### Autoencoder\n\n|              | precision | recall | f1-score | support |\n|--------------|-----------|--------|----------|---------|\n| 0.0          | 0.81      | 0.96   | 0.88     | 71666   |\n| 1.0          | 0.42      | 0.11   | 0.17     | 17917   |  \n| accuracy     |           |        | 0.79     | 89583   |\n| macro avg    | 0.62      | 0.53   | 0.52     | 89583   |\n| weighted avg | 0.73      | 0.79   | 0.74     | 89583   |\n\n![covariance matrix](images/cic-unsw-nb15/AEcm.png)\n\n---\n\n### Transformer\n\n|              | precision | recall | f1-score | support |\n|--------------|-----------|--------|----------|---------|\n| 0.0          | 1.00      | 0.97   | 0.99     | 71666   |\n| 1.0          | 0.90      | 1.00   | 0.95     | 17917   |\n| accuracy     |           |        | 0.98     | 89583   | \n| macro avg    | 0.95      | 0.99   | 0.97     | 89583   |\n| weighted avg | 0.98      | 0.98   | 0.98     | 89583   |\n\n![covariance matrix](images/cic-unsw-nb15/Transformercm.png)\n\n---\n\n### One-Class Nearest Neighbors\n\n|              | precision | recall | f1-score | support |\n|--------------|-----------|--------|----------|---------|\n| 0.0          | 0.82      | 0.98   | 0.90     | 71666   |\n| 1.0          | 0.67      | 0.17   | 0.27     | 17917   |\n| accuracy     |           |        | 0.82     | 89583   |\n| macro avg    | 0.75      | 0.57   | 0.58     | 89583   |\n| weighted avg | 0.79      | 0.82   | 0.77     | 89583   |\n\n![covariance matrix](images/cic-unsw-nb15/OCNNcm.png)\n\n---\n\n### PR + ROC Curves\n\n![PR+Roc.png](images/cic-unsw-nb",
+ "hits": {
+  "st": [
+   {
+    "file": "data_loader.py",
+    "line": 18,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from sklearn.model_selection import StratifiedShuffleSplit, train_test_split",
+     "from sklearn.preprocessing import StandardScaler, LabelEncoder, MinMaxScaler",
+     "from torch.utils.data import TensorDataset, DataLoader",
+     "from imblearn.combine import SMOTEENN",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "",
+     "def get_ctgan_generator(x_train, y_train, epochs=100, model_name='cic-unsw-nb15'):",
+     "    \"\"\""
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "data_loader.py",
+    "line": 11,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import joblib",
+     "import numpy as np",
+     "import pandas as pd",
+     "import torch",
+     "from sdv.metadata import Metadata",
+     "from sklearn.feature_extraction.text import HashingVectorizer",
+     "from sklearn.impute import SimpleImputer",
+     "from sklearn.model_selection import StratifiedShuffleSplit, train_test_split",
+     "from sklearn.preprocessing import StandardScaler, LabelEncoder, MinMaxScaler"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "data_loader.py",
+    "line": 11,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import joblib",
+     "import numpy as np",
+     "import pandas as pd",
+     "import torch",
+     "from sdv.metadata import Metadata",
+     "from sklearn.feature_extraction.text import HashingVectorizer",
+     "from sklearn.impute import SimpleImputer",
+     "from sklearn.model_selection import StratifiedShuffleSplit, train_test_split",
+     "from sklearn.preprocessing import StandardScaler, LabelEncoder, MinMaxScaler"
+    ]
+   },
+   {
+    "file": "data_loader.py",
+    "line": 18,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from sklearn.model_selection import StratifiedShuffleSplit, train_test_split",
+     "from sklearn.preprocessing import StandardScaler, LabelEncoder, MinMaxScaler",
+     "from torch.utils.data import TensorDataset, DataLoader",
+     "from imblearn.combine import SMOTEENN",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "",
+     "def get_ctgan_generator(x_train, y_train, epochs=100, model_name='cic-unsw-nb15'):",
+     "    \"\"\""
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "data_loader.py",
+    "line": 18,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from sklearn.model_selection import StratifiedShuffleSplit, train_test_split",
+     "from sklearn.preprocessing import StandardScaler, LabelEncoder, MinMaxScaler",
+     "from torch.utils.data import TensorDataset, DataLoader",
+     "from imblearn.combine import SMOTEENN",
+     "from sdv.single_table import CTGANSynthesizer",
+     "",
+     "",
+     "def get_ctgan_generator(x_train, y_train, epochs=100, model_name='cic-unsw-nb15'):",
+     "    \"\"\""
+    ]
+   },
+   {
+    "file": "data_loader.py",
+    "line": 47,
+    "text": "ctgan = CTGANSynthesizer(metadata=metadata, epochs=epochs, verbose=True, enforce_rounding=True, enforce_min_max_values=True)",
+    "context": [
+     "    metadata = Metadata.detect_from_dataframe(train_data)",
+     "",
+     "    print(f\"Starting CTGAN Synthesizer for {epochs} Epochs...\")",
+     "",
+     "    ctgan = CTGANSynthesizer(metadata=metadata, epochs=epochs, verbose=True, enforce_rounding=True, enforce_min_max_values=True)",
+     "    ctgan.fit(train_data)",
+     "    joblib.dump(ctgan, model_path)",
+     "    print(f\"CTGAN training completed in {(datetime.now() - start_time).seconds} seconds, weights saved to {model_path}\")",
+     "    return ctgan"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [
+  "images/mlg-ulb/ctgan"
+ ],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv~=1.17.1"
+  ]
+ }
+}

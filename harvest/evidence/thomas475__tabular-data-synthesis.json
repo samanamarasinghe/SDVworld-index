@@ -1,0 +1,604 @@
+{
+ "repo": "thomas475/tabular-data-synthesis",
+ "disk_kb": 54605,
+ "method": "partial_clone",
+ "tree_files": 432,
+ "status": "ok",
+ "readme": "# Tabular Data Synthesis for Mixed Data - Experiment Framework\n\nA framework for the evaluation of different tabular data synthesis pipelines in their complete form. These include the following steps:\n\n1. **Preprocessing**: Encoding categorical attributes and scaling numerical attributes.\n2. **Data Synthesis**: Generating synthetic data with a generator trained on the preprocessed training data.\n3. **_(Optional)_ Relabelling by a Black-Box Model**: Relabelling the synthetic data with a black-box model trained on the preprocessed training data. Necessary if the generator does not label the data by itself.\n\nThis synthethic data will then be added to the original training data. The augmented training data will then be used to train a white-box model, for example a shallow decision tree. The resulting performance gain is then used as a proxy for augmentation quality.\n\nThis work was done as part of my Bachelor thesis \"Benchmarking Tabular Data Synthesis Pipelines for Mixed Data\".\n\n## Installation\n\nThe required packages can be installed through the 'requirements.txt' file. If you have pip installed you can simply run:\n\n```bash\npip install -r requirements.txt\n```\n\n### PrivBayes\n\nThe PrivBayes synthesizer requires dependencies written in C++ that need to be compiled before they can be used. Make sure to have installed all the necessary dependencies to compile C++. In Linux distributions based on Ubuntu, this can be done with the following command:\n\n```bash\nsudo apt-get install build-essential\n```\n\nNavigate to the location containing the makefile for the PrivBayes compilation (`{repository_path}/framework/generators/privbayes`). Trigger the compilation from this directory with the following command:\n\n```bash\nmake compile\n```\n\nThis compilation results in a `privBayes.bin` binary. To use it in the framework we have to add its path to the `PRIVBAYES_BIN` environment variable:\n\n```bash\nexport PRIVBAYES_BIN={repository_path}/framework/generators/privbayes/privBayes.bin\n```\n\nAlways check if the `PRIVBAYES_BIN` environment variable has been set before running a long experiment with the following command:\n\n```bash\necho $PRIVBAYES_BIN\n```\n",
+ "hits": {
+  "sdv_any": [
+   {
+    "file": "framework/samplers.py",
+    "line": 11,
+    "text": "from sdv.tabular import CopulaGAN, GaussianCopula",
+    "context": [
+     "from sklearn.base import BaseEstimator",
+     "",
+     "from ctgan import CTGANSynthesizer, TVAESynthesizer",
+     "from framework.generators.sdgym.synthesizers import PrivBN, TableGAN, MedGAN",
+     "from sdv.tabular import CopulaGAN, GaussianCopula",
+     "from framework.generators.ctabgan.model.synthesizer.ctabgan_synthesizer import CTABGANSynthesizer",
+     "from framework.generators.ydata_synthetic.synthesizers.regular import CWGANGP, WGAN_GP",
+     "from framework.generators.ydata_synthetic.synthesizers import ModelParameters, TrainParameters",
+     "from framework.generators.snsynth.pytorch.nn import DPCTGAN"
+    ]
+   },
+   {
+    "file": "framework/generators/sdgym/datasets.py",
+    "line": 10,
+    "text": "from sdv import Metadata",
+    "context": [
+     "from zipfile import ZipFile",
+     "",
+     "import appdirs",
+     "import pandas as pd",
+     "from sdv import Metadata",
+     "",
+     "from sdgym.s3 import get_s3_client",
+     "",
+     "LOGGER = logging.getLogger(__name__)"
+    ]
+   },
+   {
+    "file": "framework/generators/sdgym/synthesizers/sdv.py",
+    "line": 4,
+    "text": "import sdv",
+    "context": [
+     "import abc",
+     "import logging",
+     "",
+     "import sdv",
+     "import sdv.timeseries",
+     "",
+     "from sdgym.synthesizers.base import Baseline, SingleTableBaseline",
+     "from sdgym.synthesizers.utils import select_device"
+    ]
+   },
+   {
+    "file": "framework/generators/sdgym/synthesizers/sdv.py",
+    "line": 5,
+    "text": "import sdv.timeseries",
+    "context": [
+     "import abc",
+     "import logging",
+     "",
+     "import sdv",
+     "import sdv.timeseries",
+     "",
+     "from sdgym.synthesizers.base import Baseline, SingleTableBaseline",
+     "from sdgym.synthesizers.utils import select_device",
+     ""
+    ]
+   },
+   {
+    "file": "framework/generators/sdgym/synthesizers/independent.py",
+    "line": 2,
+    "text": "from sdv.metadata import Table",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import Table",
+     "from sklearn.mixture import GaussianMixture",
+     "",
+     "from sdgym.synthesizers.base import MultiSingleTableBaseline",
+     ""
+    ]
+   },
+   {
+    "file": "framework/generators/sdgym/synthesizers/uniform.py",
+    "line": 3,
+    "text": "from sdv.metadata import Table",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.metadata import Table",
+     "",
+     "from sdgym.synthesizers.base import MultiSingleTableBaseline",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "experiments/exploration.py",
+    "line": 33,
+    "text": "from sdv.metrics.tabular import KSTest, CSTest",
+    "context": [
+     "    MultiClassTargetEncoder, MultiClassStratifiedCV5TargetEncoder",
+     "",
+     "from framework.pipelines import AugmentedEstimation",
+     "",
+     "from sdv.metrics.tabular import KSTest, CSTest",
+     "from dython.nominal import compute_associations",
+     "from framework.evaluation import calculate_dcr_nndr, calculate_jsd_wd",
+     "",
+     "import itertools"
+    ]
+   },
+   {
+    "file": "tests/test_exploration.py",
+    "line": 34,
+    "text": "from sdv.metrics.tabular import KSTest, CSTest",
+    "context": [
+     "from framework.encoders import CollapseEncoder, StratifiedCV5GLMMEncoder, StratifiedCV5TargetEncoder, StratifiedCVEncoder, StratifiedCVEncoderOriginal",
+     "",
+     "from framework.pipelines import AugmentedEstimation",
+     "",
+     "from sdv.metrics.tabular import KSTest, CSTest",
+     "from dython.nominal import compute_associations",
+     "from framework.evaluation import calculate_dcr_nndr, calculate_jsd_wd",
+     "",
+     "import itertools"
+    ]
+   }
+  ],
+  "ctgan_mod": [
+   {
+    "file": "framework/samplers.py",
+    "line": 9,
+    "text": "from ctgan import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "import pandas as pd",
+     "",
+     "from sklearn.base import BaseEstimator",
+     "",
+     "from ctgan import CTGANSynthesizer, TVAESynthesizer",
+     "from framework.generators.sdgym.synthesizers import PrivBN, TableGAN, MedGAN",
+     "from sdv.tabular import CopulaGAN, GaussianCopula",
+     "from framework.generators.ctabgan.model.synthesizer.ctabgan_synthesizer import CTABGANSynthesizer",
+     "from framework.generators.ydata_synthetic.synthesizers.regular import CWGANGP, WGAN_GP"
+    ]
+   },
+   {
+    "file": "framework/generators/snsynth/pytorch/nn/dpctgan.py",
+    "line": 22,
+    "text": "from ctgan.synthesizers import CTGANSynthesizer",
+    "context": [
+     "import opacus",
+     "",
+     "from framework.generators.snsynth.preprocessors.data_transformer import BaseTransformer",
+     "from .data_sampler import DataSampler",
+     "from ctgan.synthesizers import CTGANSynthesizer",
+     "",
+     "from ...preprocessors import DPMinMaxTransformer",
+     "from ...preprocessors.dpss_transformer import DPSSTransformer",
+     ""
+    ]
+   },
+   {
+    "file": "framework/generators/snsynth/pytorch/nn/patectgan.py",
+    "line": 21,
+    "text": "from ctgan.synthesizers import CTGANSynthesizer",
+    "context": [
+     "from torch.autograd import Variable",
+     "import warnings",
+     "",
+     "from .data_sampler import DataSampler",
+     "from ctgan.synthesizers import CTGANSynthesizer",
+     "from framework.generators.snsynth.preprocessors.data_transformer import BaseTransformer",
+     "",
+     "from .privacy_utils import weights_init, pate, moments_acc",
+     ""
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "framework/samplers.py",
+    "line": 9,
+    "text": "from ctgan import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "import pandas as pd",
+     "",
+     "from sklearn.base import BaseEstimator",
+     "",
+     "from ctgan import CTGANSynthesizer, TVAESynthesizer",
+     "from framework.generators.sdgym.synthesizers import PrivBN, TableGAN, MedGAN",
+     "from sdv.tabular import CopulaGAN, GaussianCopula",
+     "from framework.generators.ctabgan.model.synthesizer.ctabgan_synthesizer import CTABGANSynthesizer",
+     "from framework.generators.ydata_synthetic.synthesizers.regular import CWGANGP, WGAN_GP"
+    ]
+   },
+   {
+    "file": "framework/samplers.py",
+    "line": 431,
+    "text": "self._generator = CTGANSynthesizer(embedding_dim=self.embedding_dim, generator_dim=self.generator_dim,",
+    "context": [
+     "        cat_cols = categorical_columns.copy()",
+     "        if self.is_classification_task:",
+     "            cat_cols.append(self._target_name)",
+     "",
+     "        self._generator = CTGANSynthesizer(embedding_dim=self.embedding_dim, generator_dim=self.generator_dim,",
+     "                                           discriminator_dim=self.discriminator_dim, generator_lr=self.generator_lr,",
+     "                                           generator_decay=self.generator_decay, discriminator_lr=self.discriminator_lr,",
+     "                                           discriminator_decay=self.discriminator_decay, batch_size=self.batch_size,",
+     "                                           discriminator_steps=self.discriminator_steps,"
+    ]
+   },
+   {
+    "file": "framework/generators/snsynth/pytorch/nn/dpctgan.py",
+    "line": 22,
+    "text": "from ctgan.synthesizers import CTGANSynthesizer",
+    "context": [
+     "import opacus",
+     "",
+     "from framework.generators.snsynth.preprocessors.data_transformer import BaseTransformer",
+     "from .data_sampler import DataSampler",
+     "from ctgan.synthesizers import CTGANSynthesizer",
+     "",
+     "from ...preprocessors import DPMinMaxTransformer",
+     "from ...preprocessors.dpss_transformer import DPSSTransformer",
+     ""
+    ]
+   },
+   {
+    "file": "framework/generators/snsynth/pytorch/nn/dpctgan.py",
+    "line": 127,
+    "text": "class DPCTGAN(CTGANSynthesizer):",
+    "context": [
+     "    else:",
+     "        param.grad_sample = grad_sample",
+     "",
+     "",
+     "class DPCTGAN(CTGANSynthesizer):",
+     "    def __init__(",
+     "        self,",
+     "        embedding_dim=128,",
+     "        generator_dim=(256, 256),"
+    ]
+   },
+   {
+    "file": "framework/generators/snsynth/pytorch/nn/patectgan.py",
+    "line": 21,
+    "text": "from ctgan.synthesizers import CTGANSynthesizer",
+    "context": [
+     "from torch.autograd import Variable",
+     "import warnings",
+     "",
+     "from .data_sampler import DataSampler",
+     "from ctgan.synthesizers import CTGANSynthesizer",
+     "from framework.generators.snsynth.preprocessors.data_transformer import BaseTransformer",
+     "",
+     "from .privacy_utils import weights_init, pate, moments_acc",
+     ""
+    ]
+   },
+   {
+    "file": "framework/generators/snsynth/pytorch/nn/patectgan.py",
+    "line": 112,
+    "text": "class PATECTGAN(CTGANSynthesizer):",
+    "context": [
+     "        data = self.seq(input)",
+     "        return data",
+     "",
+     "",
+     "class PATECTGAN(CTGANSynthesizer):",
+     "    def __init__(",
+     "        self,",
+     "        embedding_dim=128,",
+     "        generator_dim=(256, 256),"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "framework/samplers.py",
+    "line": 9,
+    "text": "from ctgan import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "import pandas as pd",
+     "",
+     "from sklearn.base import BaseEstimator",
+     "",
+     "from ctgan import CTGANSynthesizer, TVAESynthesizer",
+     "from framework.generators.sdgym.synthesizers import PrivBN, TableGAN, MedGAN",
+     "from sdv.tabular import CopulaGAN, GaussianCopula",
+     "from framework.generators.ctabgan.model.synthesizer.ctabgan_synthesizer import CTABGANSynthesizer",
+     "from framework.generators.ydata_synthetic.synthesizers.regular import CWGANGP, WGAN_GP"
+    ]
+   },
+   {
+    "file": "framework/samplers.py",
+    "line": 582,
+    "text": "self._generator = TVAESynthesizer(",
+    "context": [
+     "        cat_cols = categorical_columns.copy()",
+     "        if self.is_classification_task:",
+     "            cat_cols.append(self._target_name)",
+     "",
+     "        self._generator = TVAESynthesizer(",
+     "            embedding_dim=self.embedding_dim,",
+     "            compress_dims=self.compress_dims,",
+     "            decompress_dims=self.decompress_dims,",
+     "            l2scale=self.l2scale,"
+    ]
+   }
+  ],
+  "sm": [
+   {
+    "file": "framework/generators/sdgym/metrics.py",
+    "line": 3,
+    "text": "import sdmetrics",
+    "context": [
+     "\"\"\"Metrics module.\"\"\"",
+     "",
+     "import sdmetrics",
+     "",
+     "",
+     "class WithKWargs:",
+     ""
+    ]
+   }
+  ],
+  "gym": [
+   {
+    "file": "framework/generators/sdgym/collect.py",
+    "line": 1,
+    "text": "from sdgym.s3 import read_csv_from_path, write_csv",
+    "context": [
+     "from sdgym.s3 import read_csv_from_path, write_csv",
+     "",
+     "",
+     "def collect_results(input_path, output_file=None, aws_key=None, aws_secret=None):",
+     "    \"\"\"Collect the results in the given input directory, and"
+    ]
+   },
+   {
+    "file": "framework/generators/sdgym/benchmark.py",
+    "line": 16,
+    "text": "from sdgym.datasets import get_dataset_paths, load_dataset, load_tables",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "import tqdm",
+     "",
+     "from sdgym.datasets import get_dataset_paths, load_dataset, load_tables",
+     "from sdgym.errors import SDGymError",
+     "from sdgym.metrics import get_metrics",
+     "from sdgym.progress import TqdmLogger, progress",
+     "from sdgym.s3 import is_s3_path, write_csv, write_file"
+    ]
+   },
+   {
+    "file": "framework/generators/sdgym/benchmark.py",
+    "line": 17,
+    "text": "from sdgym.errors import SDGymError",
+    "context": [
+     "import pandas as pd",
+     "import tqdm",
+     "",
+     "from sdgym.datasets import get_dataset_paths, load_dataset, load_tables",
+     "from sdgym.errors import SDGymError",
+     "from sdgym.metrics import get_metrics",
+     "from sdgym.progress import TqdmLogger, progress",
+     "from sdgym.s3 import is_s3_path, write_csv, write_file",
+     "from sdgym.synthesizers.base import Baseline"
+    ]
+   },
+   {
+    "file": "framework/generators/sdgym/benchmark.py",
+    "line": 18,
+    "text": "from sdgym.metrics import get_metrics",
+    "context": [
+     "import tqdm",
+     "",
+     "from sdgym.datasets import get_dataset_paths, load_dataset, load_tables",
+     "from sdgym.errors import SDGymError",
+     "from sdgym.metrics import get_metrics",
+     "from sdgym.progress import TqdmLogger, progress",
+     "from sdgym.s3 import is_s3_path, write_csv, write_file",
+     "from sdgym.synthesizers.base import Baseline",
+     "from sdgym.synthesizers.utils import get_num_gpus"
+    ]
+   },
+   {
+    "file": "framework/generators/sdgym/benchmark.py",
+    "line": 19,
+    "text": "from sdgym.progress import TqdmLogger, progress",
+    "context": [
+     "",
+     "from sdgym.datasets import get_dataset_paths, load_dataset, load_tables",
+     "from sdgym.errors import SDGymError",
+     "from sdgym.metrics import get_metrics",
+     "from sdgym.progress import TqdmLogger, progress",
+     "from sdgym.s3 import is_s3_path, write_csv, write_file",
+     "from sdgym.synthesizers.base import Baseline",
+     "from sdgym.synthesizers.utils import get_num_gpus",
+     "from sdgym.utils import ("
+    ]
+   },
+   {
+    "file": "framework/generators/sdgym/benchmark.py",
+    "line": 20,
+    "text": "from sdgym.s3 import is_s3_path, write_csv, write_file",
+    "context": [
+     "from sdgym.datasets import get_dataset_paths, load_dataset, load_tables",
+     "from sdgym.errors import SDGymError",
+     "from sdgym.metrics import get_metrics",
+     "from sdgym.progress import TqdmLogger, progress",
+     "from sdgym.s3 import is_s3_path, write_csv, write_file",
+     "from sdgym.synthesizers.base import Baseline",
+     "from sdgym.synthesizers.utils import get_num_gpus",
+     "from sdgym.utils import (",
+     "    build_synthesizer, format_exception, get_synthesizers, import_object, used_memory)"
+    ]
+   },
+   {
+    "file": "framework/generators/sdgym/benchmark.py",
+    "line": 21,
+    "text": "from sdgym.synthesizers.base import Baseline",
+    "context": [
+     "from sdgym.errors import SDGymError",
+     "from sdgym.metrics import get_metrics",
+     "from sdgym.progress import TqdmLogger, progress",
+     "from sdgym.s3 import is_s3_path, write_csv, write_file",
+     "from sdgym.synthesizers.base import Baseline",
+     "from sdgym.synthesizers.utils import get_num_gpus",
+     "from sdgym.utils import (",
+     "    build_synthesizer, format_exception, get_synthesizers, import_object, used_memory)",
+     ""
+    ]
+   },
+   {
+    "file": "framework/generators/sdgym/benchmark.py",
+    "line": 22,
+    "text": "from sdgym.synthesizers.utils import get_num_gpus",
+    "context": [
+     "from sdgym.metrics import get_metrics",
+     "from sdgym.progress import TqdmLogger, progress",
+     "from sdgym.s3 import is_s3_path, write_csv, write_file",
+     "from sdgym.synthesizers.base import Baseline",
+     "from sdgym.synthesizers.utils import get_num_gpus",
+     "from sdgym.utils import (",
+     "    build_synthesizer, format_exception, get_synthesizers, import_object, used_memory)",
+     "",
+     "LOGGER = logging.getLogger(__name__)"
+    ]
+   },
+   {
+    "file": "framework/generators/sdgym/benchmark.py",
+    "line": 23,
+    "text": "from sdgym.utils import (",
+    "context": [
+     "from sdgym.progress import TqdmLogger, progress",
+     "from sdgym.s3 import is_s3_path, write_csv, write_file",
+     "from sdgym.synthesizers.base import Baseline",
+     "from sdgym.synthesizers.utils import get_num_gpus",
+     "from sdgym.utils import (",
+     "    build_synthesizer, format_exception, get_synthesizers, import_object, used_memory)",
+     "",
+     "LOGGER = logging.getLogger(__name__)",
+     ""
+    ]
+   },
+   {
+    "file": "framework/generators/sdgym/datasets.py",
+    "line": 12,
+    "text": "from sdgym.s3 import get_s3_client",
+    "context": [
+     "import appdirs",
+     "import pandas as pd",
+     "from sdv import Metadata",
+     "",
+     "from sdgym.s3 import get_s3_client",
+     "",
+     "LOGGER = logging.getLogger(__name__)",
+     "",
+     "DATASETS_PATH = Path(appdirs.user_data_dir()) / 'SDGym' / 'datasets'"
+    ]
+   },
+   {
+    "file": "framework/generators/sdgym/summary.py",
+    "line": 8,
+    "text": "from sdgym.s3 import read_csv, write_file",
+    "context": [
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "",
+     "from sdgym.s3 import read_csv, write_file",
+     "",
+     "KNOWN_ERRORS = (",
+     "    ('Synthesizer Timeout', 'timeout'),",
+     "    ('MemoryError', 'memory_error'),"
+    ]
+   },
+   {
+    "file": "framework/generators/sdgym/utils.py",
+    "line": 15,
+    "text": "from sdgym.errors import SDGymError",
+    "context": [
+     "",
+     "import humanfriendly",
+     "import psutil",
+     "",
+     "from sdgym.errors import SDGymError",
+     "from sdgym.synthesizers.base import Baseline",
+     "from sdgym.synthesizers.utils import select_device",
+     "",
+     "LOGGER = logging.getLogger(__name__)"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "framework/generators/sdgym/synthesizers/independent.py",
+    "line": 2,
+    "text": "from sdv.metadata import Table",
+    "context": [
+     "import pandas as pd",
+     "from sdv.metadata import Table",
+     "from sklearn.mixture import GaussianMixture",
+     "",
+     "from sdgym.synthesizers.base import MultiSingleTableBaseline",
+     ""
+    ]
+   },
+   {
+    "file": "framework/generators/sdgym/synthesizers/uniform.py",
+    "line": 3,
+    "text": "from sdv.metadata import Table",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "from sdv.metadata import Table",
+     "",
+     "from sdgym.synthesizers.base import MultiSingleTableBaseline",
+     "",
+     ""
+    ]
+   }
+  ],
+  "rdt": [
+   {
+    "file": "framework/generators/sdgym/synthesizers/base.py",
+    "line": 5,
+    "text": "import rdt",
+    "context": [
+     "import abc",
+     "import logging",
+     "",
+     "import pandas as pd",
+     "import rdt",
+     "",
+     "from framework.generators.sdgym.errors import UnsupportedDataset",
+     "",
+     "LOGGER = logging.getLogger(__name__)"
+    ]
+   },
+   {
+    "file": "framework/generators/snsynth/preprocessors/data_transformer.py",
+    "line": 7,
+    "text": "from rdt.transformers.categorical import OneHotEncodingTransformer",
+    "context": [
+     "from collections import namedtuple",
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from rdt.transformers.categorical import OneHotEncodingTransformer",
+     "",
+     "SpanInfo = namedtuple(\"SpanInfo\", [\"dim\", \"activation_fn\"])",
+     "ColumnTransformInfo = namedtuple(",
+     "    \"ColumnTransformInfo\","
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ctgan_mod",
+  "gym",
+  "md",
+  "rdt",
+  "sdv_any",
+  "sm",
+  "tvae"
+ ],
+ "vendored_dirs": [
+  "framework/generators/sdgym"
+ ],
+ "dependencies": {
+  "requirements.txt": [
+   "ctgan==0.5.1",
+   "sdv==0.13.1"
+  ]
+ }
+}

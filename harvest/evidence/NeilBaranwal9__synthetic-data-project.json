@@ -1,0 +1,208 @@
+{
+ "repo": "NeilBaranwal9/synthetic-data-project",
+ "disk_kb": 56521,
+ "method": "partial_clone",
+ "tree_files": 13,
+ "status": "ok",
+ "readme": "# 🧪 Synthetic Data Generation Pipeline for Tabular Data (MOSTLY AI Challenge)\n\nThis repository contains a complete pipeline for generating high-quality, privacy-preserving synthetic tabular data using advanced generative models. Developed as part of a competition hosted by MOSTLY AI, the pipeline is designed to produce synthetic data that mimics real data distributions while passing stringent utility and privacy checks.\n\n---\n\n## 🚀 Overview\n\n* The pipeline trains and loads an ensemble of:\n  * 4 CTGAN models with different seeds\n  * 1 TVAE model\n\n* These models are orchestrated for flat-table synthetic data generation with robust sampling, metadata handling, and privacy filtering.\n\n---\n\n## 📊 Results\n\n| Metric    | Value   |\n| --------- | ------- |\n| Accuracy  | 0.897388|\n| DCR Share | 50.7%   |\n| NNDR Ratio| 1.08    |\n\n*These metrics reflect excellent utility and privacy trade-offs, demonstrating the effectiveness of the approach in a real-world anonymization scenario.*\n\n---\n\n## 🧩 Key Features\n\n* ✅ Multi-model ensemble: Combines CTGAN and TVAE models with weight-based sampling.  \n* 🔐 Privacy filtering: Applies Distance to Closest Record (DCR) and Nearest Neighbor Distance Ratio (NNDR) filters.  \n* 📈 Accuracy evaluation: Synthetic data is blended with real data and tested using a stacked ensemble classifier (XGBoost + LightGBM).  \n* 🧼 Robust metadata handling: Avoids boolean traps, infers column types conservatively.  \n* ⚙️ SMOTENC support: Balances imbalanced classes using categorical-aware oversampling.\n\n---\n\n## 📂 Output\n\n* `syn_up.csv`: The raw synthetic data before filtering.  \n* Final hybrid dataset used for evaluation: Combined real and privacy-filtered synthetic data.\n\n---\n\n## 🛠️ Technologies Used\n\n* Python 3.8+  \n* SDV (CTGANSynthesizer, TVAESynthesizer)  \n* scikit-learn, XGBoost, LightGBM  \n* imblearn for SMOTENC  \n* SDMetrics for quality and privacy scoring\n\n---\n\n## 🧠 How It Works (Simplified)\n\n* Load & preprocess the input data, including target creation.  \n* Train four CTGANs and one TVAE using SDV.  \n* Evaluate models using SDMetrics' quality and privacy reports.  \n* Sample synthetic rows proportionally based on composite model weights.  \n* Filter synthetic rows using DCR and NNDR thresholds.  \n* Combine real and synthetic data.  \n* Train and evaluate a classifier to validate utility.\n\n---\n\n## 📎 Notes\n\n* Requires CUDA for faster CTGAN/TVAE training (optional).  \n* Models are cached to `models/` to avoid retraining.  \n* Privacy thresholds: DCR ≥ 0.05, NNDR ≥ 0.5 (adjustable).\n",
+ "hits": {
+  "ct": [
+   {
+    "file": "README.md",
+    "line": 49,
+    "text": "* SDV (CTGANSynthesizer, TVAESynthesizer)",
+    "context": [
+     "",
+     "## 🛠️ Technologies Used",
+     "",
+     "* Python 3.8+  ",
+     "* SDV (CTGANSynthesizer, TVAESynthesizer)  ",
+     "* scikit-learn, XGBoost, LightGBM  ",
+     "* imblearn for SMOTENC  ",
+     "* SDMetrics for quality and privacy scoring",
+     ""
+    ]
+   },
+   {
+    "file": "synthetic_data_pipeline.py",
+    "line": 25,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "",
+     "from lightgbm import LGBMClassifier",
+     "from xgboost import XGBClassifier",
+     "",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdmetrics.reports.single_table import DiagnosticReport, QualityReport",
+     "",
+     "from imblearn.over_sampling import SMOTENC"
+    ]
+   },
+   {
+    "file": "synthetic_data_pipeline.py",
+    "line": 300,
+    "text": "ctgan = CTGANSynthesizer(metadata, **ctgan_params)",
+    "context": [
+     "            seed = random_state + i",
+     "            torch.manual_seed(seed)",
+     "            np.random.seed(seed)",
+     "",
+     "            ctgan = CTGANSynthesizer(metadata, **ctgan_params)",
+     "            logger.info(f\"Training CTGAN-{i+1} (seed={seed}) with progress bar...\")",
+     "            start = time.time()",
+     "            ctgan.fit(train_df_processed)",
+     "            elapsed = (time.time() - start) / 60"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "README.md",
+    "line": 49,
+    "text": "* SDV (CTGANSynthesizer, TVAESynthesizer)",
+    "context": [
+     "",
+     "## 🛠️ Technologies Used",
+     "",
+     "* Python 3.8+  ",
+     "* SDV (CTGANSynthesizer, TVAESynthesizer)  ",
+     "* scikit-learn, XGBoost, LightGBM  ",
+     "* imblearn for SMOTENC  ",
+     "* SDMetrics for quality and privacy scoring",
+     ""
+    ]
+   },
+   {
+    "file": "synthetic_data_pipeline.py",
+    "line": 25,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "",
+     "from lightgbm import LGBMClassifier",
+     "from xgboost import XGBClassifier",
+     "",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdmetrics.reports.single_table import DiagnosticReport, QualityReport",
+     "",
+     "from imblearn.over_sampling import SMOTENC"
+    ]
+   },
+   {
+    "file": "synthetic_data_pipeline.py",
+    "line": 332,
+    "text": "tvae = TVAESynthesizer(metadata, **tvae_params)",
+    "context": [
+     "            'loss_factor': 4,",
+     "            'enforce_rounding': True",
+     "        }",
+     "",
+     "        tvae = TVAESynthesizer(metadata, **tvae_params)",
+     "        logger.info(f\"Training TVAE with batch_size={tvae_batch_size} and progress bar...\")",
+     "        start = time.time()",
+     "        tvae.fit(train_df_processed)",
+     "        elapsed = (time.time() - start) / 60"
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "synthetic_data_pipeline.py",
+    "line": 25,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "",
+     "from lightgbm import LGBMClassifier",
+     "from xgboost import XGBClassifier",
+     "",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdmetrics.reports.single_table import DiagnosticReport, QualityReport",
+     "",
+     "from imblearn.over_sampling import SMOTENC"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "synthetic_data_pipeline.py",
+    "line": 26,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from lightgbm import LGBMClassifier",
+     "from xgboost import XGBClassifier",
+     "",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdmetrics.reports.single_table import DiagnosticReport, QualityReport",
+     "",
+     "from imblearn.over_sampling import SMOTENC",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "synthetic_data_pipeline.py",
+    "line": 25,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "",
+     "from lightgbm import LGBMClassifier",
+     "from xgboost import XGBClassifier",
+     "",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdmetrics.reports.single_table import DiagnosticReport, QualityReport",
+     "",
+     "from imblearn.over_sampling import SMOTENC"
+    ]
+   },
+   {
+    "file": "synthetic_data_pipeline.py",
+    "line": 26,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from lightgbm import LGBMClassifier",
+     "from xgboost import XGBClassifier",
+     "",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdmetrics.reports.single_table import DiagnosticReport, QualityReport",
+     "",
+     "from imblearn.over_sampling import SMOTENC",
+     ""
+    ]
+   }
+  ],
+  "sm": [
+   {
+    "file": "synthetic_data_pipeline.py",
+    "line": 27,
+    "text": "from sdmetrics.reports.single_table import DiagnosticReport, QualityReport",
+    "context": [
+     "from xgboost import XGBClassifier",
+     "",
+     "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdmetrics.reports.single_table import DiagnosticReport, QualityReport",
+     "",
+     "from imblearn.over_sampling import SMOTENC",
+     "",
+     "warnings.filterwarnings('ignore')"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "sm",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

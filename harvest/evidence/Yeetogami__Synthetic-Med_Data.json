@@ -1,0 +1,288 @@
+{
+ "repo": "Yeetogami/Synthetic-Med_Data",
+ "disk_kb": 2496,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Capstone Project: Synthetic Medical Data Generation\n\n## Project Overview\n\nThis project implements a comprehensive pipeline for generating and evaluating synthetic medical tabular data using state-of-the-art generative models. The goal is to create privacy-preserving synthetic datasets that maintain the statistical properties and utility of real medical data.\n\n## Dataset\n\n**Pima Indians Diabetes Database**\n- **Source**: UCI Machine Learning Repository / Kaggle\n- **Size**: 768 samples\n- **Features**: 8 numerical features + 1 binary target (Outcome)\n- **Task**: Binary classification (diabetes prediction)\n- **Split**: 614 training, 154 test samples (80/20 stratified)\n\n## Project Phases Completed\n\n### ✅ Phase 0: Environment & Dataset Setup\n- Downloaded and cleaned Pima Indians Diabetes dataset\n- Set up project structure and dependencies\n- Created comprehensive README and documentation\n\n### ✅ Phase 1: Data Preprocessing Pipeline\n- Handled implicit missing values (zeros in medical measurements)\n- Applied median imputation (fitted on training data)\n- Normalized features using StandardScaler\n- Implemented stratified train-test split (80/20)\n- Ensured no data leakage\n\n### ✅ Phase 2: Traditional ML Baselines\n- Implemented Logistic Regression, Random Forest, XGBoost\n- Trained on real data, tested on real data\n- **Best Model**: Random Forest (77.3% accuracy, 81.8% AUROC, 65.3% F1)\n- Established upper-bound performance for synthetic data evaluation\n\n### ✅ Phase 3: Generative Model Implementation\n- **CTGAN**: GAN-based tabular data generator (SDV)\n- **TVAE**: Variational Autoencoder for tabular data (SDV)\n- **TabDDPM**: Diffusion model for tabular data (PyTorch)\n- Generated 614 synthetic samples per model\n\n### ✅ Phase 4: TSTR Experiment (Train on Synthetic, Test on Real)\n- Trained all 3 ML models on each synthetic dataset\n- Evaluated on real test data\n- **Best Synthetic Data**: TVAE (65.4% avg accuracy, 80-93% of baseline)\n- Demonstrated synthetic data utility for ML tasks\n\n### ✅ Phase 5: Statistical Fidelity Analysis\n- Performed Kolmogorov-Smirnov tests on all features\n- Computed correlation matrix distances\n- Generated 28 visualization plots\n- **Best Fidelity**: TVAE (KS=0.186, correlation distance=0.568)\n\n### ✅ Phase 6: Privacy Evaluation\n- Computed Nearest Neighbor Distance Ratio (NNDR)\n- Detected duplicates (exact and near)\n- Calculated disclosure risk\n- **Result**: All models achieved \"Excellent\" privacy (NNDR > 0.86, zero duplicates)\n\n## Key Results Summary\n\n| Metric | CTGAN | TVAE | TabDDPM |\n|--------|-------|------|---------|\n| **TSTR Accuracy** | 49.4% | **65.4%** ✅ | 51.3% |\n| **Statistical Fidelity (KS)** | 0.254 | **0.186** ✅ | 0.246 |\n| **Correlation Distance** | 1.843 | **0.568** ✅ | 1.682 |\n| **Privacy (NNDR)** | **0.896** ✅ | 0.864 | 0.895 |\n| **Disclosure Risk** | **0.33%** ✅ | 0.98% | 0.49% |\n\n## Winner: TVAE 🏆\n\n**TVAE emerges as the clear winner** across utility and fidelity metrics:\n- ✅ Best TSTR performance (65.4% avg accuracy)\n- ✅ Best statistical fidelity (KS=0.186)\n- ✅ Best correlation preservation (distance=0.568)\n- ✅ Excellent privacy (NNDR=0.864, disclosure=0.98%)\n\n**Recommendation**: Use TVAE for synthetic medical data generation in production.\n\n## Project Structure\n\n```\nCapstone/\n├── data/\n│   ├── raw/\n│   │   └── diabetes.csv              # Original dataset\n│   ├── processed/\n│   │   ├── train.csv                 # Preprocessed training data\n│   │   └── test.csv                  # Preprocessed test data\n│   └── synthetic/\n│       ├── ctgan.csv                 # CTGAN synthetic data\n│       ├── tvae.csv                  # TVAE synthetic data\n│       └── tabddpm.csv               # TabDDPM synthetic data\n├── preprocessing/\n│   └── preprocess.py                 # Data preprocessing pipeline\n├── models/\n│   ├── logistic_regression.py        # Logistic Regression model\n│   ├── random_forest.py              # Random Forest model\n│   └── xgboost_model.py              # XGBoost model\n├── generators/\n│   ├── ctgan_generator.py            # CTGAN implementation\n│   ├── tvae_generator.py             # TVAE implementation\n│   └── tabddpm_generator.py          # TabDDPM implementation\n├── experiments/\n│   ├── baseline_real.py              # Baseline evaluation (real→real)\n│   └── tstr_pipeline.py              # TSTR evaluation (synthetic→real)\n├── evaluation/\n│   ├── statistical_fidelity.py       # Statistical fidelity analysis\n│   └── privacy_metrics.py            # Privacy evaluation\n├── results/\n│   ├── baseline_metrics.csv          # Baseline performance\n│   ├── tstr_metrics.csv              # TSTR performance\n│   ├── fidelity_metrics.csv          # Statistical fidelity metrics\n│   ├── privacy_metrics.csv           # Privacy metrics\n│   └── fidelity_plots/               # 28 visualization plots\n├── requirements.txt                  # Project dependencies\n└── README.md                         # Project documentation\n```\n\n## Technologies Used\n\n- **Python 3.13**\n- **Data Processing**: pandas, numpy, scikit-learn\n- **ML Models**: scikit-learn, xgboost\n- **Generative Models**: SDV (CTGAN, TVAE), PyTorch (TabDDPM)\n- **Visualization**: matplotlib, seaborn\n- **Statistical Tests**: scipy\n\n## How to Run\n\n### Quick Start (One-Command Execution)\n\nRun the entire pipeline with a single command:\n\n```bash\npython main.py\n```\n\nThis will:\n1. Preprocess the data\n2. Train baseline models\n3. Generate synthetic data (CTGAN, TVAE, TabDDPM)\n4. Run TSTR evaluation\n5. Perform statistical fidelity analysis\n6. Evaluate privacy metrics\n7. Generate final summary and comparison plots\n\n**Estimated time**: 10-15 minutes\n\n### Manual Execution (Step-by-Step)\n\n#### 1. Install Dependencies\n```bash\npip install -r requirements.txt\n```\n\n### 2. Preprocess Data\n```bash\ncd preprocessing\npython preprocess.py\n```\n\n### 3. Train Baseline Models\n```bash\ncd experiments\npython baseline_real.py\n```\n\n### 4. Generate Synthetic Data\n```bash\ncd generators\npython ctgan_generator.py\npython tvae_generator.py\npython tabddpm_generator.py\n```\n\n### 5. Run TSTR Evaluation\n```bash\ncd experiments\npython tstr_pipeline.py\n```\n\n### 6. Evaluate Fidelity\n```bash\ncd evaluation\npython statistical_fidelity.py\n```\n\n### 7. Evaluate Privacy\n```bash\ncd evaluation\npython privacy_metrics.py\n```\n\n## Key Findings\n\n### 1. Utility-Fidelity Correlation\nStatistical fidelity strongly correlates with downstream utility:\n- TVAE: Best fidelity → Best TSTR performance\n- CTGAN: Poor fidelity → Poor TSTR performance\n\n### 2. Privacy-Utility Tradeoff\nInverse relationship observed:\n- CTGAN: Best privacy (0.896) but worst utility (49.4%)\n- TVAE: Good privacy (0.864) with best utility (65.4%)\n\n### 3. Feature-Specific Challenges\nSome features are harder to synthesize:\n- **Easy**: BloodPressure, BMI\n- **Hard**: Insulin, Glucose, Age, Pregnancies\n\n### 4. No Memorization Detected\nAll models achieved excellent privacy with zero duplicates and low disclosure risk (<1%).\n\n## Limitations\n\n### Not Implemented (As Per Constraints)\n- ❌ Hyperparameter tuning for generative models\n- ❌ Cross-validation\n- ❌ Differential privacy training\n- ❌ Adversarial attacks (membership inference, attribute inference)\n- ❌ Advanced privacy metrics (k-anonymity, l-diversity)\n\n### Dataset Limitations\n- Small dataset (768 samples)\n- Single medical domain (diabetes)\n- Limited to tabular data\n\n## Future Work\n\n1. **Hyperparameter Optimization**: Tune CTGAN and TabDDPM for better performance\n2. **Ensemble Methods**: Combine multiple generators\n3. **Conditional Generation**: Generate synthetic data conditioned on specific attributes\n4. **Larger Datasets**: Test on larger medical datasets\n5. **Privacy-Utility Optimization**: Implement differential privacy with utility preservation\n6. **Real-World Deployment**: Deploy TVAE for privacy-preserving data sharing\n\n## Conclusion\n\nThis capstone project successfully demonstrates that **TVAE can generate high-quality synthetic medical data** that:\n- Achieves 80-93% of real data performance in ML tasks\n- Preserves statistical properties (KS=0.186)\n- Maintains feature correlations (distance=0.568)\n- Provides excellent privacy guarantees (NNDR=0.864, disclosure=0.98%)\n\n**TVAE is recommended for production use** in privacy-sensitive medical data applications where real data sharing is restricted.\n\n## License\n\nThis project is for educational purposes as part of a BTech capstone requirement.\n\n",
+ "hits": {
+  "st": [
+   {
+    "file": "generators/tvae_generator.py",
+    "line": 12,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "Date: 2026-01-31",
+     "\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import warnings",
+     "warnings.filterwarnings('ignore')",
+     ""
+    ]
+   },
+   {
+    "file": "generators/ctgan_generator.py",
+    "line": 12,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "Date: 2026-01-31",
+     "\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import warnings",
+     "warnings.filterwarnings('ignore')",
+     ""
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "generators/tvae_generator.py",
+    "line": 13,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import warnings",
+     "warnings.filterwarnings('ignore')",
+     "",
+     "# Configuration"
+    ]
+   },
+   {
+    "file": "generators/ctgan_generator.py",
+    "line": 13,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import warnings",
+     "warnings.filterwarnings('ignore')",
+     "",
+     "# Configuration"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "generators/tvae_generator.py",
+    "line": 12,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "Date: 2026-01-31",
+     "\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import warnings",
+     "warnings.filterwarnings('ignore')",
+     ""
+    ]
+   },
+   {
+    "file": "generators/tvae_generator.py",
+    "line": 13,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import warnings",
+     "warnings.filterwarnings('ignore')",
+     "",
+     "# Configuration"
+    ]
+   },
+   {
+    "file": "generators/ctgan_generator.py",
+    "line": 12,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "Date: 2026-01-31",
+     "\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import warnings",
+     "warnings.filterwarnings('ignore')",
+     ""
+    ]
+   },
+   {
+    "file": "generators/ctgan_generator.py",
+    "line": 13,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import warnings",
+     "warnings.filterwarnings('ignore')",
+     "",
+     "# Configuration"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "generators/tvae_generator.py",
+    "line": 12,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "Date: 2026-01-31",
+     "\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import warnings",
+     "warnings.filterwarnings('ignore')",
+     ""
+    ]
+   },
+   {
+    "file": "generators/tvae_generator.py",
+    "line": 63,
+    "text": "Trained TVAESynthesizer",
+    "context": [
+     "        df: Training DataFrame",
+     "        metadata: Dataset metadata",
+     "        ",
+     "    Returns:",
+     "        Trained TVAESynthesizer",
+     "    \"\"\"",
+     "    print(\"\\nTraining TVAE...\")",
+     "    print(\"  Initializing synthesizer...\")",
+     "    "
+    ]
+   },
+   {
+    "file": "generators/tvae_generator.py",
+    "line": 68,
+    "text": "synthesizer = TVAESynthesizer(",
+    "context": [
+     "    \"\"\"",
+     "    print(\"\\nTraining TVAE...\")",
+     "    print(\"  Initializing synthesizer...\")",
+     "    ",
+     "    synthesizer = TVAESynthesizer(",
+     "        metadata,",
+     "        epochs=300,",
+     "        verbose=True",
+     "    )"
+    ]
+   },
+   {
+    "file": "generators/tvae_generator.py",
+    "line": 85,
+    "text": "synthesizer: Trained TVAESynthesizer",
+    "context": [
+     "    \"\"\"",
+     "    Generate synthetic data using trained TVAE.",
+     "    ",
+     "    Args:",
+     "        synthesizer: Trained TVAESynthesizer",
+     "        num_samples: Number of samples to generate",
+     "        ",
+     "    Returns:",
+     "        DataFrame with synthetic data"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "generators/ctgan_generator.py",
+    "line": 12,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "Date: 2026-01-31",
+     "\"\"\"",
+     "",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import warnings",
+     "warnings.filterwarnings('ignore')",
+     ""
+    ]
+   },
+   {
+    "file": "generators/ctgan_generator.py",
+    "line": 63,
+    "text": "Trained CTGANSynthesizer",
+    "context": [
+     "        df: Training DataFrame",
+     "        metadata: Dataset metadata",
+     "        ",
+     "    Returns:",
+     "        Trained CTGANSynthesizer",
+     "    \"\"\"",
+     "    print(\"\\nTraining CTGAN...\")",
+     "    print(\"  Initializing synthesizer...\")",
+     "    "
+    ]
+   },
+   {
+    "file": "generators/ctgan_generator.py",
+    "line": 68,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "    \"\"\"",
+     "    print(\"\\nTraining CTGAN...\")",
+     "    print(\"  Initializing synthesizer...\")",
+     "    ",
+     "    synthesizer = CTGANSynthesizer(",
+     "        metadata,",
+     "        epochs=300,",
+     "        verbose=True",
+     "    )"
+    ]
+   },
+   {
+    "file": "generators/ctgan_generator.py",
+    "line": 85,
+    "text": "synthesizer: Trained CTGANSynthesizer",
+    "context": [
+     "    \"\"\"",
+     "    Generate synthetic data using trained CTGAN.",
+     "    ",
+     "    Args:",
+     "        synthesizer: Trained CTGANSynthesizer",
+     "        num_samples: Number of samples to generate",
+     "        ",
+     "    Returns:",
+     "        DataFrame with synthetic data"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv>=1.0.0"
+  ]
+ }
+}

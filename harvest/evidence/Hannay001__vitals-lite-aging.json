@@ -1,0 +1,455 @@
+{
+ "repo": "Hannay001/vitals-lite-aging",
+ "disk_kb": 334,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Vitals‑Lite‑Aging — synthetic vitals mini‑dataset + 10‑min Colab\n\n[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Hannay001/vitals-lite-aging/blob/main/notebooks/demo.ipynb)\n\nA small, fully **synthetic** vitals table (2,500 rows, 10 features + 2 labels) plus a **10‑minute Colab** notebook for teaching bio/health ML with **no PHI**.  \n**Goal:** a tiny, reproducible public good — one CSV, one Colab, one figure.\n\n---\n\n## Dataset at a glance\n- **Rows:** 2,500 | **Columns:** 13 (`row_id` + 10 features + 2 labels)\n- **Features:** `age_years`, `sex`, `height_cm`, `weight_kg`, `bmi`, `resting_hr_bpm`, `systolic_bp_mmHg`, `diastolic_bp_mmHg`, `temp_c`, `spo2_pct`\n- **Labels:**\n  - `age_65plus` = 1 if `age_years ≥ 65`, else 0\n  - `hypertension_flag` = 1 if `systolic_bp_mmHg ≥ 130` **or** `diastolic_bp_mmHg ≥ 80`, else 0\n- **Constraint enforced:** `diastolic_bp_mmHg < systolic_bp_mmHg` (row‑wise)\n\n> **Note:** This dataset is synthetic and for **education/demo** only. It is **not** for clinical use.\n\n---\n\n## Quickstart\n1. Click the **Colab badge** above (after you adjust USER/REPO) or open `notebooks/demo.ipynb` directly.\n2. Run all cells. The notebook loads `data/vitals_lite.csv`, trains a small **LogisticRegression** on `age_65plus`, prints accuracy + a confusion matrix, and draws one example figure.\n\n### Local (optional)\n```bash\npip install -r requirements.txt\n# or minimal:\npython -m pip install sdv sdmetrics scikit-learn pandas numpy matplotlib\n```\n\n---\n\n## Evaluation & QA\n- **SDMetrics QualityReport (single‑table): overall ≈ `0.926`** (0–1 scale; higher means closer match of column distributions & pairwise trends).  \n  Load the artifact:\n  ```python\n  from sdmetrics.reports.single_table import QualityReport\n  qr = QualityReport.load('quality_report.pkl')\n  print(qr.get_score())\n  ```\n- **DiagnosticReport:** “Data Validity” and “Data Structure” near 1.0 when metadata and columns align.\n- **Constraint proof:** All rows satisfy `DBP < SBP` via an inequality constraint during synthesis.\n\n**Artifacts included:**\n- `quality_report.pkl` (saved report)\n- `data/vitals_lite.csv` (dataset)\n\n---\n\n## Data dictionary (short)\n- `row_id` (id): unique row identifier\n- `age_years` (numeric): 18–90\n- `sex` (categorical): male/female\n- `height_cm` (numeric): ~150–195\n- `weight_kg` (numeric): ~45–120\n- `bmi` (numeric): computed: `weight_kg / (height_cm**2) * 10000`\n- `resting_hr_bpm` (numeric): ~60–100\n- `systolic_bp_mmHg` (numeric): ~90–150+\n- `diastolic_bp_mmHg` (numeric): ~50–110\n- `temp_c` (numeric): ~36.1–37.6 (fever ≥ 38.0)\n- `spo2_pct` (numeric): ~95–100%\n- `age_65plus` (categorical): binary label\n- `hypertension_flag` (categorical): binary label\n\n---\n\n## Licensing\n- **Code:** MIT License\n- **Data & docs:** CC BY 4.0\n\n---\n\n## How to cite\n“Vitals-Lite-Aging (v0.1.0)” — https://github.com/Hannay001/vitals-lite-aging  \nCode: MIT • Data/Docs: CC BY 4.0\n\n---\n\n## Release notes\n**v0.1.0**\n- First public release: dataset CSV, demo notebook, and saved `quality_report.pkl`.\n",
+ "hits": {
+  "sm": [
+   {
+    "file": "README.md",
+    "line": 39,
+    "text": "from sdmetrics.reports.single_table import QualityReport",
+    "context": [
+     "## Evaluation & QA",
+     "- **SDMetrics QualityReport (single‑table): overall ≈ `0.926`** (0–1 scale; higher means closer match of column distributions & pairwise trends).  ",
+     "  Load the artifact:",
+     "  ```python",
+     "  from sdmetrics.reports.single_table import QualityReport",
+     "  qr = QualityReport.load('quality_report.pkl')",
+     "  print(qr.get_score())",
+     "  ```",
+     "- **DiagnosticReport:** “Data Validity” and “Data Structure” near 1.0 when metadata and columns align."
+    ]
+   },
+   {
+    "file": "notebooks/demo.ipynb",
+    "line": 507,
+    "text": "\"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from sdmetrics) (1.6.1)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: deepecho>=0.7.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.7.0)\\n\",",
+     "            \"Requirement already satisfied: rdt>=1.17.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (1.18.1)\\n\",",
+     "            \"Requirement already satisfied: platformdirs>=4.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (4.4.0)\\n\",",
+     "            \"Requirement already satisfied: pyyaml>=6.0.1 in /usr/local/lib/python3.12/dist-packages (from sdv) (6.0.2)\\n\",",
+     "            \"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from sdmetrics) (1.6.1)\\n\",",
+     "            \"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from sdmetrics) (1.16.1)\\n\",",
+     "            \"Requirement already satisfied: plotly>=5.19.0 in /usr/local/lib/python3.12/dist-packages (from sdmetrics) (5.24.1)\\n\",",
+     "            \"Requirement already satisfied: jmespath<2.0.0,>=0.7.1 in /usr/local/lib/python3.12/dist-packages (from boto3<2.0.0,>=1.28->sdv) (1.0.1)\\n\",",
+     "            \"Requirement already satisfied: s3transfer<0.15.0,>=0.14.0 in /usr/local/lib/python3.12/dist-packages (from boto3<2.0.0,>=1.28->sdv) (0.14.0)\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/demo.ipynb",
+    "line": 508,
+    "text": "\"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from sdmetrics) (1.16.1)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: rdt>=1.17.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (1.18.1)\\n\",",
+     "            \"Requirement already satisfied: platformdirs>=4.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (4.4.0)\\n\",",
+     "            \"Requirement already satisfied: pyyaml>=6.0.1 in /usr/local/lib/python3.12/dist-packages (from sdv) (6.0.2)\\n\",",
+     "            \"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from sdmetrics) (1.6.1)\\n\",",
+     "            \"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from sdmetrics) (1.16.1)\\n\",",
+     "            \"Requirement already satisfied: plotly>=5.19.0 in /usr/local/lib/python3.12/dist-packages (from sdmetrics) (5.24.1)\\n\",",
+     "            \"Requirement already satisfied: jmespath<2.0.0,>=0.7.1 in /usr/local/lib/python3.12/dist-packages (from boto3<2.0.0,>=1.28->sdv) (1.0.1)\\n\",",
+     "            \"Requirement already satisfied: s3transfer<0.15.0,>=0.14.0 in /usr/local/lib/python3.12/dist-packages (from boto3<2.0.0,>=1.28->sdv) (0.14.0)\\n\",",
+     "            \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/demo.ipynb",
+    "line": 509,
+    "text": "\"Requirement already satisfied: plotly>=5.19.0 in /usr/local/lib/python3.12/dist-packages (from sdmetrics) (5.24.1)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: platformdirs>=4.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (4.4.0)\\n\",",
+     "            \"Requirement already satisfied: pyyaml>=6.0.1 in /usr/local/lib/python3.12/dist-packages (from sdv) (6.0.2)\\n\",",
+     "            \"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from sdmetrics) (1.6.1)\\n\",",
+     "            \"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from sdmetrics) (1.16.1)\\n\",",
+     "            \"Requirement already satisfied: plotly>=5.19.0 in /usr/local/lib/python3.12/dist-packages (from sdmetrics) (5.24.1)\\n\",",
+     "            \"Requirement already satisfied: jmespath<2.0.0,>=0.7.1 in /usr/local/lib/python3.12/dist-packages (from boto3<2.0.0,>=1.28->sdv) (1.0.1)\\n\",",
+     "            \"Requirement already satisfied: s3transfer<0.15.0,>=0.14.0 in /usr/local/lib/python3.12/dist-packages (from boto3<2.0.0,>=1.28->sdv) (0.14.0)\\n\",",
+     "            \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\n\",",
+     "            \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/demo.ipynb",
+    "line": 597,
+    "text": "\"from sdmetrics.reports.single_table import QualityReport, DiagnosticReport\\n\",",
+    "context": [
+     "    },",
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"from sdmetrics.reports.single_table import QualityReport, DiagnosticReport\\n\",",
+     "        \"qr = QualityReport(); qr.generate(df_seed, df_syn, metadata.to_dict()['tables']['vitals'])\\n\",",
+     "        \"print('Quality score:', round(qr.get_score(), 3))            # higher ~ better\\n\",",
+     "        \"dr = DiagnosticReport(); dr.generate(df_seed, df_syn, metadata.to_dict()['tables']['vitals'])\\n\",",
+     "        \"print(\\\"Data Validity Details:\\\")\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/demo.ipynb",
+    "line": 1107,
+    "text": "\"from sdmetrics.reports.single_table import DiagnosticReport\\n\",",
+    "context": [
+     "    },",
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"from sdmetrics.reports.single_table import DiagnosticReport\\n\",",
+     "        \"dr = DiagnosticReport()\\n\",",
+     "        \"dr.generate(real_data=df_seed, synthetic_data=df_syn, metadata=meta_dict)\\n\",",
+     "        \"\\n\",",
+     "        \"print(dr.get_properties())                # {'Data Validity': 1.0, 'Data Structure': 1.0} is ideal\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/demo.ipynb",
+    "line": 1617,
+    "text": "\"from sdmetrics.reports.single_table import QualityReport\\n\",",
+    "context": [
+     "    },",
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"from sdmetrics.reports.single_table import QualityReport\\n\",",
+     "        \"qr = QualityReport()\\n\",",
+     "        \"qr.generate(real_data=df_seed, synthetic_data=df_syn, metadata=meta_dict)\\n\",",
+     "        \"\\n\",",
+     "        \"print(\\\"Overall quality:\\\", round(qr.get_score(), 3))\\n\","
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "notebooks/demo.ipynb",
+    "line": 435,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "        \"from sdv.cag import Inequality\\n\",",
+     "        \"\\n\",",
+     "        \"metadata = SingleTableMetadata()\\n\",",
+     "        \"metadata.detect_from_dataframe(df_seed)   # no table_name here\\n\","
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "notebooks/demo.ipynb",
+    "line": 434,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    },",
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "        \"from sdv.cag import Inequality\\n\",",
+     "        \"\\n\",",
+     "        \"metadata = SingleTableMetadata()\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/demo.ipynb",
+    "line": 475,
+    "text": "\"from sdv.metadata import Metadata\\n\",",
+    "context": [
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"!pip install -U sdv sdmetrics\\n\",",
+     "        \"from sdv.metadata import Metadata\\n\",",
+     "        \"df_seed['row_id'] = range(1, len(df_seed) + 1) # Add row_id to df_seed\\n\",",
+     "        \"metadata = Metadata.detect_from_dataframe(data=df_seed, table_name='vitals')\"",
+     "      ],",
+     "      \"metadata\": {"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "notebooks/demo.ipynb",
+    "line": 434,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    },",
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "        \"from sdv.cag import Inequality\\n\",",
+     "        \"\\n\",",
+     "        \"metadata = SingleTableMetadata()\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/demo.ipynb",
+    "line": 435,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "        \"from sdv.cag import Inequality\\n\",",
+     "        \"\\n\",",
+     "        \"metadata = SingleTableMetadata()\\n\",",
+     "        \"metadata.detect_from_dataframe(df_seed)   # no table_name here\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/demo.ipynb",
+    "line": 436,
+    "text": "\"from sdv.cag import Inequality\\n\",",
+    "context": [
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "        \"from sdv.cag import Inequality\\n\",",
+     "        \"\\n\",",
+     "        \"metadata = SingleTableMetadata()\\n\",",
+     "        \"metadata.detect_from_dataframe(df_seed)   # no table_name here\\n\",",
+     "        \"\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/demo.ipynb",
+    "line": 475,
+    "text": "\"from sdv.metadata import Metadata\\n\",",
+    "context": [
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"!pip install -U sdv sdmetrics\\n\",",
+     "        \"from sdv.metadata import Metadata\\n\",",
+     "        \"df_seed['row_id'] = range(1, len(df_seed) + 1) # Add row_id to df_seed\\n\",",
+     "        \"metadata = Metadata.detect_from_dataframe(data=df_seed, table_name='vitals')\"",
+     "      ],",
+     "      \"metadata\": {"
+    ]
+   },
+   {
+    "file": "notebooks/demo.ipynb",
+    "line": 494,
+    "text": "\"Requirement already satisfied: boto3<2.0.0,>=1.28 in /usr/local/lib/python3.12/dist-packages (from sdv) (1.40.35)\\n\",",
+    "context": [
+     "          \"name\": \"stdout\",",
+     "          \"text\": [",
+     "            \"Requirement already satisfied: sdv in /usr/local/lib/python3.12/dist-packages (1.27.0)\\n\",",
+     "            \"Requirement already satisfied: sdmetrics in /usr/local/lib/python3.12/dist-packages (0.23.0)\\n\",",
+     "            \"Requirement already satisfied: boto3<2.0.0,>=1.28 in /usr/local/lib/python3.12/dist-packages (from sdv) (1.40.35)\\n\",",
+     "            \"Requirement already satisfied: botocore<2.0.0,>=1.31 in /usr/local/lib/python3.12/dist-packages (from sdv) (1.40.35)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (3.1.1)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.21)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.0.2)\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/demo.ipynb",
+    "line": 495,
+    "text": "\"Requirement already satisfied: botocore<2.0.0,>=1.31 in /usr/local/lib/python3.12/dist-packages (from sdv) (1.40.35)\\n\",",
+    "context": [
+     "          \"text\": [",
+     "            \"Requirement already satisfied: sdv in /usr/local/lib/python3.12/dist-packages (1.27.0)\\n\",",
+     "            \"Requirement already satisfied: sdmetrics in /usr/local/lib/python3.12/dist-packages (0.23.0)\\n\",",
+     "            \"Requirement already satisfied: boto3<2.0.0,>=1.28 in /usr/local/lib/python3.12/dist-packages (from sdv) (1.40.35)\\n\",",
+     "            \"Requirement already satisfied: botocore<2.0.0,>=1.31 in /usr/local/lib/python3.12/dist-packages (from sdv) (1.40.35)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (3.1.1)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.21)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.0.2)\\n\",",
+     "            \"Requirement already satisfied: pandas>=2.1.1 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.2.2)\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/demo.ipynb",
+    "line": 496,
+    "text": "\"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (3.1.1)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: sdv in /usr/local/lib/python3.12/dist-packages (1.27.0)\\n\",",
+     "            \"Requirement already satisfied: sdmetrics in /usr/local/lib/python3.12/dist-packages (0.23.0)\\n\",",
+     "            \"Requirement already satisfied: boto3<2.0.0,>=1.28 in /usr/local/lib/python3.12/dist-packages (from sdv) (1.40.35)\\n\",",
+     "            \"Requirement already satisfied: botocore<2.0.0,>=1.31 in /usr/local/lib/python3.12/dist-packages (from sdv) (1.40.35)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (3.1.1)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.21)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.0.2)\\n\",",
+     "            \"Requirement already satisfied: pandas>=2.1.1 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.2.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv) (4.67.1)\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/demo.ipynb",
+    "line": 497,
+    "text": "\"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.21)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: sdmetrics in /usr/local/lib/python3.12/dist-packages (0.23.0)\\n\",",
+     "            \"Requirement already satisfied: boto3<2.0.0,>=1.28 in /usr/local/lib/python3.12/dist-packages (from sdv) (1.40.35)\\n\",",
+     "            \"Requirement already satisfied: botocore<2.0.0,>=1.31 in /usr/local/lib/python3.12/dist-packages (from sdv) (1.40.35)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (3.1.1)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.21)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.0.2)\\n\",",
+     "            \"Requirement already satisfied: pandas>=2.1.1 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.2.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv) (4.67.1)\\n\",",
+     "            \"Requirement already satisfied: copulas>=0.12.1 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.12.3)\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/demo.ipynb",
+    "line": 498,
+    "text": "\"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.0.2)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: boto3<2.0.0,>=1.28 in /usr/local/lib/python3.12/dist-packages (from sdv) (1.40.35)\\n\",",
+     "            \"Requirement already satisfied: botocore<2.0.0,>=1.31 in /usr/local/lib/python3.12/dist-packages (from sdv) (1.40.35)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (3.1.1)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.21)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.0.2)\\n\",",
+     "            \"Requirement already satisfied: pandas>=2.1.1 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.2.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv) (4.67.1)\\n\",",
+     "            \"Requirement already satisfied: copulas>=0.12.1 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.12.3)\\n\",",
+     "            \"Requirement already satisfied: ctgan>=0.11.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.11.0)\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/demo.ipynb",
+    "line": 499,
+    "text": "\"Requirement already satisfied: pandas>=2.1.1 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.2.2)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: botocore<2.0.0,>=1.31 in /usr/local/lib/python3.12/dist-packages (from sdv) (1.40.35)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (3.1.1)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.21)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.0.2)\\n\",",
+     "            \"Requirement already satisfied: pandas>=2.1.1 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.2.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv) (4.67.1)\\n\",",
+     "            \"Requirement already satisfied: copulas>=0.12.1 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.12.3)\\n\",",
+     "            \"Requirement already satisfied: ctgan>=0.11.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.11.0)\\n\",",
+     "            \"Requirement already satisfied: deepecho>=0.7.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.7.0)\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/demo.ipynb",
+    "line": 500,
+    "text": "\"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv) (4.67.1)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (3.1.1)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.21)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.0.2)\\n\",",
+     "            \"Requirement already satisfied: pandas>=2.1.1 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.2.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv) (4.67.1)\\n\",",
+     "            \"Requirement already satisfied: copulas>=0.12.1 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.12.3)\\n\",",
+     "            \"Requirement already satisfied: ctgan>=0.11.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.11.0)\\n\",",
+     "            \"Requirement already satisfied: deepecho>=0.7.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.7.0)\\n\",",
+     "            \"Requirement already satisfied: rdt>=1.17.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (1.18.1)\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/demo.ipynb",
+    "line": 501,
+    "text": "\"Requirement already satisfied: copulas>=0.12.1 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.12.3)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.21)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.0.2)\\n\",",
+     "            \"Requirement already satisfied: pandas>=2.1.1 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.2.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv) (4.67.1)\\n\",",
+     "            \"Requirement already satisfied: copulas>=0.12.1 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.12.3)\\n\",",
+     "            \"Requirement already satisfied: ctgan>=0.11.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.11.0)\\n\",",
+     "            \"Requirement already satisfied: deepecho>=0.7.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.7.0)\\n\",",
+     "            \"Requirement already satisfied: rdt>=1.17.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (1.18.1)\\n\",",
+     "            \"Requirement already satisfied: platformdirs>=4.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (4.4.0)\\n\","
+    ]
+   }
+  ],
+  "ctgan_mod": [
+   {
+    "file": "notebooks/demo.ipynb",
+    "line": 514,
+    "text": "\"Requirement already satisfied: torch>=2.2.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.0->sdv) (2.8.0+cu126)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: jmespath<2.0.0,>=0.7.1 in /usr/local/lib/python3.12/dist-packages (from boto3<2.0.0,>=1.28->sdv) (1.0.1)\\n\",",
+     "            \"Requirement already satisfied: s3transfer<0.15.0,>=0.14.0 in /usr/local/lib/python3.12/dist-packages (from boto3<2.0.0,>=1.28->sdv) (0.14.0)\\n\",",
+     "            \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\n\",",
+     "            \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\n\",",
+     "            \"Requirement already satisfied: torch>=2.2.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.0->sdv) (2.8.0+cu126)\\n\",",
+     "            \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas>=2.1.1->sdv) (2025.2)\\n\",",
+     "            \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas>=2.1.1->sdv) (2025.2)\\n\",",
+     "            \"Requirement already satisfied: tenacity>=6.2.0 in /usr/local/lib/python3.12/dist-packages (from plotly>=5.19.0->sdmetrics) (8.5.0)\\n\",",
+     "            \"Requirement already satisfied: packaging in /usr/local/lib/python3.12/dist-packages (from plotly>=5.19.0->sdmetrics) (25.0)\\n\","
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "notebooks/demo.ipynb",
+    "line": 435,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "        \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "        \"from sdv.cag import Inequality\\n\",",
+     "        \"\\n\",",
+     "        \"metadata = SingleTableMetadata()\\n\",",
+     "        \"metadata.detect_from_dataframe(df_seed)   # no table_name here\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/demo.ipynb",
+    "line": 441,
+    "text": "\"synth = GaussianCopulaSynthesizer(metadata)\\n\",",
+    "context": [
+     "        \"\\n\",",
+     "        \"metadata = SingleTableMetadata()\\n\",",
+     "        \"metadata.detect_from_dataframe(df_seed)   # no table_name here\\n\",",
+     "        \"\\n\",",
+     "        \"synth = GaussianCopulaSynthesizer(metadata)\\n\",",
+     "        \"synth.add_constraints([\\n\",",
+     "        \"    Inequality(low_column_name='diastolic_bp_mmHg',\\n\",",
+     "        \"               high_column_name='systolic_bp_mmHg',\\n\",",
+     "        \"               strict_boundaries=True)\\n\","
+    ]
+   }
+  ],
+  "rdt": [
+   {
+    "file": "notebooks/demo.ipynb",
+    "line": 519,
+    "text": "\"Requirement already satisfied: Faker>=17 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.17.0->sdv) (37.8.0)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas>=2.1.1->sdv) (2025.2)\\n\",",
+     "            \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas>=2.1.1->sdv) (2025.2)\\n\",",
+     "            \"Requirement already satisfied: tenacity>=6.2.0 in /usr/local/lib/python3.12/dist-packages (from plotly>=5.19.0->sdmetrics) (8.5.0)\\n\",",
+     "            \"Requirement already satisfied: packaging in /usr/local/lib/python3.12/dist-packages (from plotly>=5.19.0->sdmetrics) (25.0)\\n\",",
+     "            \"Requirement already satisfied: Faker>=17 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.17.0->sdv) (37.8.0)\\n\",",
+     "            \"Requirement already satisfied: joblib>=1.2.0 in /usr/local/lib/python3.12/dist-packages (from scikit-learn>=1.3.1->sdmetrics) (1.5.2)\\n\",",
+     "            \"Requirement already satisfied: threadpoolctl>=3.1.0 in /usr/local/lib/python3.12/dist-packages (from scikit-learn>=1.3.1->sdmetrics) (3.6.0)\\n\",",
+     "            \"Requirement already satisfied: six>=1.5 in /usr/local/lib/python3.12/dist-packages (from python-dateutil<3.0.0,>=2.1->botocore<2.0.0,>=1.31->sdv) (1.17.0)\\n\",",
+     "            \"Requirement already satisfied: filelock in /usr/local/lib/python3.12/dist-packages (from torch>=2.2.0->ctgan>=0.11.0->sdv) (3.19.1)\\n\","
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ctgan_mod",
+  "gc",
+  "md",
+  "rdt",
+  "sdv_any",
+  "sm",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv",
+   "sdmetrics"
+  ]
+ }
+}

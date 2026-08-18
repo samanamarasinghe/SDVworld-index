@@ -1,0 +1,107 @@
+{
+ "repo": "R1SH1L/GenAI-Data-Augmentation-Tool",
+ "disk_kb": 13,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# GenAI Data Augmentation Tool\n\nGenerate synthetic tabular data with CTGAN and evaluate a Random Forest model before and after augmentation.\n\n## Requirements\n\n- Python 3.9+ recommended\n- See `requirements.txt`\n\n## Setup\n\n```bash\npip install -r requirements.txt\n```\n\n## Quick Start (Streamlit)\n\n```bash\nstreamlit run app.py\n```\n\n## Run (CLI)\n\n1. Open `main.py` and set `DATA_PATH` to your CSV file.\n2. Run:\n\n```bash\npython main.py\n```\n\nThe script will:\n- Load and preprocess the dataset\n- Auto-detect a target column (low-cardinality heuristic)\n- Train/evaluate Random Forest before augmentation\n- Generate synthetic data with CTGAN\n- Train/evaluate Random Forest after augmentation\n- Save the augmented dataset to `output/augmented_data.csv`\n\nMain pipeline logic lives in `src/pipeline.py`; `main.py` is a thin entry point that calls it.\n\n## Run (Streamlit UI)\n\n```bash\nstreamlit run app.py\n```\n\nIn the UI you can:\n- Upload a CSV\n- Review a detected target column or choose a different one\n- Generate synthetic data\n- See Random Forest accuracy before and after augmentation\n- Download the augmented dataset\n\n## Data Samples\n\nSample CSVs are available in the `data/` folder.\n\n## Output\n\nAugmented data is saved to:\n\n```\noutput/augmented_data.csv\n```\n\n## Example Output (CLI)\n\nShortened sample run:\n\n```\n✅ Dataset loaded successfully.\n✅ Dataset preprocessed (missing values removed).\n🔍 Analyzing columns to detect target...\n🎯 Selected: 'label' (unique values: 2) - preferring last column position\n\n🚀 MODEL TRAINING BEFORE AUGMENTATION\n📊 Model Accuracy: 1.0000\n\n⏳ Training CTGAN model (Generative AI)...\n✅ Synthetic data generated using CTGAN (Generative AI).\n\n🚀 MODEL TRAINING AFTER AUGMENTATION\n📊 Model Accuracy: 0.7121\n```\n\nNotes:\n- Accuracy can drop after augmentation depending on dataset size, label balance, and CTGAN quality. Treat the RF scores as a quick sanity check, not a benchmark.\n- Target auto-detection uses a low-cardinality heuristic; override it in the UI if needed.\n- SDV may emit a deprecation warning about `SingleTableMetadata`. It is safe to ignore for now, but you can upgrade the SDV API later if desired.\n",
+ "hits": {
+  "st": [
+   {
+    "file": "src/genai_tabular.py",
+    "line": 1,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import pandas as pd",
+     "",
+     "def augment_tabular(df, samples=200):"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "src/genai_tabular.py",
+    "line": 2,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import pandas as pd",
+     "",
+     "def augment_tabular(df, samples=200):",
+     "    print(\"\\n⏳ Training CTGAN model (Generative AI)...\")"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "src/genai_tabular.py",
+    "line": 1,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import pandas as pd",
+     "",
+     "def augment_tabular(df, samples=200):"
+    ]
+   },
+   {
+    "file": "src/genai_tabular.py",
+    "line": 2,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import pandas as pd",
+     "",
+     "def augment_tabular(df, samples=200):",
+     "    print(\"\\n⏳ Training CTGAN model (Generative AI)...\")"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "src/genai_tabular.py",
+    "line": 1,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import pandas as pd",
+     "",
+     "def augment_tabular(df, samples=200):"
+    ]
+   },
+   {
+    "file": "src/genai_tabular.py",
+    "line": 39,
+    "text": "synthesizer = CTGANSynthesizer(metadata)",
+    "context": [
+     "",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(df_train)",
+     "",
+     "    synthesizer = CTGANSynthesizer(metadata)",
+     "    synthesizer.fit(df_train)",
+     "",
+     "    synthetic_data = synthesizer.sample(samples)",
+     "    "
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv"
+  ]
+ }
+}

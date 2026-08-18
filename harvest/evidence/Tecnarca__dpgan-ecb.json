@@ -1,0 +1,622 @@
+{
+ "repo": "Tecnarca/dpgan-ecb",
+ "disk_kb": 6859,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "<p align=\"left\">\n  <a href=\"https://dai.lids.mit.edu\">\n    <img width=15% src=\"https://dai.lids.mit.edu/wp-content/uploads/2018/06/Logo_DAI_highres.png\" alt=\"DAI-Lab\" />\n  </a>\n  <i>An Open Source Project from the <a href=\"https://dai.lids.mit.edu\">Data to AI Lab, at MIT</a></i>\n</p>\n\n[![Development Status](https://img.shields.io/badge/Development%20Status-2%20--%20Pre--Alpha-yellow)](https://pypi.org/search/?c=Development+Status+%3A%3A+2+-+Pre-Alpha)\n[![PyPI Shield](https://img.shields.io/pypi/v/ctgan.svg)](https://pypi.python.org/pypi/ctgan)\n[![Travis CI Shield](https://travis-ci.com/sdv-dev/CTGAN.svg?branch=master)](https://travis-ci.com/sdv-dev/CTGAN)\n[![Downloads](https://pepy.tech/badge/ctgan)](https://pepy.tech/project/ctgan)\n[![Coverage Status](https://codecov.io/gh/sdv-dev/CTGAN/branch/master/graph/badge.svg)](https://codecov.io/gh/sdv-dev/CTGAN)\n\n\n<img align=\"center\" width=30% src=\"docs/images/ctgan.png\">\n\n* Website: https://sdv.dev\n* Documentation: https://sdv.dev/SDV\n* Repository: https://github.com/sdv-dev/CTGAN\n* License: [MIT](https://github.com/sdv-dev/CTGAN/blob/master/LICENSE)\n* Development Status: [Pre-Alpha](https://pypi.org/search/?c=Development+Status+%3A%3A+2+-+Pre-Alpha)\n\n## Overview\n\nCTGAN is a collection of Deep Learning based Synthetic Data Generators for single table data, which are able to learn from real data and generate synthetic clones with high fidelity.\n\nCurrently, this library implements the **CTGAN** and **TVAE** models proposed in the [Modeling Tabular data using Conditional GAN](https://arxiv.org/abs/1907.00503) paper. For more information about these models, please check out the respective user guides:\n* [CTGAN User Guide](https://sdv.dev/SDV/user_guides/single_table/ctgan.html).\n* [TVAE User Guide](https://sdv.dev/SDV/user_guides/single_table/tvae.html).\n\n# Install\n\n## Requirements\n\n**CTGAN** has been developed and tested on [Python 3.6, 3.7 and 3.8](https://www.python.org/downloads/)\n\n## Install from PyPI\n\nThe recommended way to installing **CTGAN** is using [pip](https://pip.pypa.io/en/stable/):\n\n```bash\npip install ctgan\n```\n\nThis will pull and install the latest stable release from [PyPI](https://pypi.org/).\n\n## Install with conda\n\n**CTGAN** can also be installed using [conda](https://docs.conda.io/en/latest/):\n\n```bash\nconda install -c sdv-dev -c pytorch -c conda-forge ctgan\n```\n\nThis will pull and install the latest stable release from [Anaconda](https://anaconda.org/).\n\n\n# Usage Example\n\n> :warning: **WARNING**: If you're just getting started with synthetic data, we recommend using the SDV library which provides user-friendly APIs for interacting with CTGAN. To learn more about using CTGAN through SDV, check out the user guide [here](https://sdv.dev/SDV/user_guides/single_table/ctgan.html).\n\nTo get started with CTGAN, you should prepare your data as either a `numpy.ndarray` or a `pandas.DataFrame` object with two types of columns:\n\n* **Continuous Columns**: can contain any numerical value.\n* **Discrete Columns**: contain a finite number values, whether these are string values or not.\n\nIn this example we load the [Adult Census Dataset](https://archive.ics.uci.edu/ml/datasets/adult) which is a built-in demo dataset. We then model it using the **CTGANSynthesizer** and generate a synthetic copy of it.\n\n\n```python3\nfrom ctgan import CTGANSynthesizer\nfrom ctgan import load_demo\n\ndata = load_demo()\n\n# Names of the columns that are discrete\ndiscrete_columns = [\n    'workclass',\n    'education',\n    'marital-status',\n    'occupation',\n    'relationship',\n    'race',\n    'sex',\n    'native-country',\n    'income'\n]\n\nctgan = CTGANSynthesizer(epochs=10)\nctgan.fit(data, discrete_columns)\n\n# Synthetic copy\nsamples = ctgan.sample(1000)\n```\n\n\n\n# Join our community\n\n\n1. Please have a look at the [Contributing Guide](https://sdv.dev/SDV/developer_guides/contributing.html) to see how you can contribute to the project.\n2. If you have any doubts, feature requests or detect an error, please [open an issue on github](https://github.com/sdv-dev/CTGAN/issues) or [join our Slack Workspace](https://sdv-space.slack.com/join/shared_invite/zt-gdsfcb5w-0QQpFMVoyB2Yd6SRiMplcw#/).\n3. Also, do not forget to check the [project documentation site](https://sdv.dev/SDV/)!\n\n\n# Citing TGAN\n\nIf you use CTGAN, please cite the following work:\n\n- *Lei Xu, Maria Skoularidou, Alfredo Cuesta-Infante, Kalyan Veeramachaneni.* **Modeling Tabular data using Conditional GAN**. NeurIPS, 2019.\n\n```LaTeX\n@inproceedings{xu2019modeling,\n  title={Modeling Tabular data using Conditional GAN},\n  author={Xu, Lei and Skoularidou, Maria and Cuesta-Infante, Alfredo and Veeramachaneni, Kalyan},\n  booktitle={Advances in Neural Information Processing Systems},\n  year={2019}\n}\n```\n\n# Related Projects\nPlease note that these libraries are external contributions and are not maintained nor supervised by\nthe MIT DAI-Lab team.\n\n## R interface for CTGAN\n\nA wrapper around **CTGAN** has been implemented by Kevin Kuo @kevinykuo, bringing the functionalities\nof **CTGAN** to **R** users.\n\nMore details can be found in the corresponding repository: https://github.com/kasaai/ctgan\n\n## CTGAN Server CLI\n\nA package to easily deploy **CTGAN** onto a remote server. This package is developed by Timothy Pillow @oregonpillow.\n\nMore details can be found in the corresponding repository: https://github.com/oregonpillow/ctgan-server-cli\n\n\n# The Synthetic Data Vault\n\n<p>\n  <a href=\"https://sdv.dev\">\n    <img width=30% src=\"https://github.com/sdv-dev/SDV/blob/master/docs/images/SDV-Logo-Color-Tagline.png?raw=true\">\n  </a>\n  <p><i>This repository is part of <a href=\"https://sdv.dev\">The Synthetic Data Vault Project</a></i></p>\n</p>\n\n* Website: https://sdv.dev\n* Documentation: https://sdv.dev/SDV",
+ "hits": {
+  "ctgan_mod": [
+   {
+    "file": "Untitled.ipynb",
+    "line": 180,
+    "text": "\"from ctgan import CTGANSynthesizer\\n\",",
+    "context": [
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"%autoreload\\n\",",
+     "    \"from ctgan import CTGANSynthesizer\\n\",",
+     "    \"from ctgan import load_demo\\n\",",
+     "    \"df = load_demo()\\n\",",
+     "    \"df.head()\"",
+     "   ]"
+    ]
+   },
+   {
+    "file": "Untitled.ipynb",
+    "line": 181,
+    "text": "\"from ctgan import load_demo\\n\",",
+    "context": [
+     "   ],",
+     "   \"source\": [",
+     "    \"%autoreload\\n\",",
+     "    \"from ctgan import CTGANSynthesizer\\n\",",
+     "    \"from ctgan import load_demo\\n\",",
+     "    \"df = load_demo()\\n\",",
+     "    \"df.head()\"",
+     "   ]",
+     "  },"
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 71,
+    "text": "from ctgan import CTGANSynthesizer",
+    "context": [
+     "In this example we load the [Adult Census Dataset](https://archive.ics.uci.edu/ml/datasets/adult) which is a built-in demo dataset. We then model it using the **CTGANSynthesizer** and generate a synth",
+     "",
+     "",
+     "```python3",
+     "from ctgan import CTGANSynthesizer",
+     "from ctgan import load_demo",
+     "",
+     "data = load_demo()",
+     ""
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 72,
+    "text": "from ctgan import load_demo",
+    "context": [
+     "",
+     "",
+     "```python3",
+     "from ctgan import CTGANSynthesizer",
+     "from ctgan import load_demo",
+     "",
+     "data = load_demo()",
+     "",
+     "# Names of the columns that are discrete"
+    ]
+   },
+   {
+    "file": "ctgan/__init__.py",
+    "line": 9,
+    "text": "from ctgan.demo import load_demo",
+    "context": [
+     "__author__ = 'MIT Data To AI Lab'",
+     "__email__ = 'dailabmit@gmail.com'",
+     "__version__ = '0.3.1.dev1'",
+     "",
+     "from ctgan.demo import load_demo",
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+     "from ctgan.synthesizers.tvae import TVAESynthesizer",
+     "",
+     "__all__ = ("
+    ]
+   },
+   {
+    "file": "ctgan/__init__.py",
+    "line": 10,
+    "text": "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+    "context": [
+     "__email__ = 'dailabmit@gmail.com'",
+     "__version__ = '0.3.1.dev1'",
+     "",
+     "from ctgan.demo import load_demo",
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+     "from ctgan.synthesizers.tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    'CTGANSynthesizer',"
+    ]
+   },
+   {
+    "file": "ctgan/__init__.py",
+    "line": 11,
+    "text": "from ctgan.synthesizers.tvae import TVAESynthesizer",
+    "context": [
+     "__version__ = '0.3.1.dev1'",
+     "",
+     "from ctgan.demo import load_demo",
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+     "from ctgan.synthesizers.tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    'CTGANSynthesizer',",
+     "    'TVAESynthesizer',"
+    ]
+   },
+   {
+    "file": "ctgan/__main__.py",
+    "line": 3,
+    "text": "from ctgan.data import read_csv, read_tsv, write_tsv",
+    "context": [
+     "import argparse",
+     "",
+     "from ctgan.data import read_csv, read_tsv, write_tsv",
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+     "",
+     "",
+     "def _parse_args():"
+    ]
+   },
+   {
+    "file": "ctgan/__main__.py",
+    "line": 4,
+    "text": "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+    "context": [
+     "import argparse",
+     "",
+     "from ctgan.data import read_csv, read_tsv, write_tsv",
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+     "",
+     "",
+     "def _parse_args():",
+     "    parser = argparse.ArgumentParser(description='CTGAN Command Line Interface')"
+    ]
+   },
+   {
+    "file": "ctgan/synthesizers/__init__.py",
+    "line": 1,
+    "text": "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+    "context": [
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+     "from ctgan.synthesizers.tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    'CTGANSynthesizer',"
+    ]
+   },
+   {
+    "file": "ctgan/synthesizers/__init__.py",
+    "line": 2,
+    "text": "from ctgan.synthesizers.tvae import TVAESynthesizer",
+    "context": [
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+     "from ctgan.synthesizers.tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    'CTGANSynthesizer',",
+     "    'TVAESynthesizer'"
+    ]
+   },
+   {
+    "file": "ctgan/synthesizers/ctgan.py",
+    "line": 10,
+    "text": "from ctgan.data_sampler import DataSampler",
+    "context": [
+     "from packaging import version",
+     "from torch import optim",
+     "from torch.nn import BatchNorm1d, Dropout, LeakyReLU, Linear, Module, ReLU, Sequential, functional",
+     "",
+     "from ctgan.data_sampler import DataSampler",
+     "from ctgan.data_transformer import DataTransformer",
+     "from ctgan.synthesizers.base import BaseSynthesizer",
+     "",
+     "import opacus"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "Untitled.ipynb",
+    "line": 180,
+    "text": "\"from ctgan import CTGANSynthesizer\\n\",",
+    "context": [
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"%autoreload\\n\",",
+     "    \"from ctgan import CTGANSynthesizer\\n\",",
+     "    \"from ctgan import load_demo\\n\",",
+     "    \"df = load_demo()\\n\",",
+     "    \"df.head()\"",
+     "   ]"
+    ]
+   },
+   {
+    "file": "Untitled.ipynb",
+    "line": 192,
+    "text": "\"ctgan = CTGANSynthesizer(verbose=True, batch_size=200)\\n\",",
+    "context": [
+     "   \"execution_count\": 3,",
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"ctgan = CTGANSynthesizer(verbose=True, batch_size=200)\\n\",",
+     "    \"discrete_columns = [\\n\",",
+     "    \"    'workclass',\\n\",",
+     "    \"    'education',\\n\",",
+     "    \"    'marital-status',\\n\","
+    ]
+   },
+   {
+    "file": "Untitled.ipynb",
+    "line": 682,
+    "text": "\"ctgan2 = CTGANSynthesizer(verbose=True, dp=False, epochs=300)\\n\",",
+    "context": [
+     "     ]",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"ctgan2 = CTGANSynthesizer(verbose=True, dp=False, epochs=300)\\n\",",
+     "    \"ctgan2.fit(df.drop(['d'],axis=1), discrete_columns)\\n\",",
+     "    \"fake_df2 = ctgan2.sample(1000)\"",
+     "   ]",
+     "  },"
+    ]
+   },
+   {
+    "file": "Untitled.ipynb",
+    "line": 1047,
+    "text": "\"dp = CTGANSynthesizer(verbose=True, batch_size=100, noise_multiplier=2, pack=1)\\n\",",
+    "context": [
+     "     ]",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"dp = CTGANSynthesizer(verbose=True, batch_size=100, noise_multiplier=2, pack=1)\\n\",",
+     "    \"dp.fit(D.drop(['d'], axis=1), ['v3', 'v4', 'v5'], epsilon=2, epochs=300)\\n\",",
+     "    \"fakeD = dp.sample(500)\"",
+     "   ]",
+     "  },"
+    ]
+   },
+   {
+    "file": "Untitled.ipynb",
+    "line": 1205,
+    "text": "\"dp = CTGANSynthesizer(verbose=True, batch_size=500, noise_multiplier=2, pack=1, dp=False)\\n\",",
+    "context": [
+     "     ]",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"dp = CTGANSynthesizer(verbose=True, batch_size=500, noise_multiplier=2, pack=1, dp=False)\\n\",",
+     "    \"dp.fit(D.drop(['d'], axis=1), ['v3', 'v4', 'v5'], epsilon=2, epochs=100)\\n\",",
+     "    \"fakeD = dp.sample(500)\"",
+     "   ]",
+     "  },"
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 67,
+    "text": "In this example we load the [Adult Census Dataset](https://archive.ics.uci.edu/ml/datasets/adult) which is a built-in demo dataset. We then model it using the **CTGANSynthesizer** and generate a synthetic copy of it.",
+    "context": [
+     "",
+     "* **Continuous Columns**: can contain any numerical value.",
+     "* **Discrete Columns**: contain a finite number values, whether these are string values or not.",
+     "",
+     "In this example we load the [Adult Census Dataset](https://archive.ics.uci.edu/ml/datasets/adult) which is a built-in demo dataset. We then model it using the **CTGANSynthesizer** and generate a synth",
+     "",
+     "",
+     "```python3",
+     "from ctgan import CTGANSynthesizer"
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 71,
+    "text": "from ctgan import CTGANSynthesizer",
+    "context": [
+     "In this example we load the [Adult Census Dataset](https://archive.ics.uci.edu/ml/datasets/adult) which is a built-in demo dataset. We then model it using the **CTGANSynthesizer** and generate a synth",
+     "",
+     "",
+     "```python3",
+     "from ctgan import CTGANSynthesizer",
+     "from ctgan import load_demo",
+     "",
+     "data = load_demo()",
+     ""
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 89,
+    "text": "ctgan = CTGANSynthesizer(epochs=10)",
+    "context": [
+     "    'native-country',",
+     "    'income'",
+     "]",
+     "",
+     "ctgan = CTGANSynthesizer(epochs=10)",
+     "ctgan.fit(data, discrete_columns)",
+     "",
+     "# Synthetic copy",
+     "samples = ctgan.sample(1000)"
+    ]
+   },
+   {
+    "file": "ctgan/__init__.py",
+    "line": 10,
+    "text": "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+    "context": [
+     "__email__ = 'dailabmit@gmail.com'",
+     "__version__ = '0.3.1.dev1'",
+     "",
+     "from ctgan.demo import load_demo",
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+     "from ctgan.synthesizers.tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    'CTGANSynthesizer',"
+    ]
+   },
+   {
+    "file": "ctgan/__init__.py",
+    "line": 14,
+    "text": "'CTGANSynthesizer',",
+    "context": [
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+     "from ctgan.synthesizers.tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    'CTGANSynthesizer',",
+     "    'TVAESynthesizer',",
+     "    'load_demo'",
+     ")"
+    ]
+   },
+   {
+    "file": "ctgan/__main__.py",
+    "line": 4,
+    "text": "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+    "context": [
+     "import argparse",
+     "",
+     "from ctgan.data import read_csv, read_tsv, write_tsv",
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+     "",
+     "",
+     "def _parse_args():",
+     "    parser = argparse.ArgumentParser(description='CTGAN Command Line Interface')"
+    ]
+   },
+   {
+    "file": "ctgan/__main__.py",
+    "line": 67,
+    "text": "model = CTGANSynthesizer.load(args.load)",
+    "context": [
+     "    else:",
+     "        data, discrete_columns = read_csv(args.data, args.metadata, args.header, args.discrete)",
+     "",
+     "    if args.load:",
+     "        model = CTGANSynthesizer.load(args.load)",
+     "    else:",
+     "        generator_dim = [int(x) for x in args.generator_dim.split(',')]",
+     "        discriminator_dim = [int(x) for x in args.discriminator_dim.split(',')]",
+     "        model = CTGANSynthesizer("
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "ctgan/__init__.py",
+    "line": 11,
+    "text": "from ctgan.synthesizers.tvae import TVAESynthesizer",
+    "context": [
+     "__version__ = '0.3.1.dev1'",
+     "",
+     "from ctgan.demo import load_demo",
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+     "from ctgan.synthesizers.tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    'CTGANSynthesizer',",
+     "    'TVAESynthesizer',"
+    ]
+   },
+   {
+    "file": "ctgan/__init__.py",
+    "line": 15,
+    "text": "'TVAESynthesizer',",
+    "context": [
+     "from ctgan.synthesizers.tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    'CTGANSynthesizer',",
+     "    'TVAESynthesizer',",
+     "    'load_demo'",
+     ")"
+    ]
+   },
+   {
+    "file": "ctgan/synthesizers/__init__.py",
+    "line": 2,
+    "text": "from ctgan.synthesizers.tvae import TVAESynthesizer",
+    "context": [
+     "from ctgan.synthesizers.ctgan import CTGANSynthesizer",
+     "from ctgan.synthesizers.tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    'CTGANSynthesizer',",
+     "    'TVAESynthesizer'"
+    ]
+   },
+   {
+    "file": "ctgan/synthesizers/__init__.py",
+    "line": 6,
+    "text": "'TVAESynthesizer'",
+    "context": [
+     "from ctgan.synthesizers.tvae import TVAESynthesizer",
+     "",
+     "__all__ = (",
+     "    'CTGANSynthesizer',",
+     "    'TVAESynthesizer'",
+     ")",
+     "",
+     "",
+     "def get_all_synthesizers():"
+    ]
+   },
+   {
+    "file": "ctgan/synthesizers/tvae.py",
+    "line": 75,
+    "text": "class TVAESynthesizer(BaseSynthesizer):",
+    "context": [
+     "    KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())",
+     "    return sum(loss) * factor / x.size()[0], KLD / x.size()[0]",
+     "",
+     "",
+     "class TVAESynthesizer(BaseSynthesizer):",
+     "    \"\"\"TVAESynthesizer.\"\"\"",
+     "",
+     "    def __init__(",
+     "        self,"
+    ]
+   },
+   {
+    "file": "ctgan/synthesizers/tvae.py",
+    "line": 76,
+    "text": "\"\"\"TVAESynthesizer.\"\"\"",
+    "context": [
+     "    return sum(loss) * factor / x.size()[0], KLD / x.size()[0]",
+     "",
+     "",
+     "class TVAESynthesizer(BaseSynthesizer):",
+     "    \"\"\"TVAESynthesizer.\"\"\"",
+     "",
+     "    def __init__(",
+     "        self,",
+     "        embedding_dim=128,"
+    ]
+   },
+   {
+    "file": "tests/integration/test_tvae.py",
+    "line": 17,
+    "text": "from ctgan.synthesizers.tvae import TVAESynthesizer",
+    "context": [
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "",
+     "from ctgan.synthesizers.tvae import TVAESynthesizer",
+     "",
+     "",
+     "def test_tvae_dataframe():",
+     "    data = pd.DataFrame({"
+    ]
+   },
+   {
+    "file": "tests/integration/test_tvae.py",
+    "line": 27,
+    "text": "tvae = TVAESynthesizer(epochs=10)",
+    "context": [
+     "        'discrete': np.random.choice(['a', 'b'], 1000)",
+     "    })",
+     "    discrete_columns = ['discrete']",
+     "",
+     "    tvae = TVAESynthesizer(epochs=10)",
+     "    tvae.fit(data, discrete_columns)",
+     "",
+     "    sampled = tvae.sample(100)",
+     ""
+    ]
+   },
+   {
+    "file": "tests/integration/test_tvae.py",
+    "line": 45,
+    "text": "tvae = TVAESynthesizer(epochs=10)",
+    "context": [
+     "        'discrete': np.random.choice(['a', 'b'], 1000)",
+     "    })",
+     "    discrete_columns = [1]",
+     "",
+     "    tvae = TVAESynthesizer(epochs=10)",
+     "    tvae.fit(data.values, discrete_columns)",
+     "",
+     "    sampled = tvae.sample(100)",
+     ""
+    ]
+   },
+   {
+    "file": "tests/integration/test_tvae.py",
+    "line": 61,
+    "text": "tvae = TVAESynthesizer(epochs=1)",
+    "context": [
+     "        'discrete': np.random.choice(['a', 'b'], 100)",
+     "    })",
+     "    discrete_columns = ['discrete']",
+     "",
+     "    tvae = TVAESynthesizer(epochs=1)",
+     "    tvae.fit(data, discrete_columns)",
+     "",
+     "    samples = tvae.sample(1000)",
+     "    assert isinstance(samples, pd.DataFrame)"
+    ]
+   },
+   {
+    "file": "tests/integration/test_tvae.py",
+    "line": 75,
+    "text": "tvae = TVAESynthesizer(epochs=10)",
+    "context": [
+     "        'discrete': np.random.choice(['a', 'b'], 100)",
+     "    })",
+     "    discrete_columns = ['discrete']",
+     "",
+     "    tvae = TVAESynthesizer(epochs=10)",
+     "    tvae.fit(data, discrete_columns)",
+     "",
+     "    with tf.TemporaryDirectory() as temporary_directory:",
+     "        tvae.save(temporary_directory + \"test_tvae.pkl\")"
+    ]
+   },
+   {
+    "file": "tests/integration/test_tvae.py",
+    "line": 80,
+    "text": "tvae = TVAESynthesizer.load(temporary_directory + \"test_tvae.pkl\")",
+    "context": [
+     "    tvae.fit(data, discrete_columns)",
+     "",
+     "    with tf.TemporaryDirectory() as temporary_directory:",
+     "        tvae.save(temporary_directory + \"test_tvae.pkl\")",
+     "        tvae = TVAESynthesizer.load(temporary_directory + \"test_tvae.pkl\")",
+     "",
+     "    sampled = tvae.sample(1000)",
+     "    assert set(sampled.columns) == {'continuous', 'discrete'}",
+     "    assert set(sampled['discrete'].unique()) == {'a', 'b'}"
+    ]
+   }
+  ],
+  "rdt": [
+   {
+    "file": "ctgan/data_transformer.py",
+    "line": 5,
+    "text": "from rdt.transformers import OneHotEncodingTransformer",
+    "context": [
+     "from collections import namedtuple",
+     "",
+     "import numpy as np",
+     "import pandas as pd",
+     "from rdt.transformers import OneHotEncodingTransformer",
+     "from sklearn.mixture import BayesianGaussianMixture",
+     "import warnings",
+     "from sklearn.exceptions import ConvergenceWarning",
+     ""
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ctgan_mod",
+  "rdt",
+  "tvae"
+ ],
+ "vendored_dirs": [
+  "ctgan"
+ ],
+ "dependencies": {
+  "setup.py": [
+   "    'rdt>=0.2.7,<0.3',",
+   "            'ctgan=ctgan.__main__:main'",
+   "    keywords='ctgan CTGAN',",
+   "    name='ctgan',",
+   "    packages=find_packages(include=['ctgan', 'ctgan.*']),",
+   "    url='https://github.com/sdv-dev/CTGAN',"
+  ],
+  "setup.cfg": [
+   "[bumpversion:file:ctgan/__init__.py]"
+  ],
+  "conda/meta.yaml": [
+   "{% set name = 'ctgan' %}",
+   "    - ctgan=ctgan.__main__:main",
+   "    - rdt >=0.2.7,<0.3",
+   "    - rdt >=0.2.7,<0.3",
+   "  home: \"https://github.com/sdv-dev/CTGAN\"",
+   "    - sdv-dev"
+  ]
+ }
+}

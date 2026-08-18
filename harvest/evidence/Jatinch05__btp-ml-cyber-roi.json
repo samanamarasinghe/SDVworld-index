@@ -1,0 +1,173 @@
+{
+ "repo": "Jatinch05/btp-ml-cyber-roi",
+ "disk_kb": 39200,
+ "method": "partial_clone",
+ "tree_files": 104,
+ "status": "ok",
+ "readme": "Cyber Impact and ROI Platform\n\nOverview\n- This project estimates cyber incident financial impact and recommends controls with ROI style scoring.\n- It combines model inference, control recommendation logic, analytics APIs, and scanner ingestion.\n- It supports two React frontends:\n\t- Existing frontend in webapp\n\t- New redesigned frontend in webapp_new\n\nCurrent Architecture\n- Backend API: src/btp/api.py\n\t- FastAPI service for prediction, recommendations, analytics, and scanner endpoints.\n- Inference engine: src/btp/infer.py\n\t- CatBoost based prediction with optional field filling from baselines.\n- Recommendation engine: src/btp/mitigation.py\n\t- Maps attack type to control recommendations and computes expected return metrics.\n- Scanner integration layer: src/btp/scanner_integration.py\n\t- Normalizes raw findings, enriches with NVD and remediation mapping, and builds scan prefill summaries.\n- Scanner runtime assets: src/btp/scanner\n\t- Local agent script and remediation reference data used by scanner endpoints.\n- Frontend (stable): webapp\n- Frontend (new redesign): webapp_new\n- Model and metadata artifacts: data/models\n- Training and optimization notebooks: notebooks\n\nRepository Layout\n- src/btp/api.py: HTTP endpoints and request/response contracts.\n- src/btp/app.py: ASGI entrypoint re-exporting the API app.\n- src/btp/infer.py: Feature preparation and model inference.\n- src/btp/mitigation.py: Control recommendation and ROI style calculations.\n- src/btp/scanner_integration.py: Scanner ingestion and enrichment pipeline.\n- src/btp/scanner/local_scanner.py: Downloaded local scanning agent.\n- data/model_ready: Training-ready datasets.\n- data/models: Serialized model artifacts and metadata.\n- webapp: Original React frontend.\n- webapp_new: New React frontend with theme mode toggle.\n\nBackend Endpoints In Use\n- GET /healthz\n- GET /analytics\n- POST /predict\n- POST /recommend-controls\n- POST /predict-and-recommend\n- GET /scanner/readiness\n- GET /scanner/agent\n- GET /scanner/agent.sha256\n- POST /scanner/upload_raw_scan\n- GET /scanner/latest_results\n\nRun Locally (Windows)\n\n1. Create and activate virtual environment\n\n\tpy -3.10 -m venv .venv310\n\t.\\.venv310\\Scripts\\Activate.ps1\n\tpython -m pip install --upgrade pip\n\n2. Install backend dependencies\n\n\tpython -m pip install -r requirements.txt\n\n3. Start backend API from repo root\n\n\t$env:PYTHONPATH = \".\\src\"\n\tuvicorn btp.api:app --host 127.0.0.1 --port 8000 --reload\n\n4. Start original frontend\n\n\tSet-Location .\\webapp\n\tnpm install\n\tnpm run dev\n\n5. Start redesigned frontend\n\n\tSet-Location .\\webapp_new\n\tnpm install\n\tnpm run dev\n\nDefault URLs\n- Backend: http://127.0.0.1:8000\n- API docs: http://127.0.0.1:8000/docs\n- Frontend: http://127.0.0.1:5174\n\nEnvironment Variables\n- Frontend API base URL (optional): VITE_API_BASE\n\t- If not set, frontend defaults to http://127.0.0.1:8000\n- NVD API key (optional but recommended for enrichment reliability): NVD_API_KEY\n\nField Handling Policy\n- Mandatory input fields:\n\t- Industry\n\t- Year\n\t- Attack_Type\n\t- Data_Type\n\t- Records_Compromised\n- Optional fields are filled only when missing or invalid:\n\t- Country\n\t- Employee_Count\n\t- Security_Budget_Million_USD\n\t- Recovery_Time_Days\n\t- Incident_Severity\n\t- Baseline_Industry_Cost_Million_USD\n\t- Canonical_Attack_Vector\n- User supplied values always win over baseline fills.\n\nScanner Notes\n- The scanner folder is part of the active architecture.\n- Removing src/btp/scanner entirely will break scanner endpoints and scan workflows in both frontends.\n- If scanner features are no longer needed, feature-flag and remove scanner routes first, then delete scanner assets.\n\nModel Artifacts\n- Runtime expects CatBoost model artifacts in data/models.\n- The inference loader prefers impact_regressor_CatBoostRegressor.pkl and related metadata.\n- Keep model and matching meta files aligned when replacing artifacts.\n\nCommon Troubleshooting\n- Import errors when starting API:\n\t- Ensure PYTHONPATH is set to .\\src before running uvicorn.\n- Frontend says backend unavailable:\n\t- Confirm backend is running on port 8000 and CORS allows frontend port in src/btp/api.py.\n- Scanner CVE and severity enrichment sparse:\n\t- Install nvdlib and set NVD_API_KEY to improve lookup quality and rate limits.\n",
+ "hits": {
+  "st": [
+   {
+    "file": "notebooks/synthetic_gen.ipynb",
+    "line": 25,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"import numpy as np\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdmetrics.reports.single_table import QualityReport\\n\",",
+     "    \"from sdv.sampling import Condition\\n\",",
+     "    \"\\n\",",
+     "    \"plt.rcParams[\\\"figure.figsize\\\"] = (8, 4)\\n\","
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "notebooks/synthetic_gen.ipynb",
+    "line": 24,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"import pandas as pd\\n\",",
+     "    \"import numpy as np\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdmetrics.reports.single_table import QualityReport\\n\",",
+     "    \"from sdv.sampling import Condition\\n\",",
+     "    \"\\n\","
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "notebooks/synthetic_gen.ipynb",
+    "line": 24,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"import pandas as pd\\n\",",
+     "    \"import numpy as np\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdmetrics.reports.single_table import QualityReport\\n\",",
+     "    \"from sdv.sampling import Condition\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/synthetic_gen.ipynb",
+    "line": 25,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"import numpy as np\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdmetrics.reports.single_table import QualityReport\\n\",",
+     "    \"from sdv.sampling import Condition\\n\",",
+     "    \"\\n\",",
+     "    \"plt.rcParams[\\\"figure.figsize\\\"] = (8, 4)\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/synthetic_gen.ipynb",
+    "line": 27,
+    "text": "\"from sdv.sampling import Condition\\n\",",
+    "context": [
+     "    \"\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdmetrics.reports.single_table import QualityReport\\n\",",
+     "    \"from sdv.sampling import Condition\\n\",",
+     "    \"\\n\",",
+     "    \"plt.rcParams[\\\"figure.figsize\\\"] = (8, 4)\\n\",",
+     "    \"plt.rcParams[\\\"axes.grid\\\"] = True\\n\",",
+     "    \"\\n\","
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "notebooks/synthetic_gen.ipynb",
+    "line": 25,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"import numpy as np\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdmetrics.reports.single_table import QualityReport\\n\",",
+     "    \"from sdv.sampling import Condition\\n\",",
+     "    \"\\n\",",
+     "    \"plt.rcParams[\\\"figure.figsize\\\"] = (8, 4)\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/synthetic_gen.ipynb",
+    "line": 323,
+    "text": "\"synth = CTGANSynthesizer(\\n\",",
+    "context": [
+     "    \"SYN_ROWS = min(8 * len(data), 50_000)\\n\",",
+     "    \"PAC = 8\\n\",",
+     "    \"BATCH = 256\\n\",",
+     "    \"\\n\",",
+     "    \"synth = CTGANSynthesizer(\\n\",",
+     "    \"    metadata,\\n\",",
+     "    \"    epochs=300,\\n\",",
+     "    \"    batch_size=BATCH,\\n\",",
+     "    \"    generator_dim=(256, 256),\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/synthetic_gen.ipynb",
+    "line": 400,
+    "text": "\"synth = CTGANSynthesizer(\\n\",",
+    "context": [
+     "    \"\\n\",",
+     "    \"PAC = 8\\n\",",
+     "    \"BATCH = 256\\n\",",
+     "    \"\\n\",",
+     "    \"synth = CTGANSynthesizer(\\n\",",
+     "    \"    metadata,\\n\",",
+     "    \"    epochs=600,\\n\",",
+     "    \"    batch_size=BATCH,\\n\",",
+     "    \"    generator_dim=(512, 512),\\n\","
+    ]
+   }
+  ],
+  "sm": [
+   {
+    "file": "notebooks/synthetic_gen.ipynb",
+    "line": 26,
+    "text": "\"from sdmetrics.reports.single_table import QualityReport\\n\",",
+    "context": [
+     "    \"import matplotlib.pyplot as plt\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdmetrics.reports.single_table import QualityReport\\n\",",
+     "    \"from sdv.sampling import Condition\\n\",",
+     "    \"\\n\",",
+     "    \"plt.rcParams[\\\"figure.figsize\\\"] = (8, 4)\\n\",",
+     "    \"plt.rcParams[\\\"axes.grid\\\"] = True\\n\","
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "sm",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

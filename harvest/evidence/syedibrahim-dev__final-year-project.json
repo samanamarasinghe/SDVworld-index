@@ -1,0 +1,122 @@
+{
+ "repo": "syedibrahim-dev/final-year-project",
+ "disk_kb": 52466,
+ "method": "partial_clone",
+ "tree_files": 269,
+ "status": "ok",
+ "readme": "<p align=\"center\">\n  <h1 align=\"center\">SalesForge AI — Intelligent Sales Training Platform</h1>\n  <p align=\"center\">\n    An AI-powered platform that trains sales professionals through interactive roleplay simulations, document-grounded MCQ assessments, and real-time performance analytics — all running on local LLMs via Ollama with GPU acceleration.\n  </p>\n</p>\n\n---\n\n## Table of Contents\n\n- [Project Overview](#project-overview)\n- [Technology Stack](#technology-stack)\n- [System Architecture](#system-architecture)\n- [Core Modules](#core-modules)\n  - [1. AI Roleplay Simulation Module](#1-ai-roleplay-simulation-module)\n  - [2. MCQ Generation Module](#2-mcq-generation-module)\n  - [3. RAG Engine](#3-rag-retrieval-augmented-generation-engine)\n  - [4. Knowledge Chatbot](#4-knowledge-chatbot)\n  - [5. Content Management](#5-content-management)\n  - [6. Organization & User Management](#6-organization--user-management)\n  - [7. Performance Dashboard & Analytics](#7-performance-dashboard--analytics)\n- [Evaluation Metrics](#evaluation-metrics)\n- [Models & Training Data](#models--training-data)\n- [Frontend Pages](#frontend-pages)\n- [Setup & Installation](#setup--installation)\n- [API Endpoints](#api-endpoints)\n\n---\n\n## Project Overview\n\n**SalesForge AI** is a comprehensive AI-driven sales training platform designed to help organizations upskill their sales teams. It provides:\n\n- **Realistic AI Roleplay Simulations** — trainees practice selling to AI-powered customer personas with company intelligence (industry, tech stack, buying stage) that adapt in real-time based on performance, with guardrails against prompt injection and off-topic input.\n- **Three-Engine Analysis** — Engine A (DeBERTa NLI) for intent/objection detection, Engine B (Emotion-RoBERTa) for empathy/pressure analysis, Engine C (Ollama LLM) for reasoning, stage tracking, and coaching.\n- **Real-Time Conversion Prediction** — SalesRLAgent (PPO reinforcement learning model trained on 1.2M conversations) predicts deal probability live during conversations.\n- **LSTM Conversation Risk Model** — A 2-layer LSTM trained on 1,000 SaaS conversations predicts deal failure risk from the sequence of per-turn classifier outputs (27-dim feature vectors), providing trajectory-aware risk scoring that complements per-turn classifiers.\n- **Document-Grounded MCQ Assessments** — quizzes generated from the organization's own training materials using RAG, ensuring assessments test real product knowledge.\n- **Intelligent Knowledge Chatbot** — employees can ask questions about their training content and receive accurate, RAG-backed answers.\n- **Comprehensive Analytics** — detailed performance tracking across roleplay sessions and MCQ attempts with per-category scoring and trend analysis.\n- **Voice Roleplay Mode** — Whisper-based speech-to-text (via faster-whisper) with real-time voice analytics (WPM, filler words, pauses, confidence) plus browser TTS for AI responses.\n- **Three Interaction Modes** — Chat (traditional text + full analytics panels), Avatar (animated SVG face-to-face driven by classifier outputs), and Voice (Whisper STT + voice metrics).\n\nAll AI inference runs **locally via Ollama** (Llama 3.1 8B, Q8_0 quantisation) with GPU/CPU hybrid offloading (22 GPU layers + 11 CPU layers), ensuring data privacy and eliminating cloud API costs.\n\n---\n\n## Technology Stack\n\n| Layer | Technology |\n|-------|-----------|\n| **Backend** | Python 3.13, FastAPI |\n| **Frontend** | React (Vite), Tailwind CSS |\n| **Database** | SQLite (SQLAlchemy ORM) |\n| **Vector Database** | ChromaDB (persistent, org-scoped) |\n| **LLM Inference** | Ollama (local, GPU/CPU hybrid) — Llama 3.1 8B (Q8_0) |\n| **EQ Engine A (Intent)** | DeBERTa NLI (`cross-encoder/nli-deberta-v3-base`) — objection detection, active listening |\n| **EQ Engine B (Emotion)** | Emotion-RoBERTa (`j-hartmann/emotion-english-distilroberta-base`) + GoEmotions (`SamLowe/roberta-base-go_emotions`) |\n| **Conversion Prediction** | Fine-tuned DistilBERT Outcome Predictor + XGBoost/MLP ensemble |\n| **Fine-tuned Classifiers** | 6x DistilBERT-base-uncased (objection, handling, emotion, outcome, state, willingness) |\n| **LSTM Risk Model** | 2-layer LSTM (hidden=64, dropout=0.3) — sequence-based conversation risk prediction |\n| **Embeddings (RAG)** | Nomic Embed Text (`nomic-embed-text`, 768-dim, Ollama-served) |\n| **Embeddings (ML)** | Sentence-Transformers (`all-MiniLM-L6-v2`, 384-dim) for intent similarity + conversion features |\n| **NLP Libraries** | spaCy (NER), Transformers (classifiers) |\n| **Charting** | D3.js (conversion trends, skill radar, score distributions) |\n| **Voice STT** | faster-whisper (`base` model, CTranslate2 int8) — word-level timestamps, WPM, filler detection |\n| **Voice TTS** | Web Speech API (browser-native) |\n| **Authentication** | JWT (HS256) |\n| **Architecture** | Multi-Agent System (9 agents), Three-Engine Pipeline, Two-Stage ML Pipeline (DistilBERT + LSTM), RAG, Modular Pipeline Pattern |\n\n---\n\n## System Architecture\n\n```\n+--------------------------------------------------------------+\n|                        React Frontend                         |\n|  (Login, Dashboard, Roleplay, MCQ, Chatbot, Content Mgmt)    |\n+--------------------------------------------------------------+\n                              | REST API\n+--------------------------------------------------------------+\n|                      FastAPI Backend                           |\n|  +----------+ +----------+ +--------+ +------------------+   |\n|  |  Auth    | | Roleplay | |  MCQ   | |  Content/Chatbot |   |\n|  |  Routes  | |  Routes  | | Routes | |     Routes       |   |\n|  +----------+ +----------+ +--------+ +------------------+   |\n+--------------------------------------------------------------+\n|  +--------------------+  +--------------------------+         |\n|  | Agent Orchestrator  |  |     MCQ Pipeline         |        |\n|  | (9 Agents +         |  |  Stem -> Distractor ->   |        |\n|  |  3-Engine Pipeline) |  |  Filter -> Validator     |        |\n|  +--------------------+  +--------------------------+         |\n+--------------------------------------------------------------+\n|  +---------------+  +----------------+  +----------------+    |\n|  | RAG Pipeline  |  | NLP Evaluator  |  | Transformer    |    |\n|  | (ChromaDB)    |  | (Tier 1 + 2)   |  | Engines A + B  |    |\n|  +---------------+  +----------------+  +----------------+    |\n|  +-----------------------------+  +------------------------+  |\n|  | Two-Stage ML Pipeline       |  | Voice Analytics        |  |\n|  | 6x DistilBERT → LSTM Risk  |  | faster-whisper (STT)   |  |\n|  +-----------------------------+  +------------------------+  |\n+--------------------------------------------------------------+\n|  +--------------------------+  +---------------------------+  |\n|  | SQLite (SQLAlchemy ORM)  |  | ChromaDB (Vector Store)   |  |\n|  +--------------------------+  +---------------------------+  |\n+--------------------------------------------------------------+\n           |                              |\n  Ollama (Local LLM Server)     SalesRLAgent Subprocess\n  Llama 3.1 8B (GPU)            PPO + BGE-M3 (CPU)\n```\n\n---\n\n## Core Modules\n\n---\n\n### 1. AI Roleplay Simulation Module\n\nThe roleplay module is the **primary module** of SalesForge AI. It creates realistic, interactive sales conversation simulations where trainees practice selling to AI-powered customer personas. The system is built on a **Multi-Agent Architecture** with a **Three-Engine Analysis Pipeline** that coordinates 9 specialized agents.\n\n#### 1.1 Three-Engine Architecture\n\n| Engine | Model | Purpose | Latency |\n|--------|-------|---------|---------|\n| **Engine A** | DeBERTa NLI (`cross-encoder/nli-deberta-v3-base`) | Intent analysis — objection detection, response classification, active listening | ~15-30ms (CPU) |\n| **Engine B** | Emotion-RoBERTa + GoEmotions | Emotion analysis — empathy detection, pressure level classification | ~10-20ms (CPU) |\n| **Engine C** | Llama 3.1 8B via Ollama | LLM reasoning — persona response generation, stage tracking, coaching hints | ~3-5s (GPU) |\n\n#### 1.2 The 9 Specialized Agents\n\n**Per-message agents (run every turn):**\n\n| # | Agent | Engine | LLM Calls | Purpose |\n|---|-------|--------|-----------|---------|\n| 1 | **Guardrail Agent** | Rules | 0 | Input validation — blocks prompt injection, inappropriate content, off-topic messages, character-breaking attempts |\n| 2 | **EQ Agent** | A + B | 0 | Emotional intelligence scoring using DeBERTa NLI (objection detection, active listening) + Emotion-RoBERTa (empathy, pressure level). Outputs weighted 0-100 EQ score. |\n| 3 | **Knowledge Accuracy Agent** | RAG | 0 | Fact-checks trainee claims against uploaded company documents via ChromaDB similarity search. Flags unverified claims. |\n| 4 | **Objection Injection Agent** | Rules | 0 | Decides when the AI customer should raise an objection based on stage, difficulty, and history. |\n| 5 | **Adaptive Difficulty Agent** | Rules | 0 | Adjusts persona warmth/resistance based on trainee EQ scores and conversation stage. |\n| 6 | **Persona Agent** | C | 1 | Generates the AI customer's in-character reply incorporating personality, company context, RAG documents, objection directives, and difficulty modifiers. |\n| 7 | **Analyst Agent** | C | 1 (skip-N) | Detects sales stage and generates coaching hints. Uses skip-every-N to reduce LLM calls; falls back to NLP heuristic when skipped. |\n\n**Async agent (non-blocking):**\n\n| # | Agent | Engine | Purpose |\n|---|-------|--------|---------|\n| 8 | **SalesRLAgent** | PPO RL | Predicts deal conversion probability using a reinforcement learning model (trained on 1.2M conversations). Runs in a persistent subprocess, never blocks the response. |\n\n**Post-session agents (run once after session ends):**\n\n| # | Agent | Engine | Purpose |\n|---|-------|--------|---------|\n| 9 | **Performance Agent** | C | Deep LLM evaluation — category scores, summary, strengths, improvements, coaching tip, per-stage feedback. |\n| 10 | **Replay Agent** | C | Annotated transcript — turning points, missed signals, strong/weak moments, alternative response suggestions. |\n| 11 | **SalesRLAgent (Full)** | PPO RL | Complete turn-by-turn conversion trajectory, turning point analysis, data-driven coaching suggestions. |\n\n#### 1.3 Company Intelligence Layer\n\nEach persona includes a `company_context` that makes the roleplay closer to real B2B sales:\n\n| Field | Example |\n|-------|---------|\n| `industry` | Manufacturing |\n| `company_size` | 200-500 employees |\n| `role` | Operations Manager |\n| `tech_stack` | Microsoft 365, SAP, Excel |\n| `business_problems` | Rising costs, manual tracking, audit pressure |\n| `buying_stage` | Evaluation — comparing vendors |\n| `budget_authority` | Controls $20K/year, CFO for more |\n| `current_solution` | Free/low-cost tools cobbled together |\n| `urgency` | Medium — next audit in 6 months |\n\nThe AI customer references this context naturally during conversation (e.g., \"We're a 250-person manufacturing company\" or \"Our next audit is in six months\").\n\n#### 1.4 Document-Grounded Roleplay (RAG Integration)\n\nWhen an organization has uploaded training documents (product brochures, playbooks, etc.), the roleplay becomes **document-grounded**:\n\n- The **Persona Agent** uses document context to ask questions grounded in real company materials.\n- The **Knowledge Accuracy Agent** fact-checks trainee claims against these documents in real-time.\n- Each persona has a `rag_probing_style` (curious, challenge, gotcha) controlling how aggressively the AI customer probes product knowledge.\n\n#### 1.5 Guardrails\n\nThe **Guardrail Agent** validates every trainee message before it reaches the AI:\n\n| Check | Action | Example |\n|-------|--------|---------|\n| Empty / too short | Block | \"Could you say that again?\" |\n| Too long (>3000 chars) | Block | \"Can you break that down?\" |\n| Prompt injection | Block | \"ignore your instructions...\" |\n| Character breaking | Block | \"are you an AI?\" |\n| Inappropriate content | Block | \"Let's keep this professional.\" |\n| Keyboard mashing | Block | \"asdfjkl;\" |\n| Off-topic (soft) | Redirect | PersonaAgent steers back to business |\n\n#### 1.6 Real-Time Features\n\n- **Stage Tracking**: LLM-detected sales stage (Opening, Discovery, Presentation, Objection, Closing) with progress bar.\n- **Coaching Hints**: Context-aware tips from the Analyst Agent (e.g., \"Ask about their timeline to move toward closing\").\n- **EQ Score**: Transformer-powered emotional intelligence badge (empathetic/neutral/pushy) with empathy and pressure metrics.\n- **Deal Probability**: SalesRLAgent conversion gauge with trend chart (D3).\n- **LSTM Risk Score**: Sequence-based deal failure prediction with trend (rising/falling/stable), updated every turn.\n- **Deal Intelligence Panel**: 5 inline metrics — Deal Confidence, Momentum, Buyer State, Willingness, LSTM Risk.\n- **Fact-Check Alerts**: Flagged claims when trainee makes unverified statements.\n- **Voice Analytics**: Whisper-powered WPM, filler word ratio, pause analysis, confidence scoring with coaching feedback.\n- **Three Modes**: Chat (text + full analytics), Avatar (animated SVG persona), Voice (Whisper STT + voice metrics).\n\n#### 1.7 Post-Session Evaluation\n\nWhen a session ends, three agents run:\n\n1. **Performance Agent** — Category scores (5 x 0-20), summary, strengths, improvements, coaching tip, per-stage analysis\n2. **Replay Agent** — Annotated transcript with turning points, missed signals, alternative responses\n3. **SalesRLAgent** — Full turn-by-turn conversion trajectory with turning point analysis\n\nThese are blended with the **NLP Evaluator** scores: `Final = 60% NLP + 40% LLM` per category.\n\n#### 1.8 Persona System\n\n8 pre-built personas covering different difficulty levels:\n\n| Persona | Difficulty | Key Challenge |\n|---------|------------|---------------|\n| The Friendly Prospect | Beginner | Easy rapport, needs team buy-in |\n| The Budget Hunter | Beginner | Price-focused, demands ROI proof |\n| The Busy Executive | Intermediate | Short attention span, wants efficiency |\n| The Detail Seeker | Intermediate | Deep technical questions |\n| The Skeptic | Advanced | Evidence-based, trusts nothing |\n| The Gatekeeper | Intermediate | Not the decision maker |\n| The Competitor Loyalist | Advanced | Happy with current vendor |\n| The Overwhelmed Owner | Beginner | Non-technical, needs simplicity |\n\nEach persona has: personality traits (5 dimensions), trigger topics, common objections, company context, scenario brief, tone, and difficulty level.\n\n---\n\n### 2. MCQ Generation Module\n\nGenerates high-quality, document-grounded multiple-choice questions using a **4-stage pipeline**:\n\n```\nRAG Retrieval -> Stem Generator (LLM) -> Distractor Generator (LLM)\n    -> Distractor Filter (rules) -> MCQ Validator (embeddings + LLM + rules)\n```\n\n- **Diversity Enforcement**: Levenshtein similarity filtering, anti-duplication prompts\n- **3-Dimensional Validation**: Content relevance (embeddings), answer correctness (LLM-as-judge), question clarity (rules)\n- **Complete Test System**: Test creation, MCQ practice mode, attempt tracking with analytics\n\n---\n\n### 3. RAG (Retrieval-Augmented Generation) Engine\n\n| Component | Responsibility |\n|-----------|---------------|\n| **Embedding Manager** | Nomic Embed Text (`nomic-embed-text`, 768-dim, Ollama-served) |\n| **Vector Store** | ChromaDB with org-scoped collections, 500-token chunks with 50 overlap |\n| **Retriever** | Similarity search with distance-based ranking |\n\nUsed by: Roleplay (persona knowledge + fact-checking), MCQ (question generation), Chatbot (Q&A).\n\n---\n\n### 4. Knowledge Chatbot\n\nRAG-powered interactive Q&A with training materials. Streaming responses via Ollama, conversational memory, source citations.\n\n---\n\n### 5. Content Management\n\nDocument upload (PDF, TXT), content library management, semantic search, version tracking. Multi-format support including URL scraping and media transcription.\n\n---\n\n### 6. Organization & User Management\n\nMulti-tenant architecture with isolated data per organization. Role-based access (Admin/Employee), invite system, JWT authentication.\n\n---\n\n### 7. Performance Dashboard & Analytics\n\nD3.js-powered analytics dashboard with:\n- **Overview**: MCQ/Roleplay averages, practice time, improvement trends, strongest/weakest skills\n- **MCQ Tab**: Score distribution chart, progress trend, attempts table\n- **Roleplay Tab**: Score trend chart, skill radar (5-axis), per-persona performance, category progress bars\n\n---\n\n## Evaluation Metrics\n\n### Roleplay Evaluation — Hybrid 3-Tier Architecture\n\n| Tier | Method | What It Produces |\n|------|--------|-----------------|\n| **Tier 1** | Rule-based NLP (questions, keywords, flow, dynamics) | Per-category scores (0-20 x 5) |\n| **Tier 2** | ML/NLP (sentiment trajectory, named entities, dialogue acts) | Modifier scores adjusting Tier 1 |\n| **Tier 3** | LLM (Performance Agent + Replay Agent) | Qualitative feedback, coaching, annotated transcript |\n\n**Final Score** = 60% NLP + 40% LLM per category (max 100).\n\n### MCQ Evaluation — 6-Criteria Weighted Rubric\n\nRelevance (25%), Correctness (25%), Stage Fit (15%), Persona Fit (15%), Distractor Plausibility (15%), Independence (5%). Each scored 1-5, normalized to 0-100.\n\n---\n\n## Models & Training Data\n\nSalesForge AI uses **15 AI components** spanning pre-trained transformer models, 6 domain fine-tuned DistilBERT classifiers, a 2-layer LSTM sequence model, a traditional ML ensemble, and Whisper-based voice analytics — trained across **9 distinct datasets**.\n\n### Pre-trained Models (Off-the-shelf)\n\n| # | Component | Model | Source | Use in System |\n|---|-----------|-------|--------|---------------|\n| 1 | **LLM** | `llama3.1:8b-instruct-q8_0` | Meta (Ollama) | Persona responses, MCQ generation, evaluation, coaching, chatbot |\n| 2 | **RAG Embeddings** | `nomic-embed-text` (768-dim) | Nomic AI (Ollama) | RAG retrieval (ChromaDB), MCQ content validation |\n| 2b | **ML Embeddings** | `all-MiniLM-L6-v2` (384-dim) | Sentence-BERT | Intent similarity (active listening), conversion feature extraction |\n| 3 | **NLI Classifier** | `cross-encoder/nli-deberta-v3-base` | DeBERTa v3 | Zero-shot objection detection, active listening (Engine A) |\n| 4 | **Emotion 7-class** | `j-hartmann/emotion-english-distilroberta-base` | DistilRoBERTa | Emotion analysis (Engine B) |\n| 5 | **Emotion 28-class** | `SamLowe/roberta-base-go_emotions` | RoBERTa | Fine-grained empathy detection (Engine B) |\n| 6 | **RAG Re-ranker** | `ms-marco-MiniLM-L-6-v2` | Cross-Encoder | Chunk re-ranking, Knowledge Agent fact-checking |\n| 7 | **Voice STT** | `faster-whisper` (base, int8) | OpenAI Whisper via CTranslate2 | Speech-to-text with word-level timestamps, WPM, filler detection, confidence scoring |\n\n### Fine-tuned DistilBERT Classifiers (Domain-specific)\n\nAll 6 classifiers use **DistilBERT-base-uncased** (67M params) as the base model, fine-tuned with weighted cross-entropy loss for class imbalance.\n\n#### C1 — Objection Detection (92.1% accuracy)\n\n| Detail | Value |\n|--------|-------|\n| **Task** | 8-class objection type classification |\n| **Labels** | `objection_price`, `objection_timing`, `objection_authority`, `objection_need`, `objection_trust`, `objection_value`, `objection_fairness`, `not_objection` |\n| **Training Data** | 4,181 examples |\n| **Datasets** | CaSiNo (4,119) + synthetic B2B (62) |\n| **Citation** | Chawla et al., \"CaSiNo: A Corpus of Campsite Negotiation Dialogues\", NAACL 2021 |\n| **Ensemble** | Runs alongside DeBERTa NLI; fine-tuned takes priority when confidence > 0.6 |\n\n#### C2 — Response Handling Quality (82.7% accuracy)\n\n| Detail | Value |\n|--------|-------|\n| **Task** | 3-class response quality scoring |\n| **Labels** | `resolved`, `deflected`, `escalated` |\n| **Training Data** | 795 examples |\n| **Datasets** | CaSiNo objection-response pairs (765) + synthetic B2B (30) |\n| **Input Format** | `\"Concern: {text} Response: {text}\"` |\n| **Citation** | CaSiNo (",
+ "hits": {
+  "st": [
+   {
+    "file": "generate_lead_data.py",
+    "line": 188,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "    \"\"\"",
+     "    Train CTGAN on the remapped data, then sample 2k rows per industry.",
+     "    \"\"\"",
+     "    try:",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "        from sdv.metadata import SingleTableMetadata",
+     "    except ImportError:",
+     "        print(\"SDV not installed. Run: pip install sdv\")",
+     "        return"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "generate_lead_data.py",
+    "line": 189,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    Train CTGAN on the remapped data, then sample 2k rows per industry.",
+     "    \"\"\"",
+     "    try:",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "        from sdv.metadata import SingleTableMetadata",
+     "    except ImportError:",
+     "        print(\"SDV not installed. Run: pip install sdv\")",
+     "        return",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "generate_lead_data.py",
+    "line": 188,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "    \"\"\"",
+     "    Train CTGAN on the remapped data, then sample 2k rows per industry.",
+     "    \"\"\"",
+     "    try:",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "        from sdv.metadata import SingleTableMetadata",
+     "    except ImportError:",
+     "        print(\"SDV not installed. Run: pip install sdv\")",
+     "        return"
+    ]
+   },
+   {
+    "file": "generate_lead_data.py",
+    "line": 189,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    Train CTGAN on the remapped data, then sample 2k rows per industry.",
+     "    \"\"\"",
+     "    try:",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "        from sdv.metadata import SingleTableMetadata",
+     "    except ImportError:",
+     "        print(\"SDV not installed. Run: pip install sdv\")",
+     "        return",
+     ""
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "generate_lead_data.py",
+    "line": 188,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "    \"\"\"",
+     "    Train CTGAN on the remapped data, then sample 2k rows per industry.",
+     "    \"\"\"",
+     "    try:",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "        from sdv.metadata import SingleTableMetadata",
+     "    except ImportError:",
+     "        print(\"SDV not installed. Run: pip install sdv\")",
+     "        return"
+    ]
+   },
+   {
+    "file": "generate_lead_data.py",
+    "line": 200,
+    "text": "synthesizer = CTGANSynthesizer(metadata, epochs=300, batch_size=500, verbose=True)",
+    "context": [
+     "    metadata.update_column(column_name=\"Converted\", sdtype=\"categorical\")",
+     "    metadata.update_column(column_name=\"Email\", sdtype=\"email\")",
+     "",
+     "    print(\"Training CTGAN (300 epochs)...\")",
+     "    synthesizer = CTGANSynthesizer(metadata, epochs=300, batch_size=500, verbose=True)",
+     "    synthesizer.fit(remapped_df)",
+     "",
+     "    all_synthetic = []",
+     "    for industry in INDUSTRIES:"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

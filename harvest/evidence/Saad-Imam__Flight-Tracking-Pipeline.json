@@ -1,0 +1,108 @@
+{
+ "repo": "Saad-Imam/Flight-Tracking-Pipeline",
+ "disk_kb": 565,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Big Data Architecture: Real-Time Flight Analytics & Predictive Pipeline\n\n**A comprehensive data engineering project for real-time ingestion, processing, storage, and predictive analytics of aviation data.**\n\n---\n\n### Business Problem\n*   **Domain:** Aviation & Logistics\n*   **Problem:** Flight delays cost the aviation industry billions annually. Identifying root causes (weather, carrier, or system congestion) in real-time is difficult due to the high velocity of incoming flight events.\n*   **Goal:** \n    1. Provide a **Live Executive Dashboard** for monitoring flight operations and delay causes.\n    2. Implement a **Predictive Model** that estimates arrival delays to allow for proactive resource allocation.\n    3. Maintain a dual-tier storage system (**Hot/Cold**) for both operational speed and historical depth.\n\n---\n\n### Architecture\n\nThe pipeline is fully dockerized and orchestrated by Airflow, following a Lambda-style architecture to separate real-time \"Hot\" processing from archival \"Cold\" storage.\n![System Architecture Diagram](docs/architecture.png)\n\n#### **Tech Stack**\n| Component | Technology | Role |\n| :--- | :--- | :--- |\n| **Ingestion** | **Kafka** (w/ Zookeeper) | Buffers high-velocity streaming data from the flight generator. |\n| **Orchestration** | **Apache Airflow** | Schedules micro-batches, model training, and data archival jobs. |\n| **Processing** | **Apache Spark** (PySpark) | Handles ETL, stream-to-static joins, and ML inference. |\n| **Hot Storage** | **MongoDB** | Serves as the real-time sink for the dashboard API. |\n| **Cold Storage** | **HDFS** (Hadoop) | Long-term archival of raw and enriched data in Parquet format. |\n| **Metadata** | **Hive Metastore** | Manages table definitions for analytical SQL querying. |\n| **Caching** | **Redis** | Caches static dimension data (Airports, Airlines) for sub-millisecond joins. |\n| **Visualization** | **Streamlit** | Multi-page frontend for monitoring KPIs and ML performance. |\n\n---\n\n### Data Dictionary & Schema\n\nThe following schema defines the core **Flight Events Stream** processed through the pipeline.\n\n#### **Main Flight Event Schema**\n| Column Name | Data Type | Description |\n| :--- | :--- | :--- |\n| `flight_id` | String | Unique identifier for each flight event (generated). |\n| `timestamp` | Timestamp | Event generation timestamp (ISO 8601 format). |\n| `AIRLINE_CODE` | String | IATA airline code (e.g., 'AA', 'DL'). |\n| `ORIGIN` | String | IATA origin airport code (e.g., 'ATL'). |\n| `DEST` | String | IATA destination airport code (e.g., 'LAX'). |\n| `CRS_DEP_TIME` | Integer | Scheduled departure time (0-2400 format). |\n| `DEP_DELAY` | Double | Departure delay in minutes (negative = early). |\n| `ARR_DELAY` | Double | Arrival delay in minutes. |\n| `DISTANCE` | Double | Flight distance in miles. |\n| `DELAY_DUE_WEATHER` | Double | Delay attributed to weather (minutes). |\n| `DELAY_DUE_CARRIER` | Double | Delay attributed to carrier operations. |\n| `DELAY_DUE_NAS` | Double | Delay attributed to National Airspace System. |\n| `DELAY_DUE_LATE_AIRCRAFT` | Double | Delay due to late-arriving aircraft. |\n| `Month` | Integer | Month of flight (1-12). |\n| `DayOfWeek` | Integer | Day of week (0=Monday, 6=Sunday). |\n\n### Data Flow\n1.  **Generation:** A Python producer simulates flight events based on statistical distributions from historical data, pushing JSON to **Kafka** topics.\n2.  **Ingestion & Processing:** Airflow triggers a **Spark Streaming** job:\n    *   Reads new offsets from Kafka.\n    *   Enriches events by joining the stream with static data (Airline/Airport names) stored in **Redis**.\n    *   Performs real-time aggregations (e.g., average delay per carrier).\n3.  **Predictive Analytics:** The Spark job passes incoming features (`Month`, `DayOfWeek`, `DISTANCE`, `DEP_DELAY`) into a **pre-trained ML model** to predict the `ARR_DELAY`.\n4.  **Storage:** \n    *   **Hot Store:** Enriched data + predictions are written to **MongoDB**.\n    *   **Cold Store:** Raw events are archived to **HDFS** in compressed Parquet.\n5.  **Archival & Purging:** An Airflow DAG monitors the MongoDB size. Once a 300MB threshold is reached, historical records are offloaded to HDFS and purged from the hot store.\n\n---\n\n### Dashboard & KPIs\n\nThe Streamlit dashboard provides 6 distinct views into the data:\n1.  **Real-Time Overview:** Live counts of incoming flights and system latency.\n2.  **Streaming Analytics:** Rolling window analysis of delays by `AIRLINE_CODE`.\n3.  **Historical Analytics:** OLAP drill-downs into long-term delay trends.\n4.  **Prediction & Insights:** Analysis of predicted vs. actual arrival delays.\n5.  **Data Quality & Metadata:** Monitoring of missing values and Hive schema health.\n6.  **Operations & Monitoring:** Visualization of Airflow DAG statuses and Spark job resource usage.\n\n---\n\n### Machine Learning Model\n*   **Target:** `ARR_DELAY` (Arrival Delay in minutes).\n*   **Features:** `Month`, `DayOfWeek`, `CRS_DEP_TIME`, `DISTANCE`, `DEP_DELAY`.\n*   **Implementation:** A Random Forest Regressor trained on historical HDFS data. The model is persisted and loaded by the Spark Streaming job for real-time inference.\n\n---\n\n### How to Run\n\n#### **Prerequisites**\n*   Docker & Docker Compose (allocated min 4 GB RAM).\n*   Python 3.8+\n\n#### **Setup**\n1.  **Clone the Repository:**\n    ```bash\n    git clone https://github.com/Saad-Imam/Flight-Tracking-Pipeline.git\n    cd Flight-Tracking-Pipeline\n    ```\n\n2.  **Launch Environment:**\n    ```bash\n    docker-compose up -d --build\n    ```\n    This automatically starts the entire pipeline. No manual modification required!\n\n3.  **Access Web UIs:**\n    *   **Airflow:** `http://localhost:8080`\n    *   **Dashboard:** `http://localhost:8501`\n    *   **Spark Master:** `http://localhost:8081`\n\n---\n\n",
+ "hits": {
+  "st": [
+   {
+    "file": "synth_data/copula_gen.py",
+    "line": 2,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import pickle",
+     "",
+     "# Load Data"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "synth_data/copula_gen.py",
+    "line": 3,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import pickle",
+     "",
+     "# Load Data",
+     "print(\"Loading dataset...\")"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "synth_data/copula_gen.py",
+    "line": 2,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import pickle",
+     "",
+     "# Load Data"
+    ]
+   },
+   {
+    "file": "synth_data/copula_gen.py",
+    "line": 3,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import pickle",
+     "",
+     "# Load Data",
+     "print(\"Loading dataset...\")"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "synth_data/copula_gen.py",
+    "line": 2,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import pickle",
+     "",
+     "# Load Data"
+    ]
+   },
+   {
+    "file": "synth_data/copula_gen.py",
+    "line": 45,
+    "text": "model = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "    metadata.update_column(column_name=col, sdtype='categorical')",
+     "",
+     "# Train Gaussian Copula ",
+     "print(\"Training Gaussian Copula\")",
+     "model = GaussianCopulaSynthesizer(metadata)",
+     "model.fit(df)",
+     "",
+     "print(\"Generating 5 synthetic rows...\")",
+     "synthetic_sample = model.sample(5)"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

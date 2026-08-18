@@ -1,0 +1,362 @@
+{
+ "repo": "Yuheng-Looi/fyp",
+ "disk_kb": 44736,
+ "method": "partial_clone",
+ "tree_files": 342,
+ "status": "ok",
+ "readme": "# Network Anomaly Detection System (FYP)\n\nThis repository contains the Final Year Project (FYP) source code for an Adaptive Threat Detection & Mitigation (ATDM) Network Anomaly Detection System. The system is designed to simulate network traffic, extract features in real-time, detect anomalies using Graph Neural Networks (GNN) and machine learning models (XGBoost), and perform automated mitigation on SDN topologies.\n\n## Project Overview\n\nThe system consists of three main components:\n\n1. **Backend (Inference Engine & GNN Models)**: A FastAPI-based server that hosts the machine learning models. It receives traffic data, performs real-time inference, and detects anomalies using custom GNN scalers (StandardScaler, RobustScaler, TriChannelScaler).\n2. **Frontend & Topology Controller**: A SDN controller (Ryu-based / Simple Switch 13 and ATDM) and web dashboard that manages the network topology (using Open vSwitch and Linux namespaces), simulates attack scenarios, and extracts flow features.\n3. **Benchmark & Evaluation Pipeline**: Automated evaluation framework for running 6 attack scenarios (Probe, DoS, DDoS, SQLi, Credential Attack, Exfiltration) across Small and Large network topologies, generating paper figures (Figures 1–6) and exporting full experimental results to Excel.\n\n## Repository Structure\n\n```text\nfyp/\n├── backend/\n│   ├── app.py                      # FastAPI inference server\n│   ├── benchmark/\n│   │   ├── benchmark.py            # Primary benchmark execution engine\n│   │   ├── generate_all_figures.py # Master figure & Excel workbook generator\n│   │   ├── controllers/            # SDN controllers (Simple Switch 13, ATDM)\n│   │   ├── config/scenarios/       # Scenario definitions (probe, dos, ddos, etc.)\n│   │   └── results/final_atdm_runs/# Verified 24-run benchmark JSON dataset\n│   ├── gnn_compare/\n│   │   ├── fig1_rescale_retrain.py # GNN feature scaling benchmark (Standard vs Robust vs Tri-Channel)\n│   │   └── fig1_rescale_vs_retrain.png # Figure 1 output\n│   ├── scalers/                    # Pre-fitted feature scalers (.pkl)\n│   └── models/                     # Trained PyTorch GNN model checkpoints\n├── final_experiment_results.xlsx   # Complete 9-sheet Excel workbook\n├── README.md                       # Project documentation\n└── .gitignore                      # Git ignore rules\n```\n\n## Quick Start & Reproducing Benchmarks\n\n### 1. Environment Setup\n```bash\npython3 -m venv fypenv\nsource fypenv/bin/activate\npip install -r requirements.txt  # Or install pytorch, torch-geometric, matplotlib, openpyxl, pandas, scikit-learn\n```\n\n### 2. Run GNN Feature Scaling Experiment (Figure 1)\n```bash\nPYTHONPATH=backend python3 backend/gnn_compare/fig1_rescale_retrain.py\n```\n- Outputs: `backend/gnn_compare/fig1_rescale_vs_retrain.png` and `backend/gnn_compare/fig1_f1_raw.csv`.\n\n### 3. Generate All Paper Figures (Figures 2–6) and Excel Workbook\n```bash\nPYTHONPATH=backend python3 backend/benchmark/generate_all_figures.py\n```\n- Figures generated in `backend/benchmark/figures/`:\n  - `fig2_latency_timeline.png` (User-perceived latency across 6.5-minute timeline)\n  - `fig3_security_preservation.png` (Web Server & Database protection scores)\n  - `fig4_service_availability.png` (Service Continuity Scores across scenarios)\n  - `fig5_bandwidth_util.png` (Bandwidth utilization percentage timeline)\n  - `fig6_throughput_timeline.png` (Benign user throughput timeline)\n- Excel Workbook: `final_experiment_results.xlsx` (9 formatted sheets with raw data and aggregated statistics).\n\n## System Requirements\n\n- **Operating System**: Linux (Ubuntu 20.04+ recommended; relies on OVS and Linux network namespaces)\n- **Python**: Python 3.10+ (tested on Python 3.12)\n- **Privileges**: Root/sudo access required for SDN topology simulation and network interface management\n- **Hardware**: GPU recommended for training GNN models\n",
+ "hits": {
+  "ctgan_mod": [
+   {
+    "file": "backend/fyp.ipynb",
+    "line": 2099,
+    "text": "\"import ctgan_utils\\n\",",
+    "context": [
+     "    \"import matplotlib.pyplot as plt\\n\",",
+     "    \"import importlib\\n\",",
+     "    \"\\n\",",
+     "    \"# Reload ctgan_utils to pick up any changes\\n\",",
+     "    \"import ctgan_utils\\n\",",
+     "    \"importlib.reload(ctgan_utils)\\n\",",
+     "    \"\\n\",",
+     "    \"from ctgan_utils import (\\n\",",
+     "    \"    train_and_generate_ctgan,\\n\","
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "backend/ctgan_utils.py",
+    "line": 34,
+    "text": "from sdv.single_table import CTGANSynthesizer as _CTGAN",
+    "context": [
+     "def _load_sdv():",
+     "    \"\"\"Lazy load SDV modules.\"\"\"",
+     "    global _sdv_loaded, CTGANSynthesizer, evaluate_quality, SingleTableMetadata",
+     "    if not _sdv_loaded:",
+     "        from sdv.single_table import CTGANSynthesizer as _CTGAN",
+     "        from sdv.evaluation.single_table import evaluate_quality as _eval",
+     "        from sdv.metadata import SingleTableMetadata as _Meta",
+     "        CTGANSynthesizer = _CTGAN",
+     "        evaluate_quality = _eval"
+    ]
+   },
+   {
+    "file": "backend/playground/playground.ipynb",
+    "line": 185,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"\\n\","
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "backend/ctgan_utils.py",
+    "line": 36,
+    "text": "from sdv.metadata import SingleTableMetadata as _Meta",
+    "context": [
+     "    global _sdv_loaded, CTGANSynthesizer, evaluate_quality, SingleTableMetadata",
+     "    if not _sdv_loaded:",
+     "        from sdv.single_table import CTGANSynthesizer as _CTGAN",
+     "        from sdv.evaluation.single_table import evaluate_quality as _eval",
+     "        from sdv.metadata import SingleTableMetadata as _Meta",
+     "        CTGANSynthesizer = _CTGAN",
+     "        evaluate_quality = _eval",
+     "        SingleTableMetadata = _Meta",
+     "        _sdv_loaded = True"
+    ]
+   },
+   {
+    "file": "backend/playground/playground.ipynb",
+    "line": 187,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "   \"source\": [",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"\\n\",",
+     "    \"def train_and_sample_ctgan(real_data, metadata, label_value, \\n\",",
+     "    \"                           sample_sizes=[1000, 800, 500, 300, 200, 100],\\n\","
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "backend/ctgan_utils.py",
+    "line": 35,
+    "text": "from sdv.evaluation.single_table import evaluate_quality as _eval",
+    "context": [
+     "    \"\"\"Lazy load SDV modules.\"\"\"",
+     "    global _sdv_loaded, CTGANSynthesizer, evaluate_quality, SingleTableMetadata",
+     "    if not _sdv_loaded:",
+     "        from sdv.single_table import CTGANSynthesizer as _CTGAN",
+     "        from sdv.evaluation.single_table import evaluate_quality as _eval",
+     "        from sdv.metadata import SingleTableMetadata as _Meta",
+     "        CTGANSynthesizer = _CTGAN",
+     "        evaluate_quality = _eval",
+     "        SingleTableMetadata = _Meta"
+    ]
+   },
+   {
+    "file": "backend/playground/playground.ipynb",
+    "line": 186,
+    "text": "\"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+    "context": [
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"\\n\",",
+     "    \"def train_and_sample_ctgan(real_data, metadata, label_value, \\n\","
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "backend/ctgan_utils.py",
+    "line": 34,
+    "text": "from sdv.single_table import CTGANSynthesizer as _CTGAN",
+    "context": [
+     "def _load_sdv():",
+     "    \"\"\"Lazy load SDV modules.\"\"\"",
+     "    global _sdv_loaded, CTGANSynthesizer, evaluate_quality, SingleTableMetadata",
+     "    if not _sdv_loaded:",
+     "        from sdv.single_table import CTGANSynthesizer as _CTGAN",
+     "        from sdv.evaluation.single_table import evaluate_quality as _eval",
+     "        from sdv.metadata import SingleTableMetadata as _Meta",
+     "        CTGANSynthesizer = _CTGAN",
+     "        evaluate_quality = _eval"
+    ]
+   },
+   {
+    "file": "backend/ctgan_utils.py",
+    "line": 35,
+    "text": "from sdv.evaluation.single_table import evaluate_quality as _eval",
+    "context": [
+     "    \"\"\"Lazy load SDV modules.\"\"\"",
+     "    global _sdv_loaded, CTGANSynthesizer, evaluate_quality, SingleTableMetadata",
+     "    if not _sdv_loaded:",
+     "        from sdv.single_table import CTGANSynthesizer as _CTGAN",
+     "        from sdv.evaluation.single_table import evaluate_quality as _eval",
+     "        from sdv.metadata import SingleTableMetadata as _Meta",
+     "        CTGANSynthesizer = _CTGAN",
+     "        evaluate_quality = _eval",
+     "        SingleTableMetadata = _Meta"
+    ]
+   },
+   {
+    "file": "backend/ctgan_utils.py",
+    "line": 36,
+    "text": "from sdv.metadata import SingleTableMetadata as _Meta",
+    "context": [
+     "    global _sdv_loaded, CTGANSynthesizer, evaluate_quality, SingleTableMetadata",
+     "    if not _sdv_loaded:",
+     "        from sdv.single_table import CTGANSynthesizer as _CTGAN",
+     "        from sdv.evaluation.single_table import evaluate_quality as _eval",
+     "        from sdv.metadata import SingleTableMetadata as _Meta",
+     "        CTGANSynthesizer = _CTGAN",
+     "        evaluate_quality = _eval",
+     "        SingleTableMetadata = _Meta",
+     "        _sdv_loaded = True"
+    ]
+   },
+   {
+    "file": "backend/playground/playground.ipynb",
+    "line": 185,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "backend/playground/playground.ipynb",
+    "line": 186,
+    "text": "\"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+    "context": [
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"\\n\",",
+     "    \"def train_and_sample_ctgan(real_data, metadata, label_value, \\n\","
+    ]
+   },
+   {
+    "file": "backend/playground/playground.ipynb",
+    "line": 187,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "   \"source\": [",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"\\n\",",
+     "    \"def train_and_sample_ctgan(real_data, metadata, label_value, \\n\",",
+     "    \"                           sample_sizes=[1000, 800, 500, 300, 200, 100],\\n\","
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "backend/ctgan_utils.py",
+    "line": 25,
+    "text": "CTGANSynthesizer = None",
+    "context": [
+     "warnings.filterwarnings('ignore')",
+     "",
+     "# Lazy load SDV to avoid import overhead",
+     "_sdv_loaded = False",
+     "CTGANSynthesizer = None",
+     "evaluate_quality = None",
+     "SingleTableMetadata = None",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "backend/ctgan_utils.py",
+    "line": 32,
+    "text": "global _sdv_loaded, CTGANSynthesizer, evaluate_quality, SingleTableMetadata",
+    "context": [
+     "",
+     "",
+     "def _load_sdv():",
+     "    \"\"\"Lazy load SDV modules.\"\"\"",
+     "    global _sdv_loaded, CTGANSynthesizer, evaluate_quality, SingleTableMetadata",
+     "    if not _sdv_loaded:",
+     "        from sdv.single_table import CTGANSynthesizer as _CTGAN",
+     "        from sdv.evaluation.single_table import evaluate_quality as _eval",
+     "        from sdv.metadata import SingleTableMetadata as _Meta"
+    ]
+   },
+   {
+    "file": "backend/ctgan_utils.py",
+    "line": 34,
+    "text": "from sdv.single_table import CTGANSynthesizer as _CTGAN",
+    "context": [
+     "def _load_sdv():",
+     "    \"\"\"Lazy load SDV modules.\"\"\"",
+     "    global _sdv_loaded, CTGANSynthesizer, evaluate_quality, SingleTableMetadata",
+     "    if not _sdv_loaded:",
+     "        from sdv.single_table import CTGANSynthesizer as _CTGAN",
+     "        from sdv.evaluation.single_table import evaluate_quality as _eval",
+     "        from sdv.metadata import SingleTableMetadata as _Meta",
+     "        CTGANSynthesizer = _CTGAN",
+     "        evaluate_quality = _eval"
+    ]
+   },
+   {
+    "file": "backend/ctgan_utils.py",
+    "line": 37,
+    "text": "CTGANSynthesizer = _CTGAN",
+    "context": [
+     "    if not _sdv_loaded:",
+     "        from sdv.single_table import CTGANSynthesizer as _CTGAN",
+     "        from sdv.evaluation.single_table import evaluate_quality as _eval",
+     "        from sdv.metadata import SingleTableMetadata as _Meta",
+     "        CTGANSynthesizer = _CTGAN",
+     "        evaluate_quality = _eval",
+     "        SingleTableMetadata = _Meta",
+     "        _sdv_loaded = True",
+     ""
+    ]
+   },
+   {
+    "file": "backend/ctgan_utils.py",
+    "line": 105,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "            # Increase epochs slightly on each retry to give the model more capacity",
+     "            attempt_epochs = int(epochs * (1 + 0.2 * (attempt - 1)))",
+     "            print(f\"  Attempt {attempt}/{max_retries} - epochs: {attempt_epochs}\")",
+     "            ",
+     "            synthesizer = CTGANSynthesizer(",
+     "                metadata,",
+     "                epochs=attempt_epochs,",
+     "                batch_size=batch_size,",
+     "                cuda=cuda,"
+    ]
+   },
+   {
+    "file": "backend/playground/playground.ipynb",
+    "line": 185,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "backend/playground/playground.ipynb",
+    "line": 210,
+    "text": "\"            synthesizer = CTGANSynthesizer(metadata)\\n\",",
+    "context": [
+     "    \"        size_best_df = None\\n\",",
+     "    \"\\n\",",
+     "    \"        for run in range(runs):\\n\",",
+     "    \"            print(f\\\"  [Run {run+1}/{runs}] Training CTGAN for label {label_value}...\\\")\\n\",",
+     "    \"            synthesizer = CTGANSynthesizer(metadata)\\n\",",
+     "    \"            synthesizer.fit(real_data)\\n\",",
+     "    \"            synthetic = synthesizer.sample(size)\\n\",",
+     "    \"            quality = evaluate_quality(real_data, synthetic, metadata)\\n\",",
+     "    \"            score = quality.get_score()\\n\","
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ctgan_mod",
+  "ev",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [
+  "backend/playground/checkpoints/ctgan"
+ ],
+ "dependencies": {
+  "backend/requirements.txt": [
+   "copulas==0.12.3",
+   "ctgan==0.11.1",
+   "rdt==1.18.2",
+   "sdmetrics==0.24.0",
+   "sdv==1.29.1"
+  ]
+ }
+}

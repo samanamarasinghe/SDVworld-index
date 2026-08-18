@@ -1,0 +1,519 @@
+{
+ "repo": "GillianGrayson/txai_omics_3",
+ "disk_kb": 46509,
+ "method": "partial_clone",
+ "tree_files": 209,
+ "status": "ok",
+ "readme": "# Детектирование и построение состязательных примеров, поиск аномалий во входных данных и экспертная оценка модели \n## Общие сведения\n\nРепозиторий с исходным кодом для Экспериментального Образца (ЭО) программного обеспечения, разрабатываемого в рамках \nчетвертого этапа научно-исследовательской работы по теме «Приложение методов доверенного и объяснимого искусственного \nинтеллекта к анализу омикс-данных».\n\n## Подготовка окружения\n\n```bash\n# clone project\ncd <project directory>\n\n# [OPTIONAL] create conda environment\nconda create -n env_name python=3.9\nconda activate env_name\n\n# install pytorch according to instructions\n# https://pytorch.org/get-started/\n\n# install requirements\npip install -r requirements.txt\n```\n\n## Описание данных и экспериментов\nИсследуются данные двух типов: эпигенетические и иммунологические данные.\n\n### Эпигенетические данные\nДанные метилирования ДНК цельной крови человека из репозитория [GEO](https://www.ncbi.nlm.nih.gov/geo/) со следующими условиями: крупнейшие наборы данных, которые включают как пациентов с болезнью Паркинсона, так и контрольную группу, при этом в каждой группе не менее 50 семплов.\nНаборы данных GSE145361 и GSE111629 были выбраны в качестве тренировочно-валидационного набора данных, GSE72774 - в качестве тестового.\nВсего 2968 семплов (2460 в тренировочно-валидационной выборке и 508 в тестовой).\nДля построения моделей использовались 1000 наиболее важных признаков - CpG-сайтов.\nОбученные в рамках второго этапа модели решают задачи классификации Cases (болезнь Паркинсона) vs Controls (здоровые) по данным отобранных признаков (CpG-сайтов).\n\n### Иммунологические данные\nДанные иммунологического профиля представляют из себя значения концентраций 10 наиболее значимых цитокинов в плазме крови для 300 человек (260 человек - тренировочно-валидационная выборка и 40 человек - тестовая).\nОбученные в рамках второго этапа модели решают задачи регрессии хронологического возраста по данным иммунологии.\n\n\n## Файловая структура\nДиректория `data` содержит данные согласно иерархии:\n```\n└── data                            <- Общая директория с данными\n    ├── dnam                           <- Эпигенетические данные\n    │   ├── model.ckpt                    <- Обученная в рамках второго этапа модель\n    │   ├── models                        <- Результаты экспериментов\n    │   ├── betas.xlsx                    <- Датасет\n    │   ├── feats.xlsx                    <- Файл с указанием входных признаков\n    │   └── classes.xlsx                  <- Файл с указанием классов\n    └── immuno                         <- Иммунологические данные\n        ├── model.ckpt                    <- Обученная в рамках второго этапа модель\n        ├── models                        <- Результаты экспериментов\n        ├── data.xlsx                     <- Датасет\n        └── feats.xlsx                    <- Файл с указанием входных признаков\n```\n\n## Конфигурация экспериментов\n\n### Расположение конфигурационных файлов\n\nКонфигурационные файлы экспериментов находятся в следующих директориях:\n```\n└── configs\n    └── experiment\n        ├── dnam                              <- Эпигенетические данные\n        │   └── classification\n        │       └── parkinson_atk_def_od          <- Конфигурационный файл для генерации и обнаружения состязательных примеров, поиска аномалий\n        └── immuno                            <- Иммунологические данные\n            └── regression\n                └── age_atk_def_od                <- Конфигурационный файл для генерации и обнаружения состязательных примеров, поиска аномалий\n```\n\n### Общая часть\nКонфигурационные файлы `*_atk_def_od` содержат следующие параметры для генерации и обнаружения состязательных примеров \nи поиска аномалий в тестируемых примерах:\n```yaml\nattacks: True    # Флаг генерации состязательных атак\ndefence: True    # Флаг обнаружения состязательных атак (построение детекторов)\noutliers: True   # Флаг поиска аномалий (аутлаеров)\n```\n\n## Запуск экспериментов\n\nДля запуска эксперимента необходимо указать конфигурациионные файлы эксперимента `experiment` \nи модуля данных `datamodule` для конкретной задачи (классификация болезни Паркинсона по эпигенетическим данным \nили регрессия возраста по иммунологическим данным) а так же задать параметры эксперимента, описанные в разделе выше.\n\nПример запуска для поиска состязательных примеров, анализа области применимости моделей в пространстве входных признаков и определения уверенности моделей в задаче регрессии возраста:\n```bash\npython run_adversarial.py\n-datamodule=configs/datamodule/immuno/regression/age\n-experiment=configs/experiment/immuno/regression/age\n-attacks=True\n-defence=True \n-outliers=True\n```\n\n## Результаты\nПосле запуска и окончания вычислений для выбранного эксперимента файлы и графики с результатами сохраняются\nв директории `models` выбранного эксперимента в соответствии с иерархией:\n\n```\nmodels\n└── <модель>                  # Директория для выбранной модели\n    └── runs                      # Директория с результатами единичных экспериментов\n        ├── YYYY-MM-DD_HH-MM-SS       # Дата и время запуска\n        │   └── ...                       # Результирующие файлы, графики\n        └── ...\n```\n",
+ "hits": {
+  "st": [
+   {
+    "file": "src/tasks/classification/adversarial.py",
+    "line": 20,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer, CopulaGANSynthesizer",
+    "context": [
+     "import seaborn as sns",
+     "from tqdm import tqdm",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.lite import SingleTablePreset",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer, CopulaGANSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sklearn.decomposition import PCA",
+     "from sklearn.manifold import Isomap",
+     "from openTSNE import TSNE"
+    ]
+   },
+   {
+    "file": "src/tasks/regression/adversarial.py",
+    "line": 22,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer, CopulaGANSynthesizer",
+    "context": [
+     "from pathlib import Path",
+     "from tqdm import tqdm",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.lite import SingleTablePreset",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer, CopulaGANSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sklearn.decomposition import PCA",
+     "from sklearn.manifold import Isomap",
+     "from openTSNE import TSNE"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "src/tasks/classification/adversarial.py",
+    "line": 18,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import matplotlib.pyplot as plt",
+     "from pathlib import Path",
+     "import seaborn as sns",
+     "from tqdm import tqdm",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.lite import SingleTablePreset",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer, CopulaGANSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sklearn.decomposition import PCA"
+    ]
+   },
+   {
+    "file": "src/tasks/regression/adversarial.py",
+    "line": 20,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from src.tasks.metrics import get_reg_metrics",
+     "from scipy.stats import mannwhitneyu",
+     "from pathlib import Path",
+     "from tqdm import tqdm",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.lite import SingleTablePreset",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer, CopulaGANSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sklearn.decomposition import PCA"
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "src/tasks/classification/adversarial.py",
+    "line": 21,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "from tqdm import tqdm",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.lite import SingleTablePreset",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer, CopulaGANSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sklearn.decomposition import PCA",
+     "from sklearn.manifold import Isomap",
+     "from openTSNE import TSNE",
+     "from pyod.models.ecod import ECOD"
+    ]
+   },
+   {
+    "file": "src/tasks/regression/adversarial.py",
+    "line": 23,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "from tqdm import tqdm",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.lite import SingleTablePreset",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer, CopulaGANSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sklearn.decomposition import PCA",
+     "from sklearn.manifold import Isomap",
+     "from openTSNE import TSNE",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "src/tasks/classification/adversarial.py",
+    "line": 18,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import matplotlib.pyplot as plt",
+     "from pathlib import Path",
+     "import seaborn as sns",
+     "from tqdm import tqdm",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.lite import SingleTablePreset",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer, CopulaGANSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sklearn.decomposition import PCA"
+    ]
+   },
+   {
+    "file": "src/tasks/classification/adversarial.py",
+    "line": 19,
+    "text": "from sdv.lite import SingleTablePreset",
+    "context": [
+     "from pathlib import Path",
+     "import seaborn as sns",
+     "from tqdm import tqdm",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.lite import SingleTablePreset",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer, CopulaGANSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sklearn.decomposition import PCA",
+     "from sklearn.manifold import Isomap"
+    ]
+   },
+   {
+    "file": "src/tasks/classification/adversarial.py",
+    "line": 20,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer, CopulaGANSynthesizer",
+    "context": [
+     "import seaborn as sns",
+     "from tqdm import tqdm",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.lite import SingleTablePreset",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer, CopulaGANSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sklearn.decomposition import PCA",
+     "from sklearn.manifold import Isomap",
+     "from openTSNE import TSNE"
+    ]
+   },
+   {
+    "file": "src/tasks/classification/adversarial.py",
+    "line": 21,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "from tqdm import tqdm",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.lite import SingleTablePreset",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer, CopulaGANSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sklearn.decomposition import PCA",
+     "from sklearn.manifold import Isomap",
+     "from openTSNE import TSNE",
+     "from pyod.models.ecod import ECOD"
+    ]
+   },
+   {
+    "file": "src/tasks/regression/adversarial.py",
+    "line": 20,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from src.tasks.metrics import get_reg_metrics",
+     "from scipy.stats import mannwhitneyu",
+     "from pathlib import Path",
+     "from tqdm import tqdm",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.lite import SingleTablePreset",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer, CopulaGANSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sklearn.decomposition import PCA"
+    ]
+   },
+   {
+    "file": "src/tasks/regression/adversarial.py",
+    "line": 21,
+    "text": "from sdv.lite import SingleTablePreset",
+    "context": [
+     "from scipy.stats import mannwhitneyu",
+     "from pathlib import Path",
+     "from tqdm import tqdm",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.lite import SingleTablePreset",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer, CopulaGANSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sklearn.decomposition import PCA",
+     "from sklearn.manifold import Isomap"
+    ]
+   },
+   {
+    "file": "src/tasks/regression/adversarial.py",
+    "line": 22,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer, CopulaGANSynthesizer",
+    "context": [
+     "from pathlib import Path",
+     "from tqdm import tqdm",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.lite import SingleTablePreset",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer, CopulaGANSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sklearn.decomposition import PCA",
+     "from sklearn.manifold import Isomap",
+     "from openTSNE import TSNE"
+    ]
+   },
+   {
+    "file": "src/tasks/regression/adversarial.py",
+    "line": 23,
+    "text": "from sdv.evaluation.single_table import evaluate_quality",
+    "context": [
+     "from tqdm import tqdm",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.lite import SingleTablePreset",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer, CopulaGANSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sklearn.decomposition import PCA",
+     "from sklearn.manifold import Isomap",
+     "from openTSNE import TSNE",
+     ""
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "src/tasks/classification/adversarial.py",
+    "line": 20,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer, CopulaGANSynthesizer",
+    "context": [
+     "import seaborn as sns",
+     "from tqdm import tqdm",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.lite import SingleTablePreset",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer, CopulaGANSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sklearn.decomposition import PCA",
+     "from sklearn.manifold import Isomap",
+     "from openTSNE import TSNE"
+    ]
+   },
+   {
+    "file": "src/tasks/classification/adversarial.py",
+    "line": 320,
+    "text": "'CTGANSynthesizer': px.colors.qualitative.Light24[2],",
+    "context": [
+     "",
+     "        colors_augs = {",
+     "            'FAST_ML': px.colors.qualitative.Light24[0],",
+     "            'GaussianCopula': px.colors.qualitative.Light24[1],",
+     "            'CTGANSynthesizer': px.colors.qualitative.Light24[2],",
+     "            'TVAESynthesizer': px.colors.qualitative.Light24[3],",
+     "            'CopulaGANSynthesizer': px.colors.qualitative.Light24[4],",
+     "        }",
+     ""
+    ]
+   },
+   {
+    "file": "src/tasks/classification/adversarial.py",
+    "line": 334,
+    "text": "'CTGANSynthesizer': CTGANSynthesizer(metadata),",
+    "context": [
+     "",
+     "        synthesizers = {",
+     "            'FAST_ML': SingleTablePreset(metadata, name='FAST_ML'),",
+     "            'GaussianCopula': GaussianCopulaSynthesizer(metadata),",
+     "            'CTGANSynthesizer': CTGANSynthesizer(metadata),",
+     "            'TVAESynthesizer': TVAESynthesizer(metadata),",
+     "            'CopulaGANSynthesizer': CopulaGANSynthesizer(metadata),",
+     "        }",
+     ""
+    ]
+   },
+   {
+    "file": "src/tasks/regression/adversarial.py",
+    "line": 22,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer, CopulaGANSynthesizer",
+    "context": [
+     "from pathlib import Path",
+     "from tqdm import tqdm",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.lite import SingleTablePreset",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer, CopulaGANSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sklearn.decomposition import PCA",
+     "from sklearn.manifold import Isomap",
+     "from openTSNE import TSNE"
+    ]
+   },
+   {
+    "file": "src/tasks/regression/adversarial.py",
+    "line": 465,
+    "text": "'CTGANSynthesizer': px.colors.qualitative.Light24[2],",
+    "context": [
+     "",
+     "        colors_augs = {",
+     "            'FAST_ML': px.colors.qualitative.Light24[0],",
+     "            'GaussianCopula': px.colors.qualitative.Light24[1],",
+     "            'CTGANSynthesizer': px.colors.qualitative.Light24[2],",
+     "            'TVAESynthesizer': px.colors.qualitative.Light24[3],",
+     "            'CopulaGANSynthesizer': px.colors.qualitative.Light24[4],",
+     "        }",
+     ""
+    ]
+   },
+   {
+    "file": "src/tasks/regression/adversarial.py",
+    "line": 478,
+    "text": "'CTGANSynthesizer': CTGANSynthesizer(metadata),",
+    "context": [
+     "",
+     "        synthesizers = {",
+     "            'FAST_ML': SingleTablePreset(metadata, name='FAST_ML'),",
+     "            'GaussianCopula': GaussianCopulaSynthesizer(metadata),",
+     "            'CTGANSynthesizer': CTGANSynthesizer(metadata),",
+     "            'TVAESynthesizer': TVAESynthesizer(metadata),",
+     "            'CopulaGANSynthesizer': CopulaGANSynthesizer(metadata),",
+     "        }",
+     ""
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "src/tasks/classification/adversarial.py",
+    "line": 20,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer, CopulaGANSynthesizer",
+    "context": [
+     "import seaborn as sns",
+     "from tqdm import tqdm",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.lite import SingleTablePreset",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer, CopulaGANSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sklearn.decomposition import PCA",
+     "from sklearn.manifold import Isomap",
+     "from openTSNE import TSNE"
+    ]
+   },
+   {
+    "file": "src/tasks/classification/adversarial.py",
+    "line": 333,
+    "text": "'GaussianCopula': GaussianCopulaSynthesizer(metadata),",
+    "context": [
+     "        metadata.update_column(target, sdtype='categorical')",
+     "",
+     "        synthesizers = {",
+     "            'FAST_ML': SingleTablePreset(metadata, name='FAST_ML'),",
+     "            'GaussianCopula': GaussianCopulaSynthesizer(metadata),",
+     "            'CTGANSynthesizer': CTGANSynthesizer(metadata),",
+     "            'TVAESynthesizer': TVAESynthesizer(metadata),",
+     "            'CopulaGANSynthesizer': CopulaGANSynthesizer(metadata),",
+     "        }"
+    ]
+   },
+   {
+    "file": "src/tasks/regression/adversarial.py",
+    "line": 22,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer, CopulaGANSynthesizer",
+    "context": [
+     "from pathlib import Path",
+     "from tqdm import tqdm",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.lite import SingleTablePreset",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer, CopulaGANSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sklearn.decomposition import PCA",
+     "from sklearn.manifold import Isomap",
+     "from openTSNE import TSNE"
+    ]
+   },
+   {
+    "file": "src/tasks/regression/adversarial.py",
+    "line": 477,
+    "text": "'GaussianCopula': GaussianCopulaSynthesizer(metadata),",
+    "context": [
+     "        metadata.detect_from_dataframe(data=df_aug_input)",
+     "",
+     "        synthesizers = {",
+     "            'FAST_ML': SingleTablePreset(metadata, name='FAST_ML'),",
+     "            'GaussianCopula': GaussianCopulaSynthesizer(metadata),",
+     "            'CTGANSynthesizer': CTGANSynthesizer(metadata),",
+     "            'TVAESynthesizer': TVAESynthesizer(metadata),",
+     "            'CopulaGANSynthesizer': CopulaGANSynthesizer(metadata),",
+     "        }"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "src/tasks/classification/adversarial.py",
+    "line": 20,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer, CopulaGANSynthesizer",
+    "context": [
+     "import seaborn as sns",
+     "from tqdm import tqdm",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.lite import SingleTablePreset",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer, CopulaGANSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sklearn.decomposition import PCA",
+     "from sklearn.manifold import Isomap",
+     "from openTSNE import TSNE"
+    ]
+   },
+   {
+    "file": "src/tasks/classification/adversarial.py",
+    "line": 321,
+    "text": "'TVAESynthesizer': px.colors.qualitative.Light24[3],",
+    "context": [
+     "        colors_augs = {",
+     "            'FAST_ML': px.colors.qualitative.Light24[0],",
+     "            'GaussianCopula': px.colors.qualitative.Light24[1],",
+     "            'CTGANSynthesizer': px.colors.qualitative.Light24[2],",
+     "            'TVAESynthesizer': px.colors.qualitative.Light24[3],",
+     "            'CopulaGANSynthesizer': px.colors.qualitative.Light24[4],",
+     "        }",
+     "",
+     "        aug_n_samples = config.aug_n_samples"
+    ]
+   },
+   {
+    "file": "src/tasks/classification/adversarial.py",
+    "line": 335,
+    "text": "'TVAESynthesizer': TVAESynthesizer(metadata),",
+    "context": [
+     "        synthesizers = {",
+     "            'FAST_ML': SingleTablePreset(metadata, name='FAST_ML'),",
+     "            'GaussianCopula': GaussianCopulaSynthesizer(metadata),",
+     "            'CTGANSynthesizer': CTGANSynthesizer(metadata),",
+     "            'TVAESynthesizer': TVAESynthesizer(metadata),",
+     "            'CopulaGANSynthesizer': CopulaGANSynthesizer(metadata),",
+     "        }",
+     "",
+     "        for s_name, s in (pbar := tqdm(synthesizers.items())):"
+    ]
+   },
+   {
+    "file": "src/tasks/regression/adversarial.py",
+    "line": 22,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer, CopulaGANSynthesizer",
+    "context": [
+     "from pathlib import Path",
+     "from tqdm import tqdm",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.lite import SingleTablePreset",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer, TVAESynthesizer, CopulaGANSynthesizer",
+     "from sdv.evaluation.single_table import evaluate_quality",
+     "from sklearn.decomposition import PCA",
+     "from sklearn.manifold import Isomap",
+     "from openTSNE import TSNE"
+    ]
+   },
+   {
+    "file": "src/tasks/regression/adversarial.py",
+    "line": 466,
+    "text": "'TVAESynthesizer': px.colors.qualitative.Light24[3],",
+    "context": [
+     "        colors_augs = {",
+     "            'FAST_ML': px.colors.qualitative.Light24[0],",
+     "            'GaussianCopula': px.colors.qualitative.Light24[1],",
+     "            'CTGANSynthesizer': px.colors.qualitative.Light24[2],",
+     "            'TVAESynthesizer': px.colors.qualitative.Light24[3],",
+     "            'CopulaGANSynthesizer': px.colors.qualitative.Light24[4],",
+     "        }",
+     "",
+     "        aug_n_samples = config.aug_n_samples"
+    ]
+   },
+   {
+    "file": "src/tasks/regression/adversarial.py",
+    "line": 479,
+    "text": "'TVAESynthesizer': TVAESynthesizer(metadata),",
+    "context": [
+     "        synthesizers = {",
+     "            'FAST_ML': SingleTablePreset(metadata, name='FAST_ML'),",
+     "            'GaussianCopula': GaussianCopulaSynthesizer(metadata),",
+     "            'CTGANSynthesizer': CTGANSynthesizer(metadata),",
+     "            'TVAESynthesizer': TVAESynthesizer(metadata),",
+     "            'CopulaGANSynthesizer': CopulaGANSynthesizer(metadata),",
+     "        }",
+     "",
+     "        for s_name, s in (pbar := tqdm(synthesizers.items())):"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ev",
+  "gc",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv==1.15.0"
+  ]
+ }
+}

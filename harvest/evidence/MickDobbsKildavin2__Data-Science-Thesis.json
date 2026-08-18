@@ -1,0 +1,578 @@
+{
+ "repo": "MickDobbsKildavin2/Data-Science-Thesis",
+ "disk_kb": 8980,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Data-Science-Thesis\n 1. Get_The_Data.ipynb\n    1.1 Gets a list of products that have ever had a fund switch.\n    1.2 Use this list of products to get the full population of policies that can possibly switch funds.\n    1.3 Create the file \\Full_Population.csv\n\n    2.1 Get all Paxus fund switches\n    2.2 Get all iSuite fund switches\n    2.3 Map cobes to Products\n    2.4 Merge the Paxus and iSuite fund switches.\n    2.5 Create the file \\All_Switches.csv\n\n 2. Get_The_Total_Fund_Switch_Population.ipynb\n    2.1 Read the file \\Full_Population.csv and clean the data.\n    2.2 Create a dataframe to count the number of switchable policies per month.\n    2.3 Read the file \\All_Switches.csv and clean the data.\n    2.4 Create a dataframe to count the number of switches per month.\n    2.5 Merge the full population counts with the switch counts.\n    2.6 Create the file \\Horizon_Switch_Counts.csv\n    \n 3. Analyse_Fund_Switch_Data.ipynb\n    3.1 Read the switchable funds/switch counts file \\Horizon_Switch_Counts.csv\n    3.2 Look at the distribution of the data.\n    3.3 Found a spike in fund switches.  Analysis shows that this is downw to a fund closure on those dates\n        \n 4. Fix_the_Closed_Funds_Problem.ipynb\n    4.1 Read back the dataset of all switches.\n    4.2 Create a new dataframe with switches for the fund close date range.\n    4.3 Get a list of policies that were involved in a fund closure.\n    4.4 Using the policy numbers from the list of policies that were involved in a fund closure, create a list of switches to delete.\n    4.5 Delete the fund closure switches.\n    4.6 Create a dataframe with all other dates, outside teh fund closure period.\n    4.7 Merge them back to get a dataframe that has the full set of switches, MINUS switches for policies involved in the fund closure.\n    4.8 # 8. Re-sort by policy number and processing date and write out file \\All_Switches_Without_Fund_Close.csv\n    4.9 Get the switchable funds/switch counts.\n    4.10 Create the Fund Switch Count dataframe.\n    4.11 Drop duplicate policy numbers.\n    4.12 recount - Not working on the recount.  I edited the file myself to continue.\n\n 5. Re-Analyse_Fund_Switch_Data.ipynb\n    5.1 Look again at the distribution of teh switches.\n     \n 6. Calculate_Historical_Fund_Switches.ipynb\n    6.1 Get all switchable policies\n    6.2 Filter to only take rows since 2020.\n    6.3 Set the dates for historical switches.\n    6.4 Get all fund switch records.\n    6.5 Filter to only take rows since 2020.\n    6.6 Merge the full population with the switches to create the prediction dataset.\n    6.7 Add the comparable past switch dates for comparison.\n    6.8 No significant past fund switch activity indicating potential future switches so no need to proceed.\n\n7. Get supplementary policy features. Switch data has been sourced and analysed so now supplement the data with various features identified in the thesis.\n   This builds towards a dataset which will be split.  One portion to be used in the training and evaluaio of the ML model an the other to run the prediction.\n   7.1 Get_Tax_Fee_and_Risk_Attributes.ipynb - Get tax, policy fee and risk attributes as potential prodective features.  Tests the distribution of all features and only keeps ones with a\n       distribution that may help prediction/classification.\n   7.2 Get_Asset_Attributes.ipynb- Get fund asset attributes as potential prodective features.  Tests the distribution of all features and only keeps ones with a distribution that may help \n       prediction/classification.\n   7.3 Get_Premium_Attributes.ipynb- Get premium and premiun indexation attributes as potential prodective features.  Tests the distribution of all features and only keeps ones with a\n       distribution that may help prediction/classification.\n   7.4 Get_Broker_Attributes.ipynb - Get broker and commission attributes as potential prodective features.  Tests the distribution of all features and only keeps ones with a distribution \n       that may help prediction/classification.\n   7.5 Get_Client_Attributes.ipynb - Get client attributes, address information and market segmentation data as potential prodective features.  Tests the distribution of all features and \n       only keeps ones with a distribution that may help prediction/classification.\n   7.6 Customer_And_Policy_Attributes.ipynb - Merges all of the data to product a final file that, after synthesisation, will be loaded into the Data Robot catalog.\n\n8. Get_Market_Index_Data.ipynb\n   8.1 Get Market indices.\n   8.2 Get the Equity indices.\n   8.3 Get some corresponding Futuress indices.\n   8.4 Get the ETFs.\n   8.5 Get the Bond indices.\n   8.6 Get the Commodities indices.\n   8.7 Get the Currencies indices.\n   8.8 Get the Volatility indices.\n   8.9 Merge all dataframes.\n   8.10 Plot the data.\n\n9. Synthesise tha data.\n   9.1 Synthesise_Full_Horizon_Tranche1.ipynb. For the first half of the data, use SDV to:\n       - Generate single table metadata from the dataframe.\n       - Auto detect metadata.\n       - Create a synthesizer. \n          - Set enforce_min_max_values to ensure the synthetic data adheres to the min/max boundaries set by the real data.  \n          - Use enforce_rounding to ensure rounding is not enforced.  The Age column is not rounded.\n       - Use the fit method to train an ML model on the data. \n          - The synthesizer uses Gaussian Copulas to learn  distribution of the real data. This happens in two stages.  \n          - It learns the distribution of each individual column (the marginal distribution).\n          - The get_learned_distributions shows  the marginal distributions learned by the model to estimate the shape of each column.  \n          - It outputs a dictionary that maps the name of each learned column to the distribution that estimates its shape.\n       - Save the synthesizer as a pickle file to use on the real data, to generate synthetic data.\n       - Create the synthetic data from the synthesiser.\n       - Save the syntheised data to file.\n   9.2 Synthesise_Full_Horizon_Tranche2.ipynb. For the second half of the data, use SDV to:\n       - Reload the metadata.\n       - Reload the Synthesizer pickle file.\n       - Create the synthetic data from the synthesiser.\n       - Save the syntheised data to file.\n   9.3 Merge_Synthesised_Tranches.ipynb. \n       - The internal PII and commercially sensitive data was synthesised in 2 separate tranches because of memory constraibts. \n       - This python file merges them and this data is fully shareable because the synthesisation (code shared, data cannot) has obfuscated the original PII data.\n       - This keeps the statistical integrity of the original data.\n       - Mergesof the synthesised internal data with the fully shareable external data.\n   9.2 Evaluate_Synthesised_Data.ipynb.\n       - Read the full file.\n       - Look at the distribution of the target variable.",
+ "hits": {
+  "st": [
+   {
+    "file": "Synthesise_Full_Horizon_Tranche2.ipynb",
+    "line": 29,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "    \"import gc\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.datasets.local import load_csvs\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.evaluation.single_table import get_column_plot\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"from sdv.evaluation.single_table import run_diagnostic\\n\","
+    ]
+   },
+   {
+    "file": "Synthesise_Full_Horizon_Tranche2.ipynb",
+    "line": 30,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"\\n\",",
+     "    \"from sdv.datasets.local import load_csvs\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.evaluation.single_table import get_column_plot\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "Synthesise_Full_Horizon_Tranche1.ipynb",
+    "line": 29,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "    \"import gc\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.datasets.local import load_csvs\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.evaluation.single_table import get_column_plot\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"from sdv.evaluation.single_table import run_diagnostic\\n\","
+    ]
+   },
+   {
+    "file": "Synthesise_Full_Horizon_Tranche1.ipynb",
+    "line": 30,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"\\n\",",
+     "    \"from sdv.datasets.local import load_csvs\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.evaluation.single_table import get_column_plot\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+     "    \"\\n\","
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "Synthesise_Full_Horizon_Tranche2.ipynb",
+    "line": 28,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"import os\\n\",",
+     "    \"import gc\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.datasets.local import load_csvs\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.evaluation.single_table import get_column_plot\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\","
+    ]
+   },
+   {
+    "file": "Synthesise_Full_Horizon_Tranche1.ipynb",
+    "line": 28,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"import os\\n\",",
+     "    \"import gc\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.datasets.local import load_csvs\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.evaluation.single_table import get_column_plot\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\","
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "Synthesise_Full_Horizon_Tranche2.ipynb",
+    "line": 31,
+    "text": "\"from sdv.evaluation.single_table import get_column_plot\\n\",",
+    "context": [
+     "    \"from sdv.datasets.local import load_csvs\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.evaluation.single_table import get_column_plot\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+     "    \"\\n\",",
+     "    \"# importing matplotlib module\\n\","
+    ]
+   },
+   {
+    "file": "Synthesise_Full_Horizon_Tranche2.ipynb",
+    "line": 32,
+    "text": "\"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+    "context": [
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.evaluation.single_table import get_column_plot\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+     "    \"\\n\",",
+     "    \"# importing matplotlib module\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\","
+    ]
+   },
+   {
+    "file": "Synthesise_Full_Horizon_Tranche2.ipynb",
+    "line": 33,
+    "text": "\"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+    "context": [
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.evaluation.single_table import get_column_plot\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+     "    \"\\n\",",
+     "    \"# importing matplotlib module\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\",",
+     "    \"plt.style.use('default')\\n\","
+    ]
+   },
+   {
+    "file": "Synthesise_Full_Horizon_Tranche2.ipynb",
+    "line": 1145,
+    "text": "\"Cell \\u001b[1;32mIn[16], line 4\\u001b[0m\\n\\u001b[0;32m      1\\u001b[0m \\u001b[38;5;66;03m#from sdv.evaluation.single_table import evaluate_quality\\u001b[39;00m\\n\\u001b[0;32m      3\\u001b[0m quality_report \\u001b[38;5;241m=\\u001b[39m evaluate_quality(\\n\\u001b[1;32m----> 4\\u001b[0m     real_data\\u001",
+    "context": [
+     "     \"output_type\": \"error\",",
+     "     \"traceback\": [",
+     "      \"\\u001b[1;31m---------------------------------------------------------------------------\\u001b[0m\",",
+     "      \"\\u001b[1;31mNameError\\u001b[0m                                 Traceback (most recent call last)\",",
+     "      \"Cell \\u001b[1;32mIn[16], line 4\\u001b[0m\\n\\u001b[0;32m      1\\u001b[0m \\u001b[38;5;66;03m#from sdv.evaluation.single_table import evaluate_quality\\u001b[39;00m\\n\\u001b[0;32m      3\\u001b[0m qua",
+     "      \"\\u001b[1;31mNameError\\u001b[0m: name 'df_Switches_table' is not defined\"",
+     "     ]",
+     "    }",
+     "   ],"
+    ]
+   },
+   {
+    "file": "Synthesise_Full_Horizon_Tranche2.ipynb",
+    "line": 1151,
+    "text": "\"#from sdv.evaluation.single_table import evaluate_quality\\n\",",
+    "context": [
+     "     ]",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"#from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"\\n\",",
+     "    \"quality_report = evaluate_quality(\\n\",",
+     "    \"    real_data=df_Switches_table,\\n\",",
+     "    \"    synthetic_data=synthetic_data,\\n\","
+    ]
+   },
+   {
+    "file": "Synthesise_Full_Horizon_Tranche1.ipynb",
+    "line": 31,
+    "text": "\"from sdv.evaluation.single_table import get_column_plot\\n\",",
+    "context": [
+     "    \"from sdv.datasets.local import load_csvs\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.evaluation.single_table import get_column_plot\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+     "    \"\\n\",",
+     "    \"# importing matplotlib module\\n\","
+    ]
+   },
+   {
+    "file": "Synthesise_Full_Horizon_Tranche1.ipynb",
+    "line": 32,
+    "text": "\"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+    "context": [
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.evaluation.single_table import get_column_plot\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+     "    \"\\n\",",
+     "    \"# importing matplotlib module\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\","
+    ]
+   },
+   {
+    "file": "Synthesise_Full_Horizon_Tranche1.ipynb",
+    "line": 33,
+    "text": "\"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+    "context": [
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.evaluation.single_table import get_column_plot\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+     "    \"\\n\",",
+     "    \"# importing matplotlib module\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\",",
+     "    \"plt.style.use('default')\\n\","
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "Synthesise_Full_Horizon_Tranche2.ipynb",
+    "line": 27,
+    "text": "\"from sdv.datasets.local import load_csvs\\n\",",
+    "context": [
+     "    \"import psutil\\n\",",
+     "    \"import os\\n\",",
+     "    \"import gc\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.datasets.local import load_csvs\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.evaluation.single_table import get_column_plot\\n\","
+    ]
+   },
+   {
+    "file": "Synthesise_Full_Horizon_Tranche2.ipynb",
+    "line": 28,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"import os\\n\",",
+     "    \"import gc\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.datasets.local import load_csvs\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.evaluation.single_table import get_column_plot\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\","
+    ]
+   },
+   {
+    "file": "Synthesise_Full_Horizon_Tranche2.ipynb",
+    "line": 29,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "    \"import gc\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.datasets.local import load_csvs\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.evaluation.single_table import get_column_plot\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"from sdv.evaluation.single_table import run_diagnostic\\n\","
+    ]
+   },
+   {
+    "file": "Synthesise_Full_Horizon_Tranche2.ipynb",
+    "line": 30,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"\\n\",",
+     "    \"from sdv.datasets.local import load_csvs\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.evaluation.single_table import get_column_plot\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "Synthesise_Full_Horizon_Tranche2.ipynb",
+    "line": 31,
+    "text": "\"from sdv.evaluation.single_table import get_column_plot\\n\",",
+    "context": [
+     "    \"from sdv.datasets.local import load_csvs\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.evaluation.single_table import get_column_plot\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+     "    \"\\n\",",
+     "    \"# importing matplotlib module\\n\","
+    ]
+   },
+   {
+    "file": "Synthesise_Full_Horizon_Tranche2.ipynb",
+    "line": 32,
+    "text": "\"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+    "context": [
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.evaluation.single_table import get_column_plot\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+     "    \"\\n\",",
+     "    \"# importing matplotlib module\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\","
+    ]
+   },
+   {
+    "file": "Synthesise_Full_Horizon_Tranche2.ipynb",
+    "line": 33,
+    "text": "\"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+    "context": [
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.evaluation.single_table import get_column_plot\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+     "    \"\\n\",",
+     "    \"# importing matplotlib module\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\",",
+     "    \"plt.style.use('default')\\n\","
+    ]
+   },
+   {
+    "file": "Synthesise_Full_Horizon_Tranche2.ipynb",
+    "line": 1145,
+    "text": "\"Cell \\u001b[1;32mIn[16], line 4\\u001b[0m\\n\\u001b[0;32m      1\\u001b[0m \\u001b[38;5;66;03m#from sdv.evaluation.single_table import evaluate_quality\\u001b[39;00m\\n\\u001b[0;32m      3\\u001b[0m quality_report \\u001b[38;5;241m=\\u001b[39m evaluate_quality(\\n\\u001b[1;32m----> 4\\u001b[0m     real_data\\u001",
+    "context": [
+     "     \"output_type\": \"error\",",
+     "     \"traceback\": [",
+     "      \"\\u001b[1;31m---------------------------------------------------------------------------\\u001b[0m\",",
+     "      \"\\u001b[1;31mNameError\\u001b[0m                                 Traceback (most recent call last)\",",
+     "      \"Cell \\u001b[1;32mIn[16], line 4\\u001b[0m\\n\\u001b[0;32m      1\\u001b[0m \\u001b[38;5;66;03m#from sdv.evaluation.single_table import evaluate_quality\\u001b[39;00m\\n\\u001b[0;32m      3\\u001b[0m qua",
+     "      \"\\u001b[1;31mNameError\\u001b[0m: name 'df_Switches_table' is not defined\"",
+     "     ]",
+     "    }",
+     "   ],"
+    ]
+   },
+   {
+    "file": "Synthesise_Full_Horizon_Tranche2.ipynb",
+    "line": 1151,
+    "text": "\"#from sdv.evaluation.single_table import evaluate_quality\\n\",",
+    "context": [
+     "     ]",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"#from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"\\n\",",
+     "    \"quality_report = evaluate_quality(\\n\",",
+     "    \"    real_data=df_Switches_table,\\n\",",
+     "    \"    synthetic_data=synthetic_data,\\n\","
+    ]
+   },
+   {
+    "file": "Evaluate_Synthesised_Data.ipynb",
+    "line": 51,
+    "text": "\"import sdv\\n\",",
+    "context": [
+     "     ]",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"import sdv\\n\",",
+     "    \"import rdt\\n\",",
+     "    \"\\n\",",
+     "    \"print('SDV version ', sdv.__version__)\\n\",",
+     "    \"print('RDT version: ', rdt.__version__)\""
+    ]
+   },
+   {
+    "file": "Synthesise_Full_Horizon_Tranche1.ipynb",
+    "line": 27,
+    "text": "\"from sdv.datasets.local import load_csvs\\n\",",
+    "context": [
+     "    \"import psutil\\n\",",
+     "    \"import os\\n\",",
+     "    \"import gc\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.datasets.local import load_csvs\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.evaluation.single_table import get_column_plot\\n\","
+    ]
+   },
+   {
+    "file": "Synthesise_Full_Horizon_Tranche1.ipynb",
+    "line": 28,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"import os\\n\",",
+     "    \"import gc\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.datasets.local import load_csvs\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.evaluation.single_table import get_column_plot\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\","
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "Synthesise_Full_Horizon_Tranche2.ipynb",
+    "line": 30,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"\\n\",",
+     "    \"from sdv.datasets.local import load_csvs\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.evaluation.single_table import get_column_plot\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+     "    \"\\n\","
+    ]
+   },
+   {
+    "file": "Synthesise_Full_Horizon_Tranche1.ipynb",
+    "line": 30,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"\\n\",",
+     "    \"from sdv.datasets.local import load_csvs\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.evaluation.single_table import get_column_plot\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"from sdv.evaluation.single_table import run_diagnostic\\n\",",
+     "    \"\\n\","
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "Synthesise_Full_Horizon_Tranche2.ipynb",
+    "line": 29,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "    \"import gc\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.datasets.local import load_csvs\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.evaluation.single_table import get_column_plot\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"from sdv.evaluation.single_table import run_diagnostic\\n\","
+    ]
+   },
+   {
+    "file": "Synthesise_Full_Horizon_Tranche2.ipynb",
+    "line": 882,
+    "text": "\"synthesizer = GaussianCopulaSynthesizer.load(\\n\",",
+    "context": [
+     "     ]",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"synthesizer = GaussianCopulaSynthesizer.load(\\n\",",
+     "    \"    filepath=home_folder + '\\\\switch_data_synthesizer.pkl'\\n\",",
+     "    \")\\n\",",
+     "    \"\\n\",",
+     "    \"print('==========================')\\n\","
+    ]
+   },
+   {
+    "file": "Synthesise_Full_Horizon_Tranche1.ipynb",
+    "line": 29,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+    "context": [
+     "    \"import gc\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.datasets.local import load_csvs\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.evaluation.single_table import get_column_plot\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\\n\",",
+     "    \"from sdv.evaluation.single_table import run_diagnostic\\n\","
+    ]
+   },
+   {
+    "file": "Synthesise_Full_Horizon_Tranche1.ipynb",
+    "line": 1115,
+    "text": "\"synthesizer = GaussianCopulaSynthesizer(\\n\",",
+    "context": [
+     "     ]",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"synthesizer = GaussianCopulaSynthesizer(\\n\",",
+     "    \"    metadata, # required\\n\",",
+     "    \"    enforce_min_max_values=True,\\n\",",
+     "    \"    enforce_rounding=False,\\n\",",
+     "    \"    numerical_distributions={\\n\","
+    ]
+   },
+   {
+    "file": "Synthesise_Full_Horizon_Tranche1.ipynb",
+    "line": 1498,
+    "text": "\"synthesizer = GaussianCopulaSynthesizer.load(\\n\",",
+    "context": [
+     "     ]",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"synthesizer = GaussianCopulaSynthesizer.load(\\n\",",
+     "    \"    filepath=home_folder + '\\\\switch_data_synthesizer_TarVarBool.pkl'\\n\",",
+     "    \")\\n\",",
+     "    \"\\n\",",
+     "    \"print('==========================')\\n\","
+    ]
+   }
+  ],
+  "rdt": [
+   {
+    "file": "Evaluate_Synthesised_Data.ipynb",
+    "line": 52,
+    "text": "\"import rdt\\n\",",
+    "context": [
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"import sdv\\n\",",
+     "    \"import rdt\\n\",",
+     "    \"\\n\",",
+     "    \"print('SDV version ', sdv.__version__)\\n\",",
+     "    \"print('RDT version: ', rdt.__version__)\"",
+     "   ]"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ev",
+  "gc",
+  "md",
+  "rdt",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

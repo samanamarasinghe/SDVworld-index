@@ -1,0 +1,451 @@
+{
+ "repo": "rochith11/Synthia_1",
+ "disk_kb": 549,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Synthia\n\nSynthia is a research oriented engineering project for synthetic rare disease variant data generation, evaluation, and iterative quality optimization. It combines tabular generative modeling with a validation stack for statistical fidelity, machine learning utility, privacy risk, bias analysis, lineage tracking, and diagnostic feedback.\n\nThe project is built around an applied question: how can we generate synthetic biomedical style tabular data that is useful for downstream experimentation while remaining auditable, privacy aware, and reproducible? To answer that, Synthia implements an end-to-end pipeline using SDV based generative models, metric driven validation, and an AI diagnostic agent that interprets failures and proposes optimization actions.\n\n## Research Motivation\n\nRare disease datasets are often small, imbalanced, operationally sensitive, and difficult to share. Synthia approaches this as a systems problem rather than only a modeling problem:\n\n- Generation quality must be measured beyond sample realism.\n- Utility must be checked against held out real data.\n- Privacy risk must be estimated explicitly.\n- Bias amplification and rare-class loss must be surfaced early.\n- Every generated artifact should remain traceable to its training context.\n\nThis makes the repository suitable as an applied prototype for synthetic health data workflows, academic demonstrations, capstone engineering work, and experimentation on trustworthy data generation pipelines.\n\n## Core Capabilities\n\n- Synthetic tabular data generation using `CTGAN` and `TVAE`\n- Optional disease-conditioned generation flow in the main pipeline\n- Train/test split workflow for holdout-based evaluation\n- Statistical validation with Kolmogorov-Smirnov statistics, Jensen-Shannon divergence, and correlation preservation\n- ML utility validation through bidirectional cross-testing\n- Privacy analysis using nearest-neighbor distance and re-identification risk estimates\n- Bias analysis for feature drift, rare class imbalance, and amplification\n- Persistent dataset storage with metadata, lineage, and audit logging\n- AI diagnostic agent for profiling, root-cause analysis, benchmark tracking, and recommendation generation\n- Flask web interface for interactive experimentation and result inspection\n- Unit and property-based testing for core pipeline behavior\n\n## System Overview\n\nSynthia follows a multi stage evaluation loop:\n\n1. Load training and holdout test data.\n2. Train a generative model on real training data.\n3. Generate synthetic records.\n4. Validate synthetic data against held out real data.\n5. Measure privacy and bias risk.\n6. Save artifacts with metadata and audit trace.\n7. Run an AI diagnostic cycle to explain weak metrics and suggest next experiments.\n\n## Methodology\n\n### 1. Generative Models\n\nThe generation layer is orchestrated by [`src/core/synthetic_data_generator.py`](src/core/synthetic_data_generator.py) and routes to:\n\n- `CTGAN` for mixed-type tabular generation and conditional sampling\n- `TVAE` as an alternative latent-variable baseline\n\nThe current sample domain is variant-style rare-disease metadata with seven key fields:\n\n- `gene_symbol`\n- `chromosome`\n- `variant_type`\n- `clinical_significance`\n- `disease`\n- `allele_frequency`\n- `inheritance_pattern`\n\n### 2. Statistical Fidelity\n\nThe validation pipeline in [`src/analysis/data_validator.py`](src/analysis/data_validator.py) and [`src/analysis/statistical_analyzer.py`](src/analysis/statistical_analyzer.py) compares synthetic and real distributions through:\n\n- Kolmogorov-Smirnov statistics for numerical features\n- Jensen-Shannon divergence for categorical and numerical distributions\n- Correlation similarity across numerical structure\n- Mode-collapse checks for dominant-category failure modes\n\n### 3. Utility Assessment\n\nSynthia evaluates downstream usefulness with cross-domain predictive testing:\n\n- Train on synthetic, test on real\n- Train on real, test on synthetic\n\nThis yields accuracy, weighted F1, and AUC estimates, helping separate visually plausible generation from genuinely useful generation.\n\n### 4. Privacy Analysis\n\nThe privacy module in [`src/analysis/privacy_analyzer.py`](src/analysis/privacy_analyzer.py) estimates memorization risk using:\n\n- nearest-neighbor distance (NND) between synthetic and real samples\n- percentile-based re-identification risk thresholds\n- a composite privacy score derived from average distance and high-risk fraction\n\n### 5. Bias and Rare-Class Analysis\n\nThe bias module in [`src/analysis/bias_detector.py`](src/analysis/bias_detector.py) checks:\n\n- feature-level distribution divergence\n- rare-class underrepresentation or disappearance\n- amplification of imbalance ratios in categorical variables\n\n### 6. Diagnostic Optimization\n\nThe AI diagnostic subsystem in [`src/ai_diagnostic_agent/`](src/ai_diagnostic_agent/) expands the project from a generator into an optimization framework. It profiles data, classifies metric severity, infers likely root causes, checks benchmark attainment, and proposes next-step interventions such as parameter changes or dataset-focused recommendations.\n\n## Repository Structure\n\n```text\nsynthia/\n|-- app.py\n|-- run_pipeline.py\n|-- run_diagnostic.py\n|-- config.yaml\n|-- requirements.txt\n|-- data/\n|-- scripts/\n|-- tests/\n`-- src/\n    |-- analysis/\n    |-- ai_diagnostic_agent/\n    |-- core/\n    |-- engines/\n    |-- models/\n    |-- storage/\n    `-- utils/\n```\n\n### Important Modules\n\n- [`app.py`](app.py): Flask application for the interactive web workflow\n- [`run_pipeline.py`](run_pipeline.py): CLI entrypoint for generation, validation, privacy, bias, and persistence\n- [`run_diagnostic.py`](run_diagnostic.py): CLI entrypoint for diagnostic cycles, profiling, benchmarks, and model comparison\n- [`src/core/`](src/core/): generation orchestration\n- [`src/engines/`](src/engines/): SDV model wrappers\n- [`src/analysis/`](src/analysis/): evaluation, privacy, and bias analytics\n- [`src/storage/`](src/storage/): dataset persistence and lineage\n- [`src/utils/`](src/utils/): configuration, loading, logging, metadata, audit\n- [`src/ai_diagnostic_agent/`](src/ai_diagnostic_agent/): diagnostic intelligence and optimization planning\n- [`tests/`](tests/): unit and property-based tests\n\n## Data and Experimental Setup\n\nThe repository includes sample tabular data under [`data/`](data/) with predefined train/test splits:\n\n- `sample_real_variants.csv`\n- `sample_real_variants_train.csv`\n- `sample_real_variants_test.csv`\n\nThese files support a reproducible demonstration workflow for rare-disease variant-style generation. If the expected sample files are missing, the loader utilities can regenerate a small synthetic seed dataset for local experimentation.\n\n## Installation\n\n### 1. Create a virtual environment\n\n```bash\npython -m venv venv\n```\n\n### 2. Activate it\n\nOn Windows:\n\n```bash\nvenv\\Scripts\\activate\n```\n\nOn macOS/Linux:\n\n```bash\nsource venv/bin/activate\n```\n\n### 3. Install dependencies\n\n```bash\npip install -r requirements.txt\n```\n\n## Quick Start\n\n### Run the end-to-end generation pipeline\n\n```bash\npython run_pipeline.py\n```\n\nExample with explicit settings:\n\n```bash\npython run_pipeline.py --model CTGAN --samples 500 --epochs 300 --seed 42\n```\n\nExample with disease filtering:\n\n```bash\npython run_pipeline.py --model CTGAN --samples 300 --disease \"Cystic Fibrosis\"\n```\n\n### Launch the web application\n\n```bash\npython app.py\n```\n\nThen open `http://localhost:5000`.\n\n### Run the diagnostic agent\n\n```bash\npython run_diagnostic.py run --model CTGAN --samples 500 --epochs 300 --format text\n```\n\n### Profile the training dataset\n\n```bash\npython run_diagnostic.py profile\n```\n\n### Compare multiple models\n\n```bash\npython run_diagnostic.py optimize --models CTGAN TVAE --samples 500\n```\n\n## Configuration\n\nProject behavior is controlled through [`config.yaml`](config.yaml). Key configuration areas include:\n\n- default generation parameters\n- disease templates\n- privacy thresholds\n- bias thresholds\n- diagnostic benchmark targets\n- optimization and stall-detection settings\n- dataset-size heuristics\n\nThis design makes experiments easier to reproduce and modify without changing code.\n\n## Evaluation Outputs\n\nThe pipeline produces several classes of outputs:\n\n- synthetic datasets stored under `data/datasets/`\n- dataset metadata and lineage records\n- audit logs in `data/audit_log.jsonl`\n- experiment tracking files in `data/experiments/` or related diagnostic storage\n- diagnostic reports in text, JSON, or HTML form\n\n## Testing\n\nThe repository includes both conventional and property-based tests.\n\nRun the full suite with:\n\n```bash\npytest\n```\n\nThe tests cover:\n\n- schema and configuration models\n- statistical and privacy metric validity\n- dataset persistence and export behavior\n- audit logging behavior\n- routing and metadata invariants\n\n## Engineering Characteristics\n\nThis project is intentionally structured as applied research software:\n\n- modular pipeline design for ablation and extension\n- reproducibility via seeds, config management, and metadata hashing\n- explicit trustworthiness checks for privacy and bias\n- benchmark-driven diagnostics instead of single-metric reporting\n- auditable storage and experiment history for iterative evaluation\n\n## Current Scope and Limitations\n\n- The included dataset is a compact sample dataset intended for experimentation, not clinical deployment.\n- Privacy analysis is heuristic and distance-based; it should not be treated as a formal privacy guarantee.\n- Model performance and benchmark attainment depend heavily on dataset size, class balance, and feature quality.\n- The web application is a research interface for demonstration and inspection, not a hardened production service.\n\n## Future Extension Directions\n\n- richer biomedical schemas and constraint-aware generation\n- stronger privacy auditing and membership-inference style attacks\n- broader model orchestration beyond CTGAN and TVAE\n- automated experiment loops with hyperparameter search\n- domain-specific post-generation filtering and calibration\n- improved dataset cards and reporting for governance workflows\n",
+ "hits": {
+  "st": [
+   {
+    "file": "src/ai_diagnostic_agent/optimization/model_orchestrator.py",
+    "line": 172,
+    "text": "from sdv.single_table import CopulaGANSynthesizer",
+    "context": [
+     "                return engine",
+     "",
+     "            elif model_type == 'CopulaGAN':",
+     "                try:",
+     "                    from sdv.single_table import CopulaGANSynthesizer",
+     "                    from sdv.metadata import Metadata",
+     "                except ImportError:",
+     "                    self.logger.warning(",
+     "                        \"CopulaGAN not available (sdv package missing or does \""
+    ]
+   },
+   {
+    "file": "src/engines/tvae_engine.py",
+    "line": 69,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "        Args:",
+     "            real_data: DataFrame with real variant data",
+     "            discrete_columns: List of column names that are discrete/categorical",
+     "        \"\"\"",
+     "        from sdv.single_table import TVAESynthesizer",
+     "",
+     "        self.discrete_columns = discrete_columns",
+     "",
+     "        print(f\"[i] Training TVAE on {len(real_data)} records...\")"
+    ]
+   },
+   {
+    "file": "src/engines/tvae_engine.py",
+    "line": 133,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "",
+     "        Args:",
+     "            filepath: Path to model file",
+     "        \"\"\"",
+     "        from sdv.single_table import TVAESynthesizer",
+     "",
+     "        if not os.path.exists(filepath):",
+     "            raise FileNotFoundError(f\"Model file not found: {filepath}\")",
+     ""
+    ]
+   },
+   {
+    "file": "src/engines/ctgan_engine.py",
+    "line": 71,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "            real_data: DataFrame with real variant data",
+     "            discrete_columns: List of column names that are discrete/categorical",
+     "            conditional_column: Column to use for conditional generation (stored for reference)",
+     "        \"\"\"",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "",
+     "        self.discrete_columns = discrete_columns",
+     "",
+     "        print(f\"[i] Training CTGAN on {len(real_data)} records...\")"
+    ]
+   },
+   {
+    "file": "src/engines/ctgan_engine.py",
+    "line": 139,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "        Args:",
+     "            filepath: Path to model file",
+     "        \"\"\"",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "",
+     "        if not os.path.exists(filepath):",
+     "            raise FileNotFoundError(f\"Model file not found: {filepath}\")",
+     ""
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "src/ai_diagnostic_agent/optimization/model_orchestrator.py",
+    "line": 173,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "            elif model_type == 'CopulaGAN':",
+     "                try:",
+     "                    from sdv.single_table import CopulaGANSynthesizer",
+     "                    from sdv.metadata import Metadata",
+     "                except ImportError:",
+     "                    self.logger.warning(",
+     "                        \"CopulaGAN not available (sdv package missing or does \"",
+     "                        \"not include CopulaGANSynthesizer). Skipping.\""
+    ]
+   },
+   {
+    "file": "src/engines/tvae_engine.py",
+    "line": 42,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "        Args:",
+     "            real_data: DataFrame with real variant data",
+     "            discrete_columns: List of categorical column names",
+     "        \"\"\"",
+     "        from sdv.metadata import Metadata",
+     "",
+     "        self.metadata_obj = Metadata()",
+     "        self.metadata_obj.detect_table_from_dataframe(table_name='variants', data=real_data)",
+     ""
+    ]
+   },
+   {
+    "file": "src/engines/ctgan_engine.py",
+    "line": 42,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "        Args:",
+     "            real_data: DataFrame with real variant data",
+     "            discrete_columns: List of categorical column names",
+     "        \"\"\"",
+     "        from sdv.metadata import Metadata",
+     "",
+     "        self.metadata_obj = Metadata()",
+     "        self.metadata_obj.detect_table_from_dataframe(table_name='variants', data=real_data)",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "src/ai_diagnostic_agent/optimization/model_orchestrator.py",
+    "line": 172,
+    "text": "from sdv.single_table import CopulaGANSynthesizer",
+    "context": [
+     "                return engine",
+     "",
+     "            elif model_type == 'CopulaGAN':",
+     "                try:",
+     "                    from sdv.single_table import CopulaGANSynthesizer",
+     "                    from sdv.metadata import Metadata",
+     "                except ImportError:",
+     "                    self.logger.warning(",
+     "                        \"CopulaGAN not available (sdv package missing or does \""
+    ]
+   },
+   {
+    "file": "src/ai_diagnostic_agent/optimization/model_orchestrator.py",
+    "line": 173,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "            elif model_type == 'CopulaGAN':",
+     "                try:",
+     "                    from sdv.single_table import CopulaGANSynthesizer",
+     "                    from sdv.metadata import Metadata",
+     "                except ImportError:",
+     "                    self.logger.warning(",
+     "                        \"CopulaGAN not available (sdv package missing or does \"",
+     "                        \"not include CopulaGANSynthesizer). Skipping.\""
+    ]
+   },
+   {
+    "file": "src/engines/tvae_engine.py",
+    "line": 42,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "        Args:",
+     "            real_data: DataFrame with real variant data",
+     "            discrete_columns: List of categorical column names",
+     "        \"\"\"",
+     "        from sdv.metadata import Metadata",
+     "",
+     "        self.metadata_obj = Metadata()",
+     "        self.metadata_obj.detect_table_from_dataframe(table_name='variants', data=real_data)",
+     ""
+    ]
+   },
+   {
+    "file": "src/engines/tvae_engine.py",
+    "line": 69,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "        Args:",
+     "            real_data: DataFrame with real variant data",
+     "            discrete_columns: List of column names that are discrete/categorical",
+     "        \"\"\"",
+     "        from sdv.single_table import TVAESynthesizer",
+     "",
+     "        self.discrete_columns = discrete_columns",
+     "",
+     "        print(f\"[i] Training TVAE on {len(real_data)} records...\")"
+    ]
+   },
+   {
+    "file": "src/engines/tvae_engine.py",
+    "line": 133,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "",
+     "        Args:",
+     "            filepath: Path to model file",
+     "        \"\"\"",
+     "        from sdv.single_table import TVAESynthesizer",
+     "",
+     "        if not os.path.exists(filepath):",
+     "            raise FileNotFoundError(f\"Model file not found: {filepath}\")",
+     ""
+    ]
+   },
+   {
+    "file": "src/engines/ctgan_engine.py",
+    "line": 42,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "        Args:",
+     "            real_data: DataFrame with real variant data",
+     "            discrete_columns: List of categorical column names",
+     "        \"\"\"",
+     "        from sdv.metadata import Metadata",
+     "",
+     "        self.metadata_obj = Metadata()",
+     "        self.metadata_obj.detect_table_from_dataframe(table_name='variants', data=real_data)",
+     ""
+    ]
+   },
+   {
+    "file": "src/engines/ctgan_engine.py",
+    "line": 71,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "            real_data: DataFrame with real variant data",
+     "            discrete_columns: List of column names that are discrete/categorical",
+     "            conditional_column: Column to use for conditional generation (stored for reference)",
+     "        \"\"\"",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "",
+     "        self.discrete_columns = discrete_columns",
+     "",
+     "        print(f\"[i] Training CTGAN on {len(real_data)} records...\")"
+    ]
+   },
+   {
+    "file": "src/engines/ctgan_engine.py",
+    "line": 139,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "        Args:",
+     "            filepath: Path to model file",
+     "        \"\"\"",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "",
+     "        if not os.path.exists(filepath):",
+     "            raise FileNotFoundError(f\"Model file not found: {filepath}\")",
+     ""
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "src/engines/tvae_engine.py",
+    "line": 10,
+    "text": "\"\"\"Wrapper around SDV 1.x TVAESynthesizer for variant generation.\"\"\"",
+    "context": [
+     "import numpy as np",
+     "",
+     "",
+     "class TVAEEngine:",
+     "    \"\"\"Wrapper around SDV 1.x TVAESynthesizer for variant generation.\"\"\"",
+     "",
+     "    def __init__(self, embedding_dim: int = 128, compress_dims: tuple = (128, 128),",
+     "                 decompress_dims: tuple = (128, 128), latent_dim: int = 128,",
+     "                 epochs: int = 300, verbose: bool = False):"
+    ]
+   },
+   {
+    "file": "src/engines/tvae_engine.py",
+    "line": 69,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "        Args:",
+     "            real_data: DataFrame with real variant data",
+     "            discrete_columns: List of column names that are discrete/categorical",
+     "        \"\"\"",
+     "        from sdv.single_table import TVAESynthesizer",
+     "",
+     "        self.discrete_columns = discrete_columns",
+     "",
+     "        print(f\"[i] Training TVAE on {len(real_data)} records...\")"
+    ]
+   },
+   {
+    "file": "src/engines/tvae_engine.py",
+    "line": 80,
+    "text": "self.model = TVAESynthesizer(",
+    "context": [
+     "        # Build metadata",
+     "        self._build_metadata(real_data, discrete_columns)",
+     "",
+     "        # Create and train TVAE model with SDV 1.x API",
+     "        self.model = TVAESynthesizer(",
+     "            metadata=self.metadata_obj,",
+     "            embedding_dim=self.embedding_dim,",
+     "            compress_dims=self.compress_dims,",
+     "            decompress_dims=self.decompress_dims,"
+    ]
+   },
+   {
+    "file": "src/engines/tvae_engine.py",
+    "line": 133,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "",
+     "        Args:",
+     "            filepath: Path to model file",
+     "        \"\"\"",
+     "        from sdv.single_table import TVAESynthesizer",
+     "",
+     "        if not os.path.exists(filepath):",
+     "            raise FileNotFoundError(f\"Model file not found: {filepath}\")",
+     ""
+    ]
+   },
+   {
+    "file": "src/engines/tvae_engine.py",
+    "line": 139,
+    "text": "self.model = TVAESynthesizer.load(filepath)",
+    "context": [
+     "        if not os.path.exists(filepath):",
+     "            raise FileNotFoundError(f\"Model file not found: {filepath}\")",
+     "",
+     "        # SDV 1.x has built-in load class method",
+     "        self.model = TVAESynthesizer.load(filepath)",
+     "        print(f\"[+] Model loaded from {filepath}\")",
+     "",
+     "    def get_config(self) -> dict:",
+     "        \"\"\"Get model configuration.\"\"\""
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "src/engines/ctgan_engine.py",
+    "line": 10,
+    "text": "\"\"\"Wrapper around SDV 1.x CTGANSynthesizer for variant generation.\"\"\"",
+    "context": [
+     "import numpy as np",
+     "",
+     "",
+     "class CTGANEngine:",
+     "    \"\"\"Wrapper around SDV 1.x CTGANSynthesizer for variant generation.\"\"\"",
+     "",
+     "    def __init__(self, embedding_dim: int = 128, generator_dim: tuple = (256, 256),",
+     "                 discriminator_dim: tuple = (256, 256), batch_size: int = 50,",
+     "                 epochs: int = 300, verbose: bool = False):"
+    ]
+   },
+   {
+    "file": "src/engines/ctgan_engine.py",
+    "line": 71,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "            real_data: DataFrame with real variant data",
+     "            discrete_columns: List of column names that are discrete/categorical",
+     "            conditional_column: Column to use for conditional generation (stored for reference)",
+     "        \"\"\"",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "",
+     "        self.discrete_columns = discrete_columns",
+     "",
+     "        print(f\"[i] Training CTGAN on {len(real_data)} records...\")"
+    ]
+   },
+   {
+    "file": "src/engines/ctgan_engine.py",
+    "line": 82,
+    "text": "self.model = CTGANSynthesizer(",
+    "context": [
+     "        # Build metadata",
+     "        self._build_metadata(real_data, discrete_columns)",
+     "",
+     "        # Create and train CTGAN model with SDV 1.x API",
+     "        self.model = CTGANSynthesizer(",
+     "            metadata=self.metadata_obj,",
+     "            embedding_dim=self.embedding_dim,",
+     "            generator_dim=self.generator_dim,",
+     "            discriminator_dim=self.discriminator_dim,"
+    ]
+   },
+   {
+    "file": "src/engines/ctgan_engine.py",
+    "line": 139,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "",
+     "        Args:",
+     "            filepath: Path to model file",
+     "        \"\"\"",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "",
+     "        if not os.path.exists(filepath):",
+     "            raise FileNotFoundError(f\"Model file not found: {filepath}\")",
+     ""
+    ]
+   },
+   {
+    "file": "src/engines/ctgan_engine.py",
+    "line": 145,
+    "text": "self.model = CTGANSynthesizer.load(filepath)",
+    "context": [
+     "        if not os.path.exists(filepath):",
+     "            raise FileNotFoundError(f\"Model file not found: {filepath}\")",
+     "",
+     "        # SDV 1.x has built-in load class method",
+     "        self.model = CTGANSynthesizer.load(filepath)",
+     "        print(f\"[+] Model loaded from {filepath}\")",
+     "",
+     "    def get_config(self) -> dict:",
+     "        \"\"\"Get model configuration.\"\"\""
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv>=0.18.0"
+  ],
+  "setup.py": [
+   "        'sdv>=0.18.0',"
+  ]
+ }
+}

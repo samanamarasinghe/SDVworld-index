@@ -1,0 +1,473 @@
+{
+ "repo": "crawfordb2026/synvara",
+ "disk_kb": 108115,
+ "method": "partial_clone",
+ "tree_files": 90,
+ "status": "ok",
+ "readme": "# Synthara — Synthetic EHR Generation & Benchmark\n\nA hackathon project that generates synthetic patient records from real EHR data and evaluates them across three dimensions: **realism**, **downstream ML utility**, and **privacy leakage**.\n\n## The problem\n\nReal patient data is locked behind HIPAA. Synthetic data generation offers a privacy-safe stand-in — but only if the synthetic records are actually statistically faithful and useful for training ML models.\n\n## What this builds\n\nAn end-to-end benchmark pipeline that:\n\n1. Flattens relational Synthea EHR tables into a single patient-level feature matrix\n2. Trains four generative models in parallel on AWS SageMaker\n3. Evaluates every generator on realism, ML utility, and privacy\n\n```\nSynthea CSVs ──► Flatten ──► Preprocess ──► Train generators (SageMaker)\n                                                      │\n                              ┌───────────────────────┼───────────────────────┐\n                              │           │            │                       │\n                           Copula      CTGAN         TVAE                Tabular Diffusion\n                              │           │            │                       │\n                              └───────────┴────────────┴───────────────────────┘\n                                                      │\n                               ┌──────────────────────┼──────────────────────┐\n                               │                      │                      │\n                          Realism eval           Utility eval          Privacy checks\n                          (KS, Wasserstein,      (AUROC, AUPRC,        (dup rate,\n                           corr distance,         F1 on real            NN distance,\n                           discriminator)         test set)             memorisation)\n                               │                      │                      │\n                               └──────────────────────┴──────────────────────┘\n                                                      │\n                                           Reports + CSV scorecards\n```\n\n---\n\n## Dataset\n\n**Synthea COVID-19 Synthetic EHR** ([synthea.mitre.org](https://synthea.mitre.org/downloads))\n\n- 124,150 patients with COVID-19 module\n- Flattened from 8+ relational tables into 35 features per patient\n- Target: `DECEASED` (0 = survived, 1 = died) — 19.5% positive rate\n\nDownload the 100k COVID-19 dataset from [synthea.mitre.org/downloads](https://synthea.mitre.org/downloads) and place the CSVs in `data/raw/100k_synthea_covid19_csv/`.\n\n### Feature groups (35 total)\n\n| Group | Count | Examples |\n|---|---|---|\n| Demographics | 5 | age, gender, race, hispanic, marital_status |\n| Conditions | 9 | diabetes, hypertension, obesity, pneumonia, anemia |\n| Encounters | 4 | inpatient, emergency, outpatient, total |\n| Vitals | 10 | BMI, systolic/diastolic BP, O₂ saturation, heart rate |\n| Financials | 7 | healthcare_expenses, healthcare_coverage |\n\n---\n\n## Generators\n\n| Model | Type | Library | Epochs | Instance |\n|---|---|---|---|---|\n| **Gaussian Copula** | Statistical | SDV | — | ml.m5.4xlarge |\n| **CTGAN** | GAN | SDV | 300 | ml.m5.4xlarge |\n| **TVAE** | VAE | SDV | 300 | ml.m5.4xlarge |\n| **Tabular Diffusion** | Diffusion | Custom (PyTorch) | 100 | ml.m5.4xlarge |\n\nTabular Diffusion is a custom implementation of Kotelnikov et al. (2023) — a denoising diffusion probabilistic model adapted for tabular data. The denoiser is a 3.34M parameter MLP with residual blocks and sinusoidal timestep embeddings.\n\n---\n\n## Results\n\n### Realism (lower is better, discriminator → 0.5 is better)\n\n| Generator | KS Mean | KS Max | Wasserstein Mean | Corr Distance | Discriminator AUROC |\n|---|---|---|---|---|---|\n| Copula | 0.111 | 0.678 | 0.126 | 3.237 | 1.000 |\n| CTGAN | 0.100 | 0.678 | 0.075 | 1.652 | 1.000 |\n| TVAE | 0.108 | 0.678 | 0.094 | 3.245 | 1.000 |\n| **Tabular Diffusion** | **0.050** | **0.350** | **0.034** | **0.503** | 1.000 |\n\n### Utility — train on synthetic, test on real (higher is better)\n\n| Training Data | Best AUROC | Best AUPRC | Best F1 |\n|---|---|---|---|\n| Real only | 0.9926 | 0.9746 | 0.9155 |\n| Copula | 0.9603 | 0.8956 | 0.7295 |\n| CTGAN | 0.9680 | 0.8938 | 0.7903 |\n| TVAE | 0.9769 | 0.9246 | 0.8097 |\n| **Tabular Diffusion** | **0.9906** | **0.9679** | **0.8949** |\n| Real + Tabular Diffusion | 0.9926 | 0.9744 | 0.9139 |\n\nTabular Diffusion closes to within **0.002 AUROC** of real data.\n\n### Privacy — all generators pass\n\n- 0 exact duplicates across all four generators\n- 0 memorized rare records (deceased patients reproduced within distance 0.05)\n- Nearest-neighbor distances well above the 0.1 danger threshold\n\n---\n\n## Project structure\n\n```\nsynthara/\n├── configs/\n│   └── config.yaml                    # Hyperparameters and paths\n├── data/\n│   ├── raw/                           # Synthea CSV files go here\n│   ├── processed/                     # train/val/test splits (auto-generated)\n│   └── synthetic/                     # Generator outputs (auto-generated)\n├── sagemaker/\n│   ├── train.py                       # SageMaker training entry point\n│   ├── launch_jobs.py                 # Submit + poll all 4 parallel jobs\n│   ├── tab_ddpm.py                    # Tabular Diffusion model classes\n│   └── requirements.txt              # SageMaker container dependencies\n├── src/\n│   ├── preprocessing/\n│   │   ├── flatten_ehr.py             # Join Synthea tables → patient_features.csv\n│   │   └── preprocess.py             # Split, log-transform, standardise\n│   ├── generators/\n│   │   └── train_generators.py        # Local Copula/CTGAN/TVAE training\n│   ├── evaluation/\n│   │   ├── realism.py                 # KS, Wasserstein, discriminator, PCA plots\n│   │   └── utility.py                 # Downstream ML benchmark\n│   ├── privacy/\n│   │   └── privacy_checks.py          # Dup rate, NN distance, memorisation\n│   └── pipeline.py                    # End-to-end CLI runner\n├── diffusion.py                       # Standalone local Tabular Diffusion training script\n├── outputs/\n│   └── models/                        # Saved model files (.pkl / .pt)\n└── reports/                           # All plots and CSV scorecards\n```\n\n---\n\n## Quickstart\n\n### 1. Install dependencies\n\n```bash\npython -m venv .venv\nsource .venv/bin/activate\npip install -r requirements.txt\n```\n\n### 2. Flatten the EHR data\n\n```bash\npython src/preprocessing/flatten_ehr.py\n```\n\nReads from `data/raw/100k_synthea_covid19_csv/`, writes `data/raw/patient_features.csv`.\n\n### 3. Run the full pipeline\n\n```bash\npython -m src.pipeline --config configs/config.yaml\n```\n\nThis preprocesses, loads pre-built synthetic CSVs (if present), and runs all evaluation phases.\n\n### 4. Train generators\n\n**Option A — AWS SageMaker (all 4 in parallel):**\n```bash\npython sagemaker/launch_jobs.py\n```\n\n**Option B — Local SDV models only:**\n```bash\npython -m src.pipeline --config configs/config.yaml  # trains locally if no synthetic CSVs found\n```\n\n**Option C — Local Tabular Diffusion:**\n```bash\npython diffusion.py --epochs 100 --steps 200 --batch-size 1024\n```\n\n### 5. Find results in `reports/`\n\n| File | Contents |\n|---|---|\n| `realism_scorecard.csv` | KS, Wasserstein, correlation distance, discriminator AUROC |\n| `utility_results.csv` | AUROC, AUPRC, F1 per training strategy × classifier |\n| `privacy_scorecard.csv` | Dup rate, NN distance, memorisation rate |\n| `distribution_comparison.png` | KDE overlays: real vs each generator |\n| `correlation_heatmaps.png` | Side-by-side correlation matrices |\n| `pca_overlap.png` | PCA scatter: real vs synthetic |\n| `utility_auroc.png` / `utility_auprc.png` | Bar charts by training strategy |\n| `utility_heatmap.png` | Full metric heatmap across all conditions |\n| `privacy_nn_distances.png` | NN distance distributions |\n| `pipeline_summary.json` | All results in one JSON |\n\n---\n\n## AWS SageMaker setup\n\nAll four training jobs run in parallel. Each pulls `patient_features.csv` from S3 and pushes `{generator}_synthetic.csv` + the model artifact back to S3.\n\n```\nS3: synthetic-ml-{account}/synthea/data/patient_features.csv\n         │\n         ├──► synth-copula    (ml.m5.4xlarge)\n         ├──► synth-ctgan     (ml.m5.4xlarge)\n         ├──► synth-tvae      (ml.m5.4xlarge)\n         └──► synth-diffusion (ml.m5.4xlarge)\n                   │\n                   ▼\nS3: synthetic-ml-{account}/synthea/output/{job}/output/model.tar.gz\n```\n\nConfigure `ACCOUNT`, `REGION`, `ROLE_ARN` in `sagemaker/launch_jobs.py` before running.\n\n---\n\n## Key engineering notes\n\n- `flatten_ehr.py` uses `regex=False` on all `str.contains()` calls — condition keywords like `\"Body mass index 30+\"` contain regex metacharacters that silently zero out columns with the default `regex=True`\n- All binary (0/1) columns are marked `sdtype='categorical'` in SDV metadata to prevent TVAE dimensional collapse\n- Six zero-inflated count/monetary columns (`encounter_inpatient`, `encounter_emergency`, `encounter_total`, `condition_count`, `healthcare_expenses`, `healthcare_coverage`) are log1p-transformed before StandardScaler\n- Discriminator AUROC = 1.0 across all generators is a known ceiling for zero-inflated tabular EHR data, not a bug — the encounter columns dominate the discriminator signal regardless of generator quality\n\n---\n\n## Team\n\n- **Crawford Barnett**\n- **Matthew Weber**\n- **Tyler Hintz**\n",
+ "hits": {
+  "st": [
+   {
+    "file": "sagemaker/train.py",
+    "line": 94,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "    return metadata",
+     "",
+     "",
+     "def train_copula(train_df: pd.DataFrame, target_col: str) -> object:",
+     "    from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "    metadata = build_metadata(train_df, target_col)",
+     "    model = GaussianCopulaSynthesizer(metadata, default_distribution='norm')",
+     "    model.fit(train_df)"
+    ]
+   },
+   {
+    "file": "sagemaker/train.py",
+    "line": 103,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "    return model",
+     "",
+     "",
+     "def train_ctgan(train_df: pd.DataFrame, target_col: str, epochs: int, batch_size: int) -> object:",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "",
+     "    metadata = build_metadata(train_df, target_col)",
+     "    model = CTGANSynthesizer(metadata, epochs=epochs, batch_size=batch_size, verbose=True)",
+     "    model.fit(train_df)"
+    ]
+   },
+   {
+    "file": "sagemaker/train.py",
+    "line": 112,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "    return model",
+     "",
+     "",
+     "def train_tvae(train_df: pd.DataFrame, target_col: str, epochs: int, batch_size: int) -> object:",
+     "    from sdv.single_table import TVAESynthesizer",
+     "",
+     "    metadata = build_metadata(train_df, target_col)",
+     "    model = TVAESynthesizer(metadata, epochs=epochs, batch_size=batch_size)",
+     "    model.fit(train_df)"
+    ]
+   },
+   {
+    "file": "src/generators/train_generators.py",
+    "line": 18,
+    "text": "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, TVAESynthesizer",
+    "context": [
+     "from pathlib import Path",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, TVAESynthesizer",
+     "",
+     "",
+     "GENERATOR_NAMES = [\"copula\", \"ctgan\", \"tvae\"]",
+     ""
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "sagemaker/train.py",
+    "line": 76,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "",
+     "def build_metadata(train_df: pd.DataFrame, target_col: str) -> object:",
+     "    \"\"\"Auto-detect metadata and mark target + all binary columns as categorical.\"\"\"",
+     "    from sdv.metadata import SingleTableMetadata",
+     "",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(train_df)",
+     "    metadata.update_column(column_name=target_col, sdtype='categorical')"
+    ]
+   },
+   {
+    "file": "src/generators/train_generators.py",
+    "line": 17,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import time",
+     "from pathlib import Path",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, TVAESynthesizer",
+     "",
+     "",
+     "GENERATOR_NAMES = [\"copula\", \"ctgan\", \"tvae\"]"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "sagemaker/train.py",
+    "line": 76,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "",
+     "def build_metadata(train_df: pd.DataFrame, target_col: str) -> object:",
+     "    \"\"\"Auto-detect metadata and mark target + all binary columns as categorical.\"\"\"",
+     "    from sdv.metadata import SingleTableMetadata",
+     "",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(train_df)",
+     "    metadata.update_column(column_name=target_col, sdtype='categorical')"
+    ]
+   },
+   {
+    "file": "sagemaker/train.py",
+    "line": 94,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "    return metadata",
+     "",
+     "",
+     "def train_copula(train_df: pd.DataFrame, target_col: str) -> object:",
+     "    from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "    metadata = build_metadata(train_df, target_col)",
+     "    model = GaussianCopulaSynthesizer(metadata, default_distribution='norm')",
+     "    model.fit(train_df)"
+    ]
+   },
+   {
+    "file": "sagemaker/train.py",
+    "line": 103,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "    return model",
+     "",
+     "",
+     "def train_ctgan(train_df: pd.DataFrame, target_col: str, epochs: int, batch_size: int) -> object:",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "",
+     "    metadata = build_metadata(train_df, target_col)",
+     "    model = CTGANSynthesizer(metadata, epochs=epochs, batch_size=batch_size, verbose=True)",
+     "    model.fit(train_df)"
+    ]
+   },
+   {
+    "file": "sagemaker/train.py",
+    "line": 112,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "    return model",
+     "",
+     "",
+     "def train_tvae(train_df: pd.DataFrame, target_col: str, epochs: int, batch_size: int) -> object:",
+     "    from sdv.single_table import TVAESynthesizer",
+     "",
+     "    metadata = build_metadata(train_df, target_col)",
+     "    model = TVAESynthesizer(metadata, epochs=epochs, batch_size=batch_size)",
+     "    model.fit(train_df)"
+    ]
+   },
+   {
+    "file": "src/generators/train_generators.py",
+    "line": 17,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import time",
+     "from pathlib import Path",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, TVAESynthesizer",
+     "",
+     "",
+     "GENERATOR_NAMES = [\"copula\", \"ctgan\", \"tvae\"]"
+    ]
+   },
+   {
+    "file": "src/generators/train_generators.py",
+    "line": 18,
+    "text": "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, TVAESynthesizer",
+    "context": [
+     "from pathlib import Path",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, TVAESynthesizer",
+     "",
+     "",
+     "GENERATOR_NAMES = [\"copula\", \"ctgan\", \"tvae\"]",
+     ""
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "sagemaker/train.py",
+    "line": 103,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "    return model",
+     "",
+     "",
+     "def train_ctgan(train_df: pd.DataFrame, target_col: str, epochs: int, batch_size: int) -> object:",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "",
+     "    metadata = build_metadata(train_df, target_col)",
+     "    model = CTGANSynthesizer(metadata, epochs=epochs, batch_size=batch_size, verbose=True)",
+     "    model.fit(train_df)"
+    ]
+   },
+   {
+    "file": "sagemaker/train.py",
+    "line": 106,
+    "text": "model = CTGANSynthesizer(metadata, epochs=epochs, batch_size=batch_size, verbose=True)",
+    "context": [
+     "def train_ctgan(train_df: pd.DataFrame, target_col: str, epochs: int, batch_size: int) -> object:",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "",
+     "    metadata = build_metadata(train_df, target_col)",
+     "    model = CTGANSynthesizer(metadata, epochs=epochs, batch_size=batch_size, verbose=True)",
+     "    model.fit(train_df)",
+     "    return model",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "src/generators/train_generators.py",
+    "line": 18,
+    "text": "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, TVAESynthesizer",
+    "context": [
+     "from pathlib import Path",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, TVAESynthesizer",
+     "",
+     "",
+     "GENERATOR_NAMES = [\"copula\", \"ctgan\", \"tvae\"]",
+     ""
+    ]
+   },
+   {
+    "file": "src/generators/train_generators.py",
+    "line": 81,
+    "text": ") -> CTGANSynthesizer:",
+    "context": [
+     "    train_df: pd.DataFrame,",
+     "    metadata: SingleTableMetadata,",
+     "    epochs: int = 300,",
+     "    batch_size: int = 500,",
+     ") -> CTGANSynthesizer:",
+     "    print(f\"\\n[CTGAN] Training for {epochs} epochs, batch_size={batch_size} …\")",
+     "    t0 = time.time()",
+     "    model = CTGANSynthesizer(",
+     "        metadata,"
+    ]
+   },
+   {
+    "file": "src/generators/train_generators.py",
+    "line": 84,
+    "text": "model = CTGANSynthesizer(",
+    "context": [
+     "    batch_size: int = 500,",
+     ") -> CTGANSynthesizer:",
+     "    print(f\"\\n[CTGAN] Training for {epochs} epochs, batch_size={batch_size} …\")",
+     "    t0 = time.time()",
+     "    model = CTGANSynthesizer(",
+     "        metadata,",
+     "        epochs=epochs,",
+     "        batch_size=batch_size,",
+     "        verbose=True,"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "sagemaker/train.py",
+    "line": 94,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "    return metadata",
+     "",
+     "",
+     "def train_copula(train_df: pd.DataFrame, target_col: str) -> object:",
+     "    from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "    metadata = build_metadata(train_df, target_col)",
+     "    model = GaussianCopulaSynthesizer(metadata, default_distribution='norm')",
+     "    model.fit(train_df)"
+    ]
+   },
+   {
+    "file": "sagemaker/train.py",
+    "line": 97,
+    "text": "model = GaussianCopulaSynthesizer(metadata, default_distribution='norm')",
+    "context": [
+     "def train_copula(train_df: pd.DataFrame, target_col: str) -> object:",
+     "    from sdv.single_table import GaussianCopulaSynthesizer",
+     "",
+     "    metadata = build_metadata(train_df, target_col)",
+     "    model = GaussianCopulaSynthesizer(metadata, default_distribution='norm')",
+     "    model.fit(train_df)",
+     "    return model",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "src/generators/train_generators.py",
+    "line": 18,
+    "text": "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, TVAESynthesizer",
+    "context": [
+     "from pathlib import Path",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, TVAESynthesizer",
+     "",
+     "",
+     "GENERATOR_NAMES = [\"copula\", \"ctgan\", \"tvae\"]",
+     ""
+    ]
+   },
+   {
+    "file": "src/generators/train_generators.py",
+    "line": 63,
+    "text": ") -> GaussianCopulaSynthesizer:",
+    "context": [
+     "def train_copula(",
+     "    train_df: pd.DataFrame,",
+     "    metadata: SingleTableMetadata,",
+     "    default_distribution: str = \"norm\",",
+     ") -> GaussianCopulaSynthesizer:",
+     "    print(\"\\n[Copula] Training Gaussian Copula baseline …\")",
+     "    t0 = time.time()",
+     "    model = GaussianCopulaSynthesizer(",
+     "        metadata,"
+    ]
+   },
+   {
+    "file": "src/generators/train_generators.py",
+    "line": 66,
+    "text": "model = GaussianCopulaSynthesizer(",
+    "context": [
+     "    default_distribution: str = \"norm\",",
+     ") -> GaussianCopulaSynthesizer:",
+     "    print(\"\\n[Copula] Training Gaussian Copula baseline …\")",
+     "    t0 = time.time()",
+     "    model = GaussianCopulaSynthesizer(",
+     "        metadata,",
+     "        default_distribution=default_distribution,",
+     "    )",
+     "    model.fit(train_df)"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "sagemaker/train.py",
+    "line": 112,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "    return model",
+     "",
+     "",
+     "def train_tvae(train_df: pd.DataFrame, target_col: str, epochs: int, batch_size: int) -> object:",
+     "    from sdv.single_table import TVAESynthesizer",
+     "",
+     "    metadata = build_metadata(train_df, target_col)",
+     "    model = TVAESynthesizer(metadata, epochs=epochs, batch_size=batch_size)",
+     "    model.fit(train_df)"
+    ]
+   },
+   {
+    "file": "sagemaker/train.py",
+    "line": 115,
+    "text": "model = TVAESynthesizer(metadata, epochs=epochs, batch_size=batch_size)",
+    "context": [
+     "def train_tvae(train_df: pd.DataFrame, target_col: str, epochs: int, batch_size: int) -> object:",
+     "    from sdv.single_table import TVAESynthesizer",
+     "",
+     "    metadata = build_metadata(train_df, target_col)",
+     "    model = TVAESynthesizer(metadata, epochs=epochs, batch_size=batch_size)",
+     "    model.fit(train_df)",
+     "    return model",
+     "",
+     ""
+    ]
+   },
+   {
+    "file": "src/generators/train_generators.py",
+    "line": 18,
+    "text": "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, TVAESynthesizer",
+    "context": [
+     "from pathlib import Path",
+     "",
+     "import pandas as pd",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, TVAESynthesizer",
+     "",
+     "",
+     "GENERATOR_NAMES = [\"copula\", \"ctgan\", \"tvae\"]",
+     ""
+    ]
+   },
+   {
+    "file": "src/generators/train_generators.py",
+    "line": 101,
+    "text": ") -> TVAESynthesizer:",
+    "context": [
+     "    train_df: pd.DataFrame,",
+     "    metadata: SingleTableMetadata,",
+     "    epochs: int = 300,",
+     "    batch_size: int = 500,",
+     ") -> TVAESynthesizer:",
+     "    print(f\"\\n[TVAE] Training for {epochs} epochs, batch_size={batch_size} …\")",
+     "    t0 = time.time()",
+     "    model = TVAESynthesizer(",
+     "        metadata,"
+    ]
+   },
+   {
+    "file": "src/generators/train_generators.py",
+    "line": 104,
+    "text": "model = TVAESynthesizer(",
+    "context": [
+     "    batch_size: int = 500,",
+     ") -> TVAESynthesizer:",
+     "    print(f\"\\n[TVAE] Training for {epochs} epochs, batch_size={batch_size} …\")",
+     "    t0 = time.time()",
+     "    model = TVAESynthesizer(",
+     "        metadata,",
+     "        epochs=epochs,",
+     "        batch_size=batch_size,",
+     "    )"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "gc",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv>=1.14.0",
+   "ctgan>=0.9.0"
+  ],
+  "sagemaker/requirements.txt": [
+   "sdv>=1.14.0",
+   "ctgan>=0.9.0"
+  ]
+ }
+}

@@ -1,0 +1,196 @@
+{
+ "repo": "luiscopete/CTGAN-Data-Privacy-Kaggle",
+ "disk_kb": 3098,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "## 🛡️ CTGAN Synthetic Data Generator: Meta Kaggle User Stats\n\nThis repository implements a **Conditional Tabular Generative Adversarial Network (CTGAN)** to create high-fidelity synthetic data based on aggregated user statistics from the official Meta Kaggle dataset.\n\n-----\n\n## 💡 What is CTGAN?\n\nThe **CTGAN** is a deep learning model specifically designed for generating realistic **tabular data**. It addresses the limitations of standard Generative Adversarial Networks (GANs) when dealing with real-world tables, which often contain:\n\n  * **Mixed Data Types:** A combination of continuous (e.g., `Followers`) and discrete/categorical (e.g., `Country`) columns.\n  * **Irregular Distributions:** Numerical columns that don't follow a simple Gaussian distribution (e.g., income might have two peaks).\n\nThe CTGAN's core innovation is using **Conditional Generation** to learn complex relationships and handle imbalanced categories, ensuring that the generated synthetic data maintains the statistical integrity of the original.\n\n-----\n\n## 🔑 Importance in Data Engineering\n\nUsing synthetic data offers immense benefits, particularly in environments handling sensitive information:\n\n1.  **Privacy and Compliance (GDPR, HIPAA):** The synthetic dataset contains **no real Personal Identifiable Information (PII)**. It allows developers and analysts to work with production-level data characteristics without the risk of exposing real users, drastically simplifying compliance requirements.\n2.  **Agile Development:** Synthetic data can be generated **on-demand** and scaled to any size. This is crucial for:\n      * **Pipeline Testing:** Validating ETL/ELT pipelines before deployment.\n      * **Bug Replication:** Simulating specific edge cases or rare events that might not exist in small test sets.\n3.  **Cost Reduction:** It eliminates the need for expensive, highly-secured infrastructure required for housing and accessing real PII in non-production environments.\n\n-----\n\n## 📊 Dataset Overview\n\nThe synthetic model is trained on **Aggregated User Statistics** sourced from the official Meta Kaggle dataset.\n\n  * **Source:** Official Meta Kaggle Dataset (Aggregated User Stats).\n  * **Sample Size Used for Training:** 100,000 rows.\n  * **Key Columns Modeled:** The model learns the relationships between user metrics, including activity (`TopicsCreated`, `LastContentDate`), social engagement (`Following`, `Followers`), and achievement (`CompetitionMedals`).\n  * **PII Handling:** The `UserName` column is explicitly defined as an **ID** field in the metadata (using `metadata.set_primary_key`), ensuring the model generates unique, sequential identifiers rather than attempting to model the distribution of actual usernames.\n\n-----\n\n## ⚙️ Training Process\n\nThe training leverages the **SDV (Synthetic Data Vault)** library's optimized CTGAN implementation.\n\n### 1\\. Model Initialization\n\nThe `CTGANSynthesizer` is initialized with the dataset's **metadata**, which informs the model about which columns are categorical, continuous, or unique IDs. The `enforce_rounding=True` parameter ensures generated integer values remain integers (e.g., `Followers` remains a whole number).\n\n```python\n# Initialize the synthesizer\nsynthesizer = CTGANSynthesizer(\n    metadata,\n    enforce_rounding=True,\n    epochs=200,\n    verbose=True\n)\n```\n\n### 2\\. Adversarial Training\n\nThe model trains over **200 epochs**, engaging in the adversarial process:\n\n  * The **Generator** ($G$) attempts to produce realistic user data based on the learned correlations.\n  * The **Discriminator** ($D$) attempts to differentiate between the real Meta Kaggle data and the synthetic data from $G$.\n  * The process converges when the Discriminator can no longer reliably distinguish the two, meaning the synthetic data is high-quality.\n\n-----\n\n## ✅ Evaluation Metric\n\nThe quality of the final synthetic dataset is measured using the **Overall Quality Score** provided by the SDV evaluation framework.\n\n  * **Metric:** `sdv.evaluation.single_table.evaluate_quality`\n  * **How it Works:** This metric calculates **Statistical Fidelity** (0% to 100%) by averaging the results of two key checks:\n    1.  **Column Shapes:** Compares the individual statistical distributions (histograms) of every column in the real and synthetic datasets.\n    2.  **Column Pairs:** Compares the correlation matrix to ensure that the relationships between variables (e.g., the link between `GoldCompetitionMedals` and `PerformanceTier`) are preserved.\n\nA score above **80%** typically indicates data suitable for advanced analytics and machine learning tasks.\n\n```python\nquality_report = evaluate_quality(\n    real_data,\n    synthetic_data,\n    metadata\n)\n\n# The result provides the final assessment of the model's success\nprint(f\"\\nOverall Quality Score: {quality_report.get_score() * 100:.2f}%\")\n```\n\n-----\n\n## ✍️ Author\n\n**Luis Copete** — Data Engineer\n* **LinkedIn:** [Luis Copete's LinkedIn Profile Link](https://www.linkedin.com/in/luiscopete)\n",
+ "hits": {
+  "st": [
+   {
+    "file": "CTGAN_MetaKaggle_Training.ipynb",
+    "line": 14,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"#Training libraries\\n\",",
+     "    \"import torch\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"#Evaluation metrics\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\"",
+     "   ]"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "CTGAN_MetaKaggle_Training.ipynb",
+    "line": 13,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "   \"source\": [",
+     "    \"#Training libraries\\n\",",
+     "    \"import torch\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"#Evaluation metrics\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\""
+    ]
+   }
+  ],
+  "ev": [
+   {
+    "file": "CTGAN_MetaKaggle_Training.ipynb",
+    "line": 17,
+    "text": "\"from sdv.evaluation.single_table import evaluate_quality\"",
+    "context": [
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"#Evaluation metrics\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\"",
+     "   ]",
+     "  },",
+     "  {",
+     "   \"cell_type\": \"markdown\","
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "CTGAN_MetaKaggle_Training.ipynb",
+    "line": 13,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "   \"source\": [",
+     "    \"#Training libraries\\n\",",
+     "    \"import torch\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"#Evaluation metrics\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\""
+    ]
+   },
+   {
+    "file": "CTGAN_MetaKaggle_Training.ipynb",
+    "line": 14,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"#Training libraries\\n\",",
+     "    \"import torch\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"#Evaluation metrics\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\"",
+     "   ]"
+    ]
+   },
+   {
+    "file": "CTGAN_MetaKaggle_Training.ipynb",
+    "line": 17,
+    "text": "\"from sdv.evaluation.single_table import evaluate_quality\"",
+    "context": [
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"#Evaluation metrics\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\"",
+     "   ]",
+     "  },",
+     "  {",
+     "   \"cell_type\": \"markdown\","
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "CTGAN_MetaKaggle_Training.ipynb",
+    "line": 14,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"#Training libraries\\n\",",
+     "    \"import torch\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"\\n\",",
+     "    \"#Evaluation metrics\\n\",",
+     "    \"from sdv.evaluation.single_table import evaluate_quality\"",
+     "   ]"
+    ]
+   },
+   {
+    "file": "CTGAN_MetaKaggle_Training.ipynb",
+    "line": 277,
+    "text": "\"synthesizer = CTGANSynthesizer(\\n\",",
+    "context": [
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"#Train model\\n\",",
+     "    \"synthesizer = CTGANSynthesizer(\\n\",",
+     "    \"    metadata,\\n\",",
+     "    \"    enforce_rounding=True,\\n\",",
+     "    \"    epochs=200,\\n\",",
+     "    \"    verbose=True\\n\","
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 47,
+    "text": "The `CTGANSynthesizer` is initialized with the dataset's **metadata**, which informs the model about which columns are categorical, continuous, or unique IDs. The `enforce_rounding=True` parameter ensures generated integer values remain integers (e.g., `Followers` remains a whole number).",
+    "context": [
+     "The training leverages the **SDV (Synthetic Data Vault)** library's optimized CTGAN implementation.",
+     "",
+     "### 1\\. Model Initialization",
+     "",
+     "The `CTGANSynthesizer` is initialized with the dataset's **metadata**, which informs the model about which columns are categorical, continuous, or unique IDs. The `enforce_rounding=True` parameter ens",
+     "",
+     "```python",
+     "# Initialize the synthesizer",
+     "synthesizer = CTGANSynthesizer("
+    ]
+   },
+   {
+    "file": "README.md",
+    "line": 51,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "The `CTGANSynthesizer` is initialized with the dataset's **metadata**, which informs the model about which columns are categorical, continuous, or unique IDs. The `enforce_rounding=True` parameter ens",
+     "",
+     "```python",
+     "# Initialize the synthesizer",
+     "synthesizer = CTGANSynthesizer(",
+     "    metadata,",
+     "    enforce_rounding=True,",
+     "    epochs=200,",
+     "    verbose=True"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ev",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "copulas==0.12.3",
+   "ctgan==0.11.1",
+   "rdt==1.18.2",
+   "sdmetrics==0.24.0",
+   "sdv==1.29.1"
+  ]
+ }
+}

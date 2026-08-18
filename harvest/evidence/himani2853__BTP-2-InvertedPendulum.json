@@ -1,0 +1,78 @@
+{
+ "repo": "himani2853/BTP-2-InvertedPendulum",
+ "disk_kb": 4089,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# InvertedPendulum: Hybrid Behavioral Cloning with Synthetic Data\n\nThis project explores hybrid behavioral cloning for the InvertedPendulum-v5 environment, combining real expert trajectories with synthetic data generated using two different generative models: CTGAN and PARModel (using DeepEcho). The goal is to investigate how synthetic data can augment limited real expert demonstrations to improve policy performance.\n\n## Project Overview\n\nThe project implements a comprehensive pipeline that:\n1. Trains an expert PPO agent on the InvertedPendulum environment\n2. Collects expert trajectories from the trained agent\n3. Generates synthetic trajectory data using CTGAN and PARModel\n4. Trains behavioral cloning agents with different ratios of real vs synthetic data\n5. Evaluates the performance of hybrid models across various data mixing ratios\n\n## Project Structure\n\n```\nInvertedPendulum/\n├── src/                          # Source code\n│   ├── train_ppo.py              # Train expert PPO agent\n│   ├── collect_trajs.py          # Collect expert trajectories\n│   ├── train_ctgan.py            # Train CTGAN generative model\n│   ├── generate_synth_data.py    # Generate synthetic data with CTGAN\n│   ├── train_par_model.py        # Train PARModel generative model\n│   ├── generate_par_data.py      # Generate synthetic data with PARModel\n│   ├── train_hybrid_bc.py        # Train behavioral cloning with mixed data\n│   ├── evaluate_hybrid.py        # Evaluate trained BC models\n│   └── plots.py                  # Generate performance plots\n├── data/                         # Data files\n│   ├── expert_trajs_500k.npz     # Expert trajectories (500k timesteps)\n│   ├── expert_trajs.npz          # Expert trajectories (smaller dataset)\n│   ├── synthetic_trajs.npz       # CTGAN generated synthetic data\n│   └── par_synthetic_trajs_500k.npz  # PARModel generated synthetic data\n├── experts/                      # Trained expert models\n│   └── ppo_invertedpendulum_500k.zip  # Expert PPO model\n├── generators/                   # Trained generative models\n│   ├── ctgan_model.pkl           # Trained CTGAN model\n│   └── par_model_500k.pkl        # Trained PARModel\n├── agents/                       # Trained behavioral cloning models\n│   ├── bc_ratio_*.pt             # CTGAN-based BC models\n│   └── par_bc_ratio_*.pt         # PARModel-based BC models\n└── results/                      # Evaluation results and plots\n    ├── eval_results_best.csv     # CTGAN evaluation results\n    ├── par_eval_results_best.csv # PARModel evaluation results\n    └── *.png                     # Performance plots\n```\n\n## Dependencies\n\nThe project requires the following python3 packages:\n- `gymnasium` - OpenAI Gym environment\n- `stable-baselines3` - PPO implementation\n- `torch` - Neural network training\n- `numpy` - Numerical computations\n- `pandas` - Data manipulation\n- `ctgan` - CTGAN generative model\n- `deepecho` - PARModel implementation\n- `sklearn` - Data splitting and preprocessing\n- `matplotlib` - Plotting\n- `seaborn` - Statistical plotting\n- `tqdm` - Progress bars\n- `joblib` - Model serialization\n\nInstall dependencies:\n```bash\npip install gymnasium stable-baselines3 torch numpy pandas ctgan deepecho scikit-learn matplotlib seaborn tqdm joblib\n```\n\n## Usage Guide\n\nFollow these steps in order to reproduce the complete experimental pipeline:\n\n### 1. Train Expert PPO Agent\n```bash\ncd src\npython3 train_ppo.py\n```\nThis creates an expert PPO agent trained on InvertedPendulum-v5 for 500k timesteps and saves it to `experts/ppo_invertedpendulum_500k.zip`.\n\n### 2. Collect Expert Trajectories\n```bash\npython3 collect_trajs.py\n```\nCollects 500 episodes of expert trajectories and saves them to `data/expert_trajs_500k.npz`.\n\n### 3. Generate Synthetic Data\n\n#### Option A: Using CTGAN\n```bash\npython3 train_ctgan.py           # Train CTGAN model\npython3 generate_synth_data.py   # Generate synthetic data\n```\n\n#### Option B: Using PARModel (Recommended)\n```bash\npython3 train_par_model.py       # Train PARModel\npython3 generate_par_data.py     # Generate synthetic data\n```\n\n### 4. Train Hybrid Behavioral Cloning Models\n```bash\npython3 train_hybrid_bc.py\n```\nThis trains BC models with different ratios of real vs synthetic data (0.0, 0.1, 0.25, 0.5, 0.75, 1.0) and saves models to the `agents/` directory.\n\n### 5. Evaluate Trained Models\n```bash\npython3 evaluate_hybrid.py\n```\nEvaluates all trained models across multiple seeds and saves results to `results/eval_results_best.csv` or `results/par_eval_results_best.csv`.\n\n### 6. Generate Performance Plots\n```bash\npython3 plots.py\n```\nCreates performance visualization plots and saves them to the `results/` directory.\n\n## Key Files and Components\n\n### Core Training Scripts\n\n- **`train_ppo.py`**: Trains an expert PPO agent using Stable Baselines3\n- **`collect_trajs.py`**: Collects expert demonstration trajectories\n- **`train_hybrid_bc.py`**: Main behavioral cloning training script with data mixing capabilities\n\n### Generative Models\n\n- **`train_ctgan.py`**: Trains a CTGAN model on expert trajectories\n- **`train_par_model.py`**: Trains a PARModel on sequential trajectory data\n- **`generate_synth_data.py`**: Generates synthetic data using trained CTGAN\n- **`generate_par_data.py`**: Generates synthetic data using trained PARModel\n\n### Evaluation and Analysis\n\n- **`evaluate_hybrid.py`**: Evaluates trained BC models across different real/synthetic ratios\n- **`plots.py`**: Generates performance comparison plots\n\n## Data Formats\n\n### Expert Trajectories\nStored as `.npz` files containing arrays of (state, action, reward, next_state, done) tuples.\n\n### Synthetic Data\nGenerated in the same format as expert trajectories for seamless integration into the training pipeline.\n\n### Model Checkpoints\n- PPO models: `.zip` files (Stable Baselines3 format)\n- Generative models: `.pkl` files (pickle format)\n- BC models: `.pt` files (PyTorch state dictionaries)\n\n## Results\n\nThe evaluation produces CSV files and plots showing:\n- Mean reward ± standard deviation for each real/synthetic data ratio\n- Performance comparison across 5 different random seeds\n- 20 episodes per seed for robust evaluation\n\nKey findings typically show optimal performance at intermediate mixing ratios (e.g., 50% real + 50% synthetic), demonstrating the value of synthetic data augmentation in behavioral cloning.\n\n## Environment Details\n\n- **Environment**: InvertedPendulum-v5 (Gymnasium)\n- **State Space**: 4D continuous (cart position, pole angle, cart velocity, pole velocity)  \n- **Action Space**: 1D continuous (force applied to cart)\n- **Success Metric**: Episode reward (higher is better)\n\n## Notes\n\n- The project supports both CPU and Apple Silicon MPS acceleration\n- Models are trained with dropout regularization to prevent overfitting\n- Data normalization and clipping are applied to ensure training stability\n- Multiple evaluation seeds ensure statistical significance of results\n\n## Troubleshooting\n\n1. **Memory Issues**: Reduce batch sizes in training scripts\n2. **MPS Compatibility**: The code automatically falls back to CPU if MPS is unavailable\n3. **Package Versions**: Ensure compatible versions of PyTorch and related packages\n4. **Data Generation**: If synthetic data generation fails, check that the generative models are properly trained and saved",
+ "hits": {
+  "ctgan_mod": [
+   {
+    "file": "src/train_ctgan.py",
+    "line": 3,
+    "text": "from ctgan.synthesizers import CTGAN   # ✅ new import",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "from ctgan.synthesizers import CTGAN   # ✅ new import",
+     "import os",
+     "import time",
+     "from tqdm import trange",
+     ""
+    ]
+   },
+   {
+    "file": "src/generate_synth_data.py",
+    "line": 3,
+    "text": "from ctgan.synthesizers import CTGAN   # ✅ new import",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "from ctgan.synthesizers import CTGAN   # ✅ new import",
+     "",
+     "if __name__ == \"__main__\":",
+     "    model = CTGAN.load(\"../generators/ctgan_model.pkl\")",
+     "    synth_df = model.sample(100000)"
+    ]
+   }
+  ],
+  "sq": [
+   {
+    "file": "src/train_par_model.py",
+    "line": 3,
+    "text": "# from sdv.sequential import PARModel",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "# from sdv.sequential import PARModel",
+     "from deepecho import PARModel",
+     "import torch",
+     "import os",
+     "import joblib"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "src/train_par_model.py",
+    "line": 3,
+    "text": "# from sdv.sequential import PARModel",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "# from sdv.sequential import PARModel",
+     "from deepecho import PARModel",
+     "import torch",
+     "import os",
+     "import joblib"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ctgan_mod",
+  "sdv_any",
+  "sq"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

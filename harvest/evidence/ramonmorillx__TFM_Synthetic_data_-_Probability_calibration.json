@@ -1,0 +1,1027 @@
+{
+ "repo": "ramonmorillx/TFM_Synthetic_data_-_Probability_calibration",
+ "disk_kb": 45512,
+ "method": "partial_clone",
+ "tree_files": 75,
+ "status": "ok",
+ "readme": "# MÉTODOS DE AJUSTE EN MODELOS DE APRENDIZAJE SUPERVISADO ANTE DESBALANCEO DE CLASES\n\nEl link del repo de github es el siguiente: https://github.com/ramonmorillx/TFM_Synthetic_data_-_Probability_calibration\n\n**Autor**:\nRamón Morillo Barrera - ramon.morillo@cunef.edu / ramonvejer@gmail.com\n\nEl objetivo general de este proyecto TFM es desarrollar un marco de trabajo el cual mitigue el desbalanceo, además de garantizar que las probabilidades asignadas por los modelos reflejen fielmente la realidad subyacente, incluso en contextos de datos sintéticos. La aplicabilidad de este enfoque radica en su capacidad para abordar problemáticas sensibles en sectores como la salud, donde un modelo no calibrado podría subestimar la probabilidad de cáncer en pacientes con síntomas atípicos, o en finanzas, donde ignorar transacciones fraudulentas minoritarias generaría pérdidas millonarias. Al garantizar que las predicciones reflejen de forma precisa las frecuencias empíricas —incluso tras ampliar artificialmente la clase minoritaria—, se mitiga el riesgo de decisiones sesgadas y se fortalece la confianza en sistemas de IA desplegados en entornos sensibles.\n\n## Enfoque Metodológico\n**1. Generación de Datos Sintéticos**\nSe aplicarán algoritmos de generación de datos sintéticos a conjuntos desbalanceados, priorizando la preservación de correlaciones multivariadas y evitando el overfitting sintético. La calidad de los datos generados se validará mediante pruebas estadísticas y visualizaciones.\n\n**2. Entrenamiento y Calibración de Modelos**\nSe entrenarán algoritmos de machine learning sobre datos originales y sintéticos. Posteriormente, se calibrarán sus salidas probabilísticas mediante algoritmos de calibración de probabilidades, ajustando las predicciones para alinearlas con las frecuencias reales.\n\n**3. Evaluación Integral**\nSe contrastará un modelo base con modelos balanceados habiendo aplicado algoritmos de generación de datos sintéticos y calibración de probabilidades, usando métricas tradicionales (precision, recall) y específicas de calibración (Brier Score, Curvas de Confiabilidad). Además, se analizará la robustez frente a ruido.\n\n### Resumen del Proyecto:\n\nEste proyecto TFM en colaboración con MAPFRE tiene como objetivo investigar acerca de una problemática común en el sector asegurador, el fraude. Con el fin de desarrollar un enfoque predictivo experimental capaz de detectar y aumentar la captura de fraude. Se realizará un análisis exploratorio de los datos, seguido de un preprocesamiento adecuado, y se abordará el desbalanceo de la variable objetivo. Además, se aplicarán diversos modelos de Machine Learning, se explicará su funcionamiento y se presentarán los resultados obtenidos.\n\n#### Repositorio de Github:\nEl repositorio está compuesto por las siguientes carpetas:\n\n- **`data`**: Contiene los archivos de datos y metadatos con los que vamos a trabajar. \n \n - **`metadata`**: Metadatos de los datos.\n  - **`raw`**: Archivos de datos originales, tal como se obtuvieron. \n \n  - **`processed`**: Datos que ya han sido procesados y transformados para su uso.\n  \n  - **`synthetic`**: Datos sintéticos generados por los diferentes algoritmos\n  \n- **`src`**: Directorio que contiene las funciones .py auxiliares que se importan en los notebooks y clases para entrenar los modelos de generación sintética.\n\n- **`html`**: Carpeta en donde se encuentran todos los archivos html exportados\n\n- **`notebooks`**: Carpeta que contiene los notebooks con todos los procesos realizados\n\n- **`experiments`**: Carpeta que alberga diferentes experimentos realizados que justifican algunas decisiones tomadas durante el proceso.\n\n- **`models`**: Carpeta con los modelos entrenados.\n\n- **`docs`**: Diversos archivos referentes a la realización del TFM\n\n- **`images`**: Imágenes del proceso de investigación\n\nLos datos debido a su capacidad de almacenamiento no estarán en github, pero se pueden solicitar bajo petición anticipada.\n\n## Notebooks Desarrollados\n\nSe han desarrollado tres notebooks en esta primera entrega:\n\n1. **00_Exploratory_data_analysis.ipynb**: Dedicado a analizar y comprender las variables del conjunto de datos, así como a examinar su distribución y características principales.\n2. **01_Feature_processing.ipynb**: Enfocado en transformar las variables categóricas mediante técnicas de codificación y normalizar las variables numéricas a través de métodos de escalado, además de la selección de las mismas.\n3. **02_Base_Model.ipynb**: Enfocado en entrenar un primer modelo base para partir de un punto el cuál mejorar.\n4. **03_SMOTE_evaluation.ipynb**: Dirigido a la impelmentación de modelos de predicción y análisis de las diferentes métricas observadas con el algoritmo SMOTE.\n5. **04_CTGAN_evaluation.ipynb**: Dirigido a la implementación de modelos de predicción y análisis de las diferentes métricas observadas con el algoritmo CTGAN.\n6. **05_TVAE_evaluation.ipynb**: Dirigido a la implementación de modelos de predicción y análisis de las diferentes métricas observadas con el algoritmo TVAE.\n7. **06_ADASYN_evaluation.ipynb**: Dirigido a la implementación de modelos de predicción y análisis de las diferentes métricas observadas con el algoritmo ADASYN.\n8. **07_Test_evaluation.ipynb**: Evaluación y selección del modelo final con una muestra de datos no observados anteriormente.\n9. **08_Probability_calibration.ipynb**: Calibración de probabilidades de salida postentrenamiento.\n10. **09_Explainability.ipynb**: Explicabilidad global y local con Shap values.\n11. **10_Conclusions.ipynb**: Conclusiones finales de negocio de la investigación.\n\n\n\n",
+ "hits": {
+  "md": [
+   {
+    "file": "notebooks/03_SMOTE_evaluation.ipynb",
+    "line": 26,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdmetrics.reports.single_table import QualityReport, DiagnosticReport\\n\",",
+     "    \"from sdmetrics.visualization import get_column_plot\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+     "    \"from sdmetrics.single_column import StatisticSimilarity\\n\",",
+     "    \"import sys\\n\",",
+     "    \"import warnings\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/03_SMOTE_evaluation.ipynb",
+    "line": 27,
+    "text": "\"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+    "context": [
+     "    \"from sdmetrics.reports.single_table import QualityReport, DiagnosticReport\\n\",",
+     "    \"from sdmetrics.visualization import get_column_plot\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+     "    \"from sdmetrics.single_column import StatisticSimilarity\\n\",",
+     "    \"import sys\\n\",",
+     "    \"import warnings\\n\",",
+     "    \"import json\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/07_test_evaluation.ipynb",
+    "line": 23,
+    "text": "\"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+     "    \"from imblearn.pipeline import Pipeline \\n\",",
+     "    \"from lightgbm import LGBMClassifier \\n\",",
+     "    \"from sklearn.preprocessing import StandardScaler\\n\",",
+     "    \"from sklearn.base import BaseEstimator, TransformerMixin\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/08_probability_calibration.ipynb",
+    "line": 23,
+    "text": "\"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+     "    \"from imblearn.pipeline import Pipeline \\n\",",
+     "    \"from lightgbm import LGBMClassifier \\n\",",
+     "    \"from sklearn.preprocessing import StandardScaler\\n\",",
+     "    \"from sklearn.base import BaseEstimator, TransformerMixin\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/05_TVAE_evaluation.ipynb",
+    "line": 26,
+    "text": "\"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+    "context": [
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"from sdmetrics.reports.single_table import QualityReport, DiagnosticReport\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+     "    \"from imblearn.pipeline import Pipeline \\n\",",
+     "    \"from lightgbm import LGBMClassifier \\n\",",
+     "    \"from sklearn.preprocessing import StandardScaler\\n\",",
+     "    \"from sklearn.base import BaseEstimator, TransformerMixin\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/06_ADASYN_evaluation.ipynb",
+    "line": 26,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdmetrics.reports.single_table import QualityReport, DiagnosticReport\\n\",",
+     "    \"from sdmetrics.visualization import get_column_plot\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+     "    \"from sdmetrics.single_column import StatisticSimilarity\\n\",",
+     "    \"import sys\\n\",",
+     "    \"import warnings\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/06_ADASYN_evaluation.ipynb",
+    "line": 27,
+    "text": "\"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+    "context": [
+     "    \"from sdmetrics.reports.single_table import QualityReport, DiagnosticReport\\n\",",
+     "    \"from sdmetrics.visualization import get_column_plot\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+     "    \"from sdmetrics.single_column import StatisticSimilarity\\n\",",
+     "    \"import sys\\n\",",
+     "    \"import warnings\\n\",",
+     "    \"import json\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/04_CTGAN_evaluation.ipynb",
+    "line": 24,
+    "text": "\"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+    "context": [
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+     "    \"from sdmetrics.reports.single_table import QualityReport, DiagnosticReport\\n\",",
+     "    \"from imblearn.pipeline import Pipeline \\n\",",
+     "    \"from lightgbm import LGBMClassifier \\n\",",
+     "    \"from sklearn.preprocessing import StandardScaler\\n\","
+    ]
+   },
+   {
+    "file": "src/artifacts/TVAE_generator.py",
+    "line": 8,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pickle",
+     "import json",
+     "import pandas as pd",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.metadata import Metadata as SDVMetadata",
+     "sys.path.append('../auxiliar')",
+     "import constants as C",
+     "sys.path.remove('../auxiliar')"
+    ]
+   },
+   {
+    "file": "src/artifacts/TVAE_generator.py",
+    "line": 9,
+    "text": "from sdv.metadata import Metadata as SDVMetadata",
+    "context": [
+     "import json",
+     "import pandas as pd",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.metadata import Metadata as SDVMetadata",
+     "sys.path.append('../auxiliar')",
+     "import constants as C",
+     "sys.path.remove('../auxiliar')",
+     ""
+    ]
+   },
+   {
+    "file": "src/artifacts/GaussianCopula_generatos.py",
+    "line": 8,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pickle",
+     "import json",
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.metadata import Metadata as SDVMetadata",
+     "sys.path.append('../auxiliar')",
+     "import constants as C",
+     "sys.path.remove('../auxiliar')"
+    ]
+   },
+   {
+    "file": "src/artifacts/GaussianCopula_generatos.py",
+    "line": 9,
+    "text": "from sdv.metadata import Metadata as SDVMetadata",
+    "context": [
+     "import json",
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.metadata import Metadata as SDVMetadata",
+     "sys.path.append('../auxiliar')",
+     "import constants as C",
+     "sys.path.remove('../auxiliar')",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "notebooks/03_SMOTE_evaluation.ipynb",
+    "line": 26,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdmetrics.reports.single_table import QualityReport, DiagnosticReport\\n\",",
+     "    \"from sdmetrics.visualization import get_column_plot\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+     "    \"from sdmetrics.single_column import StatisticSimilarity\\n\",",
+     "    \"import sys\\n\",",
+     "    \"import warnings\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/03_SMOTE_evaluation.ipynb",
+    "line": 27,
+    "text": "\"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+    "context": [
+     "    \"from sdmetrics.reports.single_table import QualityReport, DiagnosticReport\\n\",",
+     "    \"from sdmetrics.visualization import get_column_plot\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+     "    \"from sdmetrics.single_column import StatisticSimilarity\\n\",",
+     "    \"import sys\\n\",",
+     "    \"import warnings\\n\",",
+     "    \"import json\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/07_test_evaluation.ipynb",
+    "line": 22,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "   \"execution_count\": 1,",
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+     "    \"from imblearn.pipeline import Pipeline \\n\",",
+     "    \"from lightgbm import LGBMClassifier \\n\",",
+     "    \"from sklearn.preprocessing import StandardScaler\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/07_test_evaluation.ipynb",
+    "line": 23,
+    "text": "\"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+     "    \"from imblearn.pipeline import Pipeline \\n\",",
+     "    \"from lightgbm import LGBMClassifier \\n\",",
+     "    \"from sklearn.preprocessing import StandardScaler\\n\",",
+     "    \"from sklearn.base import BaseEstimator, TransformerMixin\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/08_probability_calibration.ipynb",
+    "line": 22,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "   \"execution_count\": 30,",
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+     "    \"from imblearn.pipeline import Pipeline \\n\",",
+     "    \"from lightgbm import LGBMClassifier \\n\",",
+     "    \"from sklearn.preprocessing import StandardScaler\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/08_probability_calibration.ipynb",
+    "line": 23,
+    "text": "\"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+     "    \"from imblearn.pipeline import Pipeline \\n\",",
+     "    \"from lightgbm import LGBMClassifier \\n\",",
+     "    \"from sklearn.preprocessing import StandardScaler\\n\",",
+     "    \"from sklearn.base import BaseEstimator, TransformerMixin\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/05_TVAE_evaluation.ipynb",
+    "line": 23,
+    "text": "\"from sdv.single_table import TVAESynthesizer\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"from sdmetrics.reports.single_table import QualityReport, DiagnosticReport\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+     "    \"from imblearn.pipeline import Pipeline \\n\","
+    ]
+   },
+   {
+    "file": "notebooks/05_TVAE_evaluation.ipynb",
+    "line": 25,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "   \"source\": [",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"from sdmetrics.reports.single_table import QualityReport, DiagnosticReport\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+     "    \"from imblearn.pipeline import Pipeline \\n\",",
+     "    \"from lightgbm import LGBMClassifier \\n\",",
+     "    \"from sklearn.preprocessing import StandardScaler\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/05_TVAE_evaluation.ipynb",
+    "line": 26,
+    "text": "\"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+    "context": [
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"from sdmetrics.reports.single_table import QualityReport, DiagnosticReport\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+     "    \"from imblearn.pipeline import Pipeline \\n\",",
+     "    \"from lightgbm import LGBMClassifier \\n\",",
+     "    \"from sklearn.preprocessing import StandardScaler\\n\",",
+     "    \"from sklearn.base import BaseEstimator, TransformerMixin\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/06_ADASYN_evaluation.ipynb",
+    "line": 26,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdmetrics.reports.single_table import QualityReport, DiagnosticReport\\n\",",
+     "    \"from sdmetrics.visualization import get_column_plot\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+     "    \"from sdmetrics.single_column import StatisticSimilarity\\n\",",
+     "    \"import sys\\n\",",
+     "    \"import warnings\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/06_ADASYN_evaluation.ipynb",
+    "line": 27,
+    "text": "\"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+    "context": [
+     "    \"from sdmetrics.reports.single_table import QualityReport, DiagnosticReport\\n\",",
+     "    \"from sdmetrics.visualization import get_column_plot\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+     "    \"from sdmetrics.single_column import StatisticSimilarity\\n\",",
+     "    \"import sys\\n\",",
+     "    \"import warnings\\n\",",
+     "    \"import json\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/04_CTGAN_evaluation.ipynb",
+    "line": 23,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+     "    \"from sdmetrics.reports.single_table import QualityReport, DiagnosticReport\\n\",",
+     "    \"from imblearn.pipeline import Pipeline \\n\",",
+     "    \"from lightgbm import LGBMClassifier \\n\","
+    ]
+   }
+  ],
+  "sm": [
+   {
+    "file": "notebooks/03_SMOTE_evaluation.ipynb",
+    "line": 23,
+    "text": "\"from sdmetrics.reports.single_table import QualityReport, DiagnosticReport\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdmetrics.reports.single_table import QualityReport, DiagnosticReport\\n\",",
+     "    \"from sdmetrics.visualization import get_column_plot\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.metadata import Metadata as SDVMetadata\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/03_SMOTE_evaluation.ipynb",
+    "line": 24,
+    "text": "\"from sdmetrics.visualization import get_column_plot\\n\",",
+    "context": [
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdmetrics.reports.single_table import QualityReport, DiagnosticReport\\n\",",
+     "    \"from sdmetrics.visualization import get_column_plot\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+     "    \"from sdmetrics.single_column import StatisticSimilarity\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/03_SMOTE_evaluation.ipynb",
+    "line": 28,
+    "text": "\"from sdmetrics.single_column import StatisticSimilarity\\n\",",
+    "context": [
+     "    \"from sdmetrics.visualization import get_column_plot\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+     "    \"from sdmetrics.single_column import StatisticSimilarity\\n\",",
+     "    \"import sys\\n\",",
+     "    \"import warnings\\n\",",
+     "    \"import json\\n\",",
+     "    \"import plotly.express\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/03_SMOTE_evaluation.ipynb",
+    "line": 1481,
+    "text": "\"from sdmetrics.single_table import LogisticDetection\\n\",",
+    "context": [
+     "     \"output_type\": \"execute_result\"",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdmetrics.single_table import LogisticDetection\\n\",",
+     "    \"\\n\",",
+     "    \"LogisticDetection.compute(\\n\",",
+     "    \"    real_data,\\n\",",
+     "    \"    synthetic_data,\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/05_TVAE_evaluation.ipynb",
+    "line": 24,
+    "text": "\"from sdmetrics.reports.single_table import QualityReport, DiagnosticReport\\n\",",
+    "context": [
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"from sdmetrics.reports.single_table import QualityReport, DiagnosticReport\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+     "    \"from imblearn.pipeline import Pipeline \\n\",",
+     "    \"from lightgbm import LGBMClassifier \\n\","
+    ]
+   },
+   {
+    "file": "notebooks/05_TVAE_evaluation.ipynb",
+    "line": 597,
+    "text": "\"from sdmetrics.single_table import LogisticDetection\\n\",",
+    "context": [
+     "     \"output_type\": \"execute_result\"",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdmetrics.single_table import LogisticDetection\\n\",",
+     "    \"\\n\",",
+     "    \"LogisticDetection.compute(\\n\",",
+     "    \"    real_data,\\n\",",
+     "    \"    synthetic_data,\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/06_ADASYN_evaluation.ipynb",
+    "line": 23,
+    "text": "\"from sdmetrics.reports.single_table import QualityReport, DiagnosticReport\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdmetrics.reports.single_table import QualityReport, DiagnosticReport\\n\",",
+     "    \"from sdmetrics.visualization import get_column_plot\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.metadata import Metadata as SDVMetadata\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/06_ADASYN_evaluation.ipynb",
+    "line": 24,
+    "text": "\"from sdmetrics.visualization import get_column_plot\\n\",",
+    "context": [
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdmetrics.reports.single_table import QualityReport, DiagnosticReport\\n\",",
+     "    \"from sdmetrics.visualization import get_column_plot\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+     "    \"from sdmetrics.single_column import StatisticSimilarity\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/06_ADASYN_evaluation.ipynb",
+    "line": 28,
+    "text": "\"from sdmetrics.single_column import StatisticSimilarity\\n\",",
+    "context": [
+     "    \"from sdmetrics.visualization import get_column_plot\\n\",",
+     "    \"import matplotlib.pyplot as plt\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+     "    \"from sdmetrics.single_column import StatisticSimilarity\\n\",",
+     "    \"import sys\\n\",",
+     "    \"import warnings\\n\",",
+     "    \"import json\\n\",",
+     "    \"import plotly.express\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/06_ADASYN_evaluation.ipynb",
+    "line": 1542,
+    "text": "\"from sdmetrics.single_table import LogisticDetection\\n\",",
+    "context": [
+     "     \"output_type\": \"execute_result\"",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdmetrics.single_table import LogisticDetection\\n\",",
+     "    \"\\n\",",
+     "    \"LogisticDetection.compute(\\n\",",
+     "    \"    real_data,\\n\",",
+     "    \"    synthetic_data,\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/04_CTGAN_evaluation.ipynb",
+    "line": 25,
+    "text": "\"from sdmetrics.reports.single_table import QualityReport, DiagnosticReport\\n\",",
+    "context": [
+     "   \"source\": [",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+     "    \"from sdmetrics.reports.single_table import QualityReport, DiagnosticReport\\n\",",
+     "    \"from imblearn.pipeline import Pipeline \\n\",",
+     "    \"from lightgbm import LGBMClassifier \\n\",",
+     "    \"from sklearn.preprocessing import StandardScaler\\n\",",
+     "    \"from sklearn.base import BaseEstimator, TransformerMixin\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/04_CTGAN_evaluation.ipynb",
+    "line": 17466,
+    "text": "\"from sdmetrics.single_table import LogisticDetection\\n\",",
+    "context": [
+     "     \"output_type\": \"execute_result\"",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdmetrics.single_table import LogisticDetection\\n\",",
+     "    \"\\n\",",
+     "    \"LogisticDetection.compute(\\n\",",
+     "    \"    real_data,\\n\",",
+     "    \"    synthetic_data,\\n\","
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "notebooks/07_test_evaluation.ipynb",
+    "line": 22,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "   \"execution_count\": 1,",
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+     "    \"from imblearn.pipeline import Pipeline \\n\",",
+     "    \"from lightgbm import LGBMClassifier \\n\",",
+     "    \"from sklearn.preprocessing import StandardScaler\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/08_probability_calibration.ipynb",
+    "line": 22,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "   \"execution_count\": 30,",
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+     "    \"from imblearn.pipeline import Pipeline \\n\",",
+     "    \"from lightgbm import LGBMClassifier \\n\",",
+     "    \"from sklearn.preprocessing import StandardScaler\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/05_TVAE_evaluation.ipynb",
+    "line": 23,
+    "text": "\"from sdv.single_table import TVAESynthesizer\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"from sdmetrics.reports.single_table import QualityReport, DiagnosticReport\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+     "    \"from imblearn.pipeline import Pipeline \\n\","
+    ]
+   },
+   {
+    "file": "notebooks/05_TVAE_evaluation.ipynb",
+    "line": 25,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "   \"source\": [",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"from sdmetrics.reports.single_table import QualityReport, DiagnosticReport\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+     "    \"from imblearn.pipeline import Pipeline \\n\",",
+     "    \"from lightgbm import LGBMClassifier \\n\",",
+     "    \"from sklearn.preprocessing import StandardScaler\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/04_CTGAN_evaluation.ipynb",
+    "line": 23,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+     "    \"from sdmetrics.reports.single_table import QualityReport, DiagnosticReport\\n\",",
+     "    \"from imblearn.pipeline import Pipeline \\n\",",
+     "    \"from lightgbm import LGBMClassifier \\n\","
+    ]
+   },
+   {
+    "file": "src/artifacts/TVAE_generator.py",
+    "line": 7,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import os",
+     "import pickle",
+     "import json",
+     "import pandas as pd",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.metadata import Metadata as SDVMetadata",
+     "sys.path.append('../auxiliar')",
+     "import constants as C"
+    ]
+   },
+   {
+    "file": "src/artifacts/GaussianCopula_generatos.py",
+    "line": 7,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import os",
+     "import pickle",
+     "import json",
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.metadata import Metadata as SDVMetadata",
+     "sys.path.append('../auxiliar')",
+     "import constants as C"
+    ]
+   },
+   {
+    "file": "src/artifacts/CTGAN_generator.py",
+    "line": 7,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import os",
+     "import pickle",
+     "import json",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.metadata import Metadata as SDVMetadata",
+     "sys.path.append('../auxiliar')",
+     "import constants as C"
+    ]
+   },
+   {
+    "file": "src/artifacts/CopulaGAN_generator.py",
+    "line": 7,
+    "text": "from sdv.single_table import CopulaGANSynthesizer",
+    "context": [
+     "import os",
+     "import pickle",
+     "import json",
+     "import pandas as pd",
+     "from sdv.single_table import CopulaGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.metadata import Metadata as SDVMetadata",
+     "sys.path.append('../auxiliar')",
+     "import constants as C"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "notebooks/07_test_evaluation.ipynb",
+    "line": 22,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "   \"execution_count\": 1,",
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+     "    \"from imblearn.pipeline import Pipeline \\n\",",
+     "    \"from lightgbm import LGBMClassifier \\n\",",
+     "    \"from sklearn.preprocessing import StandardScaler\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/07_test_evaluation.ipynb",
+    "line": 189,
+    "text": "\"{'ctgan_resample': CTGANResampling(ctgan_model=<sdv.single_table.ctgan.CTGANSynthesizer object at 0x000001833E319250>,\\n\",",
+    "context": [
+     "    {",
+     "     \"name\": \"stdout\",",
+     "     \"output_type\": \"stream\",",
+     "     \"text\": [",
+     "      \"{'ctgan_resample': CTGANResampling(ctgan_model=<sdv.single_table.ctgan.CTGANSynthesizer object at 0x000001833E319250>,\\n\",",
+     "      \"                n_samples=50000), 'model': LGBMClassifier(feature_fraction=0.7, is_unbalance=True,\\n\",",
+     "      \"               learning_rate=0.010437206906980006, max_depth=8,\\n\",",
+     "      \"               min_data_in_leaf=1239, n_estimators=475, n_jobs=1, num_leaves=9,\\n\",",
+     "      \"               objective='binary', random_state=132, reg_alpha=0.3,\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/08_probability_calibration.ipynb",
+    "line": 22,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "   \"execution_count\": 30,",
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+     "    \"from imblearn.pipeline import Pipeline \\n\",",
+     "    \"from lightgbm import LGBMClassifier \\n\",",
+     "    \"from sklearn.preprocessing import StandardScaler\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/05_TVAE_evaluation.ipynb",
+    "line": 25,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "   \"source\": [",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"from sdmetrics.reports.single_table import QualityReport, DiagnosticReport\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+     "    \"from imblearn.pipeline import Pipeline \\n\",",
+     "    \"from lightgbm import LGBMClassifier \\n\",",
+     "    \"from sklearn.preprocessing import StandardScaler\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/04_CTGAN_evaluation.ipynb",
+    "line": 23,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+     "    \"from sdmetrics.reports.single_table import QualityReport, DiagnosticReport\\n\",",
+     "    \"from imblearn.pipeline import Pipeline \\n\",",
+     "    \"from lightgbm import LGBMClassifier \\n\","
+    ]
+   },
+   {
+    "file": "notebooks/04_CTGAN_evaluation.ipynb",
+    "line": 105,
+    "text": "\"synthesizer = CTGANSynthesizer.load(\\n\",",
+    "context": [
+     "   \"execution_count\": 2,",
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"synthesizer = CTGANSynthesizer.load(\\n\",",
+     "    \"    filepath='../models/generators/ctgan_v2.pkl'\\n\",",
+     "    \")\"",
+     "   ]",
+     "  },"
+    ]
+   },
+   {
+    "file": "notebooks/04_CTGAN_evaluation.ipynb",
+    "line": 17552,
+    "text": "\"ctgan1 = CTGANSynthesizer(metadata)\\n\",",
+    "context": [
+     "    \"SCORING = {'AUC': 'roc_auc', 'F2': make_scorer(fbeta_score, beta=2)}\\n\",",
+     "    \"\\n\",",
+     "    \"# Cargar tu modelo CTGAN previamente entrenado (asumiendo que ya lo tienes entrenado)\\n\",",
+     "    \"metadata = SDVMetadata.load_from_json(\\\"../data/metadata/metadata.json\\\")\\n\",",
+     "    \"ctgan1 = CTGANSynthesizer(metadata)\\n\",",
+     "    \"ctgan2 = ctgan1.load(\\\"../models/ctgan753.pkl\\\")\\n\",",
+     "    \"\\n\",",
+     "    \"# =====================================================================================\\n\",",
+     "    \"# PIPELINE COMPLETO CON CTGAN PARA REMUESTREO\\n\","
+    ]
+   },
+   {
+    "file": "src/artifacts/CTGAN_generator.py",
+    "line": 7,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import os",
+     "import pickle",
+     "import json",
+     "import pandas as pd",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.metadata import Metadata as SDVMetadata",
+     "sys.path.append('../auxiliar')",
+     "import constants as C"
+    ]
+   },
+   {
+    "file": "src/artifacts/CTGAN_generator.py",
+    "line": 27,
+    "text": "self.generator = CTGANSynthesizer(",
+    "context": [
+     "        try:",
+     "            start_time = time.time()",
+     "            print(f'[Inicio] Generando datos sintéticos - {time.ctime(start_time)}')",
+     "            ",
+     "            self.generator = CTGANSynthesizer(",
+     "                metadata=self.metadata,",
+     "                epochs=400,",
+     "                verbose=True,",
+     "                cuda=True,"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "notebooks/07_test_evaluation.ipynb",
+    "line": 212,
+    "text": "\"               tvae_model=<sdv.single_table.ctgan.TVAESynthesizer object at 0x0000025E62533E90>), 'model': LGBMClassifier(feature_fraction=0.9, is_unbalance=True,\\n\",",
+    "context": [
+     "     \"name\": \"stdout\",",
+     "     \"output_type\": \"stream\",",
+     "     \"text\": [",
+     "      \"{'tvae_resample': TVAEResampling(n_samples=10,\\n\",",
+     "      \"               tvae_model=<sdv.single_table.ctgan.TVAESynthesizer object at 0x0000025E62533E90>), 'model': LGBMClassifier(feature_fraction=0.9, is_unbalance=True,\\n\",",
+     "      \"               learning_rate=0.01869698424416466, max_depth=5,\\n\",",
+     "      \"               min_data_in_leaf=1846, n_estimators=963, n_jobs=1, num_leaves=91,\\n\",",
+     "      \"               objective='binary', random_state=132, reg_alpha=0.5,\\n\",",
+     "      \"               reg_lambda=0.3, verbosity=-1)}\\n\""
+    ]
+   },
+   {
+    "file": "notebooks/05_TVAE_evaluation.ipynb",
+    "line": 23,
+    "text": "\"from sdv.single_table import TVAESynthesizer\\n\",",
+    "context": [
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdv.single_table import TVAESynthesizer\\n\",",
+     "    \"from sdmetrics.reports.single_table import QualityReport, DiagnosticReport\\n\",",
+     "    \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"from sdv.metadata import Metadata as SDVMetadata\\n\",",
+     "    \"from imblearn.pipeline import Pipeline \\n\","
+    ]
+   },
+   {
+    "file": "notebooks/05_TVAE_evaluation.ipynb",
+    "line": 57,
+    "text": "\"synthesizer = TVAESynthesizer.load(\\n\",",
+    "context": [
+     "   \"execution_count\": 2,",
+     "   \"metadata\": {},",
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"synthesizer = TVAESynthesizer.load(\\n\",",
+     "    \"    filepath='../models/generators/tvae_v1.pkl'\\n\",",
+     "    \")\"",
+     "   ]",
+     "  },"
+    ]
+   },
+   {
+    "file": "notebooks/05_TVAE_evaluation.ipynb",
+    "line": 683,
+    "text": "\"tvae1 = TVAESynthesizer(metadata)\\n\",",
+    "context": [
+     "    \"SCORING = {'AUC': 'roc_auc', 'F2': make_scorer(fbeta_score, beta=2)}\\n\",",
+     "    \"\\n\",",
+     "    \"# Cargar tu modelo CTGAN previamente entrenado (asumiendo que ya lo tienes entrenado)\\n\",",
+     "    \"metadata = SDVMetadata.load_from_json(\\\"../data/metadata/metadata.json\\\")\\n\",",
+     "    \"tvae1 = TVAESynthesizer(metadata)\\n\",",
+     "    \"tvae2 = tvae1.load(\\\"../models/generators/tvae_v1.pkl\\\")\\n\",",
+     "    \"\\n\",",
+     "    \"# =====================================================================================\\n\",",
+     "    \"# PIPELINE COMPLETO CON CTGAN PARA REMUESTREO\\n\","
+    ]
+   },
+   {
+    "file": "src/artifacts/TVAE_generator.py",
+    "line": 7,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "import os",
+     "import pickle",
+     "import json",
+     "import pandas as pd",
+     "from sdv.single_table import TVAESynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.metadata import Metadata as SDVMetadata",
+     "sys.path.append('../auxiliar')",
+     "import constants as C"
+    ]
+   },
+   {
+    "file": "src/artifacts/TVAE_generator.py",
+    "line": 27,
+    "text": "self.generator = TVAESynthesizer(",
+    "context": [
+     "        try:",
+     "            start_time = time.time()",
+     "            print(f'[Inicio] Generando datos sintéticos - {time.ctime(start_time)}')",
+     "            ",
+     "            self.generator = TVAESynthesizer(",
+     "                metadata=self.metadata,",
+     "                epochs=400,",
+     "                batch_size=500,",
+     "                verbose=True,"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "src/artifacts/GaussianCopula_generatos.py",
+    "line": 7,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import os",
+     "import pickle",
+     "import json",
+     "import pandas as pd",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.metadata import Metadata as SDVMetadata",
+     "sys.path.append('../auxiliar')",
+     "import constants as C"
+    ]
+   },
+   {
+    "file": "src/artifacts/GaussianCopula_generatos.py",
+    "line": 27,
+    "text": "self.generator = GaussianCopulaSynthesizer(",
+    "context": [
+     "        try:",
+     "            start_time = time.time()",
+     "            print(f'[Inicio] Generando datos sintéticos - {time.ctime(start_time)}')",
+     "            ",
+     "            self.generator = GaussianCopulaSynthesizer(",
+     "                metadata=self.metadata",
+     "                )   ",
+     "            ",
+     "            self.generator.fit(self.data)"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "gc",
+  "md",
+  "sdv_any",
+  "sm",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

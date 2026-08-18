@@ -1,0 +1,104 @@
+{
+ "repo": "ibrahimAtef-prg/Aurora-Extension",
+ "disk_kb": 16399,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "<div align=\"center\">\n\n<img src=\"media/logo.png\" alt=\"Aurora\" width=\"120\"/>\n\n# Aurora\n\n### Privacy-Safe Synthetic Data, Generated Where Your Data Already Lives\n\n<br/>\n\n[![VS Code](https://img.shields.io/badge/VS%20Code-%5E1.70.0-007ACC?style=flat-square&logo=visualstudiocode&logoColor=white)](https://code.visualstudio.com/)\n[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)\n[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org/)\n[![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)\n[![Security](https://img.shields.io/badge/Security-HMAC%20Signed-brightgreen?style=flat-square)]()\n\n<br/>\n\n**Aurora turns any dataset you open in VS Code into a privacy-safe synthetic copy** — schema profiling, synthetic generation, PII scanning, and AI-powered governance reports, all running locally. No data ever leaves your machine.\n\n[Features](#features) · [Screenshots](#screenshots) · [How It Works](#how-it-works) · [Installation](#installation) · [Configuration](#configuration) · [Architecture](#architecture)\n\n</div>\n\n---\n\n## Why Aurora\n\n- **Zero data exposure** — everything runs locally on your machine; nothing is uploaded anywhere.\n- **One click from your code** — Aurora detects `pd.read_csv(...)` and similar calls the moment you write them.\n- **Built-in guardrails** — synthetic output only ships after it passes a strict, automated validation pipeline.\n- **Plain-language governance** — ask an AI assistant about your dataset's privacy risk instead of reading raw metrics.\n\n---\n\n## Features\n\n| | Feature | What it does |\n|---|---|---|\n| 🔍 | **Inline Detection** | Recognizes dataset-loading code and adds a one-click action right above it |\n| 📊 | **Dataset Explorer** | Shows schema, column types, null rates, and sample values in seconds |\n| ⚗️ | **Synthetic Data Generation** | Automatically picks the right engine for your dataset size — statistical, copula-based, or GAN-based |\n| ✅ | **Automated Validation** | Every synthetic batch is checked for quality, duplicates, and realism before it's accepted |\n| 🛡️ | **Privacy & Security Scanning** | Flags PII, exposed secrets, and re-identification risk |\n| 🤖 | **AI Governance Analyst** | Chat with an AI assistant about your dataset's privacy posture and get a full report |\n| 📡 | **Live Progress Monitor** | Watch generation happen in real time, with stats as each batch completes |\n| 📋 | **Dataset Cards** | Auto-generated documentation for every dataset you analyze |\n\n---\n\n## Screenshots\n\n<div align=\"center\">\n\n**Detection happens inline — no setup, no separate tool**\n<br/>\n<img src=\"docs/0.png\" alt=\"Aurora CodeLens trigger above a dataset loading line\" width=\"600\"/>\n\n<br/><br/>\n\n**One click opens a full dataset overview**\n<br/>\n<img src=\"docs/Parser.png\" alt=\"Aurora dataset parser and schema overview\" width=\"100%\"/>\n\n<br/><br/>\n\n**Compare original vs. synthetic data side by side**\n<br/>\n<img src=\"docs/Overview_org.png\" alt=\"Original dataset overview\" width=\"48%\"/>\n<img src=\"docs/Overview_syn.png\" alt=\"Synthetic dataset overview\" width=\"48%\"/>\n\n<br/><br/>\n\n**Ask the built-in AI analyst about your data's privacy risk**\n<br/>\n<img src=\"docs/Agent.png\" alt=\"Aurora AI governance analyst chat\" width=\"48%\"/>\n<img src=\"docs/Agent2.png\" alt=\"Aurora AI governance analyst report\" width=\"48%\"/>\n\n</div>\n\n---\n\n## How It Works\n\nAurora pairs a lightweight VS Code extension with a local Python engine. The two talk to each other directly on your machine — there's no server and no network call involved.\n\n```\n You write:  pd.read_csv(\"customers.csv\")\n                       │\n                       ▼\n          Aurora detects it instantly\n                       │\n                       ▼\n        Reads the schema & builds a\n       statistical profile of your data\n                       │\n                       ▼\n     Generates a synthetic version using\n      the right engine for your dataset\n                       │\n                       ▼\n     Validates it — quality, duplicates,\n        realism, and privacy checks\n                       │\n                       ▼\n     Delivers the synthetic dataset, a\n      privacy report, and an AI summary\n```\n\n---\n\n## Trust & Safety\n\nBefore any synthetic data is handed back to you, it passes through a layered validation system — think of it as quality control for AI-generated data:\n\n| Check | What it guards against |\n|---|---|\n| **Quality & Constraint Repair** | Invalid values, broken formats, out-of-range numbers |\n| **Duplicate Detection** | Synthetic rows that are exact copies of real ones |\n| **Overfitting Detection** | Synthetic data that's *too close* to the original (a privacy risk) |\n| **Diversity Check** | Synthetic data that's collapsed into repetitive, low-variety values |\n| **Privacy & Leakage Gate** | Re-identification risk and membership-inference exposure |\n| **Integrity Assertion** | Confirms the data you receive is exactly what passed validation — nothing altered afterward |\n\nIf any check fails, generation stops and nothing is released. This entire pipeline is covered by an automated test suite that runs before every release.\n\n---\n\n## Installation\n\n### Requirements\n\n- **Node.js** ≥ 18\n- **Python** ≥ 3.10\n- **VS Code** ≥ 1.70.0\n- An API key for one LLM provider *(optional — only needed for the AI Insights feature)*\n\n### Setup\n\n```bash\ngit clone https://github.com/your-org/aurora.git\ncd aurora\n\nnpm install\npip install -r requirements.txt\nnpm run compile\n```\n\nOpen the folder in VS Code and press **F5** to launch it. Aurora activates automatically the next time you open a Python file.\n\n---\n\n## Configuration\n\n### AI Insights — LLM Provider\n\nSet an API key for any one of the supported providers, either in the AI Insights panel or as an environment variable:\n\n| Provider | Environment Variable |\n|---|---|\n| OpenRouter | `OPENROUTER_API_KEY` |\n| OpenAI | `OPENAI_API_KEY` |\n| Anthropic | `ANTHROPIC_API_KEY` |\n| Groq | `GROQ_API_KEY` |\n| Together AI | `TOGETHER_API_KEY` |\n| Mistral | `MISTRAL_API_KEY` |\n\n### VS Code Settings\n\n| Setting | Default | Description |\n|---|---|---|\n| `idelense.pythonPath` | `python3` | Path to the Python executable Aurora uses |\n| `idelense.pipelinePath` | `\"\"` | Path to the extension root — leave empty to auto-detect |\n| `automate.openrouterApiKey` | `\"\"` | OpenRouter key for AI Insights |\n\n---\n\n## Architecture\n\nAurora's synthetic data engine sits behind a 15-layer governance model, covering everything from ingestion to compliance reporting. The AI assistant only ever sees structured summaries of these layers — never your raw data.\n\n```\n Ingestion → Cataloging → Profiling → Schema Intelligence\n      → Sensitive Data Detection → Data Quality Checks\n      → Privacy Risk Scoring → Re-Identification Modeling\n      → Synthetic Risk Detection → Reliability Analysis\n      → Lineage Tracking → Governance Policy Engine\n      → Policy Authoring → Compliance Enforcement\n      → Monitoring & Audit\n```\n\n### Project Structure\n\n```\naurora/\n├── src/\n│   ├── ai/            → LLM client, agent logic, context building\n│   ├── security/       → PII/secrets scanning, alerting\n│   ├── webview/ui/      → Dashboard tabs (overview, security, synthetic, live monitor)\n│   └── utils/          → Python pipeline: generation, validation, enforcement\n├── docs/               → Screenshots and feature documentation\n├── policy.yaml          → Governance policy definitions\n├── requirements.txt\n└── package.json\n```\n\n---\n\n## Roadmap\n\n- [x] Automated validation & enforcement pipeline\n- [x] Signed, tamper-proof model cache\n- [x] Overfitting & distribution-collapse detection\n- [x] Cross-run drift tracking\n- [x] Full automated proof-test suite\n\n---\n\n## Contributing\n\n1. Fork the repository\n2. Create a feature branch: `git checkout -b feature/your-feature`\n3. Commit your changes: `git commit -m \"feat: description\"`\n4. Open a pull request against `main`\n\n---\n\n## License\n\nLicensed under the [MIT License](LICENSE).\n\n<div align=\"center\">\n  <sub>Built for ML engineers and data scientists who care about privacy.</sub>\n</div>\n",
+ "hits": {
+  "ctgan_mod": [
+   {
+    "file": "src/utils/generator.py",
+    "line": 74,
+    "text": "from ctgan import CTGANSynthesizer  # type: ignore",
+    "context": [
+     "_NUMERIC_STR = re.compile(r'^[+-]?\\d+(\\.\\d+)?([eE][+-]?\\d+)?$')",
+     "",
+     "# ctgan is optional — we detect it at import time and degrade gracefully",
+     "try:",
+     "    from ctgan import CTGANSynthesizer  # type: ignore",
+     "    _CTGAN_AVAILABLE = True",
+     "except Exception:",
+     "    _CTGAN_AVAILABLE = False",
+     ""
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "src/utils/generator.py",
+    "line": 74,
+    "text": "from ctgan import CTGANSynthesizer  # type: ignore",
+    "context": [
+     "_NUMERIC_STR = re.compile(r'^[+-]?\\d+(\\.\\d+)?([eE][+-]?\\d+)?$')",
+     "",
+     "# ctgan is optional — we detect it at import time and degrade gracefully",
+     "try:",
+     "    from ctgan import CTGANSynthesizer  # type: ignore",
+     "    _CTGAN_AVAILABLE = True",
+     "except Exception:",
+     "    _CTGAN_AVAILABLE = False",
+     ""
+    ]
+   },
+   {
+    "file": "src/utils/generator.py",
+    "line": 2056,
+    "text": "# Trains a CTGANSynthesizer on the full dataframe.",
+    "context": [
+     "",
+     "# ==================================================================",
+     "# Section 4 — CTGANEngine",
+     "# For large datasets (>= 50 000 rows).",
+     "# Trains a CTGANSynthesizer on the full dataframe.",
+     "# Falls back to ProbabilisticEngine if ctgan is not installed.",
+     "# Caches the trained model to disk keyed by dataset fingerprint.",
+     "# ==================================================================",
+     ""
+    ]
+   },
+   {
+    "file": "src/utils/generator.py",
+    "line": 2114,
+    "text": "self._model = CTGANSynthesizer(epochs=300, verbose=False)",
+    "context": [
+     "                self._manifest, df, len(df), _fit_rng",
+     "            )",
+     "            self._ctgan_cols = list(copula_df.columns)",
+     "            # Encoded categoricals are continuous — no discrete_columns",
+     "            self._model = CTGANSynthesizer(epochs=300, verbose=False)",
+     "            self._model.fit(copula_df, discrete_columns=[])",
+     "        else:",
+     "            # Legacy: pass full df with baseline categorical columns as discrete",
+     "            discrete_cols = list(self.bl.categorical.keys())"
+    ]
+   },
+   {
+    "file": "src/utils/generator.py",
+    "line": 2119,
+    "text": "self._model = CTGANSynthesizer(epochs=300, verbose=False)",
+    "context": [
+     "            self._model.fit(copula_df, discrete_columns=[])",
+     "        else:",
+     "            # Legacy: pass full df with baseline categorical columns as discrete",
+     "            discrete_cols = list(self.bl.categorical.keys())",
+     "            self._model = CTGANSynthesizer(epochs=300, verbose=False)",
+     "            self._model.fit(df, discrete_columns=discrete_cols)",
+     "            self._ctgan_cols = None",
+     "",
+     "        self._fitted = True"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "ctgan_mod"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "# Optional: CTGAN (for large datasets >= 50,000 rows)",
+   "# ctgan>=0.7.0            # Uncomment to enable CTGANEngine"
+  ]
+ }
+}

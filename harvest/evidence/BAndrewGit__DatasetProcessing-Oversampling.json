@@ -1,0 +1,409 @@
+{
+ "repo": "BAndrewGit/DatasetProcessing-Oversampling",
+ "disk_kb": 713,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Financial Behavior Risk Analysis Pipeline\n\nA reproducible machine learning pipeline for analyzing financial behavior from survey data.  \nThe system trains and evaluates models to predict **financial risk (continuous)** and **savings propensity (binary)** using clean baselines and optional, strictly quality-gated synthetic augmentation. The project is designed for research use: deterministic runs, explicit configuration, leakage prevention, and full experiment traceability.\n\n---\n\n## Methodological foundation\n\n### The learning problem\n\nThis pipeline addresses **prediction on self-reported behavioral data**, not financial default prediction or credit scoring. The dataset consists of cross-sectional survey responses describing financial attitudes, spending patterns, and self-assessed outcomes. The data is noisy, subjective, and contains no observed default events or externally validated financial outcomes.\n\nThe prediction targets are:\n1. **Risk_Score (continuous)** – A latent proxy variable reflecting aggregated behavioral tendencies\n2. **Save_Money_Yes (binary)** – A self-reported behavioral outcome\n\n### What this pipeline does NOT do\n\n- **Does not predict financial default or insolvency** – No ground-truth default events exist in the data\n- **Does not produce credit scores** – Risk_Score is a behavioral tendency metric, not a creditworthiness assessment\n- **Does not make causal claims** – Models learn correlational patterns under uncertainty\n- **Does not discover \"true risk\"** – The target is noisy, subjective, and measurement-limited\n\n### Rejected approach: Circular supervision\n\nA binary label `Behavior_Risk_Level` exists in some datasets but is **explicitly excluded from all training, validation, and model selection** because:\n- It was derived via clustering on the same features used as model inputs\n- Using it as supervision creates tautological learning (predicting a label computed from the predictors)\n- Any model trained on it would learn artifacts of the clustering algorithm, not behavioral patterns\n\nThis variable is preserved only for:\n- Exploratory analysis\n- Error stratification\n- Post-hoc interpretation\n\n**It may never influence model training.**\n\n---\n\n## Target definitions and justifications\n\n### Target 1: Risk_Score (Primary – Continuous Regression)\n\n**Definition:**  \nRisk_Score is a weighted aggregation of behavioral features, treated as a **latent proxy variable** for financial behavioral risk tendency. It is not a ground-truth measure of insolvency or default probability.\n\n**Measurement properties:**\n- **Type:** Continuous (assumed interval-scale by convention)\n- **Validity:** Subjective and noisy (derived from self-reported survey data)\n- **Interpretation:** Reflects aggregated behavioral tendencies, not causal outcomes\n\n**Why regression despite survey noise:**\n- Behavioral tendencies exist on a continuum; dichotomization discards information\n- Rank ordering (Spearman correlation) is as important as absolute error (MAE, RMSE)\n- Monotonic interpretability prioritized over precise numerical accuracy\n- The goal is **relative risk assessment**, not exact point prediction\n\n**Justification for use:**\n- Risk_Score is computed **independently** of the model (no circularity)\n- It aggregates multiple behavioral dimensions into a single metric\n- Regression allows evaluation of rank consistency and ordinal relationships\n- Null or weak results are acceptable outcomes (indicating limited predictability from survey data)\n\n**Explicit limitations:**\n- Does not represent objective financial risk (no default events observed)\n- Measurement error is high (self-reported data, social desirability bias)\n- Causal interpretation is not supported\n- Model predictions are correlational, not prescriptive\n\n**Evaluation priorities:**\n1. **Rank consistency** (Spearman correlation) – Can the model preserve relative ordering?\n2. **Cross-validation stability** – Do predictions generalize across folds?\n3. **Error distribution** – Are errors systematic or random?\n4. **Absolute accuracy** (MAE, RMSE) – Secondary to rank-based metrics\n\n---\n\n### Target 2: Save_Money_Yes (Secondary – Binary Classification)\n\n**Definition:**  \nSave_Money_Yes is a **self-reported behavioral outcome** indicating whether the respondent reports actively saving money. It is a direct survey response, not a derived or clustered label.\n\n**Measurement properties:**\n- **Type:** Binary (0 = No, 1 = Yes)\n- **Source:** Direct survey question (lower abstraction than Risk_Score)\n- **Validity:** Subject to self-report bias, but observationally grounded\n\n**Why binary classification:**\n- The outcome is discrete and directly observed in the survey\n- Lower ambiguity compared to abstract risk constructs\n- Complements the regression task by focusing on a specific behavioral outcome\n\n**Justification for use:**\n- Independent of model inputs (direct survey response, not computed from features)\n- Behaviorally meaningful (savings behavior is a tangible outcome)\n- Lower measurement error than abstract risk assessments\n- Allows evaluation of class-specific performance (precision/recall by group)\n\n**Rejected approaches:**\n- **No forced class balancing** – Natural class distribution preserved to reflect survey population\n- **No synthetic oversampling** – Augmentation tested separately with strict quality gates\n- **No threshold tuning on validation data** – Default threshold (0.5) used consistently\n\n**Evaluation priorities:**\n1. **Macro-F1** – Balanced performance across both classes\n2. **Recall** – Ability to identify savers (minority class in many surveys)\n3. **Precision** – Avoiding false positives\n4. **Accuracy** – Secondary (can be misleading with class imbalance)\n\n---\n\n### Why two separate tasks (not multi-task learning)\n\nThe regression and classification tasks are **intentionally decoupled** to preserve experimental control:\n\n1. **Different noise profiles:**\n   - Risk_Score is aggregate (high measurement noise)\n   - Save_Money_Yes is direct response (lower abstraction)\n\n2. **Different supervision strength:**\n   - Regression target is weakly validated (no external ground truth)\n   - Classification target is self-reported (observable behavior)\n\n3. **Risk of inductive bias leakage:**\n   - Shared representations could transfer circular patterns\n   - Task coupling obscures which target drives performance\n\n4. **Interpretability:**\n   - Separate models allow independent analysis of each outcome\n   - Failure of one task does not invalidate the other\n\n**Multi-task learning is avoided** to prevent confounding effects and maintain clear attribution of predictive signals.\n\n---\n\n### Multi-task ablation experiment (Sprint 4)\n\nWhile the default approach keeps tasks separate, a **controlled ablation experiment** tests whether shared representations can support both targets under strict experimental control.\n\n**Design:**\n1. **Risk-only model** – MLP trunk + risk head (baseline)\n2. **Savings-only model** – MLP trunk + savings head (baseline)\n3. **Multi-task model** – Shared trunk + both heads (ablation)\n\n**Architecture constraints:**\n- **Conservative trunk:** 1-2 hidden layers maximum\n- **Mandatory regularization:** Dropout + weight decay\n- **Early stopping:** Validation-based (no test set peeking)\n- **No synthetic data:** Real data only\n- **Same CV protocol:** Repeated K-fold (5×10)\n\n**Evaluation criteria:**\n- Multi-task model must **not catastrophically degrade either task**\n- Marginal gains or improved stability reported cautiously\n- Negative results (multi-task worse) are valid outcomes\n- Comparison is fair: same architecture, same data, same protocol\n\n**Framing:**\n- This is an **experiment**, not a recommendation\n- Tests whether shared representations help despite intentional task separation\n- Single-task baselines remain the primary approach\n- Performance improvement is optional; experimental integrity is mandatory\n\n**Usage:**\n```bash\n# Run multi-task ablation\npython run_multitask_experiment.py --config configs/multitask_experiment.yaml\n```\n\n---\n\n### Summary table\n\n| Target                | Type       | Role          | Validation        | Primary Metric |\n|-----------------------|------------|---------------|-------------------|----------------|\n| `Risk_Score`          | Continuous | Primary       | Noisy, subjective | Spearman ρ     |\n| `Save_Money_Yes`      | Binary     | Secondary     | Self-reported     | Macro-F1       |\n| `Behavior_Risk_Level` | Binary     | **FORBIDDEN** | Circular          | N/A (excluded) |\n\n---\n\n## Hard rules (non-negotiable)\n\n- No retraining on synthetic-enriched data  \n- No iterative or exponential dataset growth  \n- No forced 50/50 class balancing  \n- No GAN retraining on synthetic outputs  \n- No use of `Behavior_Risk_Level` as target or feature  \n\nViolations raise errors; nothing is silently corrected.\n\n---\n\n## Expected input\n\n- CSV file with numeric and one-hot encoded features  \n- At least one valid target column (`Risk_Score` or `Save_Money_Yes`)  \n- Optional `Save_Money_No` column (must be mutually exclusive with `Save_Money_Yes`)  \n- `Behavior_Risk_Level` may exist but will be excluded automatically  \n\n---\n\n## Project Structure\n\nThe project is organized into logical subfolders for easy navigation:\n\n```\nProcesare Dataset/\n├── runners/                    # Experiment execution scripts\n│   ├── run_pipeline.py         # Full pipeline runner (recommended)\n│   ├── run_baseline.py         # Baseline experiments (no augmentation)\n│   ├── run_latent_sampling_experiment.py  # [REJECTED EXPERIMENT] archived latent oversampling\n│   ├── run_multitask_experiment.py    # Multi-task learning\n│   ├── run_domain_transfer_experiment.py  # Domain transfer (ADV+GMSC)\n│   ├── run_analysis.py         # Interpretability and paper artifacts\n│   └── augmentation_experiment.py  # [DEPRECATED] Old jitter/SMOTE experiments\n│\n├── experiments/                # Core ML modules\n│   ├── config_schema.py        # Configuration validation\n│   ├── cv.py                   # Cross-validation\n│   ├── data.py                 # Data loading/preprocessing\n│   ├── models.py               # Model builders\n│   ├── latent_space.py         # PCA selection for latent space\n│   ├── latent_sampling.py      # Cluster-conditioned synthetic sampling\n│   ├── latent_experiment.py    # Full latent oversampling experiment\n│   ├── clustering_latent.py    # KMeans clustering in latent space\n│   ├── multitask.py            # Multi-task architecture\n│   ├── domain_transfer.py      # Domain transfer architecture\n│   └── save_model.py           # Model saving utilities\n│\n├── analysis/                   # Interpretability and analysis\n│   ├── interpretability.py     # Feature importance, SHAP\n│   ├── stability.py            # CV stability analysis\n│   ├── error_analysis.py       # Error distribution\n│   ├── what_if.py              # Partial dependence, sensitivity\n│   └── paper_artifacts.py      # LaTeX tables, diagrams\n│\n├── configs/                    # YAML configurations\n│   ├── baseline/               # Baseline experiment configs\n│   │   ├── regression.yaml\n│   │   └── classification.yaml\n│   ├── latent_sampling/        # Latent space oversampling configs\n│   │   ├── experiment.yaml\n│   │   └── test_experiment.yaml\n│   ├── multitask/              # Multi-task configs\n│   │   └── experiment.yaml\n│   └── transfer/               # Domain transfer configs\n│       └── domain_transfer.yaml\n│\n├── DataAugmentation/           # Synthetic data generation\n│   ├── quality_gates.py        # Mandatory quality checks\n│   ├── cluster_enrichment.py   # Cluster-aware enrichment\n│   └── smote_tomek.py          # [DEPRECATED] SMOTE-Tomek\n│\n├── FirstProcessing/            # Data preprocessing pipeline\n│   ├── main.py                 # Main preprocessing runner\n│   ├── encoder.py              # Feature encoding\n│   └── risk_calculation.py     # Risk score computation\n│\n├── EDA/                        # Exploratory data analysis\n│   ├── V1/                     # Basic EDA\n│   └── V2/                     # Advanced EDA with clustering\n│\n├── tests/                      # Test suite\n│   ├── test_analysis.py        # Analysis module tests\n│   ├── test_domain_transfer.py # Domain transfer tests\n│   ├── test_multitask.py       # Multi-task tests\n│   └── ...                     # Other tests\n│\n├── data/                       # Datasets (not in git)\n│   ├── raw/                    # Original survey CSV\n│   ├── processed/              # Encoded datasets\n│   └── gmsc/                   # GMSC auxiliary dataset\n│\n└── runs/                       # Experiment outputs\n```\n\n---\n\n## Data organization\n\nDatasets are organized in a `data/` folder by processing stage:\n\n```\ndata/\n├── raw/               # Original survey CSV (unmodified)\n├── processed/         # Encoded dataset from FirstProcessing\n├── gmsc/              # Give Me Some Credit dataset (auxiliary)\n└── experiments/       # Custom datasets (optional)\n```\n\n### Data pipeline\n\n```\n1. FirstProcessing/main.py\n   Input:  data/raw/survey_responses.csv\n   Output: data/processed/encoded_dataset.csv\n\n2. runners/run_baseline.py\n   Input:  data/processed/encoded_dataset.csv\n   Output: runs/experiment_TIMESTAMP/\n```\n\n**First-time setup:**\n```bash\n# Place your raw survey CSV in: data/raw/survey_responses.csv\n# Generate encoded dataset\npython FirstProcessing/main.py\n# Output: data/processed/encoded_dataset.csv\n```\n\n**Note:** CSV files in the `data/` folder are excluded from git (see `.gitignore`).\n\n---\n\n## Output per run\n\nEach experiment creates a folder in `runs/` containing:\n\n| File                      | Description                                    |\n|---------------------------|------------------------------------------------|\n| `config.yaml`             | Exact configuration used                       |\n| `metrics.json`            | CV metrics (mean, std, fold-level values)      |\n| `model.joblib`            | Final trained model (sklearn-compatible)       |\n| `scaler.joblib`           | Fitted StandardScaler                          |\n| `data_profile.json`       | Dataset hash, size, features, augmentation stats |\n| `model_metadata.json`     | Model artifacts metadata                       |\n| `cv_distribution.png`     | CV score distributions                         |\n\n### Inference bundle (production export)\n\n| File | Description |\n|------|-------------|\n| `model.pt` | Frozen PyTorch weights for selected final model |\n| `scaler.pkl` | Fitted scaler used at inference time |\n| `feature_columns.json` | Exact feature order expected by model |\n| `bank_mapping_rules.yaml` | Rule-engine thresholds for alert messages |\n| `thresholds.json` | Decision thresholds (`saving_probability_threshold`, etc.) |\n| `model_metadata.json` | Model family, architecture config, provenance |\n\nInference API is available in `experiments/inference_hybrid.py`:\n- `predict(features)` -> `risk_score`, `saving_probability`, `top_factors`, `alerts`, `confidence`\n- `explain(features)` -> explanation-focused output for UI\n\n---\n\n## Installation\n\n```bash\npip install -r requirements.txt\npip install torch  # For multi-task experiments\npip install pytest pytest-cov\n```\n\n---\n\n## Usage\n\n### Quick Start: Full Pipeline (Recommended)\n\nThe easiest way to run all experiments is using the unified pipeline runner:\n\n```bash\n# Run full pipeline in test mode (fast, for development)\npython runners/run_pipeline.py --test-mode --data data/processed/1_encoded.csv\n\n# Run full pipeline in production mode\npython runners/run_pipeline.py --data data/processed/1_encoded.csv\n```\n\nThe pipeline automatically runs:\n1. **Baseline experiments** (regression + classification)\n2. **Multi-task ablation** (shared trunk experiment)\n3. **Domain transfer** (ADV + GMSC)\n4. **Hybrid multitask+transfer selection + export**\n5. **Comprehensive analysis**\n6. **Leakage audit checks** (train-only fit, duplicate audit, shuffle sanity)\n7. **Test suite**\n\n> Latent oversampling is **explicitly retired** from the final pipeline and treated as a rejected experiment.\n\n### 1. Baseline experiments (single-task)\n\n```bash\n# Risk regression\npython runners/run_baseline.py --config configs/baseline/regression.yaml\n\n# Savings classification\npython runners/run_baseline.py --config configs/baseline/classification.yaml\n```\n\n### 2. Latent oversampling (Rejected experiment - archived)\n\nThis experiment is kept only for historical reproducibility and is **excluded from final training/reporting**:\n\n```bash\npython runners/run_latent_sampling_experiment.py \\\n  --config configs/latent_sampling/experiment.yaml \\\n  --dataset data/processed/1_encoded.csv \\\n  --output runs/latent_experiment\n```\n\n**Output files:**\n- `oversampled_dataset.csv` - Full dataset with `is_synthetic` column (0=real, 1=synthetic)\n- `augmented_data.csv` - Clean dataset ready for use (no `is_synthetic` column)\n- `data_profile.json` - Statistics: `n_synthetic`, `n_total`, `augmentation_ratio`\n- `model.joblib` - Trained MLP model\n- `scaler.joblib` - Fitted StandardScaler\n- Per-fold artifacts: `pca.joblib`, `kmeans.joblib`, cluster plots, etc.\n\n### 3. Multi-task ablation experiment\n\n```bash\n# Run all three experiments (risk-only, savings-only, multi-task)\npython runners/run_multitask_experiment.py --config configs/multitask/experiment.yaml\n\n# Output: Comparison table showing:\n# - Risk-only baseline\n# - Savings-only baseline\n# - Multi-task model (shared trunk)\n```\n\n### 4. Domain transfer experiment\n\n```bash\n# Run ADV-only vs ADV+GMSC transfer comparison\npython runners/run_domain_transfer_experiment.py --config configs/transfer/domain_transfer.yaml\n```\n\n### 4.5 Hybrid production bundle\n\n```bash\npython runners/run_hybrid_production.py \\\n  --multitask-config configs/multitask/experiment.yaml \\\n  --transfer-config configs/transfer/hybrid_transfer.yaml \\\n  --dataset data/processed/1_encoded.csv \\\n  --gmsc data/gmsc/GiveMeSomeCredit-training.csv \\\n  --output runs/\n```\n\nThis step compares `multitask-only` vs `hybrid multitask+transfer`, keeps risk-first criteria (Spearman + MAE + stability), and exports a frozen inference bundle.\n\n### 4.6 Promote release bundle + plots\n\n```bash\npython runners/run_release_promote.py \\\n  --decision-dir runs/final_decision_YYYYMMDD_HHMMSS \\\n  --releases-dir deployment/releases \\\n  --release-name release_v1\n```\n\nGenerated release artifacts:\n- `deployment/releases/<release>/bundle/` (frozen inference bundle)\n- `deployment/releases/<release>/plots/metric_bars.png`\n- `deployment/releases/<release>/plots/fold_boxplots.png`\n- `deployment/releases/<release>/plots/selection_checks.png`\n- `deployment/releases/<release>/promotion_manifest.json`\n- `deployment/current/` updated to latest promoted release\n\n### 4.7 Verify promoted release\n\n```bash\npython runners/verify_release.py \\\n  --release-dir deployment/releases/release_v1\n```\n\nOptional strict check for original source paths from manifest:\n\n```bash\npython runners/verify_release.py \\\n  --release-dir deployment/releases/release_v1 \\\n  --strict-sources\n```\n\n`verify_release.py` validates the release structure (`bundle/`, `decision_snapshot/`, `plots/`) and required files, then exits with code `0` on pass or `1` on failure.\n\n---\n\n## Running baseline experiments\n\n### Risk regression (primary task)\n\n```bash\npython runners/run_baseline.py \\\n  --config configs/baseline/regression.yaml \\\n  --dataset path/to/data.csv\n```\n\n### Savings classification (secondary task)\n\n```bash\npython runners/run_baseline.py \\\n  --config configs/baseline/classification.yaml \\\n  --dataset path/to/data.csv\n```\n\n### Run all baselines\n\n```bash\npython runners/run_baseline.py --all-baselines --dataset path/to/data.csv\n```\n\nBaseline runs **never** allow synthetic augmentation.\n\n---\n\n## Rejected experiment archive: latent oversampling\n\nThis mode generated synthetic data using **PCA latent space + clustering**. It is now retained only as a negative/rejected experiment and is not part of the production or publication pipeline.\n\n### How it works\n\n1. **PCA dimensionality reduction** - Fit PCA on training data to create latent sp",
+ "hits": {
+  "st": [
+   {
+    "file": "Old/ADASYN_WCGAN_Augmentation.py",
+    "line": 14,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from sklearn.preprocessing import OneHotEncoder, StandardScaler",
+     "from sklearn.compose import ColumnTransformer",
+     "from sklearn.pipeline import Pipeline",
+     "from sklearn.impute import SimpleImputer",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from FirstProcessing.risk_calculation import calculate_risk_score",
+     ""
+    ]
+   },
+   {
+    "file": "Old/WCGAN_Augmentation.py",
+    "line": 7,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "# For reproducible experiments, use run_experiment.py with configs/*.yaml",
+     "",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import os",
+     "from FirstProcessing.risk_calculation import calculate_risk_score",
+     "os.environ[\"LOKY_MAX_CPU_COUNT\"] = \"4\""
+    ]
+   },
+   {
+    "file": "DataAugmentation/WC_GAN.py",
+    "line": 9,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import numpy as np",
+     "import gc",
+     "import torch",
+     "import time",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "from sklearn.linear_model import LogisticRegression",
+     "from sklearn.metrics import cohen_kappa_score, f1_score",
+     "from scipy.spatial.distance import cosine"
+    ]
+   },
+   {
+    "file": "DataAugmentation/CTGan_Augmentation.py",
+    "line": 7,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "import gc",
+     "import torch",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sklearn.linear_model import LogisticRegression",
+     "from sklearn.metrics import cohen_kappa_score, f1_score",
+     "from scipy.spatial.distance import cosine"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "Old/ADASYN_WCGAN_Augmentation.py",
+    "line": 15,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from sklearn.compose import ColumnTransformer",
+     "from sklearn.pipeline import Pipeline",
+     "from sklearn.impute import SimpleImputer",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from FirstProcessing.risk_calculation import calculate_risk_score",
+     "",
+     "# Importăm funcțiile comune din scriptul WCGAN_Augmentation"
+    ]
+   },
+   {
+    "file": "Old/WCGAN_Augmentation.py",
+    "line": 8,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import os",
+     "from FirstProcessing.risk_calculation import calculate_risk_score",
+     "os.environ[\"LOKY_MAX_CPU_COUNT\"] = \"4\"",
+     ""
+    ]
+   },
+   {
+    "file": "DataAugmentation/WC_GAN.py",
+    "line": 10,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import gc",
+     "import torch",
+     "import time",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "from sklearn.linear_model import LogisticRegression",
+     "from sklearn.metrics import cohen_kappa_score, f1_score",
+     "from scipy.spatial.distance import cosine",
+     "from scipy.stats import ks_2samp"
+    ]
+   },
+   {
+    "file": "DataAugmentation/CTGan_Augmentation.py",
+    "line": 8,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import numpy as np",
+     "import gc",
+     "import torch",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sklearn.linear_model import LogisticRegression",
+     "from sklearn.metrics import cohen_kappa_score, f1_score",
+     "from scipy.spatial.distance import cosine",
+     "from FirstProcessing.risk_calculation import calculate_risk_advanced"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "Old/ADASYN_WCGAN_Augmentation.py",
+    "line": 14,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from sklearn.preprocessing import OneHotEncoder, StandardScaler",
+     "from sklearn.compose import ColumnTransformer",
+     "from sklearn.pipeline import Pipeline",
+     "from sklearn.impute import SimpleImputer",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from FirstProcessing.risk_calculation import calculate_risk_score",
+     ""
+    ]
+   },
+   {
+    "file": "Old/ADASYN_WCGAN_Augmentation.py",
+    "line": 15,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "from sklearn.compose import ColumnTransformer",
+     "from sklearn.pipeline import Pipeline",
+     "from sklearn.impute import SimpleImputer",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from FirstProcessing.risk_calculation import calculate_risk_score",
+     "",
+     "# Importăm funcțiile comune din scriptul WCGAN_Augmentation"
+    ]
+   },
+   {
+    "file": "Old/WCGAN_Augmentation.py",
+    "line": 7,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "# For reproducible experiments, use run_experiment.py with configs/*.yaml",
+     "",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import os",
+     "from FirstProcessing.risk_calculation import calculate_risk_score",
+     "os.environ[\"LOKY_MAX_CPU_COUNT\"] = \"4\""
+    ]
+   },
+   {
+    "file": "Old/WCGAN_Augmentation.py",
+    "line": 8,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import os",
+     "from FirstProcessing.risk_calculation import calculate_risk_score",
+     "os.environ[\"LOKY_MAX_CPU_COUNT\"] = \"4\"",
+     ""
+    ]
+   },
+   {
+    "file": "DataAugmentation/WC_GAN.py",
+    "line": 9,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import numpy as np",
+     "import gc",
+     "import torch",
+     "import time",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "from sklearn.linear_model import LogisticRegression",
+     "from sklearn.metrics import cohen_kappa_score, f1_score",
+     "from scipy.spatial.distance import cosine"
+    ]
+   },
+   {
+    "file": "DataAugmentation/WC_GAN.py",
+    "line": 10,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import gc",
+     "import torch",
+     "import time",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "from sklearn.linear_model import LogisticRegression",
+     "from sklearn.metrics import cohen_kappa_score, f1_score",
+     "from scipy.spatial.distance import cosine",
+     "from scipy.stats import ks_2samp"
+    ]
+   },
+   {
+    "file": "DataAugmentation/CTGan_Augmentation.py",
+    "line": 7,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "import gc",
+     "import torch",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sklearn.linear_model import LogisticRegression",
+     "from sklearn.metrics import cohen_kappa_score, f1_score",
+     "from scipy.spatial.distance import cosine"
+    ]
+   },
+   {
+    "file": "DataAugmentation/CTGan_Augmentation.py",
+    "line": 8,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import numpy as np",
+     "import gc",
+     "import torch",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sklearn.linear_model import LogisticRegression",
+     "from sklearn.metrics import cohen_kappa_score, f1_score",
+     "from scipy.spatial.distance import cosine",
+     "from FirstProcessing.risk_calculation import calculate_risk_advanced"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "Old/ADASYN_WCGAN_Augmentation.py",
+    "line": 14,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from sklearn.preprocessing import OneHotEncoder, StandardScaler",
+     "from sklearn.compose import ColumnTransformer",
+     "from sklearn.pipeline import Pipeline",
+     "from sklearn.impute import SimpleImputer",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from FirstProcessing.risk_calculation import calculate_risk_score",
+     ""
+    ]
+   },
+   {
+    "file": "Old/ADASYN_WCGAN_Augmentation.py",
+    "line": 237,
+    "text": "ctgan = CTGANSynthesizer(metadata=metadata, epochs=200, batch_size=500, verbose=True, cuda=True)",
+    "context": [
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(data_combined)",
+     "    for col in categorical_cols + ['Behavior_Risk_Level']:",
+     "        metadata.update_column(column_name=col, sdtype='categorical')",
+     "    ctgan = CTGANSynthesizer(metadata=metadata, epochs=200, batch_size=500, verbose=True, cuda=True)",
+     "    ctgan.fit(data_combined)",
+     "",
+     "    num_to_generate = max(0, TOTAL_ROWS - data_combined.shape[0])",
+     "    if num_to_generate > 0:"
+    ]
+   },
+   {
+    "file": "Old/WCGAN_Augmentation.py",
+    "line": 7,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "# For reproducible experiments, use run_experiment.py with configs/*.yaml",
+     "",
+     "import pandas as pd",
+     "import numpy as np",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "import os",
+     "from FirstProcessing.risk_calculation import calculate_risk_score",
+     "os.environ[\"LOKY_MAX_CPU_COUNT\"] = \"4\""
+    ]
+   },
+   {
+    "file": "Old/WCGAN_Augmentation.py",
+    "line": 197,
+    "text": "ctgan = CTGANSynthesizer(metadata=metadata, epochs=200, batch_size=500, verbose=True, cuda=True)",
+    "context": [
+     "    metadata.detect_from_dataframe(original_data)",
+     "    for col in categorical_cols + ['Behavior_Risk_Level']:",
+     "        metadata.update_column(column_name=col, sdtype='categorical')",
+     "",
+     "    ctgan = CTGANSynthesizer(metadata=metadata, epochs=200, batch_size=500, verbose=True, cuda=True)",
+     "    ctgan.fit(original_data)",
+     "",
+     "    # Total number of desired rows",
+     "    TOTAL_ROWS = 1000"
+    ]
+   },
+   {
+    "file": "DataAugmentation/WC_GAN.py",
+    "line": 9,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import numpy as np",
+     "import gc",
+     "import torch",
+     "import time",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import Metadata",
+     "from sklearn.linear_model import LogisticRegression",
+     "from sklearn.metrics import cohen_kappa_score, f1_score",
+     "from scipy.spatial.distance import cosine"
+    ]
+   },
+   {
+    "file": "DataAugmentation/WC_GAN.py",
+    "line": 95,
+    "text": "model = CTGANSynthesizer(metadata, epochs=1000, batch_size=150, cuda=False)",
+    "context": [
+     "",
+     "        bool_cols = [col for col, meta in metadata_dict[\"columns\"].items() if meta.get(\"sdtype\") == \"boolean\"]",
+     "        df_train[bool_cols] = df_train[bool_cols].astype(bool)",
+     "",
+     "        model = CTGANSynthesizer(metadata, epochs=1000, batch_size=150, cuda=False)",
+     "        model.fit(df_train)",
+     "",
+     "        print(\"Generating samples using freshly trained model...\")",
+     "        samples = model.sample(n_samples)"
+    ]
+   },
+   {
+    "file": "DataAugmentation/CTGan_Augmentation.py",
+    "line": 7,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "import gc",
+     "import torch",
+     "from sdv.single_table import CTGANSynthesizer",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sklearn.linear_model import LogisticRegression",
+     "from sklearn.metrics import cohen_kappa_score, f1_score",
+     "from scipy.spatial.distance import cosine"
+    ]
+   },
+   {
+    "file": "DataAugmentation/CTGan_Augmentation.py",
+    "line": 44,
+    "text": "model = CTGANSynthesizer(metadata, epochs=300, cuda=False)",
+    "context": [
+     "",
+     "    def generate_step(self, df_train, n_samples):",
+     "        metadata = self.build_metadata(df_train)",
+     "        # Explicitly set CUDA to False to ensure CPU usage",
+     "        model = CTGANSynthesizer(metadata, epochs=300, cuda=False)",
+     "        model.fit(df_train)",
+     "",
+     "        # Generate samples with balanced classes using the correct conditions format",
+     "        half = n_samples // 2"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

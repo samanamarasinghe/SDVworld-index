@@ -1,0 +1,623 @@
+{
+ "repo": "taochen1114/syndata_module_for_py39",
+ "disk_kb": 1770,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Synthetic Data Module on Python 3.9\n> Author: Tao Chen\n\n## 環境安裝\npython version 3.9.23\n\n```\npython -m venv venv\nsource venv/bin/activate\n```\n\n```\npip install --upgrade pip setuptools wheel\n\n# 合成資料核心工具\npip install sdv==1.23.0\npip install sdmetrics==0.21.0\npip install pandas==2.3.0\npip install numpy==2.0.2\npip install scikit-learn==1.6.1\npip install scipy==1.13.1\npip install matplotlib==3.9.4\n```\n\n## 使用步驟\n\n* 測試範例資料集：**House Prices - Advanced Regression Techniques**\nhttps://www.kaggle.com/c/house-prices-advanced-regression-techniques/data\n\n    * 資料欄位數：81 \n    * 放在 input/data.csv\n    * data shape: (1314, 81)\n\n\n### 1. 訓練合成資料產生器\n使用 `syndata_model_train_py36.ipynb`\n\n修改前兩個參數，分別是真實資料的路徑，以及合成資料模型輸出的資料夾\n```python\nargs = set_args([\n    \"--input_path\", \"input/data.csv\", # input 真實資料 csv 格式的表單\n    \"--output_dir\", \"output/\",   # 合成資料輸出路徑\n    \"--synth_model\", \"GaussianCopula\",  # 合成資料模型演算法\n    \"--primary_key\", \"Id\",  # key 欄位名稱\n    \"--num_rows\", \"100\",  # 生成的資料筆數\n    \"--save_model\",    # 設定模型\n    \"--save_output\"    # 設定儲存\n])\n\nmain(args)\n```\n這步驟需要一段時間，依 CPU 規格與輸入資料大小決定等待時間長短\n\n步驟完成後可以在 output_dir 看到一個  `syn_model_GaussianCopula.pkl` 檔案，那個就是合成資料模型 (合成資料產生器)\n\n除了模型外這個步驟也會產出 100(預設) row 的合成資料 csv 檔放在 output_dir 中\n\n### 2. 使用合成資料產生器生成合成資料\n使用 `syndata_generator_py36.ipynb`\n載入上一步驟訓練好的合成資料模型 `syn_model_GaussianCopula.pkl` 檔，生成合成資料\n\n參數說明:\n- input_syn_model: `syn_model_GaussianCopula.pkl` 的檔案路徑\n- output_fpath: 合成資料 csv 檔案輸出路徑\n- num_rows: 欲生成的合成資料的資料筆數\n\n修改以下設定\n```python\nargs = set_args([\n    \"--input_syn_model\", \"output/syn_model_GaussianCopula.pkl\", # 合成資料生成模型路徑 \n    \"--output_fpath\", \"output/syn_data.csv\",   # 合成資料輸出路徑\n    \"--num_rows\", \"100\",  # 生成的資料筆數\n    \"--save_output\"\n])\n\nmain(args)\n```\n這步驟需要一段時間，依 CPU 規格與輸入資料大小決定等待時間長短\n步驟完成後可以在 output_dir 看到合成資料的 csv 檔案\n\n\n### 3. 使用評估工具比較合成資料與真實資料的統計相似性\n`syndata_quality_evaluate.ipynb`\n\n修改真實資料與合成資料 csv 檔案路徑\n```python\n## inputs\nreal_data = pd.read_csv(\"input/data.csv\")  ## 真實資料路徑\nsynthetic_data = pd.read_csv(\"output/data_GaussianCopula_output.csv\") ## 合成資料路徑\n\nsyndata_eval_df = evaluate_al\nl_columns(real_data, synthetic_data)  # 注意順序！ 真實資料放前面，合成資料放後面\n```\n\nSDV 套件提供的視覺化 Quality Report\n![](img/demo_quality_report.png)\n\n可視覺化比較欄位\n![](img/demo_compare_numeric.png)\n\n![](img/demo_compare_categorical.png)\n\n\n### 4. 使用合成資料產生器模組之 sample command\n\n* 使用模組 [syndata_generator.py](syndata_generator.py)\n* 參考指令 [cmd.sh](cmd.sh)\n\ncmd.sh:\n\n```shell\necho \"without chunking\"\npython syndata_generator.py \\\n    --input_syn_model output/syn_model_GaussianCopula.pkl \\\n    --output_fpath output/syn_data_1K.csv \\\n    --num_rows 1000 \\\n    --save_output\n\n\necho \"with chunking\"\npython syndata_generator.py \\\n    --input_syn_model output/syn_model_GaussianCopula.pkl \\\n    --output_fpath output/syn_data_10M.csv \\\n    --num_rows 10000000 \\\n    --save_output \\\n    --use_chunk \\\n    --chunk_size 1000000\n\n```\n注意： \n**--chunk_size 數字必須小於 --num_rows**\n\n例: num_rows 1 千萬，chunk_size 可以設為 1 百萬\n\nchunk_size 最大值取決於系統記憶體大小可負荷範圍\n\n\n## 測試生成 1+ 億筆資料\n\n### 測試設定與總花費時間\n* 測試主機 EC2 server：c6i.4xlarge\n* 測試資料集：**House Prices - Advanced Regression Techniques**\nhttps://www.kaggle.com/c/house-prices-advanced-regression-techniques/data\n* 資料欄位數：81 \n* 測試步驟：\n    1. 使用合成資料模型訓練模組針對 data.csv 訓練合成資料模型檔 \n    2. 使用 合成資料模型檔搭配 Chunk 設定生成 一億兩千萬筆資料\n* 資料筆數設定：num_rows 120000000 (1.2億)\n* chunk 大小數：chunk_size 5000000 (500萬)\n* 總時間：29688 秒，(約 8 hr 15 min)\n\n![](img/demo_gen_big_data_testing.png)\n\n### CPU 記憶體使用率\n* CPU Memory 會是限制 Chunk size 最大可以設定多少的關鍵\n* chunk_size: 5000000 \n* memory cost: 約 26GB 左右\n![](img/demo_cpu_usage.png)\n\n\n",
+ "hits": {
+  "st": [
+   {
+    "file": "syndata_model_train_py39.ipynb",
+    "line": 55,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer\"",
+    "context": [
+     "    \"import time\\n\",",
+     "    \"import os\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer\"",
+     "   ]",
+     "  },",
+     "  {",
+     "   \"cell_type\": \"code\","
+    ]
+   },
+   {
+    "file": "syndata_generator_py39.ipynb",
+    "line": 53,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer\"",
+    "context": [
+     "    \"import time\\n\",",
+     "    \"import os\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer\"",
+     "   ]",
+     "  },",
+     "  {",
+     "   \"cell_type\": \"code\","
+    ]
+   },
+   {
+    "file": "syndata_generator.py",
+    "line": 7,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "import time",
+     "import os",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "\"\"\"",
+     "def get_data_from_model(model_path, num_rows=1000, condition_dict=None):",
+     "    print(f\"Loading model from: {model_path}\")",
+     ""
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "syndata_model_train_py39.ipynb",
+    "line": 53,
+    "text": "\"from sdv.metadata import Metadata\\n\",",
+    "context": [
+     "    \"import pandas as pd\\n\",",
+     "    \"import logging\\n\",",
+     "    \"import time\\n\",",
+     "    \"import os\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer\"",
+     "   ]",
+     "  },"
+    ]
+   },
+   {
+    "file": "syndata_model_train_py39.ipynb",
+    "line": 54,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"import logging\\n\",",
+     "    \"import time\\n\",",
+     "    \"import os\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer\"",
+     "   ]",
+     "  },",
+     "  {"
+    ]
+   },
+   {
+    "file": "syndata_quality_evaluate_v2.ipynb",
+    "line": 21,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "   \"source\": [",
+     "    \"import numpy as np\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdmetrics.reports.single_table import QualityReport\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"from sdmetrics.single_column import (\\n\",",
+     "    \"    KSComplement,\\n\",",
+     "    \"    RangeCoverage,\\n\","
+    ]
+   },
+   {
+    "file": "syndata_generator_py39.ipynb",
+    "line": 51,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"import pandas as pd\\n\",",
+     "    \"import logging\\n\",",
+     "    \"import time\\n\",",
+     "    \"import os\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer\"",
+     "   ]",
+     "  },"
+    ]
+   },
+   {
+    "file": "syndata_generator.py",
+    "line": 5,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "import logging",
+     "import time",
+     "import os",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "\"\"\"",
+     "def get_data_from_model(model_path, num_rows=1000, condition_dict=None):"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "syndata_model_train_py39.ipynb",
+    "line": 53,
+    "text": "\"from sdv.metadata import Metadata\\n\",",
+    "context": [
+     "    \"import pandas as pd\\n\",",
+     "    \"import logging\\n\",",
+     "    \"import time\\n\",",
+     "    \"import os\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer\"",
+     "   ]",
+     "  },"
+    ]
+   },
+   {
+    "file": "syndata_model_train_py39.ipynb",
+    "line": 54,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"import logging\\n\",",
+     "    \"import time\\n\",",
+     "    \"import os\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer\"",
+     "   ]",
+     "  },",
+     "  {"
+    ]
+   },
+   {
+    "file": "syndata_model_train_py39.ipynb",
+    "line": 55,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer\"",
+    "context": [
+     "    \"import time\\n\",",
+     "    \"import os\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer\"",
+     "   ]",
+     "  },",
+     "  {",
+     "   \"cell_type\": \"code\","
+    ]
+   },
+   {
+    "file": "syndata_quality_evaluate_v2.ipynb",
+    "line": 21,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "   \"source\": [",
+     "    \"import numpy as np\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdmetrics.reports.single_table import QualityReport\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"from sdmetrics.single_column import (\\n\",",
+     "    \"    KSComplement,\\n\",",
+     "    \"    RangeCoverage,\\n\","
+    ]
+   },
+   {
+    "file": "syndata_generator_py39.ipynb",
+    "line": 51,
+    "text": "\"from sdv.metadata import SingleTableMetadata\\n\",",
+    "context": [
+     "    \"import pandas as pd\\n\",",
+     "    \"import logging\\n\",",
+     "    \"import time\\n\",",
+     "    \"import os\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer\"",
+     "   ]",
+     "  },"
+    ]
+   },
+   {
+    "file": "syndata_generator_py39.ipynb",
+    "line": 53,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer\"",
+    "context": [
+     "    \"import time\\n\",",
+     "    \"import os\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer\"",
+     "   ]",
+     "  },",
+     "  {",
+     "   \"cell_type\": \"code\","
+    ]
+   },
+   {
+    "file": "syndata_generator.py",
+    "line": 5,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "import logging",
+     "import time",
+     "import os",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "\"\"\"",
+     "def get_data_from_model(model_path, num_rows=1000, condition_dict=None):"
+    ]
+   },
+   {
+    "file": "syndata_generator.py",
+    "line": 7,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "import time",
+     "import os",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "\"\"\"",
+     "def get_data_from_model(model_path, num_rows=1000, condition_dict=None):",
+     "    print(f\"Loading model from: {model_path}\")",
+     ""
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "syndata_model_train_py39.ipynb",
+    "line": 55,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer\"",
+    "context": [
+     "    \"import time\\n\",",
+     "    \"import os\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer\"",
+     "   ]",
+     "  },",
+     "  {",
+     "   \"cell_type\": \"code\","
+    ]
+   },
+   {
+    "file": "syndata_model_train_py39.ipynb",
+    "line": 71,
+    "text": "\"        model = CTGANSynthesizer.load(model_path)\\n\",",
+    "context": [
+     "    \"\\n\",",
+     "    \"    if \\\"GaussianCopula\\\" in model_path:\\n\",",
+     "    \"        model = GaussianCopulaSynthesizer.load(model_path)\\n\",",
+     "    \"    elif \\\"CTGAN\\\" in model_path:\\n\",",
+     "    \"        model = CTGANSynthesizer.load(model_path)\\n\",",
+     "    \"    else:\\n\",",
+     "    \"        raise ValueError(f\\\"Cannot determine model type from file name: {model_path}\\\")\\n\",",
+     "    \"\\n\",",
+     "    \"    if condition_dict:\\n\","
+    ]
+   },
+   {
+    "file": "syndata_model_train_py39.ipynb",
+    "line": 114,
+    "text": "\"            model = CTGANSynthesizer(\\n\",",
+    "context": [
+     "    \"        model = GaussianCopulaSynthesizer(metadata)\\n\",",
+     "    \"    elif args.synth_model == \\\"CTGAN\\\":\\n\",",
+     "    \"        if args.custom_setting:\\n\",",
+     "    \"            print(\\\"Synthetic model arch: CTGAN (custom)\\\")\\n\",",
+     "    \"            model = CTGANSynthesizer(\\n\",",
+     "    \"                metadata=metadata,\\n\",",
+     "    \"                epochs=args.epochs,\\n\",",
+     "    \"                batch_size=args.batch_size,\\n\",",
+     "    \"                generator_dim=tuple(args.gen_dim),\\n\","
+    ]
+   },
+   {
+    "file": "syndata_model_train_py39.ipynb",
+    "line": 124,
+    "text": "\"            model = CTGANSynthesizer(metadata, verbose=True)\\n\",",
+    "context": [
+     "    \"                verbose=True,\\n\",",
+     "    \"            )\\n\",",
+     "    \"        else:\\n\",",
+     "    \"            logging.info(\\\"Synthetic model arch: CTGAN (default)\\\")\\n\",",
+     "    \"            model = CTGANSynthesizer(metadata, verbose=True)\\n\",",
+     "    \"    else:\\n\",",
+     "    \"        raise ValueError(f\\\"Unsupported synth_model: {args.synth_model}\\\")\\n\",",
+     "    \"\\n\",",
+     "    \"    # === Step 4: Fit model ===\\n\","
+    ]
+   },
+   {
+    "file": "syndata_generator_py39.ipynb",
+    "line": 53,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer\"",
+    "context": [
+     "    \"import time\\n\",",
+     "    \"import os\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer\"",
+     "   ]",
+     "  },",
+     "  {",
+     "   \"cell_type\": \"code\","
+    ]
+   },
+   {
+    "file": "syndata_generator_py39.ipynb",
+    "line": 77,
+    "text": "\"        model = CTGANSynthesizer.load(model_path)\\n\",",
+    "context": [
+     "    \"    # === 載入模型 ===\\n\",",
+     "    \"    if \\\"GaussianCopula\\\" in model_path:\\n\",",
+     "    \"        model = GaussianCopulaSynthesizer.load(model_path)\\n\",",
+     "    \"    elif \\\"CTGAN\\\" in model_path:\\n\",",
+     "    \"        model = CTGANSynthesizer.load(model_path)\\n\",",
+     "    \"    else:\\n\",",
+     "    \"        raise ValueError(f\\\"Cannot determine model type from file name: {model_path}\\\")\\n\",",
+     "    \"\\n\",",
+     "    \"    # === 條件抽樣時，不支援 chunk ===\\n\","
+    ]
+   },
+   {
+    "file": "syndata_generator.py",
+    "line": 7,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "import time",
+     "import os",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "\"\"\"",
+     "def get_data_from_model(model_path, num_rows=1000, condition_dict=None):",
+     "    print(f\"Loading model from: {model_path}\")",
+     ""
+    ]
+   },
+   {
+    "file": "syndata_generator.py",
+    "line": 15,
+    "text": "model = CTGANSynthesizer.load(model_path)",
+    "context": [
+     "",
+     "    if \"GaussianCopula\" in model_path:",
+     "        model = GaussianCopulaSynthesizer.load(model_path)",
+     "    elif \"CTGAN\" in model_path:",
+     "        model = CTGANSynthesizer.load(model_path)",
+     "    else:",
+     "        raise ValueError(f\"Cannot determine model type from file name: {model_path}\")",
+     "",
+     "    if condition_dict:"
+    ]
+   },
+   {
+    "file": "syndata_generator.py",
+    "line": 40,
+    "text": "model = CTGANSynthesizer.load(model_path)",
+    "context": [
+     "    # === 載入模型 ===",
+     "    if \"GaussianCopula\" in model_path:",
+     "        model = GaussianCopulaSynthesizer.load(model_path)",
+     "    elif \"CTGAN\" in model_path:",
+     "        model = CTGANSynthesizer.load(model_path)",
+     "    else:",
+     "        raise ValueError(f\"Cannot determine model type from file name: {model_path}\")",
+     "",
+     "    # === 條件抽樣時，不支援 chunk ==="
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "syndata_model_train_py39.ipynb",
+    "line": 55,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer\"",
+    "context": [
+     "    \"import time\\n\",",
+     "    \"import os\\n\",",
+     "    \"from sdv.metadata import Metadata\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer\"",
+     "   ]",
+     "  },",
+     "  {",
+     "   \"cell_type\": \"code\","
+    ]
+   },
+   {
+    "file": "syndata_model_train_py39.ipynb",
+    "line": 69,
+    "text": "\"        model = GaussianCopulaSynthesizer.load(model_path)\\n\",",
+    "context": [
+     "    \"def get_data_from_model(model_path, num_rows=1000, condition_dict=None):\\n\",",
+     "    \"    print(f\\\"Loading model from: {model_path}\\\")\\n\",",
+     "    \"\\n\",",
+     "    \"    if \\\"GaussianCopula\\\" in model_path:\\n\",",
+     "    \"        model = GaussianCopulaSynthesizer.load(model_path)\\n\",",
+     "    \"    elif \\\"CTGAN\\\" in model_path:\\n\",",
+     "    \"        model = CTGANSynthesizer.load(model_path)\\n\",",
+     "    \"    else:\\n\",",
+     "    \"        raise ValueError(f\\\"Cannot determine model type from file name: {model_path}\\\")\\n\","
+    ]
+   },
+   {
+    "file": "syndata_model_train_py39.ipynb",
+    "line": 110,
+    "text": "\"        model = GaussianCopulaSynthesizer(metadata)\\n\",",
+    "context": [
+     "    \"\\n\",",
+     "    \"    # === Step 3: Initialize model ===\\n\",",
+     "    \"    if args.synth_model == \\\"GaussianCopula\\\":\\n\",",
+     "    \"        print(\\\"Synthetic model arch: GaussianCopula\\\")\\n\",",
+     "    \"        model = GaussianCopulaSynthesizer(metadata)\\n\",",
+     "    \"    elif args.synth_model == \\\"CTGAN\\\":\\n\",",
+     "    \"        if args.custom_setting:\\n\",",
+     "    \"            print(\\\"Synthetic model arch: CTGAN (custom)\\\")\\n\",",
+     "    \"            model = CTGANSynthesizer(\\n\","
+    ]
+   },
+   {
+    "file": "syndata_generator_py39.ipynb",
+    "line": 53,
+    "text": "\"from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer\"",
+    "context": [
+     "    \"import time\\n\",",
+     "    \"import os\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer\"",
+     "   ]",
+     "  },",
+     "  {",
+     "   \"cell_type\": \"code\","
+    ]
+   },
+   {
+    "file": "syndata_generator_py39.ipynb",
+    "line": 75,
+    "text": "\"        model = GaussianCopulaSynthesizer.load(model_path)\\n\",",
+    "context": [
+     "    \"    print(f\\\"Loading model from: {model_path}\\\")\\n\",",
+     "    \"\\n\",",
+     "    \"    # === 載入模型 ===\\n\",",
+     "    \"    if \\\"GaussianCopula\\\" in model_path:\\n\",",
+     "    \"        model = GaussianCopulaSynthesizer.load(model_path)\\n\",",
+     "    \"    elif \\\"CTGAN\\\" in model_path:\\n\",",
+     "    \"        model = CTGANSynthesizer.load(model_path)\\n\",",
+     "    \"    else:\\n\",",
+     "    \"        raise ValueError(f\\\"Cannot determine model type from file name: {model_path}\\\")\\n\","
+    ]
+   },
+   {
+    "file": "syndata_generator.py",
+    "line": 7,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "import time",
+     "import os",
+     "from sdv.metadata import SingleTableMetadata",
+     "",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "\"\"\"",
+     "def get_data_from_model(model_path, num_rows=1000, condition_dict=None):",
+     "    print(f\"Loading model from: {model_path}\")",
+     ""
+    ]
+   },
+   {
+    "file": "syndata_generator.py",
+    "line": 13,
+    "text": "model = GaussianCopulaSynthesizer.load(model_path)",
+    "context": [
+     "def get_data_from_model(model_path, num_rows=1000, condition_dict=None):",
+     "    print(f\"Loading model from: {model_path}\")",
+     "",
+     "    if \"GaussianCopula\" in model_path:",
+     "        model = GaussianCopulaSynthesizer.load(model_path)",
+     "    elif \"CTGAN\" in model_path:",
+     "        model = CTGANSynthesizer.load(model_path)",
+     "    else:",
+     "        raise ValueError(f\"Cannot determine model type from file name: {model_path}\")"
+    ]
+   },
+   {
+    "file": "syndata_generator.py",
+    "line": 38,
+    "text": "model = GaussianCopulaSynthesizer.load(model_path)",
+    "context": [
+     "    print(f\"Loading model from: {model_path}\")",
+     "",
+     "    # === 載入模型 ===",
+     "    if \"GaussianCopula\" in model_path:",
+     "        model = GaussianCopulaSynthesizer.load(model_path)",
+     "    elif \"CTGAN\" in model_path:",
+     "        model = CTGANSynthesizer.load(model_path)",
+     "    else:",
+     "        raise ValueError(f\"Cannot determine model type from file name: {model_path}\")"
+    ]
+   }
+  ],
+  "sm": [
+   {
+    "file": "syndata_quality_evaluate_v2.ipynb",
+    "line": 20,
+    "text": "\"from sdmetrics.reports.single_table import QualityReport\\n\",",
+    "context": [
+     "   \"outputs\": [],",
+     "   \"source\": [",
+     "    \"import numpy as np\\n\",",
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdmetrics.reports.single_table import QualityReport\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"from sdmetrics.single_column import (\\n\",",
+     "    \"    KSComplement,\\n\","
+    ]
+   },
+   {
+    "file": "syndata_quality_evaluate_v2.ipynb",
+    "line": 23,
+    "text": "\"from sdmetrics.single_column import (\\n\",",
+    "context": [
+     "    \"import pandas as pd\\n\",",
+     "    \"from sdmetrics.reports.single_table import QualityReport\\n\",",
+     "    \"from sdv.metadata import SingleTableMetadata\\n\",",
+     "    \"\\n\",",
+     "    \"from sdmetrics.single_column import (\\n\",",
+     "    \"    KSComplement,\\n\",",
+     "    \"    RangeCoverage,\\n\",",
+     "    \"    MissingValueSimilarity,\\n\",",
+     "    \"    StatisticSimilarity,\\n\","
+    ]
+   },
+   {
+    "file": "syndata_quality_evaluate_v2.ipynb",
+    "line": 351,
+    "text": "\"from sdmetrics.single_column import KSComplement\\n\",",
+    "context": [
+     "     \"output_type\": \"execute_result\"",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdmetrics.single_column import KSComplement\\n\",",
+     "    \"\\n\",",
+     "    \"KSComplement.compute(\\n\",",
+     "    \"    real_data=real_data['LotFrontage'],\\n\",",
+     "    \"    synthetic_data=synthetic_data['LotFrontage']\\n\","
+    ]
+   },
+   {
+    "file": "syndata_quality_evaluate_v2.ipynb",
+    "line": 406,
+    "text": "\"from sdmetrics.single_column import TVComplement\\n\",",
+    "context": [
+     "     \"output_type\": \"execute_result\"",
+     "    }",
+     "   ],",
+     "   \"source\": [",
+     "    \"from sdmetrics.single_column import TVComplement\\n\",",
+     "    \"TVComplement.compute(\\n\",",
+     "    \"    real_data=real_data['MSZoning'],\\n\",",
+     "    \"    synthetic_data=synthetic_data['MSZoning']\\n\",",
+     "    \")\""
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "gc",
+  "md",
+  "sdv_any",
+  "sm",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

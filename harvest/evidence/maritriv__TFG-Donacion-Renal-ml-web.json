@@ -1,0 +1,125 @@
+{
+ "repo": "maritriv/TFG-Donacion-Renal-ml-web",
+ "disk_kb": 16115,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# TFG-Donacion-Renal-ml-web\n\n## Descripción\nTrabajo de Fin de Grado - Aplicación web para la predicción de donantes renales válidos en asistolia no controlada (uDCD) utilizando variables clínicas, demográficas y parámetros de capnometría (EtCO₂ en punto medio y transferencia).\n---\n\nEl trabajo completo consta de dos repositorios:\n\n- Un primer repositorio que desarrolla una aplicación móvil en Android Studio basada en reglas clínicas derivadas de una tesis doctoral.\n- Un segundo repositorio (este), que integra tanto el desarrollo de modelos de aprendizaje automático como una plataforma web para su utilización.\n\nEste repositorio incluye:\n\n- el pipeline completo de datos y modelado (limpieza, análisis, entrenamiento, evaluación y exportación),\n- y una aplicación web (backend + frontend) que permite utilizar y comparar los modelos en un entorno interactivo.\n\n---\n\n## Objetivo del repositorio\n\nEl objetivo de este repositorio es implementar un flujo reproducible para:\n\n1. Cargar y limpiar los datos clínicos proporcionados por el equipo médico.\n2. Construir datasets de modelado para distintos momentos clínicos.\n3. Realizar análisis exploratorio.\n4. Entrenar y comparar distintos modelos de clasificación.\n5. Evaluar el rendimiento final.\n6. Exportar los modelos finales para su integración en la plataforma web de predicción.\n\n---\n\n## Fases del pipeline\n\nEl proyecto está organizado en cinco fases principales:\n\n### 1. Limpieza y preparación de datos\n- lectura de la hoja `Donante` del Excel clínico,\n- normalización de nombres de columnas,\n- eliminación de duplicados,\n- limpieza de variables binarias y numéricas,\n- creación de la variable objetivo `DONANTE_VALIDO`,\n- construcción de datasets para dos momentos clínicos:\n  - `MID`\n  - `TRANSFER`\n\n### 2. Análisis exploratorio\n- estudio descriptivo de variables,\n- distribución de la variable objetivo,\n- histogramas,\n- matrices de correlación,\n- generación de reportes automáticos.\n\n### 3. Entrenamiento de modelos\nComparación de varios modelos de clasificación, entre ellos:\n- Dummy Classifier\n- Logistic Regression\n- Random Forest\n- SVM\n- XGBoost\n- Voting Classifier\n\nSe contemplan dos escenarios experimentales:\n- entrenamiento con **datos reales**,\n- entrenamiento con **datos reales + sintéticos**.\n\n### 4. Evaluación final\n- selección de modelos candidatos,\n- evaluación sobre conjunto de prueba,\n- generación de métricas,\n- matrices de confusión,\n- comparación final entre configuraciones.\n\n### 5. Exportación de modelos finales\n- selección del mejor candidato para cada momento clínico,\n- reentrenamiento con todos los datos disponibles,\n- exportación de los modelos finales en formato `joblib`,\n- guardado de metadatos y métricas finales.\n\n---\n\n## Plataforma web\n\nEl repositorio incluye una aplicación web completa (backend y frontend) que permite utilizar los modelos desarrollados en el pipeline.\n\nLa plataforma está diseñada para:\n\n- Introducir los datos de un posible donante y obtener una predicción mediante modelos de aprendizaje automático.\n- Comparar la predicción del modelo de machine learning con la obtenida mediante reglas clínicas derivadas de una tesis doctoral.\n- Analizar las diferencias entre ambos enfoques utilizando la misma entrada de datos.\n- Exportar los resultados obtenidos.\n- Incorporar nuevos datos clínicos al sistema.\n\nAdemás, el diseño del pipeline permite, a futuro, reentrenar los modelos automáticamente al añadir nuevos datos, facilitando la evolución del sistema conforme se disponga de más información.\n\n### Arquitectura\n\nLa aplicación web está estructurada en dos componentes principales:\n\n- **Backend**: encargado de la lógica de negocio, carga de modelos y generación de predicciones.\n- **Frontend**: interfaz de usuario que permite introducir datos clínicos, visualizar resultados y comparar modelos.\n\nEl backend utiliza los modelos exportados en el pipeline (`outputs/final_model_export/`) para realizar predicciones en tiempo real.\n\n--- \n\n## Estructura del repositorio\n\n```text\nTFG-Donacion-Renal-ml-web/\n├── data/\n│   ├── raw/                      # Datos originales proporcionados por el equipo médico\n│   ├── processed/                # Datasets limpios, sintéticos y reportes de limpieza\n│   └── external/                 # Datos externos complementarios (si aplica)\n├── docs/                         # Documentación técnica del proyecto\n├── outputs/\n│   ├── exploratory_analysis/     # Gráficas y reportes del análisis exploratorio\n│   ├── model_training/           # Resultados del entrenamiento (métricas, modelos, CV)\n│   ├── model_evaluation/         # Comparativa final de modelos y métricas\n│   └── final_model_export/       # Modelos finales exportados (mid y transfer)\n├── src/\n│   ├── 01_data_cleaning/         # Limpieza de datos y generación de datasets (real y sintético)\n│   ├── 02_exploratory_analysis/  # Análisis exploratorio y generación de reportes\n│   ├── 03_model_training/        # Entrenamiento de modelos y búsqueda de hiperparámetros\n│   ├── 04_model_evaluation/      # Evaluación final y selección de modelos por dataset\n│   ├── 05_final_model_export/    # Reentrenamiento y exportación de los modelos finales\n│   ├── common/                   # Utilidades compartidas entre módulos\n│   └── main.py                   # Orquestador global del pipeline\n├── tests/                        # Tests (en desarrollo)\n├── web/\n│   ├── backend/                  # Backend de la aplicación web (API y lógica de predicción)\n│   └── frontend/                 # Interfaz de usuario para introducir datos y visualizar resultados\n├── pyproject.toml                # Configuración del proyecto y dependencias\n├── uv.lock                       # Versionado reproducible de dependencias\n└── README.md                     # Este documento\n```\n\n---\n\n## Requisitos\n\nPara ejecutar el proyecto se recomienda:\n\n- Python 3.11 o superior  \n- uv para la gestión del entorno y dependencias  \n\n---\n\n## Instalación del entorno\n\n**1.** Clonar el repositorio:\n\n```bash\ngit clone https://github.com/maritriv/TFG-Donacion-Renal-ml-web.git\ncd TFG-Donacion-Renal-ml-web\n```\n\n**2.** Instalar `uv` (si no está instalado):\n\n```bash\npip install uv\n```\n\n**3.** Instalar dependencias base:\n\n```bash\nuv sync\n```\n\n**4.** Instalar dependencias para generar datos sintéticos:\n\n```bash\nuv sync --extra synthetic\n```\n--- \n\n## Ejecución\n\n**Ejecutar el pipeline completo:**\n\n```bash\nuv run -m src.main\n```\n\n**Ejecutar solo la fase de limpieza y generación de datos sintéticos**\n```bashe\nuv run -m src.01_data_cleaning.main\n```\n\n**Ejecutar solo limpieza**\n```bashe\nuv run -m src.01_data_cleaning.clean_data\n```\n\n**Ejecutar solo generación sintética**\n```bashe\nuv run -m src.01_data_cleaning.generate_synthetic_data\n```\n\n**Ejecutar solo análisis exploratorio**\n```bashe\nuv run -m src.02_exploratory_analysis.main\n```\n\n**Ejecutar solo entrenamiento**\n```bashe\nuv run -m src.03_model_training.main\n```\n\n**Ejecutar solo evaluación final**\n```bashe\nuv run -m src.04_model_evaluation.main\n```\n\n**Ejecutar solo exportación final**\n```bashe\nuv run -m src.05_final_model_export.main\n```\n---\n\n## Datos de entrada\n\nLa entrada principal del pipeline es el archivo:\n```bash\ndata/raw/dataset_medicos.xlsx\n```\n\nActualmente se utiliza la hoja **Donante**.\n\n---\n\n## Salidas principales\n\n### Datos procesados\n\nEn `data/processed/` se generan, entre otros:\n\n- `dataset_mid_clean.csv` → dataset limpio para el punto medio de predicción  \n- `dataset_transfer_clean.csv` → dataset limpio para el momento de transferencia  \n- `dataset_mid_synthetic.csv` → datos sintéticos generados para el escenario `mid`  \n- `dataset_transfer_synthetic.csv` → datos sintéticos generados para el escenario `transfer`  \n- `cleaning_report.json` → resumen del proceso de limpieza (valores nulos, transformaciones...)  \n- `synthetic_report.json` → información sobre la generación de datos sintéticos  \n\n---\n\n### Análisis exploratorio\n\nEn `outputs/exploratory_analysis/` se generan:\n\n- histogramas → distribución de variables relevantes  \n- mapas de correlación → relación entre variables  \n- distribuciones de la variable objetivo → balance de clases  \n- `eda_report.json` → resumen automático del análisis exploratorio  \n\n---\n\n### Entrenamiento\n\nEn `outputs/model_training/` se generan:\n\n- métricas de validación cruzada → rendimiento medio de cada modelo  \n- resultados de búsqueda de hiperparámetros → combinaciones evaluadas  \n- `best_model.joblib` → mejor modelo encontrado en cada experimento  \n- métricas sobre conjunto de test → evaluación inicial fuera de entrenamiento  \n\n---\n\n### Evaluación final\n\nEn `outputs/model_evaluation/` se generan:\n\n- comparativa final entre modelos → ranking de modelos por dataset  \n- métricas finales (`mid` y `transfer`) → rendimiento en test del modelo seleccionado  \n- matrices de confusión → análisis de errores de clasificación  \n- `final_comparison_report.json` → resumen estructurado de la comparación final  \n\n---\n\n### Modelos finales\n\nEn `outputs/final_model_export/` se exportan los modelos finales reentrenados:\n\n- `mid/final_model.joblib` → modelo final para predicción en punto medio  \n- `mid/final_model_metadata.json` → información sobre entrenamiento y datos usados  \n- `mid/final_metrics.json` → métricas finales del modelo  \n\n- `transfer/final_model.joblib` → modelo final para predicción en transferencia  \n- `transfer/final_model_metadata.json` → información del modelo y entrenamiento  \n- `transfer/final_metrics.json` → métricas finales del modelo  \n\n- `final_models_report.json` → resumen global de los modelos exportados  \n\n---\n\n## Resultados finales actuales\n\nDe acuerdo con la última ejecución completa del pipeline, se seleccionó y exportó un modelo final independiente para cada momento clínico:\n\n### Predicción en punto medio (`mid`)\n\n- **modelo seleccionado:** `logistic_regression`\n- **experimento:** `real`\n- **semilla:** `999`\n- **F1-score en evaluación final:** `0.6667`\n- **recall en evaluación final:** `0.8`\n\n### Predicción en transferencia (`transfer`)\n\n- **modelo seleccionado:** `logistic_regression`\n- **experimento:** `real_plus_synthetic`\n- **semilla:** `999`\n- **F1-score en evaluación final:** `0.8333`\n- **recall en evaluación final:** `1.0`\n\nEstos resultados muestran que el mejor modelo no fue el mismo escenario experimental para ambos momentos clínicos. En el caso de `mid`, el mejor rendimiento se obtuvo utilizando únicamente datos reales, mientras que en `transfer` el mejor resultado se consiguió combinando datos reales y sintéticos.\n\n> Estos resultados deben interpretarse dentro del contexto del tamaño muestral disponible y del carácter académico-experimental del proyecto.\n\n---\n\n## Ejecución de la aplicación web\n\nLa aplicación web está compuesta por:\n\n- Backend (FastAPI + modelo de Machine Learning)\n- Frontend (HTML + JavaScript ES modules)\n\nPor ello, es necesario ejecutar ambos servicios.\n\n---\n\n## Opción 1 · Ejecución completa (recomendada)\n\nPermite lanzar **frontend + backend automáticamente en una sola terminal**.\n\nDesde la raíz del proyecto:\n\n```bash\nnpm run dev\n```\n\nEsto ejecuta:\n\n- Backend → http://127.0.0.1:8001  \n- Frontend → http://localhost:8000  \n\nAbrir en el navegador:\n\nhttp://localhost:8000/html/index.html\n\n## Opción 2 · Ejecución manual (2 terminales)\n\n### Terminal 1 → Backend\n\nDesde la raíz del proyecto:\n\n```bash\nuv run uvicorn web.backend.main:app --reload --host 127.0.0.1 --port 8001\n```\n\n## Terminal 2 → Frontend\n\nEn otra terminal distinta:\n\n```bash\ncd web/frontend\nuv run -m http.server 8000\n```\n\nAbrir en el navegador:\n`http://localhost:8000/html/index.html`\n\n⚠️ Es importante acceder siempre a través de /html/index.html y no abrir el archivo directamente (file://), ya que los módulos de JavaScript y las rutas no funcionarán correctamente.\n\n\n### Opción 3 · Live Server (VS Code)\n\n1. Instalar la extensión Live Server\n\nPara ello:\n\n    - Abrir Visual Studio Code\n    - Ir a la pestaña de extensiones (icono de bloques en la barra lateral izquierda)\n    - Buscar **\"Live Server\"**\n    - Instalar la extensión desarrollada por *Ritwick Dey*\n\n\n2. Abrir el proyecto en VS Code, desde la raíz del proyecto:\n```bash\ncode .\n```\n\n3. Click derecho sobre:\n`web/frontend/html/index.html`\n\n4. Seleccionar \"Open with Live Server\"\n\nSe abrirá automáticamente en el navegador, normalmente en:\n`http://127.0.0.1:5500/html/index.html`\n\n---\n\n## Flujo de uso de la aplicación web\n\nLa aplicación web permite gestionar usuarios y realizar predicciones clínicas en distintos momentos del proceso, integrando tanto modelos de aprendizaje automático como reglas clínicas.\n\n### 1. Autenticación\n\nAl acceder a la aplicación (`/html/index.html`), el usuario se encuentra con una pantalla de inicio de sesión donde puede:\n\n- iniciar sesión con su cuenta,\n- registrarse si no dispone de una,\n- recuperar la contraseña en caso de olvido.\n\nUna vez autenticado, el usuario accede a la aplicación según su rol (Médico o Administrador).\n\n\n### 2. Pantalla principal\n\nExisten dos tipos de usuarios:\n\n- **Médico**\n- **Administrador**\n\nEn ambos casos, la pantalla principal muestra:\n\n- un gráfico tipo *donut* con el número total de predicciones realizadas,\n- el porcentaje de predicciones válidas y no válidas,\n- un menú de usuario para editar datos personales o cerrar sesión.\n\n\n### 3. Funcionalidad para médicos\n\nLos usuarios con rol médico disponen de tres acciones principales:\n\n#### Función 1: Realizar predicción\n\n1. Selección del momento clínico:\n   - **Punto medio**\n   - **Transferencia**\n\n2. En función del momento seleccionado:\n   - se carga el modelo correspondiente,\n   - se muestra un formulario clínico para introducir los datos del paciente.\n\n3. Tras enviar el formulario:\n   - se calcula la predicción,\n   - se muestran los resultados:\n     - resultado basado en reglas clínicas,\n     - resultado del modelo de machine learning,\n     - indicación de si el donante es válido o no.\n\n4. El usuario puede:\n   - exportar el resultado y los parámetros en PDF,\n   - volver a la pantalla principal.\n\n\n#### Función 2: Historial de predicciones\n\nPermite visualizar todas las predicciones realizadas por el médico en formato tabla.\n\nIncluye:\n\n- ordenación por variables (edad, momento, capnometría),\n- filtrado y búsqueda de predicciones (por ejemplo, pacientes de cierta edad),\n- exportación individual de predicciones en PDF,\n- exportación completa del historial en formato CSV.\n\n\n#### Función 3: Importar predicciones\n\nPermite cargar un archivo CSV con nuevas predicciones. Tras validar los datos y comprobar que no existan duplicados entonces, las prediciones se incorporan al sistema.\n\n\n### 4. Funcionalidad para administradores\n\nLos usuarios con rol administrador disponen de funcionalidades adicionales:\n\n\n#### Función 1: Gestión de usuarios\n\nPermite:\n\n- visualizar todos los usuarios registrados (médicos y administradores),\n- consultar sus datos y predicciones,\n- modificar sus datos personales,\n- eliminar o dar de baja a usuarios.\n\n#### Función 2: Historial global\n\n- acceso a todas las predicciones realizadas por todos los médicos,\n- mismas capacidades de filtrado, ordenación y exportación que el rol médico.\n\n\n### 5. Persistencia de datos\n\nLa gestión de usuarios y predicciones se realiza mediante **Firebase**, lo que permite:\n\n- mantener sincronizados los datos entre la aplicación web y la aplicación móvil,\n- garantizar que las predicciones y registros estén disponibles independientemente del dispositivo utilizado.\n\n---\n\n## Tecnologías utilizadas\n\n### Modelado y procesamiento de datos\n- Python  \n- pandas  \n- numpy  \n- scikit-learn  \n- xgboost  \n- matplotlib  \n- openpyxl  \n- sdv / CTGAN (generación de datos sintéticos)  \n- joblib  \n\n### Visualización y utilidades\n- rich  \n\n### Aplicación web\n- HTML  \n- CSS  \n- JavaScript (ES Modules)  \n- Firebase (autenticación y base de datos)  \n\n---\n\n## Consideraciones\n\n- Este repositorio forma parte de un TFG con aplicación en un contexto clínico real.  \n- Los modelos desarrollados tienen fines académicos y de apoyo a la decisión, no sustituyen la valoración médica.  \n- La validez de los resultados depende del tamaño, calidad y representatividad del dataset proporcionado.  \n\n---\n\n## Autora\n\n**Marina Triviño de las Heras**\n\nEstudiante de caurto año del grado en Ingeniería de Datos e Inteligencia Artificial  \nUniversidad Complutense de Madrid  \n\n---\n\n## Repositorios relacionados\n\n- Aplicación móvil: [TFG-Donacion-Renal](https://github.com/maritriv/TFG-Donacion-Renal)\n",
+ "hits": {
+  "st": [
+   {
+    "file": "src/01_data_cleaning/modules/synthetic_steps.py",
+    "line": 123,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "    _ = column_types",
+     "",
+     "    try:",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "    except ImportError as exc:",
+     "        raise ImportError(",
+     "            \"La generacion sintetica requiere SDV/CTGAN. \"",
+     "            \"Instala la dependencia con 'uv sync --extra synthetic' \""
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "src/01_data_cleaning/modules/synthetic_steps.py",
+    "line": 122,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    \"\"\"Entrena CTGAN mediante SDV. Es requisito obligatorio del proyecto.\"\"\"",
+     "    _ = column_types",
+     "",
+     "    try:",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "    except ImportError as exc:",
+     "        raise ImportError(",
+     "            \"La generacion sintetica requiere SDV/CTGAN. \""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "src/01_data_cleaning/modules/synthetic_steps.py",
+    "line": 122,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    \"\"\"Entrena CTGAN mediante SDV. Es requisito obligatorio del proyecto.\"\"\"",
+     "    _ = column_types",
+     "",
+     "    try:",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "    except ImportError as exc:",
+     "        raise ImportError(",
+     "            \"La generacion sintetica requiere SDV/CTGAN. \""
+    ]
+   },
+   {
+    "file": "src/01_data_cleaning/modules/synthetic_steps.py",
+    "line": 123,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "    _ = column_types",
+     "",
+     "    try:",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "    except ImportError as exc:",
+     "        raise ImportError(",
+     "            \"La generacion sintetica requiere SDV/CTGAN. \"",
+     "            \"Instala la dependencia con 'uv sync --extra synthetic' \""
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "src/01_data_cleaning/modules/synthetic_steps.py",
+    "line": 123,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "    _ = column_types",
+     "",
+     "    try:",
+     "        from sdv.metadata import SingleTableMetadata",
+     "        from sdv.single_table import CTGANSynthesizer",
+     "    except ImportError as exc:",
+     "        raise ImportError(",
+     "            \"La generacion sintetica requiere SDV/CTGAN. \"",
+     "            \"Instala la dependencia con 'uv sync --extra synthetic' \""
+    ]
+   },
+   {
+    "file": "src/01_data_cleaning/modules/synthetic_steps.py",
+    "line": 137,
+    "text": "synthesizer = CTGANSynthesizer(metadata)",
+    "context": [
+     "        metadata.detect_from_dataframe(data=df)",
+     "    except TypeError:",
+     "        metadata.detect_from_dataframe(df)",
+     "",
+     "    synthesizer = CTGANSynthesizer(metadata)",
+     "    synthesizer.fit(df)",
+     "    return synthesizer, \"sdv_ctgan\"",
+     "",
+     ""
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "pyproject.toml": [
+   "  \"sdv>=1.15.0\""
+  ]
+ }
+}

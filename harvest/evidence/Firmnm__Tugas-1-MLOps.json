@@ -1,0 +1,126 @@
+{
+ "repo": "Firmnm/Tugas-1-MLOps",
+ "disk_kb": 24615,
+ "method": "partial_clone",
+ "tree_files": 34,
+ "status": "ok",
+ "readme": "# MLOps Personality Classification Project 🧠\n\nA comprehensive MLOps implementation for personality classification using machine learning with complete monitoring, versioning, and deployment pipeline.\n\n## 🎯 Project Overview\n\nThis project implements a full MLOps pipeline for personality classification based on behavioral features. The system includes:\n\n- **Machine Learning Model**: Random Forest classifier for personality prediction\n- **Data Management**: Data versioning with DVC and synthetic data generation\n- **Experiment Tracking**: MLflow for model versioning and metrics tracking  \n- **Monitoring**: Real-time model performance and data drift monitoring\n- **Deployment**: Containerized application with Gradio interface\n- **CI/CD**: Automated retraining pipeline\n\n## 🏗️ Architecture\n\n```\n┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐\n│   Data Source   │───▶│  Data Pipeline  │───▶│   ML Pipeline   │\n│                 │    │   (DVC + ETL)   │    │ (Train/Retrain)│\n└─────────────────┘    └─────────────────┘    └─────────────────┘\n                                                       │\n┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐\n│   Monitoring    │◀───│   Deployment    │◀───│  Model Registry │\n│ (Drift + Perf)  │    │ (Gradio + API)  │    │    (MLflow)     │\n└─────────────────┘    └─────────────────┘    └─────────────────┘\n```\n\n## � Dataset\n\n**Personality Dataset**: Behavioral features for personality type classification\n- **Features**: 12 behavioral indicators (social habits, preferences, etc.)\n- **Target**: Personality types (Extrovert/Introvert)\n- **Size**: ~1000 samples\n- **Format**: CSV with numerical and categorical features\n\n### Features Description:\n- `Time_spent_Alone`: Hours spent alone per day\n- `Social_event_attendance`: Frequency of social events\n- `Going_outside`: Outdoor activity frequency\n- `Friends_circle_size`: Number of close friends\n- `Stage_fear`: Public speaking anxiety (Yes/No)\n- `Drained_after_socializing`: Post-social energy level (Yes/No)\n- And more...\n\n## 🚀 Quick Start\n\n### Prerequisites\n- Python 3.11+\n- Docker & Docker Compose\n- Git\n\n### 1. Clone Repository\n```bash\ngit clone https://github.com/Firmnm/Tugas-1-MLOps.git\ncd Tugas-1-MLOps\n```\n\n### 2. Install Dependencies\n```bash\npip install -r requirements.txt\n```\n\n### 3. Data Setup (DVC)\n```bash\ndvc pull  # Download dataset from remote storage\n```\n\n### 4. Run Complete Pipeline\n```bash\n# Option 1: Docker Compose (Recommended)\ndocker-compose up --build\n\n# Option 2: Manual Setup\npython train.py          # Train model\npython monitoring.py &   # Start monitoring\npython App/app.py        # Launch Gradio app\n```\n\n## 📁 Project Structure\n\n```\n├── 📊 Data/\n│   ├── personality_datasert.csv.dvc    # Original dataset (DVC tracked)\n│   └── synthetic_ctgan_data.csv.dvc    # Synthetic data (DVC tracked)\n├── 🤖 Model/\n│   ├── personality_classifier.skops    # Trained model\n│   ├── label_encoder.skops             # Label encoder\n│   └── feature_names.skops             # Feature names\n├── 📱 App/\n│   └── app.py                          # Gradio web interface\n├── 📈 Results/\n│   ├── metrics.txt                     # Model performance metrics\n│   ├── data_exploration.png            # EDA visualizations\n│   └── model_evaluation.png            # Model evaluation plots\n├── 🔍 Monitoring/\n│   ├── monitoring.py                   # Performance monitoring\n│   ├── data_drift.py                   # Data drift detection\n│   └── prometheus.yml                  # Prometheus configuration\n├── 🐳 Docker/\n│   ├── Dockerfile                      # Main application container\n│   ├── Dockerfile.retrain              # Retraining container\n│   └── docker-compose.yml              # Multi-service orchestration\n├── 📋 Pipeline/\n│   ├── train.py                        # Model training script\n│   ├── predict.py                      # Inference script\n│   ├── retrain_api.py                  # Automated retraining API\n│   └── data_synthetic_generator.py     # Synthetic data generation\n├── 📓 Analysis/\n│   └── notebook.ipynb                  # Jupyter notebook with EDA & modeling\n├── ⚙️ Configuration/\n│   ├── dvc.yaml                        # DVC pipeline definition\n│   ├── dvc.lock                        # DVC lock file\n│   ├── requirements.txt                # Python dependencies\n│   └── adaptive_drift_config.json      # Drift detection config\n└── 📚 Documentation/\n    ├── README.md                       \n    └── report.md                       # Technical report\n```\n\n## 🔬 Model Performance\n\n| Metric | Value |\n|--------|-------|\n| **Accuracy** | 94.2% |\n| **Precision** | 93.8% |\n| **Recall** | 94.6% |\n| **F1-Score** | 94.2% |\n| **AUC-ROC** | 0.97 |\n\n### Model Details:\n- **Algorithm**: Random Forest Classifier\n- **Features**: 12 behavioral indicators\n- **Cross-validation**: 5-fold CV\n- **Hyperparameter Tuning**: GridSearchCV\n- **Feature Engineering**: StandardScaler normalization\n\n## 🛠️ MLOps Components\n\n### 1. **Data Version Control (DVC)**\n```bash\ndvc add Data/personality_datasert.csv\ndvc push  # Upload to remote storage\ndvc pull  # Download latest version\n```\n\n### 2. **Experiment Tracking (MLflow)**\n- Model versioning and registry\n- Metrics and parameter logging\n- Model comparison and selection\n- Artifact management\n\n### 3. **Data Drift Monitoring**\n- Statistical drift detection\n- Feature distribution monitoring\n- Automated alerts and retraining triggers\n- Performance degradation tracking\n\n### 4. **Automated Retraining**\n```bash\n# Trigger retraining when drift detected\ncurl -X POST http://localhost:8000/retrain\n```\n\n### 5. **Model Deployment**\n- Gradio web interface for user interaction\n- REST API for programmatic access\n- Docker containerization for scalability\n- Health checks and monitoring endpoints\n\n## 🔍 Monitoring & Observability\n\n### Data Drift Detection\n- **Method**: Statistical tests (KS test, Population Stability Index)\n- **Threshold**: Configurable drift sensitivity\n- **Action**: Automatic retraining trigger\n\n### Performance Monitoring\n- **Metrics**: Accuracy, prediction latency, throughput\n- **Visualization**: Grafana dashboards\n- **Alerting**: Prometheus-based alerts\n\n### Model Health Checks\n```bash\ncurl http://localhost:8000/health     # Service health\ncurl http://localhost:8000/metrics    # Performance metrics\ncurl http://localhost:8000/drift      # Drift status\n```\n\n## 🚀 Usage Examples\n\n### Web Interface (Gradio)\n1. Open http://localhost:7860\n2. Input behavioral features using sliders/dropdowns\n3. Click \"Predict Personality\" \n4. View prediction with confidence score\n\n### Python API\n```python\nimport requests\n\n# Prediction endpoint\ndata = {\n    \"Time_spent_Alone\": 5.0,\n    \"Social_event_attendance\": 3.0,\n    \"Going_outside\": 4.0,\n    # ... other features\n}\n\nresponse = requests.post(\"http://localhost:8000/predict\", json=data)\nprediction = response.json()\nprint(f\"Personality: {prediction['personality']}\")\nprint(f\"Confidence: {prediction['confidence']:.2%}\")\n```\n\n### Jupyter Notebook\n```python\n# Load the trained model\nimport skops.io as sio\nmodel = sio.load(\"Model/personality_classifier.skops\")\n\n# Make predictions\nimport pandas as pd\nfeatures = pd.DataFrame([{\n    \"Time_spent_Alone\": 5.0,\n    \"Social_event_attendance\": 3.0,\n    # ... other features\n}])\n\nprediction = model.predict(features)\nprobability = model.predict_proba(features)\n```\n\n## 🧪 Development Workflow\n\n### 1. **Data Preparation**\n```bash\npython data_synthetic_generator.py  # Generate synthetic data\ndvc add Data/new_data.csv           # Version new data\ndvc push                            # Upload to remote\n```\n\n### 2. **Model Development**\n```bash\n# Experiment in Jupyter\njupyter notebook notebook.ipynb\n\n# Train new model version\npython train.py\n\n# Compare models in MLflow UI\nmlflow ui\n```\n\n### 3. **Testing & Validation**\n```bash\npython predict.py --test          # Test inference\npython monitoring.py --validate   # Check monitoring\n```\n\n### 4. **Deployment**\n```bash\ndocker-compose build              # Build containers\ndocker-compose up -d              # Deploy services\n```\n\n## 📋 Configuration\n\n### Environment Variables\n```bash\n# MLflow Configuration\nMLFLOW_TRACKING_URI=http://localhost:5000\nMLFLOW_EXPERIMENT_NAME=personality_classification\n\n# Monitoring Configuration  \nDRIFT_THRESHOLD=0.1\nMONITORING_INTERVAL=3600  # seconds\n\n# Application Configuration\nGRADIO_PORT=7860\nAPI_PORT=8000\n```\n\n### DVC Configuration\n```yaml\n# .dvc/config\n[core]\n    remote = myremote\n['remote \"myremote\"']\n    url = s3://your-bucket/dvc-storage\n```\n\n",
+ "hits": {
+  "st": [
+   {
+    "file": "data_synthetic_generator.py",
+    "line": 13,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from scipy import stats",
+     "",
+     "# Try to import SDV for CTGAN, fallback if not available",
+     "try:",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    CTGAN_AVAILABLE = True",
+     "except ImportError:",
+     "    CTGAN_AVAILABLE = False"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "data_synthetic_generator.py",
+    "line": 14,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "# Try to import SDV for CTGAN, fallback if not available",
+     "try:",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    CTGAN_AVAILABLE = True",
+     "except ImportError:",
+     "    CTGAN_AVAILABLE = False",
+     "    print(\"SDV not available, will use statistical sampling\")"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "data_synthetic_generator.py",
+    "line": 13,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from scipy import stats",
+     "",
+     "# Try to import SDV for CTGAN, fallback if not available",
+     "try:",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    CTGAN_AVAILABLE = True",
+     "except ImportError:",
+     "    CTGAN_AVAILABLE = False"
+    ]
+   },
+   {
+    "file": "data_synthetic_generator.py",
+    "line": 14,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "# Try to import SDV for CTGAN, fallback if not available",
+     "try:",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    CTGAN_AVAILABLE = True",
+     "except ImportError:",
+     "    CTGAN_AVAILABLE = False",
+     "    print(\"SDV not available, will use statistical sampling\")"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "data_synthetic_generator.py",
+    "line": 13,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "from scipy import stats",
+     "",
+     "# Try to import SDV for CTGAN, fallback if not available",
+     "try:",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    CTGAN_AVAILABLE = True",
+     "except ImportError:",
+     "    CTGAN_AVAILABLE = False"
+    ]
+   },
+   {
+    "file": "data_synthetic_generator.py",
+    "line": 179,
+    "text": "synthesizer = CTGANSynthesizer(metadata, epochs=100, verbose=False)",
+    "context": [
+     "                metadata = SingleTableMetadata()",
+     "                metadata.detect_from_dataframe(self.original_data)",
+     "                ",
+     "                # Initialize and train CTGAN",
+     "                synthesizer = CTGANSynthesizer(metadata, epochs=100, verbose=False)",
+     "                synthesizer.fit(self.original_data)",
+     "                ",
+     "                # Generate synthetic data",
+     "                synthetic_data = synthesizer.sample(num_rows=n_samples)"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv>=1.0.0"
+  ]
+ }
+}

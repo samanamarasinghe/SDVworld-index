@@ -1,0 +1,189 @@
+{
+ "repo": "Promess02/OptimAIze",
+ "disk_kb": 22720,
+ "method": "partial_clone",
+ "tree_files": 71,
+ "status": "ok",
+ "readme": "# Event-Driven Multi-Agent ML System\n\nThis system implements an event-driven architecture with multiple AI agents for demand forecasting, inventory management, and dynamic pricing.\n\n## Architecture Overview\n\nThe system consists of:\n\n### Core Services\n1. **Training Service** - Asynchronous XGBoost model training for all products\n2. **Orchestrator** - Coordinates agent workflows and CDC event distribution\n3. **Demand Agent** - Forecasts product demand using trained ML models\n4. **Inventory Agent** - Optimizes stock levels based on demand predictions\n5. **Pricing Agent** - Dynamically adjusts prices based on inventory levels\n\n### Infrastructure\n- **Kafka** - Message broker for event streaming\n- **Redis** (4 instances) - Separate caches for each service/agent\n- **Neo4j** - Graph database for reasoning traces and data provenance\n- **SQLite** - Main transactional database\n\n## Getting Started\n\n### Prerequisites\n- Docker & Docker Compose\n- Python 3.11+\n\n### Setup\n\n1. **Create the database**:\n```bash\npython create_db.py\n```\n\n2. **Start all services**:\n```bash\ndocker-compose up --build\n```\n\nThis will start:\n- Zookeeper (port 2181)\n- Kafka (port 9092)\n- Neo4j (ports 7474, 7687)\n- Redis instances (ports 6379-6382)\n- Training Service\n- Orchestrator\n- Demand Agent (HTTP: 8001)\n- Inventory Agent (HTTP: 8002)\n- Pricing Agent (HTTP: 8003)\n\n### Usage\n\n#### HTTP Endpoints\n\n**Demand Prediction**:\n```bash\ncurl -X POST http://localhost:8001/predict \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"product_id\": \"PROD001\", \"horizon_days\": 60}'\n```\n\n**Inventory Order**:\n```bash\ncurl -X POST http://localhost:8002/order \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"product_id\": \"PROD001\", \"predicted_demand\": 500}'\n```\n\n**Dynamic Pricing**:\n```bash\ncurl -X POST http://localhost:8003/price \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"product_id\": \"PROD001\", \"inventory_level\": 250}'\n```\n\n**Health Checks**:\n```bash\ncurl http://localhost:8001/health\ncurl http://localhost:8002/health\ncurl http://localhost:8003/health\n```\n\n#### Simulating CDC Events\n\nRun the CDC simulator to trigger automatic retraining and agent workflows:\n\n```bash\n# Install dependencies\npip install confluent-kafka\n\n# Run simulator\npython shared/cdc_simulator.py\n```\n\nThis will:\n1. Simulate sales transactions\n2. Emit `SalesCreated` CDC events to Kafka\n3. Trigger model retraining in Training Service\n4. Cascade predictions through all agents\n\n## Event Flow\n\n```\nDatabase Change (Sale) \n  → CDC Event (Kafka: database_changes)\n  → Training Service retrains models\n  → Training Completed Event\n  → Orchestrator triggers agent workflows\n  → Demand Agent makes prediction\n  → Inventory Agent calculates order\n  → Pricing Agent adjusts price\n  → All decisions logged to Neo4j\n```\n\n## Kafka Topics\n\n- `database_changes` - CDC events from database\n- `training_completed` - Model training completion notifications\n- `demand_predictions` - Demand forecasts from Demand Agent\n- `inventory_updates` - Inventory decisions from Inventory Agent\n- `price_updates` - Price changes from Pricing Agent\n\n## Neo4j Reasoning Traces\n\nAccess Neo4j Browser at http://localhost:7474 (user: neo4j, password: password)\n\nQuery reasoning traces:\n```cypher\n// View all predictions for a product\nMATCH (p:Product {id: \"PROD001\"})-[:HAS_PREDICTION]->(d:DemandPrediction)\nRETURN p, d ORDER BY d.timestamp DESC\n\n// View complete decision chain\nMATCH path = (p:Product)-[:HAS_PREDICTION]->()-[:HAS_ORDER]->()-[:HAS_PRICE]->()\nRETURN path\n```\n\n## Redis Cache Structure\n\n- `model:{product_id}` - Trained XGBoost models\n- `prediction:{product_id}` - Cached demand predictions\n- `order:{product_id}` - Cached order decisions\n- `price:{product_id}` - Cached price decisions\n- `inventory:{product_id}` - Current inventory levels\n\n## Configuration\n\nEnvironment variables (set in docker-compose.yml):\n\n- `KAFKA_BOOTSTRAP_SERVERS` - Kafka broker address\n- `REDIS_HOST` - Redis instance hostname\n- `NEO4J_URI` - Neo4j connection URI\n- `DB_PATH` - Path to SQLite database\n- `MODELS_PATH` - Directory for saved models\n\n## Monitoring\n\nView logs for each service:\n```bash\ndocker-compose logs -f training_service\ndocker-compose logs -f orchestrator\ndocker-compose logs -f demand_agent\ndocker-compose logs -f inventory_agent\ndocker-compose logs -f pricing_agent\n```\n\n## Development\n\n### Adding New Agents\n\n1. Create agent directory in `agents/`\n2. Implement FastAPI HTTP endpoints\n3. Add Kafka consumer for event-driven triggers\n4. Log reasoning to Neo4j\n5. Cache state in Redis\n6. Add to docker-compose.yml\n\n### Model Retraining\n\nModels are retrained automatically on CDC events. To trigger manual retraining:\n\n```python\nfrom confluent_kafka import Producer\nimport json\n\nproducer = Producer({'bootstrap.servers': 'localhost:9092'})\nevent = {\n    \"event_type\": \"SalesCreated\",\n    \"timestamp\": \"2024-01-01T00:00:00\",\n    \"data\": {\"product_id\": \"PROD001\", \"sales\": 100}\n}\nproducer.produce('database_changes', value=json.dumps(event).encode('utf-8'))\nproducer.flush()\n```\n\n## Technology Stack\n\n- **Framework**: FastAPI (REST) + Kafka (async messaging)\n- **ML**: XGBoost (per-product demand forecasting)\n- **Agents**: CrewAI (multi-agent orchestration)\n- **Cache**: Redis (state management)\n- **Graph DB**: Neo4j (reasoning traces)\n- **Database**: SQLite (transactions)\n- **Container**: Docker + docker-compose\n\n## Architecture Diagram\n\n```\n┌─────────────────────────────────────────────────────────────────┐\n│                    KAFKA MESSAGE BROKER                          │\n├─────────────────────────────────────────────────────────────────┤\n│  Topics:                                                         │\n│  - database_changes (CDC events)                                │\n│  - demand_predictions (from Demand Agent)                       │\n│  - inventory_updates (from Inventory Agent)                     │\n│  - price_updates (from Pricing Agent)                           │\n│  - training_completed (from Training Service)                   │\n└─────────────────────────────────────────────────────────────────┘\n         ↑                    ↑                    ↑\n         │                    │                    │\n    ┌────┴────┐          ┌────┴────┐          ┌────┴────┐\n    │  Demand │          │Inventory│          │ Pricing │\n    │  Agent  │          │  Agent  │          │  Agent  │\n    │(FastAPI)│          │(FastAPI)│          │(FastAPI)│\n    │  :8001  │          │  :8002  │          │  :8003  │\n    └────┬────┘          └────┬────┘          └────┬────┘\n         │                    │                    │\n    ┌────┴────────────────────┴────────────────────┴────┐\n    │              REDIS CACHE (4 instances)           │\n    │  - Cached predictions                            │\n    │  - Agent states                                  │\n    │  - Model metadata                                │\n    └────────────────────────────────────────────────────┘\n         │\n    ┌────┴──────────────────────────────────────────────┐\n    │        TRAINING SERVICE (Async Workers)           │\n    │  - Retrains XGBoost models on CDC events          │\n    │  - Stores models in Redis + /models               │\n    │  - Publishes training_completed events            │\n    └────────────────────────────────────────────────────┘\n         │\n    ┌────┴──────────────────────────────────────────────┐\n    │              NEO4J CONTEXT GRAPHS                 │\n    │  - Agent reasoning traces                         │\n    │  - Decision trails (Data Provenance)              │\n    │  - Product relationships                          │\n    └────────────────────────────────────────────────────┘\n         │\n    ┌────┴──────────────────────────────────────────────┐\n    │            SQLITE3 MAIN DATABASE                  │\n    │  - sales_aggregated (historical data)             │\n    │  - inventory (product stock levels)               │\n    └────────────────────────────────────────────────────┘\n```\n\n## License\n\nMIT\n",
+ "hits": {
+  "st": [
+   {
+    "file": "generate_ecommerce_synthetic.py",
+    "line": 22,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "import pandas as pd",
+     "",
+     "try:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "except ImportError as exc:",
+     "    raise SystemExit(",
+     "        \"Missing dependency: sdv. Install with `pip install sdv` and rerun.\"",
+     "    ) from exc"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "generate_ecommerce_synthetic.py",
+    "line": 21,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "",
+     "try:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "except ImportError as exc:",
+     "    raise SystemExit(",
+     "        \"Missing dependency: sdv. Install with `pip install sdv` and rerun.\""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "generate_ecommerce_synthetic.py",
+    "line": 21,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "",
+     "try:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "except ImportError as exc:",
+     "    raise SystemExit(",
+     "        \"Missing dependency: sdv. Install with `pip install sdv` and rerun.\""
+    ]
+   },
+   {
+    "file": "generate_ecommerce_synthetic.py",
+    "line": 22,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "import pandas as pd",
+     "",
+     "try:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "except ImportError as exc:",
+     "    raise SystemExit(",
+     "        \"Missing dependency: sdv. Install with `pip install sdv` and rerun.\"",
+     "    ) from exc"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "generate_ecommerce_synthetic.py",
+    "line": 22,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "import pandas as pd",
+     "",
+     "try:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "except ImportError as exc:",
+     "    raise SystemExit(",
+     "        \"Missing dependency: sdv. Install with `pip install sdv` and rerun.\"",
+     "    ) from exc"
+    ]
+   },
+   {
+    "file": "generate_ecommerce_synthetic.py",
+    "line": 135,
+    "text": "ctgan = CTGANSynthesizer(metadata, epochs=epochs, verbose=False, enforce_min_max_values=True)",
+    "context": [
+     ") -> Tuple[pd.DataFrame, str, Dict[str, float]]:",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(data=train_df)",
+     "",
+     "    ctgan = CTGANSynthesizer(metadata, epochs=epochs, verbose=False, enforce_min_max_values=True)",
+     "    ctgan.fit(train_df)",
+     "    ctgan_samples = ctgan.sample(num_rows=n_samples)",
+     "",
+     "    tvae = TVAESynthesizer(metadata, epochs=epochs, enforce_min_max_values=True)"
+    ]
+   },
+   {
+    "file": "generate_ecommerce_synthetic.py",
+    "line": 196,
+    "text": "ctgan = CTGANSynthesizer(metadata, epochs=25, verbose=False, enforce_min_max_values=True)",
+    "context": [
+     "    metadata = SingleTableMetadata()",
+     "    train_inv = source_inventory_df[[\"current_stock\", \"price\"]].copy()",
+     "    metadata.detect_from_dataframe(train_inv)",
+     "",
+     "    ctgan = CTGANSynthesizer(metadata, epochs=25, verbose=False, enforce_min_max_values=True)",
+     "    ctgan.fit(train_inv)",
+     "    inv_ctgan = ctgan.sample(num_rows=target_products)",
+     "",
+     "    tvae = TVAESynthesizer(metadata, epochs=25, enforce_min_max_values=True)"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "generate_ecommerce_synthetic.py",
+    "line": 22,
+    "text": "from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "import pandas as pd",
+     "",
+     "try:",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    from sdv.single_table import CTGANSynthesizer, TVAESynthesizer",
+     "except ImportError as exc:",
+     "    raise SystemExit(",
+     "        \"Missing dependency: sdv. Install with `pip install sdv` and rerun.\"",
+     "    ) from exc"
+    ]
+   },
+   {
+    "file": "generate_ecommerce_synthetic.py",
+    "line": 139,
+    "text": "tvae = TVAESynthesizer(metadata, epochs=epochs, enforce_min_max_values=True)",
+    "context": [
+     "    ctgan = CTGANSynthesizer(metadata, epochs=epochs, verbose=False, enforce_min_max_values=True)",
+     "    ctgan.fit(train_df)",
+     "    ctgan_samples = ctgan.sample(num_rows=n_samples)",
+     "",
+     "    tvae = TVAESynthesizer(metadata, epochs=epochs, enforce_min_max_values=True)",
+     "    tvae.fit(train_df)",
+     "    tvae_samples = tvae.sample(num_rows=n_samples)",
+     "",
+     "    ctgan_score = similarity_score(train_df, ctgan_samples, [\"sales\", \"price\", \"stock\"])"
+    ]
+   },
+   {
+    "file": "generate_ecommerce_synthetic.py",
+    "line": 200,
+    "text": "tvae = TVAESynthesizer(metadata, epochs=25, enforce_min_max_values=True)",
+    "context": [
+     "    ctgan = CTGANSynthesizer(metadata, epochs=25, verbose=False, enforce_min_max_values=True)",
+     "    ctgan.fit(train_inv)",
+     "    inv_ctgan = ctgan.sample(num_rows=target_products)",
+     "",
+     "    tvae = TVAESynthesizer(metadata, epochs=25, enforce_min_max_values=True)",
+     "    tvae.fit(train_inv)",
+     "    inv_tvae = tvae.sample(num_rows=target_products)",
+     "",
+     "    score_ctgan = similarity_score(train_inv, inv_ctgan, [\"current_stock\", \"price\"])"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

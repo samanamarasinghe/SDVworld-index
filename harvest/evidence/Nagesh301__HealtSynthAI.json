@@ -1,0 +1,159 @@
+{
+ "repo": "Nagesh301/HealtSynthAI",
+ "disk_kb": 495,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# 🏥 AI-Generated Synthetic Healthcare Data\n\nA privacy-preserving synthetic healthcare data generation system using CTGAN (Conditional Tabular GAN). This project generates realistic synthetic patient records for research, testing, and education while maintaining patient privacy.\n\n## 📋 Project Overview\n\nThis mini-project implements a complete pipeline for generating synthetic healthcare data:\n\n- **Data Generation**: Create sample healthcare datasets with realistic patient demographics and vitals\n- **Privacy-Preserving**: Train CTGAN models to generate synthetic data that preserves statistical properties without copying real patient records\n- **Evaluation**: Comprehensive quality and privacy metrics including KS-tests, distribution comparisons, and membership inference analysis\n- **Image GAN Add-on**: Optional DCGAN pipeline for grayscale medical-style imagery (X-ray/MRI mock-ups)\n- **Interactive Interface**: Streamlit web application for easy data generation and analysis\n- **Jupyter Demo**: Complete end-to-end workflow demonstration\n\n## ✨ Features\n\n- 🎯 CTGAN-based synthetic data generation\n- 📊 Interactive Streamlit dashboard\n- 🔒 Privacy evaluation metrics\n- 📈 Statistical similarity analysis (KS-test, JS-divergence)\n- 📓 Jupyter notebook demo\n- 🧪 Comprehensive unit tests\n- 🐳 Docker support\n- 🚀 CI/CD pipeline\n\n## 📁 Project Structure\n\n```\n.\n├── data/                       # Data directory\n│   ├── real.csv               # Original healthcare data\n│   ├── real_processed.csv     # Preprocessed data\n│   └── synthetic.csv          # Generated synthetic data\n├── models/                     # Trained models\n│   └── ctgan.pkl              # CTGAN model\n├── notebooks/                  # Jupyter notebooks\n│   └── demo.ipynb             # End-to-end demo\n├── src/                        # Source code\n│   ├── __init__.py\n│   ├── preprocess.py          # Data preprocessing\n│   ├── train.py               # CTGAN training\n│   ├── generate.py            # Synthetic data generation\n│   ├── evaluate.py            # Evaluation metrics\n│   └── utils.py               # Utility functions\n├── tests/                      # Unit tests\n│   ├── test_preprocess.py\n│   ├── test_generate.py\n│   └── test_evaluate.py\n├── reports/                    # Evaluation reports\n│   ├── plots/                 # Visualization charts\n│   ├── ks_results.json        # KS-test results\n│   ├── js_results.json        # JS-divergence results\n│   └── privacy_results.json   # Privacy metrics\n├── scripts/                    # Utility scripts\n│   └── generate_sample_real.py\n├── app.py                      # Streamlit application\n├── Dockerfile                  # Docker configuration\n├── Makefile                    # Build automation\n├── pyproject.toml             # Python dependencies\n└── README.md                   # This file\n```\n\n## 🚀 Quick Start\n\n### Option 1: Interactive Streamlit App\n\n```bash\n# Install dependencies\npip install -e .\n\n# Run the Streamlit app\nstreamlit run app.py --server.port 5000\n```\n\nThen open your browser to `http://localhost:5000` and follow the tabs:\n1. **Data**: Generate or upload healthcare data\n2. **Train Model**: Train CTGAN on your data\n3. **Generate Synthetic**: Create synthetic records\n4. **Evaluation**: Analyze quality and privacy\n\n### Option 2: Command Line Interface\n\n```bash\n# 1. Install dependencies\npip install -e .\n\n# 2. Generate sample data\npython scripts/generate_sample_real.py\n\n# 3. Preprocess data\npython -m src.preprocess --input data/real.csv --output data/real_processed.csv\n\n# 4. Train CTGAN model\npython -m src.train --data data/real_processed.csv --out models/ctgan.pkl --epochs 100\n\n# 5. Generate synthetic data\npython -m src.generate --model models/ctgan.pkl --n 100 --out data/synthetic.csv\n\n# 6. Evaluate results\npython -m src.evaluate --real data/real_processed.csv --synth data/synthetic.csv --out reports/\n```\n\n### Option 2b: Image GAN Pipeline (optional)\n\nThe image workflow is independent from the tabular CTGAN setup and requires PyTorch. Install the optional dependency set:\n\n```bash\npip install -e .[image]\n```\n\nThen:\n\n```bash\n# 1. Generate toy grayscale images (acts as stand-in for medical scans)\npython scripts/generate_sample_images.py --n 400 --size 64 --out data/images/real\n\n# 2. Train a lightweight DCGAN\npython -m src.image_gan train --data data/images/real --out models/image_gan --epochs 20\n\n# 3. Generate synthetic images\npython -m src.image_gan generate --model models/image_gan/image_gan.pt --out data/images/synthetic --n 32\n```\n\nOutputs:\n- Training checkpoints/history in `models/image_gan/`\n- Synthetic PNGs in `data/images/synthetic/`\n- Progress grids in `models/image_gan/image_samples/`\n\n### Option 3: Using Makefile\n\n```bash\nmake install      # Install dependencies\nmake data         # Generate sample data\nmake preprocess   # Preprocess data\nmake train        # Train model (100 epochs)\nmake generate     # Generate synthetic data\nmake evaluate     # Run evaluation\nmake test         # Run unit tests\nmake image-data   # Create toy grayscale dataset\nmake image-train  # Train DCGAN (requires torch)\nmake image-gen    # Generate GAN images\n```\n\n### Option 4: Jupyter Notebook Demo\n\n```bash\n# Start Jupyter Lab\njupyter lab\n\n# Open notebooks/demo.ipynb and run all cells\n```\n\n### Option 5: Docker\n\n```bash\n# Build Docker image\ndocker build -t synthetic-healthcare .\n\n# Run container\ndocker run -it -p 5000:5000 synthetic-healthcare\n\n# Or use Make\nmake docker-build\nmake docker-run\n```\n\n## 📊 Dataset Schema\n\nThe healthcare dataset includes the following fields:\n\n| Field | Type | Description | Range |\n|-------|------|-------------|-------|\n| `patient_id` | string | Patient identifier (removed in processing) | P0000-P9999 |\n| `age` | integer | Patient age | 18-90 |\n| `gender` | categorical | Patient gender | Male, Female |\n| `diagnosis` | categorical | Primary diagnosis | Diabetes, Hypertension, Healthy, COPD |\n| `sbp` | integer | Systolic blood pressure | 90-200 mmHg |\n| `dbp` | integer | Diastolic blood pressure | 50-120 mmHg |\n| `glucose` | float | Blood glucose level | 60-400 mg/dL |\n| `heart_rate` | integer | Heart rate | 50-130 bpm |\n| `length_of_stay` | integer | Hospital stay duration | 0-30 days |\n\n## 🔍 Evaluation Metrics\n\n### Statistical Similarity\n- **KS-Test**: Kolmogorov-Smirnov test for numeric features (p-value > 0.05 indicates similar distributions)\n- **JS-Divergence**: Jensen-Shannon divergence for categorical features (< 0.1 indicates similarity)\n\n### Privacy Metrics\n- **Exact Match Count**: Number of synthetic records identical to real records (0 is ideal)\n- **Membership Inference**: AUC score for distinguishing training vs holdout data (≤ 0.6 is good)\n\n## 🧪 Running Tests\n\n```bash\n# Run all tests\npytest -v tests/\n\n# Run specific test file\npytest tests/test_preprocess.py\n\n# Run with coverage\npytest --cov=src tests/\n```\n\n## 📝 Usage Examples\n\n### Customize Training Parameters\n\n```python\nfrom src.train import train_ctgan\nimport pandas as pd\n\ndf = pd.read_csv('data/real_processed.csv')\nmodel = train_ctgan(df, 'models/custom_model.pkl', epochs=500)\n```\n\n### Generate Different Sample Sizes\n\n```python\nfrom src.generate import generate\n\n# Generate 500 synthetic records\ngenerate('models/ctgan.pkl', n_samples=500, out_csv='data/synthetic_500.csv')\n```\n\n### Image GAN Usage\n\n```python\nfrom src.image_gan import TrainConfig, train_gan, generate_images\n\nconfig = TrainConfig(data_dir=\"data/images/real\", output_dir=\"models/image_gan\", epochs=5)\ntrain_gan(config)\ngenerate_images(\"models/image_gan/image_gan.pt\", \"data/images/synthetic\", num_images=10)\n```\n\n### Custom Data Analysis\n\n```python\nfrom src.evaluate import compare_distributions, privacy_checks\nimport pandas as pd\n\nreal = pd.read_csv('data/real_processed.csv')\nsynth = pd.read_csv('data/synthetic.csv')\n\n# Run evaluations\ndist_results = compare_distributions(real, synth, 'reports')\nprivacy_results = privacy_checks(real, synth, 'reports')\n```\n\n## 🎓 Educational Use\n\nThis project is designed for:\n- **Students**: Learning about synthetic data generation and GANs\n- **Researchers**: Testing algorithms without real patient data\n- **Educators**: Teaching privacy-preserving machine learning\n- **Developers**: Building healthcare applications with test data\n\n## 📚 Dependencies\n\n- Python 3.9+\n- pandas\n- numpy\n- scikit-learn\n- matplotlib\n- seaborn\n- scipy\n- sdv (Synthetic Data Vault)\n- joblib\n- streamlit\n- jupyterlab\n- pytest\n\n## 🔧 Configuration\n\nTraining parameters can be adjusted in the command line or Streamlit interface:\n\n- **Epochs**: 50-100 for demo, 300-500 for production\n- **Sample Size**: 50-1000+ records\n- **Preprocessing**: Customize outlier handling and feature engineering\n\n## 🐛 Troubleshooting\n\n### Training takes too long\n- Reduce epochs (try 50 for testing)\n- Use smaller dataset\n- Training time is ~1-2 minutes per 100 epochs on CPU\n\n### Memory issues\n- Reduce batch size in CTGAN configuration\n- Use smaller dataset\n- Close other applications\n\n### Dependencies not installing\n```bash\npip install --upgrade pip\npip install -e . --no-cache-dir\n```\n\n## 📄 License\n\nThis project is for educational purposes. Sample data is synthetic and does not contain real patient information.\n\n## 🤝 Contributing\n\n1. Fork the repository\n2. Create a feature branch\n3. Make your changes\n4. Run tests: `pytest tests/`\n5. Submit a pull request\n\n## 📧 Contact\n\nFor questions or issues, please open a GitHub issue.\n\n## 🎯 Acceptance Criteria\n\n- ✅ Generate 100 synthetic records matching schema\n- ✅ No exact row matches between real and synthetic data\n- ✅ KS-test results available in `reports/ks_results.json`\n- ✅ Visualization plots in `reports/plots/`\n- ✅ All unit tests pass\n- ✅ Notebook runs end-to-end\n- ✅ Streamlit app functional\n\n## 🚀 Future Enhancements\n\n- [ ] Support for time-series healthcare data\n- [ ] Additional synthetic data models (TVAE, Gaussian Copula)\n- [ ] Differential privacy guarantees\n- [ ] Advanced privacy metrics (k-anonymity, l-diversity)\n- [ ] API endpoint for synthetic data generation\n- [ ] Multi-table relational data synthesis\n\n---\n\n**Note**: This is a demonstration project using synthetic data. Always consult with medical and privacy experts before using synthetic data in production healthcare applications.\n",
+ "hits": {
+  "st": [
+   {
+    "file": "src/train.py",
+    "line": 10,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "",
+     "try:",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "except ImportError:  # pragma: no cover - exercised when SDV isn't installed",
+     "    CTGANSynthesizer = None",
+     "    SingleTableMetadata = None"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "src/train.py",
+    "line": 11,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "",
+     "try:",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "except ImportError:  # pragma: no cover - exercised when SDV isn't installed",
+     "    CTGANSynthesizer = None",
+     "    SingleTableMetadata = None",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "src/train.py",
+    "line": 10,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "",
+     "try:",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "except ImportError:  # pragma: no cover - exercised when SDV isn't installed",
+     "    CTGANSynthesizer = None",
+     "    SingleTableMetadata = None"
+    ]
+   },
+   {
+    "file": "src/train.py",
+    "line": 11,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import pandas as pd",
+     "",
+     "try:",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "except ImportError:  # pragma: no cover - exercised when SDV isn't installed",
+     "    CTGANSynthesizer = None",
+     "    SingleTableMetadata = None",
+     ""
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "src/train.py",
+    "line": 10,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "import numpy as np",
+     "import pandas as pd",
+     "",
+     "try:",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "except ImportError:  # pragma: no cover - exercised when SDV isn't installed",
+     "    CTGANSynthesizer = None",
+     "    SingleTableMetadata = None"
+    ]
+   },
+   {
+    "file": "src/train.py",
+    "line": 13,
+    "text": "CTGANSynthesizer = None",
+    "context": [
+     "try:",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "except ImportError:  # pragma: no cover - exercised when SDV isn't installed",
+     "    CTGANSynthesizer = None",
+     "    SingleTableMetadata = None",
+     "",
+     "",
+     "@dataclass"
+    ]
+   },
+   {
+    "file": "src/train.py",
+    "line": 69,
+    "text": "if CTGANSynthesizer and SingleTableMetadata:",
+    "context": [
+     "def train_ctgan(df, model_out_path, epochs=300, seed=42):",
+     "    print(f\"Training CTGAN with {epochs} epochs...\")",
+     "    print(f\"Data shape: {df.shape}\")",
+     "",
+     "    if CTGANSynthesizer and SingleTableMetadata:",
+     "        metadata = SingleTableMetadata()",
+     "        metadata.detect_from_dataframe(df)",
+     "        synthesizer = CTGANSynthesizer(",
+     "            metadata,"
+    ]
+   },
+   {
+    "file": "src/train.py",
+    "line": 72,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "",
+     "    if CTGANSynthesizer and SingleTableMetadata:",
+     "        metadata = SingleTableMetadata()",
+     "        metadata.detect_from_dataframe(df)",
+     "        synthesizer = CTGANSynthesizer(",
+     "            metadata,",
+     "            epochs=epochs,",
+     "            verbose=True",
+     "        )"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "pyproject.toml": [
+   "    \"sdv>=1.2.0\",",
+   "ctgan = [{ index = \"pytorch-cpu\", marker = \"platform_system == 'Linux'\" }]",
+   "sdmetrics = [{ index = \"pytorch-cpu\", marker = \"platform_system == 'Linux'\" }]"
+  ]
+ }
+}

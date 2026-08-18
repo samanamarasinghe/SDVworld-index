@@ -1,0 +1,497 @@
+{
+ "repo": "ashisha2601/Credit-Risk-Modelling-Reinforcement-Learning",
+ "disk_kb": 241,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Privacy-Preserving Credit Risk Modeling with Synthetic Data\n\n## Project Overview\n\nThis project develops a three-stage pipeline for credit risk assessment in India's digital lending market while ensuring complete privacy compliance with DPDPA 2023 and RBI guidelines.\n\n**Stages:**\n1. **Synthetic Data Generation** - Generate high-fidelity credit datasets using Generative AI\n2. **Unsupervised Risk Profiling** - Discover natural borrower segments via clustering\n3. **Risk-Adjusted Deep RL** - Learn optimal lending policies through reinforcement learning\n\n## Quick Start - Hybrid Approach (Recommended)\n\nThe hybrid approach combines Home-Credit-Risk dataset structure with RBI/Indian market priors:\n\n```bash\n# 1. Install dependencies\npip install -r requirements.txt\n\n# 2. Download Home-Credit-Risk dataset (optional but recommended)\npython src/download_kaggle.py\n\n# 3. Update RBI priors (edit config/priors_template.yaml)\n\n# 4. Generate synthetic data\npython run_hybrid_approach.py\n\n# OR use the notebook\njupyter notebook notebooks/01_hybrid_synthetic_generation.ipynb\n```\n\nSee `HYBRID_APPROACH_GUIDE.md` for detailed steps.\n\n## Data Download Options\n\n### ✅ Easy Downloads (Do This First)\n\n**Option 1: Home_credit_default_risk** (Recommended)\n```bash\n# Install Kaggle CLI\npip install kaggle\n\n# Download Home Credit Default Risk (main dataset)\nkaggle competitions download -c home-credit-default-risk\n\n# Extract\nunzip home-credit-default-risk.zip -d data/\n```\n\n**Option 2: UCI Repository** (Quick baseline)\n```bash\n# Run download script\npython download_datasets.py\n```\n\n**Option 3: Generate from Scratch** (Most privacy-preserving)\n- Use statistical priors from RBI publications\n- Generate synthetic data directly using SDV\n- No real data download needed!\n\n### ⚠️ Realistic Expectations\n\n**Directly Downloadable:**\n- ✅ Kaggle datasets (requires free account)\n- ✅ UCI ML Repository datasets\n- ✅ Some data.gov.in datasets (varies)\n\n**Requires Manual Work:**\n- ⚠️ RBI DBIE - Interactive database, CSV export per query\n- ⚠️ NPCI Statistics - Dashboard only, no raw downloads\n- ⚠️ Census data - Excel files with multiple sheets\n\n**Reference Only:**\n- 📄 RBI Publications (PDFs) - Extract statistics manually\n- 📄 MFIN Reports (PDFs) - For microfinance priors\n\n## Project Structure\n\n```\nProjectSem5/\n├── data/                    # Downloaded datasets\n├── notebooks/               # Jupyter notebooks for each stage\n│   ├── 01_synthetic_gen.ipynb\n│   ├── 02_clustering.ipynb\n│   └── 03_rl_policy.ipynb\n├── src/                     # Source code modules\n├── config/                  # Configuration files\n├── download_datasets.py     # Dataset download script\n├── DATASET_DOWNLOAD_GUIDE.md  # Detailed download guide\n└── README.md               # This file\n```\n\n## Setup\n\n```bash\n# Create virtual environment\npython -m venv venv\nsource venv/bin/activate  # On Windows: venv\\Scripts\\activate\n\n# Install dependencies\npip install -r requirements.txt\n```\n\n## Review-1 Deliverables\n\n- [ ] Synthetic dataset (v0.1) with data card\n- [ ] Unsupervised clustering model (k-prototypes/GMM)\n- [ ] Basic RL policy (contextual bandit)\n- [ ] Privacy compliance memo\n- [ ] Three notebooks (one per stage)\n\n## Synthetic outputs and results (not in git)\n\nTo keep the repository light and avoid committing large files, all **synthetic datasets** and **visualisation outputs** are ignored via `.gitignore`:\n\n- `data/*.parquet`, `data/*.csv` – generated synthetic credit datasets (RBI priors-only, Home-Credit-Risk-only, Hybrid, etc.)\n- `results/*.png`, `results/*.csv`, `results/*.parquet`, `results/*.pptx` – clustering plots, evaluation reports, and the auto-generated `cluster_analysis.pptx`.\n\nYou can regenerate these locally by running:\n\n```bash\n# Hybrid CTGAN synthetic data (~200k rows)\npython run_hybrid_ctgan_pipeline.py\n\n# RBI priors-only and Home-Credit-Risk-only synthetic datasets\npython run_priors_only_rbi_synthetic.py\npython run_kaggle_only_ctgan_300k.py\n\n# Risk-based clustering on all synthetic datasets\npython run_credit_risk_clustering_all.py\n\n# Visualisations (cluster profiles, heatmaps, PCA, etc.)\npython run_visualize_risk_clusters_all.py\npython run_advanced_cluster_visualizations.py\n\n# Optional: build PowerPoint summary under results/cluster_analysis.pptx\npython build_cluster_analysis_ppt.py\n```\n\n## Contact\n\nFor questions about data sources or project structure, refer to `DATASET_DOWNLOAD_GUIDE.md`.\n\n",
+ "hits": {
+  "st": [
+   {
+    "file": "run_two_stage_priors_ctgan.py",
+    "line": 24,
+    "text": "from sdv.single_table import CTGANSynthesizer  # noqa: E402",
+    "context": [
+     "sys.path.append(str(project_root / \"src\"))",
+     "",
+     "from hybrid_synthetic_generator import HybridSyntheticGenerator  # noqa: E402",
+     "from sdv.metadata import SingleTableMetadata  # noqa: E402",
+     "from sdv.single_table import CTGANSynthesizer  # noqa: E402",
+     "",
+     "",
+     "def main(",
+     "    micro_n: int = 20_000,"
+    ]
+   },
+   {
+    "file": "PROJECT_ROADMAP.md",
+    "line": 132,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "```python",
+     "# File: src/synthetic_generator.py",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "import pandas as pd",
+     "import yaml",
+     "",
+     "class CreditSyntheticGenerator:"
+    ]
+   },
+   {
+    "file": "run_kaggle_only_ctgan_300k.py",
+    "line": 364,
+    "text": "from sdv.single_table import CTGANSynthesizer  # noqa: E402",
+    "context": [
+     "    print(f\"Prepared reference data shape: {reference_data.shape}\")",
+     "",
+     "    # Build metadata and CTGAN synthesizer manually so we can keep priors disabled",
+     "    from sdv.metadata import SingleTableMetadata  # noqa: E402",
+     "    from sdv.single_table import CTGANSynthesizer  # noqa: E402",
+     "",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(reference_data)",
+     ""
+    ]
+   },
+   {
+    "file": "src/hybrid_synthetic_generator.py",
+    "line": 12,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "import yaml",
+     "import random",
+     "from pathlib import Path",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "import warnings",
+     "warnings.filterwarnings('ignore')",
+     "",
+     "class HybridSyntheticGenerator:"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "run_two_stage_priors_ctgan.py",
+    "line": 23,
+    "text": "from sdv.metadata import SingleTableMetadata  # noqa: E402",
+    "context": [
+     "project_root = Path(__file__).parent",
+     "sys.path.append(str(project_root / \"src\"))",
+     "",
+     "from hybrid_synthetic_generator import HybridSyntheticGenerator  # noqa: E402",
+     "from sdv.metadata import SingleTableMetadata  # noqa: E402",
+     "from sdv.single_table import CTGANSynthesizer  # noqa: E402",
+     "",
+     "",
+     "def main("
+    ]
+   },
+   {
+    "file": "PROJECT_ROADMAP.md",
+    "line": 131,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "```python",
+     "# File: src/synthetic_generator.py",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "import pandas as pd",
+     "import yaml",
+     ""
+    ]
+   },
+   {
+    "file": "run_kaggle_only_ctgan_300k.py",
+    "line": 363,
+    "text": "from sdv.metadata import SingleTableMetadata  # noqa: E402",
+    "context": [
+     "    reference_data = generator.prepare_kaggle_data(max_rows=10000)",
+     "    print(f\"Prepared reference data shape: {reference_data.shape}\")",
+     "",
+     "    # Build metadata and CTGAN synthesizer manually so we can keep priors disabled",
+     "    from sdv.metadata import SingleTableMetadata  # noqa: E402",
+     "    from sdv.single_table import CTGANSynthesizer  # noqa: E402",
+     "",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(reference_data)"
+    ]
+   },
+   {
+    "file": "src/hybrid_synthetic_generator.py",
+    "line": 11,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import numpy as np",
+     "import yaml",
+     "import random",
+     "from pathlib import Path",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "import warnings",
+     "warnings.filterwarnings('ignore')",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "run_two_stage_priors_ctgan.py",
+    "line": 23,
+    "text": "from sdv.metadata import SingleTableMetadata  # noqa: E402",
+    "context": [
+     "project_root = Path(__file__).parent",
+     "sys.path.append(str(project_root / \"src\"))",
+     "",
+     "from hybrid_synthetic_generator import HybridSyntheticGenerator  # noqa: E402",
+     "from sdv.metadata import SingleTableMetadata  # noqa: E402",
+     "from sdv.single_table import CTGANSynthesizer  # noqa: E402",
+     "",
+     "",
+     "def main("
+    ]
+   },
+   {
+    "file": "run_two_stage_priors_ctgan.py",
+    "line": 24,
+    "text": "from sdv.single_table import CTGANSynthesizer  # noqa: E402",
+    "context": [
+     "sys.path.append(str(project_root / \"src\"))",
+     "",
+     "from hybrid_synthetic_generator import HybridSyntheticGenerator  # noqa: E402",
+     "from sdv.metadata import SingleTableMetadata  # noqa: E402",
+     "from sdv.single_table import CTGANSynthesizer  # noqa: E402",
+     "",
+     "",
+     "def main(",
+     "    micro_n: int = 20_000,"
+    ]
+   },
+   {
+    "file": "PROJECT_ROADMAP.md",
+    "line": 131,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "```python",
+     "# File: src/synthetic_generator.py",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "import pandas as pd",
+     "import yaml",
+     ""
+    ]
+   },
+   {
+    "file": "PROJECT_ROADMAP.md",
+    "line": 132,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "```python",
+     "# File: src/synthetic_generator.py",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "import pandas as pd",
+     "import yaml",
+     "",
+     "class CreditSyntheticGenerator:"
+    ]
+   },
+   {
+    "file": "run_kaggle_only_ctgan_300k.py",
+    "line": 363,
+    "text": "from sdv.metadata import SingleTableMetadata  # noqa: E402",
+    "context": [
+     "    reference_data = generator.prepare_kaggle_data(max_rows=10000)",
+     "    print(f\"Prepared reference data shape: {reference_data.shape}\")",
+     "",
+     "    # Build metadata and CTGAN synthesizer manually so we can keep priors disabled",
+     "    from sdv.metadata import SingleTableMetadata  # noqa: E402",
+     "    from sdv.single_table import CTGANSynthesizer  # noqa: E402",
+     "",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(reference_data)"
+    ]
+   },
+   {
+    "file": "run_kaggle_only_ctgan_300k.py",
+    "line": 364,
+    "text": "from sdv.single_table import CTGANSynthesizer  # noqa: E402",
+    "context": [
+     "    print(f\"Prepared reference data shape: {reference_data.shape}\")",
+     "",
+     "    # Build metadata and CTGAN synthesizer manually so we can keep priors disabled",
+     "    from sdv.metadata import SingleTableMetadata  # noqa: E402",
+     "    from sdv.single_table import CTGANSynthesizer  # noqa: E402",
+     "",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(reference_data)",
+     ""
+    ]
+   },
+   {
+    "file": "src/hybrid_synthetic_generator.py",
+    "line": 11,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "import numpy as np",
+     "import yaml",
+     "import random",
+     "from pathlib import Path",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "import warnings",
+     "warnings.filterwarnings('ignore')",
+     ""
+    ]
+   },
+   {
+    "file": "src/hybrid_synthetic_generator.py",
+    "line": 12,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "import yaml",
+     "import random",
+     "from pathlib import Path",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "import warnings",
+     "warnings.filterwarnings('ignore')",
+     "",
+     "class HybridSyntheticGenerator:"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "run_two_stage_priors_ctgan.py",
+    "line": 24,
+    "text": "from sdv.single_table import CTGANSynthesizer  # noqa: E402",
+    "context": [
+     "sys.path.append(str(project_root / \"src\"))",
+     "",
+     "from hybrid_synthetic_generator import HybridSyntheticGenerator  # noqa: E402",
+     "from sdv.metadata import SingleTableMetadata  # noqa: E402",
+     "from sdv.single_table import CTGANSynthesizer  # noqa: E402",
+     "",
+     "",
+     "def main(",
+     "    micro_n: int = 20_000,"
+    ]
+   },
+   {
+    "file": "run_two_stage_priors_ctgan.py",
+    "line": 64,
+    "text": "synthesizer = CTGANSynthesizer(metadata)",
+    "context": [
+     "",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(micro_data)",
+     "",
+     "    synthesizer = CTGANSynthesizer(metadata)",
+     "",
+     "    print(\" Fitting CTGAN synthesizer (this may take some time)...\")",
+     "    synthesizer.fit(micro_data)",
+     "    print(\" CTGAN training complete.\")"
+    ]
+   },
+   {
+    "file": "SYNTHETIC_DATA_GENERATION_REPORT.md",
+    "line": 405,
+    "text": "synthesizer = CTGANSynthesizer(metadata)",
+    "context": [
+     "metadata = SingleTableMetadata()",
+     "metadata.detect_from_dataframe(preprocessed_data)",
+     "",
+     "# Initialize CTGAN",
+     "synthesizer = CTGANSynthesizer(metadata)",
+     "",
+     "# Fit on preprocessed Kaggle data + RBI priors",
+     "print(\"Training CTGAN...\")",
+     "synthesizer.fit(preprocessed_data)"
+    ]
+   },
+   {
+    "file": "PROJECT_ROADMAP.md",
+    "line": 132,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "```python",
+     "# File: src/synthetic_generator.py",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "import pandas as pd",
+     "import yaml",
+     "",
+     "class CreditSyntheticGenerator:"
+    ]
+   },
+   {
+    "file": "PROJECT_ROADMAP.md",
+    "line": 171,
+    "text": "synthesizer = CTGANSynthesizer(metadata)",
+    "context": [
+     "        \"\"\"",
+     "        Generate high-fidelity synthetic data using CTGAN",
+     "        (slower, better quality)",
+     "        \"\"\"",
+     "        synthesizer = CTGANSynthesizer(metadata)",
+     "        # Similar process...",
+     "```",
+     "",
+     "**Action Items**:"
+    ]
+   },
+   {
+    "file": "run_kaggle_only_ctgan_300k.py",
+    "line": 364,
+    "text": "from sdv.single_table import CTGANSynthesizer  # noqa: E402",
+    "context": [
+     "    print(f\"Prepared reference data shape: {reference_data.shape}\")",
+     "",
+     "    # Build metadata and CTGAN synthesizer manually so we can keep priors disabled",
+     "    from sdv.metadata import SingleTableMetadata  # noqa: E402",
+     "    from sdv.single_table import CTGANSynthesizer  # noqa: E402",
+     "",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(reference_data)",
+     ""
+    ]
+   },
+   {
+    "file": "run_kaggle_only_ctgan_300k.py",
+    "line": 369,
+    "text": "synthesizer = CTGANSynthesizer(metadata)",
+    "context": [
+     "",
+     "    metadata = SingleTableMetadata()",
+     "    metadata.detect_from_dataframe(reference_data)",
+     "",
+     "    synthesizer = CTGANSynthesizer(metadata)",
+     "",
+     "    print(\"\\nFitting CTGAN on Kaggle-only reference data (this may take time)...\")",
+     "    synthesizer.fit(reference_data)",
+     "    print(\"CTGAN training complete.\")"
+    ]
+   },
+   {
+    "file": "src/hybrid_synthetic_generator.py",
+    "line": 12,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "import yaml",
+     "import random",
+     "from pathlib import Path",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "import warnings",
+     "warnings.filterwarnings('ignore')",
+     "",
+     "class HybridSyntheticGenerator:"
+    ]
+   },
+   {
+    "file": "src/hybrid_synthetic_generator.py",
+    "line": 261,
+    "text": "synthesizer = CTGANSynthesizer(metadata)",
+    "context": [
+     "            # Choose synthesizer",
+     "            if method == 'gaussian_copula':",
+     "                synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "            elif method == 'ctgan':",
+     "                synthesizer = CTGANSynthesizer(metadata)",
+     "            else:",
+     "                raise ValueError(f\"Unknown method: {method}\")",
+     "            ",
+     "            # Fit on reference data"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "PROJECT_ROADMAP.md",
+    "line": 132,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "```python",
+     "# File: src/synthetic_generator.py",
+     "",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "import pandas as pd",
+     "import yaml",
+     "",
+     "class CreditSyntheticGenerator:"
+    ]
+   },
+   {
+    "file": "PROJECT_ROADMAP.md",
+    "line": 152,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "        metadata = SingleTableMetadata()",
+     "        # Add fields...",
+     "        ",
+     "        # Initialize synthesizer",
+     "        synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "        ",
+     "        # Fit on reference data (if available) or generate from priors",
+     "        if self.has_reference_data():",
+     "            synthesizer.fit(self.reference_data)"
+    ]
+   },
+   {
+    "file": "src/hybrid_synthetic_generator.py",
+    "line": 12,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+    "context": [
+     "import yaml",
+     "import random",
+     "from pathlib import Path",
+     "from sdv.metadata import SingleTableMetadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer, CTGANSynthesizer",
+     "import warnings",
+     "warnings.filterwarnings('ignore')",
+     "",
+     "class HybridSyntheticGenerator:"
+    ]
+   },
+   {
+    "file": "src/hybrid_synthetic_generator.py",
+    "line": 259,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "            metadata.detect_from_dataframe(reference_data)",
+     "            ",
+     "            # Choose synthesizer",
+     "            if method == 'gaussian_copula':",
+     "                synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "            elif method == 'ctgan':",
+     "                synthesizer = CTGANSynthesizer(metadata)",
+     "            else:",
+     "                raise ValueError(f\"Unknown method: {method}\")"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv>=1.10.0",
+   "ctgan>=0.7.0"
+  ]
+ }
+}

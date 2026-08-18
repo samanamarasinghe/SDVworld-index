@@ -1,0 +1,126 @@
+{
+ "repo": "rajat-gondkar/Epileptic-Seizure-Predictor",
+ "disk_kb": 7982,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# EEG + Genetic Marker Fusion for Epileptic Seizure Prediction\n\n<p align=\"center\">\n  <img src=\"https://img.shields.io/badge/Python-3.12-blue?logo=python\" />\n  <img src=\"https://img.shields.io/badge/PyTorch-2.0%2B-orange?logo=pytorch\" />\n  <img src=\"https://img.shields.io/badge/XGBoost-1.7%2B-brightgreen\" />\n  <img src=\"https://img.shields.io/badge/React-18-61dafb?logo=react\" />\n  <img src=\"https://img.shields.io/badge/Models-Trained%20%26%20Evaluated-success\" />\n</p>\n\nA multimodal AI system that fuses **EEG signals** with **patient-specific genetic biomarkers** through a learned attention gate to deliver personalised epileptic seizure prediction.\n\n**Project:** RVCE Innovative Design Project (IDP)\n**Team:** Rajat G A · Srijeeta Ghosh · Aamir Ibrahim · Misab Abdul Raheem\n**Guide:** Prof. Deepika P\n\n> For the full technical specification (every hyperparameter, dataset table, and result), see **[`TECHNICAL_REFERENCE.md`](./TECHNICAL_REFERENCE.md)**.\n\n---\n\n## Overview\n\nEpilepsy affects ~50 million people worldwide, yet most seizure-prediction systems treat all patients identically and ignore the genetic variability in epilepsy aetiology. This project addresses that gap with a **late-fusion multimodal architecture**:\n\n1. **EEG Branch** — A Bidirectional LSTM with attention trained on the CHB-MIT scalp EEG database. It operates on raw preprocessed 30-second windows (no hand-crafted feature extraction) and learns temporal patterns directly. Produces a 512-dim embedding plus a 3-class prediction (interictal / preictal / ictal).\n2. **Genetic Branch** — An XGBoost classifier on a **22-dimensional** genetic feature vector: 9 weighted gene-mutation flags, 7 gnomAD pLI scores, a Polygenic Risk Score from 15 GWAS SNPs, and 5 engineered interaction/burden features.\n3. **Fusion Layer** — An attention-gated late fusion that learns a per-patient weight α blending the EEG embedding with the genetic risk score into a final risk `P_final ∈ [0,1]`.\n4. **Synthetic Data (CTGAN)** — Generates a constrained synthetic cohort, used strictly as a **validation benchmark** (not as fusion training data).\n5. **Clinical Alert** — `P_final` maps to a 4-level alert system (Low / Moderate / High / Critical).\n6. **Showcase Dashboard** — A reactive React + Vite dashboard that visualises the entire pipeline and includes an interactive fusion simulator.\n\n---\n\n## System Architecture\n\n```\n                    ┌─────────────────────────┐\n                    │      Patient Input       │\n                    │   EEG + Genetic Profile  │\n                    └───────────┬──────────────┘\n                                │\n              ┌─────────────────┴──────────────────┐\n              ▼                                     ▼\n  ┌───────────────────────────┐       ┌──────────────────────────┐\n  │       EEG Branch           │       │      Genetic Branch       │\n  │                            │       │                           │\n  │  Input: [B, 3840, 19]      │       │  Input: [B, 22]           │\n  │  BiLSTM (hidden=256, 2L)   │       │  XGBoost (300 trees,      │\n  │  + Attention over time     │       │           max_depth=3)    │\n  │  → 512-dim embedding       │       │                           │\n  │  → 3-class head            │       │  Output: P_genetic        │\n  └───────────┬───────────────┘       └────────────┬─────────────┘\n              │ 512-dim embedding                   │ risk score\n              └─────────────────┬───────────────────┘\n                                ▼\n                   ┌─────────────────────────┐\n                   │  Attention-Gated Fusion  │\n                   │  α = σ(W_e·h_e+W_g·h_g+b) │\n                   │  P_final = α·EEG+(1−α)·Gen│\n                   └────────────┬─────────────┘\n                                ▼\n                   ┌─────────────────────────┐\n                   │   Risk Score P ∈ [0,1]   │\n                   │   4-Level Alert System   │\n                   └─────────────────────────┘\n```\n\n---\n\n## Project Status\n\n| Component | Description | Status |\n|-----------|-------------|--------|\n| Data Acquisition | CHB-MIT + ClinVar + gnomAD + GWAS | ✅ Complete |\n| EEG Preprocessing | Bandpass, resample, z-score (per-window, lazy) | ✅ Complete |\n| Genetic Feature Engineering | 22-dim vector + PRS | ✅ Complete |\n| Synthetic Data (CTGAN) | 5,000 validation records, KS-tested | ✅ Complete |\n| EEG Branch (BiLSTM + Attention) | Trained, 96.34% test accuracy | ✅ Complete |\n| Genetic Branch (XGBoost) | Trained, AUC 0.739 / AUC-PR 0.869 | ✅ Complete |\n| Fusion Layer | Trained, AUC 0.888 (+14.4% over EEG-only) | ✅ Complete |\n| Showcase Dashboard (React) | Reactive pipeline + fusion simulator + live demo | ✅ Complete |\n| Backend API (FastAPI) | Real-time BiLSTM inference on uploaded EDF files | ✅ Complete |\n\n---\n\n## Datasets\n\n| Dataset | Source | Purpose | Size |\n|---------|--------|---------|------|\n| [CHB-MIT EEG](https://physionet.org/content/chbmit/1.0.0/) | PhysioNet | Training the EEG branch | ~40–45 GB |\n| [ClinVar](https://www.ncbi.nlm.nih.gov/clinvar/) | NCBI | Gene mutation flags | 13,331 pathogenic variants |\n| [gnomAD v2.1.1](https://gnomad.broadinstitute.org/) | Broad Institute | Gene constraint (pLI) | 9 genes |\n| [GWAS Catalog](https://www.ebi.ac.uk/gwas/) | EBI / Literature | Polygenic Risk Score | 15 epilepsy SNPs |\n\n**EEG patients used (11):** chb01, chb02, chb03, chb04, chb07, chb09, chb11, chb14, chb15, chb18, chb24\n— **355 EDF files**, 68 with seizure annotations, 256 Hz (downsampled to 128 Hz).\n\n**Target genes (9):** SCN1A · SCN8A · KCNQ2 · SCN2A · KCNT1 · DEPDC5 · PCDH19 · GRIN2A · GABRA1\n\n---\n\n## EEG Preprocessing Pipeline\n\nPreprocessing is applied **per-window** in `seizure_prediction/libCHBMITDataset.py` (lazy loading — only the needed 30-second slice is read from disk, keeping RAM < 3 GB). The model trains on the **raw preprocessed signal**; no spectral/Hjorth feature extraction is performed.\n\n```\nEDF File (CHB-MIT, 256 Hz)\n  │\n  ├─ EDF read: only the required 30-second window (PyEDFlib)\n  ├─ Channel selection: 19 common bipolar 10-20 channels\n  ├─ Bandpass filter: 0.5–45 Hz (4th-order Butterworth)\n  ├─ Resample: 256 Hz → 128 Hz\n  ├─ Z-score normalisation: per channel (zero mean, unit variance)\n  └─ Transpose: (channels, time) → (time, channels)\n       → Input tensor: (batch=16, time=3840, channels=19)\n```\n\n**Three-zone labeling** per seizure: interictal (0) · preictal (1, 25-min window) · 5-min prediction-horizon gap (0) · ictal (2).\n\n**Window class distribution (53,858 windows):** Interictal 96.0% · Preictal 3.8% · Ictal 0.2%.\n\n---\n\n## Genetic Feature Vector (22 dimensions)\n\n```python\n[\n  # [0-8]  Weighted mutation flags (0 or gene risk weight)\n  SCN1A_mutation, SCN8A_mutation, KCNQ2_mutation, SCN2A_mutation,\n  KCNT1_mutation, DEPDC5_mutation, PCDH19_mutation, GRIN2A_mutation, GABRA1_mutation,\n  # [9-15] gnomAD pLI scores\n  SCN1A_pLI, SCN8A_pLI, KCNQ2_pLI, SCN2A_pLI, GRIN2A_pLI, PCDH19_pLI, GABRA1_pLI,\n  # [16]   Polygenic Risk Score (standardised)\n  polygenic_risk_score,\n  # [17-21] Engineered interaction / aggregate features\n  sodium_channel_interaction, potassium_channel_interaction,\n  receptor_interaction, prs_tier1_interaction, mutation_burden,\n]\n```\n\n**PRS formula:** `PRS = Σ ln(OR_i) × genotype_i`, where `genotype_i ∈ {0,1,2}` is Hardy-Weinberg sampled from GWAS risk-allele frequencies, then z-score standardised.\n\n**Cohort:** The genetic branch is trained on **10,000 fully synthetic patients** generated from population-level carrier frequencies. CHB-MIT provides no genetic sequencing, so no real patient genetics are used. See `scripts/generate_synthetic_genetic_patients.py`.\n\n---\n\n## Results\n\n### EEG Branch (BiLSTM + Attention) — 53,858 windows\n| Metric | Value |\n|--------|-------|\n| Overall accuracy | **96.34%** |\n| Ictal recall (seizure detection) | 89.4% |\n| Preictal recall (prediction) | 73.4% |\n| Interictal specificity | 97.3% |\n\n### Genetic Branch (XGBoost) — 10,000 synthetic patients\n| Metric | Value |\n|--------|-------|\n| AUC | 0.739 |\n| AUC-PR | 0.869 |\n| Precision | 0.867 |\n| Recall | 0.553 |\n\n### Fusion Layer — EEG-only vs Fusion (13,508 test windows)\n| Metric | EEG-only | Fusion | Δ |\n|--------|----------|--------|---|\n| AUC | 0.744 | **0.888** | +14.4% |\n| AUC-PR | 0.255 | **0.443** | +18.7% |\n| F1 | 0.352 | **0.456** | +10.4% |\n| Recall | 0.320 | **0.413** | +9.3% |\n| MCC | 0.327 | **0.437** | +11.0% |\n\nFusion catches 55 more seizure windows while reducing false positives by 61. The learned attention settled near α ≈ 0.50 because the synthetic genetic scores have very low variance; the gains flow through the risk head, which also receives the raw genetic score directly.\n\n### CTGAN Validation\nKS pass rate 31.6% overall (genetic columns 100%, EEG columns 0%) — used as a validation benchmark only.\n\n---\n\n## Quick Start\n\n```bash\n# 1. Clone and set up the Python environment\ngit clone https://github.com/<your-username>/eeg-genetic-fusion.git\ncd eeg-genetic-fusion\npython3 -m venv venv && source venv/bin/activate\npip install -r requirements.txt\n\n# 2. Acquire datasets\npython scripts/acquire_genetic_data.py          # ClinVar + gnomAD + GWAS\npython scripts/acquire_chbmit.py                 # CHB-MIT EDF files (large; resumable)\n\n# 3. Genetic pipeline\npython scripts/generate_synthetic_genetic_patients.py --n-patients 10000\npython scripts/train_xgboost_genetic.py          # → models/xgboost_genetic/\n\n# 4. EEG branch (trained inside seizure_prediction/)\ncd seizure_prediction\nbash runTrainLSTM.sh                             # or: python scrTrainLSTM.py ...\ncd ..\n\n# 5. Fusion pipeline\npython scripts/extract_eeg_embeddings.py         # cache 512-dim embeddings (~2.5h)\npython scripts/train_fusion_clean.py             # train the attention-gated fusion\npython scripts/evaluate_fusion.py                # EEG-only vs fusion comparison\n```\n\n### Frontend dashboard\n\n```bash\ncd frontend/dashboard\nnpm install\nnpm run dev        # http://localhost:5173\nnpm run build      # production build → dist/\n```\n\nThe dashboard is fully static and reads pre-extracted results from `frontend/dashboard/src/data/*.json` — no backend required for the showcase sections.\n\n### Live inference API (for the upload-an-EDF demo)\n\n```bash\n# from the project root\n./venv/bin/python -m uvicorn src.api.main:app --port 8000\n# or: bash scripts/run_inference_api.sh\n```\n\nLoads the real all-patients BiLSTM and exposes `POST /api/predict` (upload a\n`.edf`, get per-window interictal/preictal/ictal predictions). The dashboard's\n**Live Demo** section auto-detects it at `http://localhost:8000`; if it's\noffline it falls back to a labelled simulated playback.\n\n> **Note:** EDF files and large processed arrays are excluded from the repository (see `.gitignore`). Regenerate them locally with the acquisition scripts above.\n\n---\n\n## Directory Structure\n\n```\neeg-genetic-fusion/\n│\n├── configs/\n│   └── config.yaml                   # Hyperparameters, paths, band definitions\n│\n├── data/\n│   ├── raw/                          # EDF + genomic source files (mostly untracked)\n│   │   ├── chb-mit/                  # EDF files — NOT tracked\n│   │   ├── clinvar/epilepsy_variants.csv     # 13,331 pathogenic variants\n│   │   ├── gnomad/pli_scores.csv             # pLI scores\n│   │   └── gwas/epilepsy_snps.csv            # 15 GWAS SNPs\n│   ├── processed/\n│   │   ├── genetic_vectors/          # genetic_profiles.csv, training_cohort.csv\n│   │   └── synthetic/                # CTGAN model + synthetic records + report\n│   └── splits/\n│\n├── seizure_prediction/               # EEG branch (BiLSTM + attention)\n│   ├── libCHBMITDataset.py           # Lazy dataset: filter, resample, z-score\n│   ├── libDataIO.py                  # EDF reading, 3-zone preictal labeling\n│   ├── libModelLSTM.py               # BiLSTM + attention (clsLSTM, get_embedding)\n│   ├── scrTrainLSTM.py / scrTestLSTM.py\n│   └── setup_chbmit.py               # Downloader + annotation converter\n│\n├── src/\n│   ├── data_pipeline/\n│   │   ├── genetic_feature_engineering.py   # 22-dim genetic vector\n│   │   └── prs_computation.py               # Polygenic Risk Score\n│   ├── training/\n│   │   └── fusion.py                 # AttentionGateFusion + trainer + inference\n│   ├── models/                       # (scaffold)\n│   ├── evaluation/                   # (scaffold)\n│   └── api/                          # FastAPI inference backend\n│       ├── main.py                   # endpoints: /api/health, /model-info, /predict\n│       └── inference.py              # EDF preprocessing + real BiLSTM inference\n│\n├── scripts/\n│   ├── acquire_chbmit.py             # CHB-MIT downloader\n│   ├── acquire_genetic_data.py       # ClinVar + gnomAD + GWAS downloader\n│   ├── generate_synthetic_genetic_patients.py\n│   ├── train_xgboost_genetic.py\n│   ├── extract_eeg_embeddings.py     # one-time embedding extraction\n│   ├── train_fusion_clean.py         # fusion training\n│   └── evaluate_fusion.py            # EEG-only vs fusion comparison\n│\n├── models/\n│   └── xgboost_genetic/              # Trained XGBoost model, metrics, plots\n│\n├── fusion results/                   # Trained fusion model + metrics + plots\n│   ├── fusion_best.pt / fusion_final.pt\n│   ├── fusion_evaluation.json        # EEG-only vs fusion\n│   ├── fusion_metrics.json           # training history + test metrics\n│   └── plots/\n│\n├── frontend/dashboard/               # React + Vite showcase dashboard\n│   ├── src/components/               # Hero, Datasets, Fusion simulator, etc.\n│   └── src/data/                     # Static result JSON powering the UI\n│\n├── TECHNICAL_REFERENCE.md            # Full technical spec\n├── requirements.txt\n├── docker-compose.yml\n└── .gitignore\n```\n\n---\n\n## Tech Stack\n\n| Layer | Technology |\n|-------|-----------|\n| EEG Signal Processing | PyEDFlib, SciPy |\n| Deep Learning | PyTorch ≥ 2.0 |\n| Classical ML | XGBoost ≥ 1.7 |\n| Synthetic Data | CTGAN / SDV |\n| Explainability | SHAP |\n| Frontend | React 18, Vite, Tailwind CSS, Recharts, Framer Motion |\n| Backend API | FastAPI + Uvicorn |\n| Containerisation | Docker Compose |\n| Python | 3.12 |\n\n---\n\n## License\n\nThis project is for academic and research purposes. The CHB-MIT dataset is provided under the PhysioNet Credentialed Health Data License and requires a signed data use agreement before access.\n",
+ "hits": {
+  "st": [
+   {
+    "file": "seizure_prediction/generate_ctgan_data.py",
+    "line": 535,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "    print(\"\\n\" + \"=\"*60)",
+     "    print(\"STEP 2: TRAINING CTGAN ON COMBINED DATA\")",
+     "    print(\"=\"*60)",
+     "",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "",
+     "    metadata = SingleTableMetadata()",
+     "    for col in real_df.columns:"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "seizure_prediction/generate_ctgan_data.py",
+    "line": 536,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    print(\"STEP 2: TRAINING CTGAN ON COMBINED DATA\")",
+     "    print(\"=\"*60)",
+     "",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "",
+     "    metadata = SingleTableMetadata()",
+     "    for col in real_df.columns:",
+     "        if real_df[col].dtype in ['int64', 'int32']:"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "seizure_prediction/generate_ctgan_data.py",
+    "line": 535,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "    print(\"\\n\" + \"=\"*60)",
+     "    print(\"STEP 2: TRAINING CTGAN ON COMBINED DATA\")",
+     "    print(\"=\"*60)",
+     "",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "",
+     "    metadata = SingleTableMetadata()",
+     "    for col in real_df.columns:"
+    ]
+   },
+   {
+    "file": "seizure_prediction/generate_ctgan_data.py",
+    "line": 536,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "    print(\"STEP 2: TRAINING CTGAN ON COMBINED DATA\")",
+     "    print(\"=\"*60)",
+     "",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "",
+     "    metadata = SingleTableMetadata()",
+     "    for col in real_df.columns:",
+     "        if real_df[col].dtype in ['int64', 'int32']:"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "seizure_prediction/generate_ctgan_data.py",
+    "line": 535,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "    print(\"\\n\" + \"=\"*60)",
+     "    print(\"STEP 2: TRAINING CTGAN ON COMBINED DATA\")",
+     "    print(\"=\"*60)",
+     "",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "",
+     "    metadata = SingleTableMetadata()",
+     "    for col in real_df.columns:"
+    ]
+   },
+   {
+    "file": "seizure_prediction/generate_ctgan_data.py",
+    "line": 545,
+    "text": "synthesizer = CTGANSynthesizer(",
+    "context": [
+     "            metadata.add_column(col, sdtype='categorical')",
+     "        else:",
+     "            metadata.add_column(col, sdtype='numerical')",
+     "",
+     "    synthesizer = CTGANSynthesizer(",
+     "        metadata,",
+     "        epochs=ctgan_config.get('epochs', 500),",
+     "        batch_size=ctgan_config.get('batch_size', 100),",
+     "        generator_dim=(128, 128),"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "ctgan>=0.7.0",
+   "sdv>=1.5.0"
+  ]
+ }
+}

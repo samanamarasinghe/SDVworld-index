@@ -1,0 +1,192 @@
+{
+ "repo": "LauraLivers/mlops_sdv",
+ "disk_kb": 109373,
+ "method": "partial_clone",
+ "tree_files": 20,
+ "status": "ok",
+ "readme": "# If the data won't play \n## a take on datasynthesizers\nThis repo was an experiment for the course MLOPS.hs25 at HSLU. The aim was to check whether [SDV](https://docs.sdv.dev/sdv) can hold its promise to augment a tabular dataset while leaving statistical properties intact.  \nSpoiler: It did not.\n![visualizations/aggregate_comparison/tvae_highlight.png](visualizations/aggregate_comparison/tvae_highlight.png)\n\n## 0. Data Cleaning CLI\ndownload [original dataset](https://www.kaggle.com/datasets/martj42/womens-international-football-results/data) from kaggle\n\n- standardizing spelling\n```\nsed -e 's/,Euro,/,UEFA Euro,/g' \\\n    -e 's/,European Championship,/,UEFA Euro,/g' \\\n    -e 's/,World Cup,/,FIFA World Cup,/g' \\\n    -e 's/,Olympic qualifyication,/,Olympic qualification,/g' \\\n    -e 's/,EAFF East Asian Cup,/,EAFF E-1 Championship,/g' \\\n    -e 's/,EAFF Championship,/,EAFF E-1 Championship,/g' \\\n    -e 's/,UEFA Olympic Qualifying play-off,/,UEFA Olympic Qualifying Tournament,/g' \\\n    -e 's/,Africa Cup of Nations qualification,/,African Cup of Nations qualification,/g' \\\n    -e 's/,OFC Championship,/,OFC Nations Cup,/g' \\\n    original_data/results.csv > cleaned_data/results_standardized.csv\n```\n- new col qualifiers\n```\nawk -F',' 'NR==1 {print $0\",qualifier\"; next} \n           tolower($6) ~ /qualification|qualifying|qualifyication/ {print $0\",1\"; next} \n           {print $0\",0\"}' cleaned_data/results_standardized.csv > cleaned_data/results_standardized_qualifiers.csv\n```\n- clean up cities with comma\n```\nsed -i '' 's/\"Washington, D.C.\"/Washington D.C./g; s/\"Athens, Georgia\"/Athens Georgia/g' cleaned_data/results_standardized_qualifiers.csv\n```\n\n## 1. Data Engineering\n### reference tables used to connect teams and tournaments\n```\ntail -n +2 cleaned_data/results_standardized_qualifiers.csv | cut -d',' -f7,8 | sort | uniq > reference_tables/city_country.csv\n\ntail -n +2 cleaned_data/results_standardized_qualifiers.csv | awk -F',' '$6 !~ /FIFA World Cup/ {print $6\",\"$8}' | sort | uniq > reference_tables/tournament_country.csv\n\ntail -n +2 cleaned_data/results_standardized_qualifiers.csv | awk -F',' '{print $2\",\"$8; print $3\",\"$8}' | sort -u > reference_tables/team_country.csv\n```\n## 2. filling the gaps and scoring the games\n1. Tournament stage labelling `historical_stage_labeller.py`\n2. fill the gaps so each 4-year period is as dense as the baseline period with `historical_gap_filler.py` \n3. Score each synthetic match with SVD `score_generator.py` going in reverse. This will produce 16 `.csv` files with gradually more synthetic data. For the full set use the earliest period. \n\n## 3. Visualisation\n-  model comparison for specific statistical property for overall data set `aggregate_visualization.py`\n- model comparison for specific statistical property for overall data set `model_comparison_scatter.py`\n- team ranking Europe comparison for CTGAN `team_ranking_visualizer.py`\n\n",
+ "hits": {
+  "st": [
+   {
+    "file": "score_generator.py",
+    "line": 5,
+    "text": "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, CopulaGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "import torch",
+     "from pathlib import Path",
+     "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, CopulaGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import Metadata",
+     "import warnings",
+     "from tqdm import tqdm",
+     "warnings.filterwarnings('ignore', category=FutureWarning)"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "score_generator.py",
+    "line": 6,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import numpy as np",
+     "import torch",
+     "from pathlib import Path",
+     "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, CopulaGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import Metadata",
+     "import warnings",
+     "from tqdm import tqdm",
+     "warnings.filterwarnings('ignore', category=FutureWarning)",
+     "warnings.filterwarnings('ignore', category=UserWarning)"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "score_generator.py",
+    "line": 5,
+    "text": "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, CopulaGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "import torch",
+     "from pathlib import Path",
+     "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, CopulaGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import Metadata",
+     "import warnings",
+     "from tqdm import tqdm",
+     "warnings.filterwarnings('ignore', category=FutureWarning)"
+    ]
+   },
+   {
+    "file": "score_generator.py",
+    "line": 6,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import numpy as np",
+     "import torch",
+     "from pathlib import Path",
+     "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, CopulaGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import Metadata",
+     "import warnings",
+     "from tqdm import tqdm",
+     "warnings.filterwarnings('ignore', category=FutureWarning)",
+     "warnings.filterwarnings('ignore', category=UserWarning)"
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "score_generator.py",
+    "line": 5,
+    "text": "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, CopulaGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "import torch",
+     "from pathlib import Path",
+     "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, CopulaGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import Metadata",
+     "import warnings",
+     "from tqdm import tqdm",
+     "warnings.filterwarnings('ignore', category=FutureWarning)"
+    ]
+   },
+   {
+    "file": "score_generator.py",
+    "line": 99,
+    "text": "model = CTGANSynthesizer(metadata, epochs=100, verbose=False, cuda=use_cuda)",
+    "context": [
+     "        if model_name not in self.trained_models:",
+     "            metadata = self._create_metadata()",
+     "            ",
+     "            if model_name == 'ctgan':",
+     "                model = CTGANSynthesizer(metadata, epochs=100, verbose=False, cuda=use_cuda)",
+     "            elif model_name == 'gaussian_copula':",
+     "                model = GaussianCopulaSynthesizer(metadata)",
+     "            elif model_name == 'copulagan':",
+     "                model = CopulaGANSynthesizer(metadata, epochs=100, verbose=False, cuda=use_cuda)"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "score_generator.py",
+    "line": 5,
+    "text": "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, CopulaGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "import torch",
+     "from pathlib import Path",
+     "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, CopulaGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import Metadata",
+     "import warnings",
+     "from tqdm import tqdm",
+     "warnings.filterwarnings('ignore', category=FutureWarning)"
+    ]
+   },
+   {
+    "file": "score_generator.py",
+    "line": 101,
+    "text": "model = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "            ",
+     "            if model_name == 'ctgan':",
+     "                model = CTGANSynthesizer(metadata, epochs=100, verbose=False, cuda=use_cuda)",
+     "            elif model_name == 'gaussian_copula':",
+     "                model = GaussianCopulaSynthesizer(metadata)",
+     "            elif model_name == 'copulagan':",
+     "                model = CopulaGANSynthesizer(metadata, epochs=100, verbose=False, cuda=use_cuda)",
+     "            elif model_name == 'tvae':",
+     "                model = TVAESynthesizer(metadata, epochs=100, verbose=False, cuda=use_cuda)"
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "score_generator.py",
+    "line": 5,
+    "text": "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, CopulaGANSynthesizer, TVAESynthesizer",
+    "context": [
+     "import pandas as pd",
+     "import numpy as np",
+     "import torch",
+     "from pathlib import Path",
+     "from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, CopulaGANSynthesizer, TVAESynthesizer",
+     "from sdv.metadata import Metadata",
+     "import warnings",
+     "from tqdm import tqdm",
+     "warnings.filterwarnings('ignore', category=FutureWarning)"
+    ]
+   },
+   {
+    "file": "score_generator.py",
+    "line": 105,
+    "text": "model = TVAESynthesizer(metadata, epochs=100, verbose=False, cuda=use_cuda)",
+    "context": [
+     "                model = GaussianCopulaSynthesizer(metadata)",
+     "            elif model_name == 'copulagan':",
+     "                model = CopulaGANSynthesizer(metadata, epochs=100, verbose=False, cuda=use_cuda)",
+     "            elif model_name == 'tvae':",
+     "                model = TVAESynthesizer(metadata, epochs=100, verbose=False, cuda=use_cuda)",
+     "            ",
+     "            model.fit(self.training_data)",
+     "            self.trained_models[model_name] = model",
+     "        "
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "gc",
+  "md",
+  "sdv_any",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

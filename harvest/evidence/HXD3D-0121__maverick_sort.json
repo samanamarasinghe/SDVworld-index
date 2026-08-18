@@ -1,0 +1,185 @@
+{
+ "repo": "HXD3D-0121/maverick_sort",
+ "disk_kb": 17948,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# Maverick-SORT: Knowledge-Guided Deep Reinforcement Learning for Pharmaceutical Smart Wave Allocation\n\n[![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)\n[![Streamlit](https://img.shields.io/badge/Streamlit-1.58-FF4B4B.svg)](https://streamlit.io/)\n[![PyTorch](https://img.shields.io/badge/PyTorch-2.12-EE4C2C.svg)](https://pytorch.org/)\n\nThis repository contains the implementation of **Maverick-SORT**, a decision-support system for pharmaceutical warehouse wave allocation. It combines a **Knowledge-Guided Deep Reinforcement Learning (KGDRL)** core with interactive Streamlit dashboards, offering both an **Essential Edition** (free trial, browser-only) and a **Professional Edition** (live data upload, advanced optimization).\n\nThe core question the system answers: *In five minutes, can AI-driven wave allocation save money before committing to any WMS integration?*\n\n---\n\n## 🚀 Quick Start\n\n### Essential Edition (Recommended First Try)\n```bash\npip install -r requirements-standard.txt\nstreamlit run streamlit_app_v7.py\n```\n\n### Professional Edition\n```bash\npip install -r requirements-pro.txt\nstreamlit run streamlit_app_pro_v5.py\n```\n\n### Static HTML Dashboard (No Backend)\nOpen `dashboard_release/smart_wave_dashboard_en.html` directly in any modern browser.\n\n---\n\n## 📂 Repository Structure\n\n```\nmaverick_sort/\n|\n├── 📱 Streamlit Applications\n│   ├── streamlit_app_v7.py              # Essential Edition (18 pages, free trial)\n│   ├── streamlit_app_pro_v5.py          # Professional Edition (23 pages, live data)\n│   ├── streamlit_app.py                 # Legacy unified entry\n│   └── streamlit_app_v2.py ~ v6.py      # Earlier iteration versions\n│   └── streamlit_app_pro_v1.py ~ v4.py  # Earlier Pro iterations\n│\n├── 🧠 Core Algorithms\n│   ├── kgdrl_core_v2.py                 # KGDRL engine: GAT + PPO + KL heuristic guidance\n│   ├── pharma_wave_allocation.py        # Baseline PPO environment and heuristics\n│   ├── multi_objective_scheduler.py     # NSGA-II Pareto optimizer (Pro module)\n│   ├── adaptive_policy.py               # EWMA-based online adaptive policy (Pro module)\n│   └── what_if_simulator.py             # Scenario simulator (Essential module)\n│\n├── 📦 Page Modules (for v6/v7/Pro)\n│   ├── page_modules/shared.py           # Common CSS, session state, data routers\n│   ├── page_modules/orders_inventory.py # Orders, analytics, warehouse zones\n│   ├── page_modules/operations.py       # Dashboard, SLA, task workstation, alerts\n│   ├── page_modules/scheduling.py       # Algorithm Arena, What-If, NSGA-II, Live Adaptive\n│   ├── page_modules/tech_showcase.py    # KGDRL framework, AI engine, multi-warehouse\n│   ├── page_modules/business.py         # ROI, TCO, competitor radar, pricing\n│   └── page_modules/demo.py             # Real-time simulation, demo mode\n│\n├── 🤖 Hugging Face AI Integration\n│   ├── hf_integration/client.py         # Unified LLM client with 3-tier fallback\n│   ├── hf_integration/copilot.py        # Maverick Copilot (FAQ + context-aware)\n│   ├── hf_integration/insight_engine.py # Natural-language explanations for results\n│   ├── hf_integration/report_generator.py # Auto-report generation for What-If / business\n│   ├── hf_integration/alert_analyzer.py # RAG-based root-cause analysis (Pro)\n│   ├── hf_integration/demand_forecaster.py # Time-series demand forecasting (Pro)\n│   ├── hf_integration/prompts.py        # Bilingual prompt templates\n│   └── hf_integration/config.py         # Availability detection and fallback config\n│\n├── 🔬 Research & Experiments\n│   ├── Code of KGDRL/                   # Original KGDRL research notebooks\n│   │   ├── experiment_KGDRL.ipynb\n│   │   ├── experiment_DDQN.ipynb\n│   │   ├── experiment_DDPG.ipynb\n│   │   ├── experiment_A2C.ipynb\n│   │   ├── experiment_rules.ipynb\n│   │   ├── experiment_robustness.ipynb\n│   │   ├── network.py                   # GAT + Actor-Critic networks\n│   │   ├── new_env.py                   # Pharmaceutical wave environment\n│   │   ├── PDR.py                       # Priority dispatching rules\n│   │   └── raw_PPO.py / raw_DQN.py / raw_DDPG.py  # Raw RL baselines\n│   │\n│   └── Code of KGDRL_new/               # Refactored KGDRL experiment suite\n│       ├── experiment_KGDRL.ipynb\n│       ├── experiment_large_scale_after_modification.py\n│       ├── network.py\n│       ├── new_env.py\n│       ├── PDR.py\n│       ├── raw_PPO.py\n│       └── Data/                        # Training/evaluation JSON outputs\n│\n├── 📊 Visualization & Dashboards\n│   ├── dashboard_release/               # Standalone HTML dashboard (zero setup)\n│   │   ├── smart_wave_dashboard.html\n│   │   ├── smart_wave_dashboard_en.html\n│   │   └── data/                        # Embedded JSON plot data\n│   │\n│   ├── KGDRL Visulization Ver.01/       # First-generation visualization package\n│   │   ├── 01_Python代码与Notebook/\n│   │   ├── 02_Markdown文档/\n│   │   ├── 03_可视化面板HTML/\n│   │   └── 06_运行数据/\n│   │\n│   └── KGDRL Visulization Ver.02/       # Second-generation visualization package\n│       ├── 01_Python代码与Notebook/\n│       ├── 02_Markdown文档/\n│       ├── 03_可视化面板HTML/\n│       └── 06_运行数据/\n│\n├── 🔧 Utilities & Pipelines\n│   ├── run_full_pipeline.py             # Full benchmark: data → heuristics → PPO → eval\n│   ├── run_ablation_quick.py            # Quick ablation study runner\n│   ├── gen_demo_v2.py                   # Generate synthetic demo CSV datasets\n│   ├── smart_wave_allocation.ipynb      # End-to-end allocation notebook\n│   ├── translate_dashboard.py           # Dashboard localization helper\n│   └── fix_streamlit_v3.py              # Deployment hotfix utilities\n│\n├── 💼 Product & Commercialization Docs\n│   ├── COMMERCIALIZATION_7DAY_PLAN.md\n│   ├── COMMERCIALIZATION_7DAY_PLAN_EN.md\n│   ├── PRODUCT_REVIEW.md\n│   ├── PRODUCT_REVIEW_EN.md\n│   ├── product_tier_pricing.md\n│   ├── DATA_UPLOAD_FEASIBILITY_REPORT.md\n│   ├── DEPLOYMENT_GUIDE.md\n│   ├── web_dashboard_feasibility.md\n│   └── 3D_DASHBOARD_OPTIMIZATION_PLAN.md\n│\n├── 📚 Course & Research Materials\n│   ├── 20260608_Presentation_of_Digital_Innovation/  # Slide deck and speech draft\n│   ├── background/                      # Case description and pharma knowledge\n│   ├── deep_research/                   # Research notes and references\n│   ├── Commercial Analysis/             # Market and competitor analysis\n│   ├── casebook_text.txt\n│   └── problem_and_solution_draft.md\n│\n├── 🗂️ Demo Data\n│   ├── demo_data/\n│   ├── demo_data_v2/\n│   └── simulation_data/\n│\n└── ⚙️ Configuration\n    ├── requirements.txt                 # Default dependencies (auto-synced with standard)\n    ├── requirements-standard.txt        # Essential Edition dependencies\n    ├── requirements-pro.txt             # Professional Edition dependencies\n    ├── .streamlit/config.toml           # Streamlit server and watcher config\n    └── run_app.bat / run_app.ps1        # Windows quick launch scripts\n```\n\n---\n\n## 🧩 Module Descriptions\n\n### 1. Streamlit Applications\n\n| File | Edition | Pages | Purpose |\n|------|---------|-------|---------|\n| `streamlit_app_v7.py` | **Essential** | 18 | Free-trial entry point. Browser-only, demo-data-first, five-minute validation. |\n| `streamlit_app_pro_v5.py` | **Professional** | 23 | Paid tier. Live CSV upload hub, NSGA-II optimizer, EWMA adaptive intelligence. |\n| `streamlit_app.py` | Legacy | — | Early unified prototype. |\n| `streamlit_app_v2-v6.py` | Iterations | — | Progressive UI/UX iterations leading to v7. |\n| `streamlit_app_pro_v1-v4.py` | Iterations | — | Progressive Pro feature iterations. |\n\n**Why two editions?** The Essential Edition reduces the adoption barrier to near zero (no install, no data upload, no IT ticket). The Professional Edition is for warehouses that have already validated the idea and need live-data scale-up features.\n\n### 2. Core Algorithms\n\n| File | Function |\n|------|----------|\n| `kgdrl_core_v2.py` | **KGDRL engine**: Graph Attention Network (GAT) state encoder + PPO + KL-divergence constraint aligned with TZU heuristic. |\n| `pharma_wave_allocation.py` | Vanilla PPO environment, data generator, and rule-based baselines (FCFS, TEMP_FIRST, ZONE_NN, EDD, TZU). |\n| `multi_objective_scheduler.py` | **Pro module**: NSGA-II multi-objective Pareto frontier for cost × time × compliance trade-offs. |\n| `adaptive_policy.py` | **Pro module**: EWMA demand prediction, dynamic wave capacity, online policy fine-tuning, federated-learning stubs. |\n| `what_if_simulator.py` | **Essential module**: Parameter-sensitivity and scenario-comparison simulator without touching live systems. |\n\n### 3. Page Modules\n\n| File | Responsibility |\n|------|----------------|\n| `page_modules/shared.py` | Shared CSS (`PRO_CSS`), session-state helpers, upload validators, data routers. |\n| `page_modules/orders_inventory.py` | Omni-channel orders, order analytics, warehouse & temperature zones. |\n| `page_modules/operations.py` | Operations dashboard, SLA analytics, task workstation, smart alert center. |\n| `page_modules/scheduling.py` | Algorithm Arena, What-If Lab, Strategy Optimizer (NSGA-II), Live Adaptive Intelligence. |\n| `page_modules/tech_showcase.py` | KGDRL framework visualization, AI learning engine, multi-warehouse network. |\n| `page_modules/business.py` | ROI calculator, TCO analysis, competitor radar, plans & pricing. |\n| `page_modules/demo.py` | Real-time simulation embed and auto-play demo mode. |\n\n### 4. Hugging Face AI Integration\n\n| File | Function |\n|------|----------|\n| `hf_integration/config.py` | Model configs, availability detection, graceful degradation. |\n| `hf_integration/client.py` | Unified LLM wrapper: HF Inference API → local transformers → rule-based mock. |\n| `hf_integration/copilot.py` | Maverick Copilot: FAQ mode and context-aware assistant. |\n| `hf_integration/insight_engine.py` | Natural-language explanations for benchmark, Pareto, and SLA results. |\n| `hf_integration/report_generator.py` | Auto-generate What-If and business analysis reports. |\n| `hf_integration/alert_analyzer.py` | **Pro**: Lightweight RAG for alert root-cause analysis. |\n| `hf_integration/demand_forecaster.py` | **Pro**: Time-series demand forecasting with HF fallback to EWMA. |\n| `hf_integration/prompts.py` | Bilingual (CN/EN) prompt templates for Qwen2.5-Instruct. |\n\n### 5. Visualization Dashboards\n\n| Path | Description |\n|------|-------------|\n| `dashboard_release/` | Production-ready standalone HTML dashboard. No Python backend required. |\n| `KGDRL Visulization Ver.01/` | First-generation package: Python notebooks + HTML panels + run data. |\n| `KGDRL Visulization Ver.02/` | Second-generation package with improved SDV-based data pipeline. |\n\n---\n\n## 🛠️ Installation\n\n### Standard / Essential\n```bash\npip install -r requirements-standard.txt\n```\n\n### Professional\n```bash\npip install -r requirements-pro.txt\n```\n\n> **Note on `torchvision`**: intentionally omitted from all `requirements*.txt` files to avoid version conflicts with `torch==2.12.0`. The code gracefully degrades when `torchvision` is absent.\n\n---\n\n## ▶️ Usage\n\n### Run Essential Edition\n```bash\nstreamlit run streamlit_app_v7.py\n```\n\n### Run Professional Edition\n```bash\nstreamlit run streamlit_app_pro_v5.py\n```\n\n### Run Full Benchmark Pipeline\n```bash\npython run_full_pipeline.py\n```\n\n### Run Quick Ablation Study\n```bash\npython run_ablation_quick.py\n```\n\n### Generate Demo Datasets\n```bash\npython gen_demo_v2.py\n```\n\n---\n\n## 📈 Algorithm Arena Benchmarks\n\nThe `Algorithm Arena` compares KGDRL against five heuristic baselines:\n\n| Method | Reward | Distance (m) | Waves | Deadline Miss | Temp Violations |\n|--------|--------|--------------|-------|---------------|-----------------|\n| FCFS | 1,786.9 | 690.9 | 85.9 | 0.0 | 38.5 |\n| TEMP_FIRST | -2,958.1 | 987.4 | 125.8 | 0.0 | 0.0 |\n| ZONE_NN | 1,733.8 | 669.0 | 82.9 | 0.0 | 37.3 |\n| EDD | 1,752.0 | 667.8 | 83.1 | 0.0 | 37.5 |\n| TZU | 144.6 | 666.7 | 83.0 | 0.0 | 21.4 |\n| PPO (Vanilla) | 4,007.5 | 695.5 | 87.3 | 4.4 | 36.7 |\n| **KGDRL-Full** | **1,908.8** | **665.7** | **82.8** | **0.0** | **39.0** |\n\n*KGDRL achieves the lowest picking distance while maintaining zero deadline misses.*\n\n---\n\n## 🧪 Research Artifacts\n\n- Original research notebooks: `Code of KGDRL/`\n- Refactored experiment suite: `Code of KGDRL_new/`\n- Presentation materials: `20260608_Presentation_of_Digital_Innovation/`\n- AI-tool usage review: `AI_Tools_Usage_Review.md` / `AI_Tools_Usage_Review_EN.md`\n\n---\n\n## 📄 License & Attribution\n\nThis project was developed as part of the **Digital Innovation** course (SDC / AAUBS / UCAS, 2026).\n\nCore algorithm: Knowledge-Guided Deep Reinforcement Learning for pharmaceutical smart wave allocation.\n\nUI implementation: AI-assisted, human-reviewed.\n",
+ "hits": {
+  "st": [
+   {
+    "file": "simulation_data/generate_datasets_sdv.py",
+    "line": 23,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import os",
+     "import json",
+     "",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.constraints import (",
+     "    FixedCombinations,",
+     "    Inequality,",
+     "    ScalarInequality,"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "simulation_data/generate_datasets_sdv.py",
+    "line": 22,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import random",
+     "import os",
+     "import json",
+     "",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.constraints import (",
+     "    FixedCombinations,",
+     "    Inequality,"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "simulation_data/generate_datasets_sdv.py",
+    "line": 22,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "import random",
+     "import os",
+     "import json",
+     "",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.constraints import (",
+     "    FixedCombinations,",
+     "    Inequality,"
+    ]
+   },
+   {
+    "file": "simulation_data/generate_datasets_sdv.py",
+    "line": 23,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import os",
+     "import json",
+     "",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.constraints import (",
+     "    FixedCombinations,",
+     "    Inequality,",
+     "    ScalarInequality,"
+    ]
+   },
+   {
+    "file": "simulation_data/generate_datasets_sdv.py",
+    "line": 24,
+    "text": "from sdv.constraints import (",
+    "context": [
+     "import json",
+     "",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.constraints import (",
+     "    FixedCombinations,",
+     "    Inequality,",
+     "    ScalarInequality,",
+     "    create_custom_constraint_class,"
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "simulation_data/generate_datasets_sdv.py",
+    "line": 8,
+    "text": "2. Fit SDV GaussianCopulaSynthesizer on each seed (learns correlations & distributions)",
+    "context": [
+     "that matches casebook business patterns and constraints.",
+     "",
+     "Approach:",
+     "1. Generate small \"seed\" datasets with correct distributions using numpy/pandas",
+     "2. Fit SDV GaussianCopulaSynthesizer on each seed (learns correlations & distributions)",
+     "3. Sample target-scale datasets from trained models",
+     "4. Apply post-processing for referential integrity and business rules",
+     "",
+     "Requirements: pip install sdv pandas numpy"
+    ]
+   },
+   {
+    "file": "simulation_data/generate_datasets_sdv.py",
+    "line": 23,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "import os",
+     "import json",
+     "",
+     "from sdv.metadata import Metadata",
+     "from sdv.single_table import GaussianCopulaSynthesizer",
+     "from sdv.constraints import (",
+     "    FixedCombinations,",
+     "    Inequality,",
+     "    ScalarInequality,"
+    ]
+   },
+   {
+    "file": "simulation_data/generate_datasets_sdv.py",
+    "line": 232,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "    # Override: treat string IDs as categorical so SDV samples from seed categories",
+     "    for col in [\"near_expiry_managed\", \"batch_tracking_required\", \"hazardous_or_controlled_flag\"]:",
+     "        metadata.update_column(table_name=\"products\", column_name=col, sdtype=\"boolean\")",
+     "    ",
+     "    synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "    synthesizer.fit(seed_df)",
+     "    ",
+     "    df = synthesizer.sample(num_rows=n_target)",
+     "    "
+    ]
+   },
+   {
+    "file": "simulation_data/generate_datasets_sdv.py",
+    "line": 281,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "    # Override: prevent PII anonymization of location fields",
+     "    for col in [\"province\", \"city\", \"warehouse_type\"]:",
+     "        metadata.update_column(table_name=\"warehouses\", column_name=col, sdtype=\"categorical\")",
+     "    ",
+     "    synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "    synthesizer.fit(seed_df)",
+     "    ",
+     "    df = synthesizer.sample(num_rows=n_target)",
+     "    df[\"warehouse_id\"] = [f\"WH_{i+1:03d}\" for i in range(n_target)]"
+    ]
+   },
+   {
+    "file": "simulation_data/generate_datasets_sdv.py",
+    "line": 325,
+    "text": "synthesizer = GaussianCopulaSynthesizer(metadata)",
+    "context": [
+     "        metadata.update_column(table_name=\"customers\", column_name=col, sdtype=\"categorical\")",
+     "    for col in [\"b2b_registered\"]:",
+     "        metadata.update_column(table_name=\"customers\", column_name=col, sdtype=\"boolean\")",
+     "    ",
+     "    synthesizer = GaussianCopulaSynthesizer(metadata)",
+     "    synthesizer.fit(seed_df)",
+     "    ",
+     "    df = synthesizer.sample(num_rows=n_target)",
+     "    df[\"customer_id\"] = [f\"CUST_{i+1:05d}\" for i in range(n_target)]"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

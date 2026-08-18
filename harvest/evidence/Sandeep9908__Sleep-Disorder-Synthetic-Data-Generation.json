@@ -1,0 +1,370 @@
+{
+ "repo": "Sandeep9908/Sleep-Disorder-Synthetic-Data-Generation",
+ "disk_kb": 384,
+ "method": "tarball",
+ "status": "ok",
+ "readme": "<div align=\"center\">\n\n# 💤 Sleep Disorder Synthetic Data Generation\n\n### SMOTENC vs Conditional CTGAN — Synthetic Tabular Data & ML Utility Study\n\n<p>\n  <img src=\"https://img.shields.io/badge/Python-3.x-3776AB?style=for-the-badge&logo=python&logoColor=white\"/>\n  <img src=\"https://img.shields.io/badge/Pandas-Data%20Analysis-150458?style=for-the-badge&logo=pandas&logoColor=white\"/>\n  <img src=\"https://img.shields.io/badge/Scikit--Learn-Machine%20Learning-F7931E?style=for-the-badge&logo=scikit-learn&logoColor=white\"/>\n  <img src=\"https://img.shields.io/badge/SMOTENC-Imbalanced%20Learning-2E8B57?style=for-the-badge\"/>\n  <img src=\"https://img.shields.io/badge/CTGAN-Synthetic%20Data-8A2BE2?style=for-the-badge\"/>\n  <img src=\"https://img.shields.io/badge/Google%20Colab-Notebook-F9AB00?style=for-the-badge&logo=googlecolab&logoColor=white\"/>\n</p>\n\n<p>\n  <b>Generate → Validate → Compare → Evaluate → Understand</b>\n</p>\n\n</div>\n\n---\n\n## 🌟 Project Highlights\n\n| 🔎 | What this project does |\n|---|---|\n| 📊 | Starts with a **559-record Sleep Health & Lifestyle dataset** |\n| ⚖️ | Handles an imbalanced **Sleep Disorder** target |\n| 🧪 | Generates synthetic data using **SMOTENC** |\n| 🤖 | Generates synthetic data using **Conditional CTGAN** |\n| 🔍 | Validates generated data and compares distributions |\n| 📈 | Studies numerical relationships and correlations |\n| 🌲 | Evaluates downstream utility using **Random Forest** |\n| 🏆 | Compares **Accuracy, Precision, Recall & F1-Score** |\n\n> **Core question:** *Can synthetic tabular data improve or preserve the usefulness of an imbalanced sleep-health dataset for machine-learning tasks?*\n\n---\n\n# 📌 1. About the Project\n\nThis project is a practical study of **synthetic tabular data generation** using two different approaches:\n\n- **SMOTENC** — designed for imbalanced datasets containing categorical and numerical variables.\n- **Conditional CTGAN** — a generative approach for creating synthetic tabular records while conditioning generation on the target class.\n\nThe original dataset contains **559 records and 13 original columns**. Missing `Sleep Disorder` values were filled as `Healthy`, resulting in:\n\n```text\nHealthy       375\nInsomnia       93\nSleep Apnea    91\n-------------------\nTotal         559\n```\n\nThe project then explores synthetic-data generation, validation, statistical similarity, and downstream machine-learning performance.\n\n---\n\n# 🎯 2. Objectives\n\n### Primary Objectives\n\n- Understand the class imbalance in `Sleep Disorder`.\n- Prepare the dataset for synthetic generation.\n- Generate synthetic records using **SMOTENC**.\n- Generate synthetic records using **Conditional CTGAN**.\n- Validate the generated datasets.\n- Compare categorical and numerical distributions.\n- Compare correlation structures.\n- Train a common Random Forest model.\n- Measure downstream predictive utility.\n- Identify the strengths and limitations of each synthetic-data approach.\n\n---\n\n# 🧩 3. Dataset\n\nThe project uses the **Sleep Health and Lifestyle Dataset**.\n\n### Original Dataset\n\n```text\nRows       : 559\nColumns    : 13\nTarget     : Sleep Disorder\n```\n\n### Main Features\n\n| Feature | Type |\n|---|---|\n| Person ID | Identifier |\n| Gender | Categorical |\n| Age | Numerical |\n| Occupation | Categorical |\n| Sleep Duration | Numerical |\n| Quality of Sleep | Numerical |\n| Physical Activity Level | Numerical |\n| Stress Level | Numerical |\n| BMI Category | Categorical |\n| Blood Pressure | Categorical / Structured |\n| Heart Rate | Numerical |\n| Daily Steps | Numerical |\n| Sleep Disorder | Target |\n\nThe project preprocessing also separates Blood Pressure into **systolic (`hp`) and diastolic (`lp`) components** for numerical processing. The source notebook shows the original dataset at 559 rows and the processed representation at 14 columns after this transformation. fileciteturn11file3\n\n---\n\n# ⚠️ 4. Class Imbalance\n\nThe original target distribution is:\n\n| Sleep Disorder | Records | Share |\n|---|---:|---:|\n| 🟢 Healthy | 375 | 67.1% |\n| 🟠 Insomnia | 93 | 16.6% |\n| 🔴 Sleep Apnea | 91 | 16.3% |\n| **Total** | **559** | **100%** |\n\nThese class proportions motivated the use of synthetic-data techniques. The original notebook records the same target counts after filling missing `Sleep Disorder` values with `Healthy`. fileciteturn11file2\n\n---\n\n# 🔄 5. Project Architecture\n\n```text\n                    ┌──────────────────────┐\n                    │   Original Dataset   │\n                    │      559 Records     │\n                    └──────────┬───────────┘\n                               │\n                               ▼\n                    ┌──────────────────────┐\n                    │  Data Preprocessing   │\n                    │ • Missing values      │\n                    │ • Encoding            │\n                    │ • Blood Pressure      │\n                    └──────────┬───────────┘\n                               │\n                    ┌──────────┴───────────┐\n                    │                      │\n                    ▼                      ▼\n             ┌─────────────┐       ┌─────────────┐\n             │   SMOTENC   │       │    CTGAN    │\n             │ Oversample  │       │ Conditional │\n             └──────┬──────┘       └──────┬──────┘\n                    │                     │\n                    ▼                     ▼\n             Synthetic Data         Synthetic Data\n                    │                     │\n                    └──────────┬──────────┘\n                               ▼\n                    ┌──────────────────────┐\n                    │ Synthetic Validation │\n                    │ • Missing values     │\n                    │ • Duplicates         │\n                    │ • Ranges             │\n                    │ • Distributions      │\n                    └──────────┬───────────┘\n                               ▼\n                    ┌──────────────────────┐\n                    │ Statistical Analysis │\n                    │ • Correlations       │\n                    │ • Feature patterns   │\n                    └──────────┬───────────┘\n                               ▼\n                    ┌──────────────────────┐\n                    │ Random Forest Model  │\n                    └──────────┬───────────┘\n                               ▼\n                    ┌──────────────────────┐\n                    │ Final Comparison     │\n                    │ Accuracy / F1 / etc. │\n                    └──────────────────────┘\n```\n\n---\n\n# 🧪 6. Synthetic Data Generation\n\n## 🔵 SMOTENC\n\n**SMOTENC** is used because the dataset contains both numerical and categorical variables.\n\nThe project identifies categorical columns and applies SMOTENC to generate additional minority-class observations.\n\nThe notebook demonstrates a final **1,500-record** synthetic dataset after resampling. fileciteturn11file4\n\n### SMOTENC Pipeline\n\n```text\nOriginal Data\n     ↓\nIdentify categorical features\n     ↓\nSMOTENC\n     ↓\nSynthetic minority samples\n     ↓\n1,500-record dataset\n```\n\n---\n\n## 🟣 Conditional CTGAN\n\n**CTGAN** is used as a generative-model approach for synthetic tabular data.\n\nUnlike simple oversampling, CTGAN attempts to learn patterns in the underlying tabular dataset and generate new records.\n\n### Conditional Generation\n\nThe project uses target-conditioned generation so that the synthetic data can follow the required `Sleep Disorder` class proportions.\n\n```text\nCTGAN\n  │\n  ├── Healthy\n  ├── Insomnia\n  └── Sleep Apnea\n          ↓\n    Synthetic Records\n```\n\n---\n\n# 🧹 7. Data Preparation\n\nThe project includes several preprocessing steps:\n\n### Missing Target Values\n\n```python\ndataset['Sleep Disorder'] = \\\n    dataset['Sleep Disorder'].fillna(\"Healthy\")\n```\n\n### Blood Pressure\n\nOriginal representation:\n\n```text\n126/83\n125/80\n140/90\n```\n\nProcessed representation:\n\n```text\nhp → systolic pressure\nlp → diastolic pressure\n```\n\n### Categorical Features\n\nThe preparation workflow identifies categorical columns including:\n\n```text\nGender\nOccupation\nBMI Category\nBlood Pressure / processed components\nSleep Disorder\n```\n\nThe source preparation notebook explicitly shows the 559-row dataset and categorical-feature preparation. fileciteturn11file3\n\n---\n\n# 📊 8. Synthetic Dataset Validation\n\nEvery synthetic dataset should be checked before being used for machine learning.\n\n### Validation Checklist\n\n```text\n              Synthetic Dataset\n                      │\n        ┌─────────────┼─────────────┐\n        ▼             ▼             ▼\n   Missing Values  Duplicates    Data Types\n        │             │             │\n        └─────────────┼─────────────┘\n                      ▼\n               Value Ranges\n                      │\n                      ▼\n             Category Validity\n                      │\n                      ▼\n              Distribution Check\n```\n\n### Key Checks\n\n- ✅ Number of generated records\n- ✅ Missing values\n- ✅ Duplicate records\n- ✅ Numerical ranges\n- ✅ Valid categorical values\n- ✅ Target distribution\n- ✅ Feature distributions\n- ✅ Correlation structure\n\n---\n\n# 📈 9. Statistical Comparison\n\nThe project does not evaluate synthetic data only by row count.\n\nIt also compares:\n\n### Numerical Features\n\n```text\nAge\nSleep Duration\nQuality of Sleep\nPhysical Activity Level\nStress Level\nHeart Rate\nDaily Steps\nBlood Pressure\n```\n\n### Categorical Features\n\n```text\nGender\nOccupation\nBMI Category\nSleep Disorder\n```\n\n### Relationship Analysis\n\nCorrelation matrices are used to investigate whether important relationships in the original data are reproduced by the synthetic data.\n\n---\n\n# 🤖 10. Downstream Machine Learning\n\nTo test whether the generated datasets remain useful for prediction, a common machine-learning evaluation is performed.\n\n## Model\n\n```text\nRandom Forest Classifier\n```\n\n## Configuration\n\n```text\nn_estimators = 200\nrandom_state = 42\nclass_weight = balanced\n```\n\n## Evaluation Metrics\n\n| Metric | Meaning |\n|---|---|\n| 🎯 Accuracy | Overall correct predictions |\n| 🔎 Precision | Correct positive predictions |\n| 📥 Recall | Positive cases correctly identified |\n| ⭐ F1-Score | Balance between Precision and Recall |\n\nThe model-comparison notebook contains the performance-comparison workflow and visualizes Accuracy, Precision, Recall and F1-Score across the datasets.\n\n---\n\n# 🏆 11. Model Performance\n\n### Comparison\n\n| Dataset | Accuracy | Precision | Recall | F1-Score |\n|---|---:|---:|---:|---:|\n| 🟢 Original | **85.71%** | **87.54%** | **85.71%** | **85.66%** |\n| 🔵 SMOTENC | **96.00%** | **96.04%** | **96.00%** | **95.98%** |\n| 🟣 Conditional CTGAN | **73.00%** | **67.39%** | **73.00%** | **68.74%** |\n\n## 🥇 Best Performing Approach\n\n### 🔵 SMOTENC\n\n```text\nAccuracy   → 96.00%\nPrecision  → 96.04%\nRecall     → 96.00%\nF1-Score   → 95.98%\n```\n\n### Performance Ranking\n\n```text\n🥇 SMOTENC              96.00% Accuracy\n🥈 Original             85.71% Accuracy\n🥉 Conditional CTGAN    73.00% Accuracy\n```\n\n> **Important:** This ranking describes the result of this particular experiment, dataset, preprocessing pipeline, Random Forest configuration, and evaluation setup. It does not mean SMOTENC is universally superior to CTGAN.\n\n---\n\n# 📊 12. Results Visualization\n\nThe project produces visual outputs such as:\n\n### Confusion Matrix\n\n```text\nOriginal\n   ↓\nRandom Forest\n   ↓\nConfusion Matrix\n```\n\n### Performance Comparison\n\n```text\n             Accuracy\n                 │\nSMOTENC          ████████████████████ 96%\nOriginal         █████████████████    86%\nCTGAN            ██████████████       73%\n```\n\nRecommended repository output structure:\n\n```text\nresults/\n└── comparison/\n    ├── model_comparison.csv\n    ├── confusion_matrix.png\n    └── performance_comparison.png\n```\n\n---\n\n# 🆚 13. SMOTENC vs Conditional CTGAN\n\n| Capability | SMOTENC | Conditional CTGAN |\n|---|:---:|:---:|\n| Handles numerical data | ✅ | ✅ |\n| Handles categorical data | ✅ | ✅ |\n| Synthetic records | ✅ | ✅ |\n| Target-aware generation | ⚠️ Oversampling | ✅ Conditional |\n| Neural generative model | ❌ | ✅ |\n| Distribution analysis | ✅ | ✅ |\n| Correlation analysis | ✅ | ✅ |\n| Downstream ML evaluation | ✅ | ✅ |\n| Best result in this experiment | 🏆 | — |\n\n---\n\n# 🧠 14. Key Findings\n\n### Finding 01 — SMOTENC was strongest for downstream utility\n\nSMOTENC achieved the highest Random Forest performance in this experiment.\n\n### Finding 02 — Synthetic data needs more than valid rows\n\nA synthetic dataset can have:\n\n```text\n✔ Correct number of rows\n✔ Valid categories\n✔ Valid numerical ranges\n```\n\nand still fail to reproduce important relationships.\n\n### Finding 03 — CTGAN needs careful evaluation\n\nConditional CTGAN successfully provides a generative approach, but its downstream performance was lower in this experiment.\n\n### Finding 04 — Synthetic-data quality is multi-dimensional\n\nA strong synthetic-data evaluation should consider:\n\n```text\nData Quality\n     +\nStatistical Similarity\n     +\nRelationship Preservation\n     +\nMachine-Learning Utility\n```\n\n---\n\n# ⚠️ 15. Limitations\n\n- The original dataset contains only **559 records**.\n- The source dataset may limit the amount of information available to a generative model.\n- Some relationships in synthetic data may differ from the original dataset.\n- Categorical distributions may not match perfectly.\n- CTGAN performance depends strongly on preprocessing, model configuration, training, and conditioning.\n- The downstream comparison uses a Random Forest model rather than a large collection of models.\n- Synthetic records should not be interpreted as real clinical/patient records.\n\n---\n\n# 🚀 16. Future Improvements\n\n### 🔬 Better Synthetic Data\n\n- Tune CTGAN hyperparameters.\n- Experiment with different CTGAN training configurations.\n- Compare additional synthetic-data algorithms.\n- Increase the size and diversity of the source dataset.\n\n### 🤖 Better ML Evaluation\n\n- Test Logistic Regression.\n- Test Random Forest.\n- Test XGBoost.\n- Test Gradient Boosting.\n- Use cross-validation.\n- Compare multiple random seeds.\n\n### 📊 Better Statistical Evaluation\n\n- Compare distributions using statistical tests.\n- Compare feature-wise similarity.\n- Compare covariance/correlation structures.\n- Analyze rare categories separately.\n- Add privacy and memorization analysis.\n\n---\n\n# 🛠️ 17. Technology Stack\n\n<div align=\"center\">\n\n| Technology | Purpose |\n|---|---|\n| 🐍 Python | Core programming |\n| 🐼 Pandas | Data manipulation |\n| 🔢 NumPy | Numerical computation |\n| ⚖️ imbalanced-learn | SMOTENC |\n| 🧬 SDV / CTGAN | Synthetic tabular data |\n| 🤖 Scikit-learn | Machine learning |\n| 🌳 Random Forest | Downstream evaluation |\n| 📊 Matplotlib | Visualization |\n| ☁️ Google Colab | Notebook execution |\n| 🐙 GitHub | Version control |\n\n</div>\n\n---\n\n# 📁 18. Recommended Repository Structure\n\n```text\nSleep-Disorder-Synthetic-Data-Generation/\n│\n├── 📄 README.md\n│\n├── 📂 data/\n│   ├── 📂 original/\n│   │   └── Sleep_health_and_lifestyle_dataset.csv\n│   │\n│   └── 📂 synthetic/\n│       ├── SMOTENC_1500_Synthetic_Dataset.csv\n│       └── CTGAN_1500_Synthetic_Dataset.csv\n│\n├── 📂 notebooks/\n│   ├── Dataset_Preparation.ipynb\n│   ├── SMOTENC_Synthetic_Data_Generation.ipynb\n│   ├── CTGAN_Synthetic_Data_Generation.ipynb\n│   └── model_comparison.ipynb\n│\n├── 📂 results/\n│   └── 📂 comparison/\n│       ├── model_comparison.csv\n│       ├── confusion_matrix.png\n│       └── performance_comparison.png\n│\n└── 📄 README.md\n```\n\n---\n\n# ▶️ 19. How to Run\n\n### 1. Clone the repository\n\n```bash\ngit clone https://github.com/YOUR-USERNAME/Sleep-Disorder-Synthetic-Data-Generation.git\ncd Sleep-Disorder-Synthetic-Data-Generation\n```\n\n### 2. Install dependencies\n\n```bash\npip install pandas numpy matplotlib scikit-learn imbalanced-learn sdv\n```\n\n### 3. Open the notebooks\n\nUse:\n\n```text\nGoogle Colab\n       OR\nJupyter Notebook\n```\n\n### 4. Execute in order\n\n```text\nDataset Preparation\n        ↓\nSMOTENC Generation\n        ↓\nCTGAN Generation\n        ↓\nSynthetic Data Validation\n        ↓\nModel Comparison\n        ↓\nResults\n```\n\n---\n\n# 📚 20. Learning Outcomes\n\nThis project demonstrates practical experience with:\n\n```text\n✓ Data Cleaning\n✓ Missing-Value Handling\n✓ Feature Engineering\n✓ Categorical Encoding\n✓ Class Imbalance\n✓ SMOTENC\n✓ Synthetic Tabular Data\n✓ CTGAN\n✓ Conditional Generation\n✓ Data Validation\n✓ Statistical Analysis\n✓ Correlation Analysis\n✓ Random Forest\n✓ Model Evaluation\n✓ Confusion Matrix\n✓ Performance Visualization\n✓ GitHub Project Organization\n```\n\n---\n\n# 🏁 21. Conclusion\n\nThis project provides a practical comparison of **SMOTENC and Conditional CTGAN** for synthetic tabular data generation using a Sleep Health & Lifestyle dataset.\n\nThe workflow goes beyond simply generating rows. It evaluates the synthetic datasets from multiple perspectives:\n\n```text\nOriginal Dataset\n      ↓\nPreprocessing\n      ↓\nSynthetic Generation\n      ↓\nQuality Validation\n      ↓\nDistribution Comparison\n      ↓\nCorrelation Analysis\n      ↓\nMachine Learning\n      ↓\nFinal Evaluation\n```\n\nThe most important result of this experiment is:\n\n> 🏆 **SMOTENC achieved the strongest downstream Random Forest performance, with 96.00% accuracy and 95.98% F1-score.**\n\nConditional CTGAN provides a more generative approach, but its downstream performance in this particular experiment was lower.\n\nThe project therefore demonstrates an important lesson in synthetic-data generation:\n\n**Generating synthetic records is only the beginning — their quality, statistical behavior, relationship preservation, and downstream usefulness must all be evaluated.**\n\n---\n\n# 👨‍💻 Author\n\n<div align=\"center\">\n\n## **Sandeep Kumar Reddy Chalapala**\n\n**Computer Science & Engineering**\n\n### 💡 Interests\n\n`Data Science` · `Machine Learning` · `Artificial Intelligence` · `Java` · `Synthetic Data`\n\n---\n\n### ⭐ If you find this project useful, consider giving the repository a star!\n\n</div>\n\n---\n\n## 📌 Project Snapshot\n\n```text\n┌───────────────────────────────────────────────┐\n│          SLEEP DISORDER PROJECT               │\n├───────────────────────────────────────────────┤\n│ Original Dataset       │ 559 records          │\n│ Synthetic Dataset      │ 1,500 records        │\n│ Techniques             │ SMOTENC + CTGAN      │\n│ ML Model               │ Random Forest        │\n│ Best Accuracy          │ 96.00%               │\n│ Best F1-Score          │ 95.98%               │\n│ Best Approach          │ SMOTENC              │\n└───────────────────────────────────────────────┘\n```\n\n<div align=\"center\">\n\n### 💤 Synthetic Data • 🤖 Machine Learning • 📊 Statistical Analysis • 🧪 Experimentation\n\n**Built to explore whether synthetic data can improve real-world ML utility.**\n\n</div>\n",
+ "hits": {
+  "st": [
+   {
+    "file": "notebooks/CTGAN_Synthetic_Data_Generation (2).ipynb",
+    "line": 1291,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    },",
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "        \"from sdv.metadata import Metadata\\n\",",
+     "        \"from sdv.sampling import Condition\"",
+     "      ],",
+     "      \"metadata\": {"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "notebooks/CTGAN_Synthetic_Data_Generation (2).ipynb",
+    "line": 1292,
+    "text": "\"from sdv.metadata import Metadata\\n\",",
+    "context": [
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "        \"from sdv.metadata import Metadata\\n\",",
+     "        \"from sdv.sampling import Condition\"",
+     "      ],",
+     "      \"metadata\": {",
+     "        \"id\": \"-SrfRxEuMHwX\""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "notebooks/CTGAN_Synthetic_Data_Generation (2).ipynb",
+    "line": 1222,
+    "text": "\"Collecting boto3<2.0.0,>=1.28 (from sdv)\\n\",",
+    "context": [
+     "          \"name\": \"stdout\",",
+     "          \"text\": [",
+     "            \"Collecting sdv\\n\",",
+     "            \"  Downloading sdv-1.38.0-py3-none-any.whl.metadata (14 kB)\\n\",",
+     "            \"Collecting boto3<2.0.0,>=1.28 (from sdv)\\n\",",
+     "            \"  Downloading boto3-1.43.72-py3-none-any.whl.metadata (6.6 kB)\\n\",",
+     "            \"Collecting botocore<2.0.0,>=1.31 (from sdv)\\n\",",
+     "            \"  Downloading botocore-1.43.72-py3-none-any.whl.metadata (5.6 kB)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (3.1.2)\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/CTGAN_Synthetic_Data_Generation (2).ipynb",
+    "line": 1224,
+    "text": "\"Collecting botocore<2.0.0,>=1.31 (from sdv)\\n\",",
+    "context": [
+     "            \"Collecting sdv\\n\",",
+     "            \"  Downloading sdv-1.38.0-py3-none-any.whl.metadata (14 kB)\\n\",",
+     "            \"Collecting boto3<2.0.0,>=1.28 (from sdv)\\n\",",
+     "            \"  Downloading boto3-1.43.72-py3-none-any.whl.metadata (6.6 kB)\\n\",",
+     "            \"Collecting botocore<2.0.0,>=1.31 (from sdv)\\n\",",
+     "            \"  Downloading botocore-1.43.72-py3-none-any.whl.metadata (5.6 kB)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (3.1.2)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.21)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.0.2)\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/CTGAN_Synthetic_Data_Generation (2).ipynb",
+    "line": 1226,
+    "text": "\"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (3.1.2)\\n\",",
+    "context": [
+     "            \"Collecting boto3<2.0.0,>=1.28 (from sdv)\\n\",",
+     "            \"  Downloading boto3-1.43.72-py3-none-any.whl.metadata (6.6 kB)\\n\",",
+     "            \"Collecting botocore<2.0.0,>=1.31 (from sdv)\\n\",",
+     "            \"  Downloading botocore-1.43.72-py3-none-any.whl.metadata (5.6 kB)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (3.1.2)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.21)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.0.2)\\n\",",
+     "            \"Requirement already satisfied: pandas<3,>=2.1.1 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.2.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv) (4.67.3)\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/CTGAN_Synthetic_Data_Generation (2).ipynb",
+    "line": 1227,
+    "text": "\"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.21)\\n\",",
+    "context": [
+     "            \"  Downloading boto3-1.43.72-py3-none-any.whl.metadata (6.6 kB)\\n\",",
+     "            \"Collecting botocore<2.0.0,>=1.31 (from sdv)\\n\",",
+     "            \"  Downloading botocore-1.43.72-py3-none-any.whl.metadata (5.6 kB)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (3.1.2)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.21)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.0.2)\\n\",",
+     "            \"Requirement already satisfied: pandas<3,>=2.1.1 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.2.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv) (4.67.3)\\n\",",
+     "            \"Collecting copulas>=0.12.1 (from sdv)\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/CTGAN_Synthetic_Data_Generation (2).ipynb",
+    "line": 1228,
+    "text": "\"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.0.2)\\n\",",
+    "context": [
+     "            \"Collecting botocore<2.0.0,>=1.31 (from sdv)\\n\",",
+     "            \"  Downloading botocore-1.43.72-py3-none-any.whl.metadata (5.6 kB)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (3.1.2)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.21)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.0.2)\\n\",",
+     "            \"Requirement already satisfied: pandas<3,>=2.1.1 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.2.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv) (4.67.3)\\n\",",
+     "            \"Collecting copulas>=0.12.1 (from sdv)\\n\",",
+     "            \"  Downloading copulas-0.14.1-py3-none-any.whl.metadata (9.7 kB)\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/CTGAN_Synthetic_Data_Generation (2).ipynb",
+    "line": 1229,
+    "text": "\"Requirement already satisfied: pandas<3,>=2.1.1 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.2.2)\\n\",",
+    "context": [
+     "            \"  Downloading botocore-1.43.72-py3-none-any.whl.metadata (5.6 kB)\\n\",",
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (3.1.2)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.21)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.0.2)\\n\",",
+     "            \"Requirement already satisfied: pandas<3,>=2.1.1 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.2.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv) (4.67.3)\\n\",",
+     "            \"Collecting copulas>=0.12.1 (from sdv)\\n\",",
+     "            \"  Downloading copulas-0.14.1-py3-none-any.whl.metadata (9.7 kB)\\n\",",
+     "            \"Requirement already satisfied: ctgan>=0.11.1 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.12.1)\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/CTGAN_Synthetic_Data_Generation (2).ipynb",
+    "line": 1230,
+    "text": "\"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv) (4.67.3)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: cloudpickle>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (3.1.2)\\n\",",
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.21)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.0.2)\\n\",",
+     "            \"Requirement already satisfied: pandas<3,>=2.1.1 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.2.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv) (4.67.3)\\n\",",
+     "            \"Collecting copulas>=0.12.1 (from sdv)\\n\",",
+     "            \"  Downloading copulas-0.14.1-py3-none-any.whl.metadata (9.7 kB)\\n\",",
+     "            \"Requirement already satisfied: ctgan>=0.11.1 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.12.1)\\n\",",
+     "            \"Collecting deepecho>=0.7.0 (from sdv)\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/CTGAN_Synthetic_Data_Generation (2).ipynb",
+    "line": 1231,
+    "text": "\"Collecting copulas>=0.12.1 (from sdv)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: graphviz>=0.13.2 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.21)\\n\",",
+     "            \"Requirement already satisfied: numpy>=1.26.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.0.2)\\n\",",
+     "            \"Requirement already satisfied: pandas<3,>=2.1.1 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.2.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv) (4.67.3)\\n\",",
+     "            \"Collecting copulas>=0.12.1 (from sdv)\\n\",",
+     "            \"  Downloading copulas-0.14.1-py3-none-any.whl.metadata (9.7 kB)\\n\",",
+     "            \"Requirement already satisfied: ctgan>=0.11.1 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.12.1)\\n\",",
+     "            \"Collecting deepecho>=0.7.0 (from sdv)\\n\",",
+     "            \"  Downloading deepecho-0.8.1-py3-none-any.whl.metadata (11 kB)\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/CTGAN_Synthetic_Data_Generation (2).ipynb",
+    "line": 1233,
+    "text": "\"Requirement already satisfied: ctgan>=0.11.1 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.12.1)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: pandas<3,>=2.1.1 in /usr/local/lib/python3.12/dist-packages (from sdv) (2.2.2)\\n\",",
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv) (4.67.3)\\n\",",
+     "            \"Collecting copulas>=0.12.1 (from sdv)\\n\",",
+     "            \"  Downloading copulas-0.14.1-py3-none-any.whl.metadata (9.7 kB)\\n\",",
+     "            \"Requirement already satisfied: ctgan>=0.11.1 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.12.1)\\n\",",
+     "            \"Collecting deepecho>=0.7.0 (from sdv)\\n\",",
+     "            \"  Downloading deepecho-0.8.1-py3-none-any.whl.metadata (11 kB)\\n\",",
+     "            \"Requirement already satisfied: rdt>=1.18.2 in /usr/local/lib/python3.12/dist-packages (from sdv) (1.22.0)\\n\",",
+     "            \"Collecting sdmetrics>=0.28.1 (from sdv)\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/CTGAN_Synthetic_Data_Generation (2).ipynb",
+    "line": 1234,
+    "text": "\"Collecting deepecho>=0.7.0 (from sdv)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: tqdm>=4.29 in /usr/local/lib/python3.12/dist-packages (from sdv) (4.67.3)\\n\",",
+     "            \"Collecting copulas>=0.12.1 (from sdv)\\n\",",
+     "            \"  Downloading copulas-0.14.1-py3-none-any.whl.metadata (9.7 kB)\\n\",",
+     "            \"Requirement already satisfied: ctgan>=0.11.1 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.12.1)\\n\",",
+     "            \"Collecting deepecho>=0.7.0 (from sdv)\\n\",",
+     "            \"  Downloading deepecho-0.8.1-py3-none-any.whl.metadata (11 kB)\\n\",",
+     "            \"Requirement already satisfied: rdt>=1.18.2 in /usr/local/lib/python3.12/dist-packages (from sdv) (1.22.0)\\n\",",
+     "            \"Collecting sdmetrics>=0.28.1 (from sdv)\\n\",",
+     "            \"  Downloading sdmetrics-0.28.2-py3-none-any.whl.metadata (9.9 kB)\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/CTGAN_Synthetic_Data_Generation (2).ipynb",
+    "line": 1236,
+    "text": "\"Requirement already satisfied: rdt>=1.18.2 in /usr/local/lib/python3.12/dist-packages (from sdv) (1.22.0)\\n\",",
+    "context": [
+     "            \"  Downloading copulas-0.14.1-py3-none-any.whl.metadata (9.7 kB)\\n\",",
+     "            \"Requirement already satisfied: ctgan>=0.11.1 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.12.1)\\n\",",
+     "            \"Collecting deepecho>=0.7.0 (from sdv)\\n\",",
+     "            \"  Downloading deepecho-0.8.1-py3-none-any.whl.metadata (11 kB)\\n\",",
+     "            \"Requirement already satisfied: rdt>=1.18.2 in /usr/local/lib/python3.12/dist-packages (from sdv) (1.22.0)\\n\",",
+     "            \"Collecting sdmetrics>=0.28.1 (from sdv)\\n\",",
+     "            \"  Downloading sdmetrics-0.28.2-py3-none-any.whl.metadata (9.9 kB)\\n\",",
+     "            \"Requirement already satisfied: platformdirs>=4.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (4.10.0)\\n\",",
+     "            \"Requirement already satisfied: pyyaml>=6.0.1 in /usr/local/lib/python3.12/dist-packages (from sdv) (6.0.3)\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/CTGAN_Synthetic_Data_Generation (2).ipynb",
+    "line": 1237,
+    "text": "\"Collecting sdmetrics>=0.28.1 (from sdv)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: ctgan>=0.11.1 in /usr/local/lib/python3.12/dist-packages (from sdv) (0.12.1)\\n\",",
+     "            \"Collecting deepecho>=0.7.0 (from sdv)\\n\",",
+     "            \"  Downloading deepecho-0.8.1-py3-none-any.whl.metadata (11 kB)\\n\",",
+     "            \"Requirement already satisfied: rdt>=1.18.2 in /usr/local/lib/python3.12/dist-packages (from sdv) (1.22.0)\\n\",",
+     "            \"Collecting sdmetrics>=0.28.1 (from sdv)\\n\",",
+     "            \"  Downloading sdmetrics-0.28.2-py3-none-any.whl.metadata (9.9 kB)\\n\",",
+     "            \"Requirement already satisfied: platformdirs>=4.0 in /usr/local/lib/python3.12/dist-packages (from sdv) (4.10.0)\\n\",",
+     "            \"Requirement already satisfied: pyyaml>=6.0.1 in /usr/local/lib/python3.12/dist-packages (from sdv) (6.0.3)\\n\",",
+     "            \"Collecting jmespath<2.0.0,>=0.7.1 (from boto3<2.0.0,>=1.28->sdv)\\n\","
+    ]
+   }
+  ],
+  "ctgan_mod": [
+   {
+    "file": "notebooks/CTGAN_Synthetic_Data_Generation (2).ipynb",
+    "line": 1249,
+    "text": "\"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.11.0+cpu)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\n\",",
+     "            \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\n\",",
+     "            \"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (5.24.1)\\n\",",
+     "            \"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (1.16.3)\\n\",",
+     "            \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.11.0+cpu)\\n\",",
+     "            \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2025.2)\\n\",",
+     "            \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2026.3)\\n\",",
+     "            \"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (1.6.1)\\n\",",
+     "            \"Requirement already satisfied: Faker!=37.11.0,>=17 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (40.36.0)\\n\","
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "notebooks/CTGAN_Synthetic_Data_Generation (2).ipynb",
+    "line": 1291,
+    "text": "\"from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    },",
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"from sdv.single_table import CTGANSynthesizer\\n\",",
+     "        \"from sdv.metadata import Metadata\\n\",",
+     "        \"from sdv.sampling import Condition\"",
+     "      ],",
+     "      \"metadata\": {"
+    ]
+   },
+   {
+    "file": "notebooks/CTGAN_Synthetic_Data_Generation (2).ipynb",
+    "line": 1379,
+    "text": "\"synthesizer = CTGANSynthesizer(\\n\",",
+    "context": [
+     "    },",
+     "    {",
+     "      \"cell_type\": \"code\",",
+     "      \"source\": [",
+     "        \"synthesizer = CTGANSynthesizer(\\n\",",
+     "        \"    metadata,\\n\",",
+     "        \"    epochs=300,\\n\",",
+     "        \"    batch_size=100,\\n\",",
+     "        \"    verbose=True\\n\","
+    ]
+   }
+  ],
+  "rdt": [
+   {
+    "file": "notebooks/CTGAN_Synthetic_Data_Generation (2).ipynb",
+    "line": 1252,
+    "text": "\"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (1.6.1)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (1.16.3)\\n\",",
+     "            \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.11.0+cpu)\\n\",",
+     "            \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2025.2)\\n\",",
+     "            \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2026.3)\\n\",",
+     "            \"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (1.6.1)\\n\",",
+     "            \"Requirement already satisfied: Faker!=37.11.0,>=17 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (40.36.0)\\n\",",
+     "            \"Requirement already satisfied: tenacity>=6.2.0 in /usr/local/lib/python3.12/dist-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (9.1.4)\\n\",",
+     "            \"Requirement already satisfied: packaging in /usr/local/lib/python3.12/dist-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (26.2)\\n\",",
+     "            \"Requirement already satisfied: six>=1.5 in /usr/local/lib/python3.12/dist-packages (from python-dateutil<3.0.0,>=2.1->botocore<2.0.0,>=1.31->sdv) (1.17.0)\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/CTGAN_Synthetic_Data_Generation (2).ipynb",
+    "line": 1253,
+    "text": "\"Requirement already satisfied: Faker!=37.11.0,>=17 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (40.36.0)\\n\",",
+    "context": [
+     "            \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.11.0+cpu)\\n\",",
+     "            \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2025.2)\\n\",",
+     "            \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2026.3)\\n\",",
+     "            \"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (1.6.1)\\n\",",
+     "            \"Requirement already satisfied: Faker!=37.11.0,>=17 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (40.36.0)\\n\",",
+     "            \"Requirement already satisfied: tenacity>=6.2.0 in /usr/local/lib/python3.12/dist-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (9.1.4)\\n\",",
+     "            \"Requirement already satisfied: packaging in /usr/local/lib/python3.12/dist-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (26.2)\\n\",",
+     "            \"Requirement already satisfied: six>=1.5 in /usr/local/lib/python3.12/dist-packages (from python-dateutil<3.0.0,>=2.1->botocore<2.0.0,>=1.31->sdv) (1.17.0)\\n\",",
+     "            \"Requirement already satisfied: joblib>=1.2.0 in /usr/local/lib/python3.12/dist-packages (from scikit-learn>=1.3.1->rdt>=1.18.2->sdv) (1.5.3)\\n\","
+    ]
+   }
+  ],
+  "copulas": [
+   {
+    "file": "notebooks/CTGAN_Synthetic_Data_Generation (2).ipynb",
+    "line": 1247,
+    "text": "\"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (5.24.1)\\n\",",
+    "context": [
+     "            \"Collecting s3transfer<0.20.0,>=0.19.0 (from boto3<2.0.0,>=1.28->sdv)\\n\",",
+     "            \"  Downloading s3transfer-0.19.2-py3-none-any.whl.metadata (1.7 kB)\\n\",",
+     "            \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\n\",",
+     "            \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\n\",",
+     "            \"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (5.24.1)\\n\",",
+     "            \"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (1.16.3)\\n\",",
+     "            \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.11.0+cpu)\\n\",",
+     "            \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2025.2)\\n\",",
+     "            \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2026.3)\\n\","
+    ]
+   },
+   {
+    "file": "notebooks/CTGAN_Synthetic_Data_Generation (2).ipynb",
+    "line": 1248,
+    "text": "\"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (1.16.3)\\n\",",
+    "context": [
+     "            \"  Downloading s3transfer-0.19.2-py3-none-any.whl.metadata (1.7 kB)\\n\",",
+     "            \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0.post0)\\n\",",
+     "            \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /usr/local/lib/python3.12/dist-packages (from botocore<2.0.0,>=1.31->sdv) (2.5.0)\\n\",",
+     "            \"Requirement already satisfied: plotly>=5.10.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (5.24.1)\\n\",",
+     "            \"Requirement already satisfied: scipy>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from copulas>=0.12.1->sdv) (1.16.3)\\n\",",
+     "            \"Requirement already satisfied: torch>=2.3.0 in /usr/local/lib/python3.12/dist-packages (from ctgan>=0.11.1->sdv) (2.11.0+cpu)\\n\",",
+     "            \"Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2025.2)\\n\",",
+     "            \"Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=2.1.1->sdv) (2026.3)\\n\",",
+     "            \"Requirement already satisfied: scikit-learn>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from rdt>=1.18.2->sdv) (1.6.1)\\n\","
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "copulas",
+  "ct",
+  "ctgan_mod",
+  "md",
+  "rdt",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
+}

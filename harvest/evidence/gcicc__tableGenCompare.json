@@ -1,0 +1,1345 @@
+{
+ "repo": "gcicc/tableGenCompare",
+ "disk_kb": 251002,
+ "method": "partial_clone",
+ "tree_files": 7725,
+ "status": "ok",
+ "readme": "# Clinical Synthetic Data Generation Framework\n\nA comprehensive benchmarking suite for evaluating synthetic tabular data generation methods across multiple healthcare datasets.\n\n## Overview\n\nThis project implements and compares the performance of state-of-the-art synthetic data generation methods specifically designed for clinical and healthcare tabular data. The framework provides a standardized pipeline for training, evaluating, and optimizing generative models.\n\n**Primary Workflow:** Use `STG-Driver-breast-cancer.ipynb` as the main entry point. This consolidated notebook includes the complete pipeline with all 8 generative models.\n\n## Synthetic Data Generation Methods\n\nThe framework evaluates **8 generative models**:\n\n| Model | Type | Description |\n|-------|------|-------------|\n| **CTGAN** | GAN | Standard GAN approach for tabular data |\n| **CTAB-GAN** | GAN | Enhanced preprocessing pipeline |\n| **CTAB-GAN+** | GAN | Advanced stability with WGAN-GP losses |\n| **GANerAid** | GAN | Purpose-built clinical data generator |\n| **CopulaGAN** | Statistical | Copula-based approach |\n| **TVAE** | VAE | Variational autoencoder for tabular synthesis |\n| **PATE-GAN** | GAN | Privacy-preserving GAN with differential privacy |\n| **MEDGAN** | GAN | Medical record generation with autoencoder |\n\n## Datasets\n\nThe framework supports healthcare datasets including:\n- **Breast Cancer** - Cancer diagnosis and prognosis data (primary)\n- **Alzheimer's Disease** - Neurological condition classification\n- **Liver Disease** - Hepatic condition assessment\n- **Pakistani Liver Patient** - Regional liver disease dataset\n\n---\n\n## Quick Start\n\n### Option 1: Local Installation\n\n```bash\n# Clone repository with submodules\ngit clone --recurse-submodules https://github.com/gcicc/tableGenCompare.git\ncd tableGenCompare\n\n# Create virtual environment\npython3 -m venv venv\nsource venv/bin/activate  # Linux/macOS\n# OR: venv\\Scripts\\activate  # Windows\n\n# Install dependencies\npip install --upgrade pip\npip install -r requirements.txt\n\n# Launch Jupyter\njupyter notebook STG-Driver-breast-cancer.ipynb\n```\n\n### Option 2: AWS SageMaker (Recommended for GPU)\n\nSee [AWS SageMaker Setup](#aws-sagemaker-setup) below.\n\n---\n\n## AWS SageMaker Setup\n\n### 1. Access AWS SageMaker\n\n1. Log in to AWS via Okta: **AWS TEC**\n2. Select environment: `tec-rnd-sqs-dev`\n3. Open **Amazon SageMaker AI** > **Notebook instances**\n\n### 2. Create Notebook Instance\n\n1. Click **Create notebook instance**\n2. Recommended settings:\n   - **Instance type:** `ml.g4dn.xlarge` (GPU-enabled)\n   - **Volume:** 50 GB (or more for large datasets/models)\n   - **IAM role:** Use existing role with appropriate permissions\n3. Under **Git repositories**, add:\n   - URL: `https://github.com/gcicc/tableGenCompare.git`\n   - Branch: `main`\n4. Create and wait until status shows **InService**\n5. Click **Open JupyterLab**\n\n### 3. Initialize Environment (First Time Only)\n\nOpen a terminal in JupyterLab and run:\n\n```bash\nsource ~/anaconda3/bin/activate\nconda init bash\nexec bash\n\ncd ~/SageMaker/tableGenCompare\nbash setup_env.sh\n```\n\nThis installs the conda env to the **persistent EBS volume** (`~/SageMaker/.envs/tablegen`)\nso it survives instance stop/start cycles. It also initializes all git submodules and registers\nthe Jupyter kernel.\n\n### 4. Select Kernel in JupyterLab\n\n**Kernel > Change Kernel > Python (tablegen)**\n\n### 5. Returning Sessions (Automatic)\n\nThe `on-start.sh` script re-registers the Jupyter kernel and ensures submodules\nare initialized. Install it as a **SageMaker Lifecycle Configuration** for fully\nautomatic startup:\n\n1. Go to **SageMaker Console > Notebook instances > Your instance > Edit**\n2. Under **Lifecycle configuration**, create a new one\n3. Paste the contents of `on-start.sh` into the **Start notebook** script\n4. Save and restart the instance\n\n**Or**, if you haven't set up the lifecycle config yet, just run manually:\n\n```bash\nbash ~/SageMaker/tableGenCompare/on-start.sh\n```\n\nNo reinstalling, no `pip install`, no `conda create` — everything is already on the persistent volume.\n\n---\n\n## Important Notes & Gotchas\n\n- **Python version:** Use Python 3.10 on SageMaker classic Notebook Instances (avoids compatibility issues)\n- **Persistent environment:** The conda env is installed on the EBS volume (`~/SageMaker/.envs/tablegen`) so it survives instance stop/start. Only the kernel registration (root volume) needs refreshing — handled by `on-start.sh`.\n- **scikit-learn:** Version 1.7.2+ is required (updated from earlier 1.2.2 pinning)\n- **dython:** Version 0.7.12+ required; `tab-gan-metrics` is patched at install time for compatibility (see `setup_env.sh`)\n- **Submodules:** CTAB-GAN, CTAB-GAN-Plus, and GANerAid are Git submodules — `setup_env.sh` and `on-start.sh` handle initialization automatically\n- **GANerAid device bug:** The upstream GANerAid library hardcodes `torch.cuda.is_available()` instead of respecting the `device` parameter, causing CPU/CUDA tensor mismatches on GPU instances. Patched files in `patches/` are applied by `setup_env.sh` to fix this. The `GANerAidModel` wrapper also forces CPU as a safety net.\n\n---\n\n## Notebook Structure\n\nThe STG-Driver notebook follows a standardized 5-section pipeline:\n\n### Section 1: Setup and Data Loading\n- Environment configuration and library imports\n- Dataset loading and initial exploration\n\n### Section 2: Data Preprocessing and Analysis\n- Comprehensive dataset overview and statistics\n- Missing value analysis and MICE imputation\n- Categorical encoding and feature preparation\n- **§2.2b Collinearity reduction** — residual re-parameterization of near-deterministic column pairs (e.g., `perimeter`/`radius`/`area`). Decisions table is surfaced for human review before §3/§4/§5 run on the reduced schema. See [docs/collinearity-reduction.md](docs/collinearity-reduction.md).\n- EDA heatmap highlights collinearity-treated columns in red\n\n### Section 3: Demo Model Training\n- Train all 8 models with default parameters\n- Batch evaluation with synthetic data restored to the full real schema before scoring\n- Emits `restoration_health.csv` — per-pair residual-preservation diagnostic\n\n### Section 4: Staged Hyperparameter Optimization\n- Optuna-based Bayesian optimization for each model\n- Three-stage: smoke (10 trials) → pilot (diminishing-returns analysis) → full\n- HPO tunes on the reduced schema so the residual is the actual training signal\n\n### Section 5: Final Model Comparison (SDAC Framework)\n- Retrain with best parameters on the reduced schema\n- Restore dropped columns on synthetic output before evaluation (metrics are computed on the full real schema)\n- **SDAC-aligned evaluation** across 5 dimensions: Privacy, Fidelity, Utility, Fairness, XAI\n- Privacy risk assessment (DCR, NNDR, MIA, memorization, re-identification)\n- Fidelity analysis (JSD, KS, KL, Wasserstein, Detection AUC, Mixed-Association Similarity, **Association Preservation**)\n- Utility preservation (TSTR with XGBoost/RF/LR, ML Efficacy, SRA)\n- Fairness metrics (Demographic Parity, Equalized Odds, Disparate Impact)\n- XAI metrics (Feature Importance Correlation, SHAP Distance)\n- Cross-model comparison via SDAC radar chart and heatmap\n- **Independent SDMetrics cross-check** — every §3 / §5 run also emits `sdmetrics_evaluation_summary.csv`, `sdmetrics_metric_catalog.csv`, `sdmetrics_radar_chart.png`, and `sdmetrics_heatmap.png` from the public [SDMetrics library](https://docs.sdv.dev/sdmetrics). All SDMetrics outputs are clearly captioned `Source: SDMetrics (sdv.dev)`, and overlapping columns are marked with `†`. The SDAC suite remains the primary scorecard; SDMetrics is a third-party sanity check and does not feed composite scoring.\n- Emits `restoration_health.csv` per optimized model\n\n---\n\n## Modular Architecture\n\nThe codebase uses a clean modular structure for maintainability:\n\n```\ntableGenCompare/\n├── setup.py              # Backward-compatible re-export layer\n├── setup_env.sh          # ONE-TIME env setup (persistent EBS)\n├── on-start.sh           # Per-boot kernel registration & submodule init\n├── requirements.txt      # Python dependencies\n├── STG-Driver-breast-cancer.ipynb  # Primary workflow notebook\n│\n├── patches/              # Upstream library bug fixes\n│   ├── ganeraid_model.py    # Device-aware GANerAidGAN/Generator\n│   ├── ganeraid_trainer.py  # Device-aware GanTrainer\n│   └── ganeraid_utils.py    # Device-aware noise()\n│\n├── src/                  # Modular source code\n│   ├── config.py         # Session management\n│   ├── models/           # Model implementations\n│   ├── data/             # Data preprocessing\n│   │   ├── eda.py             # run_comprehensive_eda, association primitives\n│   │   ├── preprocessing.py   # config-driven cleaning / encoding\n│   │   ├── collinearity.py    # residual reparam engine (synced w/ sibling)\n│   │   └── target_integrity.py\n│   ├── evaluation/       # SDAC evaluation framework\n│   │   ├── sdac_metrics.py  # Unified SDAC orchestrator\n│   │   ├── association.py   # Mixed-association matrix (dython-wrapped)\n│   │   ├── quality.py       # Statistical fidelity\n│   │   ├── fidelity.py      # KS, KL, WD, Detection AUC, Assoc_Preservation\n│   │   ├── trts.py          # TRTS framework (XGBoost primary)\n│   │   ├── privacy.py       # DCR, NNDR, MIA, memorization\n│   │   ├── fairness.py      # Demographic parity, equalized odds\n│   │   ├── xai_metrics.py   # Feature importance, SHAP distance\n│   │   └── batch.py         # Batch evaluation pipeline\n│   ├── objective/        # Optuna objective functions\n│   ├── visualization/    # Section-specific visualizations\n│   └── utils/            # Utility functions\n│\n├── data/                 # Dataset directory\n├── results/              # Generated outputs\n│\n└── CTAB-GAN/            # Git submodules\n    CTAB-GAN-Plus/\n    GANerAid/\n```\n\nAll notebooks use `from setup import *` without changes - the thin re-export layer ensures backward compatibility.\n\n---\n\n## Key Features\n\n- **SDAC Framework:** Evaluation aligned to the SEARCH Consortium's Synthetic Data Anonymity and Credibility (SDAC) taxonomy across 5 dimensions — Privacy, Fidelity, Utility, Fairness, XAI\n- **Unified SDAC output:** Single `sdac_evaluation_summary.csv` with all metrics organized by SDAC category\n- **Collinearity reducer:** Residual re-parameterization of near-deterministic pairs so generators preserve physical relationships (perimeter/radius, label/code) end-to-end. Surfaces a human-reviewable decisions table and a per-pair `restoration_health.csv` diagnostic. Byte-identical to the engine in sibling project `multi-table-gen-compare`. See [docs/collinearity-reduction.md](docs/collinearity-reduction.md).\n- **XGBoost-primary classifiers:** XGBoost as default classifier across TSTR and utility evaluation, with RF and LR as secondary\n- **30+ evaluation metrics:** Comprehensive TRTS analysis with statistical fidelity, utility, and privacy metrics\n- **Association Preservation metric:** Scorecard axis measuring how well generators preserve strong real-data pairwise associations (`|A_real| > 0.3`), computed via mixed-association matrix (Pearson / Cramér's V / eta)\n- **Automated batch training:** Single function call handles multi-model hyperparameter optimization\n- **Privacy dashboard:** DCR, NNDR, MIA AUC, memorization risk, and re-identification assessment\n- **Advanced visualizations:** SDAC radar chart, SDAC heatmap, ROC curves, PR curves, calibration plots, PCA comparisons\n- **Optuna integration:** Bayesian optimization with automatic visualization generation\n\n---\n\n## Requirements\n\n**System:**\n- Python 3.10+\n- 10+ GB disk space\n- 8+ GB RAM (16+ recommended)\n- GPU optional but recommended for faster training\n\n**Key Dependencies:**\n- pandas, numpy, scipy\n- torch (PyTorch)\n- scikit-learn >= 1.7.2\n- xgboost == 2.1.3\n- sdv >= 1.32.1 (includes CTGAN, CopulaGAN, TVAE)\n- dython >= 0.7.12\n- optuna >= 4.0.0\n\nSee `requirements.txt` for complete dependency list.\n\n---\n\n## Troubleshooting\n\n**PyTorch installation fails**\n- Ensure sufficient disk space (10+ GB)\n- CPU-only: `pip install torch --index-url https://download.pytorch.org/whl/cpu`\n\n**CTAB-GAN import errors**\n- Run: `git submodule update --init --recursive`\n- Verify: `ls CTAB-GAN CTAB-GAN-Plus GANerAid`\n\n**Out of memory during training**\n- Reduce `n_trials` parameter in Section 4\n- Start with `n_trials=5` for testing\n\n**Kernel not found in JupyterLab**\n- Run: `bash ~/SageMaker/tableGenCompare/on-start.sh` to re-register the kernel\n- Or set up the SageMaker Lifecycle Configuration (see [Returning Sessions](#5-returning-sessions-automatic))\n\n**GANerAid device mismatch (CPU/CUDA error)**\n- The upstream GANerAid library ignores the `device` parameter. Re-run `setup_env.sh` to apply patches.\n- The `GANerAidModel` wrapper forces CPU as a safety net; this is intentional.\n\n**Environment lost after instance restart**\n- The conda env lives on persistent EBS (`~/SageMaker/.envs/tablegen`) — it should survive restarts.\n- Only the kernel registration needs refreshing: run `on-start.sh` or use a Lifecycle Configuration.\n\n---\n\n## AWS Folder\n\nThe `aws/` directory contains AWS CLI v2 bundled distribution for SageMaker deployment:\n- `dist/` - Bundled AWS CLI v2 executables\n- `install` - Installation script\n- `README.md` - Installation instructions\n\nThis allows SageMaker notebook instances to run AWS CLI commands without manual installation.\n\n---\n\n## Documentation\n\nTopic-focused references in `docs/`:\n\n- [workflow.md](docs/workflow.md) — shortest happy path from fresh clone to completed smoke run\n- [datasets.md](docs/datasets.md) — the four benchmarks: schema, source, intended use\n- [models.md](docs/models.md) — all 10 generators (incl. TabDiffusion + GReaT) + remaining planned additions\n- [evaluation.md](docs/evaluation.md) — SDAC axes, metrics, and composite scoring\n- [collinearity-reduction.md](docs/collinearity-reduction.md) — residual re-parameterization (§2.2b feature)\n- [applications.md](docs/applications.md) — five use cases for synthetic tabular clinical data\n- [decisions.md](docs/decisions.md) — architectural decisions log (ADR-style)\n- [glossary.md](docs/glossary.md) — terminology (SDAC, TRTS, etc.)\n- [experiment_log.md](docs/experiment_log.md) — running log of notable runs and refactors\n- [USER-GUIDE.md](docs/USER-GUIDE.md) — long-form per-section user guide\n\nAlso: [Project-Evolution-Timeline.md](docs/Project-Evolution-Timeline.md) for\nthe historical development timeline.\n\n## Contributing\n\nThis framework follows a systematic approach to synthetic data generation research, emphasizing reproducibility, comprehensive evaluation, and practical applicability to healthcare data challenges.\n\n\n\n```bash\ncurl -fsSL https://claude.ai/install.sh | bash\necho 'export PATH=\"$HOME/.local/bin:$PATH\"' >> ~/.bashrc\nsource ~/.bashrc\n```",
+ "hits": {
+  "st": [
+   {
+    "file": "archive/Clinical_Synthetic_Data_Generation_Framework_Generalized.ipynb",
+    "line": 1731,
+    "text": "\"                from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"            from ctgan import CTGAN\\n\",",
+     "    \"            print(\\\"✅ Using CTGAN from ctgan package\\\")\\n\",",
+     "    \"        except ImportError:\\n\",",
+     "    \"            try:\\n\",",
+     "    \"                from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"                CTGAN = CTGANSynthesizer\\n\",",
+     "    \"                print(\\\"✅ Using CTGANSynthesizer from sdv.single_table\\\")\\n\",",
+     "    \"            except ImportError:\\n\",",
+     "    \"                try:\\n\","
+    ]
+   },
+   {
+    "file": "archive/STG-PakistaniV2.ipynb",
+    "line": 4733,
+    "text": "\"                from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"            from ctgan import CTGAN\\n\",",
+     "    \"            print(\\\"✅ Using CTGAN from ctgan package\\\")\\n\",",
+     "    \"        except ImportError:\\n\",",
+     "    \"            try:\\n\",",
+     "    \"                from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"                CTGAN = CTGANSynthesizer\\n\",",
+     "    \"                print(\\\"✅ Using CTGANSynthesizer from sdv.single_table\\\")\\n\",",
+     "    \"            except ImportError:\\n\",",
+     "    \"                try:\\n\","
+    ]
+   },
+   {
+    "file": "archive/SynthethicTableGenerator-Alzheimer.ipynb",
+    "line": 3651,
+    "text": "\"                from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"            from ctgan import CTGAN\\n\",",
+     "    \"            print(\\\"✅ Using CTGAN from ctgan package\\\")\\n\",",
+     "    \"        except ImportError:\\n\",",
+     "    \"            try:\\n\",",
+     "    \"                from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"                CTGAN = CTGANSynthesizer\\n\",",
+     "    \"                print(\\\"✅ Using CTGANSynthesizer from sdv.single_table\\\")\\n\",",
+     "    \"            except ImportError:\\n\",",
+     "    \"                try:\\n\","
+    ]
+   },
+   {
+    "file": "archive/SynthethicTableGenerator-Pakistani.ipynb",
+    "line": 4542,
+    "text": "\"                from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"            from ctgan import CTGAN\\n\",",
+     "    \"            print(\\\"✅ Using CTGAN from ctgan package\\\")\\n\",",
+     "    \"        except ImportError:\\n\",",
+     "    \"            try:\\n\",",
+     "    \"                from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"                CTGAN = CTGANSynthesizer\\n\",",
+     "    \"                print(\\\"✅ Using CTGANSynthesizer from sdv.single_table\\\")\\n\",",
+     "    \"            except ImportError:\\n\",",
+     "    \"                try:\\n\","
+    ]
+   },
+   {
+    "file": "archive/STG-Alzheimer-testing.ipynb",
+    "line": 3203,
+    "text": "\"                from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"            from ctgan import CTGAN\\n\",",
+     "    \"            print(\\\"✅ Using CTGAN from ctgan package\\\")\\n\",",
+     "    \"        except ImportError:\\n\",",
+     "    \"            try:\\n\",",
+     "    \"                from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"                CTGAN = CTGANSynthesizer\\n\",",
+     "    \"                print(\\\"✅ Using CTGANSynthesizer from sdv.single_table\\\")\\n\",",
+     "    \"            except ImportError:\\n\",",
+     "    \"                try:\\n\","
+    ]
+   },
+   {
+    "file": "archive/STG-BreastCancerV2.ipynb",
+    "line": 4752,
+    "text": "\"                from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"            from ctgan import CTGAN\\n\",",
+     "    \"            print(\\\"\\u2705 Using CTGAN from ctgan package\\\")\\n\",",
+     "    \"        except ImportError:\\n\",",
+     "    \"            try:\\n\",",
+     "    \"                from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"                CTGAN = CTGANSynthesizer\\n\",",
+     "    \"                print(\\\"\\u2705 Using CTGANSynthesizer from sdv.single_table\\\")\\n\",",
+     "    \"            except ImportError:\\n\",",
+     "    \"                try:\\n\","
+    ]
+   },
+   {
+    "file": "archive/SynthethicTableGenerator-BreastCancer.ipynb",
+    "line": 4693,
+    "text": "\"                from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"            from ctgan import CTGAN\\n\",",
+     "    \"            print(\\\"✅ Using CTGAN from ctgan package\\\")\\n\",",
+     "    \"        except ImportError:\\n\",",
+     "    \"            try:\\n\",",
+     "    \"                from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"                CTGAN = CTGANSynthesizer\\n\",",
+     "    \"                print(\\\"✅ Using CTGANSynthesizer from sdv.single_table\\\")\\n\",",
+     "    \"            except ImportError:\\n\",",
+     "    \"                try:\\n\","
+    ]
+   },
+   {
+    "file": "archive/STG-Pakistani-testing.ipynb",
+    "line": 4423,
+    "text": "\"                from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"            from ctgan import CTGAN\\n\",",
+     "    \"            print(\\\"✅ Using CTGAN from ctgan package\\\")\\n\",",
+     "    \"        except ImportError:\\n\",",
+     "    \"            try:\\n\",",
+     "    \"                from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"                CTGAN = CTGANSynthesizer\\n\",",
+     "    \"                print(\\\"✅ Using CTGANSynthesizer from sdv.single_table\\\")\\n\",",
+     "    \"            except ImportError:\\n\",",
+     "    \"                try:\\n\","
+    ]
+   },
+   {
+    "file": "docs/SynthethicTableGenerator.ipynb",
+    "line": 2756,
+    "text": "\"                from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"            from ctgan import CTGAN\\n\",",
+     "    \"            print(\\\"✅ Using CTGAN from ctgan package\\\")\\n\",",
+     "    \"        except ImportError:\\n\",",
+     "    \"            try:\\n\",",
+     "    \"                from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"                CTGAN = CTGANSynthesizer\\n\",",
+     "    \"                print(\\\"✅ Using CTGANSynthesizer from sdv.single_table\\\")\\n\",",
+     "    \"            except ImportError:\\n\",",
+     "    \"                try:\\n\","
+    ]
+   },
+   {
+    "file": "src/models/implementations/copulagan_model.py",
+    "line": 22,
+    "text": "from sdv.single_table import CopulaGANSynthesizer",
+    "context": [
+     "import importlib.util",
+     "",
+     "# Try to import SDV CopulaGAN",
+     "try:",
+     "    from sdv.single_table import CopulaGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    COPULAGAN_AVAILABLE = True",
+     "    logger = logging.getLogger(__name__)",
+     "    logger.info(\"SDV CopulaGAN successfully imported\")"
+    ]
+   },
+   {
+    "file": "src/models/implementations/tvae_model.py",
+    "line": 22,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "",
+     "logger = logging.getLogger(__name__)",
+     "",
+     "try:",
+     "    from sdv.single_table import TVAESynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    TVAE_AVAILABLE = True",
+     "except ImportError:",
+     "    TVAE_AVAILABLE = False"
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "archive/Clinical_Synthetic_Data_Generation_Framework_Generalized.ipynb",
+    "line": 1731,
+    "text": "\"                from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"            from ctgan import CTGAN\\n\",",
+     "    \"            print(\\\"✅ Using CTGAN from ctgan package\\\")\\n\",",
+     "    \"        except ImportError:\\n\",",
+     "    \"            try:\\n\",",
+     "    \"                from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"                CTGAN = CTGANSynthesizer\\n\",",
+     "    \"                print(\\\"✅ Using CTGANSynthesizer from sdv.single_table\\\")\\n\",",
+     "    \"            except ImportError:\\n\",",
+     "    \"                try:\\n\","
+    ]
+   },
+   {
+    "file": "archive/Clinical_Synthetic_Data_Generation_Framework_Generalized.ipynb",
+    "line": 1733,
+    "text": "\"                print(\\\"✅ Using CTGANSynthesizer from sdv.single_table\\\")\\n\",",
+    "context": [
+     "    \"        except ImportError:\\n\",",
+     "    \"            try:\\n\",",
+     "    \"                from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"                CTGAN = CTGANSynthesizer\\n\",",
+     "    \"                print(\\\"✅ Using CTGANSynthesizer from sdv.single_table\\\")\\n\",",
+     "    \"            except ImportError:\\n\",",
+     "    \"                try:\\n\",",
+     "    \"                    from sdv.tabular import CTGAN\\n\",",
+     "    \"                    print(\\\"✅ Using CTGAN from sdv.tabular\\\")\\n\","
+    ]
+   },
+   {
+    "file": "archive/Clinical_Synthetic_Data_Generation_Framework_Generalized.ipynb",
+    "line": 1736,
+    "text": "\"                    from sdv.tabular import CTGAN\\n\",",
+    "context": [
+     "    \"                CTGAN = CTGANSynthesizer\\n\",",
+     "    \"                print(\\\"✅ Using CTGANSynthesizer from sdv.single_table\\\")\\n\",",
+     "    \"            except ImportError:\\n\",",
+     "    \"                try:\\n\",",
+     "    \"                    from sdv.tabular import CTGAN\\n\",",
+     "    \"                    print(\\\"✅ Using CTGAN from sdv.tabular\\\")\\n\",",
+     "    \"                except ImportError:\\n\",",
+     "    \"                    raise ImportError(\\\"❌ Could not import CTGAN from any known package\\\")\\n\",",
+     "    \"        \\n\","
+    ]
+   },
+   {
+    "file": "archive/Clinical_Synthetic_Data_Generation_Framework_Generalized.ipynb",
+    "line": 1737,
+    "text": "\"                    print(\\\"✅ Using CTGAN from sdv.tabular\\\")\\n\",",
+    "context": [
+     "    \"                print(\\\"✅ Using CTGANSynthesizer from sdv.single_table\\\")\\n\",",
+     "    \"            except ImportError:\\n\",",
+     "    \"                try:\\n\",",
+     "    \"                    from sdv.tabular import CTGAN\\n\",",
+     "    \"                    print(\\\"✅ Using CTGAN from sdv.tabular\\\")\\n\",",
+     "    \"                except ImportError:\\n\",",
+     "    \"                    raise ImportError(\\\"❌ Could not import CTGAN from any known package\\\")\\n\",",
+     "    \"        \\n\",",
+     "    \"        # Auto-detect discrete columns  \\n\","
+    ]
+   },
+   {
+    "file": "archive/STG-PakistaniV2.ipynb",
+    "line": 95,
+    "text": "\"Requirement already satisfied: boto3<2.0.0,>=1.28 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (1.40.69)\\n\",",
+    "context": [
+     "      \"\\u001b[0m\\u001b[31mERROR: Ignored the following versions that require a different python version: 0.10.0 Requires-Python >=3.6,<3.9; 0.10.0.dev0 Requires-Python >=3.6,<3.9; 0.10.1 Requires-Pyth",
+     "      \"\\u001b[0m\\u001b[31mERROR: Could not find a version that satisfies the requirement ipython==9.3.0 (from versions: 0.10, 0.10.1, 0.10.2, 0.11, 0.12, 0.12.1, 0.13, 0.13.1, 0.13.2, 1.0.0, 1.1.0, 1.",
+     "      \"\\u001b[0m\\u001b[31mERROR: No matching distribution found for ipython==9.3.0\\u001b[0m\\u001b[31m\\n\",",
+     "      \"\\u001b[0mRequirement already satisfied: sdv in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (1.29.1)\\n\",",
+     "      \"Requirement already satisfied: boto3<2.0.0,>=1.28 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (1.40.69)\\n\",",
+     "      \"Requirement already satisfied: botocore<2.0.0,>=1.31 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (1.40.69)\\n\",",
+     "      \"Requirement already satisfied: cloudpickle>=2.1.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (3.1.2)\\n\",",
+     "      \"Requirement already satisfied: graphviz>=0.13.2 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (0.21)\\n\",",
+     "      \"Requirement already satisfied: numpy>=1.24.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (1.26.4)\\n\","
+    ]
+   },
+   {
+    "file": "archive/STG-PakistaniV2.ipynb",
+    "line": 96,
+    "text": "\"Requirement already satisfied: botocore<2.0.0,>=1.31 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (1.40.69)\\n\",",
+    "context": [
+     "      \"\\u001b[0m\\u001b[31mERROR: Could not find a version that satisfies the requirement ipython==9.3.0 (from versions: 0.10, 0.10.1, 0.10.2, 0.11, 0.12, 0.12.1, 0.13, 0.13.1, 0.13.2, 1.0.0, 1.1.0, 1.",
+     "      \"\\u001b[0m\\u001b[31mERROR: No matching distribution found for ipython==9.3.0\\u001b[0m\\u001b[31m\\n\",",
+     "      \"\\u001b[0mRequirement already satisfied: sdv in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (1.29.1)\\n\",",
+     "      \"Requirement already satisfied: boto3<2.0.0,>=1.28 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (1.40.69)\\n\",",
+     "      \"Requirement already satisfied: botocore<2.0.0,>=1.31 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (1.40.69)\\n\",",
+     "      \"Requirement already satisfied: cloudpickle>=2.1.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (3.1.2)\\n\",",
+     "      \"Requirement already satisfied: graphviz>=0.13.2 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (0.21)\\n\",",
+     "      \"Requirement already satisfied: numpy>=1.24.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (1.26.4)\\n\",",
+     "      \"Requirement already satisfied: pandas>=1.4.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (2.3.3)\\n\","
+    ]
+   },
+   {
+    "file": "archive/STG-PakistaniV2.ipynb",
+    "line": 97,
+    "text": "\"Requirement already satisfied: cloudpickle>=2.1.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (3.1.2)\\n\",",
+    "context": [
+     "      \"\\u001b[0m\\u001b[31mERROR: No matching distribution found for ipython==9.3.0\\u001b[0m\\u001b[31m\\n\",",
+     "      \"\\u001b[0mRequirement already satisfied: sdv in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (1.29.1)\\n\",",
+     "      \"Requirement already satisfied: boto3<2.0.0,>=1.28 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (1.40.69)\\n\",",
+     "      \"Requirement already satisfied: botocore<2.0.0,>=1.31 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (1.40.69)\\n\",",
+     "      \"Requirement already satisfied: cloudpickle>=2.1.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (3.1.2)\\n\",",
+     "      \"Requirement already satisfied: graphviz>=0.13.2 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (0.21)\\n\",",
+     "      \"Requirement already satisfied: numpy>=1.24.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (1.26.4)\\n\",",
+     "      \"Requirement already satisfied: pandas>=1.4.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (2.3.3)\\n\",",
+     "      \"Requirement already satisfied: tqdm>=4.29 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (4.67.1)\\n\","
+    ]
+   },
+   {
+    "file": "archive/STG-PakistaniV2.ipynb",
+    "line": 98,
+    "text": "\"Requirement already satisfied: graphviz>=0.13.2 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (0.21)\\n\",",
+    "context": [
+     "      \"\\u001b[0mRequirement already satisfied: sdv in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (1.29.1)\\n\",",
+     "      \"Requirement already satisfied: boto3<2.0.0,>=1.28 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (1.40.69)\\n\",",
+     "      \"Requirement already satisfied: botocore<2.0.0,>=1.31 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (1.40.69)\\n\",",
+     "      \"Requirement already satisfied: cloudpickle>=2.1.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (3.1.2)\\n\",",
+     "      \"Requirement already satisfied: graphviz>=0.13.2 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (0.21)\\n\",",
+     "      \"Requirement already satisfied: numpy>=1.24.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (1.26.4)\\n\",",
+     "      \"Requirement already satisfied: pandas>=1.4.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (2.3.3)\\n\",",
+     "      \"Requirement already satisfied: tqdm>=4.29 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (4.67.1)\\n\",",
+     "      \"Requirement already satisfied: copulas>=0.12.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (0.12.3)\\n\","
+    ]
+   },
+   {
+    "file": "archive/STG-PakistaniV2.ipynb",
+    "line": 99,
+    "text": "\"Requirement already satisfied: numpy>=1.24.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (1.26.4)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: boto3<2.0.0,>=1.28 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (1.40.69)\\n\",",
+     "      \"Requirement already satisfied: botocore<2.0.0,>=1.31 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (1.40.69)\\n\",",
+     "      \"Requirement already satisfied: cloudpickle>=2.1.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (3.1.2)\\n\",",
+     "      \"Requirement already satisfied: graphviz>=0.13.2 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (0.21)\\n\",",
+     "      \"Requirement already satisfied: numpy>=1.24.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (1.26.4)\\n\",",
+     "      \"Requirement already satisfied: pandas>=1.4.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (2.3.3)\\n\",",
+     "      \"Requirement already satisfied: tqdm>=4.29 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (4.67.1)\\n\",",
+     "      \"Requirement already satisfied: copulas>=0.12.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (0.12.3)\\n\",",
+     "      \"Requirement already satisfied: ctgan>=0.11.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (0.11.1)\\n\","
+    ]
+   },
+   {
+    "file": "archive/STG-PakistaniV2.ipynb",
+    "line": 100,
+    "text": "\"Requirement already satisfied: pandas>=1.4.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (2.3.3)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: botocore<2.0.0,>=1.31 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (1.40.69)\\n\",",
+     "      \"Requirement already satisfied: cloudpickle>=2.1.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (3.1.2)\\n\",",
+     "      \"Requirement already satisfied: graphviz>=0.13.2 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (0.21)\\n\",",
+     "      \"Requirement already satisfied: numpy>=1.24.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (1.26.4)\\n\",",
+     "      \"Requirement already satisfied: pandas>=1.4.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (2.3.3)\\n\",",
+     "      \"Requirement already satisfied: tqdm>=4.29 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (4.67.1)\\n\",",
+     "      \"Requirement already satisfied: copulas>=0.12.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (0.12.3)\\n\",",
+     "      \"Requirement already satisfied: ctgan>=0.11.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (0.11.1)\\n\",",
+     "      \"Requirement already satisfied: deepecho>=0.7.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (0.7.0)\\n\","
+    ]
+   },
+   {
+    "file": "archive/STG-PakistaniV2.ipynb",
+    "line": 101,
+    "text": "\"Requirement already satisfied: tqdm>=4.29 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (4.67.1)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: cloudpickle>=2.1.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (3.1.2)\\n\",",
+     "      \"Requirement already satisfied: graphviz>=0.13.2 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (0.21)\\n\",",
+     "      \"Requirement already satisfied: numpy>=1.24.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (1.26.4)\\n\",",
+     "      \"Requirement already satisfied: pandas>=1.4.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (2.3.3)\\n\",",
+     "      \"Requirement already satisfied: tqdm>=4.29 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (4.67.1)\\n\",",
+     "      \"Requirement already satisfied: copulas>=0.12.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (0.12.3)\\n\",",
+     "      \"Requirement already satisfied: ctgan>=0.11.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (0.11.1)\\n\",",
+     "      \"Requirement already satisfied: deepecho>=0.7.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (0.7.0)\\n\",",
+     "      \"Requirement already satisfied: rdt>=1.18.2 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (1.18.2)\\n\","
+    ]
+   },
+   {
+    "file": "archive/STG-PakistaniV2.ipynb",
+    "line": 102,
+    "text": "\"Requirement already satisfied: copulas>=0.12.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (0.12.3)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: graphviz>=0.13.2 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (0.21)\\n\",",
+     "      \"Requirement already satisfied: numpy>=1.24.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (1.26.4)\\n\",",
+     "      \"Requirement already satisfied: pandas>=1.4.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (2.3.3)\\n\",",
+     "      \"Requirement already satisfied: tqdm>=4.29 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (4.67.1)\\n\",",
+     "      \"Requirement already satisfied: copulas>=0.12.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (0.12.3)\\n\",",
+     "      \"Requirement already satisfied: ctgan>=0.11.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (0.11.1)\\n\",",
+     "      \"Requirement already satisfied: deepecho>=0.7.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (0.7.0)\\n\",",
+     "      \"Requirement already satisfied: rdt>=1.18.2 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (1.18.2)\\n\",",
+     "      \"Requirement already satisfied: sdmetrics>=0.21.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from sdv) (0.24.0)\\n\","
+    ]
+   }
+  ],
+  "ctgan_mod": [
+   {
+    "file": "archive/Clinical_Synthetic_Data_Generation_Framework_Generalized.ipynb",
+    "line": 1727,
+    "text": "\"            from ctgan import CTGAN\\n\",",
+    "context": [
+     "    \"        print(f\\\"🎯 Using target column: '{TARGET_COLUMN}'\\\")\\n\",",
+     "    \"        \\n\",",
+     "    \"        # FIXED: Use correct CTGAN import - try multiple import paths\\n\",",
+     "    \"        try:\\n\",",
+     "    \"            from ctgan import CTGAN\\n\",",
+     "    \"            print(\\\"✅ Using CTGAN from ctgan package\\\")\\n\",",
+     "    \"        except ImportError:\\n\",",
+     "    \"            try:\\n\",",
+     "    \"                from sdv.single_table import CTGANSynthesizer\\n\","
+    ]
+   },
+   {
+    "file": "archive/Clinical_Synthetic_Data_Generation_Framework_Generalized.ipynb",
+    "line": 1728,
+    "text": "\"            print(\\\"✅ Using CTGAN from ctgan package\\\")\\n\",",
+    "context": [
+     "    \"        \\n\",",
+     "    \"        # FIXED: Use correct CTGAN import - try multiple import paths\\n\",",
+     "    \"        try:\\n\",",
+     "    \"            from ctgan import CTGAN\\n\",",
+     "    \"            print(\\\"✅ Using CTGAN from ctgan package\\\")\\n\",",
+     "    \"        except ImportError:\\n\",",
+     "    \"            try:\\n\",",
+     "    \"                from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"                CTGAN = CTGANSynthesizer\\n\","
+    ]
+   },
+   {
+    "file": "archive/STG-LiverV2.ipynb",
+    "line": 3166,
+    "text": "\"✅ Using CTGAN from ctgan package\\n\"",
+    "context": [
+     "      \"✅ PAC validation: 500 % 10 = 0\\n\",",
+     "      \"\\n\",",
+     "      \"🔄 CTGAN Trial 1: epochs=700, batch_size=500, pac=10, lr=1.95e-03\\n\",",
+     "      \"🎯 Using target column: 'Result'\\n\",",
+     "      \"✅ Using CTGAN from ctgan package\\n\"",
+     "     ]",
+     "    },",
+     "    {",
+     "     \"name\": \"stderr\","
+    ]
+   },
+   {
+    "file": "archive/STG-LiverV2.ipynb",
+    "line": 3209,
+    "text": "\"✅ Using CTGAN from ctgan package\\n\"",
+    "context": [
+     "      \"✅ PAC validation: 256 % 8 = 0\\n\",",
+     "      \"\\n\",",
+     "      \"🔄 CTGAN Trial 2: epochs=800, batch_size=256, pac=8, lr=4.95e-05\\n\",",
+     "      \"🎯 Using target column: 'Result'\\n\",",
+     "      \"✅ Using CTGAN from ctgan package\\n\"",
+     "     ]",
+     "    },",
+     "    {",
+     "     \"name\": \"stderr\","
+    ]
+   },
+   {
+    "file": "archive/STG-LiverV2.ipynb",
+    "line": 3252,
+    "text": "\"✅ Using CTGAN from ctgan package\\n\"",
+    "context": [
+     "      \"✅ PAC validation: 32 % 2 = 0\\n\",",
+     "      \"\\n\",",
+     "      \"🔄 CTGAN Trial 3: epochs=400, batch_size=32, pac=2, lr=2.99e-03\\n\",",
+     "      \"🎯 Using target column: 'Result'\\n\",",
+     "      \"✅ Using CTGAN from ctgan package\\n\"",
+     "     ]",
+     "    },",
+     "    {",
+     "     \"name\": \"stderr\","
+    ]
+   },
+   {
+    "file": "archive/STG-LiverV2.ipynb",
+    "line": 3295,
+    "text": "\"✅ Using CTGAN from ctgan package\\n\"",
+    "context": [
+     "      \"✅ PAC validation: 1000 % 2 = 0\\n\",",
+     "      \"\\n\",",
+     "      \"🔄 CTGAN Trial 4: epochs=900, batch_size=1000, pac=2, lr=2.47e-03\\n\",",
+     "      \"🎯 Using target column: 'Result'\\n\",",
+     "      \"✅ Using CTGAN from ctgan package\\n\"",
+     "     ]",
+     "    },",
+     "    {",
+     "     \"name\": \"stderr\","
+    ]
+   },
+   {
+    "file": "archive/STG-LiverV2.ipynb",
+    "line": 3338,
+    "text": "\"✅ Using CTGAN from ctgan package\\n\"",
+    "context": [
+     "      \"✅ PAC validation: 1000 % 2 = 0\\n\",",
+     "      \"\\n\",",
+     "      \"🔄 CTGAN Trial 5: epochs=800, batch_size=1000, pac=2, lr=6.41e-06\\n\",",
+     "      \"🎯 Using target column: 'Result'\\n\",",
+     "      \"✅ Using CTGAN from ctgan package\\n\"",
+     "     ]",
+     "    },",
+     "    {",
+     "     \"name\": \"stderr\","
+    ]
+   },
+   {
+    "file": "archive/STG-LiverV2.ipynb",
+    "line": 3380,
+    "text": "\"✅ Using CTGAN from ctgan package\\n\"",
+    "context": [
+     "      \"✅ PAC validation: 500 % 2 = 0\\n\",",
+     "      \"\\n\",",
+     "      \"🔄 CTGAN Trial 6: epochs=750, batch_size=500, pac=2, lr=9.77e-06\\n\",",
+     "      \"🎯 Using target column: 'Result'\\n\",",
+     "      \"✅ Using CTGAN from ctgan package\\n\"",
+     "     ]",
+     "    },",
+     "    {",
+     "     \"name\": \"stderr\","
+    ]
+   },
+   {
+    "file": "archive/STG-LiverV2.ipynb",
+    "line": 3422,
+    "text": "\"✅ Using CTGAN from ctgan package\\n\"",
+    "context": [
+     "      \"✅ PAC validation: 128 % 2 = 0\\n\",",
+     "      \"\\n\",",
+     "      \"🔄 CTGAN Trial 7: epochs=550, batch_size=128, pac=2, lr=5.28e-05\\n\",",
+     "      \"🎯 Using target column: 'Result'\\n\",",
+     "      \"✅ Using CTGAN from ctgan package\\n\"",
+     "     ]",
+     "    },",
+     "    {",
+     "     \"name\": \"stderr\","
+    ]
+   },
+   {
+    "file": "archive/STG-LiverV2.ipynb",
+    "line": 3464,
+    "text": "\"✅ Using CTGAN from ctgan package\\n\"",
+    "context": [
+     "      \"✅ PAC validation: 32 % 4 = 0\\n\",",
+     "      \"\\n\",",
+     "      \"🔄 CTGAN Trial 8: epochs=850, batch_size=32, pac=4, lr=1.68e-04\\n\",",
+     "      \"🎯 Using target column: 'Result'\\n\",",
+     "      \"✅ Using CTGAN from ctgan package\\n\"",
+     "     ]",
+     "    },",
+     "    {",
+     "     \"name\": \"stderr\","
+    ]
+   },
+   {
+    "file": "archive/STG-LiverV2.ipynb",
+    "line": 3507,
+    "text": "\"✅ Using CTGAN from ctgan package\\n\"",
+    "context": [
+     "      \"✅ PAC validation: 64 % 4 = 0\\n\",",
+     "      \"\\n\",",
+     "      \"🔄 CTGAN Trial 9: epochs=350, batch_size=64, pac=4, lr=2.18e-03\\n\",",
+     "      \"🎯 Using target column: 'Result'\\n\",",
+     "      \"✅ Using CTGAN from ctgan package\\n\"",
+     "     ]",
+     "    },",
+     "    {",
+     "     \"name\": \"stderr\","
+    ]
+   },
+   {
+    "file": "archive/STG-LiverV2.ipynb",
+    "line": 3550,
+    "text": "\"✅ Using CTGAN from ctgan package\\n\"",
+    "context": [
+     "      \"✅ PAC validation: 64 % 4 = 0\\n\",",
+     "      \"\\n\",",
+     "      \"🔄 CTGAN Trial 10: epochs=400, batch_size=64, pac=4, lr=1.10e-03\\n\",",
+     "      \"🎯 Using target column: 'Result'\\n\",",
+     "      \"✅ Using CTGAN from ctgan package\\n\"",
+     "     ]",
+     "    },",
+     "    {",
+     "     \"name\": \"stderr\","
+    ]
+   }
+  ],
+  "ct": [
+   {
+    "file": "archive/Clinical_Synthetic_Data_Generation_Framework_Generalized.ipynb",
+    "line": 1731,
+    "text": "\"                from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"            from ctgan import CTGAN\\n\",",
+     "    \"            print(\\\"✅ Using CTGAN from ctgan package\\\")\\n\",",
+     "    \"        except ImportError:\\n\",",
+     "    \"            try:\\n\",",
+     "    \"                from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"                CTGAN = CTGANSynthesizer\\n\",",
+     "    \"                print(\\\"✅ Using CTGANSynthesizer from sdv.single_table\\\")\\n\",",
+     "    \"            except ImportError:\\n\",",
+     "    \"                try:\\n\","
+    ]
+   },
+   {
+    "file": "archive/Clinical_Synthetic_Data_Generation_Framework_Generalized.ipynb",
+    "line": 1732,
+    "text": "\"                CTGAN = CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"            print(\\\"✅ Using CTGAN from ctgan package\\\")\\n\",",
+     "    \"        except ImportError:\\n\",",
+     "    \"            try:\\n\",",
+     "    \"                from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"                CTGAN = CTGANSynthesizer\\n\",",
+     "    \"                print(\\\"✅ Using CTGANSynthesizer from sdv.single_table\\\")\\n\",",
+     "    \"            except ImportError:\\n\",",
+     "    \"                try:\\n\",",
+     "    \"                    from sdv.tabular import CTGAN\\n\","
+    ]
+   },
+   {
+    "file": "archive/Clinical_Synthetic_Data_Generation_Framework_Generalized.ipynb",
+    "line": 1733,
+    "text": "\"                print(\\\"✅ Using CTGANSynthesizer from sdv.single_table\\\")\\n\",",
+    "context": [
+     "    \"        except ImportError:\\n\",",
+     "    \"            try:\\n\",",
+     "    \"                from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"                CTGAN = CTGANSynthesizer\\n\",",
+     "    \"                print(\\\"✅ Using CTGANSynthesizer from sdv.single_table\\\")\\n\",",
+     "    \"            except ImportError:\\n\",",
+     "    \"                try:\\n\",",
+     "    \"                    from sdv.tabular import CTGAN\\n\",",
+     "    \"                    print(\\\"✅ Using CTGAN from sdv.tabular\\\")\\n\","
+    ]
+   },
+   {
+    "file": "archive/STG-PakistaniV2.ipynb",
+    "line": 4733,
+    "text": "\"                from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"            from ctgan import CTGAN\\n\",",
+     "    \"            print(\\\"✅ Using CTGAN from ctgan package\\\")\\n\",",
+     "    \"        except ImportError:\\n\",",
+     "    \"            try:\\n\",",
+     "    \"                from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"                CTGAN = CTGANSynthesizer\\n\",",
+     "    \"                print(\\\"✅ Using CTGANSynthesizer from sdv.single_table\\\")\\n\",",
+     "    \"            except ImportError:\\n\",",
+     "    \"                try:\\n\","
+    ]
+   },
+   {
+    "file": "archive/STG-PakistaniV2.ipynb",
+    "line": 4734,
+    "text": "\"                CTGAN = CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"            print(\\\"✅ Using CTGAN from ctgan package\\\")\\n\",",
+     "    \"        except ImportError:\\n\",",
+     "    \"            try:\\n\",",
+     "    \"                from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"                CTGAN = CTGANSynthesizer\\n\",",
+     "    \"                print(\\\"✅ Using CTGANSynthesizer from sdv.single_table\\\")\\n\",",
+     "    \"            except ImportError:\\n\",",
+     "    \"                try:\\n\",",
+     "    \"                    from sdv.tabular import CTGAN\\n\","
+    ]
+   },
+   {
+    "file": "archive/STG-PakistaniV2.ipynb",
+    "line": 4735,
+    "text": "\"                print(\\\"✅ Using CTGANSynthesizer from sdv.single_table\\\")\\n\",",
+    "context": [
+     "    \"        except ImportError:\\n\",",
+     "    \"            try:\\n\",",
+     "    \"                from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"                CTGAN = CTGANSynthesizer\\n\",",
+     "    \"                print(\\\"✅ Using CTGANSynthesizer from sdv.single_table\\\")\\n\",",
+     "    \"            except ImportError:\\n\",",
+     "    \"                try:\\n\",",
+     "    \"                    from sdv.tabular import CTGAN\\n\",",
+     "    \"                    print(\\\"✅ Using CTGAN from sdv.tabular\\\")\\n\","
+    ]
+   },
+   {
+    "file": "archive/SynthethicTableGenerator-Alzheimer.ipynb",
+    "line": 3651,
+    "text": "\"                from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"            from ctgan import CTGAN\\n\",",
+     "    \"            print(\\\"✅ Using CTGAN from ctgan package\\\")\\n\",",
+     "    \"        except ImportError:\\n\",",
+     "    \"            try:\\n\",",
+     "    \"                from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"                CTGAN = CTGANSynthesizer\\n\",",
+     "    \"                print(\\\"✅ Using CTGANSynthesizer from sdv.single_table\\\")\\n\",",
+     "    \"            except ImportError:\\n\",",
+     "    \"                try:\\n\","
+    ]
+   },
+   {
+    "file": "archive/SynthethicTableGenerator-Alzheimer.ipynb",
+    "line": 3652,
+    "text": "\"                CTGAN = CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"            print(\\\"✅ Using CTGAN from ctgan package\\\")\\n\",",
+     "    \"        except ImportError:\\n\",",
+     "    \"            try:\\n\",",
+     "    \"                from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"                CTGAN = CTGANSynthesizer\\n\",",
+     "    \"                print(\\\"✅ Using CTGANSynthesizer from sdv.single_table\\\")\\n\",",
+     "    \"            except ImportError:\\n\",",
+     "    \"                try:\\n\",",
+     "    \"                    from sdv.tabular import CTGAN\\n\","
+    ]
+   },
+   {
+    "file": "archive/SynthethicTableGenerator-Alzheimer.ipynb",
+    "line": 3653,
+    "text": "\"                print(\\\"✅ Using CTGANSynthesizer from sdv.single_table\\\")\\n\",",
+    "context": [
+     "    \"        except ImportError:\\n\",",
+     "    \"            try:\\n\",",
+     "    \"                from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"                CTGAN = CTGANSynthesizer\\n\",",
+     "    \"                print(\\\"✅ Using CTGANSynthesizer from sdv.single_table\\\")\\n\",",
+     "    \"            except ImportError:\\n\",",
+     "    \"                try:\\n\",",
+     "    \"                    from sdv.tabular import CTGAN\\n\",",
+     "    \"                    print(\\\"✅ Using CTGAN from sdv.tabular\\\")\\n\","
+    ]
+   },
+   {
+    "file": "archive/SynthethicTableGenerator-Pakistani.ipynb",
+    "line": 4542,
+    "text": "\"                from sdv.single_table import CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"            from ctgan import CTGAN\\n\",",
+     "    \"            print(\\\"✅ Using CTGAN from ctgan package\\\")\\n\",",
+     "    \"        except ImportError:\\n\",",
+     "    \"            try:\\n\",",
+     "    \"                from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"                CTGAN = CTGANSynthesizer\\n\",",
+     "    \"                print(\\\"✅ Using CTGANSynthesizer from sdv.single_table\\\")\\n\",",
+     "    \"            except ImportError:\\n\",",
+     "    \"                try:\\n\","
+    ]
+   },
+   {
+    "file": "archive/SynthethicTableGenerator-Pakistani.ipynb",
+    "line": 4543,
+    "text": "\"                CTGAN = CTGANSynthesizer\\n\",",
+    "context": [
+     "    \"            print(\\\"✅ Using CTGAN from ctgan package\\\")\\n\",",
+     "    \"        except ImportError:\\n\",",
+     "    \"            try:\\n\",",
+     "    \"                from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"                CTGAN = CTGANSynthesizer\\n\",",
+     "    \"                print(\\\"✅ Using CTGANSynthesizer from sdv.single_table\\\")\\n\",",
+     "    \"            except ImportError:\\n\",",
+     "    \"                try:\\n\",",
+     "    \"                    from sdv.tabular import CTGAN\\n\","
+    ]
+   },
+   {
+    "file": "archive/SynthethicTableGenerator-Pakistani.ipynb",
+    "line": 4544,
+    "text": "\"                print(\\\"✅ Using CTGANSynthesizer from sdv.single_table\\\")\\n\",",
+    "context": [
+     "    \"        except ImportError:\\n\",",
+     "    \"            try:\\n\",",
+     "    \"                from sdv.single_table import CTGANSynthesizer\\n\",",
+     "    \"                CTGAN = CTGANSynthesizer\\n\",",
+     "    \"                print(\\\"✅ Using CTGANSynthesizer from sdv.single_table\\\")\\n\",",
+     "    \"            except ImportError:\\n\",",
+     "    \"                try:\\n\",",
+     "    \"                    from sdv.tabular import CTGAN\\n\",",
+     "    \"                    print(\\\"✅ Using CTGAN from sdv.tabular\\\")\\n\","
+    ]
+   }
+  ],
+  "rdt": [
+   {
+    "file": "archive/STG-PakistaniV2.ipynb",
+    "line": 121,
+    "text": "\"Requirement already satisfied: scikit-learn>=1.1.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from rdt>=1.18.2->sdv) (1.7.2)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: pytz>=2020.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from pandas>=1.4.0->sdv) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from pandas>=1.4.0->sdv) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: narwhals>=1.15.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (2.10.2)\\n\",",
+     "      \"Requirement already satisfied: packaging in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (24.2)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.1.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from rdt>=1.18.2->sdv) (1.7.2)\\n\",",
+     "      \"Requirement already satisfied: Faker!=37.11.0,>=17 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from rdt>=1.18.2->sdv) (38.2.0)\\n\",",
+     "      \"Requirement already satisfied: joblib>=1.2.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from scikit-learn>=1.1.0->rdt>=1.18.2->sdv) (1.5.2)\\n\",",
+     "      \"Requirement already satisfied: threadpoolctl>=3.1.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from scikit-learn>=1.1.0->rdt>=1.18.2->sdv) (3.6.0)\\n\",",
+     "      \"Requirement already satisfied: filelock in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from torch>=1.13.0->ctgan>=0.11.0->sdv) (3.20.0)\\n\","
+    ]
+   },
+   {
+    "file": "archive/STG-PakistaniV2.ipynb",
+    "line": 122,
+    "text": "\"Requirement already satisfied: Faker!=37.11.0,>=17 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from rdt>=1.18.2->sdv) (38.2.0)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from pandas>=1.4.0->sdv) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: narwhals>=1.15.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (2.10.2)\\n\",",
+     "      \"Requirement already satisfied: packaging in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (24.2)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.1.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from rdt>=1.18.2->sdv) (1.7.2)\\n\",",
+     "      \"Requirement already satisfied: Faker!=37.11.0,>=17 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from rdt>=1.18.2->sdv) (38.2.0)\\n\",",
+     "      \"Requirement already satisfied: joblib>=1.2.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from scikit-learn>=1.1.0->rdt>=1.18.2->sdv) (1.5.2)\\n\",",
+     "      \"Requirement already satisfied: threadpoolctl>=3.1.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from scikit-learn>=1.1.0->rdt>=1.18.2->sdv) (3.6.0)\\n\",",
+     "      \"Requirement already satisfied: filelock in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from torch>=1.13.0->ctgan>=0.11.0->sdv) (3.20.0)\\n\",",
+     "      \"Requirement already satisfied: typing-extensions>=4.10.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from torch>=1.13.0->ctgan>=0.11.0->sdv) (4.15.0)\\n\","
+    ]
+   },
+   {
+    "file": "archive/STG-PakistaniV2.ipynb",
+    "line": 157,
+    "text": "\"Requirement already satisfied: scipy>=1.9.2 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from rdt>=1.14.0->ctgan) (1.15.2)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: python-dateutil>=2.8.2 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from pandas>=1.4.0->ctgan) (2.9.0)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from pandas>=1.4.0->ctgan) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from pandas>=1.4.0->ctgan) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: six>=1.5 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from python-dateutil>=2.8.2->pandas>=1.4.0->ctgan) (1.17.0)\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.9.2 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from rdt>=1.14.0->ctgan) (1.15.2)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.1.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from rdt>=1.14.0->ctgan) (1.7.2)\\n\",",
+     "      \"Requirement already satisfied: Faker!=37.11.0,>=17 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from rdt>=1.14.0->ctgan) (38.2.0)\\n\",",
+     "      \"Requirement already satisfied: joblib>=1.2.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from scikit-learn>=1.1.0->rdt>=1.14.0->ctgan) (1.5.2)\\n\",",
+     "      \"Requirement already satisfied: threadpoolctl>=3.1.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from scikit-learn>=1.1.0->rdt>=1.14.0->ctgan) (3.6.0)\\n\","
+    ]
+   },
+   {
+    "file": "archive/STG-PakistaniV2.ipynb",
+    "line": 158,
+    "text": "\"Requirement already satisfied: scikit-learn>=1.1.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from rdt>=1.14.0->ctgan) (1.7.2)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: pytz>=2020.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from pandas>=1.4.0->ctgan) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from pandas>=1.4.0->ctgan) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: six>=1.5 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from python-dateutil>=2.8.2->pandas>=1.4.0->ctgan) (1.17.0)\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.9.2 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from rdt>=1.14.0->ctgan) (1.15.2)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.1.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from rdt>=1.14.0->ctgan) (1.7.2)\\n\",",
+     "      \"Requirement already satisfied: Faker!=37.11.0,>=17 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from rdt>=1.14.0->ctgan) (38.2.0)\\n\",",
+     "      \"Requirement already satisfied: joblib>=1.2.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from scikit-learn>=1.1.0->rdt>=1.14.0->ctgan) (1.5.2)\\n\",",
+     "      \"Requirement already satisfied: threadpoolctl>=3.1.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from scikit-learn>=1.1.0->rdt>=1.14.0->ctgan) (3.6.0)\\n\",",
+     "      \"Requirement already satisfied: filelock in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from torch>=1.13.0->ctgan) (3.20.0)\\n\","
+    ]
+   },
+   {
+    "file": "archive/STG-PakistaniV2.ipynb",
+    "line": 159,
+    "text": "\"Requirement already satisfied: Faker!=37.11.0,>=17 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from rdt>=1.14.0->ctgan) (38.2.0)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from pandas>=1.4.0->ctgan) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: six>=1.5 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from python-dateutil>=2.8.2->pandas>=1.4.0->ctgan) (1.17.0)\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.9.2 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from rdt>=1.14.0->ctgan) (1.15.2)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.1.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from rdt>=1.14.0->ctgan) (1.7.2)\\n\",",
+     "      \"Requirement already satisfied: Faker!=37.11.0,>=17 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from rdt>=1.14.0->ctgan) (38.2.0)\\n\",",
+     "      \"Requirement already satisfied: joblib>=1.2.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from scikit-learn>=1.1.0->rdt>=1.14.0->ctgan) (1.5.2)\\n\",",
+     "      \"Requirement already satisfied: threadpoolctl>=3.1.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from scikit-learn>=1.1.0->rdt>=1.14.0->ctgan) (3.6.0)\\n\",",
+     "      \"Requirement already satisfied: filelock in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from torch>=1.13.0->ctgan) (3.20.0)\\n\",",
+     "      \"Requirement already satisfied: typing-extensions>=4.10.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from torch>=1.13.0->ctgan) (4.15.0)\\n\","
+    ]
+   },
+   {
+    "file": "archive/STG-Driver-liver-train.ipynb",
+    "line": 101,
+    "text": "\"Requirement already satisfied: Faker!=37.11.0,>=17 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from rdt>=1.14.0->ctgan) (40.1.2)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: pyparsing>=3 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from matplotlib>=3.4.0->ganeraid) (3.3.2)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from pandas>=1.4.0->ctgan) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from pandas>=1.4.0->ctgan) (2025.3)\\n\",",
+     "      \"Requirement already satisfied: narwhals>=1.15.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (2.15.0)\\n\",",
+     "      \"Requirement already satisfied: Faker!=37.11.0,>=17 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from rdt>=1.14.0->ctgan) (40.1.2)\\n\",",
+     "      \"Requirement already satisfied: joblib>=1.2.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from scikit-learn>=0.22.2->ganeraid) (1.5.3)\\n\",",
+     "      \"Requirement already satisfied: threadpoolctl>=3.1.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from scikit-learn>=0.22.2->ganeraid) (3.6.0)\\n\",",
+     "      \"Requirement already satisfied: psutil in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from tab-gan-metrics>=1.1.4->ganeraid) (7.2.1)\\n\",",
+     "      \"Requirement already satisfied: dython==0.5.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from tab-gan-metrics>=1.1.4->ganeraid) (0.5.1)\\n\","
+    ]
+   },
+   {
+    "file": "archive/STG-Driver-breast-cancer.ipynb",
+    "line": 101,
+    "text": "\"Requirement already satisfied: Faker!=37.11.0,>=17 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from rdt>=1.14.0->ctgan) (40.1.2)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: pyparsing>=3 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from matplotlib>=3.4.0->ganeraid) (3.2.5)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from pandas>=1.4.0->ctgan) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from pandas>=1.4.0->ctgan) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: narwhals>=1.15.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (2.10.2)\\n\",",
+     "      \"Requirement already satisfied: Faker!=37.11.0,>=17 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from rdt>=1.14.0->ctgan) (40.1.2)\\n\",",
+     "      \"Requirement already satisfied: joblib>=1.2.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from scikit-learn>=0.22.2->ganeraid) (1.5.2)\\n\",",
+     "      \"Requirement already satisfied: threadpoolctl>=3.1.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from scikit-learn>=0.22.2->ganeraid) (3.6.0)\\n\",",
+     "      \"Requirement already satisfied: psutil in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from tab-gan-metrics>=1.1.4->ganeraid) (7.1.3)\\n\",",
+     "      \"Requirement already satisfied: dython==0.5.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from tab-gan-metrics>=1.1.4->ganeraid) (0.5.1)\\n\","
+    ]
+   },
+   {
+    "file": "archive/STG-BreastCancerV2.ipynb",
+    "line": 131,
+    "text": "\"Requirement already satisfied: scikit-learn>=1.1.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from rdt>=1.18.2->sdv) (1.7.2)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: pytz>=2020.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from pandas>=1.4.0->sdv) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from pandas>=1.4.0->sdv) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: narwhals>=1.15.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (2.10.2)\\n\",",
+     "      \"Requirement already satisfied: packaging in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (24.2)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.1.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from rdt>=1.18.2->sdv) (1.7.2)\\n\",",
+     "      \"Collecting Faker!=37.11.0,>=17 (from rdt>=1.18.2->sdv)\\n\",",
+     "      \"  Downloading faker-38.2.0-py3-none-any.whl.metadata (16 kB)\\n\",",
+     "      \"Requirement already satisfied: joblib>=1.2.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from scikit-learn>=1.1.0->rdt>=1.18.2->sdv) (1.5.2)\\n\",",
+     "      \"Requirement already satisfied: threadpoolctl>=3.1.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from scikit-learn>=1.1.0->rdt>=1.18.2->sdv) (3.6.0)\\n\","
+    ]
+   },
+   {
+    "file": "archive/STG-BreastCancerV2.ipynb",
+    "line": 132,
+    "text": "\"Collecting Faker!=37.11.0,>=17 (from rdt>=1.18.2->sdv)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from pandas>=1.4.0->sdv) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: narwhals>=1.15.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (2.10.2)\\n\",",
+     "      \"Requirement already satisfied: packaging in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (24.2)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.1.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from rdt>=1.18.2->sdv) (1.7.2)\\n\",",
+     "      \"Collecting Faker!=37.11.0,>=17 (from rdt>=1.18.2->sdv)\\n\",",
+     "      \"  Downloading faker-38.2.0-py3-none-any.whl.metadata (16 kB)\\n\",",
+     "      \"Requirement already satisfied: joblib>=1.2.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from scikit-learn>=1.1.0->rdt>=1.18.2->sdv) (1.5.2)\\n\",",
+     "      \"Requirement already satisfied: threadpoolctl>=3.1.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from scikit-learn>=1.1.0->rdt>=1.18.2->sdv) (3.6.0)\\n\",",
+     "      \"Requirement already satisfied: filelock in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from torch>=1.13.0->ctgan>=0.11.0->sdv) (3.20.0)\\n\","
+    ]
+   },
+   {
+    "file": "archive/STG-BreastCancerV2.ipynb",
+    "line": 180,
+    "text": "\"Requirement already satisfied: scipy>=1.9.2 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from rdt>=1.14.0->ctgan) (1.15.2)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: python-dateutil>=2.8.2 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from pandas>=1.4.0->ctgan) (2.9.0)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from pandas>=1.4.0->ctgan) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from pandas>=1.4.0->ctgan) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: six>=1.5 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from python-dateutil>=2.8.2->pandas>=1.4.0->ctgan) (1.17.0)\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.9.2 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from rdt>=1.14.0->ctgan) (1.15.2)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.1.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from rdt>=1.14.0->ctgan) (1.7.2)\\n\",",
+     "      \"Requirement already satisfied: Faker!=37.11.0,>=17 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from rdt>=1.14.0->ctgan) (38.2.0)\\n\",",
+     "      \"Requirement already satisfied: joblib>=1.2.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from scikit-learn>=1.1.0->rdt>=1.14.0->ctgan) (1.5.2)\\n\",",
+     "      \"Requirement already satisfied: threadpoolctl>=3.1.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from scikit-learn>=1.1.0->rdt>=1.14.0->ctgan) (3.6.0)\\n\","
+    ]
+   },
+   {
+    "file": "archive/STG-BreastCancerV2.ipynb",
+    "line": 181,
+    "text": "\"Requirement already satisfied: scikit-learn>=1.1.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from rdt>=1.14.0->ctgan) (1.7.2)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: pytz>=2020.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from pandas>=1.4.0->ctgan) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from pandas>=1.4.0->ctgan) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: six>=1.5 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from python-dateutil>=2.8.2->pandas>=1.4.0->ctgan) (1.17.0)\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.9.2 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from rdt>=1.14.0->ctgan) (1.15.2)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.1.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from rdt>=1.14.0->ctgan) (1.7.2)\\n\",",
+     "      \"Requirement already satisfied: Faker!=37.11.0,>=17 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from rdt>=1.14.0->ctgan) (38.2.0)\\n\",",
+     "      \"Requirement already satisfied: joblib>=1.2.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from scikit-learn>=1.1.0->rdt>=1.14.0->ctgan) (1.5.2)\\n\",",
+     "      \"Requirement already satisfied: threadpoolctl>=3.1.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from scikit-learn>=1.1.0->rdt>=1.14.0->ctgan) (3.6.0)\\n\",",
+     "      \"Requirement already satisfied: filelock in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from torch>=1.13.0->ctgan) (3.20.0)\\n\","
+    ]
+   },
+   {
+    "file": "archive/STG-BreastCancerV2.ipynb",
+    "line": 182,
+    "text": "\"Requirement already satisfied: Faker!=37.11.0,>=17 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from rdt>=1.14.0->ctgan) (38.2.0)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from pandas>=1.4.0->ctgan) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: six>=1.5 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from python-dateutil>=2.8.2->pandas>=1.4.0->ctgan) (1.17.0)\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.9.2 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from rdt>=1.14.0->ctgan) (1.15.2)\\n\",",
+     "      \"Requirement already satisfied: scikit-learn>=1.1.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from rdt>=1.14.0->ctgan) (1.7.2)\\n\",",
+     "      \"Requirement already satisfied: Faker!=37.11.0,>=17 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from rdt>=1.14.0->ctgan) (38.2.0)\\n\",",
+     "      \"Requirement already satisfied: joblib>=1.2.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from scikit-learn>=1.1.0->rdt>=1.14.0->ctgan) (1.5.2)\\n\",",
+     "      \"Requirement already satisfied: threadpoolctl>=3.1.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from scikit-learn>=1.1.0->rdt>=1.14.0->ctgan) (3.6.0)\\n\",",
+     "      \"Requirement already satisfied: filelock in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from torch>=1.13.0->ctgan) (3.20.0)\\n\",",
+     "      \"Requirement already satisfied: typing-extensions>=4.10.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from torch>=1.13.0->ctgan) (4.15.0)\\n\","
+    ]
+   }
+  ],
+  "copulas": [
+   {
+    "file": "archive/STG-PakistaniV2.ipynb",
+    "line": 114,
+    "text": "\"Requirement already satisfied: plotly>=5.10.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from copulas>=0.12.1->sdv) (6.4.0)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: s3transfer<0.15.0,>=0.14.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from boto3<2.0.0,>=1.28->sdv) (0.14.0)\\n\",",
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0)\\n\",",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from botocore<2.0.0,>=1.31->sdv) (1.26.20)\\n\",",
+     "      \"Requirement already satisfied: six>=1.5 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from python-dateutil<3.0.0,>=2.1->botocore<2.0.0,>=1.31->sdv) (1.17.0)\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from copulas>=0.12.1->sdv) (6.4.0)\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.9.2 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from copulas>=0.12.1->sdv) (1.15.2)\\n\",",
+     "      \"Requirement already satisfied: torch>=1.13.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from ctgan>=0.11.0->sdv) (2.6.0+cu124)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from pandas>=1.4.0->sdv) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from pandas>=1.4.0->sdv) (2025.2)\\n\","
+    ]
+   },
+   {
+    "file": "archive/STG-PakistaniV2.ipynb",
+    "line": 115,
+    "text": "\"Requirement already satisfied: scipy>=1.9.2 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from copulas>=0.12.1->sdv) (1.15.2)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0)\\n\",",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from botocore<2.0.0,>=1.31->sdv) (1.26.20)\\n\",",
+     "      \"Requirement already satisfied: six>=1.5 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from python-dateutil<3.0.0,>=2.1->botocore<2.0.0,>=1.31->sdv) (1.17.0)\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from copulas>=0.12.1->sdv) (6.4.0)\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.9.2 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from copulas>=0.12.1->sdv) (1.15.2)\\n\",",
+     "      \"Requirement already satisfied: torch>=1.13.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from ctgan>=0.11.0->sdv) (2.6.0+cu124)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from pandas>=1.4.0->sdv) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from pandas>=1.4.0->sdv) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: narwhals>=1.15.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (2.10.2)\\n\","
+    ]
+   },
+   {
+    "file": "archive/STG-Driver-liver-train.ipynb",
+    "line": 89,
+    "text": "\"Requirement already satisfied: plotly>=5.10.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from copulas>=0.12.1->sdv) (6.5.2)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: scikit-learn>=0.22.2 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from ganeraid) (1.7.2)\\n\",",
+     "      \"Requirement already satisfied: seaborn>=0.11.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from ganeraid) (0.13.2)\\n\",",
+     "      \"Requirement already satisfied: tab-gan-metrics>=1.1.4 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from ganeraid) (1.1.4)\\n\",",
+     "      \"Requirement already satisfied: matplotlib>=3.4.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from ganeraid) (3.10.8)\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from copulas>=0.12.1->sdv) (6.5.2)\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.9.2 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from copulas>=0.12.1->sdv) (1.15.2)\\n\",",
+     "      \"Requirement already satisfied: contourpy>=1.0.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from matplotlib>=3.4.0->ganeraid) (1.3.2)\\n\",",
+     "      \"Requirement already satisfied: cycler>=0.10 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from matplotlib>=3.4.0->ganeraid) (0.12.1)\\n\",",
+     "      \"Requirement already satisfied: fonttools>=4.22.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from matplotlib>=3.4.0->ganeraid) (4.61.1)\\n\","
+    ]
+   },
+   {
+    "file": "archive/STG-Driver-liver-train.ipynb",
+    "line": 90,
+    "text": "\"Requirement already satisfied: scipy>=1.9.2 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from copulas>=0.12.1->sdv) (1.15.2)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: seaborn>=0.11.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from ganeraid) (0.13.2)\\n\",",
+     "      \"Requirement already satisfied: tab-gan-metrics>=1.1.4 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from ganeraid) (1.1.4)\\n\",",
+     "      \"Requirement already satisfied: matplotlib>=3.4.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from ganeraid) (3.10.8)\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from copulas>=0.12.1->sdv) (6.5.2)\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.9.2 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from copulas>=0.12.1->sdv) (1.15.2)\\n\",",
+     "      \"Requirement already satisfied: contourpy>=1.0.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from matplotlib>=3.4.0->ganeraid) (1.3.2)\\n\",",
+     "      \"Requirement already satisfied: cycler>=0.10 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from matplotlib>=3.4.0->ganeraid) (0.12.1)\\n\",",
+     "      \"Requirement already satisfied: fonttools>=4.22.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from matplotlib>=3.4.0->ganeraid) (4.61.1)\\n\",",
+     "      \"Requirement already satisfied: kiwisolver>=1.3.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from matplotlib>=3.4.0->ganeraid) (1.4.9)\\n\","
+    ]
+   },
+   {
+    "file": "archive/STG-Driver-breast-cancer.ipynb",
+    "line": 89,
+    "text": "\"Requirement already satisfied: plotly>=5.10.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from copulas>=0.12.1->sdv) (6.4.0)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: scikit-learn>=0.22.2 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from ganeraid) (1.7.2)\\n\",",
+     "      \"Requirement already satisfied: seaborn>=0.11.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from ganeraid) (0.13.2)\\n\",",
+     "      \"Requirement already satisfied: tab-gan-metrics>=1.1.4 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from ganeraid) (1.1.4)\\n\",",
+     "      \"Requirement already satisfied: matplotlib>=3.4.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from ganeraid) (3.10.7)\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from copulas>=0.12.1->sdv) (6.4.0)\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.9.2 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from copulas>=0.12.1->sdv) (1.15.2)\\n\",",
+     "      \"Requirement already satisfied: contourpy>=1.0.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from matplotlib>=3.4.0->ganeraid) (1.3.2)\\n\",",
+     "      \"Requirement already satisfied: cycler>=0.10 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from matplotlib>=3.4.0->ganeraid) (0.12.1)\\n\",",
+     "      \"Requirement already satisfied: fonttools>=4.22.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from matplotlib>=3.4.0->ganeraid) (4.60.1)\\n\","
+    ]
+   },
+   {
+    "file": "archive/STG-Driver-breast-cancer.ipynb",
+    "line": 90,
+    "text": "\"Requirement already satisfied: scipy>=1.9.2 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from copulas>=0.12.1->sdv) (1.15.2)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: seaborn>=0.11.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from ganeraid) (0.13.2)\\n\",",
+     "      \"Requirement already satisfied: tab-gan-metrics>=1.1.4 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from ganeraid) (1.1.4)\\n\",",
+     "      \"Requirement already satisfied: matplotlib>=3.4.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from ganeraid) (3.10.7)\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from copulas>=0.12.1->sdv) (6.4.0)\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.9.2 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from copulas>=0.12.1->sdv) (1.15.2)\\n\",",
+     "      \"Requirement already satisfied: contourpy>=1.0.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from matplotlib>=3.4.0->ganeraid) (1.3.2)\\n\",",
+     "      \"Requirement already satisfied: cycler>=0.10 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from matplotlib>=3.4.0->ganeraid) (0.12.1)\\n\",",
+     "      \"Requirement already satisfied: fonttools>=4.22.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from matplotlib>=3.4.0->ganeraid) (4.60.1)\\n\",",
+     "      \"Requirement already satisfied: kiwisolver>=1.3.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from matplotlib>=3.4.0->ganeraid) (1.4.9)\\n\","
+    ]
+   },
+   {
+    "file": "archive/STG-BreastCancerV2.ipynb",
+    "line": 124,
+    "text": "\"Requirement already satisfied: plotly>=5.10.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from copulas>=0.12.1->sdv) (6.4.0)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: s3transfer<0.15.0,>=0.14.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from boto3<2.0.0,>=1.28->sdv) (0.14.0)\\n\",",
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0)\\n\",",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from botocore<2.0.0,>=1.31->sdv) (1.26.20)\\n\",",
+     "      \"Requirement already satisfied: six>=1.5 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from python-dateutil<3.0.0,>=2.1->botocore<2.0.0,>=1.31->sdv) (1.17.0)\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from copulas>=0.12.1->sdv) (6.4.0)\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.9.2 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from copulas>=0.12.1->sdv) (1.15.2)\\n\",",
+     "      \"Requirement already satisfied: torch>=1.13.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from ctgan>=0.11.0->sdv) (2.6.0+cu124)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from pandas>=1.4.0->sdv) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from pandas>=1.4.0->sdv) (2025.2)\\n\","
+    ]
+   },
+   {
+    "file": "archive/STG-BreastCancerV2.ipynb",
+    "line": 125,
+    "text": "\"Requirement already satisfied: scipy>=1.9.2 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from copulas>=0.12.1->sdv) (1.15.2)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from botocore<2.0.0,>=1.31->sdv) (2.9.0)\\n\",",
+     "      \"Requirement already satisfied: urllib3!=2.2.0,<3,>=1.25.4 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from botocore<2.0.0,>=1.31->sdv) (1.26.20)\\n\",",
+     "      \"Requirement already satisfied: six>=1.5 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from python-dateutil<3.0.0,>=2.1->botocore<2.0.0,>=1.31->sdv) (1.17.0)\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from copulas>=0.12.1->sdv) (6.4.0)\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.9.2 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from copulas>=0.12.1->sdv) (1.15.2)\\n\",",
+     "      \"Requirement already satisfied: torch>=1.13.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from ctgan>=0.11.0->sdv) (2.6.0+cu124)\\n\",",
+     "      \"Requirement already satisfied: pytz>=2020.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from pandas>=1.4.0->sdv) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: tzdata>=2022.7 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from pandas>=1.4.0->sdv) (2025.2)\\n\",",
+     "      \"Requirement already satisfied: narwhals>=1.15.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from plotly>=5.10.0->copulas>=0.12.1->sdv) (2.10.2)\\n\","
+    ]
+   },
+   {
+    "file": "archive/STG-Driver-liver.ipynb",
+    "line": 87,
+    "text": "\"Requirement already satisfied: plotly>=5.10.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from copulas>=0.12.1->sdv) (6.4.0)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: scikit-learn>=0.22.2 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from ganeraid) (1.7.2)\\n\",",
+     "      \"Requirement already satisfied: seaborn>=0.11.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from ganeraid) (0.13.2)\\n\",",
+     "      \"Requirement already satisfied: tab-gan-metrics>=1.1.4 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from ganeraid) (1.1.4)\\n\",",
+     "      \"Requirement already satisfied: matplotlib>=3.4.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from ganeraid) (3.10.7)\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from copulas>=0.12.1->sdv) (6.4.0)\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.9.2 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from copulas>=0.12.1->sdv) (1.15.2)\\n\",",
+     "      \"Requirement already satisfied: contourpy>=1.0.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from matplotlib>=3.4.0->ganeraid) (1.3.2)\\n\",",
+     "      \"Requirement already satisfied: cycler>=0.10 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from matplotlib>=3.4.0->ganeraid) (0.12.1)\\n\",",
+     "      \"Requirement already satisfied: fonttools>=4.22.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from matplotlib>=3.4.0->ganeraid) (4.60.1)\\n\","
+    ]
+   },
+   {
+    "file": "archive/STG-Driver-liver.ipynb",
+    "line": 88,
+    "text": "\"Requirement already satisfied: scipy>=1.9.2 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from copulas>=0.12.1->sdv) (1.15.2)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: seaborn>=0.11.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from ganeraid) (0.13.2)\\n\",",
+     "      \"Requirement already satisfied: tab-gan-metrics>=1.1.4 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from ganeraid) (1.1.4)\\n\",",
+     "      \"Requirement already satisfied: matplotlib>=3.4.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from ganeraid) (3.10.7)\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from copulas>=0.12.1->sdv) (6.4.0)\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.9.2 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from copulas>=0.12.1->sdv) (1.15.2)\\n\",",
+     "      \"Requirement already satisfied: contourpy>=1.0.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from matplotlib>=3.4.0->ganeraid) (1.3.2)\\n\",",
+     "      \"Requirement already satisfied: cycler>=0.10 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from matplotlib>=3.4.0->ganeraid) (0.12.1)\\n\",",
+     "      \"Requirement already satisfied: fonttools>=4.22.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from matplotlib>=3.4.0->ganeraid) (4.60.1)\\n\",",
+     "      \"Requirement already satisfied: kiwisolver>=1.3.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from matplotlib>=3.4.0->ganeraid) (1.4.9)\\n\","
+    ]
+   },
+   {
+    "file": "archive/STG-Driver-diabetes.ipynb",
+    "line": 87,
+    "text": "\"Requirement already satisfied: plotly>=5.10.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from copulas>=0.12.1->sdv) (6.4.0)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: scikit-learn>=0.22.2 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from ganeraid) (1.7.2)\\n\",",
+     "      \"Requirement already satisfied: seaborn>=0.11.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from ganeraid) (0.13.2)\\n\",",
+     "      \"Requirement already satisfied: tab-gan-metrics>=1.1.4 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from ganeraid) (1.1.4)\\n\",",
+     "      \"Requirement already satisfied: matplotlib>=3.4.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from ganeraid) (3.10.7)\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from copulas>=0.12.1->sdv) (6.4.0)\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.9.2 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from copulas>=0.12.1->sdv) (1.15.2)\\n\",",
+     "      \"Requirement already satisfied: contourpy>=1.0.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from matplotlib>=3.4.0->ganeraid) (1.3.2)\\n\",",
+     "      \"Requirement already satisfied: cycler>=0.10 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from matplotlib>=3.4.0->ganeraid) (0.12.1)\\n\",",
+     "      \"Requirement already satisfied: fonttools>=4.22.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from matplotlib>=3.4.0->ganeraid) (4.60.1)\\n\","
+    ]
+   },
+   {
+    "file": "archive/STG-Driver-diabetes.ipynb",
+    "line": 88,
+    "text": "\"Requirement already satisfied: scipy>=1.9.2 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from copulas>=0.12.1->sdv) (1.15.2)\\n\",",
+    "context": [
+     "      \"Requirement already satisfied: seaborn>=0.11.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from ganeraid) (0.13.2)\\n\",",
+     "      \"Requirement already satisfied: tab-gan-metrics>=1.1.4 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from ganeraid) (1.1.4)\\n\",",
+     "      \"Requirement already satisfied: matplotlib>=3.4.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from ganeraid) (3.10.7)\\n\",",
+     "      \"Requirement already satisfied: plotly>=5.10.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from copulas>=0.12.1->sdv) (6.4.0)\\n\",",
+     "      \"Requirement already satisfied: scipy>=1.9.2 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from copulas>=0.12.1->sdv) (1.15.2)\\n\",",
+     "      \"Requirement already satisfied: contourpy>=1.0.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from matplotlib>=3.4.0->ganeraid) (1.3.2)\\n\",",
+     "      \"Requirement already satisfied: cycler>=0.10 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from matplotlib>=3.4.0->ganeraid) (0.12.1)\\n\",",
+     "      \"Requirement already satisfied: fonttools>=4.22.0 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from matplotlib>=3.4.0->ganeraid) (4.60.1)\\n\",",
+     "      \"Requirement already satisfied: kiwisolver>=1.3.1 in /home/ec2-user/anaconda3/envs/pytorch_p310/lib/python3.10/site-packages (from matplotlib>=3.4.0->ganeraid) (1.4.9)\\n\","
+    ]
+   }
+  ],
+  "tvae": [
+   {
+    "file": "src/models/search_spaces.py",
+    "line": 498,
+    "text": "Note: dropout parameter is sampled but SDV's TVAESynthesizer doesn't accept it;",
+    "context": [
+     "    \"\"\"",
+     "    TVAE search space from Cell 64.",
+     "",
+     "    Data-aware batch sizes, epochs, and embedding dimensions.",
+     "    Note: dropout parameter is sampled but SDV's TVAESynthesizer doesn't accept it;",
+     "    it's included for consistency with VAE best practices.",
+     "    \"\"\"",
+     "    data_size = data_size or 1000",
+     "    n_cols = n_cols or 10"
+    ]
+   },
+   {
+    "file": "src/models/implementations/tvae_model.py",
+    "line": 22,
+    "text": "from sdv.single_table import TVAESynthesizer",
+    "context": [
+     "",
+     "logger = logging.getLogger(__name__)",
+     "",
+     "try:",
+     "    from sdv.single_table import TVAESynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    TVAE_AVAILABLE = True",
+     "except ImportError:",
+     "    TVAE_AVAILABLE = False"
+    ]
+   },
+   {
+    "file": "src/models/implementations/tvae_model.py",
+    "line": 117,
+    "text": "self._tvae_model = TVAESynthesizer(",
+    "context": [
+     "            ",
+     "            logger.info(f\"Metadata created with {len(self._metadata.columns)} columns\")",
+     "            ",
+     "            # Initialize TVAE model with current configuration",
+     "            self._tvae_model = TVAESynthesizer(",
+     "                metadata=self._metadata,",
+     "                enforce_min_max_values=enforce_min_max,",
+     "                enforce_rounding=enforce_rounding,",
+     "                epochs=epochs,"
+    ]
+   },
+   {
+    "file": "src/models/implementations/tvae_model.py",
+    "line": 395,
+    "text": "self._tvae_model = TVAESynthesizer.load(str(latest_model))",
+    "context": [
+     "            # Load the most recent model",
+     "            latest_model = max(model_files, key=lambda x: x.stat().st_mtime)",
+     "            ",
+     "            # Load TVAE model using SDV's built-in load method",
+     "            self._tvae_model = TVAESynthesizer.load(str(latest_model))",
+     "            ",
+     "            # Load SDV metadata",
+     "            sdv_metadata_file = latest_model.with_name(latest_model.name.replace('.pkl', '_sdv_metadata.json'))",
+     "            if sdv_metadata_file.exists():"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "src/models/implementations/copulagan_model.py",
+    "line": 23,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "",
+     "# Try to import SDV CopulaGAN",
+     "try:",
+     "    from sdv.single_table import CopulaGANSynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    COPULAGAN_AVAILABLE = True",
+     "    logger = logging.getLogger(__name__)",
+     "    logger.info(\"SDV CopulaGAN successfully imported\")",
+     "except ImportError as e:"
+    ]
+   },
+   {
+    "file": "src/models/implementations/tvae_model.py",
+    "line": 23,
+    "text": "from sdv.metadata import SingleTableMetadata",
+    "context": [
+     "logger = logging.getLogger(__name__)",
+     "",
+     "try:",
+     "    from sdv.single_table import TVAESynthesizer",
+     "    from sdv.metadata import SingleTableMetadata",
+     "    TVAE_AVAILABLE = True",
+     "except ImportError:",
+     "    TVAE_AVAILABLE = False",
+     "    # Create dummy class for type hints when SDV not available"
+    ]
+   }
+  ],
+  "sm": [
+   {
+    "file": "src/evaluation/sdmetrics_report.py",
+    "line": 140,
+    "text": "from sdmetrics.single_column import (",
+    "context": [
+     "        print(\"\\n[SDMetrics] Computing SDMetrics single-table report\")",
+     "        print(\"=\" * 60)",
+     "",
+     "    try:",
+     "        from sdmetrics.single_column import (",
+     "            BoundaryAdherence,",
+     "            CategoryAdherence,",
+     "            CategoryCoverage,",
+     "            KSComplement,"
+    ]
+   },
+   {
+    "file": "src/evaluation/sdmetrics_report.py",
+    "line": 150,
+    "text": "from sdmetrics.column_pairs import (",
+    "context": [
+     "            RangeCoverage,",
+     "            StatisticSimilarity,",
+     "            TVComplement,",
+     "        )",
+     "        from sdmetrics.column_pairs import (",
+     "            ContingencySimilarity,",
+     "            ContinuousKLDivergence,",
+     "            CorrelationSimilarity,",
+     "        )"
+    ]
+   },
+   {
+    "file": "src/evaluation/sdmetrics_report.py",
+    "line": 155,
+    "text": "from sdmetrics.single_table import (",
+    "context": [
+     "            ContingencySimilarity,",
+     "            ContinuousKLDivergence,",
+     "            CorrelationSimilarity,",
+     "        )",
+     "        from sdmetrics.single_table import (",
+     "            BinaryAdaBoostClassifier,",
+     "            BinaryDecisionTreeClassifier,",
+     "            BinaryLogisticRegression,",
+     "            CategoricalCAP,"
+    ]
+   },
+   {
+    "file": "src/evaluation/sdmetrics_report.py",
+    "line": 168,
+    "text": "from sdmetrics.reports.single_table import DiagnosticReport, QualityReport",
+    "context": [
+     "            NewRowSynthesis,",
+     "            NumericalLR,",
+     "            SVCDetection,",
+     "        )",
+     "        from sdmetrics.reports.single_table import DiagnosticReport, QualityReport",
+     "    except ImportError as e:",
+     "        raise ImportError(",
+     "            \"sdmetrics is required for compute_sdmetrics_tabular_report. \"",
+     "            \"Install with: pip install sdmetrics\""
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "copulas",
+  "ct",
+  "ctgan_mod",
+  "md",
+  "rdt",
+  "sdv_any",
+  "sm",
+  "st",
+  "tvae"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {
+  "requirements.txt": [
+   "sdv==1.32.1",
+   "sdmetrics>=0.18         # Independent third-party evaluation alongside SDAC suite",
+   "ctgan==0.11.1",
+   "copulas==0.14.0",
+   "rdt==1.19.0"
+  ]
+ }
+}
