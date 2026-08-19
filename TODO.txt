@@ -1,6 +1,6 @@
 ================================================================================
 SDVworld-index -- TODO
-Index v0.99 | 1087 curated entries | 77 shards | last reviewed 2026-08-17
+Index v0.99 | 2419 curated entries | 91 shards | last reviewed 2026-08-19
 ================================================================================
 
 Read README.txt first if you have not. This file is the work queue: what is
@@ -10,6 +10,10 @@ they are in docs/open-questions.md, one section each.
 
 Every count below is derived from the data, not maintained by hand. Section 0
 gives the commands that regenerate them, so distrust the numbers and re-run.
+
+THE ONE THING TO KNOW FIRST: 1334 of the 2419 entries were curated by a batch
+model in August 2026 and have never been read by a person. They carry
+auto_curated.reviewed = false. Section 1 says what was checked and what was not.
 
 --------------------------------------------------------------------------------
 0. REGENERATE THESE NUMBERS BEFORE TRUSTING THEM
@@ -25,7 +29,46 @@ A one-liner for any field census, e.g. entries with no integration:
       print(sum(1 for r in d if not r.get('integration')))"
 
 --------------------------------------------------------------------------------
-1. WAITING ON THE OWNER -- 23 JUDGMENT CALLS
+1. THE AUTO-CURATED TAIL -- 1334 ENTRIES, UNREVIEWED
+--------------------------------------------------------------------------------
+
+In August 2026 every unvisited repository in the pool was fetched
+(harvest/repo_evidence.py, 1455 evidence files under harvest/evidence/) and
+curated in one Anthropic batch run (curate/auto_curate.py, Sonnet, ~$10).
+1335 records merged into shards 108-119. They are ordinary index entries in
+every respect except that no human has read them.
+
+    python3 -c "import json; d=json.load(open('data/sdv-index.json')); \
+      print(sum(1 for r in d if (r.get('auto_curated') or {}).get('reviewed') is False))"
+
+What WAS checked, mechanically, over all of them:
+
+  * No entry claims a runs-SDV integration without a code hit outside a
+    dependency file. This was the failure mode most feared and it did not occur.
+  * No name_collision carries importance != 0; no citation_only carries
+    importance >= 4; no `unclear` carries confidence high.
+  * Duplicate sweep against the existing index and within the batch: 26 records
+    dropped, three retirements applied in shard 120.
+  * sdv_component backfilled where an import was missed (shard 121, 66 records).
+
+What was NOT checked:
+
+  * Only 15 entries were read against their evidence by a person. Two of the 15
+    were wrong -- both giving a runs-SDV integration to a repository that never
+    imports SDV. Expect that error class at roughly one in ten and look for it
+    first.
+  * Nothing verifies the summaries. The SDV clause at the end of each was
+    written from the evidence file, not from the repository.
+  * 856 of these entries carry a `needs` string. Most report what the model
+    could not SEE -- no README, no call site in the excerpt, no author stated --
+    rather than a judgment it could not make.
+
+The honest description of this tier: better than a keyword classifier,
+not equivalent to a curator's read. If a decision rests on one of these
+entries, open harvest/evidence/<owner>__<repo>.json and check it.
+
+--------------------------------------------------------------------------------
+2. WAITING ON THE OWNER
 --------------------------------------------------------------------------------
 
 Do not resolve these yourself. Each is recorded twice: as a `needs` string on
@@ -36,82 +79,77 @@ either confirms the provisional call or triggers a correction shard.
 Two clusters are ripe and would close most of them with one line each:
 
   (a) wrapper vs modification -- when does building on CTGAN become
-      derivative_work rather than api_user? Four cases turn on it
-      (open questions 2, 16, 18, 19).
+      derivative_work rather than api_user? Four cases turn on it.
   (b) the benchmark/comparative-study shape -- when a paper proposes no
       generator of its own, are the generators it runs baselines or evaluation
-      subjects? Three cases, judged three different ways (question 20).
+      subjects? Three cases, judged three different ways.
 
-To list them from the data:
+Also open, and new:
+
+  (c) importance no longer separates significant work from trivial work.
+      994 entries sit at 3 and 809 at 4, three quarters of the index in two
+      buckets, because the scale measures how central SDV is TO AN ENTRY and in
+      a one-purpose student notebook SDV is everything. The convention is being
+      applied correctly; the scale is doing less than the default view needs.
+  (d) nothing on the page marks the 1334 unreviewed entries. They carry the
+      flag; no filter reads it.
+
+To list the ruling-blocked entries from the data:
 
     python3 -c "import json; d=json.load(open('data/sdv-index.json')); \
       [print(r['id'],'|',r['needs']) for r in d if r.get('needs') and \
       ('convention' in r['needs'].lower() or 'ruling' in r['needs'].lower())]"
 
 --------------------------------------------------------------------------------
-2. MISSING DATA
+3. MISSING DATA
 --------------------------------------------------------------------------------
 
-Counts are out of 1087 entries. None of these is a bug; each is a field no
+Counts are out of 2419 entries. None of these is a bug; each is a field no
 source established, and each is a curation task.
 
   Facets
-    154  no sdv_concept        -- the source named no mechanism, often correctly
-     61  no use_case
+    370  no sdv_concept        -- the source named no mechanism, often correctly
+    195  no use_case
+    181  no sdv_component
      37  no integration        -- predates the field; needs a read to assign
-     31  no sdv_component
-    166  industry is ["academia"] alone (129 repos, 22 papers, 5 theses)
+    184  industry is ["academia"] alone
            This is the academia audit. The valuable half is not reassignment
            but discovering industry values that do not exist yet -- a keyword
            pass cannot do that, because it only finds categories already in the
            vocabulary. space_astronomy is already a visible candidate.
-           See docs/open-questions.md section A.
 
   Attribution
-    106  no authors at all (94 repos, 5 documentation, 5 tutorials)
-    295  authors present but EVERY affiliation is null (254 repos, 17
-           documentation) -- so 686 entries carry a named organization, and
-           the Affiliations and Americas/Europe/Asia/Africa-Oceania facets see
-           just those. Repositories are the bulk: a GitHub profile with no
-           company field cannot be resolved without a judgment call about the
-           person.
+   1289  no authors at all, overwhelmingly repositories
+    389  authors present but EVERY affiliation is null
+           So 741 entries carry a named organization, and the Affiliations and
+           Americas/Europe/Asia/Africa-Oceania facets see just those -- under a
+           third of the index, where before the repository merge it was most of
+           it. A GitHub profile with no company field cannot be resolved without
+           a judgment call about the person.
 
   Bibliographic
      11  no year -- all first-party docs and site entries, which have no
-           publication date: docs-sdv-agent, docs-bundle-ai-connectors,
-           docs-bundle-cag, docs-bundle-dp, docs-bundle-targeted-sampling,
-           docs-bundle-xsynthesizers, docs-sdv-community, docs-compare-features,
-           docs-sdv-enterprise, site-sdv-dev, site-forum
-    925  no venue, 655 no doi -- expected: 513 entries are repositories
-      8  scholarly entries and 1 repository join to no pool row, so they get no
-           year, DOI, citation or star count. `build.py` prints them as
-           "not joined".
-     12  no evidence: announce-dp-synthesizers, blog-label-balancing,
-           blog-community-feedback-models, blog-fake-to-synthetic-ml,
-           blog-intro-to-sdv, case-aml-banks, case-ucla-fraud,
-           docs-compare-features, site-sdv-dev, site-forum,
-           paper-wind-copula-2015, paper-cents-2025
-           The first ten are first-party pages where the artifact IS the
-           evidence; the last two are real gaps.
+           publication date
+   2257  no venue, 1987 no doi -- expected: 1845 entries are repositories
+      9  entries join to no pool row, so they get no year, DOI, citation or
+           star count. `build.py` prints them as "not joined".
+     12  no evidence -- ten are first-party pages where the artifact IS the
+           evidence; paper-wind-copula-2015 and paper-cents-2025 are real gaps.
 
 --------------------------------------------------------------------------------
-3. CURATED BUT NOT FULLY VERIFIED
+4. CURATED BUT NOT FULLY VERIFIED
 --------------------------------------------------------------------------------
 
-    183  confidence: medium  (136 papers, 17 repos, 16 preprints)
-     15  confidence: low     (9 papers, 4 repos)
+    410  confidence: medium  (244 repos, 136 papers, 16 preprints)
+    102  confidence: low     (91 repos, 9 papers)
+    989  entries carry a `needs` string; 856 of those are section 1's.
 
   In the papers lane, `medium` almost always means the publisher would not
   serve the full text to an automated fetch, not that the curator was careless.
-  This is the single highest-leverage fix in the project: adding a PDF text
-  extractor to the toolchain would move roughly a third of every future papers
-  batch from medium to high. There is no pdftotext, fitz, pdfminer or PyPDF2 in
-  the default environment; pypdf installs with `pip install --break-system-packages`.
-
-    135  entries carry a `needs` string. Roughly: 23 awaiting a ruling
-         (section 1), 11 duplicate questions, 101 verification tasks --
-         a full text that would not fetch, a repository that would not clone,
-         a classification resting on a file path rather than a read of the code.
+  Adding a PDF text extractor to the toolchain would move roughly a third of
+  every future papers batch from medium to high. There is no pdftotext, fitz,
+  pdfminer or PyPDF2 in the default environment; pypdf installs with
+  `pip install --break-system-packages`.
 
      32  scholarly entries have no second source, so the url-vs-DOI
          cross-check in validate.py cannot corroborate their pointer.
@@ -132,14 +170,29 @@ source established, and each is a curation task.
       been read: its table 9 says LGBM where the preprint entry's evidence says
       xgboost, so fix that line on merge.
 
+  A duplicate class the title sweep does NOT catch: a copy that renamed itself.
+  shlomihod/smartnoise-sdk-synth was a copy of the already-indexed
+  opendp/smartnoise-sdk under a different title, found only by reading it.
+
 --------------------------------------------------------------------------------
-4. NOT YET CURATED -- THE REAL REMAINING SCOPE
+5. NOT YET CURATED -- THE REAL REMAINING SCOPE
 --------------------------------------------------------------------------------
 
-  2618  of the 2862 works in data/tail/openalex-citations.json are uncurated.
-        This is the bulk of the remaining project. The 287 works flagged
-        `influential` were its highest-value slice and are now done except for
-        the items below. Work in batches of about 50, one shard per batch.
+  2392  of the 2848 works in data/tail/openalex-citations.json are uncurated.
+        This is now the bulk of the remaining project. The 287 works flagged
+        `influential` were its highest-value slice and are done except for the
+        items below. Work in batches of about 50, one shard per batch.
+
+   123  repositories in data/tail/github-repos.json are still uncurated --
+        the residue after the August pass, mostly rows added by a later
+        discovery run. harvest/repo_evidence.py --uncurated --skip-existing
+        picks up exactly these.
+
+    80  records in curate/auto-shards/needs-review.jsonl failed validation and
+        produced no entry. Triage the reasons before resubmitting: a transient
+        truncation will succeed on a retry, a vocabulary violation will not.
+        Re-running `auto_curate.py --submit` picks up exactly these, since a
+        repository with a record file is skipped.
 
      6  works need an institutional login; the owner downloads the PDF and
         uploads it to the chat, which is faster than any fetching route:
@@ -161,28 +214,8 @@ source established, and each is a curation task.
   SciTePress's direct PDF path, the malformed PMC urls Unpaywall returns.
   Read that before inventing a new one.
 
-  The full-text read queue -- pooled works whose abstract suggested SDV use
-  without establishing it -- has been worked through. ONE candidate remains:
-  W4390129643, "Fs-TGAN: an enhanced approach for IoT intrusion detection",
-  no abstract indexed. Regenerate the list rather than trusting this line:
-
-    python3 -c "
-    import json,re
-    idx=json.load(open('data/sdv-index.json'))
-    norm=lambda t: re.sub(r'[^a-z0-9]+',' ',(t or '').lower()).strip()
-    have={norm(r['title']) for r in idx}
-    seen=set()
-    for r in json.load(open('data/tail/openalex-citations.json')):
-        if r['id'] in seen: continue
-        seen.add(r['id']); c=r.get('curation') or {}
-        if not c.get('uses_sdv') or c.get('duplicate_of'): continue
-        if norm(r.get('title')) in have: continue
-        if c.get('confidence')=='low' or 'read full text' in (c.get('needs') or ''):
-            print(r['id'], '|', r.get('title'))
-    "
-
 --------------------------------------------------------------------------------
-5. SITE AND CODE
+6. SITE AND CODE
 --------------------------------------------------------------------------------
 
   Bugs, smallest first:
@@ -210,23 +243,18 @@ source established, and each is a curation task.
       lines of fake document/fetch in node, vm.runInThisContext on the real
       assets/js/sdv-index.js, then read pubs-count.textContent and drive the
       sliders and buttons. Compare counts at importance 0 / popularity 0,
-      at 4 / 0, and at the defaults. docs/site.md records the reference counts
-      and the two stubs that are easy to miss.
+      at 4 / 0, and at the defaults. docs/site.md has the detail.
 
   [ ] A machine-readable retraction flag. One indexed work is retracted
       (10.52783/jes.2913, shard 100); the retraction is stated in its summary
       and nowhere a program can see it. Proposed: `retracted: true`.
       validate.py has no key allowlist, so an extra key passes.
 
---------------------------------------------------------------------------------
-6. CLOSED -- DO NOT RESTART THESE
---------------------------------------------------------------------------------
+  [ ] Some way to see, or hide, the unreviewed tier on the page -- see 2(d).
 
-  * The repository tail. About 1400 pooled repositories, almost all with zero
-    stars, will not be read. They stay in data/tail/github-repos.json at low
-    importance and are hidden by any importance floor above 0. Indexing them
-    unread would put summary clauses in the index that came from no source,
-    which is the one rule everything else here rests on.
+--------------------------------------------------------------------------------
+7. CLOSED -- DO NOT RESTART THESE
+--------------------------------------------------------------------------------
 
   * The self-archive hunt on the login-required works. Confirmed empty five
     ways: Unpaywall, Semantic Scholar openAccessPdf, OpenAlex locations,
@@ -235,16 +263,22 @@ source established, and each is a curation task.
     self-archive. If a NEW closed set appears, run Unpaywall and OpenAlex
     first, then web search the residual -- in that order.
 
-  * Two records in the tail look uncurated but were deliberately removed as
-    preprint duplicates: 10.48550/arxiv.2210.13423 and
-    10.48550/arxiv.2211.07369. Never re-add them.
+  * Repository discovery. Two full github_tail.py runs a fortnight apart added
+    11 repositories between them. The search has converged; another run is not
+    worth its rate limit.
+
+  * curate/never-readd.json lists repositories deliberately dropped by a prior
+    ruling. Never re-add them, and read that file rather than the built index
+    before any bulk pass -- a retired entry is absent from data/sdv-index.json
+    while its id and url are still owned by a shard, which is exactly how two
+    of them got re-curated in August.
 
   * The Google Scholar lane, unless a SERPAPI_KEY turns up. Scholar publishes
     no API and its terms forbid automated querying; if it serves a CAPTCHA,
     stop rather than working around it.
 
 --------------------------------------------------------------------------------
-7. SMALLER THINGS
+8. SMALLER THINGS
 --------------------------------------------------------------------------------
 
   [ ] paper-pretactical-flight-delay-synthetic-2025 names a companion library,
@@ -260,3 +294,6 @@ source established, and each is a curation task.
       some of them; the rest was never finished. It is a cosmetic field -- the
       site does not filter on it -- so do this only if you are touching those
       shards anyway.
+  [ ] The affiliation `needs` strings fire on records with no authors at all,
+      30 of 60 in the August batch. If auto_curate.py's prompt is revised,
+      suppress that one when `authors` is empty.
