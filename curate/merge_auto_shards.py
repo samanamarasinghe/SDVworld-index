@@ -136,10 +136,14 @@ def main():
     # (duplicate_of) is absent from data/sdv-index.json but its id and url are
     # still owned by a shard, and re-adding it collides. frhrdr/dp-merf is
     # exactly this case: retired in shard 041 by the Q2 ruling for ParkLabML.
+    #
+    # Every shard counts, INCLUDING the auto-repo-tail ones this script wrote on a
+    # previous run. An earlier version skipped those so the first merge could be
+    # re-run from scratch; once they were committed that skip made the script refuse
+    # to run at all, because it re-proposed 1335 records the index already had. To
+    # redo a merge, delete its shards first.
     shard_urls, shard_ids, retired = set(), set(), {}
     for path in sorted(glob.glob(os.path.join(SHARD_DIR, "*.json"))):
-        if re.search(r"auto-repo-tail", os.path.basename(path)):
-            continue
         for rec in load_json(path, []):
             if rec.get("id"):
                 shard_ids.add(rec["id"])
