@@ -10,7 +10,7 @@ points where the entry says it does.
 
 Exit status is 0 when every check passes, 1 otherwise, so this can gate CI.
 
-The controlled vocabularies are parsed out of README.md rather than restated
+The controlled vocabularies are parsed out of docs/schema.md rather than restated
 here. A test that keeps its own copy of the schema drifts from it, and then
 agrees with itself while the data is wrong.
 
@@ -58,16 +58,16 @@ def shard_files():
 
 
 def read_vocabularies():
-    """Pull the controlled vocabularies out of README.md.
+    """Pull the controlled vocabularies out of docs/schema.md.
 
     Each is a line of the form `**name** (aside): a, b, c` possibly wrapped over
     several lines. Parenthetical glosses are stripped before splitting."""
-    text = open(os.path.join(ROOT, 'README.md')).read()
+    text = open(os.path.join(ROOT, 'docs', 'schema.md')).read()
     vocab = {}
     for facet in FACETS:
         m = re.search(r'\*\*' + facet + r'\*\*[^:]*:(.*?)(?:\n\s*\n)', text, re.S)
         if not m:
-            fail('vocabulary', f'README.md has no **{facet}** list; cannot validate that facet')
+            fail('vocabulary', f'docs/schema.md has no **{facet}** list; cannot validate that facet')
             continue
         body = re.sub(r'\([^)]*\)', ' ', m.group(1))
         vocab[facet] = {t for t in re.split(r'[,\s]+', body) if re.fullmatch(r'[a-z][a-z_]*', t or '')}
@@ -294,7 +294,7 @@ def check_vocabularies(records, vocab):
             v = rec.get(facet)
             for value in ([v] if isinstance(v, str) else (v or [])):
                 if value not in allowed:
-                    fail('vocabulary', f'{rec.get("id")}: {facet}={value!r} is not in README')
+                    fail('vocabulary', f'{rec.get("id")}: {facet}={value!r} is not in docs/schema.md')
 
 
 def check_scales(records):

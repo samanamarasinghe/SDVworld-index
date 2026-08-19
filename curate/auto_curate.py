@@ -67,17 +67,17 @@ EVIDENCE_CHARS = 9000
 # ---------------------------------------------------------------- vocabulary
 
 def read_vocabularies():
-    """Parse the controlled vocabularies out of README.md.
+    """Parse the controlled vocabularies out of docs/schema.md.
 
     Same source and same parse as tests/validate.py, deliberately: if the two
     disagreed, this script would happily produce records validation rejects.
     """
-    text = open(os.path.join(ROOT, 'README.md')).read()
+    text = open(os.path.join(ROOT, 'docs', 'schema.md')).read()
     vocab = {}
     for facet in FACETS:
         match = re.search(r'\*\*' + facet + r'\*\*[^:]*:(.*?)(?:\n\s*\n)', text, re.S)
         if not match:
-            sys.exit(f'README.md has no **{facet}** list; cannot build the prompt')
+            sys.exit(f'docs/schema.md has no **{facet}** list; cannot build the prompt')
         body = re.sub(r'\([^)]*\)', ' ', match.group(1))
         vocab[facet] = sorted({t for t in re.split(r'[,\s]+', body)
                                if re.fullmatch(r'[a-z][a-z_]*', t or '')})
