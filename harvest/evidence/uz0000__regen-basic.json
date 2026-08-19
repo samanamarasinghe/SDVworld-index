@@ -1,6 +1,252 @@
 {
  "repo": "uz0000/regen-basic",
  "disk_kb": 0,
- "status": "error",
- "error": "HTTPError: HTTP Error 404: Not Found"
+ "method": "tarball",
+ "status": "ok",
+ "readme": "# regen-basic\n\n[![tests](https://github.com/uz0000/regen-basic/actions/workflows/tests.yml/badge.svg)](https://github.com/uz0000/regen-basic/actions/workflows/tests.yml)\n\n**If you simulate data instead of using the real thing, and then make a\ndecision from it — do you reach the same conclusion the truth would have\ngiven you?**\n\nThat question is the whole point of this repo. Synthetic data is usually\njustified by necessity: the real records are private, restricted, expensive,\nor simply not allowed to leave the building, so you work with a stand-in.\nThe stand-in is normally judged by whether it *looks* like the real data.\nBut looking right and *supporting the same conclusion* are different\nproperties, and the second one is what actually matters the moment anybody\nacts on the result.\n\n**What we found.** Every generator put through this test failed it — this repo's\nsimulator, SDV's Gaussian copula, and CTGAN alike. Each one passes the ordinary\nquality checks first: the columns have the right spread, the relationships\nbetween them land inside tolerance. Then the declared analysis is refit on the\noutput and the coefficients have moved. The gap between \"looks right\" and \"is\nright\" is not a quirk of one implementation; it reproduces across every method\ntried here and in [`regen-synth`](https://github.com/uz0000/regen-synth), which\nadds noise injection, SMOTE and a generator built specifically to close the gap.\nNone of them retained the conclusion reliably.\n\nSo this repo is built as two halves that argue with each other:\n\n| | | |\n|---|---|---|\n| **`simulate/`** | build the stand-in | model a real table's joint distribution and draw new rows from it |\n| **`certify/`** | check the conclusion | fit the same analysis on real and simulated data, and see whether it lands in the same place |\n\nThe second half exists to hold the first half to account. It is deliberately\nindependent of it — it never asks who produced the data, so it works just as\nwell on output from any other tool.\n\nDeterministic given a seed. No LLM, no network. Three dependencies.\n\n**Relationship to [`regen-synth`](https://github.com/uz0000/regen-synth).** That\nrepo is the larger system the same question came out of: rare-event\namplification, a privacy floor, an audit bundle, and a certifier that extends to\na second generator built specifically to preserve a declared analysis. This repo\nis the compact version — the simulator and the check, three dependencies, no\nmodel call anywhere.\n\nInstall them into **separate environments**. Both claim the top-level package\nnames `engine`, `contracts` and `cli`, so a shared environment resolves those\nimports to whichever was installed last and the CLIs shadow each other.\n\n---\n\n---\n\n## The finding: no generator preserves the conclusion — this one included\n\n`python examples/decision_check/run_demo.py` — a real public dataset of\n30,000 people, one regression, three sources. The subject matter is\nincidental; substitute any table where someone fits a model and acts on the\ncoefficients.\n\nFull per-coefficient table:\n[`examples/decision_check/RESULTS.md`](examples/decision_check/RESULTS.md),\nwritten by the script that produced it.\n\n| source | `pay_delay_1` | verdict |\n|---|---|---|\n| **truth** (the real data) | **+0.714** | — |\n| bootstrap *(positive control)* | +0.714 | matches |\n| independent *(negative control)* | −0.017 | diverges |\n| **simulator** *(this repo's output)* | **+0.422** | **diverges** |\n\nThe two controls confirm the checker works. A plain resample of the real\ndata reproduces the conclusion, as it must — if that failed, the checker\nwould be broken. The negative control is the simulator's own output with\neach column then shuffled on its own, so the distributions are *identical*\nand only the joint structure is destroyed; it diverges on everything, which\nis precisely the failure the correlation check was built to catch.\n\n**And the simulator's own output diverges too, on three of four\ncoefficients.** Its own fidelity check passed: every column's distribution\nmatched, and the relationships between columns shifted by 0.037, comfortably\ninside the limit. Anyone trusting that verdict would have shipped it. The\nindependent check says a decision made from that data lands somewhere different\nfrom the truth. `pay_delay_1` comes back at +0.42 against a real +0.71, an effect\nunderstated by 41%.\n\nThis is the honest result rather than the flattering one, and it is the most\nuseful thing in the repo. It is not a bug in either half. It is a real property\nof this class of generator, and the reason is measurable.\n\nThe strongest warning sign in this data does not behave like a trend. Among\naccounts not behind on payments 12.8% default, one period behind 33.9%, two\nperiods behind 69.1%. Risk climbs and then jumps. A copula ties columns together\nwith a single number for how strongly they move together, which can describe a\nclimb and cannot describe a jump, so it renders the jump as a gentle slope. Its\ncorrelation with the outcome comes out at +0.21 against a real +0.33, and the\ncoefficient shrinks with it.\n\nMatching distributions and matching correlations is genuinely not sufficient for\nmatching conclusions.\n\nEvery claim in the two paragraphs above is measured rather than argued:\n[`examples/decision_check/MECHANISM.md`](examples/decision_check/MECHANISM.md)\n(`python examples/decision_check/mechanism_check.py`) states each one, measures\nit, and reports whether it holds.\n\nThe narrower generator that *would* close this gap, one that describes how the\npredictor rows are arranged in more detail and then decides each row's outcome\nfrom a model of how the real outcome depends on where a row sits, built against a\ndeclared analysis rather than general resemblance, is a different tool than a\ngeneral-purpose simulator and isn't in this repo. It was\nbuilt in [`regen-synth`](https://github.com/uz0000/regen-synth): it recovers the\ncoefficient every method here breaks, and still certifies the full analysis on\nonly 37% of seeds. A partial fix, with the honest number reported as one, in that\nrepo's [`FINDINGS.md`](https://github.com/uz0000/regen-synth/blob/main/FINDINGS.md).\n\n**What to take from it**: if you simulate data and something downstream\ndepends on a specific relationship in it, verify that relationship\nexplicitly. Do not infer it from the fact that the data looks right.\n\n## The same result against the industry standard\n\nThe failure is not particular to the simulator in this repo. Measured against\nSDV, the most widely used synthetic-tabular library, using both its Gaussian\ncopula and CTGAN, no generator preserves the declared analysis — the best result\nfrom any of them is one coefficient out of four, and every one of them passes the\nordinary quality checks while doing it.\n\nFull numbers and method: [`examples/comparison/RESULTS.md`](examples/comparison/RESULTS.md),\nboth controls included.\n\nOn the real 30k-row table with a declared analysis:\n\n| generator | correlation Δ | **conclusion kept** | time |\n|---|---|---|---|\n| bootstrap *(control)* | 0.006 | **4/4** | — |\n| independent *(control)* | 0.177 | **0/4** | — |\n| **regen-basic** | **0.037** | **1/4** | **0.4s** |\n| sdv-copula | 0.064 | **1/4** | 4.1s |\n| sdv-ctgan | 0.091 | **0/4** | 91s |\n\nTwo further things this says, neither of them flattering:\n\n**This repo is competitive but not special.** It ties the industry standard\non the conclusion, edges it on correlation structure, and runs ten times\nfaster. It is the same family of method, and it inherits the same\nweaknesses — including the categorical one, which SDV's copula has for\nexactly the same structural reason.\n\n**CTGAN genuinely beats both copulas on categorical structure** once given\nenough training (0.370 against 0.575, on the second table in the results),\nbecause it doesn't rank categories. It still fails the threshold, and costs\n~2,500× the time. Worth knowing rather than hiding: the approach used here\nis not the best available at that particular thing.\n\nWhat isn't available elsewhere is the middle column. SDV ships no verdict on\nwhether a declared analysis survived — measuring that requires being told\nwhich analysis matters. That is the contribution: not a better generator, but\nrefusing to report success without checking the thing that decides whether\nthe data was any use.\n\n---\n\n## How it works\n\n### Simulating a table\n\n```bash\nsynth generate mytable.csv --n-rows 500 --out synth-output/\n```\n\n```python\nfrom simulate.generate import generate_table\n\nresult = generate_table(real_df, n_rows=500, seed=42)\nresult.synthetic_df                   # the stand-in\nresult.fidelity_passed                # did every check pass?\nresult.correlation_delta              # how far the numeric relationships drifted\nresult.categorical_association_delta  # the worst category-to-measurement drift\nresult.categorical_worst_pair         # which pair that was\nresult.n_duplicates_guarded           # rows that landed on a real record, moved off\n```\n\nThe simulator infers what each column *is* (a measurement, a category, a\nyes/no flag, or an identifier), fits **one joint model over the whole\ntable**, and samples fresh rows from it.\n\nThe word *joint* is carrying the weight there. The easy way to build\nsynthetic data is column by column: learn what values `age` takes, learn\nwhat values `income` takes, then draw each independently. Every column comes\nout with a perfect distribution and the table is nonsense — because in the\nreal data those two columns move together, and nothing in that procedure\never recorded that they did. Anything downstream that depends on the\nrelationship (a ratio, a model, a filter, a join) is now quietly wrong while\nevery column-level check reports success.\n\nA copula avoids this by separating the two things being learned: what each\ncolumn looks like on its own, and how the columns move together. Both are\nfit, and both are reproduced — for numeric columns, very well. For\ncategorical ones, only partly, which is documented honestly below rather\nthan glossed.\n\nIdentifier columns get special treatment — they're re-minted as fresh unique\nvalues rather than sampled, since drawing from a column where every value\nappears once just reproduces noise, and reusing a real ID is the single\nstrongest way to re-identify someone.\n\n### What the output checks tell you\n\n```\n$ synth generate examples/readings.csv --n-rows 2000 --out synth-output/\nreadings: 2000 real rows -> 2000 synthetic rows\n  fidelity: FAIL\n    numeric correlations   delta 0.037  (limit 0.25)  ok\n    category vs. measure   delta 0.595  (limit 0.1)  TOO FAR [worst: temp_c by region]\n  privacy: 0 row(s) landed on a real record and were moved off\n```\n\nThat is the sample table failing, on purpose and correctly. The numeric\nrelationships came through almost exactly — temperature and humidity really\ndo correlate at -0.87 in the real table and -0.88 in the simulated one. But\nthe real table's regions have distinctly different temperatures, and in the\nsimulated table they mostly don't, so the check refuses to call it good.\n\nTwo things are worth noticing. First, **the check reports the worst single\npair and names it**, rather than averaging across all of them — an average is\nhow one badly broken relationship disappears behind nine intact ones.\nSecond, the tool tells you this instead of reporting success, which is the\nentire point; a version of this that only checked numeric correlations\npassed the exact same table cleanly, because a correlation needs two numbers\nand a category isn't one.\n\n**The underlying limitation, stated plainly**: to fit a category into a\ncorrelation-based model it has to be turned into a number, and the numbering\nis alphabetical, which is arbitrary. So the model can only express a\ncategory-to-measurement relationship that happens to run in alphabetical\norder. In the sample table it doesn't — the coldest region is `north`, third\nalphabetically — so the relationship cannot be represented, only detected\nand reported. If your table has meaningful differences between categories,\nexpect this check to fire, and treat it as real.\n\n### Exit codes\n\nA failed check is not a crash: the tool ran correctly and is telling you the\nresult is bad. A pipeline watching only for crashes would sail straight past\nthat, so the two are separate codes.\n\n| code | meaning |\n|---|---|\n| `0` | every table simulated and passed every check |\n| `1` | at least one table **failed** a check — the data was still written, so you can inspect it |\n| `2` | could not run (missing file, or input the simulator refuses); nothing written |\n\n```bash\nsynth generate mytable.csv --out synth-output/ || echo \"don't trust that output\"\n```\n\nPass `--allow-fail` to get exit `0` regardless when you want the data\nanyway. Note that `1` still writes the output — a verdict of \"this isn't\nfaithful\" is more useful with the evidence attached than without it.\n\n**On privacy**: no synthetic row is built by perturbing a real row — every\nvalue is drawn from a fitted distribution — so near-copies are already rare\nby construction, and a duplicate guard checks for them anyway. This is *not*\ndifferential privacy; it prevents reproducing a real record's attributes, and\nmakes no claim about what can be inferred in aggregate.\n\n### Checking the conclusion\n\nFidelity checks, meaning the checks that ask whether the table looks like the\nreal one, answer \"does this look right.\" They cannot answer \"would someone acting\non this be right,\" because that depends on a specific analysis, and no generator\nknows which analysis you have in mind. So you declare it:\n\n```python\nfrom certify.certifier import certify_dataset\nfrom contracts.types import EstimandSpec\n\n# The conclusion you actually care about, whatever your table is about.\nanalysis = EstimandSpec(outcome=\"recovered\", predictors=[\"dose\", \"age\"], family=\"logit\")\n\ncert = certify_dataset(real_df, synthetic_df, analysis)\ncert[\"certified\"]   # did every coefficient survive the round trip?\ncert[\"targets\"]     # per coefficient: truth vs. simulated, and whether they agree\n```\n\nIt reports **per coefficient**, not one overall score, because that is where\nthe useful information is. A dataset can preserve three relationships and\nbreak the fourth — and if the broken one is the one driving your decision,\nan aggregate \"87% similar\" would have hidden exactly the thing you needed to\nknow.\n\nThe certificate carries the real estimate and its uncertainty — aggregate\nnumbers, not rows — so someone holding only the synthetic data can re-run\nthe check themselves and confirm the verdict, without ever seeing the real\nrecords.\n\n## Reading the code\n\n```\nsimulate/generate.py     the simulator: infer column kinds, fit, sample, check\ncertify/certifier.py     the verdict: same analysis on both, per-coefficient\ncertify/estimand.py      the statistics: OLS and logistic fits, from scratch\nengine/prior/grounded.py the copula — marginals and dependence, fit separately\nengine/auditor/          the fidelity checks (per-column, correlation, category)\nengine/privacy.py        the duplicate guard\nengine/ingest/loader.py  column-kind and identifier inference\nexamples/decision_check/ the demo above\nexamples/comparison/     the head-to-head against SDV and CTGAN\n```\n\nThe regression fits in `certify/estimand.py` are written directly against\nnumpy/scipy rather than pulled from a stats library, so the check has no\ndependency on a solver whose behavior could drift between versions.\n\n## Scope and limits\n\n- **One table at a time.** `generate_table` for one, `generate_tables` for\n  several; relationships *between* tables aren't modeled.\n- **Category-to-measurement relationships survive only partly**, and only\n  when they happen to run in alphabetical order of the category labels. The\n  check detects the shortfall and names the pair; the generator cannot\n  currently fix it. Detected, reported, not solved.\n- **No missing values.** Fails with a clear error rather than silently\n  distorting the fit — impute or drop first.\n- **The check covers numeric predictors, OLS and logistic regression.** Other\n  analyses are not certifiable here.\n- **Rows are treated as independent.** Nothing sequential — no time series,\n  no ordering, no per-entity history.\n- **Not differential privacy.** See the privacy note above.\n- **One dataset's worth of evidence here.** The finding above is a single real\n  dataset and a single analysis. It is a real result, not a general law. The\n  same failure has since been replicated on a second dataset and a second model\n  family, ordinary least squares on California housing, in\n  [`regen-synth`](https://github.com/uz0000/regen-synth/blob/main/FINDINGS.md).\n  That is two points, not a law.\n\n## Install\n\n```bash\npython3 -m venv .venv && source .venv/bin/activate\npip install -r requirements.txt\npip install -e .\npytest tests/ -q                        # 35 tests\npython examples/make_sample_data.py     # a demo table to try the CLI on\nsynth generate examples/readings.csv --n-rows 500 --out synth-output/\n```\n\nThat last command exits `1` on purpose — the demo table contains a\nrelationship the simulator can't reproduce, and the checks say so. See\n**Exit codes** above.\n\nDependencies are pinned (numpy, pandas, scipy) as reproducibility discipline:\nidentical seeds only guarantee identical output within a fixed dependency\nset. That is not just asserted here — CI runs the suite and both examples on\nLinux across Python 3.10, 3.11 and 3.12, none of which is the machine this\nwas written on. It matters more than it might sound: the tests assert numeric\nthresholds on seeded draws, and those are exactly the assertions that can\ndrift with a different platform or numerical backend. They currently don't.\n\nWorth knowing what that does *not* cover: only these pinned versions are\ntested, so the pins are known-good rather than known-necessary. The one\nconfirmed case of a version bump changing a result was in an earlier,\nsince-removed module that used scikit-learn, which this codebase no longer\ndepends on at all.\n\n## Where to find things\n\n| You want | Go to |\n|---|---|\n| What was found | [the finding](#the-finding-no-generator-preserves-the-conclusion--this-one-included), above |\n| The per-coefficient table | [`examples/decision_check/RESULTS.md`](examples/decision_check/RESULTS.md) |\n| Whether the explanation is true | [`examples/decision_check/MECHANISM.md`](examples/decision_check/MECHANISM.md) |\n| How it compares to SDV and CTGAN | [`examples/comparison/RESULTS.md`](examples/comparison/RESULTS.md) |\n| Claims that were revised, and why | [`CORRECTIONS.md`](CORRECTIONS.md) |\n| What the code does, file by file | [Reading the code](#reading-the-code), above |\n| What this does not do | [Scope and limits](#scope-and-limits), above |\n| The larger system this came from | [`regen-synth`](https://github.com/uz0000/regen-synth) |\n\nBoth result tables are written by the scripts that produce them and carry a\ngenerated-file header. This README links to them rather than restating their\nnumbers, so a document cannot drift from a run.\n\n## License\n\nMIT\n",
+ "hits": {
+  "ct": [
+   {
+    "file": "examples/comparison/RESULTS.md",
+    "line": 27,
+    "text": "| `sdv-ctgan` | SDV's `CTGANSynthesizer` — a GAN. A genuinely different approach, and it encodes categories one-hot rather than ranking them. |",
+    "context": [
+     "| `bootstrap` | **positive control.** Resamples the real rows. Not usable as synthetic data — it *is* the real data — but it marks the ceiling. |",
+     "| `independent` | **negative control.** Samples each column separately. Every column's own distribution is perfect and every relationship between columns is destroyed. |",
+     "| `regen-basic` | this repo — one joint Gaussian copula over the whole table. |",
+     "| `sdv-copula` | [SDV](https://sdv.dev)'s `GaussianCopulaSynthesizer`. The closest peer, and the most widely used synthetic-tabular library there is. |",
+     "| `sdv-ctgan` | SDV's `CTGANSynthesizer` — a GAN. A genuinely different approach, and it encodes categories one-hot rather than ranking them. |",
+     "",
+     "## Table 1 — does a real conclusion survive?",
+     "",
+     "Real public table, 30,000 rows, all numeric. The declared analysis is"
+    ]
+   },
+   {
+    "file": "examples/comparison/generate_baselines.py",
+    "line": 60,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "    categories one-hot rather than ranking them, so it is not subject to the",
+     "    alphabetical-order limitation this repo's copula has.\"\"\"",
+     "    import numpy as np",
+     "    import torch",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    np.random.seed(seed)",
+     "    torch.manual_seed(seed)",
+     "    s = CTGANSynthesizer(_metadata_for(df), epochs=epochs, verbose=False)",
+     "    s.fit(df)"
+    ]
+   },
+   {
+    "file": "examples/comparison/generate_baselines.py",
+    "line": 63,
+    "text": "s = CTGANSynthesizer(_metadata_for(df), epochs=epochs, verbose=False)",
+    "context": [
+     "    import torch",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    np.random.seed(seed)",
+     "    torch.manual_seed(seed)",
+     "    s = CTGANSynthesizer(_metadata_for(df), epochs=epochs, verbose=False)",
+     "    s.fit(df)",
+     "    return s.sample(num_rows=n_rows)",
+     "",
+     ""
+    ]
+   }
+  ],
+  "gc": [
+   {
+    "file": "examples/comparison/RESULTS.md",
+    "line": 26,
+    "text": "| `sdv-copula` | [SDV](https://sdv.dev)'s `GaussianCopulaSynthesizer`. The closest peer, and the most widely used synthetic-tabular library there is. |",
+    "context": [
+     "|---|---|",
+     "| `bootstrap` | **positive control.** Resamples the real rows. Not usable as synthetic data — it *is* the real data — but it marks the ceiling. |",
+     "| `independent` | **negative control.** Samples each column separately. Every column's own distribution is perfect and every relationship between columns is destroyed. |",
+     "| `regen-basic` | this repo — one joint Gaussian copula over the whole table. |",
+     "| `sdv-copula` | [SDV](https://sdv.dev)'s `GaussianCopulaSynthesizer`. The closest peer, and the most widely used synthetic-tabular library there is. |",
+     "| `sdv-ctgan` | SDV's `CTGANSynthesizer` — a GAN. A genuinely different approach, and it encodes categories one-hot rather than ranking them. |",
+     "",
+     "## Table 1 — does a real conclusion survive?",
+     ""
+    ]
+   },
+   {
+    "file": "examples/comparison/generate_baselines.py",
+    "line": 47,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "def gaussian_copula(df: pd.DataFrame, n_rows: int, seed: int) -> pd.DataFrame:",
+     "    \"\"\"SDV's Gaussian copula — the closest peer to what this repo does.\"\"\"",
+     "    import numpy as np",
+     "    from sdv.single_table import GaussianCopulaSynthesizer",
+     "    np.random.seed(seed)",
+     "    s = GaussianCopulaSynthesizer(_metadata_for(df))",
+     "    s.fit(df)",
+     "    return s.sample(num_rows=n_rows)"
+    ]
+   },
+   {
+    "file": "examples/comparison/generate_baselines.py",
+    "line": 49,
+    "text": "s = GaussianCopulaSynthesizer(_metadata_for(df))",
+    "context": [
+     "    \"\"\"SDV's Gaussian copula — the closest peer to what this repo does.\"\"\"",
+     "    import numpy as np",
+     "    from sdv.single_table import GaussianCopulaSynthesizer",
+     "    np.random.seed(seed)",
+     "    s = GaussianCopulaSynthesizer(_metadata_for(df))",
+     "    s.fit(df)",
+     "    return s.sample(num_rows=n_rows)",
+     "",
+     ""
+    ]
+   }
+  ],
+  "st": [
+   {
+    "file": "examples/comparison/generate_baselines.py",
+    "line": 47,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "def gaussian_copula(df: pd.DataFrame, n_rows: int, seed: int) -> pd.DataFrame:",
+     "    \"\"\"SDV's Gaussian copula — the closest peer to what this repo does.\"\"\"",
+     "    import numpy as np",
+     "    from sdv.single_table import GaussianCopulaSynthesizer",
+     "    np.random.seed(seed)",
+     "    s = GaussianCopulaSynthesizer(_metadata_for(df))",
+     "    s.fit(df)",
+     "    return s.sample(num_rows=n_rows)"
+    ]
+   },
+   {
+    "file": "examples/comparison/generate_baselines.py",
+    "line": 60,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "    categories one-hot rather than ranking them, so it is not subject to the",
+     "    alphabetical-order limitation this repo's copula has.\"\"\"",
+     "    import numpy as np",
+     "    import torch",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    np.random.seed(seed)",
+     "    torch.manual_seed(seed)",
+     "    s = CTGANSynthesizer(_metadata_for(df), epochs=epochs, verbose=False)",
+     "    s.fit(df)"
+    ]
+   }
+  ],
+  "md": [
+   {
+    "file": "examples/comparison/generate_baselines.py",
+    "line": 34,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "def _metadata_for(df: pd.DataFrame):",
+     "    \"\"\"Build SDV metadata across the several API shapes SDV has shipped.\"\"\"",
+     "    try:                                     # SDV >= 1.17",
+     "        from sdv.metadata import Metadata",
+     "        return Metadata.detect_from_dataframe(df, table_name=\"table\")",
+     "    except Exception:",
+     "        pass",
+     "    from sdv.metadata import SingleTableMetadata   # SDV 1.0 - 1.16"
+    ]
+   },
+   {
+    "file": "examples/comparison/generate_baselines.py",
+    "line": 38,
+    "text": "from sdv.metadata import SingleTableMetadata   # SDV 1.0 - 1.16",
+    "context": [
+     "        from sdv.metadata import Metadata",
+     "        return Metadata.detect_from_dataframe(df, table_name=\"table\")",
+     "    except Exception:",
+     "        pass",
+     "    from sdv.metadata import SingleTableMetadata   # SDV 1.0 - 1.16",
+     "    md = SingleTableMetadata()",
+     "    md.detect_from_dataframe(df)",
+     "    return md",
+     ""
+    ]
+   }
+  ],
+  "sdv_any": [
+   {
+    "file": "examples/comparison/generate_baselines.py",
+    "line": 34,
+    "text": "from sdv.metadata import Metadata",
+    "context": [
+     "",
+     "def _metadata_for(df: pd.DataFrame):",
+     "    \"\"\"Build SDV metadata across the several API shapes SDV has shipped.\"\"\"",
+     "    try:                                     # SDV >= 1.17",
+     "        from sdv.metadata import Metadata",
+     "        return Metadata.detect_from_dataframe(df, table_name=\"table\")",
+     "    except Exception:",
+     "        pass",
+     "    from sdv.metadata import SingleTableMetadata   # SDV 1.0 - 1.16"
+    ]
+   },
+   {
+    "file": "examples/comparison/generate_baselines.py",
+    "line": 38,
+    "text": "from sdv.metadata import SingleTableMetadata   # SDV 1.0 - 1.16",
+    "context": [
+     "        from sdv.metadata import Metadata",
+     "        return Metadata.detect_from_dataframe(df, table_name=\"table\")",
+     "    except Exception:",
+     "        pass",
+     "    from sdv.metadata import SingleTableMetadata   # SDV 1.0 - 1.16",
+     "    md = SingleTableMetadata()",
+     "    md.detect_from_dataframe(df)",
+     "    return md",
+     ""
+    ]
+   },
+   {
+    "file": "examples/comparison/generate_baselines.py",
+    "line": 47,
+    "text": "from sdv.single_table import GaussianCopulaSynthesizer",
+    "context": [
+     "",
+     "def gaussian_copula(df: pd.DataFrame, n_rows: int, seed: int) -> pd.DataFrame:",
+     "    \"\"\"SDV's Gaussian copula — the closest peer to what this repo does.\"\"\"",
+     "    import numpy as np",
+     "    from sdv.single_table import GaussianCopulaSynthesizer",
+     "    np.random.seed(seed)",
+     "    s = GaussianCopulaSynthesizer(_metadata_for(df))",
+     "    s.fit(df)",
+     "    return s.sample(num_rows=n_rows)"
+    ]
+   },
+   {
+    "file": "examples/comparison/generate_baselines.py",
+    "line": 60,
+    "text": "from sdv.single_table import CTGANSynthesizer",
+    "context": [
+     "    categories one-hot rather than ranking them, so it is not subject to the",
+     "    alphabetical-order limitation this repo's copula has.\"\"\"",
+     "    import numpy as np",
+     "    import torch",
+     "    from sdv.single_table import CTGANSynthesizer",
+     "    np.random.seed(seed)",
+     "    torch.manual_seed(seed)",
+     "    s = CTGANSynthesizer(_metadata_for(df), epochs=epochs, verbose=False)",
+     "    s.fit(df)"
+    ]
+   }
+  ]
+ },
+ "hit_codes": [
+  "ct",
+  "gc",
+  "md",
+  "sdv_any",
+  "st"
+ ],
+ "vendored_dirs": [],
+ "dependencies": {}
 }
