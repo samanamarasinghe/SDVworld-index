@@ -82,9 +82,16 @@ def fetch_tarball(repo, dest):
     with urllib.request.urlopen(url, timeout=180) as response, open(path, 'wb') as fh:
         shutil.copyfileobj(response, fh)
     with tarfile.open(path) as tar:
-        # Skip absolute and parent-escaping members rather than trusting the archive.
+        # Skip absolute and parent-escaping members rather than trusting the archive,
+        # and skip LINKS entirely. Python's data filter raises AbsoluteLinkError on a
+        # committed virtualenv symlink -- venv/bin/python pointing at the machine that
+        # built it -- and that exception aborts the WHOLE extraction, so one stray
+        # symlink cost the entire repository. Nine of the first pass's fourteen
+        # failures were this and not a dead repository. Nothing here needs to follow a
+        # link: the scan reads regular files.
         safe = [m for m in tar.getmembers()
-                if not m.name.startswith('/') and '..' not in m.name.split('/')]
+                if not m.name.startswith('/') and '..' not in m.name.split('/')
+                and not (m.issym() or m.islnk())]
         tar.extractall(dest, members=safe)
     os.remove(path)
     roots = [d for d in os.listdir(dest) if os.path.isdir(os.path.join(dest, d))]
