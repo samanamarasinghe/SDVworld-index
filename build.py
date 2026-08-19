@@ -178,6 +178,16 @@ def main(write=False):
             if rec['id'] in impact:
                 rec.update(impact[rec['id']])  # hand-checked figures win over the join
 
+    # auto_curated carries the batch response's model, token usage and service
+    # tier. That is provenance for a curator, not something to publish: the page
+    # fetches this file, and the usage blob is 586KB of a 4MB payload. Keep the
+    # reviewed flag, which the page can filter on, and leave the full record in
+    # the shard.
+    for rec in out:
+        marker = rec.get('auto_curated')
+        if isinstance(marker, dict):
+            rec['auto_curated'] = {'reviewed': bool(marker.get('reviewed'))}
+
     out.sort(key=lambda r: (r['kind'], -(r.get('year') or 0), r['title']))
     dest = os.path.join(ROOT, 'data', 'sdv-index.json')
     if write:
