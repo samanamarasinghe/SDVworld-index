@@ -1,6 +1,6 @@
 ================================================================================
 SDVworld-index -- README for whoever takes this over
-Index v0.99 | 1087 curated entries | 77 shards | written 2026-08-17
+Index v0.99 | 2419 curated entries | 91 shards | written 2026-08-19
 ================================================================================
 
 Published at   https://samanamarasinghe.github.io/SDVworld-index/
@@ -33,6 +33,23 @@ WHAT MAKES IT WORTH ANYTHING
   downstream can tell the difference.
 
   If you keep one rule from this file, keep that one.
+
+NOT EVERY ENTRY MEETS THAT STANDARD, AND YOU NEED TO KNOW WHICH
+
+  1334 of the 2419 entries -- the repository tail, shards 108 to 119 -- were
+  curated by a batch model in August 2026 from evidence files rather than by a
+  person reading the repository. They carry auto_curated.reviewed = false and
+  are otherwise ordinary entries.
+
+  They were checked mechanically and the hard rules held: none claims to run
+  SDV without a code hit outside a dependency file. Fifteen were read against
+  their evidence by hand and two of the fifteen were wrong, both in the same
+  direction -- a runs-SDV integration on a repository that never imports SDV.
+
+  Treat that tier as better than a keyword classifier and not equivalent to a
+  curator's read. The evidence each judgment was made from is in
+  harvest/evidence/<owner>__<repo>.json, so any one of them can be checked in
+  under a minute. TODO.txt section 1 has the full account.
 
 
 ================================================================================
@@ -234,12 +251,13 @@ TRAPS THAT HAVE ALREADY COST TIME
 
   * THE PAGE'S FILTER SEMANTICS ARE MIXED, DELIBERATELY. The checkbox facets
     are include filters: one match is enough. The two button groups
-    (Academic/Non-academic, Americas/Europe/Asia+) are the opposite -- they
-    PERMIT, so unlighting one removes every entry carrying even one value of
-    that kind. A record with no value in a group must therefore match nothing
-    in it, or it gets vetoed by a group it has no business being in. That bug
-    shipped once and hid 668 entries. docs/site.md has the details; the
-    relevant guard is the NO_NONE set in assets/js/sdv-index.js.
+    (Academic / Non-academic / Affiliation-not-found, and Americas / Europe /
+    Asia / Africa-Oceania) are the opposite -- they PERMIT, so unlighting one
+    removes every entry carrying even one value of that kind. A record with no
+    value in a group must therefore match nothing in it, or it gets vetoed by a
+    group it has no business being in. That bug shipped once and hid 668
+    entries. docs/site.md has the details; the relevant guard is the NO_NONE
+    set in assets/js/sdv-index.js.
 
   * MISCITATION IS A PROPERTY OF THIS LITERATURE, not a transcription error.
     Nine cases and counting: a "CreditGAN" that does not exist, TGAN cited to
@@ -286,5 +304,6 @@ WHERE THE JUDGMENT LIVES
   convention, record the provisional call plus a `needs` and add it to
   docs/open-questions.md rather than blocking.
 
-  Twenty-three of those calls are open right now. They are the owner's, not
-  yours.
+  A number of those calls are open right now, listed in
+  docs/open-questions.md and summarized in TODO.txt section 2. They are the
+  owner's, not yours.
