@@ -30,6 +30,7 @@ No duplicate sweep, no detection that two repositories are the same project, no
 check against open questions. Each request sees one repository and nothing else.
 """
 import argparse
+import collections
 import glob
 import json
 import os
@@ -53,8 +54,13 @@ REQUESTS_DUMP = os.path.join(OUT, '_requests.json')
 
 API = 'https://api.anthropic.com/v1'
 MODEL = 'claude-sonnet-5'
-MAX_TOKENS = 3000        # Sonnet spends output tokens thinking; 1500 truncated
-                         # a record mid-evidence and lost the closing brace
+MAX_TOKENS = 6000        # Sonnet spends output tokens THINKING before it writes,
+                         # and the thinking comes out of the same budget. At 1500
+                         # records truncated mid-evidence; at 3000, 16 of the first
+                         # 1433 still did, every one under 2300 characters of
+                         # actual output. The ceiling is not what the record costs,
+                         # it is what the record costs plus however long the model
+                         # deliberates about a repository whose evidence is thin.
 PER_BATCH = 400          # keeps each POST near 10 MB; the API ceiling is far higher
 MAX_ID_CHARS = 64        # the Batch API rejects a custom_id longer than this
 FACETS = ('kind', 'use_case', 'industry', 'sdv_component', 'sdv_concept', 'integration')
@@ -386,11 +392,18 @@ def validate(record, repo, entry_id, vocab):
     # A false positive has no use case and no domain, so the non-empty requirement is
     # waived for it -- otherwise every correctly identified collision, which is the
     # commonest thing in this pool, would be diverted to review.
-    if integration != 'name_collision':
-        if not record.get('use_case'):
-            problems.append('use_case is empty')
-        if not record.get('industry'):
-            problems.append('industry is empty')
+    #
+    # citation_only and unclear are waived from use_case for the same reason, learned
+    # the hard way: 32 of the first review queue's 80 rows were a correct empty
+    # use_case on one of those two. A repository that names SDV in a dependency file
+    # and never calls it has no purpose for synthetic data to record, and demanding
+    # one invites the model to invent it. industry is still required there, because a
+    # repository has a domain whether or not it uses SDV for anything.
+    NO_USE_CASE = ('name_collision', 'citation_only', 'unclear')
+    if integration not in NO_USE_CASE and not record.get('use_case'):
+        problems.append('use_case is empty')
+    if integration != 'name_collision' and not record.get('industry'):
+        problems.append('industry is empty')
 
     if integration not in vocab['integration']:
         problems.append(f'integration: {integration!r} is not in the vocabulary')
@@ -480,6 +493,54 @@ def write_result(repo, entry_id, text, vocab, usage=None):
     with open(path, 'w') as fh:
         json.dump(record, fh, indent=1, ensure_ascii=False)
     return record
+
+
+def do_recover(vocab):
+    """Re-validate the stored responses in needs-review.jsonl against the CURRENT
+    rules and promote whatever now passes.
+
+    A validation rule that was too strict sends a perfectly good response to the
+    review queue, and the raw response is kept there. When the rule is corrected,
+    those rows can be recovered from what is already on disk rather than paid for
+    again -- so this makes no API call. Nothing is edited on the way through: a row
+    is promoted only if it validates as it stands.
+    """
+    if not os.path.exists(REVIEW):
+        print('no review file'); return
+    with open(REVIEW) as fh:
+        rows = [json.loads(line) for line in fh if line.strip()]
+
+    promoted, remaining = [], []
+    for row in rows:
+        repo, entry_id = row['repo'], row['id']
+        if os.path.exists(os.path.join(RECORDS, repo.replace('/', '__') + '.json')):
+            continue          # already curated by a later run; the row is spent
+        try:
+            parsed = parse_record(row.get('raw'))
+            problems = validate(parsed, repo, entry_id, vocab)
+        except Exception as exc:
+            problems = [f'{type(exc).__name__}: {exc}']
+        if problems:
+            row['problems'] = problems
+            remaining.append(row)
+            continue
+        record = finalize(parsed, repo, entry_id)
+        os.makedirs(RECORDS, exist_ok=True)
+        with open(os.path.join(RECORDS, repo.replace('/', '__') + '.json'), 'w') as fh:
+            json.dump(record, fh, indent=1, ensure_ascii=False)
+        promoted.append(repo)
+
+    with open(REVIEW, 'w') as fh:
+        for row in remaining:
+            fh.write(json.dumps(row, ensure_ascii=False) + '\n')
+
+    print(f'{len(promoted)} promoted to records/, {len(remaining)} still in review')
+    reasons = collections.Counter(str(p)[:60] for row in remaining
+                                  for p in row['problems'])
+    for reason, count in reasons.most_common():
+        print(f'  {count:4d}  {reason}')
+    if promoted:
+        print('\nRe-run merge_auto_shards.py to bring the promoted records into a shard.')
 
 
 # ---------------------------------------------------------------- http
@@ -636,6 +697,9 @@ def main():
     parser.add_argument('--limit', type=int)
     parser.add_argument('--status', action='store_true')
     parser.add_argument('--collect', action='store_true')
+    parser.add_argument('--recover', action='store_true',
+                        help='re-validate needs-review.jsonl against the current '
+                             'rules and promote what now passes; makes no API call')
     args = parser.parse_args()
 
     vocab = read_vocabularies()
@@ -647,8 +711,11 @@ def main():
         do_status()
     elif args.collect:
         do_collect(vocab)
+    elif args.recover:
+        do_recover(vocab)
     else:
-        parser.error('pick one of --pilot N, --submit, --status, --collect')
+        parser.error('pick one of --pilot N, --submit, --status, --collect, '
+                     '--recover')
 
 
 if __name__ == '__main__':
