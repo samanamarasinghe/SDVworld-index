@@ -156,14 +156,24 @@ def route_openalex(doi, meta):
     return None
 
 
+UNPAYWALL_CACHE = {}
+
+
 def unpaywall(doi):
+    """One answer per DOI per run. route_unpaywall and route_pmc both need it, and
+    without the memo a --routes unpaywall,pmc pass asks the same question twice for
+    every row."""
+    if doi in UNPAYWALL_CACHE:
+        return UNPAYWALL_CACHE[doi]
     blob = get(f'https://api.unpaywall.org/v2/{urllib.parse.quote(doi)}?email={EMAIL}')
-    if not blob:
-        return {}
-    try:
-        return json.loads(blob)
-    except ValueError:
-        return {}
+    data = {}
+    if blob:
+        try:
+            data = json.loads(blob)
+        except ValueError:
+            data = {}
+    UNPAYWALL_CACHE[doi] = data
+    return data
 
 
 def route_unpaywall(doi, meta):
