@@ -4,7 +4,14 @@
     python3 harvest/paper_fetch.py --dois 10.3390/math10152733 10.5220/0012302400003654
     python3 harvest/paper_fetch.py --from-xlsx missing_pdfs.xlsx --limit 50
     python3 harvest/paper_fetch.py --from-xlsx missing_pdfs.xlsx --routes mdpi,scitepress
+    python3 harvest/paper_fetch.py --from-tail --doi-prefix 10.48550 --routes arxiv
     python3 harvest/paper_fetch.py --report          # what is already cached
+
+--from-tail builds the worklist from data/tail/openalex-citations.json minus whatever
+is already in data/sdv-index.json, highest cited_by first, so --limit takes the works
+that matter most. It is the right worklist for the curation lane: the xlsx is an
+ACCESS-side view listing what a browser could not get, so open preprints -- 448 arXiv
+DOIs, the largest free block in the tail -- never appear in it at all.
 
 Output goes to harvest/papers/, which is GITIGNORED: publisher PDFs must not be
 redistributed, and the extracted text is re-derivable. The cache exists so that a
@@ -32,6 +39,10 @@ docs/agent-guide.md for the full account.
   pmc         the LEGACY host www.ncbi.nlm.nih.gov/pmc/articles/PMC<id>/ returns full
               text where pmc.ncbi.nlm.nih.gov and the Europe PMC fulltextRepo do not.
               Europe PMC's REST fullTextXML is the reliable one for a PMCID.
+  openalex    the tail already carries primary_location.pdf_url for 890 uncurated
+              works. It is a direct link that costs no API round trip, so it is tried
+              before unpaywall. It is also often a landing page rather than a PDF,
+              hence the %PDF check.
   arxiv       a preprint is a SEPARATE record with its own DOI, so a DOI lookup never
               finds it. Search by title, accept a difflib ratio >= 0.80, and when the
               title has diverged too far try the distinctive project name instead.
@@ -57,6 +68,8 @@ import zipfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'harvest', 'papers')
+TAIL = os.path.join(ROOT, 'data', 'tail', 'openalex-citations.json')
+INDEX = os.path.join(ROOT, 'data', 'sdv-index.json')
 EMAIL = os.environ.get('UNPAYWALL_EMAIL', 'saman@lcs.mit.edu')
 UA = ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 '
       '(KHTML, like Gecko) Chrome/124.0 Safari/537.36')
@@ -118,6 +131,16 @@ def route_scitepress(doi, meta):
         blob = get(url, tries=1)
         if is_pdf(blob):
             return url, blob
+    return None
+
+
+def route_openalex(doi, meta):
+    url = meta.get('pdf_url')
+    if not url:
+        return None
+    blob = get(url, tries=1)
+    if is_pdf(blob):
+        return url, blob
     return None
 
 
@@ -197,13 +220,17 @@ def norm(text):
 
 
 ROUTES = [('mdpi', route_mdpi), ('scitepress', route_scitepress),
-          ('unpaywall', route_unpaywall), ('pmc', route_pmc), ('arxiv', route_arxiv)]
+          ('openalex', route_openalex), ('unpaywall', route_unpaywall),
+          ('pmc', route_pmc), ('arxiv', route_arxiv)]
 
 # A route that only ever fires on one DOI prefix. Used to skip rows a --routes
 # subset cannot possibly serve, so --limit measures work attempted rather than
 # rows scrolled past: the worklist is grouped by publisher, so the first several
 # hundred rows are all IEEE and a naive --limit does nothing at all.
 ROUTE_PREFIX = {'mdpi': '10.3390/', 'scitepress': '10.5220/'}
+# arxiv is deliberately NOT in that table. It searches by TITLE, so it serves a row
+# with any DOI whose work also has a preprint -- exactly the FEST case. To restrict a
+# run to arXiv-DOI rows, filter the worklist with --doi-prefix instead.
 
 
 # ------------------------------------------------------------------ driver
@@ -345,11 +372,62 @@ def load_xlsx(path, limit, reasons, routes=None):
     return rows
 
 
+def load_tail(limit, routes=None, prefixes=None, with_pdf_url=False):
+    """Uncurated tail works, highest cited_by first."""
+    def bare(value):
+        value = str(value or '').strip().lower()
+        return re.sub(r'^https?://(dx\.)?doi\.org/', '', value)
+
+    indexed = set()
+    with open(INDEX, encoding='utf-8') as fh:
+        for entry in json.load(fh):
+            for key in ('doi', 'url'):
+                value = bare(entry.get(key))
+                if value.startswith('10.'):
+                    indexed.add(value)
+    with open(TAIL, encoding='utf-8') as fh:
+        tail = json.load(fh)
+
+    seen, works = set(), []
+    for work in tail:                      # the tail carries 14 doubled records
+        if work.get('id') in seen:
+            continue
+        seen.add(work['id'])
+        works.append(work)
+    works.sort(key=lambda w: -(w.get('cited_by_count') or 0))
+
+    rows = []
+    for work in works:
+        doi = bare(work.get('doi'))
+        if not doi.startswith('10.') or doi in indexed:
+            continue
+        if prefixes and not any(doi.startswith(p) for p in prefixes):
+            continue
+        if with_pdf_url and not (work.get('primary_location') or {}).get('pdf_url'):
+            continue
+        if routes:
+            gated = [ROUTE_PREFIX[r] for r in routes if r in ROUTE_PREFIX]
+            if len(gated) == len(routes) and not any(doi.startswith(p) for p in gated):
+                continue
+        rows.append({'doi': doi, 'title': work.get('title'),
+                     'year': work.get('publication_year'),
+                     'pdf_url': (work.get('primary_location') or {}).get('pdf_url')})
+        if limit and len(rows) >= limit:
+            break
+    return rows
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--dois', nargs='*', default=[])
     parser.add_argument('--from-xlsx')
+    parser.add_argument('--from-tail', action='store_true',
+                        help='worklist from the uncurated citation tail')
+    parser.add_argument('--with-pdf-url', action='store_true',
+                        help='only rows OpenAlex gives a pdf_url for (the openalex route)')
+    parser.add_argument('--doi-prefix', action='append',
+                        help='only DOIs starting with this, e.g. 10.48550; repeatable')
     parser.add_argument('--limit', type=int)
     parser.add_argument('--routes', help='comma-separated subset, e.g. mdpi,scitepress')
     parser.add_argument('--reason', action='append',
@@ -371,12 +449,15 @@ def main():
         return
 
     routes = set(args.routes.split(',')) if args.routes else None
-    if args.from_xlsx:
+    prefixes = args.doi_prefix or None
+    if args.from_tail:
+        rows = load_tail(args.limit, routes, prefixes, args.with_pdf_url)
+    elif args.from_xlsx:
         rows = load_xlsx(args.from_xlsx, args.limit, args.reason, routes)
     else:
         rows = [{'doi': d, 'title': None, 'year': None} for d in args.dois]
     if not rows:
-        parser.error('give --dois or --from-xlsx')
+        parser.error('give --dois, --from-xlsx or --from-tail')
 
     got = cached = 0
     for i, row in enumerate(rows, 1):
