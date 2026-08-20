@@ -53,6 +53,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
+import zipfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'harvest', 'papers')
@@ -272,11 +273,58 @@ def fetch_one(doi, meta, routes, keep_pdf):
     return None, None
 
 
-def load_xlsx(path, limit, reasons, routes=None):
-    import pandas as pd
-    frame = pd.read_excel(path)
+SHEET_NS = '{http://schemas.openxmlformats.org/spreadsheetml/2006/main}'
+
+
+def read_xlsx(path):
+    """Rows of the first worksheet as dicts keyed by the header row. Stdlib only.
+
+    An .xlsx is a zip of XML, so pandas and openpyxl are both avoidable, and this
+    repository is otherwise pure standard library -- README.txt promises there is
+    nothing to install. Text cells are indexes into a shared-strings table rather
+    than literals, which is the only part that is not obvious.
+    """
+    with zipfile.ZipFile(path) as archive:
+        shared = []
+        if 'xl/sharedStrings.xml' in archive.namelist():
+            root = ET.fromstring(archive.read('xl/sharedStrings.xml'))
+            for item in root.findall(SHEET_NS + 'si'):
+                shared.append(''.join(t.text or '' for t in item.iter(SHEET_NS + 't')))
+        names = [n for n in archive.namelist()
+                 if re.match(r'xl/worksheets/sheet1\.xml$', n)]
+        if not names:
+            raise SystemExit(f'{path}: no first worksheet')
+        sheet = ET.fromstring(archive.read(names[0]))
+
     rows = []
-    for _, row in frame.iterrows():
+    for row in sheet.iter(SHEET_NS + 'row'):
+        cells = {}
+        for cell in row.findall(SHEET_NS + 'c'):
+            reference = cell.get('r') or ''
+            column = re.match(r'([A-Z]+)', reference)
+            if not column:
+                continue
+            value_node, kind = cell.find(SHEET_NS + 'v'), cell.get('t')
+            if kind == 'inlineStr':
+                value = ''.join(t.text or '' for t in cell.iter(SHEET_NS + 't'))
+            elif value_node is None:
+                value = ''
+            elif kind == 's':
+                value = shared[int(value_node.text)]
+            else:
+                value = value_node.text or ''
+            cells[column.group(1)] = value
+        rows.append(cells)
+    if not rows:
+        return []
+    header = rows[0]
+    return [{header.get(k, k): v for k, v in row.items()} for row in rows[1:]]
+
+
+def load_xlsx(path, limit, reasons, routes=None):
+    rows_in = read_xlsx(path)
+    rows = []
+    for row in rows_in:
         doi = str(row.get('DOI') or '').strip()
         doi = re.sub(r'^https?://(dx\.)?doi\.org/', '', doi, flags=re.I)
         if not doi.startswith('10.'):
@@ -289,9 +337,9 @@ def load_xlsx(path, limit, reasons, routes=None):
             if len(prefixes) == len(routes) and not any(doi.startswith(p)
                                                         for p in prefixes):
                 continue
-        year = row.get('Year')
+        year = str(row.get('Year') or '').strip()
         rows.append({'doi': doi, 'title': row.get('Title'),
-                     'year': int(year) if year == year and year else None})
+                     'year': int(float(year)) if re.match(r'^\d', year) else None})
         if limit and len(rows) >= limit:
             break
     return rows
