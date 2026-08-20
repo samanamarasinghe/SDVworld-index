@@ -369,7 +369,14 @@ Fields:
               "OECD" or "World Bank" gets authors [] and affiliations [], with the
               institution named in the summary. [] if no person is named.
   affiliations        aligned 1:1 with authors, null where unknown. [] if no authors.
-                      An element may name several organisations separated by "; ".
+                      THE ORGANISATION NAME ALONE -- "Jeju National University", not
+                      "Department of Computer Engineering, Jeju National University,
+                      Jeju, Republic of Korea". No department, no institute, no city,
+                      no country. Two authors at one university must produce the SAME
+                      string, character for character, or downstream counting treats
+                      them as two organisations and the record is rejected. An element
+                      may name several organisations separated by "; " when one author
+                      holds several posts.
   affiliation_types   one per DISTINCT ORGANISATION named in affiliations, in the order
                       they first appear -- not one per author. Allowed values:
                       academic, corporate, government, nonprofit, other, unknown.
@@ -419,7 +426,10 @@ not how it arrived. Judging one from the other is the most common error.
     on SDV output
   3 one of several: one generator or metric among many
   2 contextual: SDV's method is described or adopted in prose, not run
-  1 passing mention, an undifferentiated citation list in an off-domain paper
+  1 passing mention: an undifferentiated citation list, or an off-domain paper that
+    names CTGAN once without engaging with it. A paper ON tabular synthesis that
+    describes CTGAN in its related work as the prior art it departs from is 2, not 1
+    -- the description is engagement, however brief.
   0 name collision or unrelated
 6 is reserved for first-party SDV-project work and is NOT available to you; a work
 that genuinely looks first-party gets a `needs` saying so.
@@ -462,6 +472,10 @@ RULES THAT DECIDE MOST CASES. These come from a thousand hand-made judgments:
   carry exactly one value per distinct organization, the same length as
   affiliation_types. Where an organization is named but its country is not evident,
   the value is the string "unknown", never an omission.
+- sdv_concept RECORDS AN ALGORITHM THE EVIDENCE NAMES, never one inferred from which
+  SDV paper was cited. If the evidence does not say CTGAN, TVAE, GaussianCopula, PAR,
+  HMA, a Metadata object or a quality report, sdv_concept is []. On a metadata_only
+  row it is always [] and is emptied by the script if you fill it.
 - unclear may never carry confidence high.
 - If the evidence is too thin to judge, say so in `needs` and use low rather than
   guessing. A flagged entry is useful; a confident wrong one poisons the index.
@@ -674,13 +688,20 @@ def finalize(record, candidate):
     cap = TIER_CAP[candidate['tier']]
     if RANK[out['confidence']] > RANK[cap]:
         out['confidence'] = cap
+    # A metadata_only row has a title and a citation edge and nothing else, so any
+    # named algorithm is inferred from WHICH SDV paper was cited rather than read.
+    # The pilot invented relational_hma for a system paper on that basis. Emptied
+    # here rather than rejected, for the same reason the confidence cap is applied
+    # here: the rest of the record is sound.
+    if candidate['tier'] == 'metadata_only':
+        out['sdv_concept'] = []
     out['evidence_tier'] = candidate['tier']
     out['source_channel'] = 'semantic_scholar_discovery'
     out['auto_curated'] = {'model': MODEL, 'reviewed': False}
     return out
 
 
-def write_result(candidate, text, vocab, usage=None):
+def write_result(candidate, text, vocab, usage=None, report=None):
     os.makedirs(RECORDS, exist_ok=True)
     try:
         parsed = parse_record(text)
@@ -693,6 +714,8 @@ def write_result(candidate, text, vocab, usage=None):
             fh.write(json.dumps({'doi': candidate['doi'], 'id': candidate['id'],
                                  'tier': candidate['tier'], 'problems': problems,
                                  'raw': (text or '')[:4000]}, ensure_ascii=False) + '\n')
+        if report is not None:
+            report.extend(problems)
         return None
 
     record = finalize(parsed, candidate)
@@ -815,12 +838,20 @@ def do_pilot(count, vocab, want, dump, seed):
         request = build_request(candidate, vocab)
         response = json.loads(call('POST', '/messages', request['params']))
         text = ''.join(b.get('text', '') for b in response.get('content', []))
-        record = write_result(candidate, text, vocab, response.get('usage'))
+        problems = []
+        record = write_result(candidate, text, vocab, response.get('usage'), problems)
         print('=' * 78)
         print(candidate['id'], candidate['tier'], '->',
               'OK' if record else 'NEEDS REVIEW', json.dumps(response.get('usage')))
-        print(json.dumps(record, indent=1, ensure_ascii=False) if record
-              else (text or '')[:1500])
+        if record:
+            print(json.dumps(record, indent=1, ensure_ascii=False))
+        else:
+            # Print the REASON, not just the response. Truncating the raw text at
+            # 1500 characters and calling that a report makes a validation failure
+            # look like a truncated response, which cost a round of diagnosis.
+            for problem in problems:
+                print('  PROBLEM:', problem)
+            print((text or '')[:2500])
         time.sleep(1)
     if not dump:
         print(f'\nrecords in {RECORDS}, failures in {REVIEW}')
