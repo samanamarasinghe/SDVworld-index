@@ -199,6 +199,7 @@ def route_pmc(doi, meta):
 
 ARXIV_DOI = re.compile(r'^10\.48550/arxiv\.(.+)$', re.I)
 ARXIV_DELAY = 1.0        # arxiv.org refuses a fast burst; 24 rows in, it stops
+ARXIV_API_DELAY = 3.0    # export.arxiv.org asks for one request every three seconds
 
 
 def arxiv_id_by_title(meta):
@@ -207,6 +208,7 @@ def arxiv_id_by_title(meta):
         return None
     query = urllib.parse.quote(f'ti:"{title}"')
     blob = get(f'http://export.arxiv.org/api/query?search_query={query}&max_results=5')
+    time.sleep(ARXIV_API_DELAY)   # the throttle that cost a 448-row run, on the API side
     if not blob:
         return None
     try:
