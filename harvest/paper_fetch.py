@@ -43,9 +43,14 @@ docs/agent-guide.md for the full account.
               works. It is a direct link that costs no API round trip, so it is tried
               before unpaywall. It is also often a landing page rather than a PDF,
               hence the %PDF check.
-  arxiv       a preprint is a SEPARATE record with its own DOI, so a DOI lookup never
-              finds it. Search by title, accept a difflib ratio >= 0.80, and when the
-              title has diverged too far try the distinctive project name instead.
+  arxiv       TWO CASES, and conflating them cost a whole 448-row run. A 10.48550
+              DOI IS an arXiv id -- 10.48550/arxiv.2008.12763 is 2008.12763 -- so the
+              PDF url is built directly and no API call happens at all. Only for a
+              NON-arXiv DOI is the API searched by title, because a preprint of a
+              published paper is a separate record the DOI cannot reach; accept a
+              difflib ratio >= 0.80, and when the title has diverged too far try the
+              distinctive project name instead. arxiv.org is throttled, so every
+              fetch pauses and retries rather than being dropped on the first refusal.
 
 Two rules that cost time when ignored:
   * A 200 is not evidence of a PDF. Springer returns the paywalled HTML page with a
@@ -185,7 +190,11 @@ def route_pmc(doi, meta):
     return None
 
 
-def route_arxiv(doi, meta):
+ARXIV_DOI = re.compile(r'^10\.48550/arxiv\.(.+)$', re.I)
+ARXIV_DELAY = 1.0        # arxiv.org refuses a fast burst; 24 rows in, it stops
+
+
+def arxiv_id_by_title(meta):
     title = (meta.get('title') or '').strip()
     if len(title) < 20:
         return None
@@ -204,12 +213,21 @@ def route_arxiv(doi, meta):
         ratio = difflib.SequenceMatcher(None, norm(title), norm(found)).ratio()
         if ratio > ratio_best:
             best, ratio_best = entry, ratio
-    if not best or ratio_best < 0.80:
+    # `not best` on an Element tests its CHILD COUNT, which is deprecated and will
+    # become always-False. Test against None.
+    if best is None or ratio_best < 0.80:
         return None
-    identifier = (best.findtext(namespace + 'id') or '')
-    arxiv_id = identifier.rsplit('/', 1)[-1]
+    return (best.findtext(namespace + 'id') or '').rsplit('/', 1)[-1] or None
+
+
+def route_arxiv(doi, meta):
+    match = ARXIV_DOI.match(doi)
+    arxiv_id = match.group(1) if match else arxiv_id_by_title(meta)
+    if not arxiv_id:
+        return None
     url = f'https://arxiv.org/pdf/{arxiv_id}'
-    blob = get(url)
+    blob = get(url, tries=3)
+    time.sleep(ARXIV_DELAY)
     if is_pdf(blob):
         return url, blob
     return None
