@@ -23,6 +23,13 @@ Per DOI it writes  <slug>.txt  (extracted text) and  <slug>.json  (which route w
 how many characters came back, and the URL that served it). The PDF itself is kept
 only when --keep-pdf is passed.
 
+It also keeps  harvest/fetch-log.json,  one record per DOI ever attempted: the
+outcome, the route that served it, the routes tried, the url and the character count.
+That file IS committed -- it holds no publisher text, only what happened -- so the
+record of a failed attempt survives a fresh clone even though the cache does not. It
+is the file to join against missing_pdfs.xlsx when reporting which papers were
+obtained and which were not.
+
 ROUTES, in the order tried. Each was established the hard way; see
 docs/agent-guide.md for the full account.
 
@@ -277,11 +284,13 @@ def fetch_one(doi, meta, routes, keep_pdf):
     text_path = os.path.join(OUT, slug + '.txt')
     meta_path = os.path.join(OUT, slug + '.json')
     if os.path.exists(text_path) and os.path.getsize(text_path) > 2000:
-        return 'cached', None
+        return 'cached', None, {'tried': []}
 
+    tried = []
     for name, route in ROUTES:
         if routes and name not in routes:
             continue
+        tried.append(name)
         try:
             result = route(doi, meta)
         except Exception as exc:
@@ -314,8 +323,59 @@ def fetch_one(doi, meta, routes, keep_pdf):
             json.dump({'doi': doi, 'route': name, 'url': url, 'chars': len(text),
                        'title': meta.get('title'), 'year': meta.get('year')},
                       fh, indent=1, ensure_ascii=False)
-        return name, len(text)
-    return None, None
+        return name, len(text), {'url': url, 'tried': tried}
+    return None, None, {'tried': tried}
+
+
+LOG = os.path.join(ROOT, 'harvest', 'fetch-log.json')
+LOG_NOTE = ('One record per DOI ever attempted by paper_fetch.py: outcome, the route '
+            'that served it, every route tried, the url and the character count. '
+            'Committed deliberately -- it carries no publisher text, and a failed '
+            'attempt is worth as much as a successful one. harvest/papers/ is '
+            'gitignored, so without this file a fresh clone cannot tell whether a '
+            'paper was never tried or tried and refused. Join it on doi to report '
+            'coverage against missing_pdfs.xlsx.')
+
+
+def load_log():
+    if not os.path.exists(LOG):
+        return {}
+    try:
+        with open(LOG, encoding='utf-8') as fh:
+            return json.load(fh).get('attempts', {})
+    except (ValueError, OSError):
+        return {}
+
+
+def save_log(attempts):
+    tmp = LOG + '.part'                      # never truncate a good log on a crash
+    with open(tmp, 'w', encoding='utf-8') as fh:
+        json.dump({'note': LOG_NOTE, 'attempts': attempts}, fh,
+                  indent=1, ensure_ascii=False, sort_keys=True)
+    os.replace(tmp, LOG)
+
+
+def log_record(doi, meta, name, size, detail):
+    """What happened to one DOI, in the shape the xlsx join wants."""
+    if name == 'cached':
+        # The sidecar already holds the winning route; re-read it rather than
+        # recording a bare 'cached', which would lose how the paper was obtained.
+        sidecar = os.path.join(OUT, slug_for(doi) + '.json')
+        try:
+            with open(sidecar, encoding='utf-8') as fh:
+                saved = json.load(fh)
+            return {'status': 'ok', 'route': saved.get('route'),
+                    'url': saved.get('url'), 'chars': saved.get('chars'),
+                    'routes_tried': [saved.get('route')],
+                    'title': saved.get('title'), 'year': saved.get('year'),
+                    'when': time.strftime('%Y-%m-%d')}
+        except (ValueError, OSError):
+            return None                      # no sidecar: leave any older record alone
+    return {'status': 'ok' if name else 'no_route', 'route': name,
+            'url': detail.get('url'), 'chars': size,
+            'routes_tried': detail.get('tried') or [],
+            'title': meta.get('title'), 'year': meta.get('year'),
+            'when': time.strftime('%Y-%m-%d')}
 
 
 SHEET_NS = '{http://schemas.openxmlformats.org/spreadsheetml/2006/main}'
@@ -464,6 +524,11 @@ def main():
             by_route[m['route']] = by_route.get(m['route'], 0) + 1
         for name, count in sorted(by_route.items(), key=lambda kv: -kv[1]):
             print(f'  {count:5d}  {name}')
+        attempts = load_log()
+        if attempts:
+            ok = sum(1 for a in attempts.values() if a.get('status') == 'ok')
+            print(f'{len(attempts)} DOIs attempted, {ok} obtained, '
+                  f'{len(attempts) - ok} refused every route -> {LOG}')
         return
 
     routes = set(args.routes.split(',')) if args.routes else None
@@ -477,9 +542,15 @@ def main():
     if not rows:
         parser.error('give --dois, --from-xlsx or --from-tail')
 
+    attempts = load_log()
     got = cached = 0
     for i, row in enumerate(rows, 1):
-        name, size = fetch_one(row['doi'], row, routes, args.keep_pdf)
+        name, size, detail = fetch_one(row['doi'], row, routes, args.keep_pdf)
+        record = log_record(row['doi'], row, name, size, detail)
+        if record:
+            attempts[row['doi']] = record
+        if i % 10 == 0:                      # survive a Ctrl-C mid-run
+            save_log(attempts)
         if name == 'cached':
             cached += 1
             status = 'cached'
@@ -489,8 +560,10 @@ def main():
         else:
             status = 'no route'
         print(f'[{i}/{len(rows)}] {row["doi"]:34s} {status}', flush=True)
+    save_log(attempts)
     print(f'\n{got} fetched, {cached} already cached, '
           f'{len(rows) - got - cached} unreachable -> {OUT}')
+    print(f'{len(attempts)} DOIs in {LOG}')
 
 
 if __name__ == '__main__':
