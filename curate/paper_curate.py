@@ -78,7 +78,9 @@ PER_BATCH = 400
 MAX_ID_CHARS = 64
 FACETS = ('kind', 'use_case', 'industry', 'sdv_component', 'sdv_concept', 'integration')
 
-HEAD_CHARS = 3000        # byline, affiliations and abstract live in the first pages
+HEAD_CHARS = 5000        # byline, affiliations and abstract live in the first pages.
+                         # 3000 lost the affiliation block on a 29-author paper: a
+                         # long byline consumes the window before the addresses start
 TAIL_CHARS = 1200        # ... except in Springer-style journals, which print the
                          # author addresses after the references
 ABSTRACT_CHARS = 1600
