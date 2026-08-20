@@ -48,6 +48,7 @@ import collections
 import glob
 import json
 import os
+import random
 import re
 import sys
 import time
@@ -362,8 +363,11 @@ Fields:
   summary     2-4 sentences: what the paper IS and what it contributes, then ENDING
               with the SDV clause
   venue       the journal or conference as printed, "" if the evidence does not say
-  authors     the author list. Prefer the byline in the full text over the metadata
-              list, which is truncated to one name on some small journals. [] if none.
+  authors     the author list, REAL NAMED PEOPLE ONLY. Prefer the byline in the full
+              text over the metadata list, which is truncated to one name on some
+              small journals. An institution is not an author: a report bylined only
+              "OECD" or "World Bank" gets authors [] and affiliations [], with the
+              institution named in the summary. [] if no person is named.
   affiliations        aligned 1:1 with authors, null where unknown. [] if no authors.
                       An element may name several organisations separated by "; ".
   affiliation_types   one per DISTINCT ORGANISATION named in affiliations, in the order
@@ -447,9 +451,17 @@ RULES THAT DECIDE MOST CASES. These come from a thousand hand-made judgments:
   Goodfellow, RDT credited to an unrelated paper, TVAE glossed wrongly. Record the
   paper's own wording in evidence and never correct it silently.
 - INDUSTRY IS THE DOMAIN THE WORK IS ABOUT, not the kind of institution that wrote
-  it. A university paper about card fraud is finance_insurance. `academia` is the
-  last resort, for work whose only subject is scholarship itself; a methods paper
-  with no single domain is cross_industry.
+  it. A university paper about card fraud is finance_insurance. A survey or methods
+  paper with no single domain is cross_industry; one about software engineering is
+  software. `academia` means the SUBJECT is scholarship itself -- bibliometrics,
+  peer review, student records, research funding. Nearly every work in this pool is
+  written by researchers, so being research is no reason at all to choose it: if you
+  are reaching for academia because the authors are academics, the answer is
+  cross_industry.
+- affiliation_countries takes FULL COUNTRY NAMES -- "Germany", not "DE" -- and must
+  carry exactly one value per distinct organization, the same length as
+  affiliation_types. Where an organization is named but its country is not evident,
+  the value is the string "unknown", never an omission.
 - unclear may never carry confidence high.
 - If the evidence is too thin to judge, say so in `needs` and use low rather than
   guessing. A flagged entry is useful; a confident wrong one poisons the index.
@@ -501,6 +513,10 @@ def pack_evidence(candidate):
                          f'({len(windows)} of them, in document order):\n'
                          + '\n---\n'.join('  ' + w for w in windows))
         cited = windows_in(bibliography, max(0, MAX_WINDOWS - len(windows) - 6))
+        if cited and not windows:
+            parts.append('THE WHOLE TEXT WAS SEARCHED AND NO SDV-FAMILY TERM APPEARS '
+                         'OUTSIDE THE REFERENCE LIST. This is a settled finding, not '
+                         'a gap in the evidence: the citation is bibliographic only.')
         if cited:
             parts.append(f'passages from the REFERENCE LIST ({len(cited)}). These '
                          f'establish what is cited, never what is run:\n'
@@ -604,6 +620,12 @@ def validate(record, candidate, vocab):
                          'other', 'unknown'):
             problems.append(f'affiliation_type {value!r} is not in the vocabulary')
 
+    # tests/validate.py demands EXACT equality here, not a ceiling: as many types and
+    # as many countries as there are distinct organizations, every value a non-empty
+    # string, and a country spelled out rather than abbreviated. A record that is
+    # merely short -- one organization, one type, no country -- passes a >= check and
+    # then fails the repository validator at shard time, which is where it is
+    # expensive to find. The pilot produced exactly that record.
     organizations, seen = [], set()
     for affiliation in record.get('affiliations') or []:
         if not affiliation or not isinstance(affiliation, str):
@@ -613,10 +635,19 @@ def validate(record, candidate, vocab):
                 seen.add(organization)
                 organizations.append(organization)
     for field in ('affiliation_types', 'affiliation_countries'):
-        values = record.get(field) or []
-        if len(values) > len(organizations):
+        values = record.get(field)
+        if not isinstance(values, list):
+            problems.append(f'{field} is not a list')
+            continue
+        if len(values) != len(organizations):
             problems.append(f'{field} has {len(values)} values but affiliations names '
                             f'{len(organizations)} organization(s)')
+        for value in values:
+            if not isinstance(value, str) or not value.strip():
+                problems.append(f'{field} has an empty value')
+    for country in record.get('affiliation_countries') or []:
+        if isinstance(country, str) and re.fullmatch(r'[A-Z]{2}', country):
+            problems.append(f'country {country!r} must use its full name')
     return problems
 
 
@@ -758,13 +789,22 @@ def do_tiers(want):
               f'(~{sum(sizes) // len(sizes) // 4} tokens), max {max(sizes)}')
 
 
-def do_pilot(count, vocab, want, dump):
+def do_pilot(count, vocab, want, dump, seed):
+    """N per tier, sampled at RANDOM within each tier.
+
+    Taking the head of the list looks tidy and is useless: the pool is sorted by
+    citation count, the most-cited works citing SDV are surveys, and a pilot of
+    surveys returns six citation_only records and tells you nothing about how the
+    prompt handles a paper that actually runs the library.
+    """
     candidates = load_candidates(want)
     picked = []
     for tier in ('full_text', 'abstract_context', 'metadata_only'):
         if want and tier not in want:
             continue
-        picked += [c for c in candidates if c['tier'] == tier][:count]
+        pool = [c for c in candidates if c['tier'] == tier]
+        random.Random(seed).shuffle(pool)
+        picked += pool[:count]
     print(f'{len(candidates)} candidates; piloting {len(picked)}\n')
     for candidate in picked:
         if dump:
@@ -880,7 +920,8 @@ def do_collect(vocab):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--pilot', type=int, metavar='N',
-                        help='N per tier, live calls, no batch')
+                        help='N per tier, sampled at random, live calls, no batch')
+    parser.add_argument('--seed', type=int, default=17)
     parser.add_argument('--dump', action='store_true',
                         help='with --pilot: print the packed evidence, call nothing')
     parser.add_argument('--tier', action='append',
@@ -905,7 +946,7 @@ def main():
         return do_tiers(want)
     vocab = read_vocabularies()
     if args.pilot:
-        do_pilot(args.pilot, vocab, want, args.dump)
+        do_pilot(args.pilot, vocab, want, args.dump, args.seed)
     elif args.submit:
         do_submit(vocab, args.dry_run, args.limit, want)
     elif args.status:
