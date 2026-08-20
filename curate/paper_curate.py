@@ -79,6 +79,8 @@ MAX_ID_CHARS = 64
 FACETS = ('kind', 'use_case', 'industry', 'sdv_component', 'sdv_concept', 'integration')
 
 HEAD_CHARS = 3000        # byline, affiliations and abstract live in the first pages
+TAIL_CHARS = 1200        # ... except in Springer-style journals, which print the
+                         # author addresses after the references
 ABSTRACT_CHARS = 1600
 CONTEXT_CHARS = 2000
 WINDOW = 600
@@ -368,10 +370,13 @@ Fields:
               small journals. An institution is not an author: a report bylined only
               "OECD" or "World Bank" gets authors [] and affiliations [], with the
               institution named in the summary. [] if no person is named.
-  affiliations        aligned 1:1 with authors, null where unknown. [] if no authors.
-                      THE ORGANISATION NAME ALONE -- "Jeju National University", not
-                      "Department of Computer Engineering, Jeju National University,
-                      Jeju, Republic of Korea". No department, no institute, no city,
+  affiliations        aligned 1:1 with authors, null where unknown -- and unknown
+                      means the EVIDENCE does not say. Never supply an affiliation you
+                      happen to know; on a metadata_only row every element is null and
+                      the script enforces it. THE ORGANISATION NAME ALONE --
+                      "Jeju National University", not "Department of Computer
+                      Engineering, Jeju National University, Jeju, Republic of
+                      Korea". No department, no institute, no city,
                       no country. Two authors at one university must produce the SAME
                       string, character for character, or downstream counting treats
                       them as two organisations and the record is rejected. An element
@@ -476,6 +481,15 @@ RULES THAT DECIDE MOST CASES. These come from a thousand hand-made judgments:
   SDV paper was cited. If the evidence does not say CTGAN, TVAE, GaussianCopula, PAR,
   HMA, a Metadata object or a quality report, sdv_concept is []. On a metadata_only
   row it is always [] and is emptied by the script if you fill it.
+- THE CONCEPT IS NOT THE MODEL'S NAME. `ctgan` is a COMPONENT, never a concept, and
+  putting it in sdv_concept rejects the record. Translate what runs:
+    CTGAN or CopulaGAN -> mode_specific_normalization, and conditional_sampling where
+      the conditional vector is what the paper leans on
+    TVAE -> tvae;  GaussianCopula -> gaussian_copula;  PAR -> par_sequential
+    HMA or a multi-table synthesizer -> relational_hma
+    a Metadata or SingleTableMetadata object -> metadata_schema
+    evaluate_quality, QualityReport or an SDMetrics score -> quality_report
+  Two synthesizers means two concepts.
 - unclear may never carry confidence high.
 - If the evidence is too thin to judge, say so in `needs` and use low rather than
   guessing. A flagged entry is useful; a confident wrong one poisons the index.
@@ -520,6 +534,9 @@ def pack_evidence(candidate):
     if text:
         parts.append('first page of the full text (byline and affiliations '
                      'live here):\n' + text[:HEAD_CHARS])
+        if len(text) > HEAD_CHARS + TAIL_CHARS:
+            parts.append('last page of the full text (some journals print the author '
+                         'addresses here instead):\n' + text[-TAIL_CHARS:])
         body, bibliography = split_bibliography(text)
         windows = windows_in(body, MAX_WINDOWS)
         if windows:
@@ -695,6 +712,14 @@ def finalize(record, candidate):
     # here: the rest of the record is sound.
     if candidate['tier'] == 'metadata_only':
         out['sdv_concept'] = []
+        # Nor can an affiliation be read off a title and an author list. The pilot
+        # returned Ghent and UNSW for a row with no text at all -- plausibly right,
+        # entirely unverified, and validate.py checks that one organization carries
+        # the same type and country in EVERY record, so a remembered affiliation
+        # propagates. Alignment is preserved by nulling rather than emptying.
+        out['affiliations'] = [None] * len(out.get('authors') or [])
+        out['affiliation_types'] = []
+        out['affiliation_countries'] = []
     out['evidence_tier'] = candidate['tier']
     out['source_channel'] = 'semantic_scholar_discovery'
     out['auto_curated'] = {'model': MODEL, 'reviewed': False}
