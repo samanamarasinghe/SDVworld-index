@@ -462,6 +462,13 @@ RULES THAT DECIDE MOST CASES. These come from a thousand hand-made judgments:
 - Benchmarking a DESCENDANT (CTAB-GAN+, DP-CTGAN, table-GAN) rather than CTGAN itself
   is citation_only, unless the descendant is run through SDV.
 - A paper that runs a generator only to reject it still counts as baseline_only.
+- AN AUTHORS' OWN REIMPLEMENTATION IS `port`, NEVER api_user. "Our CTGAN follows the
+  design of [42]", a described generator/discriminator architecture, or a from-scratch
+  build in the authors' own framework means no SDV code ran. Importance is unchanged
+  -- a reimplementation carrying the whole empirical programme is still 4. api_user
+  requires the library itself: a named package, an import, an sdv.dev reference, or
+  CTGAN constructor parameter names. Where a paper is genuinely ambiguous, say so in
+  `needs` and use `unclear`, which may not carry confidence high.
 - MIS-CITATION IS COMMON IN THIS LITERATURE and is not yours to fix: CTGAN cited to
   Goodfellow, RDT credited to an unrelated paper, TVAE glossed wrongly. Record the
   paper's own wording in evidence and never correct it silently.
