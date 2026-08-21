@@ -58,6 +58,17 @@ ALIASES = {
     # [stated] 2026-08-21: "MIT Lincoln labs can use just MIT."
     "MIT Lincoln Laboratory": "Massachusetts Institute of Technology",
     "Lincoln Laboratory": "Massachusetts Institute of Technology",
+    # Same place, two spellings; the spaced form is the one the index uses.
+    "PengCheng Laboratory": "Peng Cheng Laboratory",
+}
+
+# A country value that is not a country. These reached the index as a single
+# facet slot holding a compound answer, which validate.py cannot see -- its
+# check is that one ORGANIZATION carries one consistent string, and a compound
+# string is perfectly consistent with itself. The site's region table then
+# places none of them, so the entry survives every regional narrowing.
+COUNTRY_FIXES = {
+    "China (Hong Kong)": "Hong Kong",
 }
 
 # Country spellings that name the same place. The PREFERRED member is not the
@@ -275,8 +286,24 @@ def main():
         print("\ncountry spellings the index prefers:",
               ", ".join(f"{k} -> {v}" for k, v in sorted(shown.items())))
 
+    compound = collections.Counter()
+
     def canon_country(value):
-        return preferred.get(str(value or "").casefold(), value)
+        """One country name. Applies COUNTRY_FIXES, splits a compound value,
+        drops 'unknown' from it, and folds each part to the preferred spelling."""
+        raw = COUNTRY_FIXES.get(str(value or "").strip(), str(value or "").strip())
+        parts = []
+        for part in (p.strip() for p in raw.split(";")):
+            if not part or part.casefold() == "unknown":
+                continue
+            part = preferred.get(part.casefold(), part)
+            if part not in parts:
+                parts.append(part)
+        if not parts:
+            return "unknown"
+        if raw != value or len(raw.split(";")) > 1:
+            compound[f"{value!r} -> {parts[0]!r}"] += 1
+        return parts[0]
 
     # --- pass 3: one authoritative fact per organization --------------------
     authority, coinflips, hinted = {}, [], []
@@ -317,6 +344,10 @@ def main():
         authority[org] = (otype, country)
 
     print(f"\norganizations: {len(authority)} total")
+    if compound:
+        print(f"\ncountry values that were not a single country ({len(compound)}):")
+        for text, n in compound.most_common():
+            print(f"    {n:5d}  {text}")
 
     # --- rewrite the editable shards ----------------------------------------
     changed_records, changed_slots, orphans = 0, 0, []
@@ -372,7 +403,7 @@ def main():
     else:
         print("\nno coin flips: every organization was settled by evidence or by MANUAL")
 
-    # --- verify: alignment, and no organization carrying two facts ----------
+    # --- verify: alignment, one fact each, and no compound country left -----
     problems = []
     for rec in old_records + new_records:
         if rec.get("override"):
@@ -385,6 +416,11 @@ def main():
                if len(c) > 1}
     for org, c in sorted(residue.items()):
         problems.append(f"{org}: still carries {sorted(c)}")
+    leftover = sorted({c for rec in new_records
+                       for c in (rec.get("affiliation_countries") or [])
+                       if ";" in str(c) or str(c) in COUNTRY_FIXES})
+    for c in leftover:
+        problems.append(f"compound country value survives in an editable shard: {c!r}")
     if problems:
         print(f"\nPROBLEMS ({len(problems)}) -- nothing written:")
         for text in problems[:40]:
