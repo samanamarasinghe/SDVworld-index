@@ -171,7 +171,13 @@ def main():
         print("\naffiliation trios: already aligned, nothing changed")
 
     # --- integrity checks before writing ----------------------------------
-    problems = []
+    # A check here must be at least as strict as tests/validate.py, or the
+    # failure surfaces at shard time instead. It must not be STRICTER, or it
+    # blocks records the repo would happily accept -- which is why an empty
+    # sdv_component is a warning rather than a problem. validate.py requires
+    # only id, title, url, kind and summary; a paper may cite SDV as prior art
+    # and name no component at all.
+    problems, warnings = [], []
     ids = collections.Counter(r.get("id") for r in kept)
     for rid, n in ids.items():
         if n > 1:
@@ -190,9 +196,15 @@ def main():
         if not r.get("summary") or not r.get("title"):
             problems.append(f"record missing title or summary: {r.get('id')}")
         if not r.get("sdv_component"):
-            problems.append(f"empty sdv_component: {r.get('id')}")
+            warnings.append(f"empty sdv_component: {r.get('id')}")
         if r.get("integration") == "unclear" and r.get("confidence") == "high":
             problems.append(f"unclear with confidence high: {r.get('id')}")
+    if warnings:
+        print(f"\nwarnings ({len(warnings)}) -- not fatal, nothing blocked:")
+        for w in warnings[:25]:
+            print("   ", w)
+        if len(warnings) > 25:
+            print(f"    ... and {len(warnings) - 25} more")
     if problems:
         print(f"\nINTEGRITY PROBLEMS ({len(problems)}) -- nothing written:")
         for p in problems[:50]:
