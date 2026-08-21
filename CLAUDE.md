@@ -48,6 +48,16 @@ Wall-clock timings are **recorded, never gated** (§9). Report them; do not fail
   file changes. Every later edit is judged against frozen golden data, never against
   recollection of the old behavior.
 - **One stage per session**, against the stage brief in `docs/perf/stage-N.md`.
+- **Stage 2 is split** (owner decision, 2026-08-21). §10 bundles the data-format
+  change with the §4 search change; those are independent risks and Stage 1 showed
+  what isolating them buys. **2a** is the projection, the single build path and the
+  workflow fix, and its differential must stay 293/293 with **zero exceptions** —
+  exactly as Stage 1 — so any difference is unambiguously a projection bug. **2b** is
+  postings and the title-only search, where the only permitted differences are the
+  frozen search states. Consequence: 2a carries a precomputed lowercase search string
+  in `core.json` purely to hold v1's title+summary matching unchanged, so 2a is
+  expected to exceed the 1.5 MB eager budget; 2b deletes that string and comes in
+  under it. The payload and postings gates are therefore scoped to 2b, not 2a.
 - **Browser harness** (owner decision, 2026-08-21): this machine has no Node, npm, or
   Playwright, and the package registries are unreachable from the command sandbox. The
   benchmark and screenshots therefore run as a dependency-free HTML/JS harness served by

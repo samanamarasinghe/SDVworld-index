@@ -5,25 +5,41 @@ name: build-index
 # derived blob alongside the shards a reviewer actually wants to read, and the two
 # drift the moment someone forgets. This rebuilds it instead.
 #
-# On a pull request: build and fail if the committed index does not match the shards,
-# without writing anything. On main: rebuild and commit if it changed, so the
+# On a pull request: build and report if the committed output does not match the
+# shards, without writing anything. On main: rebuild and commit if it changed, so the
 # published site always matches the reviewed shards.
+#
+# "the committed output" is data/sdv-index.json, data/build-info.json AND the
+# data/site/ projection. Covering only the first is what let the build stamp drift
+# (design v2 §7).
 
 on:
   push:
     branches: [main]
     paths:
       - 'data/shards/**'
+      - 'data/impact.json'
+      - 'data/tail/**'
       - 'build.py'
+      - 'site_projection.py'
+      - 'VERSION'
       - '.github/workflows/build-index.yml'
   pull_request:
     paths:
       - 'data/shards/**'
+      - 'data/impact.json'
+      - 'data/tail/**'
       - 'build.py'
+      - 'site_projection.py'
+      - 'VERSION'
   workflow_dispatch:
 
 permissions:
   contents: write
+
+env:
+  # The generated set, in one place. build.py --write writes all of it.
+  GENERATED: data/sdv-index.json data/build-info.json data/site
 
 jobs:
   build:
@@ -38,23 +54,34 @@ jobs:
       - name: Build index
         run: python build.py --write
 
+      - name: Build tests
+        run: python tests/build_tests.py
+
+      # Every path build.py --write can touch. The previous version checked and
+      # committed only data/sdv-index.json, although the same command also rewrites
+      # data/build-info.json -- so the stamp drifted and the live footer reported
+      # v0.99 while VERSION said 1.0.0. Design v2 §7.
       - name: Check for drift (pull requests)
         if: github.event_name == 'pull_request'
         run: |
-          if ! git diff --quiet -- data/sdv-index.json; then
-            echo "::notice::data/sdv-index.json is stale; it will be rebuilt on merge."
-            git diff --stat -- data/sdv-index.json
+          if ! git diff --quiet -- $GENERATED; then
+            echo "::notice::generated output is stale; it will be rebuilt on merge."
+            git diff --stat -- $GENERATED
           fi
 
-      - name: Commit rebuilt index (main only)
+      - name: Commit rebuilt output (main only)
         if: github.event_name != 'pull_request'
         run: |
-          if git diff --quiet -- data/sdv-index.json; then
-            echo "index already current, nothing to commit"
+          if git diff --quiet -- $GENERATED && \
+             [ -z "$(git status --porcelain -- data/site)" ]; then
+            echo "generated output already current, nothing to commit"
             exit 0
           fi
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/sdv-index.json
-          git commit -m "Rebuild data/sdv-index.json from shards [skip ci]"
+          # Staged explicitly, path by path, so a new generated file cannot be
+          # committed by accident and an existing one cannot be forgotten.
+          git add data/sdv-index.json data/build-info.json
+          git add --all data/site
+          git commit -m "Rebuild generated output from shards [skip ci]"
           git push

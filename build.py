@@ -103,7 +103,14 @@ def enrich(records):
     return filled, unjoined
 
 
-def main(write=False):
+def assemble_records():
+    """The single source of truth for what the index contains.
+
+    Pure: reads the shards and the harvest pools, returns the assembled record list
+    and the counters the report prints. Both the legacy export and the site
+    projection are emitted from THIS list, so there is no second merge
+    implementation to drift (design v2 §5).
+    """
     by_url, by_id, out = {}, {}, []
     dupes = retired = applied = orphaned = 0
     for path in sorted(glob.glob(os.path.join(ROOT, 'data', 'shards', '*.json'))):
@@ -189,26 +196,50 @@ def main(write=False):
             rec['auto_curated'] = {'reviewed': bool(marker.get('reviewed'))}
 
     out.sort(key=lambda r: (r['kind'], -(r.get('year') or 0), r['title']))
-    dest = os.path.join(ROOT, 'data', 'sdv-index.json')
-    if write:
-        with open(dest, 'w') as fh:
-            json.dump(out, fh, indent=1, ensure_ascii=False)
-            fh.write('\n')
-        # A stamp the page can show, so a visitor can tell how current the index is.
-        # Version comes from the VERSION file; the count is whatever was just built.
-        info = {
-            'version': (open(os.path.join(ROOT, 'VERSION')).read().strip()
-                        if os.path.exists(os.path.join(ROOT, 'VERSION')) else None),
-            'built': datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d'),
-            'entries': len(out),
-        }
-        with open(os.path.join(ROOT, 'data', 'build-info.json'), 'w') as fh:
-            json.dump(info, fh, indent=1)
-            fh.write('\n')
+    return out, {'dupes': dupes, 'retired': retired, 'applied': applied,
+                 'orphaned': orphaned, 'filled': filled, 'unjoined': unjoined}
 
+
+def write_legacy(out):
+    """data/sdv-index.json: the unchanged public export (§5 item 1).
+
+    Byte-identity for identical inputs is a hard requirement -- downstream consumers
+    read this file, and the projection work must not perturb it. Serialization is
+    exactly as it has always been; do not "tidy" it.
+    """
+    dest = os.path.join(ROOT, 'data', 'sdv-index.json')
+    with open(dest, 'w') as fh:
+        json.dump(out, fh, indent=1, ensure_ascii=False)
+        fh.write('\n')
+    return dest
+
+
+def write_build_info(out):
+    """A stamp the page can show, so a visitor can tell how current the index is.
+
+    This file is why the live footer said 0.99 while VERSION said 1.0.0: the workflow
+    runs --write, which rewrites it, and then commits only sdv-index.json. §7 fixes
+    the workflow; this function is unchanged.
+    """
+    info = {
+        'version': (open(os.path.join(ROOT, 'VERSION')).read().strip()
+                    if os.path.exists(os.path.join(ROOT, 'VERSION')) else None),
+        'built': datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d'),
+        'entries': len(out),
+    }
+    with open(os.path.join(ROOT, 'data', 'build-info.json'), 'w') as fh:
+        json.dump(info, fh, indent=1)
+        fh.write('\n')
+
+
+def report(out, stats, wrote):
+    dest = os.path.join(ROOT, 'data', 'sdv-index.json')
+    dupes, retired = stats['dupes'], stats['retired']
+    applied, orphaned = stats['applied'], stats['orphaned']
+    filled, unjoined = stats['filled'], stats['unjoined']
     print(f'{len(out)} entries, {dupes} duplicate urls dropped, '
           f'{retired} retired by duplicate_of, {applied} corrections applied '
-          + (f'-> {dest}' if write else '(validated only; pass --write to update it)'))
+          + (f'-> {dest}' if wrote else '(validated only; pass --write to update it)'))
     if orphaned:
         print(f'WARNING: {orphaned} correction(s) matched no entry by id and were skipped')
     if filled:
@@ -228,9 +259,26 @@ def main(write=False):
             print(f'  {count:>4}  {name}')
 
 
+def main(write=False, site=True):
+    out, stats = assemble_records()
+    if write:
+        write_legacy(out)
+        write_build_info(out)
+        if site:
+            from site_projection import write_site
+            summary = write_site(out)
+            print(f"site projection: {summary['records']} records "
+                  f"({summary['curated']} curated + {summary['tail']} tail), "
+                  f"{summary['buckets']} detail buckets, "
+                  f"core {summary['core_bytes']:,} B")
+    report(out, stats, write)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Merge shards into data/sdv-index.json.')
     parser.add_argument('--write', action='store_true',
                         help='write the index; omit to validate the shards only')
+    parser.add_argument('--no-site', dest='site', action='store_false',
+                        help='skip the data/site/ projection (legacy export only)')
     main(**vars(parser.parse_args()))

@@ -4,10 +4,7 @@
  * benchmark can build one against a mount of their choosing and drive it directly.
  * main.js is the two lines that start it on the real page.
  */
-import {
-  Corpus, loadAll, dedupeTail, normalizeCite, normalizeGh,
-  curatedUrlSet, notCurated,
-} from './data.js';
+import { Corpus, Details, loadSite } from './data.js';
 import { Engine, countValues } from './engine.js';
 import { sortWithin, groupHeadersFor, headerOrder } from './order.js';
 import { renderResults, syncNeeds, PAGE } from './render.js';
@@ -32,6 +29,7 @@ export class App {
   constructor(root = document) {
     this.root = root;
     this.corpus = new Corpus();
+    this.details = new Details();
     this.engine = new Engine(this.corpus);
     this.state = freshState();
     this.byId = new Map();
@@ -132,7 +130,7 @@ export class App {
       els.btnNeeds.setAttribute('aria-pressed', String(s.showNeeds));
       els.btnNeeds.textContent = s.showNeeds ? 'Hide open questions' : 'Show open questions';
       /* Operates on what is rendered, per §3 item 9 -- no walk, no re-render. */
-      syncNeeds(els.results, this.byId, s.showNeeds);
+      syncNeeds(els.results, this.byId, s.showNeeds, this.details);
     });
 
     els.btnSummaries.addEventListener('click', () => {
@@ -202,6 +200,7 @@ export class App {
     renderResults(this.els.results, sorted, this.state, {
       summaryExpanded: this.state.summaryExpanded,
       showNeeds: this.state.showNeeds,
+      details: this.details,
       onMore: () => this.showMore(false),
       onAll: () => this.showMore(true),
       onChip: (facet, value) => { this.state.sel[facet][value] = true; this.changed(); },
@@ -212,66 +211,27 @@ export class App {
 
   /* ---- corpus ------------------------------------------------------------ */
 
-  setCorpus(curated, cite, gh) {
-    this.corpus.set(curated, cite, gh);
+  setCorpus(coreRecords, counts) {
+    this.corpus.set(coreRecords, counts);
     this.engine.invalidate();
     this.byId = new Map(this.corpus.records.map(n => [String(n.id), n]));
-    this.affFieldsPresent = this.corpus.records.some(
-      n => n.rec.affiliation_types || n.rec.affiliation_countries);
+    /* The build always emits aff_type, so the affiliation groups are present
+       whenever there is a corpus at all. The v1 flag existed because the fields were
+       being introduced gradually; there is nothing left to gate on. */
+    this.affFieldsPresent = this.corpus.records.length > 0;
     return this;
   }
 
-  /* Takes the pools in their stored shape and runs them through dedupe,
-     normalization and alias suppression -- the same path loadAll takes. The semantic
-     fixture is swapped in through here so those steps are exercised for real. */
-  setCorpusRaw(curated, rawCite, rawGh) {
-    const map = curatedUrlSet(curated || []);
-    const cite = rawCite
-      ? dedupeTail(rawCite).map(normalizeCite).filter(r => notCurated(map, r)) : null;
-    const gh = rawGh
-      ? ((rawGh && rawGh.repos) || rawGh || []).map(normalizeGh)
-        .filter(r => notCurated(map, r)) : null;
-    return this.setCorpus(curated, cite, gh);
-  }
-
-  /* Pool rows are unrated, so at any importance floor above 0 none of them can pass
-     -- and the default floor is 1. The one thing they can still move at a higher
-     floor is the popularity percentile, which is taken over the whole active corpus.
-     So the cards need rebuilding only in those two cases; otherwise the arriving
-     pools change nothing but the facet vocabulary.
-     v1 re-renders the whole default view once per pool regardless (§1 item 9). */
-  poolsCanChangeResults() {
-    return this.state.minImportance === 0 || this.state.minPopularity > 0;
-  }
-
   async start({ onError } = {}) {
-    const fail = onError || ((path, e) => {
-      if (this.els.errors) this.els.errors.textContent = `Could not load ${path}: ${e.message}`;
-    });
     try {
-      await loadAll({
-        onIndex: (curated) => {
-          this.setCorpus(curated, null, null);
-          this.apply();
-        },
-        onPools: (cite, gh) => {
-          const needCards = this.poolsCanChangeResults();
-          this.setCorpus(this.corpus.curated, cite, gh);
-          if (needCards) {
-            this.apply();
-          } else {
-            /* Facet lists still gain the pool's values, at count zero, exactly as in
-               v1 -- but no card is rebuilt. */
-            rebuildFacets(this.facetCtx(this.engine.snapshot(this.state).counts));
-          }
-        },
-        onError: fail,
-      });
+      const { records, counts } = await loadSite();
+      this.setCorpus(records, counts);
+      this.apply();
     } catch (e) {
-      if (this.els.errors) {
-        this.els.errors.textContent =
-          `Could not load the index: ${e.message}. Serve over HTTP, not the file:// scheme.`;
-      }
+      const msg = `Could not load the index: ${e.message}. ` +
+        'Serve over HTTP, not the file:// scheme.';
+      if (onError) onError('data/site', e);
+      else if (this.els.errors) this.els.errors.textContent = msg;
     }
     return this;
   }
@@ -303,7 +263,11 @@ export class App {
       computeUniverse: () => {},
       scanCount: () => app.engine.scanCount(),
       probe: () => app.corpus.probe(),
-      setCorpus: (curated, rawCite, rawGh) => app.setCorpusRaw(curated, rawCite, rawGh),
+      /* The harnesses hand over a PROJECTED fixture, built by the same
+         site_projection.py the site is built with. Projecting in JS here would be a
+         second implementation of the thing under test. */
+      setCorpus: (coreRecords, counts) => app.setCorpus(coreRecords, counts),
+      details: app.details,
     };
   }
 }

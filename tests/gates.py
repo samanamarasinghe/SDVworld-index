@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The design v2 §9 structural gates.
 
-    python3 tests/gates.py                # v2 -- enforcing
+    python3 tests/gates.py --stage 2a     # v2 -- enforcing
     python3 tests/gates.py --target v1    # the baseline -- reports, never fails
     python3 tests/gates.py --stage 1      # only gates in force by that stage
 
@@ -19,17 +19,28 @@ import argparse, gzip, hashlib, json, pathlib, subprocess, sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 
-# Which stage each gate comes into force at. Stage 1 runs on the current flat export
-# and keeps the pools temporarily (§10), so the payload and raw-pool gates cannot
-# apply until Stage 2 -- the artifacts they measure do not exist before then.
+# Stages in order. Stage 2 is split (see CLAUDE.md): 2a is the projection, 2b is
+# postings and the §4 search change.
+STAGES = ['1', '2a', '2b', '3']
+
+# Which stage each gate comes into force at.
+#
+# Stage 1 ran on the flat export and kept the pools on purpose (§10), so the raw-pool
+# and bucket gates could not apply. They do from 2a.
+#
+# eager-payload waits for 2b because 2a deliberately ships a precomputed search string
+# in core to hold v1's title+summary matching unchanged -- about 0.87 MB gzip of
+# scaffolding that postings delete. Gating on it at 2a would fail the build for a cost
+# that is planned, budgeted and temporary.
 STAGE = {
-    'render-cap': 1, 'node-budget': 1, 'one-scan': 1, 'no-blob-render': 1,
-    'golden': 1, 'semantic': 1,
-    'eager-payload': 2, 'detail-bucket': 2, 'no-raw-pool': 2,
+    'render-cap': '1', 'node-budget': '1', 'one-scan': '1', 'no-blob-render': '1',
+    'golden': '1', 'semantic': '1',
+    'export-identity': '2a', 'build': '2a', 'detail-bucket': '2a', 'no-raw-pool': '2a',
+    'eager-payload': '2b',
 }
 
 EAGER_V2 = ['data/site/manifest.json', 'data/site/core.json',
-            'data/site/summary-postings.json']
+            'data/site/summary-postings.json']   # postings arrive in 2b
 TARGET_SOURCES = {
     'v1': ['index.html', 'assets/js/sdv-index.js', 'assets/css/style.css'],
     'v2': ['v2'],
@@ -66,7 +77,7 @@ class Gates:
         self.rows.append((name, ok, detail, skipped))
 
     def check(self, name, ok, detail):
-        if STAGE[name] > self.stage:
+        if STAGES.index(STAGE[name]) > STAGES.index(self.stage):
             self.add(name, None, f'{detail}  (in force from stage {STAGE[name]})', True)
         else:
             self.add(name, ok, detail)
@@ -107,10 +118,13 @@ class Gates:
                    'no raw-pool request' if not pools else f'fetched {", ".join(pools)}')
 
     def payload(self):
-        eager = EAGER_V2 + [f'{self.target}/index.html', f'{self.target}/assets/js',
-                            f'{self.target}/assets/css'] if self.target == 'v2' else \
-                ['data/sdv-index.json', 'index.html', 'assets/js/sdv-index.js',
-                 'assets/css/style.css']
+        if self.target == 'v2':
+            eager = EAGER_V2 + ['v2/index.html', 'v2/assets/js', 'v2/assets/css',
+                                'assets/css/style.css']
+        else:
+            eager = ['data/sdv-index.json', 'data/tail/openalex-citations.json',
+                     'data/tail/github-repos.json', 'index.html',
+                     'assets/js/sdv-index.js', 'assets/css/style.css']
         total, missing = 0, []
         for rel in eager:
             p = ROOT / rel
@@ -133,6 +147,32 @@ class Gates:
             worst = max(sizes.items(), key=lambda kv: kv[1], default=('-', 0))
             self.check('detail-bucket', worst[1] <= 75_000,
                        f'largest bucket {worst[0]} at {worst[1] / 1000:.1f} KB gzip (cap 75 KB)')
+
+    def build(self):
+        """The §8 build tests, and the byte-identity of the public export.
+
+        Identity is its own gate rather than one line inside build_tests.py because
+        it is the single check that protects a downstream contract: everything else
+        here is about the site, and this is about everyone else's copy of the data.
+        """
+        r = subprocess.run(['bash', str(ROOT / 'scripts/check_export_identity.sh')],
+                           capture_output=True, text=True, cwd=ROOT)
+        tail = (r.stdout + r.stderr).strip().splitlines()
+        self.check('export-identity', r.returncode == 0,
+                   tail[-1] if tail else 'no output')
+
+        r = subprocess.run([sys.executable, str(ROOT / 'tests/build_tests.py')],
+                           capture_output=True, text=True, cwd=ROOT)
+        lines = r.stdout.strip().splitlines()
+        summary = lines[-1] if lines else 'no output'
+        if r.returncode:
+            first = next((l.strip() for l in lines if 'FIRST FAILING CHECK' in l), '')
+            detail = next((l.strip() for l in lines
+                           if l.startswith('    ') and 'FIRST' not in l), '')
+            summary = f'{first} {detail}'.strip() or summary
+        else:
+            summary = f'{len([l for l in lines if "[ ok ]" in l])} build checks passed'
+        self.check('build', r.returncode == 0, summary)
 
     def golden(self):
         actual = ROOT / f'docs/perf/golden/actual-{self.target}.json'
@@ -210,7 +250,7 @@ def load_bench(target):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--target', default='v2', choices=['v1', 'v2'])
-    ap.add_argument('--stage', type=int, default=1)
+    ap.add_argument('--stage', default='2a', choices=STAGES)
     a = ap.parse_args()
 
     # v1 is the thing being replaced. Running the gates against it is how the
@@ -222,6 +262,7 @@ def main():
 
     g = Gates(a.target, a.stage, enforce)
     g.structural(load_bench(a.target))
+    g.build()
     g.payload()
     g.golden()
     g.semantic()

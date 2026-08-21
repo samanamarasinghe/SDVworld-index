@@ -188,10 +188,21 @@ async function v1Engine(fixture) {
   return { E, provenance };
 }
 
-async function v2Engine(fixture) {
+/* v1 gets the RAW fixture and does its own suppression, normalization and scoring in
+ * the browser, because that is what v1 does. v2 gets the same fixture PROJECTED by
+ * site_projection.py, because from Stage 2a that is what the page consumes.
+ *
+ * The two paths landing on the same 12 records is itself the check that the Python
+ * port of the pool logic agrees with the JavaScript original it was ported from. */
+async function v2Engine() {
   const mod = await import('../oracle/adapter-v2.js');
   const built = await mod.build({ say, note: line, waitFor });
-  built.engine.setCorpus(fixture.curated, fixture.citation_pool_raw, fixture.repo_pool_raw);
+  const proj = await (await fetch('/tests/semantic/fixture-projected.json',
+    { cache: 'no-store' })).json();
+  built.engine.setCorpus(proj.core, proj.counts);
+  for (const [name, content] of Object.entries(proj.detail)) {
+    built.app.details.prime(name, content);
+  }
   return { E: built.engine, provenance: built.provenance };
 }
 
@@ -211,13 +222,20 @@ async function renderHarness() {
   const mount = document.getElementById('render-mount');
   mount.innerHTML = doc.body.innerHTML;
 
+  const generated = await (await fetch('/tests/semantic/render-fixture.json',
+    { cache: 'no-store' })).json();
+
   const h = {
-    urls, downloadBibtex, mount,
+    urls, downloadBibtex, mount, generated,
+    Details: (await import('../../v2/assets/js/data.js')).Details,
     app: null, results: null,
     /* Scoped to the container, so App.$ resolves ids inside it rather than globally. */
-    async load(records) {
+    async load(bundle) {
       h.app = new App(mount).mount();
-      h.app.setCorpus(records, [], []);
+      h.app.setCorpus(bundle.core, bundle.counts);
+      for (const [name, content] of Object.entries(bundle.detail || {})) {
+        h.app.details.prime(name, content);
+      }
       h.app.apply();
       h.results = h.app.els.results;
       await h.settle();
@@ -239,6 +257,14 @@ async function renderHarness() {
     settle() {
       return new Promise(r => nextTick(() => nextTick(r)));
     },
+    /* For the detail cases, which finish on a promise rather than on a render. */
+    async waitFor(cond, what, tries = 200) {
+      for (let i = 0; i < tries; i++) {
+        if (cond()) return true;
+        await h.settle();
+      }
+      throw new Error(`timed out waiting for ${what}`);
+    },
   };
   return h;
 }
@@ -253,7 +279,7 @@ async function main() {
   const casesText = await (await fetch('/tests/semantic/cases.js', { cache: 'no-store' })).text();
   const fixture = JSON.parse(fixtureText);
 
-  const { E, provenance } = target === 'v1' ? await v1Engine(fixture) : await v2Engine(fixture);
+  const { E, provenance } = target === 'v1' ? await v1Engine(fixture) : await v2Engine();
   const p = E.probe();
   line(`corpus: ${p.data} curated + ${p.cite} pool row(s) surviving suppression`);
   line('');
@@ -286,6 +312,10 @@ async function main() {
   for (const c of PENDING_V2) {
     if (done.has(c.id)) continue;
     results.push({ id: c.id, ok: null, pending: true, closes: c.closes, why: c.why });
+  }
+  if (target === 'v2' && results.some(r => r.pending)) {
+    line(`NOTE: ${results.filter(r => r.pending).length} case(s) named in cases.js ` +
+         'have no implementation in render-cases.js');
   }
 
   const passed = results.filter(r => r.ok === true).length;

@@ -1,265 +1,103 @@
-/* Loading and normalization.
+/* Loading the site projection.
  *
- * v1 derives everything on demand: organizationsOf splits semicolons, affiliationRows
- * rebuilds a per-author table, regionOf lowercases and looks up a country -- and all
- * of it runs again for every record on every one of the eleven-plus corpus walks each
- * interaction costs. Here each record is normalized exactly once and the derived
- * values are read thereafter.
+ * Stage 2a. The page no longer reads data/sdv-index.json or either raw pool. It reads
+ * data/site/, which the build produces from the same assembled record list as the
+ * public export (§5):
  *
- * Stage 1 reads the CURRENT data/sdv-index.json, unchanged, plus both raw pools. The
- * site projection is Stage 2's job; keeping the format fixed here is what makes a
- * clean differential possible.
+ *   manifest.json   counts, file sizes, and data_hash -- the cache identity
+ *   core.json       everything the filter, the sort and a collapsed card need
+ *   detail/NN.json  summary and needs only, 32 buckets, fetched when asked for
+ *
+ * What used to happen here and no longer does: splitting semicolon-separated
+ * affiliations, deriving affiliation types and regions, scoring popularity, and
+ * fetching 3.7 MB of raw pool data in order to discover the 44 rows of it that
+ * survive suppression. All of that is done once now, at build time, by
+ * site_projection.py.
  */
-import {
-  TYPE2KIND, HITS2COMPONENT, AMERICAS, EUROPE, ASIA, AFRICA, OCEANIA,
-  FACET_KEYS, NONE, NO_NONE,
-} from './vocab.js';
+import { FACET_KEYS, NONE, NO_NONE } from './vocab.js';
 
-/* Resolved against this module's own URL, not the document's.
- *
- * GitHub Pages serves this project under /SDVworld-index/, so a root-relative
- * '/data/...' would 404 in production while working perfectly on localhost -- the
- * single likeliest way for the pilot to look fine here and be broken live. A
- * document-relative '../data/...' is nearly as fragile: the oracle, the semantic
- * runner and the benchmark all load these modules from pages at other depths.
- * import.meta.url is true wherever the module is loaded from. */
+/* Resolved against this module's own URL. Pages serves this project under
+ * /SDVworld-index/, so a root-relative path would 404 in production while working on
+ * localhost, and a document-relative one breaks the harnesses, which load these
+ * modules from pages at other depths. */
 const at = (rel) => new URL(rel, import.meta.url).href;
-export const INDEX_PATH = at('../../../data/sdv-index.json');
-export const TAIL_PATH = at('../../../data/tail/openalex-citations.json');
-export const GITHUB_PATH = at('../../../data/tail/github-repos.json');
+export const SITE = at('../../../data/site/');
+export const MANIFEST_PATH = SITE + 'manifest.json';
 
-/* ---- derived values, computed once per record --------------------------- */
+/* ---- normalization ------------------------------------------------------- */
 
-function regionOf(name) {
-  const k = String(name || '').toLowerCase().replace(/^the\s+/, '').trim();
-  if (!k || k === 'unknown' || k === 'n/a' || k === 'unspecified') return '';
-  if (AMERICAS[k]) return 'americas';
-  if (EUROPE[k]) return 'europe';
-  if (ASIA[k]) return 'asia';
-  if (AFRICA[k] || OCEANIA[k]) return 'africa_oceania';
-  return '';   // unplaced: carried by no button, so vetoed by none of them
-}
-
-function dedupe(arr) {
-  const seen = new Set(), out = [];
-  for (const v of arr) if (!seen.has(v)) { seen.add(v); out.push(v); }
-  return out;
-}
-
-/* The stored list is aligned with authors, so one element can contain several
-   semicolon-separated organizations and co-authors can repeat an institution. */
-function organizationsOf(rec) {
-  const out = [];
-  for (const value of rec.affiliations || []) {
-    if (!value) continue;
-    for (let part of String(value).split(';')) {
-      part = part.trim();
-      if (part) out.push(part);
-    }
-  }
-  return dedupe(out);
-}
-
-function affiliationRows(rec, organizations) {
-  const types = rec.affiliation_types || [];
-  const countries = rec.affiliation_countries || [];
-  return organizations.map((organization, i) => {
-    const rawType = types[i];
-    return {
-      organization,
-      type: rawType === 'academic' ? 'academic'
-        : (rawType && rawType !== 'unknown' ? 'non_academic' : ''),
-      region: regionOf(countries[i]),
-    };
-  });
-}
-
-/* An entry with no affiliation on record is its own value rather than being folded
-   into non-academic. An organization whose type is unrecorded still reads
-   non-academic. */
-function affTypes(rows) {
-  if (!rows.length) return ['unaffiliated'];
-  let acad = false, other = false;
-  for (const row of rows) {
-    if (row.type === 'academic') acad = true; else other = true;
-  }
-  if (!acad) return ['non_academic'];
-  return other ? ['academic', 'non_academic'] : ['academic'];
-}
-
-function affRegions(rows) {
-  return dedupe(rows.map(r => r.region).filter(Boolean));
-}
-
-/* Popularity = attention the artifact has drawn, on one 0-1 scale so repositories and
-   papers can be ranked against each other. Both sides are log-compressed; commits are
-   clamped before blending; an entry carrying both signals takes the higher of the two;
-   an entry with neither sits at 0.3, a neutral default rather than a zero. */
-export function popularityOf(rec) {
-  let best = null;
-  if (rec.kind === 'code_repo' || rec.stars != null) {
-    const w = (rec.stars || 0) + 2 * (rec.forks || 0) + 5 * (rec.contributors || 0) +
-      0.1 * Math.min(rec.commits || 0, 2000);
-    best = Math.min(1, Math.log1p(w) / Math.log1p(8000));
-  }
-  if (rec.cited != null) {
-    const c = Math.min(1, Math.log1p(rec.cited) / Math.log1p(1500));
-    if (best === null || c > best) best = c;
-  }
-  return best === null ? 0.3 : best;
-}
-
-function rawValuesOf(rec, facet, organizations, rows) {
-  switch (facet) {
-    case 'kind': return rec.kind ? [rec.kind] : [];
-    case 'sdv_component': return rec.sdv_component || [];
-    case 'sdv_concept': return rec.sdv_concept || [];
-    case 'use_case': return rec.use_case || [];
-    case 'integration': return rec.integration ? [rec.integration] : [];
-    case 'industry': return rec.industry || [];
-    case 'confidence': return rec.confidence ? [rec.confidence] : [];
-    case 'authors': return rec.authors || [];
-    case 'affiliations': return organizations;
-    case 'aff_type': return affTypes(rows);
-    case 'aff_region': return affRegions(rows);
-    case 'year': return rec.year ? [String(rec.year)] : [];
-  }
-  return [];
-}
-
-/* The normalized view of one record. `rec` is the original object, untouched, because
- * rendering still reads it and the differential compares its id. */
-export function normalize(rec, i) {
-  const organizations = organizationsOf(rec);
-  const rows = affiliationRows(rec, organizations);
+/* Far less work than Stage 1's version: the derived values arrive precomputed, so
+ * this only has to shape the facet lookups the engine walks. */
+export function normalize(core, i) {
   const vals = {}, sets = {};
+  const raw = {
+    kind: core.kind ? [core.kind] : [],
+    sdv_component: core.sdv_component || [],
+    sdv_concept: core.sdv_concept || [],
+    use_case: core.use_case || [],
+    integration: core.integration ? [core.integration] : [],
+    industry: core.industry || [],
+    authors: core.authors || [],
+    affiliations: core.organizations || [],
+    aff_type: core.aff_type || [],
+    aff_region: core.aff_region || [],
+    year: core.year ? [String(core.year)] : [],
+  };
   for (const f of FACET_KEYS) {
-    const raw = rawValuesOf(rec, f, organizations, rows);
     /* Absence is a curatorial statement on bounded facets and an absent fact on the
-       unbounded ones -- NO_NONE is the difference, and getting it wrong here would
-       silently drop every unaffiliated entry. */
-    vals[f] = (raw.length || NO_NONE[f]) ? raw : [NONE];
+       unbounded ones. Getting NO_NONE wrong here would hand a permission group a
+       value no button lights, silently dropping every unaffiliated entry. */
+    vals[f] = (raw[f].length || NO_NONE[f]) ? raw[f] : [NONE];
     sets[f] = new Set(vals[f]);
   }
   return {
-    rec, i,
-    id: rec.id,
-    tier: rec.tier,
-    /* Stage 1 preserves v1's search exactly: substring over title AND summary,
-       lowercased. The title-only change of §4 is Stage 2's, deliberately kept out of
-       the stage that rewrites the runtime, so a golden difference here can only mean
-       a bug. */
-    searchText: ((rec.title || '') + ' ' + (rec.summary || '')).toLowerCase(),
-    importance: rec.importance != null ? rec.importance : null,
-    pop: popularityOf(rec),
-    organizations,
+    rec: core, i,
+    id: core.id,
+    tier: core.tier,
+    bucket: core.b,
+    hasSummary: !!core.hs,
+    hasNeeds: !!core.hn,
+    /* Stage 2a preserves v1's search exactly -- substring over title AND summary --
+       and the build ships a precomputed lowercase string for it because summary now
+       lives in a detail bucket. Stage 2b replaces this with token postings and the
+       title-only matching of §4, and the string goes away. */
+    searchText: core.s || (core.title || '').toLowerCase(),
+    importance: core.importance != null ? core.importance : null,
+    pop: core.pop,
+    organizations: core.organizations || [],
     vals, sets,
   };
 }
 
-/* ---- the pools ---------------------------------------------------------- */
-
-function fromHits(hits) {
-  const set = new Set();
-  for (const h of hits || []) { const c = HITS2COMPONENT[h]; if (c) set.add(c); }
-  return [...set];
-}
-
-export function normalizeCite(r) {
-  const loc = r.primary_location || {};
-  const authors = (r.authorships || [])
-    .map(a => (a.author || {}).display_name).filter(Boolean);
-  return {
-    id: r.id, title: r.title || 'Untitled', year: r.publication_year || null,
-    kind: TYPE2KIND[r.type] || 'paper',
-    url: loc.landing_page_url || r.doi || r.id, doi: r.doi || '',
-    alt_urls: [loc.landing_page_url, r.doi, r.id].filter(Boolean),
-    authors, sdv_component: [], sdv_concept: [], use_case: [], industry: [],
-    cited: r.cited_by_count || 0, confidence: null, tier: 'tail',
-  };
-}
-
-export function normalizeGh(r) {
-  const yr = parseInt((r.created || '').slice(0, 4), 10) || null;
-  const authors = [r.owner].concat(r.top_contributors || []).filter(Boolean);
-  return {
-    id: 'gh-' + r.repo, title: r.repo, url: 'https://github.com/' + r.repo,
-    kind: 'code_repo', sdv_component: fromHits((r.hit_patterns || '').split('|')),
-    sdv_concept: [], use_case: [], industry: [], authors, summary: r.description || '',
-    year: yr, stars: r.stars || 0, forks: r.forks || 0,
-    contributors: r.contributors || 0, commits: r.commits || 0,
-    confidence: null, tier: 'tail',
-  };
-}
-
-/* The stored citation tail has carried the same work twice. Duplicates would show as
-   repeated pool rows and inflate the corpus count, so collapse them on their id. */
-export function dedupeTail(raw) {
-  const seen = new Set(), out = [];
-  for (const row of raw) {
-    const key = row.id || row.doi || (row.title || '');
-    if (key && seen.has(key)) continue;
-    if (key) seen.add(key);
-    out.push(row);
-  }
-  return out;
-}
-
-const urlKey = (u) =>
-  String(u || '').toLowerCase().replace(/^https?:\/\//, '').replace(/\/+$/, '');
-
-/* A work can be reached by three different pointers -- its landing page, its DOI, its
-   OpenAlex id -- and a curator may have filed it under any one of them. Index every
-   pointer the curated entry carries, not just the one it displays. */
-export function curatedUrlSet(curated) {
-  const map = new Set();
-  for (const r of curated) {
-    for (const u of [r.url, r.openalex_id]) if (u) map.add(urlKey(u));
-  }
-  return map;
-}
-
-export function notCurated(map, r) {
-  for (const k of r.alt_urls || [r.url]) {
-    if (k && map.has(urlKey(k))) return false;
-  }
-  return true;
-}
-
-/* ---- the corpus --------------------------------------------------------- */
+/* ---- the corpus ---------------------------------------------------------- */
 
 export class Corpus {
   constructor() {
-    this.curated = [];
-    this.cite = null;
-    this.gh = null;
-    this.records = [];        // normalized, curated first then pools
-    this.universe = {};       // facet -> sorted array of every value present
-    this.popSorted = [];      // ascending popularity over the whole active corpus
+    this.records = [];
+    this.universe = {};
+    this.popSorted = [];
+    this.counts = { curated: 0, tail: 0, total: 0 };
   }
 
   /* One place where the corpus changes, so nothing can forget to rebuild what is
      derived from it. */
-  set(curated, cite, gh) {
-    this.curated = curated || [];
-    this.cite = cite;
-    this.gh = gh;
-    const all = this.curated.concat(this.cite || [], this.gh || []);
-    this.records = all.map(normalize);
+  set(coreRecords, counts) {
+    this.records = (coreRecords || []).map(normalize);
+    this.counts = counts || { curated: this.records.length, tail: 0,
+                              total: this.records.length };
     this.universe = {};
     for (const f of FACET_KEYS) {
       const set = new Set();
       for (const n of this.records) for (const v of n.vals[f]) set.add(v);
       this.universe[f] = [...set];
     }
-    /* v1 re-sorts the whole corpus by popularity inside popularityFloor(), which is
-       called inside every filteredData() -- thirteen times an interaction. It is a
-       pure function of the corpus, so it is computed here instead, once. */
+    /* v1 re-sorted the whole corpus by popularity inside popularityFloor(), which
+       ran inside every filteredData() -- thirteen times an interaction. It is a pure
+       function of the corpus, so it is sorted once. */
     this.popSorted = this.records.map(n => n.pop).sort((a, b) => a - b);
     return this;
   }
 
-  /* The percentile floor for a slider stop, by exactly v1's indexing. */
   popularityFloor(minPopularity) {
     if (!minPopularity) return -1;
     const v = this.popSorted;
@@ -268,36 +106,83 @@ export class Corpus {
   }
 
   probe() {
+    const c = this.counts;
     return {
-      data: this.curated.length,
-      cite: this.cite && this.cite.length,
-      gh: this.gh && this.gh.length,
+      data: c.curated,
+      cite: c.citation_pool != null ? c.citation_pool : null,
+      gh: c.repo_pool != null ? c.repo_pool : null,
+      total: this.records.length,
     };
   }
 }
 
-/* Both pools are fetched in parallel and applied together. v1 fires an applyFilters()
- * per pool, each re-rendering the full default view, although at any floor above 0 --
- * which the default is -- no pooled row can appear and no count can move. */
-export async function loadAll({ onIndex, onPools, onError }) {
-  const index = await fetch(INDEX_PATH).then(r => {
-    if (!r.ok) throw new Error('HTTP ' + r.status);
+/* ---- detail buckets ------------------------------------------------------ */
+
+/* §6: "Detail-bucket fetches deduplicate in-flight promises and retain loaded
+ * buckets in memory; ordinary HTTP caching (ETag revalidation) does the rest."
+ *
+ * A rejected fetch is deliberately NOT retained. Caching the rejection would poison
+ * the bucket for the rest of the session, so every record in it would be permanently
+ * unable to show its summary after one flaky response -- and §3 item 10 requires the
+ * error to be retryable. */
+export class Details {
+  constructor(base = SITE, fetcher = null) {
+    this.base = base;
+    this.fetch = fetcher || ((url) => fetch(url));
+    this.loaded = new Map();
+    this.inflight = new Map();
+    this.requests = 0;
+  }
+
+  bucket(name) {
+    if (this.loaded.has(name)) return Promise.resolve(this.loaded.get(name));
+    if (this.inflight.has(name)) return this.inflight.get(name);
+    this.requests++;
+    const p = Promise.resolve(this.fetch(`${this.base}detail/${name}.json`))
+      .then(r => {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
+      .then(json => {
+        this.loaded.set(name, json);
+        this.inflight.delete(name);
+        return json;
+      })
+      .catch(e => {
+        this.inflight.delete(name);
+        throw e;
+      });
+    this.inflight.set(name, p);
+    return p;
+  }
+
+  /* Returns {summary, needs}; an empty object is a legitimate answer for a record
+     that carries neither. */
+  async forRecord(n) {
+    if (!n.hasSummary && !n.hasNeeds) return {};
+    const b = await this.bucket(n.bucket);
+    return b[n.id] || {};
+  }
+
+  /* Test seam: preload a bucket without a network round trip. */
+  prime(name, content) { this.loaded.set(name, content); }
+}
+
+/* ---- loading ------------------------------------------------------------- */
+
+export async function loadSite() {
+  const grab = async (url, what) => {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`${what}: HTTP ${r.status}`);
     return r.json();
-  });
-  const curated = index || [];
-  onIndex(curated);
-
-  const map = curatedUrlSet(curated);
-  const grab = (path, shape) => fetch(path)
-    .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-    .then(shape)
-    .catch(e => { onError(path, e); return null; });
-
-  const [cite, gh] = await Promise.all([
-    grab(TAIL_PATH, raw => dedupeTail(raw || []).map(normalizeCite)
-      .filter(r => notCurated(map, r))),
-    grab(GITHUB_PATH, raw => ((raw && raw.repos) || raw || []).map(normalizeGh)
-      .filter(r => notCurated(map, r))),
-  ]);
-  onPools(cite, gh);
+  };
+  const manifest = await grab(MANIFEST_PATH, 'manifest');
+  const core = await grab(SITE + 'core.json', 'core');
+  if (core.schema_version !== manifest.schema_version) {
+    /* A half-deployed site is the realistic failure here, and silently rendering a
+       mismatched pair is worse than saying so. */
+    throw new Error(`schema mismatch: manifest ${manifest.schema_version}, ` +
+                    `core ${core.schema_version}`);
+  }
+  return { manifest, records: core.records, counts: manifest.counts };
 }

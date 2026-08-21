@@ -88,8 +88,8 @@ export function downloadBibtex(rec, { deliver } = {}) {
 
 /* ---- one card ------------------------------------------------------------ */
 
-function summaryNode(text) {
-  const sum = el('div', 'pub-summary open');
+function summaryParagraphs(text) {
+  const out = [];
   /* Curated summaries carry inline HTML -- links to the source, mostly -- and v1
      renders them as markup. Parity matters more than taste here: switching to text
      would silently drop every link in the corpus. The text is curator-authored and
@@ -97,10 +97,12 @@ function summaryNode(text) {
   for (const para of String(text).split(/\n\n+/)) {
     const pnode = document.createElement('p');
     pnode.innerHTML = para;
-    sum.appendChild(pnode);
+    for (const a of pnode.getElementsByTagName('a')) {
+      a.target = '_blank'; a.rel = 'noopener';
+    }
+    out.push(pnode);
   }
-  for (const a of sum.getElementsByTagName('a')) { a.target = '_blank'; a.rel = 'noopener'; }
-  return sum;
+  return out;
 }
 
 function renderCard(n, ctx) {
@@ -197,44 +199,74 @@ function renderCard(n, ctx) {
     actions.appendChild(copy);
   }
 
-  /* Lazy detail. The toggle exists eagerly -- it is one node and the reader has to
-     be able to see that a summary is there -- but the summary's own nodes are not
-     built until asked for. At Stage 1 the text is already in memory, so "load" is a
-     synchronous build; Stage 2 replaces the body of ensure() with a bucket fetch and
-     the four pending cases in tests/semantic/cases.js become real. */
-  if (rec.summary) {
+  /* Lazy detail (§3 items 6, 9 and 10).
+   *
+   * The toggle exists eagerly -- it is one node, and a reader has to be able to see
+   * that a summary is there -- but the text lives in a detail bucket and is not
+   * fetched until asked for. A failed fetch leaves the card completely usable and
+   * shows a retryable inline error; the loader does not cache the rejection, so the
+   * retry really can succeed. */
+  if (n.hasSummary) {
     let node = null;
+    let loading = false;
     const toggle = el('a', 'pub-action pub-summary-toggle');
     toggle.href = '#';
     const setArrow = (open) => { toggle.textContent = open ? 'Summary ▾' : 'Summary ▸'; };
-    const ensure = () => {
-      if (!node) { node = summaryNode(rec.summary); li.appendChild(node); }
+
+    const box = () => {
+      if (!node) { node = el('div', 'pub-summary'); li.appendChild(node); }
       return node;
     };
-    const setOpen = (open) => {
-      if (open) { ensure().className = 'pub-summary open'; }
-      else if (node) { node.className = 'pub-summary'; }
-      setArrow(open);
+    const fail = (message) => {
+      const b = box();
+      b.className = 'pub-summary open pub-summary-error';
+      b.replaceChildren();
+      b.appendChild(el('span', null, 'Could not load the summary: ' + message + ' '));
+      const again = el('a', 'pub-action', 'Retry');
+      again.href = '#';
+      again.addEventListener('click', (e) => { e.preventDefault(); load(true); });
+      b.appendChild(again);
     };
+    const load = (open) => {
+      if (loading) return;
+      loading = true;
+      const b = box();
+      b.className = 'pub-summary open';
+      b.replaceChildren(el('span', 'pub-summary-loading', 'Loading…'));
+      ctx.details.forRecord(n).then(d => {
+        loading = false;
+        b.className = 'pub-summary' + (open ? ' open' : '');
+        b.replaceChildren(...summaryParagraphs(d.summary || ''));
+        setArrow(open);
+      }).catch(e => {
+        loading = false;
+        fail(e.message);
+        setArrow(true);
+      });
+    };
+
+    setArrow(false);
     toggle.addEventListener('click', (e) => {
       e.preventDefault();
-      setOpen(!node || node.className.indexOf('open') === -1);
+      if (!node) { load(true); return; }
+      const open = node.className.indexOf('open') === -1;
+      node.className = 'pub-summary' + (open ? ' open' : '');
+      setArrow(open);
     });
     actions.appendChild(toggle);
     li.appendChild(actions);
-    /* §3 item 9: newly rendered records honour the current global toggle. */
-    setArrow(false);
-    if (ctx.summaryExpanded) setOpen(true);
+    /* §3 item 9: a newly rendered record honours the current global toggle. */
+    if (ctx.summaryExpanded) load(true);
   } else {
     li.appendChild(actions);
   }
 
-  if (rec.needs) {
-    /* Hidden by CSS unless the results container carries .show-needs, as in v1 --
-       but built only when the reader has asked to see open questions, so the default
-       view carries none of these nodes. */
-    if (ctx.showNeeds) li.appendChild(el('div', 'pub-needs', '⚑ needs: ' + rec.needs));
-    else li.setAttribute('data-has-needs', '1');
+  if (n.hasNeeds) {
+    /* Same lazily as the summary, and for the same reason: the text is in a bucket.
+       The marker lets syncNeeds find the card when the reader asks to see open
+       questions, without the default view carrying any of these nodes. */
+    li.setAttribute('data-has-needs', '1');
+    if (ctx.showNeeds) fillNeeds(li, n, ctx.details);
   }
 
   return li;
@@ -303,14 +335,21 @@ export function renderResults(mount, sorted, state, ctx) {
 
 /* Turning "show open questions" on must not force a re-render of everything, but the
  * nodes were never built for the cards already on screen. Build them in place. */
-export function syncNeeds(mount, byId, show) {
+function fillNeeds(li, n, details) {
+  li.removeAttribute('data-has-needs');
+  const line = el('div', 'pub-needs', '⚑ needs: loading…');
+  li.appendChild(line);
+  details.forRecord(n)
+    .then(d => { line.textContent = '⚑ needs: ' + (d.needs || ''); })
+    .catch(e => { line.textContent = '⚑ needs: could not load (' + e.message + ')'; });
+}
+
+export function syncNeeds(mount, byId, show, details) {
   mount.classList.toggle('show-needs', show);
   if (!show) return;
   for (const li of mount.querySelectorAll('li.pub-item[data-has-needs]')) {
     const n = byId.get(li.getAttribute('data-record-id'));
-    if (!n) continue;
-    li.removeAttribute('data-has-needs');
-    li.appendChild(el('div', 'pub-needs', '⚑ needs: ' + n.rec.needs));
+    if (n) fillNeeds(li, n, details);
   }
 }
 
