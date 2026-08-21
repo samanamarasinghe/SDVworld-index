@@ -130,7 +130,9 @@ but does not run it), foundation (the artifact is SDV itself: a library, an anch
 a thesis behind one), inherited (SDV arrived inside a vendored third party rather than by a
 decision to embed it — the intermediary is usually an index entry in its own right),
 port
-(reimplements SDV's design in another language, carrying no SDV source), name_collision
+(reimplements SDV's design in the authors' own code, carrying no SDV source -- the
+reimplementation may be in another language or in the same one; what makes it a port is
+that the design is rebuilt and RUN rather than a package being invoked), name_collision
 (false-positive match, unrelated to SDV), unclear (use suspected but unverified).
 
 `unclear` may not carry `confidence: high`. If the library link could not be established,
