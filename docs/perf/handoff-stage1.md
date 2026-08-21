@@ -12,8 +12,10 @@ anything.
 
 ## What to look at
 
-`/v2/` on the live site once merged; `http://127.0.0.1:8765/v2/index.html` locally
-after `python3 scripts/serve.py`. It should look exactly like the current page,
+**https://samanamarasinghe.github.io/SDVworld-index/v2/** — live and verified there,
+not just locally: 4,703 results, 100 cards, 2,252 element nodes, no console errors,
+and the root page unchanged at 4,703 cards. Locally it is
+`http://127.0.0.1:8765/v2/index.html` after `python3 scripts/serve.py`. It should look exactly like the current page,
 because it is the current page's markup and stylesheet — the only visible additions
 are the two buttons at the foot of the results and a "v2 preview" line in the credits.
 
