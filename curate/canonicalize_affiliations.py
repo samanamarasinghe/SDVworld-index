@@ -130,6 +130,10 @@ MANUAL = {
     # batch cannot tip them the other way.
     "Manipal Academy of Higher Education": ("academic", "India"),
     "German Research Center for Artificial Intelligence (DFKI)": ("nonprofit", "Germany"),
+    # A hospital, so nonprofit per docs/schema.md, which counts university
+    # and government hospitals too. Shard 126 typed it "other" -- the same
+    # drift this pass already corrected on UNSW and Peking.
+    "Samsung Medical Center": ("nonprofit", "South Korea"),
 }
 
 VALID_TYPES = {"academic", "corporate", "government", "nonprofit", "other", "unknown"}

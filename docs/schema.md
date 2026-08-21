@@ -104,7 +104,7 @@ open_science_reproducibility, imputation
 **industry**: healthcare_bio, finance_insurance, government_public, academia,
 energy_utilities, telecom, retail_ecommerce, transportation, manufacturing, software,
 cross_industry, construction_infrastructure, cybersecurity, environment_climate,
-media_recommenders, chemicals_materials, education_sector, agriculture, aerospace
+media_recommenders, chemicals_materials, education_sector, agriculture, aerospace, real_estate
 
 **affiliation_types**: academic, corporate, government, nonprofit, other, unknown
 
