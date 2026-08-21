@@ -282,62 +282,78 @@ export const CASES = [
 /* Behaviors that only exist in v2. They are named here, in Stage 0, so the contract
  * is fixed before the code -- but their assertions need an API that Stage 1 has yet
  * to define, so the runner reports them as PENDING rather than inventing a shape for
- * them now. Stage 1 fills each `run` in and drops the `pending` flag; a case still
- * pending at the end of Stage 1 is a gap, not a pass.
+ * them now.
+ *
+ * `closes` says which stage is supposed to make each one real. Six close in Stage 1,
+ * which is the rendering and object-URL work. The four detail-fetch cases cannot:
+ * Stage 1 runs on the current flat export, where summary and needs are already in
+ * memory and "lazy" means lazy DOM, not a lazy fetch. The buckets those four describe
+ * do not exist until Stage 2. A case still pending after the stage that `closes` it
+ * is a gap, not a pass.
  *
  * v1 fails several of these by design -- it renders every card and mints one Blob
  * URL per citable entry. That is the redesign, not a regression. */
 export const PENDING_V2 = [
   {
     id: 'at-most-100-unique-records-render-initially',
+    closes: 1,
     why: 'Design v2 §3 item 8 and §9. Sort the full unique result set, render the ' +
          'first N unique records, place those into every applicable group.',
     pending: true,
   },
   {
     id: 'group-headers-show-visible-over-total',
+    closes: 1,
     why: '§3 item 8. A group holding 400 records of which 12 are rendered must say so.',
     pending: true,
   },
   {
     id: 'show-100-more-adds-100-unique-records',
+    closes: 1,
     why: '§3 item 8. The increment is in unique records, not in group placements.',
     pending: true,
   },
   {
     id: 'any-filter-grouping-or-sort-change-resets-the-page-limit',
+    closes: 1,
     why: '§3 item 8. Otherwise a narrow filter inherits a wide page and renders more ' +
          'than the cap.',
     pending: true,
   },
   {
     id: 'no-blob-url-is-created-during-render',
+    closes: 1,
     why: '§9, a hard gate. v1 creates about 8,541 unreclaimed object URLs before any ' +
          'interaction; BibTeX must move into the click handler.',
     pending: true,
   },
   {
     id: 'a-bibtex-object-url-is-revoked-once-the-download-begins',
+    closes: 1,
     why: '§3 item 6. Generating lazily is not enough if the URL then leaks.',
     pending: true,
   },
   {
     id: 'a-detail-fetch-populates-summary-and-needs',
+    closes: 2,
     why: '§3 item 6 and §6. Stage 2 artifact, but the loader lands in Stage 1.',
     pending: true,
   },
   {
     id: 'concurrent-detail-fetches-for-one-bucket-share-a-promise',
+    closes: 2,
     why: '§6, "detail-bucket fetches deduplicate in-flight promises".',
     pending: true,
   },
   {
     id: 'a-failed-detail-fetch-leaves-the-core-card-usable',
+    closes: 2,
     why: '§3 item 10. The card keeps working and shows a retryable inline error.',
     pending: true,
   },
   {
     id: 'retrying-a-failed-detail-fetch-succeeds',
+    closes: 2,
     why: '§3 item 10. A failure must not poison the bucket for the rest of the session.',
     pending: true,
   },

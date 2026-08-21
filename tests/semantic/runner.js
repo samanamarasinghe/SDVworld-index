@@ -207,7 +207,7 @@ async function main() {
     line(`${failure ? 'FAIL' : 'pass'}  ${c.id}${failure ? '\n        ' + failure : ''}`);
   }
   for (const c of PENDING_V2) {
-    results.push({ id: c.id, ok: null, pending: true, why: c.why });
+    results.push({ id: c.id, ok: null, pending: true, closes: c.closes, why: c.why });
   }
 
   const passed = results.filter(r => r.ok === true).length;
@@ -215,7 +215,11 @@ async function main() {
   const pending = results.filter(r => r.pending).length;
 
   line('');
-  line(`${passed} passed, ${failed} failed, ${pending} pending (v2 behaviors, Stage 1)`);
+  const byStage = {};
+  for (const r of results) if (r.pending) byStage[r.closes] = (byStage[r.closes] || 0) + 1;
+  const breakdown = Object.keys(byStage).sort()
+    .map(k => `${byStage[k]} in stage ${k}`).join(', ');
+  line(`${passed} passed, ${failed} failed, ${pending} pending (${breakdown})`);
   const firstFail = results.find(r => r.ok === false);
   if (firstFail) line(`FIRST FAILING CASE  ${firstFail.id}\n  ${firstFail.failure}`);
 
@@ -236,7 +240,7 @@ async function main() {
   if (!r.ok) throw new Error(`sink refused the run: HTTP ${r.status}`);
 
   Object.assign(window.__SEMANTIC__, { done: true, passed, failed, pending });
-  say(failed ? `FAIL: ${failed} case(s)` : `PASS: ${passed} passed, ${pending} pending`);
+  say(failed ? `FAIL: ${failed} case(s)` : `PASS: ${passed} passed, ${pending} pending (${breakdown})`);
 }
 
 main().catch(e => {
