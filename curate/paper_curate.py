@@ -71,9 +71,11 @@ REQUESTS_DUMP = os.path.join(OUT, '_requests.json')
 
 API = 'https://api.anthropic.com/v1'
 MODEL = 'claude-sonnet-5'
-MAX_TOKENS = 6000        # the repo lane learned this the hard way: the model spends
+MAX_TOKENS = 10000       # the repo lane learned this the hard way: the model spends
                          # output tokens thinking before it writes, out of the same
                          # budget, and 3000 truncated 16 of 1433 records mid-string.
+                         # 6000 then lost 17 of 2389 papers the same way -- 12 of them
+                         # spent the entire budget thinking and returned no text.
 PER_BATCH = 400
 MAX_ID_CHARS = 64
 FACETS = ('kind', 'use_case', 'industry', 'sdv_component', 'sdv_concept', 'integration')
@@ -387,6 +389,13 @@ Fields:
   affiliation_types   one per DISTINCT ORGANISATION named in affiliations, in the order
                       they first appear -- not one per author. Allowed values:
                       academic, corporate, government, nonprofit, other, unknown.
+                      WORKED EXAMPLE, and this is the single most common failure:
+                      authors [A, B, C] with affiliations ["Uni X", "Uni X", "Uni Y"]
+                      name TWO organisations, so affiliation_types is
+                      ["academic", "academic"] and affiliation_countries carries TWO
+                      values, not three. One author affiliated "Uni X; Corp Z" names
+                      two organisations and so contributes TWO entries -- never one
+                      entry reading "academic; corporate".
                       MUST be [] when affiliations names no organisation at all.
   affiliation_countries  same alignment, full country names. [] under the same rule.
   sdv_component  {vocab['sdv_component']}
@@ -495,11 +504,19 @@ RULES THAT DECIDE MOST CASES. These come from a thousand hand-made judgments:
     CTGAN or CopulaGAN -> mode_specific_normalization, and conditional_sampling where
       the conditional vector is what the paper leans on
     TVAE -> tvae;  GaussianCopula -> gaussian_copula;  PAR -> par_sequential
+      and the mirror image of the ctgan rule: `tvae` is a CONCEPT and never a
+      component. The component that ships TVAE is `ctgan`, the package, or `sdv`
+      where the SDV API ran it
     HMA or a multi-table synthesizer -> relational_hma
     a Metadata or SingleTableMetadata object -> metadata_schema
     evaluate_quality, QualityReport or an SDMetrics score -> quality_report
   Two synthesizers means two concepts.
 - unclear may never carry confidence high.
+- SHAPES. sdv_component, sdv_concept, use_case, industry, authors, affiliations,
+  affiliation_types and affiliation_countries are ALWAYS LISTS, even when they hold
+  one value; integration, confidence, title, summary and evidence are bare strings.
+  affiliations is EXACTLY as long as authors. Every field named above except venue
+  and needs is required: never omit one, and never leave evidence or industry empty.
 - If the evidence is too thin to judge, say so in `needs` and use low rather than
   guessing. A flagged entry is useful; a confident wrong one poisons the index.
 - Never invent a facet value outside the lists above. If nothing fits, use the
@@ -798,6 +815,40 @@ def do_recover(vocab):
         print(f'  {count:4d}  {reason}')
 
 
+def do_retry(vocab):
+    """Re-call the API for every row in needs-review.jsonl.
+
+    The prompt and MAX_TOKENS have both moved since the batch ran, so unlike
+    --recover this asks the model again rather than re-reading what it already
+    said. The review file is renamed to .bak up front and rebuilt by
+    write_result, so a row that fails twice lands back in it, and a run that
+    dies part way leaves the original sitting in the .bak.
+    """
+    if not os.path.exists(REVIEW):
+        print('no review file'); return
+    with open(REVIEW) as fh:
+        rows = [json.loads(line) for line in fh if line.strip()]
+    by_doi = {c['doi']: c for c in load_candidates()}
+    os.replace(REVIEW, REVIEW + '.bak')
+
+    ok = failed = skipped = 0
+    for row in rows:
+        candidate = by_doi.get(row.get('doi'))
+        if candidate is None:              # curated by a later run
+            skipped += 1
+            continue
+        response = json.loads(call('POST', '/messages',
+                                   build_request(candidate, vocab)['params']))
+        text = ''.join(b.get('text', '') for b in response.get('content', []))
+        record = write_result(candidate, text, vocab, response.get('usage'))
+        ok, failed = (ok + 1, failed) if record else (ok, failed + 1)
+        print(f'  {"OK   " if record else "AGAIN"}  {candidate["id"]}')
+        time.sleep(1)
+    print(f'\n{ok} promoted to records/, {failed} still failing, '
+          f'{skipped} already curated elsewhere')
+    print(f'the review file as the batch left it is {REVIEW}.bak')
+
+
 # ---------------------------------------------------------------- http
 
 def call(method, path, payload=None, tries=6):
@@ -1001,6 +1052,9 @@ def main():
     parser.add_argument('--recover', action='store_true',
                         help='re-validate needs-review.jsonl against the current '
                              'rules and promote what now passes; makes no API call')
+    parser.add_argument('--retry', action='store_true',
+                        help='re-call the API for every row in needs-review.jsonl '
+                             'against the current prompt; costs money')
     args = parser.parse_args()
 
     want = set(args.tier) if args.tier else None
@@ -1020,9 +1074,11 @@ def main():
         do_collect(vocab)
     elif args.recover:
         do_recover(vocab)
+    elif args.retry:
+        do_retry(vocab)
     else:
         parser.error('pick one of --pilot N, --submit, --status, --collect, '
-                     '--recover, --tiers')
+                     '--recover, --retry, --tiers')
 
 
 if __name__ == '__main__':
