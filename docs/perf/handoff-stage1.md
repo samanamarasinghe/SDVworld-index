@@ -33,18 +33,18 @@ is the slowest one, so read it as "worst observed", not as a real 95th percentil
 
 | interaction | v1 median | v2 median | speedup | v1 p95 | v2 p95 | v1 scans | v2 scans |
 | --- | --: | --: | --: | --: | --: | --: | --: |
-| `search-type-health` \* | 231 ms | 192 ms | **1×** | 1,202 ms | 1,052 ms | 13 | 1 |
-| `importance-1-to-4` | 710 ms | 52 ms | **14×** | 1,533 ms | 70 ms | 13 | 1 |
-| `importance-1-to-0` | 2,198 ms | 136 ms | **16×** | 3,402 ms | 318 ms | 13 | 1 |
-| `popularity-0-to-50` | 2,130 ms | 75 ms | **28×** | 7,883 ms | 606 ms | 13 | 1 |
-| `facet-tick-first-kind` | 2,277 ms | 111 ms | **21×** | 4,903 ms | 256 ms | 13 | 1 |
-| `group-by-kind` | 2,566 ms | 113 ms | **23×** | 3,982 ms | 244 ms | 1 | 0 |
-| `sort-by-title` | 2,803 ms | 120 ms | **23×** | 3,356 ms | 383 ms | 1 | 0 |
-| `clear-all` | 3,176 ms | 151 ms | **21×** | 9,300 ms | 234 ms | 13 | 1 |
+| `search-type-health` \* | 231 ms | 183 ms | **1×** | 1,202 ms | 813 ms | 13 | 1 |
+| `importance-1-to-4` | 710 ms | 89 ms | **8×** | 1,533 ms | 170 ms | 13 | 1 |
+| `importance-1-to-0` | 2,198 ms | 153 ms | **14×** | 3,402 ms | 401 ms | 13 | 1 |
+| `popularity-0-to-50` | 2,130 ms | 112 ms | **19×** | 7,883 ms | 212 ms | 13 | 1 |
+| `facet-tick-first-kind` | 2,277 ms | 122 ms | **19×** | 4,903 ms | 303 ms | 13 | 1 |
+| `group-by-kind` | 2,566 ms | 133 ms | **19×** | 3,982 ms | 341 ms | 1 | 0 |
+| `sort-by-title` | 2,803 ms | 177 ms | **16×** | 3,356 ms | 1,173 ms | 1 | 0 |
+| `clear-all` | 3,176 ms | 133 ms | **24×** | 9,300 ms | 350 ms | 13 | 1 |
 
 | | v1 | v2 |
 | --- | --: | --: |
-| cold load to settled | 8,903 ms | 1,303 ms |
+| cold load to settled | 8,903 ms | 590 ms |
 | element nodes, default flat view | 129,114 | 2,252 |
 | cards rendered initially | 4,703 | 100 |
 | object URLs before any interaction | 8,541 | 0 |
@@ -53,28 +53,64 @@ is the slowest one, so read it as "worst observed", not as a real 95th percentil
 **\* The search row is not a fair comparison, and I would rather say so than publish
 the 1×.** v2 debounces the title input by 150 ms and v1 debounces nothing, so v2 is
 being charged for a wait it takes deliberately. Worse, the benchmark has to run in a
-background tab, where Chrome clamps `setTimeout` — measured at 775 ms during the v2
+background tab, where Chrome clamps `setTimeout` — measured at 542 ms during the v2
 run and 275 ms during the v1 run. The harness measures that clamp and subtracts it,
-but subtracting a noisy 775 ms from a 967 ms measurement leaves a number with most of
+but subtracting a noisy 542 ms from a 725 ms measurement leaves a number with most of
 the uncertainty in it. What is solid for that state is structural and not affected by
 any clamp: v2 does **1 corpus scan and renders 100 cards** where v1 does **13 scans
 and renders 384**. In front of a real reader, with an unclamped timer, the wait is the
 150 ms debounce plus work in the tens of milliseconds.
 
-The other seven rows are undebounced and directly comparable: **14× to 28×**, against
-the design's target of ≥ 5×. Medians are 52–151 ms against the < 100 ms target — three
-rows sit above it, all of them in the 111–151 ms band, and all on the widest possible
-result sets.
+The other seven rows are undebounced and directly comparable: **8× to 24×**, against
+the design's target of ≥ 5×. Medians are 89–177 ms against the < 100 ms target — several
+rows sit above it, all on the widest possible result sets.
 
 Two further caveats, in the spirit of §9's "timings are recorded, not hard-gated":
 
-- Run-to-run variance is real. An earlier v1 run measured cold load at 4,931 ms
-  against the 8,903 ms above; the benchmarks were run back to back on a loaded
-  machine. Treat the cold-load row as "seconds versus one second", not as 6.8×.
-- The v1 and v2 runs saw different timer clamps (275 ms and 775 ms), which affects
-  only the debounced row.
+- **Run-to-run variance is large — read the order of magnitude, not the digits.**
+  Across three v2 runs the same interactions came out at 52–151 ms, 89–177 ms, and
+  cold load at 380 ms, 1,303 ms and 590 ms. Three v1 cold loads ranged 4.9–8.9 s.
+  These were measured on a working laptop, back to back, with a browser doing other
+  things. The claim worth making is "tens of milliseconds against seconds", not any
+  particular multiple.
+- The v1 and v2 runs saw different timer clamps, which affects only the debounced
+  row.
 
 Raw data: `docs/perf/bench-baseline.json` (v1), `docs/perf/bench-v2.json`.
+
+## UI parity: 100 states, both pages, real clicks
+
+Added after the first handoff, because the differential above proves less than it
+appears to. It drives the filter **engine** — it never dispatches an event, never
+reads a checkbox, never looks at the facet panel. It would have passed at 293/293 on a
+v2 whose checkboxes were wired to the wrong facet, whose facet lists rendered in the
+wrong order, whose sliders were inverted, or whose cards were drawn out of order.
+
+`tests/parity/` loads `/index.html` and `/v2/index.html` in two iframes, **unmodified
+and uninstrumented**, and drives both through the same real clicks on the same real
+controls — then compares what a reader would see: the header count, the card titles in
+order, every facet list's labels/counts/order/truncation, the facet header counts, the
+year grid, the affiliation buttons and their lit state, and the group headings.
+
+**Result: 100 of 100 states identical, 0 differing** (seed `20260821`, reproducible).
+299 individual facet-value selections; all seven importance stops; four popularity
+stops; all six groupings and all four sorts; 45 states with a search; 64 combining two
+or more facets; 71 with two or more values in one facet. Full breakdown in
+`tests/parity/README.md`.
+
+Verified by mutation first, because a hundred passes prove nothing if the comparison
+cannot fail. Two bugs seeded into v2 — a reversed year tie-break (changes card order
+only, no count anywhere) and facet lists sorted ascending (changes list order only,
+every count still right) — were both caught with the exact card and the exact facet
+item named. Neither is visible to the golden differential.
+
+Two false alarms along the way, both recorded in that README because each looked
+exactly like a v2 bug and neither was one. The second is worth repeating here: the
+test server sent `Last-Modified` and answered `If-Modified-Since` with a `304`, so
+Chrome served an **old copy of the harness** for two full runs even though every
+response also said `Cache-Control: no-store`. Those runs reported stale-code failures
+as product failures. `scripts/serve.py` now drops conditional request headers, so a
+304 is impossible.
 
 ## Screenshots
 
@@ -131,6 +167,8 @@ are. So, on the tests:
   during render the way v1 does. Both caught.
 - The gates fail loudly on missing or stale evidence rather than skipping, and they
   were run against v1 first to confirm they fail everything v1 is supposed to fail.
+- The UI parity harness was mutation-verified before its 100 states were believed,
+  and its two false alarms were chased to root cause rather than re-run until green.
 
 ## Knowingly open
 

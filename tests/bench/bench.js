@@ -32,31 +32,27 @@ const line = (m) => { outEl.textContent += m + '\n'; };
 window.__BENCH__ = { done: false, error: null, phase: 'starting' };
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-/* Ticking a background tab.
+/* The clock for the settle loop.
  *
- * A driven benchmark runs in a tab that is usually not the foreground one, and Chrome
- * throttles hidden tabs hard: requestAnimationFrame stops entirely and setTimeout is
- * clamped to a second, then to a minute under intensive throttling. Either one turns
- * the settle loop into a hang. A MessageChannel task is subject to neither, so use
- * rAF when the tab is visible -- frame-aligned, cheap -- and a channel task when it
- * is not. Tick granularity only affects how soon settling is NOTICED; the reported
- * number is taken from the mutation timestamp, so this costs no accuracy. */
-const chan = new MessageChannel();
-let pending = [];
-chan.port1.onmessage = () => { const w = pending; pending = []; w.forEach(r => r()); };
-const macrotask = () => new Promise(r => { pending.push(r); chan.port2.postMessage(0); });
-const tick = () => (document.visibilityState === 'visible'
-  ? new Promise(r => requestAnimationFrame(() => r()))
-  : macrotask());
-
-async function waitFor(fn, what, timeoutMs = 120000) {
+ * A driven run sits in a background tab, and none of the obvious clocks survive
+ * that. requestAnimationFrame stops entirely, so a wait that picks it is stranded
+ * until the reader comes back. setTimeout is clamped to a second, and after five
+ * minutes hidden to a MINUTE, which turns a 120 ms settle window into a two-minute
+ * stall. Racing rAF against a MessageChannel task avoids both, but the channel wins
+ * instantly every time, so the wait becomes a spin that saturates the renderer and
+ * piles up rAF callbacks that will never fire.
+ *
+ * A dedicated worker's timer is throttled by none of this -- measured at a steady
+ * 25 ms in a hidden tab -- and costs one message per tick instead of a busy loop. */
+const TICKER_SRC = 'setInterval(() => postMessage(0), 25);';
+const ticker = new Worker(
+  URL.createObjectURL(new Blob([TICKER_SRC], { type: 'text/javascript' })));
+let waiters = [];
+ticker.onmessage = () => { const q = waiters; waiters = []; for (const f of q) f(); };
+const tick = () => new Promise(r => waiters.push(r));
+async function waitMs(ms) {
   const t0 = performance.now();
-  for (;;) {
-    let v; try { v = fn(); } catch (e) { v = null; }
-    if (v) return v;
-    if (performance.now() - t0 > timeoutMs) throw new Error(`timed out waiting for ${what}`);
-    await tick();
-  }
+  while (performance.now() - t0 < ms) await tick();
 }
 
 /* ---- instrumentation, installed before the target's scripts evaluate ----- */
@@ -283,7 +279,7 @@ async function main() {
      exactly this. */
   say('measuring cold load');
   const cold = await settler.wait(navStart, 2500, 180000);
-  await sleep(500);
+  await waitMs(500);
 
   corpusSize = engine.activeData ? engine.activeData().length : 0;
   const counts = engine.probe ? engine.probe() : {};
@@ -327,7 +323,7 @@ async function main() {
         settler.reset();
         step.setup();
         await settler.wait(performance.now());
-        await sleep(30);
+        await waitMs(30);
       }
 
       const beforeBlob = probe.objectUrlsCreated;
@@ -343,7 +339,7 @@ async function main() {
       settler.reset();
       step.undo();
       await settler.wait(performance.now());
-      await sleep(30);
+      await waitMs(30);
     }
     timings[step.id] = {
       why: step.why,
@@ -371,7 +367,7 @@ async function main() {
          (step.debounceMs ? `work ${String(work).padStart(7)} ms   ` : '                    ') +
          `scans ${median(scanCounts)}   objectURLs ${Math.max(...blobCounts)}`);
     window.__BENCH__.phase = step.id;
-    await sleep(0);
+    await tick();
   }
 
   const doc = {

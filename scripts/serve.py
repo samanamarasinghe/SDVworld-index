@@ -55,9 +55,27 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             raise ValueError(f'sink path must live under one of {SINK_ROOTS}')
         return dest
 
+    def send_head(self):
+        """Refuse conditional requests outright.
+
+        Cache-Control: no-store is not enough on its own. SimpleHTTPRequestHandler
+        still sends Last-Modified, and Chrome will still revalidate with
+        If-Modified-Since and happily reuse its cached copy on the 304 that comes
+        back. That silently ran an OLD version of a harness here for two full
+        twenty-five-minute runs, and the results looked like product failures.
+        Dropping the conditional headers makes a 304 impossible, so a harness always
+        gets the bytes on disk.
+        """
+        for h in ('If-Modified-Since', 'If-None-Match', 'If-Range'):
+            while h in self.headers:
+                del self.headers[h]
+        return super().send_head()
+
     def end_headers(self):
         # Harness runs must never measure a stale artifact.
-        self.send_header('Cache-Control', 'no-store')
+        self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate')
+        self.send_header('Pragma', 'no-cache')
+        self.send_header('Expires', '0')
         super().end_headers()
 
     def log_message(self, fmt, *args):

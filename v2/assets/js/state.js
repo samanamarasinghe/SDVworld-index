@@ -224,10 +224,19 @@ if (chan) {
   chan.port1.onmessage = () => { const w = waiting; waiting = []; for (const f of w) f(); };
 }
 export function nextTick(fn) {
+  let ran = false;
+  const run = () => { if (!ran) { ran = true; fn(); } };
   if (document.visibilityState === 'visible' || !chan) {
-    requestAnimationFrame(fn);
+    requestAnimationFrame(run);
+    /* rAF stops the instant the tab is hidden, so a frame requested just before the
+       reader switched away never arrives and the pending pass is stranded until they
+       come back. Racing a channel task instead would fix that but would also break
+       the coalescing this exists for -- separate input events land in separate tasks,
+       and only a frame gathers them into one pass. So keep the frame, and let a
+       visibility change release the work if the frame is not going to come. */
+    document.addEventListener('visibilitychange', run, { once: true });
   } else {
-    waiting.push(fn);
+    waiting.push(run);
     chan.port2.postMessage(0);
   }
 }
