@@ -14,7 +14,16 @@ export const EXPORT_LINE =
   'computeUniverse:computeUniverse,activeData:activeData,valuesOf:valuesOf,' +
   'popularity:popularity,labelFor:labelFor,allOn:allOn,AFF_GROUPS:AFF_GROUPS,' +
   'FACET_KEYS:FACET_KEYS,UNIVERSE:UNIVERSE,applyFilters:applyFilters,' +
-  'renderResults:renderResults,makeBibLink:makeBibLink,' +
+  'renderResults:renderResults,renderItem:renderItem,makeBibLink:makeBibLink,' +
+  'organizationsOf:organizationsOf,affTypes:affTypes,affRegions:affRegions,' +
+  'notCurated:notCurated,normalizeCite:normalizeCite,normalizeGh:normalizeGh,' +
+  'dedupeTail:dedupeTail,' +
+  /* Swap the corpus for the synthetic fixture, by exactly the path loadPools takes,
+     so the alias-suppression and pool-normalization tests exercise the real thing. */
+  'setCorpus:function(d,rawCite,rawGh){DATA=d||[];CURATED_URLS=null;' +
+  'CITE=rawCite?dedupeTail(rawCite).map(normalizeCite).filter(notCurated):null;' +
+  'GH=rawGh?((rawGh&&rawGh.repos)||rawGh||[]).map(normalizeGh).filter(notCurated):null;' +
+  'computeUniverse();},' +
   'probe:function(){return{data:DATA.length,cite:CITE&&CITE.length,gh:GH&&GH.length};}};';
 
 /* Exactly what gets added, so the size assertion below can compare against it

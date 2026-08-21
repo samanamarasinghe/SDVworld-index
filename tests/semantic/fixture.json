@@ -1,0 +1,161 @@
+{
+  "_comment": [
+    "Hand-authored semantic fixture (design v2 §8, 'Hand-authored semantic tests').",
+    "",
+    "The characterization oracle preserves existing bugs by construction -- that is",
+    "its job -- so it cannot tell anyone whether the semantics are RIGHT. These",
+    "eleven curated records and two pool rows are small enough that every expected",
+    "answer in cases.js is derived by reading the fixture, never by running the code",
+    "and writing down what came out.",
+    "",
+    "Each record exists to force one distinction. Do not add fields casually: a",
+    "record that carries an incidental value can silently satisfy a case it was not",
+    "meant to, and the case stops testing anything.",
+    "",
+    "Sort order at importance 0, hand-derived, sorting by importance:",
+    "  c1 p1 p2 t1 t2 p4 p5 p3 p6 r1 r2 W999",
+    "and sorting by popularity:",
+    "  W999 r1 p1 p2 c1 t1 t2 p4 p5 p3 p6 r2"
+  ],
+
+  "curated": [
+    {
+      "_why": "The fully-populated case: two use cases (so it duplicates under grouping), one component, one industry, one academic US affiliation, a citation count.",
+      "id": "p1", "title": "Alpha health study", "kind": "paper", "importance": 5,
+      "year": 2024, "url": "https://example.org/p1", "cited": 10,
+      "summary": "A study of privacy-preserving health data sharing.",
+      "authors": ["Ann Alpha", "Bob Beta"],
+      "use_case": ["privacy_protection", "data_sharing"],
+      "sdv_component": ["sdv"], "sdv_concept": [], "industry": ["healthcare_bio"],
+      "affiliations": ["MIT"], "affiliation_types": ["academic"],
+      "affiliation_countries": ["United States"]
+    },
+    {
+      "_why": "Shares data_sharing with p1 but a different component, so AND-across-facets can be told apart from OR-within-one. Non-academic, Europe. Same citation count as p1 so the importance sort must fall through to year.",
+      "id": "p2", "title": "Beta finance study", "kind": "paper", "importance": 5,
+      "year": 2023, "url": "https://example.org/p2", "cited": 10,
+      "summary": "Synthetic tabular data for finance.",
+      "authors": ["Cara Gamma"],
+      "use_case": ["data_sharing"],
+      "sdv_component": ["sdv", "ctgan"], "sdv_concept": [], "industry": ["finance_insurance"],
+      "affiliations": ["Acme Corp"], "affiliation_types": ["company"],
+      "affiliation_countries": ["Germany"]
+    },
+    {
+      "_why": "Empty everything. Bounded facets must give it the __none__ sentinel; authors, affiliations and both affiliation groups must NOT (NO_NONE). Its aff_region must come back EMPTY, not ['__none__'] -- the exact bug the v1 comment on NO_NONE describes.",
+      "id": "p3", "title": "Gamma untyped work", "kind": "preprint", "importance": 3,
+      "year": null, "url": "https://example.org/p3",
+      "summary": "No component, no use case, no industry, no author, no affiliation.",
+      "authors": [], "use_case": [], "sdv_component": [], "sdv_concept": [],
+      "industry": [], "affiliations": [], "affiliation_types": [],
+      "affiliation_countries": []
+    },
+    {
+      "_why": "One affiliations entry holding TWO semicolon-separated organizations on two continents. Forces the split, and makes the multi-region veto testable: unlighting Americas must drop it even though Europe stays lit.",
+      "id": "p4", "title": "Delta shared privacy", "kind": "paper", "importance": 4,
+      "year": 2022, "url": "https://example.org/p4",
+      "summary": "Privacy protection across two institutions.",
+      "authors": ["Dan Delta"],
+      "use_case": ["privacy_protection"],
+      "sdv_component": [], "sdv_concept": [], "industry": [],
+      "affiliations": ["MIT;Delft University of Technology"],
+      "affiliation_types": ["academic", "academic"],
+      "affiliation_countries": ["United States", "Netherlands"]
+    },
+    {
+      "_why": "Academic AND non-academic at once, so lighting only Academic must veto it -- the overlap that makes one lit button read as 'only here'. Its second country is unplaceable, which must contribute NO region rather than a region that could veto.",
+      "id": "p5", "title": "Epsilon mixed affiliation", "kind": "paper", "importance": 4,
+      "year": 2022, "url": "https://example.org/p5",
+      "summary": "A university and a company on one paper.",
+      "authors": ["Eve Epsilon"],
+      "use_case": [], "sdv_component": [], "sdv_concept": [], "industry": [],
+      "affiliations": ["Oxford", "Acme Corp"],
+      "affiliation_types": ["academic", "company"],
+      "affiliation_countries": ["United Kingdom", "Atlantis"]
+    },
+    {
+      "_why": "Affiliation type literally 'unknown', which must read as non-academic, and country 'unknown', which must place it in no region at all.",
+      "id": "p6", "title": "Zeta unknown type", "kind": "paper", "importance": 2,
+      "year": null, "url": "https://example.org/p6",
+      "summary": "Type and country both unrecorded.",
+      "authors": ["Fay Zeta"],
+      "use_case": [], "sdv_component": [], "sdv_concept": [], "industry": [],
+      "affiliations": ["Nowhere Institute"], "affiliation_types": ["unknown"],
+      "affiliation_countries": ["unknown"]
+    },
+    {
+      "_why": "A repository with every attention signal, to exercise the blended weight. w = 100 + 2*10 + 5*4 + 0.1*500 = 190.",
+      "id": "r1", "title": "Eta toolkit", "kind": "code_repo", "importance": 1,
+      "year": 2021, "url": "https://github.com/example/eta",
+      "summary": "A toolkit.",
+      "authors": ["Gil Eta"], "use_case": [], "sdv_component": [], "sdv_concept": [],
+      "industry": [], "affiliations": [], "affiliation_types": [],
+      "affiliation_countries": [],
+      "stars": 100, "forks": 10, "contributors": 4, "commits": 500
+    },
+    {
+      "_why": "A repository with zero of everything. Popularity must be 0, NOT the 0.3 neutral default -- the default is for entries carrying no signal at all, and a starless repo carries one.",
+      "id": "r2", "title": "Theta toolkit", "kind": "code_repo", "importance": 1,
+      "year": 2021, "url": "https://github.com/example/theta",
+      "summary": "Another toolkit.",
+      "authors": ["Hal Theta"], "use_case": [], "sdv_component": [], "sdv_concept": [],
+      "industry": [], "affiliations": [], "affiliation_types": [],
+      "affiliation_countries": [],
+      "stars": 0
+    },
+    {
+      "_why": "Tie partner one: same importance, same (default) popularity and same year as t2, so the sort must fall all the way through to title. 'Iota' sorts before 'Jota'.",
+      "id": "t1", "title": "Iota tie", "kind": "paper", "importance": 5,
+      "year": 2020, "url": "https://example.org/t1",
+      "summary": "Tie partner.",
+      "authors": [], "use_case": [], "sdv_component": [], "sdv_concept": [],
+      "industry": [], "affiliations": [], "affiliation_types": [],
+      "affiliation_countries": []
+    },
+    {
+      "_why": "Tie partner two.",
+      "id": "t2", "title": "Jota tie", "kind": "paper", "importance": 5,
+      "year": 2020, "url": "https://example.org/t2",
+      "summary": "Tie partner.",
+      "authors": [], "use_case": [], "sdv_component": [], "sdv_concept": [],
+      "industry": [], "affiliations": [], "affiliation_types": [],
+      "affiliation_countries": []
+    },
+    {
+      "_why": "Carries an openalex_id that the pool row W123 also carries, but a DIFFERENT url. Suppression must match on the alias, not on the displayed pointer -- a curator who replaced the OpenAlex pointer with the real source would otherwise unsuppress the row they retired.",
+      "id": "c1", "title": "Lambda canonical", "kind": "paper", "importance": 6,
+      "year": 2019, "url": "https://doi.org/10.1/lambda",
+      "openalex_id": "https://openalex.org/W123",
+      "summary": "The curated entry for W123.",
+      "authors": ["Ivy Lambda"], "use_case": [], "sdv_component": [], "sdv_concept": [],
+      "industry": [], "affiliations": [], "affiliation_types": [],
+      "affiliation_countries": []
+    }
+  ],
+
+  "citation_pool_raw": [
+    {
+      "_why": "Must be suppressed: c1 already carries this OpenAlex id, though under a different url.",
+      "id": "https://openalex.org/W123", "title": "Kappa duplicate", "type": "article",
+      "publication_year": 2019, "cited_by_count": 5,
+      "primary_location": { "landing_page_url": "https://example.org/kappa" },
+      "authorships": [{ "author": { "display_name": "Ivy Lambda" } }]
+    },
+    {
+      "_why": "Must survive: nothing curated points at it. Unrated, so the default importance floor of 1 hides it and importance 0 reveals it -- the 'pool residue' behavior of §3 item 7.",
+      "id": "https://openalex.org/W999", "title": "Mu pooled work", "type": "article",
+      "publication_year": 2018, "cited_by_count": 200,
+      "primary_location": { "landing_page_url": "https://example.org/mu" },
+      "authorships": [{ "author": { "display_name": "Ken Mu" } }]
+    },
+    {
+      "_why": "A byte-for-byte repeat of W999's id. dedupeTail must collapse it, or the pool row shows twice and inflates the header count.",
+      "id": "https://openalex.org/W999", "title": "Mu pooled work", "type": "article",
+      "publication_year": 2018, "cited_by_count": 200,
+      "primary_location": { "landing_page_url": "https://example.org/mu" },
+      "authorships": [{ "author": { "display_name": "Ken Mu" } }]
+    }
+  ],
+
+  "repo_pool_raw": []
+}
