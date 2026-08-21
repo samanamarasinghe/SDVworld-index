@@ -396,6 +396,16 @@ Fields:
                       values, not three. One author affiliated "Uni X; Corp Z" names
                       two organisations and so contributes TWO entries -- never one
                       entry reading "academic; corporate".
+                      COUNT IT MECHANICALLY RATHER THAN BY EYE, and count it last,
+                      after affiliations is final: split every element of affiliations
+                      on ";", strip each piece, walk the pieces in order and keep each
+                      one the first time it appears, dropping later repeats. Matching
+                      is on the EXACT string, so "Uni X" and "University X" would be
+                      two organisations -- which is why one organisation must be
+                      spelled identically everywhere. What remains is the organisation
+                      list; affiliation_types and affiliation_countries have exactly
+                      as many entries as it has, in its order. Check both against it
+                      before you emit them.
                       MUST be [] when affiliations names no organisation at all.
   affiliation_countries  same alignment, full country names. [] under the same rule.
   sdv_component  {vocab['sdv_component']}
@@ -515,7 +525,8 @@ RULES THAT DECIDE MOST CASES. These come from a thousand hand-made judgments:
 - SHAPES. sdv_component, sdv_concept, use_case, industry, authors, affiliations,
   affiliation_types and affiliation_countries are ALWAYS LISTS, even when they hold
   one value; integration, confidence, title, summary and evidence are bare strings.
-  affiliations is EXACTLY as long as authors. Every field named above except venue
+  affiliations is EXACTLY as long as authors -- one element per author, null where the
+  evidence does not say, never a shorter list. Every field named above except venue
   and needs is required: never omit one, and never leave evidence or industry empty.
 - If the evidence is too thin to judge, say so in `needs` and use low rather than
   guessing. A flagged entry is useful; a confident wrong one poisons the index.
