@@ -330,7 +330,15 @@
   function curatedUrls() {
     if (!CURATED_URLS) {
       CURATED_URLS = {};
-      DATA.forEach(function (r) { if (r.url) CURATED_URLS[urlKey(r.url)] = 1; });
+      /* Index every pointer the curated entry carries, not just the one it
+         displays. A curator who replaces an OpenAlex record pointer with the real
+         source -- the right thing to do -- would otherwise unsuppress the pool row
+         that entry was meant to retire, and the work would be counted twice. */
+      DATA.forEach(function (r) {
+        [r.url, r.openalex_id].forEach(function (u) {
+          if (u) CURATED_URLS[urlKey(u)] = 1;
+        });
+      });
     }
     return CURATED_URLS;
   }
