@@ -60,20 +60,28 @@ export function buildBibtex(rec) {
   return out.join('\n');
 }
 
-/* Exported so the semantic suite can drive it without a real click. Returns the URL
- * it created and revoked, which is the only way to assert the revocation happened. */
-export function downloadBibtex(rec, doc = document) {
+/* Returns the object URL it created, so a test can assert it was revoked.
+ *
+ * `deliver` exists only so the semantic suite can exercise the create-and-revoke
+ * path without handing a real download to the browser and dropping a .bib file in
+ * somebody's Downloads folder. The default path -- the one the page uses -- is the
+ * else branch. */
+export function downloadBibtex(rec, { deliver } = {}) {
   const blob = new Blob([buildBibtex(rec)], { type: 'text/plain' });
   const url = URL.createObjectURL(blob);
-  const a = doc.createElement('a');
+  const a = document.createElement('a');
   a.href = url;
   a.download = bibKey(rec) + '.bib';
-  doc.body.appendChild(a);
-  a.click();
-  a.remove();
+  if (deliver) {
+    deliver(a);
+  } else {
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
   /* The browser has taken its own reference by the time the click returns, so the
      URL can go on the next task. Holding it costs the blob's memory for the life of
-     the document, which is exactly v1's leak. */
+     the document, which is exactly v1's leak: 8,541 of them, never reclaimed. */
   setTimeout(() => URL.revokeObjectURL(url), 0);
   return url;
 }

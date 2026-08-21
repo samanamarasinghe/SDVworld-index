@@ -10,6 +10,18 @@
  */
 import { loadInstrumentedV1, injectV1Markup } from '../oracle/instrument.js';
 import { CASES, PENDING_V2, ALL_AFF_TYPES, ALL_AFF_REGIONS } from './cases.js';
+import { RENDER_CASES } from './render-cases.js';
+
+/* Wrapped before anything else runs, so "created during render" means every object
+ * URL the page made, not just the ones made after the counter was installed. */
+const urls = {
+  created: 0, revoked: 0, lastRevoked: null,
+  reset() { this.created = 0; this.revoked = 0; this.lastRevoked = null; },
+};
+const realCreate = URL.createObjectURL.bind(URL);
+const realRevoke = URL.revokeObjectURL.bind(URL);
+URL.createObjectURL = function (...a) { urls.created++; return realCreate(...a); };
+URL.revokeObjectURL = function (u) { urls.revoked++; urls.lastRevoked = u; return realRevoke(u); };
 
 const statusEl = document.getElementById('status');
 const outEl = document.getElementById('out');
@@ -183,6 +195,54 @@ async function v2Engine(fixture) {
   return { E: built.engine, provenance: built.provenance };
 }
 
+/* ---- the rendering harness ---------------------------------------------- */
+
+/* A real App on real markup, driven through real events. Nothing here reaches into
+ * the App's internals to set a limit or force a render: the cases are about what the
+ * page does when a reader clicks, so they click. */
+async function renderHarness() {
+  const { App } = await import('../../v2/assets/js/app.js');
+  const { downloadBibtex } = await import('../../v2/assets/js/render.js');
+  const { nextTick } = await import('../../v2/assets/js/state.js');
+
+  const html = await (await fetch('/v2/index.html', { cache: 'no-store' })).text();
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  doc.querySelectorAll('script').forEach(s => s.remove());
+  const mount = document.getElementById('render-mount');
+  mount.innerHTML = doc.body.innerHTML;
+
+  const h = {
+    urls, downloadBibtex, mount,
+    app: null, results: null,
+    /* Scoped to the container, so App.$ resolves ids inside it rather than globally. */
+    async load(records) {
+      h.app = new App(mount).mount();
+      h.app.setCorpus(records, [], []);
+      h.app.apply();
+      h.results = h.app.els.results;
+      await h.settle();
+    },
+    select(id, value) {
+      const e = mount.querySelector('#' + id);
+      e.value = value;
+      e.dispatchEvent(new Event('change', { bubbles: true }));
+    },
+    range(id, value) {
+      const e = mount.querySelector('#' + id);
+      e.value = String(value);
+      e.dispatchEvent(new Event('input', { bubbles: true }));
+    },
+    /* The controller coalesces to a tick, so a click's effect is not visible until
+       the tick after it. Two ticks, to be sure the render has run. Uses the
+       controller's own tick, which keeps working in a background tab -- these runs
+       are driven, so the tab is usually not the one in front. */
+    settle() {
+      return new Promise(r => nextTick(() => nextTick(r)));
+    },
+  };
+  return h;
+}
+
 /* ---- main --------------------------------------------------------------- */
 
 async function main() {
@@ -206,7 +266,25 @@ async function main() {
     results.push({ id: c.id, ok: !failure, failure: failure || null });
     line(`${failure ? 'FAIL' : 'pass'}  ${c.id}${failure ? '\n        ' + failure : ''}`);
   }
+  /* The rendering suite needs its own markup and its own App -- the engine run above
+     has already mounted one copy, and two copies would collide on element ids. Tear
+     the first one down before building the second. */
+  const done = new Set();
+  if (target === 'v2') {
+    line('');
+    document.getElementById('v1-markup').replaceChildren();
+    const h = await renderHarness();
+    for (const c of RENDER_CASES) {
+      let failure;
+      try { failure = await c.run(h); }
+      catch (err) { failure = `threw: ${err.message}`; }
+      done.add(c.id);
+      results.push({ id: c.id, ok: !failure, failure: failure || null });
+      line(`${failure ? 'FAIL' : 'pass'}  ${c.id}${failure ? '\n        ' + failure : ''}`);
+    }
+  }
   for (const c of PENDING_V2) {
+    if (done.has(c.id)) continue;
     results.push({ id: c.id, ok: null, pending: true, closes: c.closes, why: c.why });
   }
 

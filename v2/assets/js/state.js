@@ -210,7 +210,29 @@ export function rebuildFacets(ctx) {
 
 /* ---- coalescing ---------------------------------------------------------- */
 
-/* One scheduled pass per frame, however many events arrived. The design asks for
+/* A frame-aligned tick that still ticks in a background tab.
+ *
+ * requestAnimationFrame is the right clock for coalescing work that ends in a paint,
+ * and it is what §6 asks for. But a hidden tab stops firing it entirely, which would
+ * leave a state change that arrived while the tab was backgrounded sitting unapplied
+ * until the reader came back -- and would hang any harness driving the page from a
+ * tab that is not in front. A MessageChannel task is not throttled, so it stands in
+ * while the document is hidden. Rendering into a hidden document costs no paint. */
+const chan = typeof MessageChannel === 'function' ? new MessageChannel() : null;
+let waiting = [];
+if (chan) {
+  chan.port1.onmessage = () => { const w = waiting; waiting = []; for (const f of w) f(); };
+}
+export function nextTick(fn) {
+  if (document.visibilityState === 'visible' || !chan) {
+    requestAnimationFrame(fn);
+  } else {
+    waiting.push(fn);
+    chan.port2.postMessage(0);
+  }
+}
+
+/* One scheduled pass per tick, however many events arrived. The design asks for
  * "slider labels update immediately but filter work coalesces to at most one
  * requestAnimationFrame callback" (§6) -- so labels are written by the handler and
  * only the expensive half comes through here. */
@@ -219,7 +241,7 @@ export function makeScheduler(work) {
   return function schedule() {
     if (queued) return;
     queued = true;
-    requestAnimationFrame(() => { queued = false; work(); });
+    nextTick(() => { queued = false; work(); });
   };
 }
 
