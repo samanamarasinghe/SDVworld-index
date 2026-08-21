@@ -49,6 +49,16 @@ const tick = () => (document.visibilityState === 'visible'
   ? new Promise(r => requestAnimationFrame(() => r()))
   : macrotask());
 
+async function waitFor(fn, what, timeoutMs = 120000) {
+  const t0 = performance.now();
+  for (;;) {
+    let v; try { v = fn(); } catch (e) { v = null; }
+    if (v) return v;
+    if (performance.now() - t0 > timeoutMs) throw new Error(`timed out waiting for ${what}`);
+    await tick();
+  }
+}
+
 /* ---- instrumentation, installed before the target's scripts evaluate ----- */
 
 const probe = {
@@ -108,14 +118,17 @@ function makeSettler(el) {
   obs.observe(el, { childList: true, subtree: true, attributes: true, characterData: true });
   return {
     reset() { last = 0; count = 0; },
-    async wait(t0, quietMs = 80, timeoutMs = 20000) {
+    async wait(t0, quietMs = 80, timeoutMs = 20000, firstMs = 1200) {
       for (;;) {
         await tick();
         const now = performance.now();
         if (now - t0 > timeoutMs) break;
         if (last && now - last > quietMs) break;
-        // Nothing moved at all: a no-op interaction, not a slow one.
-        if (!last && now - t0 > Math.max(quietMs, 250)) break;
+        /* Nothing has moved YET. That may mean a no-op interaction, or it may mean
+           a debounce that has not expired -- so this allowance has to comfortably
+           exceed the longest debounce on the page (150 ms) plus the work behind it,
+           or a debounced input measures as zero. */
+        if (!last && now - t0 > firstMs) break;
       }
       return { elapsed: last ? last - t0 : 0, mutations: count, settled: performance.now() - t0 };
     },
@@ -138,6 +151,7 @@ function script(doc) {
 
   return [
     { id: 'search-type-health', why: 'the commonest interaction there is',
+      debounceMs: 150,
       run: () => { const e = $('facet-title'); e.value = 'health'; fire(e, 'input'); },
       undo: () => { const e = $('facet-title'); e.value = ''; fire(e, 'input'); } },
 
@@ -187,36 +201,81 @@ const p95 = (a) => {
 };
 const r2 = (n) => Math.round(n * 100) / 100;
 
+/* How long a 150 ms timer actually takes here.
+ *
+ * A driven benchmark runs in a background tab, and Chrome clamps setTimeout in one to
+ * a second or worse. v2 debounces the title input by 150 ms; v1 debounces nothing. So
+ * under a clamp the search comparison is not merely noisy, it is systematically
+ * unfair to v2 -- it charges v2 for a wait the environment imposed and v1 never asks
+ * for. Measuring the clamp is what lets the report say so instead of quietly
+ * publishing a number that reads as v2 being slow. */
+async function calibrateTimer(ms = 150, samples = 3) {
+  const took = [];
+  for (let i = 0; i < samples; i++) {
+    const t0 = performance.now();
+    await new Promise(r => setTimeout(r, ms));
+    took.push(performance.now() - t0);
+  }
+  return r2(Math.min(...took));
+}
+
 /* ---- targets ------------------------------------------------------------ */
 
+/* Bring-up is two-phase on purpose. The cold-load measurement is the whole point of
+ * the phase split: the mutation observer has to be attached after the markup exists
+ * but BEFORE the data starts arriving, or the first render happens unobserved and
+ * cold load reads as zero. */
 async function bringUpV1() {
   const { loadInstrumentedV1, injectV1Markup } = await import('../oracle/instrument.js');
   await injectV1Markup('/index.html', 'page');
+  /* v1's init() runs the moment the patched script evaluates, so there is no seam
+     between "markup exists" and "loading has started". Attaching the observer costs
+     a fraction of a millisecond against a 5-second load, so the race is harmless --
+     but it is a race, and v2 does not have one. */
   const provenance = await loadInstrumentedV1('/assets/js/sdv-index.js');
-  const t0 = performance.now();
-  const E = await new Promise((resolve) => {
-    const tick = () => (window.__V1__ ? resolve(window.__V1__) : setTimeout(tick, 20));
-    tick();
-  });
-  return { engine: E, provenance, startedAt: t0 };
+  const engine = await waitFor(() => window.__V1__, '__V1__');
+  return {
+    engine, provenance,
+    ready: () => waitFor(() => {
+      const p = engine.probe();
+      return p.data > 0 && p.cite != null && p.gh != null;
+    }, 'v1 index + both pools', 180000),
+  };
 }
 
 async function bringUpV2() {
-  const mod = await import('../oracle/adapter-v2.js');
-  const built = await mod.build({ say, note: line, waitFor: null, mount: 'page' });
-  return { engine: built.engine, provenance: built.provenance, startedAt: performance.now() };
+  const { App } = await import('/v2/assets/js/app.js');
+  const { injectV2Markup } = await import('../oracle/adapter-v2.js');
+  await injectV2Markup('page');
+  const app = new App(document).mount();
+  /* Deliberately not awaited: start() is the cold load, and it has to be in flight
+     while the observer watches. */
+  const started = app.start({ onError: (path, e) => line(`pool load failed: ${path}: ${e.message}`) });
+  return {
+    engine: app.adapter(),
+    provenance: { target: 'v2', modules: 'v2/assets/js/*.js' },
+    ready: () => started,
+  };
 }
 
 /* ---- main --------------------------------------------------------------- */
 
 async function main() {
+  say('calibrating the timer');
+  const timerClamp = await calibrateTimer();
+  const clamped = timerClamp > 300;
+  line(`a 150 ms timer takes ${timerClamp} ms here` +
+       (clamped ? ` -- this tab is ${document.visibilityState}, so timers are clamped`
+                : ''));
+
   say(`bringing up ${TARGET}`);
   const navStart = performance.now();
-  const { engine, provenance } = TARGET === 'v1' ? await bringUpV1() : await bringUpV2();
+  const { engine, provenance, ready } = TARGET === 'v1' ? await bringUpV1() : await bringUpV2();
 
   const results = document.getElementById('pubs-results');
   if (!results) throw new Error('the target did not produce #pubs-results');
   const settler = makeSettler(results);
+  await ready();
 
   /* Cold load: the page is ready when the result list first has content and stops
      growing. v1 renders the default view three times over -- once from the index and
@@ -259,7 +318,17 @@ async function main() {
   for (const step of steps) {
     const samples = [], scanCounts = [], blobCounts = [];
     for (let rep = 0; rep < REPS; rep++) {
-      if (step.setup) { step.setup(); await settler.wait(performance.now()); await sleep(30); }
+      /* Every wait needs its own reset. Without one the settler still holds the
+         PREVIOUS step's mutation timestamp, reads it as "quiet since then", and
+         returns immediately -- so the undo is never actually awaited, the next
+         rep's run() lands inside the undo's 150 ms debounce and cancels it, and the
+         state never moves. That measures a no-op and reports it as fast. */
+      if (step.setup) {
+        settler.reset();
+        step.setup();
+        await settler.wait(performance.now());
+        await sleep(30);
+      }
 
       const beforeBlob = probe.objectUrlsCreated;
       const beforeScans = engine.scanCount ? engine.scanCount() : filterScans;
@@ -271,12 +340,23 @@ async function main() {
       scanCounts.push((engine.scanCount ? engine.scanCount() : filterScans) - beforeScans);
       blobCounts.push(probe.objectUrlsCreated - beforeBlob);
 
+      settler.reset();
       step.undo();
       await settler.wait(performance.now());
       await sleep(30);
     }
     timings[step.id] = {
       why: step.why,
+      /* Perceived latency: keystroke or click to the last DOM change. For a
+         debounced input that includes the debounce, which is a deliberate wait
+         rather than work -- debounce_ms records how much of it. v1 debounces
+         nothing, so its numbers are all work. */
+      debounce_ms: step.debounceMs || 0,
+      /* What the reader would actually wait, minus the part of the wait that is a
+         deliberate debounce inflated by the environment's timer clamp. For every
+         undebounced row this is the same as median_ms. */
+      median_work_ms: r2(Math.max(0, median(samples) -
+        (step.debounceMs ? Math.max(step.debounceMs, timerClamp) : 0))),
       median_ms: r2(median(samples)),
       p95_ms: r2(p95(samples)),
       min_ms: r2(Math.min(...samples)),
@@ -285,8 +365,10 @@ async function main() {
       corpus_scans: median(scanCounts),
       object_urls_created: Math.max(...blobCounts),
     };
+    const work = timings[step.id].median_work_ms;
     line(`${step.id.padEnd(26)} median ${String(r2(median(samples))).padStart(8)} ms   ` +
          `p95 ${String(r2(p95(samples))).padStart(8)} ms   ` +
+         (step.debounceMs ? `work ${String(work).padStart(7)} ms   ` : '                    ') +
          `scans ${median(scanCounts)}   objectURLs ${Math.max(...blobCounts)}`);
     window.__BENCH__.phase = step.id;
     await sleep(0);
@@ -295,6 +377,10 @@ async function main() {
   const doc = {
     target: TARGET,
     reps: REPS,
+    /* Everything a reader needs to judge whether a debounced row is comparable. */
+    timer_clamp_ms: timerClamp,
+    timers_clamped: clamped,
+    visibility: document.visibilityState,
     scan_counter: engine.scanCount ? 'engine' : 'Array.prototype.filter (approximate)',
     corpus_size: corpusSize,
     cold_load_ms: r2(cold.elapsed),

@@ -8,7 +8,7 @@
  */
 import { App } from '../../v2/assets/js/app.js';
 
-async function injectV2Markup(mountId) {
+export async function injectV2Markup(mountId) {
   /* The live v2 page, fetched rather than copied, for the same reason the v1
      harness fetches index.html: a copy drifts and the harness would then be
      measuring a page nobody ships. */
