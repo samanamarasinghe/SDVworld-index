@@ -9,22 +9,28 @@ they are the whole of what the repository lane never finished.
 
 Two mechanisms here, and the first matters more than the second.
 
-SALVAGE, which needs no judgment at all. Five of the rows were logged as
-JSONDecodeErrors and none of them is truncated -- every raw ends in a proper brace.
-They fail for two mechanical reasons:
+SALVAGE, which needs no judgment at all. Five rows were logged as JSONDecodeErrors
+and none of them is truncated -- every raw ends in a proper brace. Two mechanical
+causes:
 
   * `"confidence":high` -- the value written as a bare word rather than a string.
-  * TWO complete JSON objects concatenated in one response. `parse_record` spans
-    from the first `{` to the LAST `}`, so it hands json.loads both objects plus
-    whatever sits between them. Reading the FIRST BALANCED object instead recovers
-    a perfectly good record.
+  * SEVERAL complete JSON objects in one response. `parse_record` spans from the
+    first `{` to the LAST `}`, so it hands json.loads every object plus the gaps
+    between them.
 
-Neither is a judgment failure, so neither should cost an API call. Anything salvage
-recovers is then put through the ordinary validator; nothing skips it.
+For the second case the right object is NOT reliably the first: GuardDog's response
+is a partial object followed by a complete one, so a first-object rule picks the
+one missing `confidence`. Every balanced object is therefore tried and the first
+that VALIDATES wins. Nothing skips the validator.
 
-FIXES, for the rows that are genuinely wrong. Each is a named patch with its
-reason. There are four, and only one of them is a judgment call rather than a
-mechanical correction -- see THE BRIDGE SCHOOL below.
+FIXES, for rows that are genuinely wrong. Each is a named patch with its reason.
+
+WHAT CANNOT BE FIXED HERE: importance 6. It is reserved for first-party SDV-project
+work, the prompt withholds it from the model, and validate() rejects it -- so a
+first-party repo cannot be staged at 6 by any means. The established route is his
+own from shard 120, where two importance-6 lifts were applied as POST-MERGE
+OVERRIDES in a correction shard. datacebo-guides takes the same route: staged
+honestly here, lifted after the merge.
 
     python3 curate/repair_auto_review.py            # dry run
     python3 curate/repair_auto_review.py --write    # write records, rewrite review
@@ -73,36 +79,37 @@ FIXES = {
         'set': {'affiliation_countries': ['India', 'United States']},
     },
     'datacebo/datacebo-guides': {
-        'why': "FIRST-PARTY, and he has already ruled it: importance 6, alongside "
-               "repo-datacebo-cookbook and repo-sdvworld-index. The model saw thin "
-               "evidence and returned importance 1 with an empty component. Setting "
-               "importance to his ruling and the component to the family marker, but "
-               "DELIBERATELY LEAVING integration `unclear` with a needs rather than "
-               "promoting it to api_user: 274 commits of DataCebo's own guides almost "
-               "certainly run the library, but the evidence in hand does not say so, "
-               "and a confident wrong record is worse than a flagged one. THIS ENTRY "
-               "DESERVES A HAND-WRITTEN SUMMARY -- treat this patch as a floor.",
-        'set': {'sdv_component': ['sdv'], 'importance': 6},
-        'needs': ('First-party DataCebo repository indexed at importance 6 by ruling. '
-                  'Integration left unclear: the harvested evidence does not show a '
-                  'call site. Worth reading the guides directly and rewriting this '
-                  'record by hand.'),
+        'why': "FIRST-PARTY. He has ruled importance 6 for it, alongside "
+               "repo-datacebo-cookbook and repo-sdvworld-index -- but 6 CANNOT BE SET "
+               "HERE: validate() caps importance at 5 because 6 is reserved and the "
+               "prompt withholds it from the model. So this patch fixes only what it "
+               "can (the empty component) and the importance-6 lift goes in a "
+               "correction shard after the merge, exactly as shard 120 did for the "
+               "other two. Integration is DELIBERATELY left `unclear` with a needs "
+               "rather than promoted to api_user: 274 commits of DataCebo's own guides "
+               "almost certainly run the library, but the evidence in hand does not "
+               "say so. THIS ENTRY DESERVES A HAND-WRITTEN SUMMARY -- treat the patch "
+               "as a floor.",
+        'set': {'sdv_component': ['sdv']},
+        'needs': ('First-party DataCebo repository. AWAITING AN IMPORTANCE-6 LIFT in a '
+                  'correction shard, per his ruling; it cannot be staged at 6. '
+                  'Integration left unclear: the harvested evidence shows no call '
+                  'site. Worth reading the guides directly and rewriting by hand.'),
     },
 }
 
 
-def first_object(text):
-    """The first BALANCED {...} in the text, respecting strings and escapes.
+def objects(text):
+    """Every BALANCED {...} in the text, in order, respecting strings and escapes.
 
-    parse_record spans first-brace to last-brace, which is correct for one object
-    with trailing prose and wrong for two objects -- it swallows both and the gap.
+    parse_record spans first-brace to last-brace, which is right for one object with
+    trailing prose and wrong for several -- it swallows them all and the gaps. And
+    the FIRST object is not reliably the good one, so yield them all and let the
+    caller validate.
     """
-    start = text.find('{')
-    if start < 0:
-        return None
-    depth, in_string, escaped = 0, False, False
-    for i in range(start, len(text)):
-        ch = text[i]
+    depth = start = -1
+    in_string = escaped = False
+    for i, ch in enumerate(text or ''):
         if in_string:
             if escaped:
                 escaped = False
@@ -114,34 +121,37 @@ def first_object(text):
         if ch == '"':
             in_string = True
         elif ch == '{':
+            if depth <= 0:
+                depth, start = 0, i
             depth += 1
-        elif ch == '}':
+        elif ch == '}' and depth > 0:
             depth -= 1
             if depth == 0:
-                return text[start:i + 1]
-    return None
+                yield text[start:i + 1]
 
 
-def salvage(raw):
-    """(record, note). Raises nothing the caller cannot report."""
+def candidates(raw):
+    """(record, note) for everything parseable in the response, best-effort."""
+    out = []
     try:
-        return ac.parse_record(raw), 'parsed as-is'
+        out.append((ac.parse_record(raw), 'parsed as-is'))
     except Exception:
         pass
-    notes = []
-    text = first_object(raw or '')
-    if text is None:
-        raise ValueError('no balanced JSON object in the response')
-    if text != (raw or '').strip():
-        notes.append('took the first balanced object')
-    try:
-        return json.loads(text), '; '.join(notes) or 'reparsed'
-    except Exception:
-        pass
-    quoted = BARE_WORD.sub(lambda m: f'{m.group(1)}"{m.group(2)}"{m.group(3)}', text)
-    if quoted != text:
-        notes.append('quoted a bare word value')
-    return json.loads(quoted), '; '.join(notes)
+    for n, text in enumerate(objects(raw or ''), 1):
+        try:
+            out.append((json.loads(text), f'object {n} of the response'))
+            continue
+        except Exception:
+            pass
+        quoted = BARE_WORD.sub(lambda m: f'{m.group(1)}"{m.group(2)}"{m.group(3)}',
+                               text)
+        if quoted != text:
+            try:
+                out.append((json.loads(quoted),
+                            f'object {n}, quoted a bare word value'))
+            except Exception:
+                pass
+    return out
 
 
 def main():
@@ -154,43 +164,56 @@ def main():
     with open(ac.REVIEW) as fh:
         rows = [json.loads(line) for line in fh if line.strip()]
     vocab = ac.read_vocabularies()
-    print(f'{len(rows)} row(s) over '
-          f'{len({r.get("repo") for r in rows})} repo(s)\n')
+    repos = {r.get('repo') for r in rows}
+    print(f'{len(rows)} row(s) over {len(repos)} repo(s)\n')
 
     resolved, failures = {}, {}
     for row in rows:
         repo, entry_id = row.get('repo'), row.get('id')
         if repo in resolved:
-            continue                       # a better attempt already worked
+            continue                       # an earlier attempt already worked
         print(f'  {repo}  ({entry_id})')
         for problem in row.get('problems') or []:
             print(f'        was: {problem}')
-        try:
-            record, note = salvage(row.get('raw'))
-            print(f'        salvage: {note}')
-        except Exception as exc:
-            print(f'        HELD: {type(exc).__name__}: {exc}')
-            failures.setdefault(repo, []).append(row)
-            continue
 
         fix = FIXES.get(repo)
         if fix:
             print(f"        why: {fix['why']}")
-            for field, value in (fix.get('set') or {}).items():
-                print(f'        {field}: {record.get(field)!r} -> {value!r}')
-                record[field] = value
-            if fix.get('needs'):
-                record['needs'] = fix['needs']
 
-        problems = ac.validate(record, repo, entry_id, vocab)
-        if problems:
-            for problem in problems:
+        found, last = None, []
+        for record, note in candidates(row.get('raw')):
+            if fix:
+                for field, value in (fix.get('set') or {}).items():
+                    record[field] = value
+                if fix.get('needs'):
+                    record['needs'] = fix['needs']
+            problems = ac.validate(record, repo, entry_id, vocab)
+            if not problems:
+                found = (record, note)
+                break
+            last = problems
+        if found is None:
+            if not last:
+                print('        HELD: nothing parseable in the response')
+            for problem in last:
                 print(f'        STILL FAILING: {problem}')
-            failures.setdefault(repo, []).append(row)
+            failures.setdefault(repo, row)
             continue
+
+        record, note = found
+        print(f'        salvage: {note}')
+        if fix:
+            for field, value in (fix.get('set') or {}).items():
+                print(f'        {field} -> {value!r}')
         print(f"        clean -> {record.get('integration')} "
               f"importance {record.get('importance')}")
         resolved[repo] = (entry_id, record)
+
+    # A repo resolved by a later attempt is NOT a failure, whatever an earlier row
+    # did. Without this the rewritten review file keeps a row for a repo that was
+    # written to records/ in the same run.
+    for repo in resolved:
+        failures.pop(repo, None)
 
     print(f'\n{len(resolved)} repo(s) repaired, {len(failures)} still failing')
     if not args.write:
@@ -203,8 +226,8 @@ def main():
                            vocab):
             print(f'  wrote {repo}')
     with open(ac.REVIEW, 'w') as fh:
-        for repo, held in failures.items():
-            fh.write(json.dumps(held[0], ensure_ascii=False) + '\n')
+        for repo, row in failures.items():
+            fh.write(json.dumps(row, ensure_ascii=False) + '\n')
     print(f'\n{len(resolved)} written to {ac.RECORDS}; review file rewritten '
           f'deduplicated with {len(failures)} row(s)')
 
