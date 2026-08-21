@@ -13,7 +13,12 @@ they mention already has exactly one fact; adopting it means no committed shard
 has to change and no correction shard is needed. An organization that appears
 only in the new shards is settled by majority vote, with the tie-breaks below.
 
-Dry run by default: prints every organization it would change, writes nothing.
+Three passes, in order, over the editable shards only:
+  1. PLACEHOLDERS  drop role descriptors that are not places at all
+  2. ALIASES       fold an organization into the name the index already uses
+  3. the vote      one (type, country) per surviving organization
+
+Dry run by default: prints everything it would change, writes nothing.
 Pass --write to rewrite the shards.
 
     python3 curate/canonicalize_affiliations.py            # dry run
@@ -27,6 +32,28 @@ if not os.path.isdir(os.path.join(ROOT, "data", "shards")):
 SHARD_DIR = os.path.join(ROOT, "data", "shards")
 FIRST_EDITABLE = 124
 
+# His standing ruling: "Don't put the independent researcher, community
+# contributor type things as the affiliation. No affiliations if there is no
+# explicit brick-and-mortar type place." A role descriptor is not an
+# organization, so it is removed rather than given a type and a country. The
+# author slot survives as an explicit null, which is a real answer.
+PLACEHOLDERS = {
+    "independent", "independent researcher", "independent scholar",
+    "independent contributor", "individual researcher", "individual",
+    "community contributor", "open source contributor", "freelance",
+    "freelancer", "self-employed", "unaffiliated", "none", "n/a", "na",
+    "not affiliated", "no affiliation",
+}
+
+# Organizations the index already knows under another name. Applied to the
+# affiliation string itself, so the entry joins the existing organization
+# rather than sitting beside it in the facet list.
+ALIASES = {
+    # [stated] 2026-08-21: "MIT Lincoln labs can use just MIT."
+    "MIT Lincoln Laboratory": "Massachusetts Institute of Technology",
+    "Lincoln Laboratory": "Massachusetts Institute of Technology",
+}
+
 # Country spellings that name the same place. The PREFERRED member is not the
 # one listed first -- it is whichever spelling the authoritative shards already
 # use most, computed at run time, so this script follows the index rather than
@@ -35,7 +62,7 @@ FIRST_EDITABLE = 124
 #
 # Hong Kong is deliberately NOT grouped with China: the site's region table
 # carries Hong Kong as its own country value, and collapsing it would make
-# African and Asian work harder to find rather than easier.
+# that work harder to find rather than easier.
 SYNONYM_GROUPS = [
     ["United States", "United States of America", "USA", "U.S.A.", "US"],
     ["South Korea", "Republic of Korea", "Korea, Republic of", "Korea"],
@@ -52,22 +79,36 @@ SYNONYM_GROUPS = [
 ]
 
 # Tie-breaks for a type vote that comes out level, applied to the organization
-# NAME. The project's existing convention (affiliation_facets.MANUAL_TYPES, the
-# DFKI precedent) is that a hospital or a research centre is nonprofit even when
-# it is attached to a university. Every use is reported.
+# NAME, first match winning. The project's existing convention
+# (affiliation_facets.MANUAL_TYPES, the DFKI precedent) is that a hospital or a
+# research institute is nonprofit even when it is attached to a university --
+# hence a bare "Institut" falls to nonprofit while "Institute of Technology" is
+# caught by the academic line above it. Every use is reported.
 NAME_HINTS = [
     (r"(?i)hospital|klinik|klinikum|medical cent|health system|\bclinic\b", "nonprofit"),
     (r"(?i)ministry|national institute of|agency|administration", "government"),
-    (r"(?i)universit|college|\bschool\b|academy|polytechnic|\bETH\b|\bKAIST\b", "academic"),
-    (r"(?i)research cent|research institute|foundation|laborator", "nonprofit"),
-    (r"(?i)\binc\b|\bltd\b|\bllc\b|\bgmbh\b|\bcorp|technologies|\bAG\b|\bplc\b", "corporate"),
+    (r"(?i)universit|college|\bschool\b|academy|polytechnic|institute of technology",
+     "academic"),
+    (r"(?i)research cent|\binstitut|foundation|laborator|\btrust\b", "nonprofit"),
+    (r"(?i)\binc\b|\bltd\b|\bllc\b|\bgmbh\b|\bcorp|technologies|\bAG\b|\bplc\b",
+     "corporate"),
 ]
 
 # Explicit calls that no vote should decide. Organization -> (type, country).
-# Seeded empty on purpose: run the dry run first, read what it reports as a
-# coin-flip, and put the answers here rather than letting alphabetical order
-# decide something that matters.
-MANUAL = {}
+# Each of these was a reported coin flip on an earlier run, answered rather than
+# left to alphabetical order.
+MANUAL = {
+    # SAS Institute is Cary, North Carolina; the UK vote is a subsidiary office.
+    "SAS": ("corporate", "United States"),
+    # Finnish. NEITHER recorded vote was right, so only this table can fix it.
+    "Nokia": ("corporate", "Finland"),
+    # The other three Hong Kong universities all resolve to Hong Kong.
+    "City University of Hong Kong": ("academic", "Hong Kong"),
+    # A UK charity; the hospital / research-institute convention says nonprofit.
+    "The Institute of Cancer Research": ("nonprofit", "United Kingdom"),
+    # A Portuguese non-profit research institute, not a company.
+    "INESC-ID": ("nonprofit", "Portugal"),
+}
 
 VALID_TYPES = {"academic", "corporate", "government", "nonprofit", "other", "unknown"}
 
@@ -114,6 +155,41 @@ def facts_of(records):
     return facts
 
 
+def clean_affiliations(rec):
+    """Strip placeholders and apply aliases in the affiliations strings.
+
+    Returns a list of (kind, detail) describing what changed. The slot itself is
+    kept -- nulled when nothing survives -- because tests/validate.py requires
+    one affiliation entry per author.
+    """
+    changes = []
+    affiliations = rec.get("affiliations")
+    if not isinstance(affiliations, list):
+        return changes
+    out = []
+    for affiliation in affiliations:
+        if not affiliation:
+            out.append(affiliation)
+            continue
+        kept = []
+        for org in (part.strip() for part in str(affiliation).split(";")):
+            if not org:
+                continue
+            if org.casefold().strip(".") in PLACEHOLDERS:
+                changes.append(("placeholder", org))
+                continue
+            alias = ALIASES.get(org)
+            if alias:
+                changes.append(("alias", f"{org} -> {alias}"))
+                org = alias
+            if org not in kept:
+                kept.append(org)
+        out.append("; ".join(kept) if kept else None)
+    if changes:
+        rec["affiliations"] = out
+    return changes
+
+
 def main():
     write = "--write" in sys.argv
 
@@ -132,6 +208,18 @@ def main():
     print(f"{len(old_records)} authoritative records, "
           f"{len(new_records)} records in {len(new_files)} editable shards")
 
+    # --- pass 1 and 2: placeholders and aliases ------------------------------
+    string_changes = collections.Counter()
+    for rec in new_records:
+        if rec.get("override"):
+            continue
+        for kind, detail in clean_affiliations(rec):
+            string_changes[f"{kind}: {detail}"] += 1
+    if string_changes:
+        print(f"\naffiliation strings rewritten ({sum(string_changes.values())} slots):")
+        for text, n in string_changes.most_common():
+            print(f"    {n:5d}  {text}")
+
     old_facts = facts_of(old_records)
     new_facts = facts_of(new_records)
 
@@ -148,13 +236,13 @@ def main():
     shown = {g[0]: preferred[g[0].casefold()] for g in SYNONYM_GROUPS
              if preferred[g[0].casefold()] != g[0]}
     if shown:
-        print("country spellings the index prefers:",
+        print("\ncountry spellings the index prefers:",
               ", ".join(f"{k} -> {v}" for k, v in sorted(shown.items())))
 
     def canon_country(value):
         return preferred.get(str(value or "").casefold(), value)
 
-    # --- one authoritative fact per organization ----------------------------
+    # --- pass 3: one authoritative fact per organization --------------------
     authority, coinflips, hinted = {}, [], []
     for org in set(old_facts) | set(new_facts):
         if org in MANUAL:
@@ -192,11 +280,7 @@ def main():
                 coinflips.append(f"{org}: type {winners} -> {otype}")
         authority[org] = (otype, country)
 
-    conflicted = sorted(org for org in set(old_facts) | set(new_facts)
-                        if len(old_facts.get(org, {})) + len(new_facts.get(org, {})) > 1
-                        or len(set(old_facts.get(org, {})) | set(new_facts.get(org, {}))) > 1)
-    print(f"\norganizations: {len(authority)} total, {len(conflicted)} carried more "
-          f"than one fact")
+    print(f"\norganizations: {len(authority)} total")
 
     # --- rewrite the editable shards ----------------------------------------
     changed_records, changed_slots = 0, 0
@@ -206,24 +290,23 @@ def main():
             if rec.get("override"):
                 continue
             orgs = organizations_of(rec)
-            types = rec.get("affiliation_types") or []
-            countries = rec.get("affiliation_countries") or []
-            if len(types) != len(orgs) or len(countries) != len(orgs):
+            types = list(rec.get("affiliation_types") or [])
+            countries = list(rec.get("affiliation_countries") or [])
+            want = [authority.get(org) for org in orgs]
+            if any(w is None for w in want):
                 continue
-            touched = False
+            new_types = [w[0] for w in want]
+            new_countries = [w[1] for w in want]
+            if new_types == types and new_countries == countries:
+                continue
             for i, org in enumerate(orgs):
-                want = authority.get(org)
-                if not want:
-                    continue
-                if (types[i], countries[i]) != want:
-                    changes[f"{org}: {(types[i], countries[i])} -> {want}"] += 1
-                    types[i], countries[i] = want
+                before = (types[i], countries[i]) if i < len(types) and i < len(countries) else None
+                if before != want[i]:
+                    changes[f"{org}: {before} -> {want[i]}"] += 1
                     changed_slots += 1
-                    touched = True
-            if touched:
-                rec["affiliation_types"] = types
-                rec["affiliation_countries"] = countries
-                changed_records += 1
+            rec["affiliation_types"] = new_types
+            rec["affiliation_countries"] = new_countries
+            changed_records += 1
 
     if changes:
         print(f"\n{len(changes)} organization-level changes, "
@@ -242,6 +325,8 @@ def main():
               f"Put the real answers in MANUAL and re-run:")
         for text in coinflips:
             print("    " + text)
+    else:
+        print("\nno coin flips: every organization was settled by evidence or by MANUAL")
 
     # --- verify: no organization may carry two facts anywhere ---------------
     residue = {org: dict(c) for org, c in facts_of(old_records + new_records).items()
