@@ -330,13 +330,19 @@ def do_shard(number):
 
     A correction shard must sort AFTER the shard it corrects, which is why the number
     is given rather than computed: the caller reserves it against the other lane.
+
+    EVERY ROW CARRIES override: true.  Without it build.py treats the record as a new
+    entry, matches on url instead of id, finds the original already there and drops it
+    as a duplicate url -- so the corrections vanish and validate.py reports the id
+    defined twice.  The flag is what makes build.py merge by id over the original; it is
+    stripped from the merged record, so it never reaches the built index.
     """
     old = shard_records()
     rows = []
     for entry_id, record in sorted(collected_records().items()):
         before = (old.get(entry_id) or (None, None))[0]
         if before is not None and changes(before, record):
-            rows.append(record)
+            rows.append(dict(record, override=True))
     if not rows:
         return print('no changed records; nothing to write')
     path = os.path.join(pc.SHARDS, f'{number:03d}-papers-rejudged-full-text.json')
