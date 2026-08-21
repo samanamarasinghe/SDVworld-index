@@ -18,6 +18,12 @@ Three passes, in order, over the editable shards only:
   2. ALIASES       fold an organization into the name the index already uses
   3. the vote      one (type, country) per surviving organization
 
+The votes are gathered BEFORE passes 1 and 2 and then folded, because a stripped
+or aliased organization changes the record's organization sequence: counting
+afterwards would lose the evidence of any record whose facet lists no longer
+line up with it, and that record would then keep stale lists of the wrong
+length. That is a real bug this script shipped with once.
+
 Dry run by default: prints everything it would change, writes nothing.
 Pass --write to rewrite the shards.
 
@@ -108,6 +114,11 @@ MANUAL = {
     "The Institute of Cancer Research": ("nonprofit", "United Kingdom"),
     # A Portuguese non-profit research institute, not a company.
     "INESC-ID": ("nonprofit", "Portugal"),
+    # Headquarters, not the campus or office the author sat in. Both were tied
+    # votes that alphabetical order happened to get right; pinned so a later
+    # batch cannot tip them the other way.
+    "Manipal Academy of Higher Education": ("academic", "India"),
+    "German Research Center for Artificial Intelligence (DFKI)": ("nonprofit", "Germany"),
 }
 
 VALID_TYPES = {"academic", "corporate", "government", "nonprofit", "other", "unknown"}
@@ -158,14 +169,22 @@ def facts_of(records):
 def clean_affiliations(rec):
     """Strip placeholders and apply aliases in the affiliations strings.
 
-    Returns a list of (kind, detail) describing what changed. The slot itself is
+    Returns a list of (kind, detail) describing what changed. The author slot is
     kept -- nulled when nothing survives -- because tests/validate.py requires
-    one affiliation entry per author.
+    one affiliation entry per author. The facet lists are re-aligned BY NAME to
+    the surviving organizations, so the record never leaves this function with
+    lists of the wrong length.
     """
     changes = []
     affiliations = rec.get("affiliations")
     if not isinstance(affiliations, list):
         return changes
+    before = organizations_of(rec)
+    types = list(rec.get("affiliation_types") or [])
+    countries = list(rec.get("affiliation_countries") or [])
+    aligned = len(types) == len(before) and len(countries) == len(before)
+    known = dict(zip(before, zip(types, countries))) if aligned else {}
+
     out = []
     for affiliation in affiliations:
         if not affiliation:
@@ -181,12 +200,20 @@ def clean_affiliations(rec):
             alias = ALIASES.get(org)
             if alias:
                 changes.append(("alias", f"{org} -> {alias}"))
+                if org in known and alias not in known:
+                    known[alias] = known[org]
                 org = alias
             if org not in kept:
                 kept.append(org)
         out.append("; ".join(kept) if kept else None)
-    if changes:
-        rec["affiliations"] = out
+    if not changes:
+        return changes
+    rec["affiliations"] = out
+    after = organizations_of(rec)
+    if aligned:
+        pairs = [known.get(org, ("unknown", "unknown")) for org in after]
+        rec["affiliation_types"] = [p[0] for p in pairs]
+        rec["affiliation_countries"] = [p[1] for p in pairs]
     return changes
 
 
@@ -208,6 +235,16 @@ def main():
     print(f"{len(old_records)} authoritative records, "
           f"{len(new_records)} records in {len(new_files)} editable shards")
 
+    # Votes first, while every record's facet lists still line up with its own
+    # organization sequence. Placeholders are dropped and aliases folded here
+    # rather than being counted under a name that will not survive.
+    raw_facts = facts_of(new_records)
+    new_facts = collections.defaultdict(collections.Counter)
+    for org, counter in raw_facts.items():
+        if org.casefold().strip(".") in PLACEHOLDERS:
+            continue
+        new_facts[ALIASES.get(org, org)].update(counter)
+
     # --- pass 1 and 2: placeholders and aliases ------------------------------
     string_changes = collections.Counter()
     for rec in new_records:
@@ -221,7 +258,6 @@ def main():
             print(f"    {n:5d}  {text}")
 
     old_facts = facts_of(old_records)
-    new_facts = facts_of(new_records)
 
     # --- preferred country spelling, learned from the authoritative shards ---
     old_country_use = collections.Counter()
@@ -283,7 +319,7 @@ def main():
     print(f"\norganizations: {len(authority)} total")
 
     # --- rewrite the editable shards ----------------------------------------
-    changed_records, changed_slots = 0, 0
+    changed_records, changed_slots, orphans = 0, 0, []
     changes = collections.Counter()
     for path, data in new_files:
         for rec in data:
@@ -293,7 +329,9 @@ def main():
             types = list(rec.get("affiliation_types") or [])
             countries = list(rec.get("affiliation_countries") or [])
             want = [authority.get(org) for org in orgs]
-            if any(w is None for w in want):
+            missing = [org for org, w in zip(orgs, want) if w is None]
+            if missing:
+                orphans.append(f"{rec.get('id')}: {missing}")
                 continue
             new_types = [w[0] for w in want]
             new_countries = [w[1] for w in want]
@@ -316,6 +354,12 @@ def main():
     else:
         print("\nnothing to change")
 
+    if orphans:
+        print(f"\nORGANIZATIONS WITH NO FACT AT ALL ({len(orphans)}) -- records skipped, "
+              f"which leaves their facet lists as they were:")
+        for text in orphans[:20]:
+            print("    " + text)
+
     if hinted:
         print(f"\ntype decided by a name hint ({len(hinted)}):")
         for text in hinted:
@@ -328,15 +372,25 @@ def main():
     else:
         print("\nno coin flips: every organization was settled by evidence or by MANUAL")
 
-    # --- verify: no organization may carry two facts anywhere ---------------
+    # --- verify: alignment, and no organization carrying two facts ----------
+    problems = []
+    for rec in old_records + new_records:
+        if rec.get("override"):
+            continue
+        n = len(organizations_of(rec))
+        if len(rec.get("affiliation_types") or []) != n or \
+                len(rec.get("affiliation_countries") or []) != n:
+            problems.append(f"{rec.get('id')}: facet lists do not match {n} organizations")
     residue = {org: dict(c) for org, c in facts_of(old_records + new_records).items()
                if len(c) > 1}
-    if residue:
-        print(f"\nSTILL CONFLICTING ({len(residue)}) -- nothing written:")
-        for org, c in sorted(residue.items())[:40]:
-            print(f"    {org}: {sorted(c)}")
+    for org, c in sorted(residue.items()):
+        problems.append(f"{org}: still carries {sorted(c)}")
+    if problems:
+        print(f"\nPROBLEMS ({len(problems)}) -- nothing written:")
+        for text in problems[:40]:
+            print("    " + text)
         sys.exit(1)
-    print("\nverified: every organization now carries exactly one (type, country)")
+    print("\nverified: every record aligned, every organization one (type, country)")
 
     if not write:
         print("\nDRY RUN -- nothing written. Re-run with --write to apply.")
