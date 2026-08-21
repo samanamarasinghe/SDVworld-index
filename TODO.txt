@@ -1,6 +1,6 @@
 ================================================================================
 SDVworld-index -- TODO
-Index v0.99 | 2419 curated entries | 91 shards | last reviewed 2026-08-19
+Index v0.999999999 | 4918 curated entries | 118 shards | last reviewed 2026-08-21
 ================================================================================
 
 Read README.txt first if you have not. This file is the work queue: what is
@@ -11,7 +11,7 @@ they are in docs/open-questions.md, one section each.
 Every count below is derived from the data, not maintained by hand. Section 0
 gives the commands that regenerate them, so distrust the numbers and re-run.
 
-THE ONE THING TO KNOW FIRST: 1334 of the 2419 entries were curated by a batch
+THE ONE THING TO KNOW FIRST: 3833 of the 4918 entries were curated by a batch
 model in August 2026 and have never been read by a person. They carry
 auto_curated.reviewed = false. Section 1 says what was checked and what was not.
 
@@ -29,19 +29,30 @@ A one-liner for any field census, e.g. entries with no integration:
       print(sum(1 for r in d if not r.get('integration')))"
 
 --------------------------------------------------------------------------------
-1. THE AUTO-CURATED TAIL -- 1334 ENTRIES, UNREVIEWED
+1. THE AUTO-CURATED TIER -- 3833 ENTRIES, UNREVIEWED
 --------------------------------------------------------------------------------
 
-In August 2026 every unvisited repository in the pool was fetched
-(harvest/repo_evidence.py, 1455 evidence files under harvest/evidence/) and
-curated in one Anthropic batch run (curate/auto_curate.py, Sonnet, ~$10).
-1335 records merged into shards 108-119. They are ordinary index entries in
-every respect except that no human has read them.
+Two batch runs, not one.
+
+The first fetched every unvisited repository in the pool (harvest/repo_evidence.py,
+1457 evidence files under harvest/evidence/) and curated it in one Anthropic batch
+run (curate/auto_curate.py, Sonnet, ~$10); 1335 records merged into shards 108-119.
+
+The second curated the paper citation tail (curate/paper_curate.py); 2382 records
+merged into shards 124-143. Both are ordinary index entries in every respect
+except that no human has read them.
 
     python3 -c "import json; d=json.load(open('data/sdv-index.json')); \
       print(sum(1 for r in d if (r.get('auto_curated') or {}).get('reviewed') is False))"
 
-What WAS checked, mechanically, over all of them:
+EVIDENCE QUALITY DIFFERS SHARPLY BETWEEN THE TWO, and the repository half is the
+weaker. A repository was judged from an evidence file assembled by a script. A
+paper carries evidence_tier, which states what was actually read: full_text,
+abstract_context or metadata_only, with confidence capped mechanically by the
+tier. 1799 entries now rest on full text, most of them following the August
+re-judge in shard 148 -- see section 5's note on that pass.
+
+What WAS checked, mechanically, over the repository half:
 
   * No entry claims a runs-SDV integration without a code hit outside a
     dependency file. This was the failure mode most feared and it did not occur.
@@ -53,19 +64,20 @@ What WAS checked, mechanically, over all of them:
 
 What was NOT checked:
 
-  * Only 15 entries were read against their evidence by a person. Two of the 15
-    were wrong -- both giving a runs-SDV integration to a repository that never
-    imports SDV. Expect that error class at roughly one in ten and look for it
-    first.
+  * Only 15 repository entries were read against their evidence by a person. Two
+    of the 15 were wrong -- both giving a runs-SDV integration to a repository
+    that never imports SDV. Expect that error class at roughly one in ten and
+    look for it first.
   * Nothing verifies the summaries. The SDV clause at the end of each was
     written from the evidence file, not from the repository.
-  * 856 of these entries carry a `needs` string. Most report what the model
+  * 2667 of these entries carry a `needs` string. Most report what the model
     could not SEE -- no README, no call site in the excerpt, no author stated --
     rather than a judgment it could not make.
 
 The honest description of this tier: better than a keyword classifier,
 not equivalent to a curator's read. If a decision rests on one of these
-entries, open harvest/evidence/<owner>__<repo>.json and check it.
+entries, open harvest/evidence/<owner>__<repo>.json and check it -- or, for a
+paper, harvest/papers/<slug>.txt if the tier says full_text.
 
 --------------------------------------------------------------------------------
 2. WAITING ON THE OWNER
@@ -84,15 +96,26 @@ Two clusters are ripe and would close most of them with one line each:
       generator of its own, are the generators it runs baselines or evaluation
       subjects? Three cases, judged three different ways.
 
-Also open, and new:
+Also open:
 
   (c) importance no longer separates significant work from trivial work.
-      994 entries sit at 3 and 809 at 4, three quarters of the index in two
-      buckets, because the scale measures how central SDV is TO AN ENTRY and in
-      a one-purpose student notebook SDV is everything. The convention is being
-      applied correctly; the scale is doing less than the default view needs.
-  (d) nothing on the page marks the 1334 unreviewed entries. They carry the
+      1626 entries sit at 3 and 1389 at 4, more than three fifths of the index
+      in two buckets, because the scale measures how central SDV is TO AN ENTRY
+      and in a one-purpose student notebook SDV is everything. The convention is
+      being applied correctly; the scale is doing less than the default view
+      needs.
+  (d) nothing on the page marks the 3833 unreviewed entries. They carry the
       flag; no filter reads it.
+
+Settled since the last revision, recorded here so they are not re-asked:
+
+  * `real_estate` added to the industry vocabulary, and used by one entry.
+  * `port` widened. It read "reimplements SDV's design in another language";
+    it now covers reimplementation in the authors' own code whatever the
+    language, the test being that the design is rebuilt and RUN rather than a
+    package invoked. 19 papers in the re-judge turned on this.
+  * A retracted work stays in the index with the retraction stated in its
+    summary.
 
 To list the ruling-blocked entries from the data:
 
@@ -104,33 +127,35 @@ To list the ruling-blocked entries from the data:
 3. MISSING DATA
 --------------------------------------------------------------------------------
 
-Counts are out of 2419 entries. None of these is a bug; each is a field no
+Counts are out of 4918 entries. None of these is a bug; each is a field no
 source established, and each is a curation task.
 
   Facets
-    370  no sdv_concept        -- the source named no mechanism, often correctly
-    195  no use_case
-    181  no sdv_component
+   1487  no sdv_concept        -- the source named no mechanism, often correctly
+    294  no use_case
+    200  no sdv_component
      37  no integration        -- predates the field; needs a read to assign
-    184  industry is ["academia"] alone
+    189  industry is ["academia"] alone
            This is the academia audit. The valuable half is not reassignment
            but discovering industry values that do not exist yet -- a keyword
            pass cannot do that, because it only finds categories already in the
            vocabulary. space_astronomy is already a visible candidate.
 
   Attribution
-   1289  no authors at all, overwhelmingly repositories
-    389  authors present but EVERY affiliation is null
-           So 741 entries carry a named organization, and the Affiliations and
-           Americas/Europe/Asia/Africa-Oceania facets see just those -- under a
-           third of the index, where before the repository merge it was most of
-           it. A GitHub profile with no company field cannot be resolved without
-           a judgment call about the person.
+   1364  no authors at all, overwhelmingly repositories
+   1062  authors present but EVERY affiliation is null
+           So roughly 2500 entries carry a named organization, and the
+           Affiliations and Americas/Europe/Asia/Africa-Oceania facets see just
+           those. The August re-judge improved this sharply -- academic
+           affiliations went 2652 to 3621 -- because a paper read at
+           metadata_only has its affiliations nulled deliberately, and full
+           text fills them in. A GitHub profile with no company field remains
+           unresolvable without a judgment call about the person.
 
   Bibliographic
-     11  no year -- all first-party docs and site entries, which have no
+     13  no year -- first-party docs and site entries, which have no
            publication date
-   2257  no venue, 1987 no doi -- expected: 1845 entries are repositories
+   3145  no venue, 2100 no doi -- expected: 1932 entries are repositories
       9  entries join to no pool row, so they get no year, DOI, citation or
            star count. `build.py` prints them as "not joined".
      12  no evidence -- ten are first-party pages where the artifact IS the
@@ -140,18 +165,18 @@ source established, and each is a curation task.
 4. CURATED BUT NOT FULLY VERIFIED
 --------------------------------------------------------------------------------
 
-    410  confidence: medium  (244 repos, 136 papers, 16 preprints)
-    102  confidence: low     (91 repos, 9 papers)
-    989  entries carry a `needs` string; 856 of those are section 1's.
+    910  confidence: medium  (260 repos, 569 papers, 81 preprints)
+    521  confidence: low     (122 repos, 358 papers, 41 preprints)
+   2801  entries carry a `needs` string; 2667 of those are section 1's.
 
   In the papers lane, `medium` almost always means the publisher would not
   serve the full text to an automated fetch, not that the curator was careless.
-  Adding a PDF text extractor to the toolchain would move roughly a third of
-  every future papers batch from medium to high. There is no pdftotext, fitz,
-  pdfminer or PyPDF2 in the default environment; pypdf installs with
-  `pip install --break-system-packages`.
+  A PDF text extractor is now in the toolchain and this is no longer the
+  bottleneck it was: pypdf, installed with `pip install --break-system-packages`,
+  is used by harvest/paper_fetch.py and harvest/stage_login_pdfs.py. What
+  remains is publisher access, not extraction -- see section 5.
 
-     32  scholarly entries have no second source, so the url-vs-DOI
+     58  scholarly entries have no second source, so the url-vs-DOI
          cross-check in validate.py cannot corroborate their pointer.
       1  code entry is not hosted on GitHub and has no pool row to check.
 
@@ -174,41 +199,82 @@ source established, and each is a curation task.
   shlomihod/smartnoise-sdk-synth was a copy of the already-indexed
   opendp/smartnoise-sdk under a different title, found only by reading it.
 
+  Three entries in the re-judged set are keyed to the wrong Xu paper and need a
+  read: paper-addressing-spatial-sparsity-mdt-2021 and
+  paper-arf-detecting-ethereum-fraudulent-2024 both cite Xu & Veeramachaneni
+  2018, which is TGAN and not CTGAN, and paper-bridging-generation-gap-age-2025
+  is about TVAE. TGAN is a different work from CTGAN; check which Xu paper a
+  source cites before keying an entry to ctgan.
+
 --------------------------------------------------------------------------------
 5. NOT YET CURATED -- THE REAL REMAINING SCOPE
 --------------------------------------------------------------------------------
 
-  2392  of the 2848 works in data/tail/openalex-citations.json are uncurated.
-        This is now the bulk of the remaining project. The 287 works flagged
-        `influential` were its highest-value slice and are done except for the
-        items below. Work in batches of about 50, one shard per batch.
+    461  of the 2848 works in data/tail/openalex-citations.json are uncurated.
+         The August papers batch took the bulk of what was the largest item in
+         this file. Work in batches of about 50, one shard per batch.
 
-   123  repositories in data/tail/github-repos.json are still uncurated --
-        the residue after the August pass, mostly rows added by a later
-        discovery run. harvest/repo_evidence.py --uncurated --skip-existing
-        picks up exactly these.
+     29  repositories in data/tail/github-repos.json are still uncurated --
+         the residue after the August pass, mostly rows added by a later
+         discovery run. harvest/repo_evidence.py --uncurated --skip-existing
+         picks up exactly these.
 
-    80  records in curate/auto-shards/needs-review.jsonl failed validation and
-        produced no entry. Triage the reasons before resubmitting: a transient
-        truncation will succeed on a retry, a vocabulary violation will not.
-        Re-running `auto_curate.py --submit` picks up exactly these, since a
-        repository with a record file is skipped.
+     55  records in curate/auto-shards/needs-review.jsonl failed validation and
+         produced no entry. Triage the reasons before resubmitting: a transient
+         truncation will succeed on a retry, a vocabulary violation will not.
+         Re-running `auto_curate.py --submit` picks up exactly these, since a
+         repository with a record file is skipped.
 
-     6  works need an institutional login; the owner downloads the PDF and
-        uploads it to the chat, which is faster than any fetching route:
-          10.1007/s00521-025-11749-7    10.1007/s42952-025-00342-2
-          10.1080/01605682.2025.2450060 10.1117/12.3093790
-          10.1515/joc-2024-0281         10.2118/204224-pa
+     12  records in curate/paper-shards/rejudge/needs-review.jsonl failed the
+         same way in the re-judge pass. Six are affiliation trio misalignments
+         -- the counts of affiliation_types and affiliation_countries not
+         matching the number of distinct organizations -- which are hand-fixable
+         without an API call. curate/repair_paper_review.py is the model for it.
 
-     3  open access but unreachable from a sandbox -- candidates for a real
-        browser session:
-          10.1007/978-3-031-70371-3_4  (HAL anti-bot interstitial)
-          10.1162/coli_a_00540         (QMUL DSpace serves a JS shell)
-          10.21428/594757db.3e4f0dfb   (BankGAN, 403 to curl and urllib alike)
+  FULL TEXT AND PUBLISHER ACCESS. harvest/fetch-log.json holds one record per
+  DOI ever attempted: 1827 ok, 557 no_route. Of the 557:
 
-     4  genuinely stuck, no route found:
-          10.1177/09720634251396339  10.58812/esiscs.v2i02.1151
-          and the two above that are also paywalled.
+    294  Elsevier. Closed, see section 7.
+     25  Springer, where the proxy serves an HTML landing page instead of a PDF.
+         Skewed to 2025-2026 DOIs, which fits online-first articles with no PDF
+         posted yet. Re-running them changes nothing.
+    238  a long tail across MDPI, SSRN, Taylor & Francis, Wiley, SAGE, SPIE and
+         about forty smaller prefixes. Unpaywall reports 146 of them open
+         access but only 63 with a directly fetchable PDF url: MDPI 22, Wiley
+         10, T&F 4, IOP 3, TechRxiv 3, then ones and twos. Those 63 are the
+         next fetching batch and should be run BY HOST, because the in-page
+         fetch is same-origin: one tab per publisher, not one worklist.
+         MDPI must go through a browser whatever the network -- Cloudflare
+         fingerprints the client, so a script fails from a residential IP as
+         surely as from a datacenter one. The remaining 175 have no known PDF
+         url and need a landing-page hop per publisher.
+
+  THE RE-JUDGE PASS, for anyone who finds shard 148 and wonders. 690 papers
+  fetched through an institutional login were ingested into harvest/papers/ by
+  harvest/stage_login_pdfs.py, which extracts the text under the same slug and
+  sidecar shape paper_fetch.py writes and then flips the fetch-log row.
+  curate/paper_rejudge.py re-curated them against the full text: 667 of 685
+  changed a judgment field and 255 changed the integration call outright, the
+  largest single transition being citation_only to api_user. Corrections went
+  in as shard 148, every row carrying `override: true`. Without that flag
+  build.py treats a correction as a new entry, matches on url rather than id,
+  and drops it as a duplicate.
+
+      6  works need an institutional login; the owner downloads the PDF and
+         uploads it to the chat, which is faster than any fetching route:
+           10.1007/s00521-025-11749-7    10.1007/s42952-025-00342-2
+           10.1080/01605682.2025.2450060 10.1117/12.3093790
+           10.1515/joc-2024-0281         10.2118/204224-pa
+
+      3  open access but unreachable from a sandbox -- candidates for a real
+         browser session:
+           10.1007/978-3-031-70371-3_4  (HAL anti-bot interstitial)
+           10.1162/coli_a_00540         (QMUL DSpace serves a JS shell)
+           10.21428/594757db.3e4f0dfb   (BankGAN, 403 to curl and urllib alike)
+
+      4  genuinely stuck, no route found:
+           10.1177/09720634251396339  10.58812/esiscs.v2i02.1151
+           and the two above that are also paywalled.
 
   Access routes that work are written up in docs/agent-guide.md -- MDPI's CDN,
   SciTePress's direct PDF path, the malformed PMC urls Unpaywall returns.
@@ -231,6 +297,10 @@ source established, and each is a curation task.
       reintroduce it. Two occurrences; the file carries CJK, accents and emoji,
       so edit it in place rather than round-tripping it through a tool.
 
+  [ ] docs/data-files.md documents data/ only, so harvest/fetch-log.json --
+      which is committed, and is the record of what could and could not be
+      obtained -- is undocumented.
+
   [ ] One unmerged remote branch, agent/add-canonical-authors-affiliations,
       whose work reached main by another route. Deleting a branch needs the
       owner's say-so.
@@ -245,6 +315,14 @@ source established, and each is a curation task.
       sliders and buttons. Compare counts at importance 0 / popularity 0,
       at 4 / 0, and at the defaults. docs/site.md has the detail.
 
+  [ ] A check on facet VALUE SETS between builds. validate.py rejects a
+      malformed country but not a new spelling of one already present. The
+      August batch introduced "Republic of Korea", "United States of America"
+      and "Russian Federation" beside the established spellings, and every
+      variant renders as its own button. They were caught by reading build.py's
+      histogram. Diffing the value set against the previous build would catch
+      the next one.
+
   [ ] A machine-readable retraction flag. One indexed work is retracted
       (10.52783/jes.2913, shard 100); the retraction is stated in its summary
       and nowhere a program can see it. Proposed: `retracted: true`.
@@ -255,6 +333,17 @@ source established, and each is a curation task.
 --------------------------------------------------------------------------------
 7. CLOSED -- DO NOT RESTART THESE
 --------------------------------------------------------------------------------
+
+  * Elsevier, all 294 rows. MIT cancelled its entire Elsevier journals contract
+    in 2020, so there is no institutional access to articles published 2020 or
+    later, and 291 of the 294 are 2020 or later. The TDM API returns 403 on
+    entitlement grounds for every DOI including gold open-access ones, and the
+    error wording says "authentication", which is misleading -- it is not a key
+    or a network problem, and no VPN fixes it. ScienceDirect's own pdfft route
+    returns an interstitial whose real link is a bot-challenge solve hop;
+    automating that is out of bounds. What remains available is the API's META
+    view, which returns title and abstract for every DOI with just a key, if the
+    pipeline can use that instead of full text.
 
   * The self-archive hunt on the login-required works. Confirmed empty five
     ways: Unpaywall, Semantic Scholar openAccessPdf, OpenAlex locations,
@@ -281,12 +370,29 @@ source established, and each is a curation task.
 8. SMALLER THINGS
 --------------------------------------------------------------------------------
 
+  [ ] Three container DOIs were ingested as if they were papers: two Springer
+      books (10.1007/978-3-030-49669-2, over a million characters, and
+      10.1007/978-3-319-11460-6) and 10.1109/issre59848.2023.00058. A
+      container's text is dozens of unrelated papers. Size alone does not
+      identify them -- two ACM proceedings volumes extracted to only 136k and
+      151k characters -- but a DOI with no chapter or article suffix does.
+  [ ] 10.1109/nss/mic/rtsd57108.2024.10657766 extracted to 4464 characters,
+      just over the 2000-character floor. It is almost certainly a poster
+      abstract rather than a paper.
+  [ ] missing_pdfs.xlsx has never been updated with the outcome of the search.
+      harvest/fetch-log.json now holds all of it. Reading .xlsx is solved
+      (read_xlsx in paper_fetch.py, stdlib zipfile and ElementTree); writing is
+      not, and pandas or openpyxl would break README.txt's no-dependencies
+      promise. Emit CSV, or write the minimal xlsx XML by hand.
   [ ] paper-pretactical-flight-delay-synthetic-2025 names a companion library,
       SynthAIr/syntabair, which is an index candidate in its own right as a
       vendored_source repository and is not in the pool.
   [ ] Palazzo's thesis was identified as a candidate and never curated.
   [ ] 37 lineage pairs -- works whose relationship to SDV runs through a named
       third-party derivative -- were tabled pending domain expertise.
+  [ ] The article inside 10.69593/ajsteme.v4i02 was never identified, so a real
+      work may be missing. Tail records carrying an issue- or volume-level DOI
+      are a category worth sweeping.
   [ ] source_channel carries 12 values and they do not partition cleanly:
       `docs`, `sdv_dev`, `datacebo_site`, `datacebo_research`,
       `datacebo_blog`, `datacebo_case_studies` and `datacebo_announcements`
