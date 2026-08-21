@@ -1,6 +1,6 @@
 ================================================================================
 SDVworld-index -- README for whoever takes this over
-Index v0.99 | 2419 curated entries | 91 shards | written 2026-08-19
+Index v0.999999999 | 4918 curated entries | 118 shards | written 2026-08-21
 ================================================================================
 
 Published at   https://samanamarasinghe.github.io/SDVworld-index/
@@ -36,15 +36,22 @@ WHAT MAKES IT WORTH ANYTHING
 
 NOT EVERY ENTRY MEETS THAT STANDARD, AND YOU NEED TO KNOW WHICH
 
-  1334 of the 2419 entries -- the repository tail, shards 108 to 119 -- were
-  curated by a batch model in August 2026 from evidence files rather than by a
-  person reading the repository. They carry auto_curated.reviewed = false and
-  are otherwise ordinary entries.
+  3833 of the 4918 entries were curated by a batch model in August 2026 rather
+  than by a person, in two runs: the repository tail (1335 records, shards 108
+  to 119) judged from evidence files, and the paper citation tail (2382 records,
+  shards 124 to 143) judged from whatever text could be obtained. They carry
+  auto_curated.reviewed = false and are otherwise ordinary entries.
+
+  The two halves are not equally reliable. A paper carries evidence_tier saying
+  what was read -- full_text, abstract_context or metadata_only -- and its
+  confidence is capped by that tier in code; 1799 entries now rest on full text.
+  A repository carries no such marker.
 
   They were checked mechanically and the hard rules held: none claims to run
-  SDV without a code hit outside a dependency file. Fifteen were read against
-  their evidence by hand and two of the fifteen were wrong, both in the same
-  direction -- a runs-SDV integration on a repository that never imports SDV.
+  SDV without a code hit outside a dependency file. Fifteen repositories were
+  read against their evidence by hand and two of the fifteen were wrong, both in
+  the same direction -- a runs-SDV integration on a repository that never
+  imports SDV.
 
   Treat that tier as better than a keyword classifier and not equivalent to a
   curator's read. The evidence each judgment was made from is in
