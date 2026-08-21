@@ -102,6 +102,17 @@ those states — 299 individual facet-value selections in all:
 `held-node lookups that needed a live-DOM fallback: 0`, so every control was found
 where expected.
 
+## Re-run against Stage 2a, 2026-08-21
+
+Same seed, same 100 states, now with v2 reading the site projection instead of the
+flat export and both raw pools: **100 of 100 identical, 0 differing**, and again zero
+live-DOM fallbacks. That is the check that matters most for 2a — the golden
+differential drives the engine, so it cannot see whether the projection dropped a
+field the collapsed card renders. This can, and did not.
+
+It also got faster: 8.6 s per state against 14 s, because v2's half of each state no
+longer downloads 3.7 MB of raw pool data.
+
 ## Two false alarms, and what they were
 
 Both are recorded because each looked exactly like a v2 bug and neither was one.
