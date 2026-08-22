@@ -1,6 +1,6 @@
 ================================================================================
 SDVworld-index -- README for whoever takes this over
-Index v0.999999999 | 4918 curated entries | 118 shards | written 2026-08-21
+Index v1.1 | 4918 curated entries | 118 shards | written 2026-08-22
 ================================================================================
 
 Published at   https://samanamarasinghe.github.io/SDVworld-index/
@@ -97,15 +97,34 @@ HOW THE DATA FLOWS
         |                        real content of the project: the summaries,
         |                        the facets, the evidence, the confidence.
         |
-        |   build.py            merges shards in filename order, dedupes on
-        |                        url, applies corrections, and joins the
-        |                        fields that drift (year, stars, forks,
-        |                        commits, contributors, citations, DOI)
-        v
-    data/sdv-index.json         GENERATED. Never hand-edit.
+        |   build.py            assemble_records() merges shards in filename
+        |                        order, dedupes on url, applies corrections,
+        |                        and joins the fields that drift (year, stars,
+        |                        forks, commits, contributors, citations, DOI)
         |
-        v
-    index.html + assets/js/sdv-index.js   -->   GitHub Pages
+        |                        ONE assembled list, TWO outputs from it:
+        |
+        +-------------------------------+
+        v                               v
+    data/sdv-index.json         data/site/            GENERATED. Never
+        the public export           manifest.json      hand-edit either.
+        GENERATED, byte-stable,     core.json
+        unchanged shape.            summary-postings.json
+        No browser reads it.        author-postings.json
+                                    detail/00..1f.json
+                                        |
+                                        v
+                              index.html + v2/assets/js/*.js  -->  GitHub Pages
+                              (the previous page is kept at /v1/ for one release)
+
+  The projection is deliberately LOSSY. It carries only what the page needs,
+  plus five values precomputed at build time that the old page recomputed on
+  every keystroke: organizations, aff_type, aff_region, popularity, and which
+  detail bucket holds the summary. source_channel, evidence_tier, openalex_id,
+  countries and the raw aligned affiliation lists stay in the export only.
+
+  The 44 uncurated pool survivors are folded in AT BUILD TIME. The page no
+  longer downloads 3.7 MB of raw pool to discover them.
 
   Two directions of authority, and it matters which is which:
 
@@ -123,19 +142,42 @@ WHERE EVERYTHING LIVES
 ================================================================================
 
   README.txt              this file
+  SDVworld-manual.pdf     the handover manual: user guide, architecture with
+                          diagrams, what the data holds and lacks, and the
+                          to-do list split into mechanical work and work that
+                          needs a human ruling. Generated from
+                          docs/manual/manual.html by scripts/build_manual.sh
   TODO.txt                the work queue: what is missing, unverified,
                           uncurated, and deliberately closed
   AGENTS.md               entry point for an AI agent with write access; a
                           pointer file, twenty lines
   VERSION                 stamped onto the page footer via build-info.json
 
-  index.html              the whole site. One page, no framework, no build.
-  assets/js/sdv-index.js  filter and render controller, ~1100 lines
-  assets/css/style.css
+  index.html              the whole site. One page, no framework, no bundler.
+  v2/assets/js/*.js       eight ES modules: vocab, data, search, engine, order,
+                          render, state, app. See SDVworld-manual.pdf section 2
+  v2/assets/css/v2.css    only what the shared sheet does not provide
+  assets/css/style.css    the shared stylesheet, used by both pages
   assets/img/sdv-logo.svg
 
-  build.py                shards -> data/sdv-index.json
-  tests/validate.py       every check that runs before a push
+  v1/index.html           the PREVIOUS page, kept for one release. One <base>
+  assets/js/sdv-index.js  element redirects it to the root; its runtime is
+                          byte-identical to what shipped before the cutover,
+                          because the golden corpus is pinned to that file's
+                          hash. Delete both when the release is over -- and see
+                          the note in tests/parity/README.md first.
+
+  build.py                shards -> data/sdv-index.json AND data/site/
+  site_projection.py      the browser's view: core, postings, detail buckets
+  scripts/                serve.py, verify_site.py, check_export_identity.sh,
+                          check_vocab_parity.py, build_fixture.py, cutover.py,
+                          build_manual.sh, recall_report.py, pin_baseline.py
+  tests/validate.py       schema, vocabulary, pointer and alignment checks
+  tests/build_tests.py    15 checks on the projection
+  tests/gates.py          the eleven structural gates -- run this before a push
+  tests/oracle/           293-state golden differential against the old page
+  tests/semantic/         36 hand-authored cases: is the behaviour RIGHT
+  tests/parity/           drives both real pages and compares every detail
 
   data/shards/NNN-*.json  curated entries, append-only, one shard per wave
   data/sdv-index.json     GENERATED index the page reads
@@ -156,8 +198,11 @@ WHERE EVERYTHING LIVES
   docs/agent-guide.md     the working rules -- curation procedure, correction
                           shards, parallel lanes, and the access routes that
                           are known to work
-  docs/site.md            how index.html and sdv-index.js fit together, and
-                          the filter semantics, which are not obvious
+  docs/site.md            the filter semantics, which are not obvious
+  docs/manual/            source of SDVworld-manual.pdf
+  docs/perf/              the performance redesign: design v2, five stage
+                          briefs, four handoffs, the golden corpus, the
+                          benchmark baselines and the search recall report
   docs/open-questions.md  judgment calls awaiting the owner's ruling, each with
                           the provisional value already applied
   docs/data-files.md      what every file under data/ contains and who produces it

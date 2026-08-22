@@ -65,6 +65,7 @@ def bundle(curated, cite_raw, gh_raw):
         'core': core,
         'detail': detail,
         'postings': sp.build_postings(records),
+        'authorPostings': sp.build_postings(records, field='authors'),
         'counts': {'curated': len(curated), 'tail': len(cite) + len(gh),
                    'total': len(records), 'citation_pool': len(cite),
                    'repo_pool': len(gh)},

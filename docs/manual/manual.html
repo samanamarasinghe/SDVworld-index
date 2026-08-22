@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SDVworld-index — engineering manual</title>
+<style>
+  @page { size: A4; margin: 17mm 16mm 16mm; }
+  * { box-sizing: border-box; }
+  body {
+    font: 10.2pt/1.5 "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color: #1c2330; margin: 0;
+  }
+  h1 { font-size: 25pt; margin: 0 0 .15em; letter-spacing: -.02em; }
+  h2 {
+    font-size: 14pt; margin: 1.9em 0 .5em; padding-bottom: .22em;
+    border-bottom: 2px solid #1f6f8b; color: #14505f; page-break-after: avoid;
+  }
+  h3 { font-size: 11pt; margin: 1.3em 0 .35em; color: #14505f; page-break-after: avoid; }
+  p, li { orphans: 3; widows: 3; }
+  code, .mono { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: .88em; }
+  code { background: #eef2f6; padding: .06em .3em; border-radius: 3px; }
+  table { border-collapse: collapse; width: 100%; margin: .7em 0; font-size: 9.2pt; }
+  th, td { text-align: left; padding: .3em .5em; border-bottom: .5pt solid #cfd6de; vertical-align: top; }
+  th { background: #eef2f6; font-weight: 600; }
+  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+  .lead { font-size: 11pt; color: #48525f; margin: .2em 0 1.4em; }
+  .page-break { page-break-before: always; }
+  .note {
+    background: #f5f8fa; border-left: 3px solid #1f6f8b;
+    padding: .55em .8em; margin: .8em 0; font-size: 9.4pt;
+  }
+  .warn { background: #fff6ec; border-left-color: #c2751b; }
+  figure { margin: 1em 0; page-break-inside: avoid; }
+  figcaption { font-size: 8.6pt; color: #5a6472; margin-top: .35em; }
+  svg { display: block; max-width: 100%; }
+  .cols { column-count: 2; column-gap: 1.5em; }
+  ul { padding-left: 1.1em; margin: .4em 0; }
+  .kv { font-size: 9.4pt; }
+  .tag {
+    display: inline-block; background: #1f6f8b; color: #fff; border-radius: 3px;
+    padding: .05em .4em; font-size: 8pt; margin-right: .3em;
+  }
+  .tag.j { background: #b4531a; }
+  footer.cover { margin-top: 2.2em; font-size: 9.5pt; color: #5a6472; }
+</style>
+</head>
+<body>
+
+<h1>SDVworld-index</h1>
+<div class="lead">Engineering manual — everything needed to take the project over.<br>
+Version 1.1 · <span class="mono">samanamarasinghe/SDVworld-index</span></div>
+
+<p>An index of the Synthetic Data Vault ecosystem: papers, preprints, theses, code
+repositories, documentation, tutorials, case studies and blog posts that use, extend,
+evaluate or merely cite SDV. It is a static site on GitHub Pages, built from
+hand-curated JSON shards by one Python script, with no backend and no database.</p>
+
+<p>This manual has four parts: how to <strong>use</strong> the site, how it is
+<strong>built</strong>, what <strong>data</strong> it holds and what is missing from
+it, and what is <strong>left to do</strong> — separating the mechanical work from the
+work that needs a human to make a judgement call.</p>
+
+<div class="note">
+<strong>The four rules that matter most.</strong> Breaking one is expensive.
+<ul>
+<li>Shards are <strong>append-only</strong>. A correction is a new record that sorts
+after the one it corrects, matched by <code>id</code>.</li>
+<li><strong>Never hand-edit</strong> <code>data/sdv-index.json</code>,
+<code>data/build-info.json</code> or anything under <code>data/site/</code>. They are
+generated; CI regenerates the first two.</li>
+<li><strong>Read the source before writing a summary.</strong> Citing a paper is not
+using the software.</li>
+<li><strong>Verify every push with a byte diff.</strong> Two silent corruptions have
+got through review.</li>
+</ul>
+</div>
+
+<h2>1 · User guide</h2>
+
+<p>The site is one page: <span class="mono">samanamarasinghe.github.io/SDVworld-index/</span>.
+Filters are at the top, results below. Everything is client-side — no login, no server,
+nothing is recorded about what you search.</p>
+
+<h3>The two sliders</h3>
+<p><strong>SDV importance</strong> is the one to reach for first. It asks how central
+SDV is to the entry, on a curator-assigned 0–6 scale, and it is the difference between
+browsing the field and browsing everything that ever mentioned SDV.</p>
+
+<table>
+<tr><th class="n">Level</th><th>Meaning</th><th class="n">Entries</th></tr>
+<tr><td class="n">6</td><td>First-party — produced by the SDV project itself</td><td class="n">81</td></tr>
+<tr><td class="n">5</td><td>SDV <em>is</em> the work: a fork or reimplementation</td><td class="n">73</td></tr>
+<tr><td class="n">4</td><td>Load-bearing — remove SDV and the work does not stand</td><td class="n">1,389</td></tr>
+<tr><td class="n">3</td><td>One of several baselines</td><td class="n">1,626</td></tr>
+<tr><td class="n">2</td><td>Method described, not run</td><td class="n">577</td></tr>
+<tr><td class="n">1</td><td>Passing citation</td><td class="n">957</td></tr>
+<tr><td class="n">0</td><td>Everything, including 215 unrated entries and the 44-row uncurated pool</td><td class="n">4,962</td></tr>
+</table>
+
+<p>The default is <strong>1 or above</strong>, which shows 4,703 entries. Note the
+asymmetry: dropping to 0 adds only 259 entries, while moving to 4 removes more than
+three thousand.</p>
+
+<p><strong>Popularity</strong> is attention drawn, and <em>nothing else</em> — GitHub
+stars, forks, contributors and commits for code; citations for papers; log-compressed
+onto one 0–1 scale so the two are comparable. It is a percentile cut over everything
+currently in view. An entry with no attention signal at all sits at a neutral 0.3
+rather than at zero. Popularity and importance are deliberately independent: work can
+be widely used but peripheral to SDV, or obscure and built entirely on it.</p>
+
+<h3>Search</h3>
+<p>By default the box matches <strong>title, summary and author</strong>. Each word is
+matched separately and all of them must appear, in any order; the last word matches as
+a prefix, so results narrow as you type. Accents are folded, so <code>muller</code>
+finds <em>Müller</em> and <code>naive</code> finds <em>naïve</em>.</p>
+<p>Untick <strong>also search summaries</strong> to match titles only — narrower, and
+useful when a common word is swamping the results. There are no wildcards.</p>
+
+<div class="note">Author names are indexed, but the index arrives a moment after the
+page does. A search typed in the very first instant matches title and summary only,
+and re-runs itself once the author index lands.</div>
+
+<h3>Facets</h3>
+<p>Checkbox facets are <strong>OR within, AND across</strong>: ticking two kinds shows
+either, but ticking a kind and a sector shows only entries with both. Each count is
+<em>self-excluding</em> — the number beside a value is how many entries you would get
+if you ticked it, given everything else already selected, which is why a value can
+read 0 without vanishing.</p>
+<p><strong>Sector</strong> and <strong>Affiliation</strong> carry button groups that
+work the opposite way: they <em>permit</em> rather than select. All buttons lit filters
+nothing; unlighting <em>Americas</em> removes every entry with any American
+organization, even if it also has a European one. That is what makes a single lit
+button read as "only here".</p>
+<p><em>Not specified</em> is a real value, not an absence — the curator looked and
+found nothing to record. Authors and organizations have no such value, because a
+missing author list is a gap in the data rather than a statement about the work.</p>
+
+<h3>Results</h3>
+<p>The first 100 are drawn, with <strong>Show 100 more</strong> and <strong>Show
+all</strong> beneath. "Show all" is honest about being slow: rendering all 4,703 takes
+about 1.2 seconds and builds 117,000 elements. Grouping headings read <em>visible of
+total</em>, and an entry with two use cases genuinely appears under both, so section
+totals can exceed the entry count.</p>
+<p><strong>Summary</strong> expands the curator's note, which always ends by saying
+which part of SDV is involved and how. <strong>Show open questions</strong> reveals
+<code>needs</code> — the honest record of where the index is soft.</p>
+
+<div class="page-break"></div>
+<h2>2 · Architecture</h2>
+
+<p>Three stages, one direction, no backend: curated shards are merged by a Python
+build into two independent outputs — a public export nobody's browser reads, and a
+projection built solely for the page.</p>
+
+<figure>
+<svg viewBox="0 0 700 250" width="700" height="250" font-family="Helvetica" font-size="10">
+  <defs>
+    <marker id="a" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+      <polygon points="0 0, 9 3.5, 0 7" fill="#1f6f8b"/></marker>
+  </defs>
+  <rect x="8" y="46" width="126" height="86" rx="5" fill="#eef2f6" stroke="#93a3b2"/>
+  <text x="71" y="66" text-anchor="middle" font-weight="bold">Sources</text>
+  <text x="71" y="84" text-anchor="middle" font-size="9">data/shards/ · 118 files</text>
+  <text x="71" y="98" text-anchor="middle" font-size="9">append-only JSON</text>
+  <text x="71" y="115" text-anchor="middle" font-size="9">data/tail/ pools</text>
+  <text x="71" y="127" text-anchor="middle" font-size="9">harvest metadata</text>
+
+  <line x1="136" y1="89" x2="182" y2="89" stroke="#1f6f8b" stroke-width="1.6" marker-end="url(#a)"/>
+
+  <rect x="184" y="40" width="140" height="98" rx="5" fill="#dcecf2" stroke="#1f6f8b" stroke-width="1.4"/>
+  <text x="254" y="60" text-anchor="middle" font-weight="bold">build.py</text>
+  <text x="254" y="77" text-anchor="middle" font-size="9">assemble_records()</text>
+  <text x="254" y="90" text-anchor="middle" font-size="9">merge · corrections</text>
+  <text x="254" y="103" text-anchor="middle" font-size="9">retire duplicates</text>
+  <text x="254" y="116" text-anchor="middle" font-size="9">join harvest metadata</text>
+  <text x="254" y="131" text-anchor="middle" font-size="8.5" fill="#48525f">one in-memory list</text>
+
+  <line x1="326" y1="70" x2="376" y2="52" stroke="#1f6f8b" stroke-width="1.6" marker-end="url(#a)"/>
+  <line x1="326" y1="108" x2="376" y2="130" stroke="#1f6f8b" stroke-width="1.6" marker-end="url(#a)"/>
+
+  <rect x="378" y="24" width="150" height="52" rx="5" fill="#f2f0e6" stroke="#a89a6a"/>
+  <text x="453" y="42" text-anchor="middle" font-weight="bold" font-size="9.6">data/sdv-index.json</text>
+  <text x="453" y="56" text-anchor="middle" font-size="8.6">the public export · 8.9 MB</text>
+  <text x="453" y="68" text-anchor="middle" font-size="8.6" fill="#7a6a3a">unchanged shape, byte-stable</text>
+
+  <rect x="378" y="102" width="150" height="66" rx="5" fill="#e7f0e6" stroke="#6a9a6a"/>
+  <text x="453" y="120" text-anchor="middle" font-weight="bold" font-size="9.6">data/site/</text>
+  <text x="453" y="134" text-anchor="middle" font-size="8.6">manifest · core · postings</text>
+  <text x="453" y="146" text-anchor="middle" font-size="8.6">32 detail buckets</text>
+  <text x="453" y="160" text-anchor="middle" font-size="8.6" fill="#3a6a3a">the browser's view</text>
+
+  <line x1="530" y1="135" x2="576" y2="135" stroke="#1f6f8b" stroke-width="1.6" marker-end="url(#a)"/>
+  <rect x="578" y="102" width="114" height="66" rx="5" fill="#eef2f6" stroke="#93a3b2"/>
+  <text x="635" y="122" text-anchor="middle" font-weight="bold">Browser</text>
+  <text x="635" y="138" text-anchor="middle" font-size="9">v2/assets/js/</text>
+  <text x="635" y="152" text-anchor="middle" font-size="9">ES modules</text>
+
+  <text x="453" y="90" text-anchor="middle" font-size="8.5" fill="#8a4a2a">no consumer reads this in the browser</text>
+  <text x="352" y="196" text-anchor="middle" font-size="8.8" fill="#48525f">Both outputs come from the SAME assembled list — there is no second merge implementation to drift.</text>
+  <text x="352" y="212" text-anchor="middle" font-size="8.8" fill="#48525f">The export is a downstream contract and must rebuild byte-identically; the projection is free to change shape.</text>
+  <text x="352" y="234" text-anchor="middle" font-size="8.8" fill="#8a4a2a">CI VERIFIES data/site/ rather than rebuilding it — see "Reproducibility" below.</text>
+</svg>
+<figcaption>Figure 1 — the build. One merge, two outputs, one direction.</figcaption>
+</figure>
+
+<h3>What the browser downloads</h3>
+<table>
+<tr><th>File</th><th>When</th><th class="n">gzip</th><th>Holds</th></tr>
+<tr><td class="mono">manifest.json</td><td>eager</td><td class="n">0.4 KB</td><td>counts, file sizes, <code>data_hash</code> (the cache identity)</td></tr>
+<tr><td class="mono">core.json</td><td>eager</td><td class="n">996 KB</td><td>every field the filter, the sort and a collapsed card need</td></tr>
+<tr><td class="mono">summary-postings.json</td><td>eager</td><td class="n">343 KB</td><td>15,143-token inverted index over title + summary</td></tr>
+<tr><td class="mono">author-postings.json</td><td>after paint</td><td class="n">100 KB</td><td>12,420-token index over author names</td></tr>
+<tr><td class="mono">detail/00–1f.json</td><td>on demand</td><td class="n">33 KB ea.</td><td>summary and needs only, 32 buckets</td></tr>
+</table>
+<p><strong>1.38 MB eager</strong>, against a design budget of 1.50 MB. The previous
+version loaded 2.59 MB, of which 0.55 MB was two raw harvest pools downloaded so the
+browser could discover the 44 rows of them that survive de-duplication — work now done
+at build time.</p>
+
+<h3>The record, and what does not travel</h3>
+<p>The projection is <strong>deliberately lossy</strong>. <code>core.json</code> drops
+<code>source_channel</code>, <code>evidence_tier</code>, <code>openalex_id</code>,
+<code>countries</code>, the raw aligned affiliation lists, and the popularity inputs
+now folded into a single score. Those stay in the public export for downstream
+consumers. It <em>adds</em> five precomputed values the page would otherwise derive on
+every keystroke:</p>
+<table>
+<tr><th>Field</th><th>Derived from</th><th>Why precomputed</th></tr>
+<tr><td class="mono">organizations</td><td><code>affiliations</code> split on <code>;</code></td><td>one element can hold several institutions</td></tr>
+<tr><td class="mono">aff_type</td><td><code>affiliation_types</code></td><td>academic / non-academic / unaffiliated, and they overlap</td></tr>
+<tr><td class="mono">aff_region</td><td><code>affiliation_countries</code></td><td>every region enumerated; an unplaceable country gets none</td></tr>
+<tr><td class="mono">pop</td><td>stars, forks, contributors, commits, citations</td><td>log-compressed blend; see the warning below</td></tr>
+<tr><td class="mono">b</td><td><code>sha256(id)[0] &amp; 0x1f</code></td><td>which detail bucket holds the summary</td></tr>
+</table>
+
+<h3>The filter engine</h3>
+<p>The previous version walked the corpus <strong>thirteen times per interaction</strong>
+— once for the list, once for the header count, and once per facet for its
+self-excluding count — re-sorting the whole corpus inside each walk to find the
+popularity percentile. A single click cost between 0.7 and 3.2 seconds.</p>
+
+<figure>
+<svg viewBox="0 0 700 210" width="700" height="210" font-family="Helvetica" font-size="10">
+  <text x="8" y="14" font-weight="bold" font-size="10.5">One walk. Each record gets a failure MASK — one bit per facet that rejects it.</text>
+  <rect x="8" y="26" width="110" height="150" rx="4" fill="#eef2f6" stroke="#93a3b2"/>
+  <text x="63" y="44" text-anchor="middle" font-size="9" font-weight="bold">for each record</text>
+  <text x="63" y="62" text-anchor="middle" font-size="8.6">importance floor</text>
+  <text x="63" y="76" text-anchor="middle" font-size="8.6">popularity floor</text>
+  <text x="63" y="90" text-anchor="middle" font-size="8.6">search candidates</text>
+  <text x="63" y="106" text-anchor="middle" font-size="8.2" fill="#8a4a2a">fail any → skipped</text>
+  <text x="63" y="126" text-anchor="middle" font-size="8.6">then one bit per</text>
+  <text x="63" y="138" text-anchor="middle" font-size="8.6">active facet</text>
+
+  <line x1="120" y1="100" x2="160" y2="100" stroke="#1f6f8b" stroke-width="1.6" marker-end="url(#a)"/>
+
+  <rect x="164" y="40" width="200" height="124" rx="4" fill="#fff" stroke="#1f6f8b" stroke-width="1.3"/>
+  <text x="264" y="58" text-anchor="middle" font-size="9" font-weight="bold">mask</text>
+  <g font-family="monospace" font-size="9">
+    <text x="176" y="78">kind      ·  0</text><text x="176" y="94">use_case  ·  0</text>
+    <text x="176" y="110">industry ·  1  ← fails only this</text>
+    <text x="176" y="126">year      ·  0</text>
+    <text x="176" y="148" fill="#14505f">mask = 0b0100</text>
+  </g>
+
+  <line x1="366" y1="80" x2="404" y2="66" stroke="#1f6f8b" stroke-width="1.6" marker-end="url(#a)"/>
+  <line x1="366" y1="124" x2="404" y2="138" stroke="#1f6f8b" stroke-width="1.6" marker-end="url(#a)"/>
+
+  <rect x="406" y="40" width="286" height="50" rx="4" fill="#e7f0e6" stroke="#6a9a6a"/>
+  <text x="418" y="58" font-size="9" font-weight="bold">mask === 0 → in the RESULT SET</text>
+  <text x="418" y="76" font-size="8.8">this record passed every filter</text>
+
+  <rect x="406" y="112" width="286" height="58" rx="4" fill="#f2f0e6" stroke="#a89a6a"/>
+  <text x="418" y="130" font-size="9" font-weight="bold">(mask &amp; ~bit(F)) === 0 → counts toward facet F</text>
+  <text x="418" y="147" font-size="8.8">"passes everything except F" — the self-excluding count,</text>
+  <text x="418" y="160" font-size="8.8">which the old code needed a separate walk to compute</text>
+
+  <text x="8" y="198" font-size="8.8" fill="#48525f">Result: 13 walks → 1. Interactions went from 0.7–3.2 s to 50–180 ms. The engine counts its own walks; the test gates fail above one.</text>
+</svg>
+<figcaption>Figure 2 — why one pass is enough for both the results and every facet count.</figcaption>
+</figure>
+
+<h3>Runtime modules</h3>
+<p>Native ES modules under <code>v2/assets/js/</code>; no bundler, no build step for
+the front end.</p>
+<table>
+<tr><th>Module</th><th>Responsibility</th></tr>
+<tr><td class="mono">vocab.js</td><td>Labels, controlled vocabularies, region tables. <strong>Extracted verbatim from the old runtime by script</strong>, not retyped; <code>scripts/check_vocab_parity.py</code> fails on drift.</td></tr>
+<tr><td class="mono">data.js</td><td>Loads the projection; normalizes each record once; the <code>Details</code> bucket loader.</td></tr>
+<tr><td class="mono">search.js</td><td>Tokenizing, folding, postings, the multi-index <code>Index</code>.</td></tr>
+<tr><td class="mono">engine.js</td><td>The one-pass mask walk. Caches its result on a state signature.</td></tr>
+<tr><td class="mono">order.js</td><td>Sorting and grouping, including the page-limit group plan.</td></tr>
+<tr><td class="mono">render.js</td><td>Cards, the 100-record page, lazy summary and needs, BibTeX.</td></tr>
+<tr><td class="mono">state.js</td><td>State, the facet panel, input coalescing.</td></tr>
+<tr><td class="mono">app.js</td><td>Wiring. Exported as a class so harnesses can drive it.</td></tr>
+</table>
+
+<div class="warn note">
+<strong>Three traps, each of which has already bitten.</strong>
+<ul>
+<li><strong>Popularity is not rounded, on purpose.</strong> <code>math.log1p</code> is
+not correctly rounded and libm differs by platform, so this corpus built on macOS and
+on CI's Linux differs in the last bit for 395 records. Rounding to 9 dp looks safe —
+it collapses only 10 pairs that should have scored identically — but those pairs are
+<em>ordered</em> in the old runtime, the golden corpus recorded that order, and
+quantizing failed 76 golden states. Fidelity wins. CI therefore
+<strong>verifies</strong> <code>data/site/</code> instead of rebuilding it, so the
+bytes served are always the bytes that were tested.</li>
+<li><strong>Paths resolve through <code>import.meta.url</code>.</strong> Pages serves
+under <code>/SDVworld-index/</code>, so a root-relative data path works locally and
+404s in production.</li>
+<li><strong>The build tokenizes in Python, the runtime in JavaScript.</strong> If they
+diverge, a query is looked up under a key the text was never filed under and search
+silently returns too little. Both are pinned to a shared table,
+<code>tests/semantic/tokenizer-cases.json</code>, checked from each side.</li>
+</ul>
+</div>
+
+<div class="page-break"></div>
+<h2>3 · The data</h2>
+
+<p>4,918 curated entries, assembled from 118 append-only shards, plus 44 uncurated
+pool survivors visible only at importance 0. Publication years span 2011–2026.</p>
+
+<figure>
+<svg viewBox="0 0 700 168" width="700" height="168" font-family="Helvetica" font-size="9">
+  <text x="0" y="11" font-weight="bold" font-size="10">Entries by kind (4,918)</text>
+  <g>
+    <rect x="96" y="20" width="332" height="13" fill="#1f6f8b"/><text x="0" y="30">paper</text><text x="434" y="30">2,178</text>
+    <rect x="96" y="37" width="295" height="13" fill="#2f8fa8"/><text x="0" y="47">code_repo</text><text x="434" y="47">1,932</text>
+    <rect x="96" y="54" width="101" height="13" fill="#4aa8bf"/><text x="0" y="64">preprint</text><text x="434" y="64">661</text>
+    <rect x="96" y="71" width="7" height="13" fill="#6cbcd0"/><text x="0" y="81">blog_post</text><text x="434" y="81">40</text>
+    <rect x="96" y="88" width="6" height="13" fill="#6cbcd0"/><text x="0" y="98">documentation</text><text x="434" y="98">38</text>
+    <rect x="96" y="105" width="5" height="13" fill="#8ecfdd"/><text x="0" y="115">tutorial</text><text x="434" y="115">29</text>
+    <rect x="96" y="122" width="3" height="13" fill="#8ecfdd"/><text x="0" y="132">thesis</text><text x="434" y="132">18</text>
+    <rect x="96" y="139" width="4" height="13" fill="#b3e0e9"/><text x="0" y="149">other</text><text x="434" y="149">22</text>
+  </g>
+  <text x="480" y="11" font-weight="bold" font-size="10">Curator confidence</text>
+  <rect x="480" y="20" width="150" height="13" fill="#4a7f4a"/><text x="636" y="30">high 3,487</text>
+  <rect x="480" y="37" width="39" height="13" fill="#8ab08a"/><text x="636" y="47">med 910</text>
+  <rect x="480" y="54" width="22" height="13" fill="#c2d6c2"/><text x="636" y="64">low 521</text>
+  <text x="480" y="88" font-weight="bold" font-size="10">Provenance</text>
+  <text x="480" y="104">3,833 auto-curated (LLM-assisted)</text>
+  <text x="480" y="118">1,085 hand-curated</text>
+  <text x="480" y="132" fill="#8a4a2a">2,801 carry an open question</text>
+  <text x="480" y="146" fill="#8a4a2a">215 have no importance rating</text>
+</svg>
+<figcaption>Figure 3 — composition of the curated index.</figcaption>
+</figure>
+
+<h3>What was gathered</h3>
+<p>Records come from OpenAlex (citation graph around the SDV papers), a GitHub code
+search for SDV import patterns, and hand-curation of first-party and notable sources.
+Bibliographic and repository metadata — year, DOI, venue, stars, forks, contributors,
+commits — are <em>joined at build time</em> from <code>data/tail/</code>; a curator's
+value always wins over the join, and the join only ever fills a field a shard left
+empty.</p>
+<p>Author affiliations are the most laborious part of the dataset: 10,599 distinct
+author names resolve to 2,655 distinct organizations, each classified academic or
+non-academic and placed in a country, through
+<code>data/affiliation-normalizations.json</code> and a stack of curated override
+files.</p>
+
+<h3>What is missing — and how much</h3>
+<table>
+<tr><th>Gap</th><th class="n">Entries</th><th>Consequence</th></tr>
+<tr><td>No author list</td><td class="n">1,364</td><td>28% invisible to author search and the Author facet</td></tr>
+<tr><td>No affiliation</td><td class="n">1,364</td><td>same records; they read <em>Affiliation not found</em></td></tr>
+<tr><td>No importance rating</td><td class="n">215</td><td>hidden at the default floor of 1 — they only appear at 0</td></tr>
+<tr><td>Open question recorded</td><td class="n">2,801</td><td>a verification the curator could not complete</td></tr>
+<tr><td>Low confidence</td><td class="n">521</td><td>the summary may not reflect the source</td></tr>
+<tr><td>No DOI</td><td class="n">2,100</td><td>no stable pointer; the URL may rot</td></tr>
+<tr><td>No year</td><td class="n">13</td><td>sorts last, grouped under <em>Undated</em></td></tr>
+</table>
+
+<div class="warn note"><strong>The largest single gap is affiliation coverage.</strong>
+1,364 of 4,918 entries — nearly three in ten — carry no author or affiliation at all,
+which means every sector, region and organization figure on the site is computed over
+72% of the index. The counts are correct for what is recorded; they are not a census.
+</div>
+
+<p>Two further caveats worth knowing before trusting a number:</p>
+<ul>
+<li><strong>2,801 entries carry an open question</strong>, not the 114 the old
+interface's tooltip claimed. That tooltip is stale and is listed as a to-do below.</li>
+<li><strong>3,833 of 4,918 summaries are LLM-assisted</strong> and carry a
+<code>reviewed</code> flag. Confidence is the curator's own estimate of whether the
+source was actually read, and 521 say <em>low</em>.</li>
+</ul>
+
+<div class="page-break"></div>
+<h2>4 · Working on it</h2>
+
+<h3>The commands</h3>
+<table>
+<tr><td class="mono">python3 build.py</td><td>merge shards, report counts, write nothing</td></tr>
+<tr><td class="mono">python3 build.py --write</td><td>write the export, the stamp and the projection</td></tr>
+<tr><td class="mono">python3 tests/validate.py</td><td>schema, vocabulary, pointer and alignment checks</td></tr>
+<tr><td class="mono">python3 tests/build_tests.py</td><td>15 checks on the projection</td></tr>
+<tr><td class="mono">python3 tests/gates.py --stage 2b</td><td>the eleven structural gates</td></tr>
+<tr><td class="mono">python3 scripts/verify_site.py</td><td>is the committed projection current?</td></tr>
+<tr><td class="mono">python3 scripts/serve.py</td><td>localhost:8765, with a POST sink for the browser harnesses</td></tr>
+</table>
+
+<h3>The test suite, and what each part can actually catch</h3>
+<p>They are layered deliberately: each catches a class the one above cannot see.</p>
+<table>
+<tr><th>Suite</th><th>Catches</th><th>Blind to</th></tr>
+<tr><td><strong>Golden differential</strong><br><span class="mono">tests/oracle/</span><br>293 frozen states</td>
+<td>any change in which records match, in what order, with what facet counts</td>
+<td>everything about the DOM — it drives the engine directly</td></tr>
+<tr><td><strong>Semantic suite</strong><br><span class="mono">tests/semantic/</span><br>36 hand-authored cases</td>
+<td>whether the semantics are <em>right</em>, not merely unchanged</td>
+<td>anything not written down as a case</td></tr>
+<tr><td><strong>Build tests</strong><br><span class="mono">tests/build_tests.py</span></td>
+<td>projection integrity, export byte-identity, tokenizer agreement</td>
+<td>runtime behaviour</td></tr>
+<tr><td><strong>UI parity</strong><br><span class="mono">tests/parity/</span></td>
+<td>every visible detail of both real pages, driven by real clicks</td>
+<td>the old page will not exist forever — see below</td></tr>
+<tr><td><strong>Gates</strong><br><span class="mono">tests/gates.py</span></td>
+<td>the structural budgets; fails on missing or stale evidence</td>
+<td>wall-clock timing, which is recorded and never gated</td></tr>
+</table>
+
+<div class="warn note"><strong>The parity harness has a shelf life.</strong> It compares
+the current page against the previous one at <code>/v1/</code>, which the design keeps
+for one release only. When <code>/v1/</code> is removed, that harness stops being
+meaningful and the golden corpus becomes the only record of the old behaviour. Decide
+deliberately whether to freeze a final parity run before deleting it.</div>
+
+<h3>To-do — mechanical</h3>
+<p>Work that needs doing but not deciding.</p>
+<ul>
+<li><strong>Retire <code>/v1/</code></strong> after one release, with the parity
+question above settled first.</li>
+<li><strong>The stale tooltip.</strong> The open-questions button claims 114 entries
+carry one; the real figure is 2,801. The text is in <code>index.html</code>.</li>
+<li><strong>The BibTeX download path is not tested end to end.</strong> Creation and
+revocation of the object URL are covered; the browser actually saving the file is not,
+because the test stubs delivery to avoid writing files during runs.</li>
+<li><strong>Rendered summaries use <code>innerHTML</code></strong>, as the old page
+did, because curated summaries carry inline links. The text is curator-authored and
+travels with the generated index, but it is worth a deliberate look.</li>
+<li><strong>Node and Playwright are not installed</strong> on the maintainer's machine,
+so the browser harnesses are driven manually rather than in CI. They were written with
+no driver-specific API precisely so a Playwright driver can load the same URLs.</li>
+<li><strong>215 entries have no importance rating</strong> and are therefore invisible
+at the default floor. Rating them is mechanical once someone reads the source.</li>
+</ul>
+
+<h3>Needs human judgement</h3>
+<p>Do not let an agent decide these.</p>
+<ul>
+<li><span class="tag j">recall</span><strong>Should <code>GAN</code> match inside
+<code>ctgan</code>?</strong> The old page matched substrings anywhere and returned
+3,589; the current page matches whole words and returns 1,311. Someone searching GAN
+arguably wants the CTGAN papers. Restoring it is a five-line change to match the final
+term as a substring of the vocabulary — at the cost of <code>he</code> matching inside
+<code>the</code> again.</li>
+<li><span class="tag j">data</span><strong>The affiliation gap.</strong> Closing it for
+1,364 entries is weeks of work and the only way to make the sector and region figures a
+census rather than a sample. Whether that is worth it is a judgement about what the
+index is <em>for</em>.</li>
+<li><span class="tag j">data</span><strong>How much LLM-assisted curation is
+acceptable?</strong> 78% of summaries are auto-curated. The <code>reviewed</code> flag
+and the confidence rating exist to make that visible, but the threshold for publishing
+an unreviewed summary is a policy nobody has written down.</li>
+<li><span class="tag j">scope</span><strong>The uncurated pools.</strong> 44 rows
+survive de-duplication and appear only at importance 0. Either curate them or drop
+them; leaving them is a third choice that costs a permanent branch in the code.</li>
+<li><span class="tag j">scope</span><strong>Shareable query-string state</strong> was
+deferred as optional. It is the most-requested kind of feature for an index like this,
+and it interacts with every filter.</li>
+<li><span class="tag j">policy</span><strong>Unresolved curation questions</strong>
+live in <code>docs/open-questions.md</code>. They are there because they need the
+owner's ruling; do not invent a resolution.</li>
+</ul>
+
+<h3>Where to read next</h3>
+<table>
+<tr><td class="mono">README.txt</td><td>the project in prose, and the traps — fastest orientation</td></tr>
+<tr><td class="mono">AGENTS.md · CLAUDE.md</td><td>how to work here; the operating rules</td></tr>
+<tr><td class="mono">docs/schema.md</td><td>the record schema and controlled vocabularies — the definition, parsed by validate.py</td></tr>
+<tr><td class="mono">docs/agent-guide.md</td><td>curation procedure, the append-only rule, access routes to full text</td></tr>
+<tr><td class="mono">docs/perf/</td><td>the performance redesign: design v2, five stage briefs, four handoffs</td></tr>
+<tr><td class="mono">TODO.txt</td><td>what is left, with the commands that regenerate every count in it</td></tr>
+</table>
+
+<footer class="cover">Generated from <span class="mono">docs/manual/manual.html</span>
+by <span class="mono">scripts/build_manual.sh</span>. Figures are inline SVG; edit the
+HTML and re-run.</footer>
+
+</body>
+</html>

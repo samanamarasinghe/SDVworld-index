@@ -79,3 +79,23 @@ the built index is how two retired repositories were re-curated and re-added.
 **Size is not a diff.** `data/tail/github-repos.json` once produced a 67,680-line diff
 that was pure formatting: the committed copy was single-line JSON and the harvester
 writes it pretty-printed. Check the counts, not the line count.
+
+## `data/site/` — the browser's view (generated, v1.1+)
+
+Written by `site_projection.py` from the same assembled record list as
+`data/sdv-index.json`. Never hand-edit. `scripts/verify_site.py` checks it is current;
+CI runs that rather than regenerating, because `math.log1p` differs in the last bit
+between platforms and the bytes served must be the bytes that were tested.
+
+| file | eager? | gzip | contents |
+| --- | --- | --- | --- |
+| `manifest.json` | yes | 0.4 KB | counts, file sizes, `data_hash` — the cache identity |
+| `core.json` | yes | 996 KB | filter, sort and collapsed-card fields, plus precomputed `organizations`, `aff_type`, `aff_region`, `pop` and the detail-bucket id |
+| `summary-postings.json` | yes | 343 KB | inverted index over title + summary, 15,143 tokens, delta-encoded |
+| `author-postings.json` | after paint | 100 KB | inverted index over author names, 12,420 tokens |
+| `detail/00.json`…`1f.json` | on demand | 33 KB each | summary and needs only, keyed by id |
+
+The projection is intentionally lossy: `source_channel`, `evidence_tier`,
+`openalex_id`, `countries`, the raw aligned affiliation lists and the popularity
+inputs stay in the export only. The 44 uncurated pool survivors are folded in here at
+build time, so the page never downloads a raw pool.

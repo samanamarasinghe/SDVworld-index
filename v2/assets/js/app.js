@@ -4,7 +4,7 @@
  * benchmark can build one against a mount of their choosing and drive it directly.
  * main.js is the two lines that start it on the real page.
  */
-import { Corpus, Details, loadSite } from './data.js';
+import { Corpus, Details, loadSite, loadAuthorPostings } from './data.js';
 import { Engine, countValues } from './engine.js';
 import { sortWithin, groupHeadersFor, headerOrder } from './order.js';
 import { renderResults, syncNeeds, PAGE } from './render.js';
@@ -236,10 +236,19 @@ export class App {
 
   async start({ onError } = {}) {
     try {
-      const { records, counts, postings } = await loadSite();
-      this.engine.postings = postings;
+      const { records, counts, index } = await loadSite();
+      this.engine.search = index;
       this.setCorpus(records, counts);
       this.apply();
+
+      /* After the first paint, not before it. If it fails, search simply keeps
+         working over title and summary -- so this is deliberately not fatal and not
+         reported to the reader. */
+      loadAuthorPostings().then(p => {
+        this.engine.search.add(p);
+        this.engine.invalidate();
+        if (this.state.titleQuery) this.schedule();
+      }).catch(() => {});
     } catch (e) {
       const msg = `Could not load the index: ${e.message}. ` +
         'Serve over HTTP, not the file:// scheme.';
@@ -280,7 +289,7 @@ export class App {
          site_projection.py the site is built with. Projecting in JS here would be a
          second implementation of the thing under test. */
       setCorpus: (coreRecords, counts) => app.setCorpus(coreRecords, counts),
-      setPostings: (p) => { app.engine.postings = p; app.engine.invalidate(); },
+      setPostings: (idx) => { app.engine.search = idx; app.engine.invalidate(); },
       details: app.details,
     };
   }

@@ -200,7 +200,12 @@ async function v2Engine() {
   const proj = await (await fetch('/tests/semantic/fixture-projected.json',
     { cache: 'no-store' })).json();
   built.engine.setCorpus(proj.core, proj.counts);
-  if (proj.postings) built.engine.setPostings(new (await import('../../v2/assets/js/search.js')).Postings(proj.postings));
+  if (proj.postings) {
+    const S = await import('../../v2/assets/js/search.js');
+    const parts = [new S.Postings(proj.postings)];
+    if (proj.authorPostings) parts.push(new S.Postings(proj.authorPostings));
+    built.engine.setPostings(new S.Index(parts));
+  }
   for (const [name, content] of Object.entries(proj.detail)) {
     built.app.details.prime(name, content);
   }
@@ -230,12 +235,13 @@ async function renderHarness() {
     urls, downloadBibtex, mount, generated,
     Details: (await import('../../v2/assets/js/data.js')).Details,
     Postings: (await import('../../v2/assets/js/search.js')).Postings,
+    Index: (await import('../../v2/assets/js/search.js')).Index,
     app: null, results: null,
     /* Scoped to the container, so App.$ resolves ids inside it rather than globally. */
     async load(bundle) {
       h.app = new App(mount).mount();
       h.app.setCorpus(bundle.core, bundle.counts);
-      if (bundle.postings) h.app.engine.postings = new h.Postings(bundle.postings);
+      if (bundle.postings) h.app.engine.search = new h.Index([new h.Postings(bundle.postings)]);
       for (const [name, content] of Object.entries(bundle.detail || {})) {
         h.app.details.prime(name, content);
       }

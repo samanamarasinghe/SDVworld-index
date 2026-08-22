@@ -1,7 +1,46 @@
 ================================================================================
 SDVworld-index -- TODO
-Index v0.999999999 | 4918 curated entries | 118 shards | last reviewed 2026-08-21
+Index v1.1 | 4918 curated entries | 118 shards | last reviewed 2026-08-22
 ================================================================================
+
+THE PERFORMANCE REDESIGN IS DONE AND LIVE (2026-08-22, v1.1)
+--------------------------------------------------------------------------------
+
+  Stages 0-3 of docs/perf/sdvworld-perf-design-v2.md are complete. The rebuilt
+  page is now the site; the previous one is archived at /v1/ for one release.
+
+  What changed for a reader: interactions went from 0.7-3.2 s to 50-180 ms,
+  cold load from ~8.9 s to ~0.5 s, and the download from 2.59 MB to 1.38 MB.
+  Search now matches title, summary AND author by word rather than by raw
+  substring -- "Kalyan" went from 1 hit to 26. Results are drawn 100 at a time
+  with "Show more"; "Show all" renders everything in about 1.2 s.
+
+  What a maintainer needs to know is in SDVworld-manual.pdf. Do not skip
+  section 2's three traps -- popularity precision, path resolution, and the
+  Python/JavaScript tokenizer agreement. Each has already caused a real bug.
+
+  Left over from that work, all mechanical:
+
+    [ ] Retire /v1/ after one release. Read tests/parity/README.md first: the
+        parity harness compares against it and stops being meaningful once it
+        is gone. Decide whether to freeze a final run.
+    [ ] The "Show open questions" tooltip in index.html claims 114 entries
+        carry one. The real figure is 2801. Stale since long before this work.
+    [ ] The BibTeX download is not tested end to end -- the test stubs
+        delivery so runs do not litter a Downloads folder. Creation and
+        revocation of the object URL ARE covered.
+    [ ] No Node on the maintainer's machine, so the browser harnesses are
+        driven by hand rather than in CI. They use no driver-specific API, so
+        a Playwright driver can load the same URLs unchanged.
+
+  And one that is NOT mechanical, recorded in the manual as needing a ruling:
+
+    [ ] Should a search for "GAN" match inside "ctgan"? The old page matched
+        substrings anywhere (3589 hits); the new one matches whole words
+        (1311). Someone searching GAN arguably wants the CTGAN papers.
+        Five-line change either way; the cost of restoring it is "he" matching
+        inside "the" again.
+
 
 Read README.txt first if you have not. This file is the work queue: what is
 missing, what is curated but unverified, what was never curated, and what is

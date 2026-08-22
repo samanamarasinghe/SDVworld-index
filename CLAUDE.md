@@ -42,6 +42,27 @@ Run `python3 tests/gates.py` before every commit. It fails the commit on any of:
 
 Wall-clock timings are **recorded, never gated** (§9). Report them; do not fail on them.
 
+## Testing rules (owner, 2026-08-22)
+
+1. **Always force a reload before testing.** Never trust that the page under test is
+   the code just written. This has bitten three times: `serve.py` answered
+   `If-Modified-Since` with a 304 so Chrome ran an OLD harness through two
+   twenty-five-minute runs and reported stale-code failures as product bugs; a results
+   file from a previous run was nearly reported as a fresh result; and a half-cached
+   deploy rendered `/v2/` blank. Cache-bust every navigation and every fetch in a
+   harness, and check an artifact's mtime before believing it.
+2. **Test deselection, not just selection.** Every harness so far builds each state
+   from a cleared baseline, so nothing ever unticks a box or switches a toggle back.
+   Sequence-dependent state bugs -- a selection that lingers after being cleared, a
+   switch that does not return to where it started -- are invisible to that shape of
+   test.
+3. **Search with realistic strings**, drawn from the corpus rather than invented:
+   author first names and surnames, title phrases, venue and conference names, years,
+   and some genuine nonsense.
+4. **Time the "Show all" path.** The 100-record cap is what makes v2 fast; with the
+   cap lifted it renders everything, which is the one path where it has no advantage
+   over v1. Measure it rather than assuming.
+
 ## Ordering rules
 
 - **Oracle before code.** Stage 0 must be committed and green before any behavior-bearing

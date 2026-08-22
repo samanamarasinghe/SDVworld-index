@@ -119,8 +119,54 @@ export class Postings {
   }
 }
 
+/* One or more Postings searched together.
+ *
+ * Authors live in their own index, fetched after first paint, because folding them
+ * into the main one cost 100 KB gzip and left 20 KB of headroom under the eager
+ * budget. A term matches if ANY index carries it, so the per-term candidate sets are
+ * unioned across indexes first and only then intersected across terms -- doing it the
+ * other way round would require every term to come from the same index, and
+ * "veeramachaneni synthetic" would find nothing. */
+export class Index {
+  constructor(parts = []) { this.parts = parts.filter(Boolean); }
+
+  add(postings) { this.parts.push(postings); return this; }
+  get ready() { return this.parts.length > 0; }
+
+  candidates(query) {
+    if (!this.parts.length) return null;
+    const terms = tokenize(query);
+    if (!terms.length) return null;
+    const usePrefix = prefixWanted(query);
+
+    const perTerm = [];
+    for (let i = 0; i < terms.length; i++) {
+      const last = i === terms.length - 1 && usePrefix;
+      const union = new Set();
+      for (const p of this.parts) {
+        if (last) {
+          for (const id of p.withPrefix(terms[i])) union.add(id);
+        } else {
+          const ids = p.exact(terms[i]);
+          if (ids) for (const id of ids) union.add(id);
+        }
+      }
+      if (!union.size) return new Set();
+      perTerm.push(union);
+    }
+    perTerm.sort((a, b) => a.size - b.size);
+    let acc = perTerm[0];
+    for (let i = 1; i < perTerm.length && acc.size; i++) {
+      const next = new Set();
+      for (const id of acc) if (perTerm[i].has(id)) next.add(id);
+      acc = next;
+    }
+    return acc;
+  }
+}
+
 export async function loadPostings(url) {
-  const r = await fetch(url);
+  const r = await fetch(url, { cache: 'no-store' });
   if (!r.ok) throw new Error(`postings: HTTP ${r.status}`);
   return new Postings(await r.json());
 }

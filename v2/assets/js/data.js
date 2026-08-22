@@ -15,7 +15,7 @@
  * site_projection.py.
  */
 import { FACET_KEYS, NONE, NO_NONE } from './vocab.js';
-import { fold, Postings } from './search.js';
+import { fold, Postings, Index } from './search.js';
 
 /* Resolved against this module's own URL. Pages serves this project under
  * /SDVworld-index/, so a root-relative path would 404 in production while working on
@@ -25,6 +25,7 @@ const at = (rel) => new URL(rel, import.meta.url).href;
 export const SITE = at('../../../data/site/');
 export const MANIFEST_PATH = SITE + 'manifest.json';
 export const POSTINGS_PATH = SITE + 'summary-postings.json';
+export const AUTHOR_POSTINGS_PATH = SITE + 'author-postings.json';
 
 /* ---- normalization ------------------------------------------------------- */
 
@@ -171,6 +172,15 @@ export class Details {
 
 /* ---- loading ------------------------------------------------------------- */
 
+/* Fetched after the first render, so it costs nothing against the eager budget and
+ * nothing a reader can perceive. Until it lands, a query searches title and summary
+ * only -- which is what the page did before authors were indexed at all. */
+export async function loadAuthorPostings() {
+  const r = await fetch(AUTHOR_POSTINGS_PATH, { cache: 'no-store' });
+  if (!r.ok) throw new Error(`author postings: HTTP ${r.status}`);
+  return new Postings(await r.json());
+}
+
 export async function loadSite() {
   const grab = async (url, what) => {
     const r = await fetch(url);
@@ -191,5 +201,5 @@ export async function loadSite() {
                     `core ${core.schema_version}`);
   }
   return { manifest, records: core.records, counts: manifest.counts,
-           postings: new Postings(postings) };
+           index: new Index([new Postings(postings)]) };
 }

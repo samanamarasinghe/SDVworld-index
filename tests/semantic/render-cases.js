@@ -329,12 +329,12 @@ export const RENDER_CASES = [
     why: '§4. Several terms must all be present, in any order; the final term ' +
          'matches by prefix so results narrow as the reader types.',
     async run(h) {
-      const { Postings } = await import('/v2/assets/js/search.js');
+      const { Postings, Index } = await import('/v2/assets/js/search.js');
       /* Three records, hand-built so every expected answer is readable here. */
-      const P = new Postings({
+      const P = new Index([new Postings({
         vocab: ['alpha', 'beta', 'betamax', 'gamma'],
         postings: [[0, 1], [0, 2], [1], [2]],   // delta-encoded: a=[0,1] b=[0,2] bm=[1] g=[2]
-      });
+      })]);
       const set = (q) => [...(P.candidates(q) || [])].sort();
       const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
       if (!eq(set('alpha'), [0, 1])) return `alpha -> ${set('alpha')}`;

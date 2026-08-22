@@ -272,7 +272,9 @@ def main(write=False, site=True):
                   f"{summary['buckets']} detail buckets, "
                   f"core {summary['core_bytes']:,} B, "
                   f"{summary['vocab']:,}-token postings "
-                  f"{summary['postings_bytes']:,} B")
+                  f"{summary['postings_bytes']:,} B, "
+                  f"{summary['author_vocab']:,}-token author postings "
+                  f"{summary['author_postings_bytes']:,} B")
     report(out, stats, write)
 
 

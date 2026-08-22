@@ -322,8 +322,8 @@ def tokenize(text):
     return [w for w in re.split(r'[\W_]+', fold(text), flags=re.UNICODE) if w]
 
 
-def build_postings(records):
-    """Vocabulary and postings over title + summary (§4).
+def build_postings(records, field='text'):
+    """Vocabulary and postings over the chosen text (§4).
 
     Postings are delta-encoded: a record list is ascending, so storing the gaps
     instead of the values roughly halves it before compression and more than halves
@@ -332,7 +332,10 @@ def build_postings(records):
     """
     by_token = {}
     for i, rec in enumerate(records):
-        text = (rec.get('title') or '') + ' ' + (rec.get('summary') or '')
+        if field == 'authors':
+            text = ' '.join(rec.get('authors') or [])
+        else:
+            text = (rec.get('title') or '') + ' ' + (rec.get('summary') or '')
         for token in set(tokenize(text)):
             by_token.setdefault(token, []).append(i)
     vocab = sorted(by_token)
@@ -421,6 +424,16 @@ def write_site(assembled):
                                             'records': core})
     postings = build_postings(records)
     files['summary-postings.json'] = dump('summary-postings.json', postings)
+    # Authors ride in their own file, fetched after first paint.
+    #
+    # Searching an author's name found nothing in v1 and found nothing here until
+    # 2026-08-22: "Kalyan" appears in 28 author lists, 1 summary and 0 titles, so the
+    # search box simply could not reach it. Folding authors into the main index would
+    # have cost 100 KB gzip and left 20 KB of headroom under the 1.5 MB eager budget --
+    # enough for the next curation batch to break the build. Lazy keeps the eager
+    # budget honest and costs a reader nothing they can perceive.
+    authors = build_postings(records, field='authors')
+    files['author-postings.json'] = dump('author-postings.json', authors)
     for name, content in sorted(buckets.items()):
         files[f'detail/{name}.json'] = dump(f'detail/{name}.json', content)
 
@@ -430,8 +443,9 @@ def write_site(assembled):
     h = hashlib.sha256()
     h.update(json.dumps(core, ensure_ascii=False, sort_keys=True,
                         separators=(',', ':')).encode('utf-8'))
-    h.update(json.dumps(postings, ensure_ascii=False, sort_keys=True,
-                        separators=(',', ':')).encode('utf-8'))
+    for part in (postings, authors):
+        h.update(json.dumps(part, ensure_ascii=False, sort_keys=True,
+                            separators=(',', ':')).encode('utf-8'))
     for name in sorted(buckets):
         h.update(json.dumps(buckets[name], ensure_ascii=False, sort_keys=True,
                             separators=(',', ':')).encode('utf-8'))
@@ -456,7 +470,9 @@ def write_site(assembled):
             'tail': len(cite) + len(gh), 'buckets': BUCKETS,
             'core_bytes': files['core.json'],
             'vocab': len(postings['vocab']),
+            'author_vocab': len(authors['vocab']),
             'postings_bytes': files['summary-postings.json'],
+            'author_postings_bytes': files['author-postings.json'],
             'data_hash': manifest['data_hash']}
 
 

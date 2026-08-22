@@ -31,7 +31,7 @@ const COUNTED = FACET_KEYS;
 export class Engine {
   constructor(corpus) {
     this.corpus = corpus;
-    this.postings = null;
+    this.search = null;   // a search.js Index, or null before load
     this._cache = null;
     this._signature = null;
     this._scans = 0;
@@ -79,7 +79,7 @@ export class Engine {
     const useSummaries = state.searchSummaries !== false;
     let candidates = null, titleNeedle = '';
     if (rawQuery) {
-      if (useSummaries && this.postings) candidates = this.postings.candidates(rawQuery);
+      if (useSummaries && this.search) candidates = this.search.candidates(rawQuery);
       else titleNeedle = fold(rawQuery);
     }
     const floor = this.corpus.popularityFloor(state.minPopularity);

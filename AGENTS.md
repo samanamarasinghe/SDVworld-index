@@ -6,7 +6,11 @@ ecosystem published at https://samanamarasinghe.github.io/SDVworld-index/
 Owner: Saman Amarasinghe. Report back to him, not to whoever queued the task.
 
 This file is a pointer. The instructions live in `docs/`, and there is more of them than
-fits here. Read in this order:
+fits here.
+
+**Start with `SDVworld-manual.pdf`** if you are new: user guide, architecture with
+diagrams, what the data holds and lacks, and the to-do list split into mechanical work
+and work that needs a human ruling. Then read in this order:
 
 1. **`README.txt`** — what the project is, how the data flows, and the traps. Written for
    a human but it is the fastest orientation there is.
@@ -21,9 +25,14 @@ fits here. Read in this order:
 5. **`docs/open-questions.md`** — judgment calls awaiting the owner's ruling. Do not
    resolve these yourself and do not invent a resolution to one already listed.
 
-Also: `docs/site.md` for the page and its filter semantics, `docs/data-files.md` for what
-every file under `data/` contains, `harvest/README.md` and `curate/README.md` for the
-scripts.
+Also: `docs/site.md` for the filter semantics (still exact; the runtime it describes was
+replaced in v1.1), `docs/data-files.md` for what every file under `data/` contains,
+`docs/perf/` for the performance redesign and its five stage briefs, `harvest/README.md`
+and `curate/README.md` for the scripts.
+
+The front end is `index.html` plus eight ES modules under `v2/assets/js/`. The previous
+page is archived at `/v1/` for one release and must not be edited — the golden corpus is
+pinned to its hash.
 
 The four rules worth stating twice, because breaking one is expensive:
 
@@ -38,6 +47,9 @@ The four rules worth stating twice, because breaking one is expensive:
   have got through review; `validate.py` matches titles fuzzily and will not catch a
   dropped letter.
 
-    python3 build.py            # merge shards, report counts, write nothing
-    python3 build.py --write    # write the generated index
-    python3 tests/validate.py   # schema, vocabulary, pointer and alignment checks
+    python3 build.py                    # merge shards, report counts, write nothing
+    python3 build.py --write            # write the export, the stamp and data/site/
+    python3 tests/validate.py           # schema, vocabulary, pointer, alignment
+    python3 tests/build_tests.py        # 15 checks on the generated projection
+    python3 tests/gates.py --stage 2b   # the eleven structural gates -- before a push
+    python3 scripts/serve.py            # localhost:8765 for the browser harnesses

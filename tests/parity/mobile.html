@@ -14,9 +14,18 @@
 </style>
 <div id="bar"><span id="status">loading…</span></div>
 <div class="frames">
-  <figure><figcaption>v1 — 390px</figcaption><iframe id="f1" src="/index.html"></iframe></figure>
-  <figure><figcaption>v2 — 390px</figcaption><iframe id="f2" src="/v2/index.html"></iframe></figure>
+  <figure><figcaption>v1 — 390px</figcaption><iframe id="f1"></iframe></figure>
+  <figure><figcaption>v2 — 390px</figcaption><iframe id="f2"></iframe></figure>
 </div>
+<script>
+/* CACHE-BUST. Never test a page the browser kept from last time: serve.py once
+   answered a conditional request with a 304 and Chrome ran an OLD harness through two
+   full runs, reporting stale code as product failure. The frame src is set here, with
+   a unique token, rather than written in the markup. */
+const BUST = 'cb=' + Date.now() + '-' + Math.random().toString(36).slice(2);
+document.getElementById('f1').src = '/v1/index.html?' + BUST;
+document.getElementById('f2').src = '/index.html?' + BUST;
+</script>
 <script type="module">
 const ready = async (id, name) => {
   const f = document.getElementById(id);

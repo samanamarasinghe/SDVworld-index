@@ -1,11 +1,29 @@
 # The page and its filter semantics
 
-The site is `index.html` plus `assets/js/sdv-index.js`, served by GitHub Pages from
-`main`. No build step, no framework, no bundler: the JS is one IIFE of ES5, and the
-page fetches `data/sdv-index.json` and the two pool files at runtime.
+> **As of v1.1 (2026-08-22) the runtime described here has been replaced.** The
+> *semantics* below are still exact and still enforced — they are what
+> `tests/semantic/` asserts and what the 293-state golden differential pins — but the
+> code that implements them has moved.
+>
+> | then | now |
+> | --- | --- |
+> | `assets/js/sdv-index.js`, one ES5 IIFE | `v2/assets/js/*.js`, eight ES modules |
+> | fetches `data/sdv-index.json` + two raw pools | fetches `data/site/` (see below) |
+> | recomputes derived values per walk | precomputed at build time |
+> | thirteen corpus walks per interaction | one |
+> | renders every matching card | 100, with "show more" |
+> | search: substring over title + summary | words over title + summary + author |
+>
+> The old page is archived at `/v1/` for one release and its runtime is untouched.
+> For architecture, data structures and the traps, read **SDVworld-manual.pdf**;
+> for the reasoning, `docs/perf/sdvworld-perf-design-v2.md` and the stage handoffs.
+> Everything below remains the authoritative description of what the filters *mean*.
 
-`assets/js/sdv-index.js` carries a comment on every non-obvious decision. This file is
-the model behind those decisions; the code is the detail.
+The site is one page served by GitHub Pages from `main`. No build step for the front
+end, no framework, no bundler.
+
+The code carries a comment on every non-obvious decision. This file is the model
+behind those decisions; the code is the detail.
 
 ## What is on screen
 
