@@ -23,14 +23,24 @@ rendered in the wrong order, whose sliders were inverted, or whose cards were dr
 out of order — because none of that is the engine.
 
 This harness loads `/index.html` and `/v2/index.html` in two iframes, **unmodified and
-uninstrumented**, and drives them through real DOM events on the real controls. It
-compares what a reader would see:
+uninstrumented**, and drives them through real DOM events on the real controls. From
+Stage 3 it compares every visible detail, not just the titles:
 
-- the result count in the header
-- the titles of the rendered cards, in order
-- every facet list: label text, count, order, and the 200-value truncation
-- the facet header counts, the year grid, the affiliation buttons and their lit state
-- group headings and their totals
+**Per rendered card** — class, title text and href, the whole meta line, every badge
+with its class, confidence, authors, integration and evidence, every chip with its
+class, and every action with its label and href.
+
+**Per facet item** — label, count, `disabled` state and **checked** state, in order.
+Checked state matters on its own: a facet that filters correctly but draws its own
+selection unticked is a bug the engine differential cannot see.
+
+**Plus** the result count, the facet header counts, the year grid, the affiliation
+buttons and their lit state, group headings and totals, both slider values *and their
+labels*, the group and sort selects, the search box value, and the results container's
+classes.
+
+Titles alone would miss a dropped venue, a wrong star count, a missing DOI link, a chip
+rendered under the wrong facet, or a badge that lost its class.
 
 ## The two normalized differences
 
@@ -53,6 +63,8 @@ into v2 and both were caught with the exact difference named:
 
 | seeded bug | what the harness said |
 | --- | --- |
+| dropped the star count from the meta line — title, counts and every facet unchanged | `group "Code repo" card 1 ("9k-dataset") meta: v1 "Code repo 2026 · ★ 0medium", v2 "Code repo 2026medium"` |
+| rendered a *selected* facet checkbox as unticked — filtering still correct, the display lies | `facet-kind item 2: v1 "facet-item\|Blog post (0)\|on", v2 "facet-item\|Blog post (0)\|off"` |
 | reversed the year tie-break in `sortWithin` — changes card **order** only, no count anywhere | `card 1: v1 "How DataCebo Supports Enterprises…", v2 "DataCebo Forum"` and, under grouping, `group "Paper" card 1: …` |
 | sorted facet lists ascending by count — changes list **order** only, every count still correct | `facet-kind item 1: v1 "Code repo (81)", v2 "Dataset / benchmark (0)"` |
 
