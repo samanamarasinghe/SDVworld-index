@@ -49,6 +49,7 @@ export class App {
     this.els = {
       errors: $('pubs-errors'), results: $('pubs-results'), count: $('pubs-count'),
       title: $('facet-title'), authorSearch: $('author-search'),
+      searchSummaries: $('search-summaries'),
       affiliations: $('facet-affiliations'),
       affTypeToggles: $('facet-aff-type-toggles'),
       affRegionToggles: $('facet-aff-region-toggles'),
@@ -88,6 +89,15 @@ export class App {
     /* The one input a reader holds down a key in. 150 ms, per §6. */
     const applyTitle = makeDebounce((v) => { s.titleQuery = v; this.changed(); }, 150);
     els.title.addEventListener('input', (e) => applyTitle(e.target.value));
+
+    /* Not debounced: it is a click, and it only matters when there is a query. */
+    if (els.searchSummaries) {
+      els.searchSummaries.checked = s.searchSummaries;
+      els.searchSummaries.addEventListener('change', (e) => {
+        s.searchSummaries = e.target.checked;
+        if (s.titleQuery) this.changed();
+      });
+    }
 
     /* Typing in the author box narrows the LIST, not the results, so it needs no
        corpus walk and goes straight to the one facet. */
@@ -149,6 +159,8 @@ export class App {
       s.sel.aff_region = allOn(AFF_GROUPS[1]);
       s.titleQuery = ''; s.facetQuery = { authors: '' };
       els.title.value = ''; els.authorSearch.value = '';
+      /* Clear resets the FILTERS. The search scope is a preference about how the box
+         behaves, not a filter, so it survives -- like the grouping and sort menus. */
       s.minImportance = 1; els.minImportance.value = '1';
       els.minImportanceLabel.textContent = IMPORTANCE_STEPS[1];
       s.minPopularity = 0; els.minPopularity.value = '0';
@@ -224,7 +236,8 @@ export class App {
 
   async start({ onError } = {}) {
     try {
-      const { records, counts } = await loadSite();
+      const { records, counts, postings } = await loadSite();
+      this.engine.postings = postings;
       this.setCorpus(records, counts);
       this.apply();
     } catch (e) {
@@ -267,6 +280,7 @@ export class App {
          site_projection.py the site is built with. Projecting in JS here would be a
          second implementation of the thing under test. */
       setCorpus: (coreRecords, counts) => app.setCorpus(coreRecords, counts),
+      setPostings: (p) => { app.engine.postings = p; app.engine.invalidate(); },
       details: app.details,
     };
   }

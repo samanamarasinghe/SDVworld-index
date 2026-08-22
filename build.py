@@ -270,7 +270,9 @@ def main(write=False, site=True):
             print(f"site projection: {summary['records']} records "
                   f"({summary['curated']} curated + {summary['tail']} tail), "
                   f"{summary['buckets']} detail buckets, "
-                  f"core {summary['core_bytes']:,} B")
+                  f"core {summary['core_bytes']:,} B, "
+                  f"{summary['vocab']:,}-token postings "
+                  f"{summary['postings_bytes']:,} B")
     report(out, stats, write)
 
 

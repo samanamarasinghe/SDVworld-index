@@ -20,6 +20,10 @@ export function allOn(group) {
 export function freshState() {
   return {
     titleQuery: '',
+    /* Summaries are searched by default. §4 specifies the opposite; the owner
+       inverted it on 2026-08-21 after measuring what title-only costs on this
+       corpus -- `sdv` 3,146 hits to 61, `ctgan` 3,293 to 123. See search.js. */
+    searchSummaries: true,
     facetQuery: { authors: '' },
     sel: {
       kind: {}, sdv_concept: {}, sdv_component: {}, use_case: {}, integration: {},

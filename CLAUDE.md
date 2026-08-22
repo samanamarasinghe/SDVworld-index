@@ -58,6 +58,18 @@ Wall-clock timings are **recorded, never gated** (§9). Report them; do not fail
   in `core.json` purely to hold v1's title+summary matching unchanged, so 2a is
   expected to exceed the 1.5 MB eager budget; 2b deletes that string and comes in
   under it. The payload and postings gates are therefore scoped to 2b, not 2a.
+- **The §4 search default is inverted** (owner decision, 2026-08-21). §4 makes
+  title-only the default with summaries opt-in, and that was a standing ruling — but
+  it predates the performance work. Measured on this corpus, a title-only default
+  keeps 29% of v1's results overall and collapses the terms the index is *about*:
+  `sdv` from 3,146 hits to 61, `ctgan` from 3,293 to 123. v2 therefore searches title
+  and summary by default and offers a toggle to narrow to titles. Everything else in
+  §4 stands: identical normalization at build and runtime, Unicode letter/number
+  tokens, terms AND, final term by prefix.
+- **One correction to §4 as written.** "The final term matches by prefix" is applied
+  only when the query does *not* end in a delimiter. Unconditionally, `C++` tokenizes
+  to the single token `c` and prefix-matching returns 4,627 of 4,962 records. A
+  trailing delimiter means the reader finished the word.
 - **Browser harness** (owner decision, 2026-08-21): this machine has no Node, npm, or
   Playwright, and the package registries are unreachable from the command sandbox. The
   benchmark and screenshots therefore run as a dependency-free HTML/JS harness served by

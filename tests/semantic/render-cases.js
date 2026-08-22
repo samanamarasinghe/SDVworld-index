@@ -272,4 +272,125 @@ export const RENDER_CASES = [
       return null;
     },
   },
+
+  /* ---- search (design v2 §4) --------------------------------------------- */
+
+  {
+    id: 'the-runtime-tokenizer-matches-the-build-tokenizer',
+    closes: 2,
+    why: 'The single highest-risk thing in 2b. The postings are built by Python and ' +
+         'queried by JavaScript; if the two tokenize differently, a query is looked ' +
+         'up under a key the text was never filed under and the search quietly ' +
+         'returns too little. Both are pinned to one shared table rather than to ' +
+         'each other, so neither can drift into agreeing on the wrong answer.',
+    async run(h) {
+      const { cases } = await (await fetch('/tests/semantic/tokenizer-cases.json',
+        { cache: 'no-store' })).json();
+      const { fold, tokenize } = await import('/v2/assets/js/search.js');
+      for (const c of cases) {
+        const got = tokenize(c.text);
+        if (JSON.stringify(got) !== JSON.stringify(c.tokens)) {
+          return `tokenize(${JSON.stringify(c.text)}) gave ${JSON.stringify(got)}, ` +
+                 `the table says ${JSON.stringify(c.tokens)}`;
+        }
+        if (fold(c.text) !== c.folded) {
+          return `fold(${JSON.stringify(c.text)}) gave ${JSON.stringify(fold(c.text))}, ` +
+                 `the table says ${JSON.stringify(c.folded)}`;
+        }
+      }
+      return null;
+    },
+  },
+
+  {
+    id: 'a-finished-word-is-not-prefix-matched',
+    closes: 2,
+    why: 'Prefix matching exists so a half-typed word still finds things. §4 applies ' +
+         'it to the final term unconditionally, which is a gap in the spec: "C++" ' +
+         'tokenizes to the single token c, and prefix-matching that returns almost ' +
+         'the whole corpus. A trailing delimiter means the reader finished the word.',
+    async run(h) {
+      const { prefixWanted } = await import('/v2/assets/js/search.js');
+      const wants = [['hea', true], ['health', true], ['C++', false],
+                     ['covid-19', true], ['time-series', true], ['e.g.', false],
+                     ['multi word', true], ['trailing ', false]];
+      for (const [q, want] of wants) {
+        if (prefixWanted(q) !== want) {
+          return `prefixWanted(${JSON.stringify(q)}) is ${prefixWanted(q)}, expected ${want}`;
+        }
+      }
+      return null;
+    },
+  },
+
+  {
+    id: 'search-terms-AND-and-the-last-one-matches-by-prefix',
+    closes: 2,
+    why: '§4. Several terms must all be present, in any order; the final term ' +
+         'matches by prefix so results narrow as the reader types.',
+    async run(h) {
+      const { Postings } = await import('/v2/assets/js/search.js');
+      /* Three records, hand-built so every expected answer is readable here. */
+      const P = new Postings({
+        vocab: ['alpha', 'beta', 'betamax', 'gamma'],
+        postings: [[0, 1], [0, 2], [1], [2]],   // delta-encoded: a=[0,1] b=[0,2] bm=[1] g=[2]
+      });
+      const set = (q) => [...(P.candidates(q) || [])].sort();
+      const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+      if (!eq(set('alpha'), [0, 1])) return `alpha -> ${set('alpha')}`;
+      if (!eq(set('bet'), [0, 1, 2])) return `bet (prefix) -> ${set('bet')}`;
+      if (!eq(set('beta '), [0, 2])) return `"beta " (finished) -> ${set('beta ')}`;
+      if (!eq(set('alpha bet'), [0, 1])) return `alpha bet -> ${set('alpha bet')}`;
+      if (!eq(set('alpha beta '), [0])) return `alpha beta -> ${set('alpha beta ')}`;
+      if (!eq(set('beta alpha '), [0])) return `order must not matter -> ${set('beta alpha ')}`;
+      /* A finished term is matched exactly, so a prefix that is not itself a word
+         finds nothing -- which is the whole point of the trailing-delimiter rule. */
+      if (!eq(set('bet '), [])) return `"bet " is not a word -> ${set('bet ')}`;
+      if (!eq(set('alpha gamma '), [])) return `alpha gamma -> ${set('alpha gamma ')}`;
+      if (!eq(set('nosuch '), [])) return `an absent term must give nothing`;
+      if (P.candidates('') !== null) return 'an empty query must not constrain anything';
+      return null;
+    },
+  },
+
+  {
+    id: 'narrowing-to-titles-changes-the-result-and-is-reversible',
+    closes: 2,
+    why: 'The scope toggle is the mitigation for the §4 search change, so it has to ' +
+         'actually work: ticking and unticking must move the result set and put it ' +
+         'back, and it must not be reset by Clear filters, which resets FILTERS.',
+    async run(h) {
+      await h.load(h.generated);
+      const box = h.mount.querySelector('#facet-title');
+      const scope = h.mount.querySelector('#search-summaries');
+      if (!scope) return 'the search-scope toggle is not in the markup';
+      if (!scope.checked) return 'summaries are not searched by default';
+
+      const count = () => h.app.els.count.textContent;
+      /* "summary" appears in every generated summary and in no generated title, so
+         the two scopes must disagree completely: 250 against 0. That also means the
+         COUNT does not move when the search applies -- only when the scope does --
+         so wait on the debounced state rather than on the number. */
+      box.value = 'summary';
+      box.dispatchEvent(new Event('input', { bubbles: true }));
+      await h.waitFor(() => h.app.state.titleQuery === 'summary', 'the debounce to fire');
+      await h.settle();
+      if (count() !== '(250)') return `summaries mode found ${count()}, expected (250)`;
+
+      scope.checked = false;
+      scope.dispatchEvent(new Event('change', { bubbles: true }));
+      await h.waitFor(() => count() === '(0)', 'narrowing to titles');
+
+      scope.checked = true;
+      scope.dispatchEvent(new Event('change', { bubbles: true }));
+      await h.waitFor(() => count() === '(250)', 'the scope change to reverse');
+
+      h.mount.querySelector('#btn-clear').click();
+      await h.settle();
+      if (!h.mount.querySelector('#search-summaries').checked) {
+        return 'Clear filters reset the search scope, which is a preference not a filter';
+      }
+      return null;
+    },
+  },
 ];

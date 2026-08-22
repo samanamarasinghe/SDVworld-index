@@ -200,6 +200,7 @@ async function v2Engine() {
   const proj = await (await fetch('/tests/semantic/fixture-projected.json',
     { cache: 'no-store' })).json();
   built.engine.setCorpus(proj.core, proj.counts);
+  if (proj.postings) built.engine.setPostings(new (await import('../../v2/assets/js/search.js')).Postings(proj.postings));
   for (const [name, content] of Object.entries(proj.detail)) {
     built.app.details.prime(name, content);
   }
@@ -228,11 +229,13 @@ async function renderHarness() {
   const h = {
     urls, downloadBibtex, mount, generated,
     Details: (await import('../../v2/assets/js/data.js')).Details,
+    Postings: (await import('../../v2/assets/js/search.js')).Postings,
     app: null, results: null,
     /* Scoped to the container, so App.$ resolves ids inside it rather than globally. */
     async load(bundle) {
       h.app = new App(mount).mount();
       h.app.setCorpus(bundle.core, bundle.counts);
+      if (bundle.postings) h.app.engine.postings = new h.Postings(bundle.postings);
       for (const [name, content] of Object.entries(bundle.detail || {})) {
         h.app.details.prime(name, content);
       }
@@ -257,13 +260,19 @@ async function renderHarness() {
     settle() {
       return new Promise(r => nextTick(() => nextTick(r)));
     },
-    /* For the detail cases, which finish on a promise rather than on a render. */
-    async waitFor(cond, what, tries = 200) {
-      for (let i = 0; i < tries; i++) {
+    /* Bounded by TIME, not by a tick count. nextTick falls back to a MessageChannel
+       task in a background tab, which resolves in microseconds -- so a loop of 200
+       ticks expires in a few milliseconds, long before a 150 ms debounce (clamped to
+       roughly 700 ms while hidden) has any chance to fire. */
+    async waitFor(cond, what, timeoutMs = 10000) {
+      const t0 = performance.now();
+      for (;;) {
         if (cond()) return true;
+        if (performance.now() - t0 > timeoutMs) {
+          throw new Error(`timed out waiting for ${what}`);
+        }
         await h.settle();
       }
-      throw new Error(`timed out waiting for ${what}`);
     },
   };
   return h;

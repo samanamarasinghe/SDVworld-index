@@ -15,6 +15,7 @@
  * site_projection.py.
  */
 import { FACET_KEYS, NONE, NO_NONE } from './vocab.js';
+import { fold, Postings } from './search.js';
 
 /* Resolved against this module's own URL. Pages serves this project under
  * /SDVworld-index/, so a root-relative path would 404 in production while working on
@@ -23,6 +24,7 @@ import { FACET_KEYS, NONE, NO_NONE } from './vocab.js';
 const at = (rel) => new URL(rel, import.meta.url).href;
 export const SITE = at('../../../data/site/');
 export const MANIFEST_PATH = SITE + 'manifest.json';
+export const POSTINGS_PATH = SITE + 'summary-postings.json';
 
 /* ---- normalization ------------------------------------------------------- */
 
@@ -57,11 +59,10 @@ export function normalize(core, i) {
     bucket: core.b,
     hasSummary: !!core.hs,
     hasNeeds: !!core.hn,
-    /* Stage 2a preserves v1's search exactly -- substring over title AND summary --
-       and the build ships a precomputed lowercase string for it because summary now
-       lives in a detail bucket. Stage 2b replaces this with token postings and the
-       title-only matching of §4, and the string goes away. */
-    searchText: core.s || (core.title || '').toLowerCase(),
+    /* Title-only mode matches by substring, so it needs the folded title. Accent
+       folding is applied here too, so narrowing to titles does not quietly become
+       accent-sensitive when the summaries mode is not. */
+    foldedTitle: fold(core.title || ''),
     importance: core.importance != null ? core.importance : null,
     pop: core.pop,
     organizations: core.organizations || [],
@@ -177,12 +178,18 @@ export async function loadSite() {
     return r.json();
   };
   const manifest = await grab(MANIFEST_PATH, 'manifest');
-  const core = await grab(SITE + 'core.json', 'core');
+  /* Both eager, and in parallel: summary matching is the default, so the postings
+     are needed for the first keystroke rather than on demand. */
+  const [core, postings] = await Promise.all([
+    grab(SITE + 'core.json', 'core'),
+    grab(POSTINGS_PATH, 'postings'),
+  ]);
   if (core.schema_version !== manifest.schema_version) {
     /* A half-deployed site is the realistic failure here, and silently rendering a
        mismatched pair is worse than saying so. */
     throw new Error(`schema mismatch: manifest ${manifest.schema_version}, ` +
                     `core ${core.schema_version}`);
   }
-  return { manifest, records: core.records, counts: manifest.counts };
+  return { manifest, records: core.records, counts: manifest.counts,
+           postings: new Postings(postings) };
 }

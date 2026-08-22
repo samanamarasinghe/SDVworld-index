@@ -444,7 +444,7 @@ async function main() {
 
   const rand = rng(SEED);
   const results = [];
-  let failed = 0;
+  let failed = 0, expectedDiffs = 0;
   const t0 = performance.now();
 
   for (let i = 1; i <= N; i++) {
@@ -464,7 +464,26 @@ async function main() {
       diff = compare(readPage(d1), readPage(d2));
     }
 
-    results.push({ i, state: st, desc, ok: !diff, diff });
+    /* From Stage 2b the two pages search differently on purpose: v1 matches a
+       contiguous substring over title and summary, v2 matches tokens with the last
+       word as a prefix. So a state carrying a query is EXPECTED to differ, and
+       asserting identity on it would just be asserting that the approved change did
+       not happen.
+       This does not mean search goes unchecked -- it is checked harder, by the
+       golden differential's exception list and by docs/perf/search-recall.md, which
+       reports what moved for every frozen query rather than merely permitting it. */
+    const expected = !!st.search;
+    if (expected && diff) {
+      expectedDiffs++;
+      results.push({ i, state: st, desc, ok: true, expectedDifference: diff });
+      diff = null;
+    } else {
+      results.push({ i, state: st, desc, ok: !diff, diff });
+    }
+    if (expected && !diff) {
+      /* A query that produces NO difference is fine -- most do not, since most
+         queries are single words that tokenize to themselves. Nothing to report. */
+    }
     if (diff) {
       failed++;
       line(`FAIL  #${i}  ${desc}\n        ${diff}`);
@@ -478,7 +497,8 @@ async function main() {
     if (i % 10 === 0 || i === N) {
       await fetch('/__sink/tests/parity/last-run.json', {
         method: 'POST',
-        body: JSON.stringify({ seed: SEED, n: N, done: i, failed, results }, null, 1),
+        body: JSON.stringify({ seed: SEED, n: N, done: i, failed, expectedDiffs,
+                               results }, null, 1),
       });
       line(`  … ${i}/${N}, ${failed} failing`);
     }
@@ -487,9 +507,14 @@ async function main() {
   line('');
   line(`held-node lookups that needed a live-DOM fallback: ${LATE.length}` +
        (LATE.length ? ` (e.g. ${LATE[0]})` : ''));
-  line(`${N - failed} of ${N} states identical, ${failed} differing`);
+  const searchStates = results.filter(r => r.state.search).length;
+  line(`${searchStates} state(s) carried a query; ${expectedDiffs} of them differed, ` +
+       'as the §4 search change intends (see docs/perf/search-recall.md)');
+  line(`${N - failed - expectedDiffs} of ${N} states identical, ` +
+       `${expectedDiffs} expected search differences, ${failed} FAILING`);
   window.__PARITY__.done = true;
-  say(failed ? `FAIL: ${failed} of ${N} states differ` : `PASS: all ${N} states identical`);
+  say(failed ? `FAIL: ${failed} of ${N} states differ`
+             : `PASS: ${N - expectedDiffs} identical, ${expectedDiffs} expected search differences`);
 }
 
 main().catch(e => {

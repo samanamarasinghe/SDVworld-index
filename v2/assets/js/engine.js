@@ -16,6 +16,7 @@
  * starting design. They are not used here.
  */
 import { FACET_KEYS, NO_NONE } from './vocab.js';
+import { fold } from './search.js';
 
 /* Which facets veto rather than select. A checkbox facet asks whether ANY value the
    record carries was ticked; a button group asks whether EVERY value it carries is
@@ -30,6 +31,7 @@ const COUNTED = FACET_KEYS;
 export class Engine {
   constructor(corpus) {
     this.corpus = corpus;
+    this.postings = null;
     this._cache = null;
     this._signature = null;
     this._scans = 0;
@@ -55,7 +57,7 @@ export class Engine {
       if (on.length) sel[f] = on.sort();
     }
     return JSON.stringify([state.titleQuery.replace(/\s+/g, ' ').trim().toLowerCase(),
-      state.minImportance, state.minPopularity, sel]);
+      !!state.searchSummaries, state.minImportance, state.minPopularity, sel]);
   }
 
   snapshot(state) {
@@ -69,7 +71,17 @@ export class Engine {
   _walk(state) {
     this._scans++;
     const { records } = this.corpus;
-    const q = state.titleQuery.replace(/\s+/g, ' ').trim().toLowerCase();
+    const rawQuery = state.titleQuery.replace(/\s+/g, ' ').trim();
+    /* Summaries mode resolves the whole query up front, to a set of record indices,
+       so the corpus walk below stays one cheap membership test per record rather
+       than a string scan. Title-only mode keeps substring matching, which is what a
+       reader expects of a title box and what §4 specifies for it. */
+    const useSummaries = state.searchSummaries !== false;
+    let candidates = null, titleNeedle = '';
+    if (rawQuery) {
+      if (useSummaries && this.postings) candidates = this.postings.candidates(rawQuery);
+      else titleNeedle = fold(rawQuery);
+    }
     const floor = this.corpus.popularityFloor(state.minPopularity);
     const minImp = state.minImportance;
 
@@ -108,7 +120,8 @@ export class Engine {
          one of these is out of everything, counts included. */
       if (minImp && (n.importance === null || n.importance < minImp)) continue;
       if (n.pop < floor) continue;
-      if (q && n.searchText.indexOf(q) < 0) continue;
+      if (candidates && !candidates.has(n.i)) continue;
+      if (titleNeedle && n.foldedTitle.indexOf(titleNeedle) < 0) continue;
 
       let mask = 0;
       for (const a of active) {

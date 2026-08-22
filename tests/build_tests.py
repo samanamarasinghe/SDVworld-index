@@ -201,6 +201,49 @@ def _countries(ctx):
     return None
 
 
+@check('the tokenizer matches its shared expectation table')
+def _tokenizer(ctx):
+    """The Python half. tests/semantic/render-cases.js runs the same table through
+    v2/assets/js/search.js, so the two languages are pinned to one answer rather than
+    to each other's behaviour on the day."""
+    table = json.load(open(ROOT / 'tests/semantic/tokenizer-cases.json'))['cases']
+    for c in table:
+        got = sp.tokenize(c['text'])
+        if got != c['tokens']:
+            return f'tokenize({c["text"]!r}) gave {got}, table says {c["tokens"]}'
+        if sp.fold(c['text']) != c['folded']:
+            return f'fold({c["text"]!r}) gave {sp.fold(c["text"])!r}, table says {c["folded"]!r}'
+    return None
+
+
+@check('postings resolve a query to the same records as a direct scan')
+def _postings(ctx):
+    """An independent answer: scan the assembled text directly and compare to what
+    the inverted index returns. A postings bug is otherwise invisible -- it just
+    quietly returns fewer results."""
+    doc = json.load(open(SITE / 'summary-postings.json'))
+    vocab, raw = doc['vocab'], doc['postings']
+    if vocab != sorted(vocab):
+        return 'the vocabulary is not sorted; the runtime binary-searches it'
+    texts = [((r.get('title') or '') + ' ' + (r.get('summary') or ''))
+             for r in ctx['records']]
+    for term in ('sdv', 'ctgan', 'health', 'privacy', 'muller'):
+        at = next((i for i, v in enumerate(vocab) if v == term), None)
+        want = {i for i, t in enumerate(texts) if term in sp.tokenize(t)}
+        if at is None:
+            if want:
+                return f'{term!r} carries {len(want)} records but is not in the vocabulary'
+            continue
+        ids, run = set(), 0
+        for d in raw[at]:
+            run += d
+            ids.add(run)
+        if ids != want:
+            return (f'{term!r}: postings hold {len(ids)} records, a direct scan finds '
+                    f'{len(want)}')
+    return None
+
+
 @check('the 44-row pool residue matches the Stage 0 corpus')
 def _residue(ctx):
     """The strongest check available: the corpus recorded what the BROWSER produced
@@ -231,7 +274,10 @@ def _manifest(ctx):
         if path.stat().st_size != meta['bytes']:
             return (f'{name}: manifest says {meta["bytes"]:,} B, file is '
                     f'{path.stat().st_size:,} B')
-    on_disk = {'core.json'} | {f'detail/{p.name}' for p in (SITE / 'detail').glob('*.json')}
+    # Enumerated from disk rather than listed here, so a new artifact that nobody
+    # added to the manifest fails instead of being quietly ignored.
+    on_disk = {str(p.relative_to(SITE)) for p in SITE.rglob('*.json')
+               if p.name != 'manifest.json'}
     if set(m['files']) != on_disk:
         extra = on_disk - set(m['files'])
         return f'{len(extra)} file(s) on disk are absent from the manifest, e.g. {sorted(extra)[:1]}'

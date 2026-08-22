@@ -23,8 +23,8 @@ GOLDEN = ROOT / 'docs/perf/golden'
 # but it is still reported, and it still fails if it is UNCHANGED when the change
 # was supposed to move it (see --expect-exceptions-differ).
 EXCEPTIONS = {
-    'search-': 'title-only default search (§4): the planned semantic change',
-    'imp-0-search-health': 'title-only default search (§4)',
+    'search-': 'token matching replaces substring matching (§4)',
+    'imp-0-search-health': 'token matching replaces substring matching (§4)',
 }
 
 

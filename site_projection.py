@@ -24,6 +24,7 @@ import json
 import math
 import os
 import re
+import unicodedata
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 SITE = os.path.join(ROOT, 'data', 'site')
@@ -278,6 +279,46 @@ def pool_residue(curated):
                         load('data/tail/github-repos.json') or [])
 
 
+# ---- search text -----------------------------------------------------------
+
+# Normalization has to be IDENTICAL here and in v2/assets/js/search.js, or a query
+# tokenizes differently from the text it is searching and the postings silently miss.
+# tests/build_tests.py checks a shared table of cases against both.
+#
+# Combining marks are stripped after NFKD rather than kept, so "Muller" finds
+# "Müller" and "naive" finds "naïve". Keeping them would also split those words in
+# two, since a combining mark is neither a letter nor a number.
+
+def fold(text):
+    decomposed = unicodedata.normalize('NFKD', str(text or ''))
+    return ''.join(c for c in decomposed if not unicodedata.combining(c)).lower()
+
+
+def tokenize(text):
+    return [w for w in re.split(r'[\W_]+', fold(text), flags=re.UNICODE) if w]
+
+
+def build_postings(records):
+    """Vocabulary and postings over title + summary (§4).
+
+    Postings are delta-encoded: a record list is ascending, so storing the gaps
+    instead of the values roughly halves it before compression and more than halves
+    it after. Measured on the real corpus: 343 KB gzip, against 812 KB for the
+    precomputed search string it replaces.
+    """
+    by_token = {}
+    for i, rec in enumerate(records):
+        text = (rec.get('title') or '') + ' ' + (rec.get('summary') or '')
+        for token in set(tokenize(text)):
+            by_token.setdefault(token, []).append(i)
+    vocab = sorted(by_token)
+    postings = []
+    for token in vocab:
+        ids = sorted(by_token[token])
+        postings.append([ids[0]] + [ids[k] - ids[k - 1] for k in range(1, len(ids))])
+    return {'schema_version': SCHEMA_VERSION, 'vocab': vocab, 'postings': postings}
+
+
 # ---- the projection -------------------------------------------------------
 
 def bucket_of(record_id):
@@ -302,9 +343,6 @@ def project(rec):
         # tie and silently send the sort down a different path than v1 takes.
         'pop': popularity_of(rec),
         'b': bucket_of(rec['id']),
-        # Stage 2a only: v1 matches on title AND summary, and summary has moved to the
-        # detail buckets. 2b replaces this with token postings and deletes it.
-        's': ((rec.get('title') or '') + ' ' + summary).lower(),
     }
     for field in ('url', 'doi', 'venue', 'evidence', 'integration', 'confidence',
                   'tier'):
@@ -359,6 +397,8 @@ def write_site(assembled):
     files = {}
     files['core.json'] = dump('core.json', {'schema_version': SCHEMA_VERSION,
                                             'records': core})
+    postings = build_postings(records)
+    files['summary-postings.json'] = dump('summary-postings.json', postings)
     for name, content in sorted(buckets.items()):
         files[f'detail/{name}.json'] = dump(f'detail/{name}.json', content)
 
@@ -367,6 +407,8 @@ def write_site(assembled):
     # see produces the same hash.
     h = hashlib.sha256()
     h.update(json.dumps(core, ensure_ascii=False, sort_keys=True,
+                        separators=(',', ':')).encode('utf-8'))
+    h.update(json.dumps(postings, ensure_ascii=False, sort_keys=True,
                         separators=(',', ':')).encode('utf-8'))
     for name in sorted(buckets):
         h.update(json.dumps(buckets[name], ensure_ascii=False, sort_keys=True,
@@ -390,7 +432,10 @@ def write_site(assembled):
 
     return {'records': len(records), 'curated': len(assembled),
             'tail': len(cite) + len(gh), 'buckets': BUCKETS,
-            'core_bytes': files['core.json'], 'data_hash': manifest['data_hash']}
+            'core_bytes': files['core.json'],
+            'vocab': len(postings['vocab']),
+            'postings_bytes': files['summary-postings.json'],
+            'data_hash': manifest['data_hash']}
 
 
 if __name__ == '__main__':
