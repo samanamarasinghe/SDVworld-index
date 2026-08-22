@@ -161,6 +161,13 @@ class Gates:
         self.check('export-identity', r.returncode == 0,
                    tail[-1] if tail else 'no output')
 
+        r = subprocess.run([sys.executable, str(ROOT / 'scripts/verify_site.py')],
+                           capture_output=True, text=True, cwd=ROOT)
+        if r.returncode:
+            self.check('build', False,
+                       (r.stderr or r.stdout).strip().splitlines()[-1][:160])
+            return
+
         r = subprocess.run([sys.executable, str(ROOT / 'tests/build_tests.py')],
                            capture_output=True, text=True, cwd=ROOT)
         lines = r.stdout.strip().splitlines()

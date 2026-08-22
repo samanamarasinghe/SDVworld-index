@@ -9,9 +9,11 @@ name: build-index
 # shards, without writing anything. On main: rebuild and commit if it changed, so the
 # published site always matches the reviewed shards.
 #
-# "the committed output" is data/sdv-index.json, data/build-info.json AND the
-# data/site/ projection. Covering only the first is what let the build stamp drift
-# (design v2 §7).
+# "the committed output" is data/sdv-index.json and data/build-info.json. Covering
+# only the first is what let the build stamp drift (design v2 §7).
+#
+# data/site/ is deliberately NOT rebuilt here -- it is verified instead. See the
+# "Verify the site projection" step.
 
 on:
   push:
@@ -38,8 +40,9 @@ permissions:
   contents: write
 
 env:
-  # The generated set, in one place. build.py --write writes all of it.
-  GENERATED: data/sdv-index.json data/build-info.json data/site
+  # What CI regenerates and commits. data/site is NOT here on purpose -- see the
+  # "Verify the site projection" step below.
+  GENERATED: data/sdv-index.json data/build-info.json
 
 jobs:
   build:
@@ -52,7 +55,19 @@ jobs:
           python-version: '3.11'
 
       - name: Build index
-        run: python build.py --write
+        run: python build.py --write --no-site
+
+      # The projection is VERIFIED here, not rebuilt. math.log1p is not correctly
+      # rounded and libm differs by platform, so building this corpus on Linux and on
+      # a developer's macOS gives 395 records whose popularity differs in the last
+      # bit. Regenerating here would mean the bytes actually SERVED are CI's build,
+      # which no differential has ever run against -- the tested build and the shipped
+      # build would stop being the same thing. Rounding the score away is not
+      # available: v1 inherits the same artifact and the golden corpus recorded the
+      # ordering it produces. So the committed artifacts are authoritative and this
+      # only checks they are still current.
+      - name: Verify the site projection
+        run: python scripts/verify_site.py
 
       - name: Build tests
         run: python tests/build_tests.py
@@ -72,8 +87,7 @@ jobs:
       - name: Commit rebuilt output (main only)
         if: github.event_name != 'pull_request'
         run: |
-          if git diff --quiet -- $GENERATED && \
-             [ -z "$(git status --porcelain -- data/site)" ]; then
+          if git diff --quiet -- $GENERATED; then
             echo "generated output already current, nothing to commit"
             exit 0
           fi
@@ -82,6 +96,5 @@ jobs:
           # Staged explicitly, path by path, so a new generated file cannot be
           # committed by accident and an existing one cannot be forgotten.
           git add data/sdv-index.json data/build-info.json
-          git add --all data/site
           git commit -m "Rebuild generated output from shards [skip ci]"
           git push

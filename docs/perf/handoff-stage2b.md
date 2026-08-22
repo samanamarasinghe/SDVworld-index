@@ -135,6 +135,36 @@ terms match exactly, and `bet` is not a word — the engine was right. And a `wa
 that counted *ticks* rather than time expired in milliseconds, long before a debounce
 clamped to ~700 ms could fire.
 
+## A reproducibility bug CI found, and the fix that did not work
+
+Right after 2a went live, CI rebuilt `core.json` on `main` and committed a diff:
+**395 records whose popularity differed in the last bit.** `math.log1p` is not
+required to be correctly rounded and libm differs between macOS and CI's Linux.
+
+Three consequences, the third serious: every local build gets rewritten by CI and
+vice versa; `data_hash` — the *cache identity* — moves although nothing a reader can
+see changed; and the bytes actually **served** become CI's build, which no
+differential has ever run against. The tested build and the shipped build stop being
+the same thing.
+
+The obvious fix is to round, and it looks measurably safe: of 647 apparently distinct
+scores, 10 pairs sit 5.55e-17 apart, and every precision from 6 to 15 decimal places
+collapses exactly those 10 and nothing else. Those pairs are records that *should*
+score identically and do not, because `0.1 * commits` accumulates a different error
+than an equivalent whole number.
+
+**I rounded to 9 dp and it failed 76 golden states.** v1 does the same arithmetic in
+JavaScript, inherits the same artifact, and therefore treats those pairs as ordered —
+and the Stage 0 corpus recorded that order. Quantizing turned them into ties that fell
+through to the next tie-break and reordered the page. Fidelity to v1 wins: v2 is not
+allowed to reorder cards, even to fix a wart.
+
+So it is solved at the other end. **CI verifies the projection instead of rebuilding
+it** (`scripts/verify_site.py`): same records, same ids, same order, same every field,
+with last-bit float noise on `pop` tolerated and nothing else. The committed artifacts
+stay authoritative — produced and tested on one machine — and a structural staleness
+fails the build and says which record and field moved.
+
 ## Next: Stage 3
 
 Parity and cutover — the v1/v2 differential at the pinned revision (done and green),

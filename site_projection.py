@@ -30,6 +30,30 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 SITE = os.path.join(ROOT, 'data', 'site')
 
 SCHEMA_VERSION = 1
+
+# Popularity is stored at FULL double precision, and that is a decision with a
+# history worth recording, because the obvious fix is wrong.
+#
+# math.log1p is not required to be correctly rounded and libm differs by platform:
+# the same corpus built on macOS and on CI's Linux produced 395 records whose scores
+# differed in the last bit. So the build is not bit-reproducible across machines.
+#
+# The tempting fix is to round. It is measurably safe-looking: of 647 apparently
+# distinct scores, 10 pairs sit 5.55e-17 apart, and every precision from 6 to 15
+# decimal places collapses exactly those 10 pairs and nothing else. Those pairs are
+# records that SHOULD score identically and do not, because `0.1 * commits`
+# accumulates a different error than an equivalent whole number.
+#
+# But rounding them together changes the ORDER OF THE PAGE. v1 computes the same
+# arithmetic in JavaScript, inherits the same artifact, and therefore treats those
+# pairs as ordered; the Stage 0 corpus recorded that order. Quantizing to 9 dp turned
+# them into ties that fell through to the next tie-break and failed 76 golden states.
+# Fidelity to v1 wins: v2 is not allowed to reorder the page, even to fix a wart.
+#
+# Cross-platform reproducibility is therefore solved elsewhere -- CI verifies the
+# committed artifacts rather than regenerating them, so what is served is always the
+# build that was tested. See scripts/verify_site.py.
+POP_TOLERANCE = 1e-12
 # 32 buckets. Enough that no bucket approaches the 75 KB gzip cap (§9) and few enough
 # that a reader scrolling a page pulls only one or two.
 BUCKETS = 32
@@ -338,9 +362,7 @@ def project(rec):
         'id': rec['id'],
         'title': rec.get('title') or '',
         'kind': rec.get('kind'),
-        # NOT rounded. Ordering falls through to popularity as a tie-break, so
-        # rounding could collapse two records that differ in the last few bits into a
-        # tie and silently send the sort down a different path than v1 takes.
+        # Full precision, deliberately. See POP_DP above for why it is not rounded.
         'pop': popularity_of(rec),
         'b': bucket_of(rec['id']),
     }
