@@ -94,7 +94,8 @@ export class Postings {
    * immediately rather than after a full pass over the commonest one. */
   candidates(query) {
     const terms = tokenize(query);
-    if (!terms.length) return null;
+    // See Index.candidates: punctuation-only is a query that matches nothing.
+    if (!terms.length) return String(query || '').trim() ? new Set() : null;
     const usePrefix = prefixWanted(query);
 
     const sets = [];
@@ -136,7 +137,12 @@ export class Index {
   candidates(query) {
     if (!this.parts.length) return null;
     const terms = tokenize(query);
-    if (!terms.length) return null;
+    /* A query with no tokens is either empty -- no constraint -- or entirely
+       punctuation, like "???" or "---". Those are NOT the same thing, and conflating
+       them returned the whole corpus for "???" because the query looked absent. A
+       reader who typed something and is shown all 4,703 entries has been told their
+       query matched everything, which is false; the old page showed none. */
+    if (!terms.length) return String(query || '').trim() ? new Set() : null;
     const usePrefix = prefixWanted(query);
 
     const perTerm = [];

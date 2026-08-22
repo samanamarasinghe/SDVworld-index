@@ -349,6 +349,13 @@ export const RENDER_CASES = [
       if (!eq(set('alpha gamma '), [])) return `alpha gamma -> ${set('alpha gamma ')}`;
       if (!eq(set('nosuch '), [])) return `an absent term must give nothing`;
       if (P.candidates('') !== null) return 'an empty query must not constrain anything';
+      if (P.candidates('   ') !== null) return 'whitespace only is still an empty query';
+      /* Punctuation-only tokenizes to nothing but is NOT an absent query. Treating
+         the two alike showed all 4,703 entries for "???" -- found by throwing
+         nonsense at the real page. */
+      for (const junk of ['???', '---', '...', '@@@']) {
+        if (!eq(set(junk), [])) return `${junk} must match nothing, got ${set(junk)}`;
+      }
       return null;
     },
   },

@@ -13,8 +13,8 @@ reader typed them contiguously.
 | --- | --: | --: | --: | --: | --- |
 | `health` | 389 | 387 | 99% | +0 |  |
 | `` | 1,370 | 1,370 | 100% | +0 |  |
-| `h` | 4,702 | 2,214 | 47% | +0 | **narrowed** |
-| `he` | 4,691 | 714 | 15% | +0 | **narrowed** |
+| `h` | 4,702 | 2,698 | 57% | +0 | **narrowed** |
+| `he` | 4,691 | 875 | 19% | +0 | **narrowed** |
 | `health` | 384 | 382 | 99% | +0 |  |
 | `healthcare` | 153 | 153 | 100% | +0 |  |
 | `Health` | 384 | 382 | 99% | +0 |  |
@@ -29,29 +29,30 @@ reader typed them contiguously.
 | `tabular` | 2,184 | 2,183 | 100% | +0 |  |
 | `time-series` | 122 | 159 | 100% | +37 | widened |
 | `time series` | 57 | 159 | 100% | +102 | widened |
-| `GAN` | 3,589 | 1,311 | 37% | +0 | **narrowed** |
-| `C++` | 3 | 25 | 67% | +23 | widened |
+| `GAN` | 3,589 | 1,328 | 37% | +3 | **narrowed** |
+| `C++` | 3 | 81 | 67% | +79 | widened |
 | `covid-19` | 22 | 22 | 100% | +0 |  |
 | `naïve` | 2 | 26 | 100% | +24 | widened |
-| `Müller` | 0 | 0 | -- | +0 | no results either way |
-| `Zhang` | 0 | 0 | -- | +0 | no results either way |
+| `Müller` | 0 | 4 | -- | +4 | widened |
+| `Zhang` | 0 | 187 | -- | +187 | widened |
 | `multi word no match` | 0 | 0 | -- | +0 | no results either way |
 | `zzzznomatch` | 0 | 0 | -- | +0 | no results either way |
 
-Across all frozen queries v2 keeps **75%** of v1's results and adds others.
+Across all frozen queries v2 keeps **76%** of v1's results and adds others.
 
 ## Where they differ most
 
-**`he`** — v1 4,691, v2 714. 3,977 dropped, 0 added.
+**`he`** — v1 4,691, v2 875. 3,816 dropped, 0 added.
   - dropped, e.g. `announce-10-million-downloads`
 
-**`GAN`** — v1 3,589, v2 1,311. 2,278 dropped, 0 added.
+**`GAN`** — v1 3,589, v2 1,328. 2,264 dropped, 3 added.
   - dropped, e.g. `blog-interpreting-ctgan-progress`
+  - added, e.g. `paper-bayesian-multi-model-inference-2026`
 
-**`h`** — v1 4,702, v2 2,214. 2,488 dropped, 0 added.
+**`h`** — v1 4,702, v2 2,698. 2,004 dropped, 0 added.
   - dropped, e.g. `announce-10-million-downloads`
 
-**`C++`** — v1 3, v2 25. 1 dropped, 23 added.
+**`C++`** — v1 3, v2 81. 1 dropped, 79 added.
   - dropped, e.g. `paper-privacy-preserving-blockchain-transactions-2024`
-  - added, e.g. `paper-c-ctgan-trajectory-2025`
+  - added, e.g. `paper-advancing-organizational-science-synthetic-2024`
 

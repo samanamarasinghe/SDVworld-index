@@ -77,6 +77,23 @@ function settler(doc) {
 
 const fire = (el, type) => el.dispatchEvent(new Event(type, { bubbles: true }));
 
+/* Suites must not inherit each other's view state.
+ *
+ * "Clear filters" resets the FILTERS and deliberately leaves grouping and sort alone
+ * -- they are view preferences. So the sweeps suite left both pages grouped by
+ * industry, and the search suite that followed counted every record once per group it
+ * appeared under, which made 64 of 94 queries look internally inconsistent. */
+async function resetView(d1, d2, s1, s2) {
+  for (const d of [d1, d2]) {
+    d.getElementById('btn-clear').click();
+    for (const [id, v] of [['sort-group', 'none'], ['sort-within', 'importance']]) {
+      const e = d.getElementById(id);
+      if (e.value !== v) { e.value = v; fire(e, 'change'); }
+    }
+  }
+  await Promise.all([s1(), s2()]);
+}
+
 /* ---- the operations a reader can perform ------------------------------- */
 
 /* Each returns a function that performs it on one document, so the same operation is
@@ -135,6 +152,7 @@ function operations(doc, rand) {
 /* ---- suites ------------------------------------------------------------- */
 
 async function suiteToggles(d1, d2, s1, s2, report) {
+  await resetView(d1, d2, s1, s2);
   const rand = rng(90210);
   let failed = 0, steps = 0;
   for (let seq = 1; seq <= SEQUENCES; seq++) {
@@ -202,6 +220,7 @@ async function suiteToggles(d1, d2, s1, s2, report) {
 }
 
 async function suiteSweeps(d1, d2, s1, s2, report) {
+  await resetView(d1, d2, s1, s2);
   let failed = 0, states = 0;
   const set = (d, id, v, ev) => { const e = d.getElementById(id); e.value = String(v); fire(e, ev); };
   /* Every sweep step changes what is on screen, so both pages must be seen to
@@ -257,6 +276,7 @@ async function suiteSweeps(d1, d2, s1, s2, report) {
 }
 
 async function suiteSearch(d1, d2, s1, s2, report) {
+  await resetView(d1, d2, s1, s2);
   const { queries } = await (await fetch('/tests/parity/queries.json',
     { cache: 'no-store' })).json();
   const rows = [];
@@ -299,6 +319,7 @@ async function suiteSearch(d1, d2, s1, s2, report) {
 }
 
 async function suiteShowAll(d1, d2, s1, s2, report) {
+  await resetView(d1, d2, s1, s2);
   const rows = [];
   const num = (d) => Number((txt(d.getElementById('pubs-count')) || '(0)')
     .replace(/[^\d]/g, '') || 0);
